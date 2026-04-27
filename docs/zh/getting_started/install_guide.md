@@ -27,15 +27,9 @@ bash install.sh
 
 ### 基于Atlas 300I Duo 系列产品安装
 
-前置条件：已安装CANN并设置环境变量
-
-注意：
-
-1.Atlas 300I Duo 卡仅支持单卡单芯片处理器量化。
-
-2.如果需要进行稀疏量化和压缩，则需要安装CANN（8.2.RC1以上版本）：
-
-安装CANN软件需要根据系统选择aarch64或x86_64对应版本，具体安装方式请参考[CANN快速安装](https://www.hiascend.com/cann/download)。
+>[!NOTE]  
+> 1.Atlas 300I Duo 卡仅支持单卡单芯片处理器量化。  
+> 2.如果需要进行稀疏量化和压缩，则需要安装8.2.RC1及以上版本CANN，具体安装方式请参考[CANN快速安装](https://www.hiascend.com/cann/download)。
 
 ```shell
 # 1.git clone msmodelslim代码
@@ -84,7 +78,7 @@ pip install ./msmodelslim-{version}-py3-none-any.whl # 安装whl包
 
 ### CANN安装
 
-安装CANN软件需要根据系统选择aarch64或x86_64对应版本，具体安装方式请参考[CANN快速安装](https://www.hiascend.com/cann/download)。
+安装CANN软件和昇腾NPU驱动（包含Toolkit、ops和NNAL包），具体请参考[CANN快速安装](https://www.hiascend.com/cann/download)。
 
 ### PTA安装
 
@@ -95,3 +89,7 @@ PyTorch安装请参考《[Ascend Extension for PyTorch](https://www.hiascend.com
 ```shell
 pip uninstall msmodelslim -y
 ```
+
+## 升级
+
+若需要升级工具，可参照[源码安装](#源码安装)、[PyPI安装](#从pypi安装)或[下载whl包安装](#下载whl包安装)中的步骤直接安装新版本，新版本会覆盖原有的版本。
