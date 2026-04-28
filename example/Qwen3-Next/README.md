@@ -18,7 +18,7 @@
 
 | 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A16 | W4A8 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
 |---------|---------|---------------------------------------------------------------|-----|-----|-----|--------|------|---------|----------|-----------|-----------------------------------------------|
-| **Qwen3-Next** | Qwen3-Next-80B-A3B-Instruct | [Qwen3-Next-80B-A3B-Instruct](https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct)   | ✅ |  |    |        |   |  |   |   | [W8A8](#qwen3-next-80b-a3b-instruct-w8a8量化)|
+| **Qwen3-Next** | Qwen3-Next-80B-A3B-Instruct | [Qwen3-Next-80B-A3B-Instruct](https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct)   | ✅ |  |    |        |   |  |   |   | [W8A8](#qwen3-next-80b-a3b-instruct)|
 
 **说明：**
 
@@ -33,7 +33,8 @@
 - 请将`${MODEL_PATH}`替换为用户实际浮点权重路径,`${SAVE_PATH}`替换为量化权重保存路径。
 
 #### Qwen3-Next-80B-A3B-Instruct
-##### <span id="qwen3-next-80b-a3b-instruct-w8a8量化">Qwen3-Next-80B-A3B-Instruct W8A8量化</span>
+
+##### <span id="qwen3-next-80b-a3b-instruct-w8a8量">Qwen3-Next-80B-A3B-Instruct W8A8量化</span>
 
 该模型的量化已经集成至[一键量化](../../docs/zh/feature_guide/quick_quantization_v1/usage.md)。
 

@@ -67,3 +67,4 @@
 
 - 更多参数配置要求，请参考量化过程中配置的参数 [QuantConfig](../../../docs/zh/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_QuantConfig.md)
   以及量化参数配置类 [Calibrator](../../../docs/zh/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_Calibrator.md)
+  

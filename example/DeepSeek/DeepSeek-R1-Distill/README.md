@@ -88,7 +88,6 @@ Atlas 800I A2 w8a8量化
 
 OrangePi
 
-
 - 使用 OrangePi 推理，需要准备另外一台Atlas 800I A2 或 Atlas 300I DUO 进行w8a8量化，量化后把权重转移至香橙派上
 
 ```shell

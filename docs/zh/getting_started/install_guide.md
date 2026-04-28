@@ -2,13 +2,13 @@
 
 ## 安装说明
 
-本文介绍msModelSlim工具的安装。当前支持从PyPI安装、下载whl包安装和编译安装三种方式。
+本文介绍msModelSlim工具的安装，当前工具支持源码编译安装和pip安装两种方式。
 
 ## 安装前准备
 
 准备python环境：需要 Python 3.8 或更高版本。
 
-## 源码安装
+## 源码编译安装
 
 >[!NOTE]  
 >使用 `msModelSlim` 命令行工具时，请勿在 `msModelSlim` 的源码目录下直接运行命令。这可能会因 Python 在导入模块时出现源码路径和安装路径冲突，导致命令执行失败。  
@@ -29,7 +29,7 @@ bash install.sh
 
 >[!NOTE]  
 > 1.Atlas 300I Duo 卡仅支持单卡单芯片处理器量化。  
-> 2.如果需要进行稀疏量化和压缩，则需要安装8.2.RC1及以上版本CANN，具体安装方式请参考[CANN快速安装](https://www.hiascend.com/cann/download)。
+> 2.如果需要进行稀疏量化和压缩，则需要安装8.2.RC1及以上版本CANN，请参考[CANN快速安装](https://www.hiascend.com/cann/download)安装昇腾NPU驱动和CANN软件（包括Toolkit和ops包）并配置环境变量。
 
 ```shell
 # 1.git clone msmodelslim代码
@@ -52,13 +52,17 @@ sudo bash build.sh ${install_path}/ascend-toolkit/latest
 chmod -R 550 build
 ```
 
-## 从PyPI安装
+## pip安装
+
+pip安装包括从**PyPI远程安装**和**下载whl包本地安装**两种方式。
+
+### PyPI远程安装
 
 ```bash
 pip install msmodelslim
 ```
 
-## 下载whl包安装
+### 下载whl包安装
 
 请参考[版本说明](../appendix/release_notes.md)中的“whl包获取”章节，下载msModelSlim的whl软件包。
 
@@ -78,11 +82,11 @@ pip install ./msmodelslim-{version}-py3-none-any.whl # 安装whl包
 
 ### CANN安装
 
-安装CANN软件和昇腾NPU驱动（包含Toolkit、ops和NNAL包），具体请参考[CANN快速安装](https://www.hiascend.com/cann/download)。
+请参考[CANN快速安装](https://www.hiascend.com/cann/download)安装昇腾NPU驱动和CANN软件（包括Toolkit和ops包）并配置环境变量。
 
 ### PTA安装
 
-PyTorch安装请参考《[Ascend Extension for PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/710/configandinstg/instg/insg_0004.html)》配置与安装。
+PyTorch安装请参考《[Ascend Extension for PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/730/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)》配置与安装。
 
 ## 卸载
 
@@ -92,4 +96,4 @@ pip uninstall msmodelslim -y
 
 ## 升级
 
-若需要升级工具，可参照[源码安装](#源码安装)、[PyPI安装](#从pypi安装)或[下载whl包安装](#下载whl包安装)中的步骤直接安装新版本，新版本会覆盖原有的版本。
+若需要升级工具，可参照[源码编译安装](#源码编译安装)、[PyPI远程安装](#pypi远程安装)或[下载whl包安装](#下载whl包安装)中的步骤直接安装新版本，新版本会覆盖原有的版本。
