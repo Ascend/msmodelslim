@@ -86,6 +86,12 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
             self._analysis_method.name,
         )
 
+        if len(self._target_layers) == 0:
+            get_logger().warning(
+                f"No target layers/modules found matching the specified patterns for {request.name}. "
+                f"Please check the patterns {self.config.patterns} and the model structure, to ensure it meets expectations."
+                )
+
         # Runner 按块下发 request（如 request.name='model.layers.0'），target_layers 是叶子 Linear 全名
         # 遍历当前块下属于 _target_layers 的 nn.Linear 子模块，逐个注册 hook
         hook_fn = self._analysis_method.get_hook()
@@ -130,6 +136,12 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
             len(self._layer_scores),
             self._analysis_method.name,
         )
+
+        if not ctx["layer_analysis"].debug["layer_scores"] or len(ctx["layer_analysis"].debug["layer_scores"]) == 0:
+            get_logger().warning(
+                f"No statistics collected. This may be caused by empty calibration data "
+                f"or incompatible patterns with the model structure."
+                )
 
     def get_layer_scores(self) -> List[Dict[str, Any]]:
         """Return the computed layer scores (for tests or when context is not used)."""

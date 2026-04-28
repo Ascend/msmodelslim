@@ -92,11 +92,17 @@ class BinaryAnalysisProcessor(AutoSessionProcessor):
         self._target_layers = self._analysis_method.filter_layers_by_patterns(
             all_layers, self.config.patterns
         )
-        get_logger().info(
+        get_logger().debug(
             "BinaryAnalysisProcessor preprocess: %d target layers (metrics=%s)",
             len(self._target_layers),
             self._analysis_method.name,
         )
+
+        if len(self._target_layers) == 0:
+            get_logger().warning(
+                f"No target layers/modules found matching the specified patterns for {request.name}. "
+                f"Please check the patterns {self.config.patterns} and the model structure, to ensure it meets expectations."
+                )
 
         hook_fn = self._analysis_method.get_hook()
         self._register_hooks_for_request(request, hook_fn, self._float_layer_stats)
@@ -152,6 +158,12 @@ class BinaryAnalysisProcessor(AutoSessionProcessor):
             len(self._layer_scores),
             self._analysis_method.name,
         )
+
+        if not ctx["layer_analysis"].debug["layer_scores"] or len(ctx["layer_analysis"].debug["layer_scores"]) == 0:
+            get_logger().warning(
+                f"No statistics collected. This may be caused by empty calibration data "
+                f"or incompatible patterns with the model structure."
+                )
 
     def _register_hooks_for_request(self, 
                                     request: BatchProcessRequest, 

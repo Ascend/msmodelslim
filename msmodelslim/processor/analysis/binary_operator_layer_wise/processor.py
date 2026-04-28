@@ -94,11 +94,17 @@ class BinaryOperatorLayerWiseProcessor(AutoSessionProcessor):
         if not self._target_decoder_layers:
             return
 
-        logger.info(
+        logger.debug(
             "LayerAnalysisProcessor preprocess: decoder layer %s (metrics=%s)",
             self._target_decoder_layers[0],
             self._analysis_method.name,
         )
+
+        if len(self._target_decoder_layers) == 0:
+            logger.warning(
+                f"No target layers found matching the specified patterns for {request.name}. "
+                f"Please check the patterns {self.config.patterns} and the model structure, to ensure it meets expectations."
+                )
 
         hook_fn = self._analysis_method.get_hook()
 
@@ -174,6 +180,12 @@ class BinaryOperatorLayerWiseProcessor(AutoSessionProcessor):
             len(self._decoder_layer_scores),
             self._analysis_method.name,
         )
+
+        if not ctx["layer_analysis"].debug["layer_scores"] or len(ctx["layer_analysis"].debug["layer_scores"]) == 0:
+            get_logger().warning(
+                f"No statistics collected. This may be caused by empty calibration data "
+                f"or incompatible patterns with the model structure."
+                )
 
     def _remove_hooks_for_request(self, request: BatchProcessRequest) -> None:
         keys_to_remove = [k for k in self._hook_handles if k == request.name or k.startswith(request.name + ".")]
