@@ -64,17 +64,43 @@ pip install msmodelslim
 
 ### 下载whl包安装
 
-请参考[版本说明](../appendix/release_notes.md)中的“whl包获取”章节，下载msModelSlim的whl软件包。
+1. 请参考[msModelSlim Release](https://gitcode.com/Ascend/msmodelslim/releases)下载msModelSlim的whl包和对应哈希校验文件（.sha256）。
 
-获取到whl软件包后执行如下命令进行安装。
+   下载本软件即表示您同意[华为企业业务最终用户许可协议（EULA）](https://e.huawei.com/cn/about/eula)的条款和条件。
 
-```bash
-sha256sum {name}.whl # 验证whl包，若校验码一致，则whl包在下载中没有受损
-```
+2. 验证whl包的完整性。
 
-```bash
-pip install ./msmodelslim-{version}-py3-none-any.whl # 安装whl包
-```
+   1. 在whl包所在目录执行如下命令获取whl软件包的sha256校验码。
+
+      ```bash
+      sha256sum {name}.whl # 获取whl包校验码
+      ```
+
+       打印如下示例信息。
+
+      ```ColdFusion
+      {sha256} {name}.whl
+      ```
+
+   2. 用记事本打开哈希校验文件查看sha256校验码。
+
+   3. 比对两个文件的sha256校验码是否一致。
+
+      若两个校验码一致，则表示下载了正确的软件包；若不一致，请不要使用该软件包，需要支持与服务请在论坛求助或提交技术工单。    
+
+3. 安装whl包。
+
+   执行如下命令安装whl包。
+
+   ```bash
+   pip install ./msmodelslim-{version}-py3-none-any.whl # 安装whl包
+   ```
+
+   打印如下信息时，表示msModelSlim安装成功。
+ 
+   ```ColdFusion
+   Successfully installed msmodelslim-{version}
+   ```
 
 ## 安装后配置
 
