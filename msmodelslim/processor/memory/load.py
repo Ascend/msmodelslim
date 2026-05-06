@@ -106,7 +106,6 @@ class LoadProcessor(AutoSessionProcessor):
                 unregister_device_alignment_hook(request.module, name=request.name)
 
             request.module.to(torch.device(self.device), non_blocking=self.non_blocking)
-            torch.set_default_device(torch.device(self.device if self.device != 'meta' else 'cpu'))
 
             if self.config.cleanup:
 
