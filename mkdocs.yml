@@ -49,13 +49,20 @@ nav:
       - 自动调优策略:
           - Standing High: "zh/quantization_algorithms/auto_tuning_strategies/standing_high.md"
           - Standing High With Experience: "zh/quantization_algorithms/auto_tuning_strategies/standing_high_with_experience.md"
+      - 敏感层分析算法:
+          - Std: "zh/quantization_algorithms/sensitive_layer_analysis/std.md"
+          - Quantile: "zh/quantization_algorithms/sensitive_layer_analysis/quantile.md"
+          - Kurtosis: "zh/quantization_algorithms/sensitive_layer_analysis/kurtosis.md"
+          - Attention MSE: "zh/quantization_algorithms/sensitive_layer_analysis/attention_mse.md"
+          - 层级 MSE（mse_layer_wise）: "zh/quantization_algorithms/sensitive_layer_analysis/mse_layer_wise.md"
+          - 模型级 MSE（mse_model_wise）: "zh/quantization_algorithms/sensitive_layer_analysis/mse_model_wise.md"
   - 四、功能指南:
       - 一键量化 (V1):
           - 使用指南: "zh/feature_guide/quick_quantization_v1/usage.md"
           - 量化结果说明: "zh/feature_guide/quick_quantization_v1/quantization_result.md"
           - 组合处理器: "zh/feature_guide/quick_quantization_v1/group.md"
       - 敏感层分析:
-          - 使用指南: "zh/feature_guide/sensitive_layer_analysis/analyze_api_usage.md"
+          - 使用指南: "zh/feature_guide/sensitive_layer_analysis/usage.md"
       - 自动调优策略:
           - 使用指南: "zh/feature_guide/auto_precision_tuning/usage.md"
           - 配置协议详解: "zh/feature_guide/auto_precision_tuning/configuration_protocols.md"
