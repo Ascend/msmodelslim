@@ -60,9 +60,14 @@ for section_name in config.sections():
         if plugin_list:
             plugin_entry_points[plugin_path] = plugin_list
 
+__version__ = '26.0.0.alpha01'
+whl_version = os.getenv('WHL_VERSION')
+if whl_version is not None:
+    __version__ = whl_version
+
 setup(
     name='msmodelslim',
-    version='26.0.0.alpha01',
+    version=__version__,
     description='msModelSlim, MindStudio ModelSlim Tools',
     long_description_content_type='text/markdown',
     url=config.get('URL', 'repository_url'),
