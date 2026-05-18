@@ -555,7 +555,7 @@ python3 sparse_quant.py
 
 已参考前提条件，完成开发环境配置。
 
-请参考[安装指南](../../getting_started/install_guide.md#基于atlas-300i-duo-系列产品安装)中“基于Atlas 300I Duo 系列产品安装”章节，完成**稀疏量化压缩场景**的相关编译步骤。
+请参见[安装指南](../../getting_started/install_guide.md#232-源码构建安装)中有关稀疏量化内容，完成**稀疏量化压缩场景**的相关编译步骤。
 
 编译结束后，在当前路径下生成build目录，执行如下命令查看编译结果compress_executor。
 
@@ -763,7 +763,7 @@ python3 sparse_quant.py
 
 已参考前提条件，完成开发环境配置。
 
-请参考[安装指南](../../getting_started/install_guide.md#基于atlas-300i-duo-系列产品安装)中“基于Atlas 300I Duo 系列产品安装”章节，完成**稀疏量化压缩场景**的相关编译步骤。
+请参见[安装指南](../../getting_started/install_guide.md#232-源码构建安装)中有关稀疏量化内容，完成**稀疏量化压缩场景**的相关编译步骤。
 
 编译结束后，在当前路径下生成build目录，执行如下命令查看编译结果compress_executor。
 
