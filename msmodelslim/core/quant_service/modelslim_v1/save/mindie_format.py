@@ -41,7 +41,7 @@ from msmodelslim.ir.qal import QDType, QScope
 from .saver import AutoSaverProcessor, AutoSaverBaseConfig
 from .utils.json import JsonWriter
 from .utils.safetensors import SafetensorsWriter, BufferedSafetensorsWriter
-
+from .utils.pack import w4a8_pack_int4, process_scale, pack_fp4_to_uint8
 
 def copy_files(input_path, output_path):
     """
@@ -283,6 +283,7 @@ class MindIEFormatSaver(AutoSaverProcessor):
             self.json_append[ValidJsonExt.JSON_APPEND] = dict()
         self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W8A8_DYNAMIC"
 
+
     @save_this_rank_only()
     def on_w8a8_mx_dynamic_per_block(self, prefix: str, module: qir.W8A8MXDynamicPerBlockFakeQuantLinear):
         with torch.device(module.weight.device):
@@ -303,6 +304,28 @@ class MindIEFormatSaver(AutoSaverProcessor):
         if ValidJsonExt.JSON_APPEND not in self.json_append.keys():
             self.json_append[ValidJsonExt.JSON_APPEND] = dict()
         self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W8A8_MXFP8"
+
+    def on_w4a4_mx_dynamic_dual_scale(self, prefix: str, module: qir.W4A4MXDynamicDualScaleFakeQuantLinear):
+        with torch.device(module.weight.device):
+            if not (isinstance(module.w_axes, (int, list))):
+                raise SchemaValidateError("w_axes must be int or list[int].")
+            weight_scale = module.weight_scale
+            weight_dual_scale = module.weight_dual_scale
+            self.group_size = 32
+            self.write_tensor(prefix + ".weight", "W4A4_MXFP4_DUALSCALE", pack_fp4_to_uint8(module.weight.cpu()))
+            self.write_tensor(
+                prefix + ".weight_scale",
+                "W4A4_MXFP4_DUALSCALE",
+                (weight_scale.squeeze(dim=module.w_axes) + 127).cpu().to(torch.uint8)
+                # +127 是对 weight_scale 进行偏移处理，使其从-127~128偏移到0~255，正好覆盖torch_uint8的取值范围
+            )
+            self.write_tensor(prefix + ".weight_dual_scale", "W4A4_MXFP4_DUALSCALE", weight_dual_scale.cpu().to(torch.float32))
+            if module.bias is not None:
+                self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
+
+        if ValidJsonExt.JSON_APPEND not in self.json_append.keys():
+            self.json_append[ValidJsonExt.JSON_APPEND] = dict()
+        self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W4A4_MXFP4_DUALSCALE"
 
     def on_online_rotation_wrapper(self, prefix: str, module: qir.OnlineRotationWrapper):
         """

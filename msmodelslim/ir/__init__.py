@@ -31,6 +31,7 @@ __all__ = [
     "W8A8DynamicPerChannelFakeQuantLinear",
     "W8A8MXDynamicPerBlockFakeQuantLinear",
     "W4A4MXDynamicPerBlockFakeQuantLinear",
+    "W4A4MXDynamicDualScaleFakeQuantLinear",
     "W4A8MXDynamicPerBlockFakeQuantLinear",
     "W8A8PDMixFakeQuantLinear",
     "W8A8DynamicPerGroupFakeQuantLinear",
@@ -77,6 +78,7 @@ __all__ = [
     "int4_per_tensor_asym",
     "int4_per_token_asym",
     "mxfp4_per_block_sym",
+    "mxfp4_dual_scale_sym",
     "mxfp8_per_block_sym",
     "float_per_tensor_sym",
     "PDMixState",
@@ -91,7 +93,7 @@ from .const import int8_per_tensor_sym, int8_per_channel_sym, int8_per_token_sym
     int8_per_group_asym, int8_per_tensor_asym, int8_per_token_asym, int8_per_channel_asym, int4_per_channel_sym, \
     int8_per_tensor_asym, int8_per_token_asym, int8_per_channel_asym, int4_per_tensor_sym, int4_per_channel_sym, \
     int4_per_channel_asym, int4_per_token_sym, int4_per_group_sym, int4_per_group_asym, int4_per_tensor_asym, \
-    int4_per_token_asym, int8_pd_mix_asym, mxfp4_per_block_sym, mxfp8_per_block_sym, \
+    int4_per_token_asym, int8_pd_mix_asym, mxfp4_per_block_sym, mxfp4_dual_scale_sym, mxfp8_per_block_sym, \
     fp8_e4m3_per_token_sym, fp8_e4m3_per_tensor_sym, fp8_e4m3_per_channel_sym, float_per_tensor_sym, \
     int8_per_head_sym
 from .flatquant import FlatQuantOnlineWrapper, FlatQuantOnlineHookIR
@@ -103,6 +105,7 @@ from .quarot import QuarotOnlineRotationInfo, QuarotOfflineRotationInfo, QuarotO
 from .w16a16s import W16A16sLinear
 from .w4a4_dynamic import W4A4DynamicPerChannelFakeQuantLinear, W4A4DynamicPerGroupFakeQuantLinear
 from .w4a4_mx_dynamic import W4A4MXDynamicPerBlockFakeQuantLinear
+from .w4a4_mx_dynamic_dualscale import W4A4MXDynamicDualScaleFakeQuantLinear
 from .w4a8_dynamic import W4A8DynamicFakeQuantLinear
 from .w4a8_mx_dynamic import W4A8MXDynamicPerBlockFakeQuantLinear
 from .w8a16_static import W8A16StaticPerChannelFakeQuantLinear, W8A16StaticPerGroupFakeQuantLinear

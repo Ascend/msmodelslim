@@ -107,6 +107,7 @@ class AutoSaverProcessor(AutoSessionProcessor):
             qir.W8A8MXDynamicPerBlockFakeQuantLinear: self.on_w8a8_mx_dynamic_per_block,
             qir.W4A8MXDynamicPerBlockFakeQuantLinear: self.on_w4a8_mx_dynamic_per_block,
             qir.W4A4MXDynamicPerBlockFakeQuantLinear: self.on_w4a4_mx_dynamic_per_block,
+            qir.W4A4MXDynamicDualScaleFakeQuantLinear: self.on_w4a4_mx_dynamic_dual_scale,
             qir.W4A8DynamicFakeQuantLinear: self.on_w4a8_dynamic,
             nn.Linear: self.on_float_linear,
             nn.Module: self.on_float_module,
@@ -213,6 +214,10 @@ class AutoSaverProcessor(AutoSessionProcessor):
     def on_w4a8_mx_dynamic_per_block(self, prefix: str, module: qir.W4A8MXDynamicPerBlockFakeQuantLinear):
         raise NotImplementedError(
             f"You should implement the on_w4a8_mx_dynamic_per_block method for {self.__class__.__name__}")
+
+    def on_w4a4_mx_dynamic_dual_scale(self, prefix: str, module: qir.W4A4MXDynamicDualScaleFakeQuantLinear):
+        raise NotImplementedError(
+            f"You should implement the on_w4a4_mx_dynamic_dual_scale method for {self.__class__.__name__}")
 
     def on_w4a8_dynamic(self, prefix: str, module: qir.W4A8DynamicFakeQuantLinear):
         raise NotImplementedError(f"You should implement the on_w4a8_dynamic method for {self.__class__.__name__}")

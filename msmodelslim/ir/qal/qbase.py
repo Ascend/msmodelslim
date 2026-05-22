@@ -97,6 +97,7 @@ class QScope(str, Enum):
     PER_TOKEN = "per_token"
     PD_MIX = "pd_mix"
     PER_HEAD = "per_head"
+    DUAL_SCALE = "dual_scale"
 
     PLACEHOLDER = "placeholder"
 
