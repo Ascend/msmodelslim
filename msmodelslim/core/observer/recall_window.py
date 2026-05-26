@@ -26,6 +26,7 @@ import torch
 from pydantic import BaseModel
 from torch import distributed as dist, nn
 
+from msmodelslim.utils.distributed import sync_base_operation
 from msmodelslim.utils.exception import SpecError
 
 
@@ -59,6 +60,10 @@ class RecallWindowObserver(nn.Module):
         else:
             index = sample_max > self._max_values
             self._max_values[index] = sample_max[index]
+
+        if sync and dist.is_initialized():
+            sync_base_operation(self._min_values, op="min", group=group)
+            sync_base_operation(self._max_values, op="max", group=group)
 
     def reset(self):
         self._min_values = None

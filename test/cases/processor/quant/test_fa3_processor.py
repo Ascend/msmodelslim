@@ -127,7 +127,7 @@ class TestFA3QuantProcessor(unittest.TestCase):
         processor = FA3QuantProcessor(self.model, config, self.adapter)
         
         self.assertFalse(processor.is_data_free())
-        self.assertFalse(processor.support_distributed())
+        self.assertTrue(processor.support_distributed())
 
     def test_preprocess_calls_adapter_and_replaces_placeholder(self):
         """测试preprocess调用适配器并替换占位符"""
