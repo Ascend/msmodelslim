@@ -3,6 +3,7 @@
 ## 使用前准备
 
 - 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/install_guide/)。
+- HunyuanVideo浮点推理环境与依赖请参考[魔乐 HunyuanVideo](https://modelers.cn/models/MindIE/hunyuan_video) 及 [README](https://modelers.cn/models/MindIE/hunyuan_video/blob/main/README.md)，确保在量化前可正常完成浮点推理。
 
 ## 支持的模型版本与量化策略
 
@@ -178,9 +179,9 @@ with torch.autocast(device_type='cuda', dtype=torch.bfloat16, enabled=True):
 
 ### <span id="hunyuanvideo-fa3-量化">HunyuanVideo fa3 量化</span>
 
-该模型的FA3+W8A8动态量化已经集成至一键量化。
+#### 使用quant_type参数进行一键量化
 
-#### 使用config_path参数指定配置文件进行一键量化
+W8A8(MXFP8)+FA3(FP8动态)
 
 ```bash
 msmodelslim quant \
@@ -188,11 +189,13 @@ msmodelslim quant \
     --save_path /path/to/hunyuan_quantized_weights \
     --device npu \
     --model_type hunyuan_video \
-    --config_path /lab_practice/hunyuan_video/hunyuan_video_w8a8f8_mxfp.yaml \
+    --quant_type w8a8f8 \
     --trust_remote_code True
 ```
 
 #### 脚本量化启动命令
+
+W8A8(INT8)+FA3(INT8静态)
 
 **注意：** 
 Atlas 800I A2(8*64G)推理设备：支持4卡量化、6卡量化、8卡量化。

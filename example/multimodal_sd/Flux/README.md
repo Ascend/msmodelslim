@@ -6,7 +6,7 @@ FLUX的推理量化依赖于FLUX.1-dev推理工程仓：[MindIE/FLUX.1-dev](http
 
 - 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/install_guide/)。
 - 硬件支持：Atlas 800I A2
-- 软件支持：FLUX.1-dev推理工程仓，commit ID `12e09174353b1bd57bf7fcb80386f59b09fbbefe`
+- 软件支持：FLUX.1-dev推理工程仓
 
 **注意**：diffusers仅支持>=0.33.0,<=0.33.1
 
@@ -14,7 +14,7 @@ FLUX的推理量化依赖于FLUX.1-dev推理工程仓：[MindIE/FLUX.1-dev](http
 
 - 克隆工程仓代码；
 
-- 执行 `git checkout 12e09174353b1bd57bf7fcb80386f59b09fbbefe` 切换至指定版本；
+- 非一键量化需要执行 `git checkout 12e09174353b1bd57bf7fcb80386f59b09fbbefe` 切换至指定版本；
 
 - 完成后续配置与量化步骤。
   
@@ -176,9 +176,9 @@ quant_model(model, session_cfg)
 
 ### <span id="flux-fa3-quantization">FLUX FA3+W8A8动态量化</span>
 
-该模型的FA3+W8A8动态量化已经集成至一键量化。
+#### 使用quant_type参数进行一键量化
 
-#### 使用config_path参数指定配置文件进行一键量化
+W8A8(MXFP8)+FA3(FP8动态)
 
 ```bash
 msmodelslim quant \
@@ -186,11 +186,13 @@ msmodelslim quant \
     --save_path /path/to/flux1_quantized_weights \
     --device npu \
     --model_type FLUX.1-dev \
-    --config_path /lab_practice/flux1/flux1_w8a8f8_mxfp.yaml \
+    --quant_type w8a8f8 \
     --trust_remote_code True
 ```
 
 #### 脚本量化启动命令
+
+W8A8(INT8)+FA3(INT8静态)
 
 我们提供了完整的量化启动脚本示例：[Flux/inference_flux.py](./inference_flux.py)，其启动命令可参考(请提前确保calib_prompts.txt权限不大于'0o640')：
 

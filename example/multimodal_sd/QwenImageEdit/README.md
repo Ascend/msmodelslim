@@ -34,7 +34,9 @@ Qwen-Image-Edit-2509 的 Transformer 部分基于扩散与 Transformer 结构，
 
 ### <span id="qwen-image-edit-2509-fa3w8a8动态量化">Qwen-Image-Edit-2509 FA3+W8A8 动态量化</span>
 
-#### 使用 config_path 参数指定配置文件进行一键量化
+#### 使用 quant_type 参数进行一键量化
+
+W8A8(MXFP8)+FA3(FP8动态)
 
 ```bash
 msmodelslim quant \
@@ -42,25 +44,9 @@ msmodelslim quant \
     --save_path /path/to/qwen_image_edit_quantized_weights \
     --device npu \
     --model_type Qwen-Image-Edit-2509 \
-    --config_path lab_practice/qwen_image_edit/qwen-image-edit-w8a8f8-mxfp.yaml \
+    --quant_type w8a8f8 \
     --trust_remote_code True
 ```
-
-### 一键量化命令参数说明
-
-一键量化参数基本说明可参考：[一键量化参数说明](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/feature_guide/quick_quantization_v1/usage/#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)。
-
-针对 Qwen-Image-Edit-2509，补充说明如下：
-
-| 参数名称 | 解释 | 是否可选 | 范围 |
-|----------|------|----------|------|
-| model_path | 浮点权重目录（需包含 `transformer` 子目录及 Pipeline 所需文件，与 MindIE 推理仓一致） | 必选 | 类型：Str |
-| save_path | 量化权重保存路径 | 必选 | 类型：Str |
-| device | 量化设备 | 必选 | 1. 类型：Str <br>2. 仅支持 `npu` |
-| model_type | 模型名称 | 必选 | 1. 类型：Str <br>2. 大小写敏感，需配置为 `qwen_image_edit` |
-| config_path | 指定配置路径 | 与 `quant_type` 二选一 | 1. 类型：Str <br>2. 配置文件格式为 yaml <br>3. 建议优先使用最佳实践库中已验证配置 [qwen-image-edit-w8a8f8-mxfp.yaml](../../../lab_practice/qwen_image_edit/qwen-image-edit-w8a8f8-mxfp.yaml)；若自定义配置，msModelSlim 不为量化结果负责 |
-| quant_type | 量化类型 | 与 `config_path` 二选一 | 1. 类型：Str <br>2. 当前Qwen-Image-Edit模型仅支持config_path |
-| trust_remote_code | 是否信任自定义代码 | 可选 | 类型：Bool，默认 False；加载自定义代码时建议设为 `True`（请确保代码来源可靠） |
 
 ## 配置文件说明
 
