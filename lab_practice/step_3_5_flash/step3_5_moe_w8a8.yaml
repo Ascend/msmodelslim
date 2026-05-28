@@ -1,0 +1,36 @@
+# Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
+apiversion: modelslim_v1
+metadata:
+  config_id: Step-3.5-Flash_w8a8_mxfp8
+  score: 90
+  verified_model_types:
+    - Step-3.5-Flash
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: False
+
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+
+spec:
+  process:
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*moe.experts*"
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
+  dataset: "data_list_1.jsonl"  # Short name: auto-searches in lab_calib/
+  default_text: "Describe this image in detail."
