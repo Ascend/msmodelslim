@@ -21,12 +21,14 @@ from typing import List, Literal, Dict
 
 import functools
 import torch
-import torch.nn as nn
+import torch.distributed as dist
+from torch import nn
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.core.context import get_current_context
 from msmodelslim.processor.base import AutoSessionProcessor
+from msmodelslim.utils.distributed import DistHelper
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.processor.quarot.offline_quarot.quarot_interface import QuaRotInterface
@@ -95,6 +97,8 @@ class AdaptRotationStage1Processor(AutoSessionProcessor):
         self.adapter = adapter
         self.act_dict = defaultdict(list)
         self._stat_hooks: list = []
+        self.dist_helper = None
+        self.rot_matrix = None
         if not isinstance(adapter, AdaptRotationInterface):
             raise UnsupportedError(
                 f'{adapter.__class__.__name__} does not support AdaptRotationInterface',
@@ -108,10 +112,40 @@ class AdaptRotationStage1Processor(AutoSessionProcessor):
         self.act_dict[name].append(tensor)
 
     def support_distributed(self) -> bool:
-        return False
+        return True
 
     def is_data_free(self) -> bool:
         return False
+
+    # ---- distributed helpers --------------------------------------------
+
+    def _setup_dist_helper(self, request: BatchProcessRequest) -> None:
+        if dist.is_initialized():
+            self.dist_helper = DistHelper(request.module, prefix=request.name)
+
+    def _teardown_dist_helper(self) -> None:
+        self.dist_helper = None
+
+    def _gather_activations_across_ranks(self) -> None:
+        ws = dist.get_world_size()
+        keys = [None] * ws
+        dist.all_gather_object(keys, set(self.act_dict.keys()))
+        all_keys = set()
+        for k in keys:
+            if k:
+                all_keys.update(k)
+        merged = defaultdict(list)
+        for key in sorted(all_keys):
+            local = self.act_dict.get(key, [])
+            cat = torch.cat(local, dim=0) if local else torch.empty(0)
+            gathered = [None] * ws
+            dist.all_gather_object(gathered, cat)
+            parts = [t for t in gathered if isinstance(t, torch.Tensor) and t.numel() > 0]
+            if parts:
+                merged[key] = [torch.cat(parts, dim=0)]
+        self.act_dict = merged
+
+    # ---- end distributed helpers ----------------------------------------
 
     def pre_run(self) -> None:
         _, pre_run_fused_ln = self.adapter.get_ln_fuse_map()
@@ -124,6 +158,7 @@ class AdaptRotationStage1Processor(AutoSessionProcessor):
 
     def preprocess(self, request: BatchProcessRequest) -> None:
         """注册前向钩子，供 process 阶段前向传播时收集激活。"""
+        self._setup_dist_helper(request)
         prefix = request.name
         prefix = f"{prefix}." if prefix != "" else ""
 
@@ -149,8 +184,12 @@ class AdaptRotationStage1Processor(AutoSessionProcessor):
             for h in self._stat_hooks:
                 h.remove()
             self._stat_hooks = []
+        self._teardown_dist_helper()
 
     def post_run(self) -> None:
+        if dist.is_initialized() and dist.get_world_size() > 1:
+            self._gather_activations_across_ranks()
+
         act_matrix = {}
         for name, tensors in self.act_dict.items():
             all_acts = torch.cat(tensors, dim=0)
@@ -172,9 +211,14 @@ class AdaptRotationStage1Processor(AutoSessionProcessor):
             max_samples=self.config.max_samples,
             steps=self.config.steps,
         )
+        if getattr(torch, 'npu', None) is not None and torch.npu.is_available():
+            device = torch.device(f"npu:{torch.npu.current_device()}")
+        else:
+            device = torch.device("cpu")
         adapted_matrix = optimizer.optimize(
             act_matrix,
             self.rot_matrix,
+            device=device,
         )
 
         ctx = get_current_context()
@@ -183,22 +227,22 @@ class AdaptRotationStage1Processor(AutoSessionProcessor):
                 "AdaptRotation stage1 requires context to store adapted_matrix for stage2, but get_current_context() returned None.",
                 action="Ensure AdaptRotation stage1 runs within quant_service prior stage (ContextManager).",
             )
-        ns = ctx["adapt_rotation"]
+        ns = ctx["adapt_rotation"]  # pylint: disable=unsubscriptable-object
         adapted_matrix_cpu = adapted_matrix.cpu() if hasattr(adapted_matrix, "cpu") else adapted_matrix
         ns.state["adapted_matrix"] = adapted_matrix_cpu
 
     def _fuse_norm(self, fused_map: Dict[str, str]):
         for key, value in fused_map.items():
-            get_logger().debug(f"start to fuse layer norm and linear: {key} and {value}")
+            get_logger().debug("start to fuse layer norm and linear: %s and %s", key, value)
             layernorms = []
-            if isinstance(key, list) or isinstance(key, tuple):
+            if isinstance(key, (list, tuple)):
                 for k in key:
                     layernorms.append(self.model.get_submodule(k))
             else:
                 layernorms.append(self.model.get_submodule(key))
             linears = []
 
-            if isinstance(value, list) or isinstance(value, tuple):
+            if isinstance(value, (list, tuple)):
                 for v in value:
                     linears.append(self.model.get_submodule(v))
             else:
@@ -210,4 +254,4 @@ class AdaptRotationStage1Processor(AutoSessionProcessor):
                     "fuse layer norm and linear error!",
                     action=f"Please check the {key} and {value} size!",
                 ) from e
-            get_logger().debug(f"successfully fuse layer norm and linear: {key} and {value}")
+            get_logger().debug("successfully fuse layer norm and linear: %s and %s", key, value)

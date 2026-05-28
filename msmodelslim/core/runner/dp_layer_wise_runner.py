@@ -48,7 +48,7 @@ class DPLayerWiseRunner(LayerWiseRunner):
     """
     Distributed Data Parallel Layer-Wise Runner for multi-device quantization.
     This runner inherits from LayerWiseRunner and adds distributed execution support.
-    
+
     It handles:
     1. Setting up distributed environment
     2. Launching multiple processes
@@ -59,7 +59,7 @@ class DPLayerWiseRunner(LayerWiseRunner):
                  backend: str = 'hccl'):
         """
         Initialize DPLayerWiseRunner.
-        
+
         Args:
             adapter: PipelineInterface instance
             offload_device: Device to offload model layers to (default: 'meta')
@@ -72,10 +72,10 @@ class DPLayerWiseRunner(LayerWiseRunner):
     def convert_to_distributed_config_if_needed(processor_cfg: AutoProcessorConfig) -> AutoProcessorConfig:
         """
         Convert AscendV1Config to DistributedAscendV1Config if needed for distributed saving.
-        
+
         Args:
             processor_cfg: Processor configuration to check and convert
-        
+
         Returns:
             Converted processor configuration (or original if no conversion needed)
         """
@@ -90,19 +90,19 @@ class DPLayerWiseRunner(LayerWiseRunner):
                 ext=processor_cfg.ext
             )
             get_logger().info(
-                f"Converted AscendV1Config to DistributedAscendV1Config for distributed saving"
+                "Converted AscendV1Config to DistributedAscendV1Config for distributed saving"
             )
             return distributed_cfg
-        
+
         return processor_cfg
 
     def distributed_worker(self, rank: int, world_size: int, device_indices: List[int],
-                          model: Optional[nn.Module], calib_data: Optional[List[Any]], 
+                          model: Optional[nn.Module], calib_data: Optional[List[Any]],
                           device: DeviceType, master_port: int = 29500,
                           shared_ctx=None, work_queue=None):
         """
         Worker function for distributed execution.
-        
+
         Args:
             rank: Process rank (0-based index in the process group)
             world_size: Total number of processes
@@ -134,9 +134,8 @@ class DPLayerWiseRunner(LayerWiseRunner):
                     )
 
                 get_logger().info(
-                    f"Rank {rank}/{world_size} initialized on device {actual_device_idx} "
-                    f"(device index {actual_device_idx}) with backend {self.backend}"
-                )
+                    "Rank %s/%s initialized on device %s (device index %s) with backend %s",
+                    rank, world_size, actual_device_idx, actual_device_idx, self.backend)
 
                 # Initialize model in distributed environment
                 _ = get_input_datas(self.adapter, calib_data, DeviceType.CPU)
@@ -174,9 +173,9 @@ class DPLayerWiseRunner(LayerWiseRunner):
                 )
 
                 self.generated_schedule(process_unit, data_recorder)
-            
+
         except Exception as e:
-            get_logger().error(f"Error in rank {rank}: {e}")
+            get_logger().error("Error in rank %s: %s", rank, e)
             raise
         finally:
             clear_distributed_task_work_queue()
@@ -187,10 +186,10 @@ class DPLayerWiseRunner(LayerWiseRunner):
             device: DeviceType = DeviceType.NPU, device_indices: Optional[List[int]] = None):
         """
         Run distributed quantization.
-        
+
         This method sets up the distributed environment and launches multiple processes
         for parallel quantization across multiple devices.
-        
+
         Args:
             model: Model to quantize (optional)
             calib_data: Calibration data (optional)
@@ -200,76 +199,86 @@ class DPLayerWiseRunner(LayerWiseRunner):
         if device_indices is None or len(device_indices) <= 1:
             get_logger().warning("Number of devices <= 1, falling back to single-device execution")
             return super().run(model=model, calib_data=calib_data, device=device, device_indices=device_indices)
-        
+
         world_size = len(device_indices)
 
         get_logger().info(
-            f"Starting distributed execution with {world_size} devices: {device_indices}. "
+            "Starting distributed execution with %s devices: %s. ",
+            world_size, device_indices,
         )
 
         try:
             # Set multiprocessing start method
             mp.set_start_method('spawn', force=True)
-            
-            # Find available port in main process
+
+            # Ownership principle: if we set MASTER_PORT ourselves, clean it after spawn
+            # to avoid contaminating subsequent mp.spawn calls in multi-stage quantization.
+            # If MASTER_PORT was preset externally (e.g. via env), leave it intact.
+            _port_set_by_us = False
             if 'MASTER_PORT' not in os.environ:
                 master_port = find_free_port()
                 os.environ['MASTER_PORT'] = str(master_port)
-                get_logger().info(f"Main process: Using port {master_port} for distributed quantization")
+                _port_set_by_us = True
+                get_logger().info("Main process: Using port %s for distributed quantization", master_port)
             else:
                 master_port = int(os.environ['MASTER_PORT'])
                 get_logger().info(
-                    f"Main process: Using existing MASTER_PORT {master_port} for distributed quantization"
-                )
-            
+                    "Main process: Using existing MASTER_PORT %s for distributed quantization",
+                    master_port)
+
             shared_ctx = get_current_context()
 
-            # 进程间共享任务队列：在 spawn 前由父进程创建，并通过全局注入在各 rank 侧使用。
+            # Cross-process shared task queue: created by parent process before spawn,
+            # injected globally for access by all ranks.
             ctx = mp.get_context("spawn")
             work_queue = ctx.Queue()
             get_logger().info("Distributed task shared queue enabled (spawn ctx.Queue()).")
             get_logger().debug("Parent created distributed task queue: type=%s", type(work_queue).__name__)
 
-            # Start distributed execution
-            mp.spawn(
-                self.distributed_worker,
-                args=(world_size, device_indices, model, calib_data, device, master_port, shared_ctx, work_queue),
-                nprocs=world_size,
-                join=True
-            )
+            try:
+                # Start distributed execution
+                mp.spawn(
+                    self.distributed_worker,
+                    args=(world_size, device_indices, model, calib_data, device, master_port, shared_ctx, work_queue),
+                    nprocs=world_size,
+                    join=True
+                )
+            finally:
+                if _port_set_by_us:
+                    os.environ.pop('MASTER_PORT', None)
             return None
         except Exception as e:
-            get_logger().error(f"Failed to start distributed execution: {e}")
+            get_logger().error("Failed to start distributed execution: %s", e)
             raise
 
     def add_processor(self, processor_cfg: AutoProcessorConfig, append: bool = True):
         """
         Add a processor configuration to the runner.
-        
+
         For DPLayerWiseRunner, this method automatically converts AscendV1Config
         to DistributedAscendV1Config for distributed saving support.
-        
+
         Args:
             processor_cfg: Processor configuration to add
             append: If True, append to the end; if False, insert at the beginning
         """
         # Convert AscendV1Config to DistributedAscendV1Config if needed
         converted_cfg = self.convert_to_distributed_config_if_needed(processor_cfg)
-        
+
         if append:
             self.process_config_list.append(converted_cfg)
         else:
             self.process_config_list.insert(0, converted_cfg)
 
-    def _check_distributed_support(self, processor_list: List[AutoProcessorConfig], 
+    def _check_distributed_support(self, processor_list: List[AutoProcessorConfig],
                                     model: nn.Module) -> List[AutoSessionProcessor]:
         """
         Check which processors support distributed execution.
-        
+
         Args:
             processor_list: List of processor configurations to check
             model: Model instance (needed to create processor instances)
-        
+
         Returns:
             List of processors that do NOT support distributed execution
         """
@@ -278,8 +287,8 @@ class DPLayerWiseRunner(LayerWiseRunner):
         for processor_config in processor_list:
             processor = AutoSessionProcessor.from_config(model, processor_config, self.adapter)
             processors.append(processor)
-        
+
         # Find processors that do not support distributed execution
         unsupported_processors = [processor for processor in processors if not processor.support_distributed()]
-        
+
         return unsupported_processors

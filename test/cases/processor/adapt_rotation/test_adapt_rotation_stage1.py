@@ -18,14 +18,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-"""
-msmodelslim.processor.adapt_rotation.adapt_rotation_stage1 模块的单元测试
-"""
+# msmodelslim.processor.adapt_rotation.adapt_rotation_stage1 模块的单元测试
 import unittest
 from unittest.mock import MagicMock, patch
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.processor.adapt_rotation.adapt_rotation_stage1 import (
@@ -101,12 +99,12 @@ class TestAdaptRotationStage1Processor(unittest.TestCase):
         self.assertEqual(len(proc.act_dict), 0)
         self.assertEqual(len(proc._stat_hooks), 0)
 
-    def test_support_distributed_return_false(self):
-        """测试 support_distributed 返回 False"""
+    def test_support_distributed_return_true(self):
+        """测试 support_distributed 返回 True"""
         mock_model = MagicMock()
         config = AdaptRotationStage1ProcessorConfig(type="_adapt_rotation_stage1")
         proc = AdaptRotationStage1Processor(mock_model, config, MockQuaRotAdapter())
-        self.assertFalse(proc.support_distributed())
+        self.assertTrue(proc.support_distributed())
 
     def test_is_data_free_return_false(self):
         """测试 is_data_free 返回 False"""

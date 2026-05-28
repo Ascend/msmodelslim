@@ -18,9 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-"""
-msmodelslim.processor.adapt_rotation.adapt_rotation 模块的单元测试
-"""
+# msmodelslim.processor.adapt_rotation.adapt_rotation 模块的单元测试
 import unittest
 from unittest.mock import MagicMock
 
@@ -117,7 +115,7 @@ class TestAdaptRotationProcessor(unittest.TestCase):
         """测试各方法均委托给内部处理器"""
         mock_request = MagicMock()
         cases = [
-            ("support_distributed", False, lambda p, m: (p.support_distributed(), m.support_distributed), None),
+            ("support_distributed", True, lambda p, m: (p.support_distributed(), m.support_distributed), None),
             ("is_data_free", False, lambda p, m: (p.is_data_free(), m.is_data_free), None),
             ("preprocess", None, lambda p, m: (p.preprocess(mock_request), m.preprocess), mock_request),
             ("postprocess", None, lambda p, m: (p.postprocess(mock_request), m.postprocess), mock_request),

@@ -20,7 +20,6 @@ See the Mulan PSL v2 for more details.
 """
 from abc import ABC, abstractmethod
 from typing import Any, Iterable, Optional
-from typing import Any, Iterable
 from collections.abc import MutableMapping
 
 
