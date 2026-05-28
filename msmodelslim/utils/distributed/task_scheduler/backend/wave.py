@@ -3,8 +3,10 @@
 
 """Wave 调度 backend：按依赖前缀与 parallel 语义分波执行。"""
 
+import contextlib
 import queue as py_queue
 import time
+import traceback
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
@@ -38,6 +40,74 @@ from msmodelslim.utils.distributed.task_scheduler.payload import (
     wave_semantic_hash,
 )
 from msmodelslim.utils.distributed.task_scheduler.sync import DTSMixin, default_module_state_sync
+
+
+@contextlib.contextmanager
+def _collective_op_guard():
+    """检测共享任务执行中是否非法调用集合通信操作。
+
+    DTS 要求共享任务可被任意 rank 独立执行，若任务函数内含有
+    ``torch.distributed.broadcast`` / ``all_gather`` 等多 rank 同步操作，
+    则该任务在多卡并行时因不同 rank 执行不同任务而导致挂死或错误结果。
+    """
+    if not dist.is_initialized() or dist.get_world_size() <= 1:
+        yield
+        return
+
+    _COLLECTIVE_OP_NAMES = frozenset({
+        "broadcast",
+        "all_reduce",
+        "reduce",
+        "all_gather",
+        "all_gather_into_tensor",
+        "gather",
+        "scatter",
+        "all_to_all",
+        "all_to_all_single",
+        "reduce_scatter",
+        "reduce_scatter_tensor",
+        "barrier",
+        "monitored_barrier",
+        "broadcast_object_list",
+        "all_gather_object",
+        "gather_object",
+        "scatter_object",
+    })
+
+    def _make_guard(op_name: str):
+        def _guarded(*args, **kwargs):
+            # 捕获调用栈，定位用户任务函数的调用位置
+            stack = traceback.extract_stack()[:-1]
+            caller_lines = ""
+            for frame in reversed(stack):
+                fname = frame.filename.replace("\\", "/")
+                if "_collective_op_guard" in frame.name or "wave.py" in fname:
+                    continue
+                caller_lines = (
+                    f"  File \"{frame.filename}\", line {frame.lineno}, in {frame.name}\n"
+                    f"    {frame.line}"
+                )
+                break
+
+            msg = (
+                f"DTS shared task contains illegal cross-rank collective: "
+                f"torch.distributed.{op_name}()."
+            )
+            tip = (
+                "DTS shared tasks must be independently executable by any single rank; "
+                "they must NOT contain multi-rank synchronization (broadcast, all_gather, etc.). "
+                "Remove the collective call from the task function, or restructure the task "
+                "so that synchronization happens via DTS sync phase (sync_fn / DTSMixin)."
+            )
+            if caller_lines:
+                tip += f"\n\nCall site:\n{caller_lines}"
+            raise SchemaValidateError(msg, action=tip)
+        return _guarded
+
+    guards = {name: _make_guard(name) for name in _COLLECTIVE_OP_NAMES if hasattr(dist, name)}
+    from unittest.mock import patch
+    with patch.multiple(dist, **guards):
+        yield
 
 
 def _dp_tasks_executed_on_this_rank(n_tasks: int, rank: int, world_size: int, all_ranks_execute: bool) -> int:
@@ -363,40 +433,11 @@ class _DtsSingleWaveSchedulerBase(ABC):
             rank: int,
             world_size: int,
             t_run_wall_start: float,
-    ) -> List[TaskExecutionRecord]:
-        _log = get_logger()
-        _log.info(
-            DTS_USER_LOG_PREFIX + "run stage(sync): synchronize task results skip_sync_count=%s",
-            len(self._tasks),
-        )
+    ) -> Tuple[List[TaskExecutionRecord], float, float]:
         records = self._build_records_without_sync(owner_map, local_results, exec_time_map)
         total_exec_s = sum(float(r.exec_time_s or 0.0) for r in records)
         total_sync_s = sum(float(r.sync_time_s or 0.0) for r in records)
-        ratio = (total_exec_s / total_sync_s) if total_sync_s > 0 else float("inf")
-        _log.debug(
-            DTS_USER_LOG_PREFIX
-            + DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX
-            + " rank=%s world_size=%s total_exec_s=%.6f total_sync_s=%.6f exec_over_sync=%.6f",
-            rank,
-            world_size,
-            total_exec_s,
-            total_sync_s,
-            ratio,
-        )
-        if total_sync_s > 0 and ratio <= 1.0:
-            _log.debug(
-                DTS_USER_LOG_PREFIX
-                + DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX
-                + ": exec_over_sync=%.6f (<=1). Sync cost dominates.",
-                ratio,
-            )
-        _ = t_run_wall_start
-        _log.info(
-            DTS_USER_LOG_PREFIX + "DistributedTaskScheduler.run done: rank=%s record_count=%s",
-            rank,
-            len(records),
-        )
-        return records
+        return records, total_exec_s, total_sync_s
 
 
 class _DtsMultiRankParallelWaveScheduler(_DtsSingleWaveSchedulerBase):
@@ -408,6 +449,14 @@ class _DtsMultiRankParallelWaveScheduler(_DtsSingleWaveSchedulerBase):
                 "DTS parallel wave requires multi-rank environment (world_size > 1).",
                 action="Use _DtsSequentialWaveScheduler for single-rank or no-parallel semantics.",
             )
+
+    def _execute_local_task(self, task: Task, rank: int, world_size: int) -> Tuple[Any, float]:
+        t0 = time.perf_counter()
+        if task.spec.fn is None:
+            raise RuntimeError(f"Task {task.spec.task_id} has no fn to execute.")
+        with _collective_op_guard():
+            out = task.spec.fn(*task.spec.args, **task.spec.kwargs)
+        return out, (time.perf_counter() - t0)
 
     def _has_conflict(self, parallel: bool) -> bool:
         if not self._tasks:
@@ -442,12 +491,6 @@ class _DtsMultiRankParallelWaveScheduler(_DtsSingleWaveSchedulerBase):
         world_size = dist.get_world_size() if dist.is_initialized() else 1
         rank = dist.get_rank() if dist.is_initialized() else 0
         _log = get_logger()
-        _log.info(
-            DTS_USER_LOG_PREFIX + "DistributedTaskScheduler.run start: rank=%s world_size=%s task_count=%s",
-            rank,
-            world_size,
-            len(self._tasks),
-        )
 
         gathered_counts: List[Optional[int]] = [None] * world_size
         dist.all_gather_object(gathered_counts, int(len(self._tasks)))
@@ -489,18 +532,7 @@ class _DtsMultiRankParallelWaveScheduler(_DtsSingleWaveSchedulerBase):
         local_exec_rank: Dict[str, int] = {}
         local_exec_time_s: Dict[str, float] = {}
         queue = get_distributed_task_work_queue()
-        _log.info(
-            DTS_USER_LOG_PREFIX + "DTS owner policy: queue=%s (None -> i%%ws owner; set via set_distributed_task_work_queue)",
-            "shared" if queue is not None else "static_rr",
-        )
-        executed_here = _dp_tasks_executed_on_this_rank(n_tasks, rank, world_size, False)
-        _log.info(
-            DTS_USER_LOG_PREFIX + "run stage(multi-rank): task_count=%s executed_on_this_rank(estimate)=%s queue=%s disable_parallel=%s",
-            n_tasks,
-            executed_here,
-            queue is not None,
-            False,
-        )
+
         self._execute_all_rank_tasks(
             task_indices,
             queue,
@@ -514,10 +546,6 @@ class _DtsMultiRankParallelWaveScheduler(_DtsSingleWaveSchedulerBase):
         owner_map = self._merge_owner_map_multirank(local_exec_rank, world_size)
         exec_time_map = self._merge_exec_time_map_multirank(local_exec_time_s, world_size)
 
-        _log.info(
-            DTS_USER_LOG_PREFIX + "run stage(sync): synchronize task results skip_sync_count=%s",
-            0,
-        )
         records = self._sync_all_task(
             owner_map,
             local_results,
@@ -526,51 +554,44 @@ class _DtsMultiRankParallelWaveScheduler(_DtsSingleWaveSchedulerBase):
             world_size,
             sync_enabled=True,
         )
+
+        t_run_wall_s = time.perf_counter() - t_run_wall_start
         total_exec_s = sum(float(r.exec_time_s or 0.0) for r in records)
         total_sync_s = sum(float(r.sync_time_s or 0.0) for r in records)
-        ratio = (total_exec_s / total_sync_s) if total_sync_s > 0 else float("inf")
-        _log.debug(
-            DTS_USER_LOG_PREFIX
-            + DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX
-            + " rank=%s world_size=%s total_exec_s=%.6f total_sync_s=%.6f exec_over_sync=%.6f",
-            rank,
-            world_size,
-            total_exec_s,
-            total_sync_s,
-            ratio,
-        )
-        if total_sync_s > 0 and ratio <= 1.0:
+
+        per_rank_task_count: Dict[int, int] = {}
+        per_rank_exec_time: Dict[int, float] = {}
+        per_rank_sync_time: Dict[int, float] = {}
+        for r_rec in records:
+            er = r_rec.executor_rank
+            per_rank_task_count[er] = per_rank_task_count.get(er, 0) + 1
+            per_rank_exec_time[er] = per_rank_exec_time.get(er, 0.0) + float(r_rec.exec_time_s or 0.0)
+            per_rank_sync_time[er] = per_rank_sync_time.get(er, 0.0) + float(r_rec.sync_time_s or 0.0)
+
+        my_tasks = per_rank_task_count.get(rank, 0)
+        my_exec_s = per_rank_exec_time.get(rank, 0.0)
+        my_sync_s = per_rank_sync_time.get(rank, 0.0)
+        if total_sync_s > 0:
+            ratio = total_exec_s / total_sync_s
             _log.debug(
                 DTS_USER_LOG_PREFIX
-                + DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX
-                + ": exec_over_sync=%.6f (<=1). Sync cost dominates.",
-                ratio,
+                + DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX
+                + " rank=%s world_size=%s total_exec_s=%.6f total_sync_s=%.6f exec_over_sync=%.6f",
+                rank, world_size, total_exec_s, total_sync_s, ratio,
             )
-        if world_size > 1:
-            t_run_wall_s = time.perf_counter() - t_run_wall_start
-            if total_exec_s > 0:
-                speedup_ratio = t_run_wall_s / float(total_exec_s)
-                _log.info(
+            if ratio <= 1.0:
+                _log.debug(
                     DTS_USER_LOG_PREFIX
-                    + DTS_PERF_LOG_SPEEDUP_RATIO_PREFIX
-                    + ": rank=%s world_size=%s T_run_s=%.6f sum_task_exec_s=%.6f ratio=%.6f",
-                    rank,
-                    world_size,
-                    t_run_wall_s,
-                    total_exec_s,
-                    speedup_ratio,
+                    + DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX
+                    + ": exec_over_sync=%.6f (<=1). Sync cost dominates.",
+                    ratio,
                 )
-            else:
-                _log.info(
-                    DTS_USER_LOG_PREFIX
-                    + DTS_PERF_LOG_SPEEDUP_SKIPPED_PREFIX
-                    + ": rank=%s sum_task_exec_s=0 (no measurable task exec time)",
-                    rank,
-                )
+        queue_str = "shared" if queue is not None else "static_rr"
+        speedup = float(total_exec_s) / t_run_wall_s if t_run_wall_s > 0 and total_exec_s > 0 else 0.0
         _log.info(
-            DTS_USER_LOG_PREFIX + "DistributedTaskScheduler.run done: rank=%s record_count=%s",
-            rank,
-            len(records),
+            DTS_USER_LOG_PREFIX + "Summary: tasks=%d world_size=%d rank=%d my_tasks=%d exec_s=%.4f my_exec_s=%.4f sync_s=%.4f my_sync_s=%.4f t_run_wall_s=%.4f speedup=%.4f queue=%s",
+            n_tasks, world_size, rank, my_tasks,
+            total_exec_s, my_exec_s, total_sync_s, my_sync_s, t_run_wall_s, speedup, queue_str,
         )
         return records
 
@@ -609,24 +630,13 @@ class _DtsSequentialWaveScheduler(_DtsSingleWaveSchedulerBase):
         world_size = dist.get_world_size() if dist.is_initialized() else 1
         rank = dist.get_rank() if dist.is_initialized() else 0
         _log = get_logger()
-        _log.info(
-            DTS_USER_LOG_PREFIX + "DistributedTaskScheduler.run start: rank=%s world_size=%s task_count=%s",
-            rank,
-            world_size,
-            len(self._tasks),
-        )
 
         if world_size == 1:
-            _log.info(DTS_USER_LOG_PREFIX + "run stage(single-rank): execute local tasks")
             local_results, owner_map, exec_time_map = self._run_single_rank(0, 1)
         else:
-            _log.info(
-                DTS_USER_LOG_PREFIX + "run stage(no-parallel wave): each rank executes all %s tasks locally; cross-rank sync skipped",
-                len(self._tasks),
-            )
             n_tasks = len(self._tasks)
             task_indices = list(range(n_tasks))
-            local_results = {}
+            local_results: Dict[str, Any] = {}
             local_exec_rank: Dict[str, int] = {}
             local_exec_time_s: Dict[str, float] = {}
             self._execute_all_rank_tasks(
@@ -642,7 +652,7 @@ class _DtsSequentialWaveScheduler(_DtsSingleWaveSchedulerBase):
             owner_map = dict(local_exec_rank)
             exec_time_map = dict(local_exec_time_s)
 
-        return self._finalize_local_wave_no_sync(
+        records, total_exec_s, total_sync_s = self._finalize_local_wave_no_sync(
             owner_map,
             local_results,
             exec_time_map,
@@ -650,6 +660,15 @@ class _DtsSequentialWaveScheduler(_DtsSingleWaveSchedulerBase):
             world_size,
             t_run_wall_start,
         )
+        t_run_wall_s = time.perf_counter() - t_run_wall_start
+        my_tasks = len(records)
+        mode = "single-rank" if world_size == 1 else "no-parallel"
+        _log.info(
+            DTS_USER_LOG_PREFIX + "Summary: tasks=%d world_size=%d rank=%d my_tasks=%d exec_s=%.4f my_exec_s=%.4f sync_s=%.4f my_sync_s=%.4f t_run_wall_s=%.4f mode=%s",
+            len(self._tasks), world_size, rank, my_tasks,
+            total_exec_s, total_exec_s, total_sync_s, total_sync_s, t_run_wall_s, mode,
+        )
+        return records
 
 
 class WaveDTSBackend(DTSBackend):

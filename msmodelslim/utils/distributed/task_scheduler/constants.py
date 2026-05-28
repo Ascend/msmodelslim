@@ -14,7 +14,7 @@ DTS_USER_LOG_PREFIX = "【DTS】 "
 # 性能指引日志前缀（勿改文案；``test.cases.utils.distributed.test_dts_performance`` 依赖）。
 DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX = "DTS run time summary:"
 DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX = "DTS not suitable for parallel"
-DTS_PERF_LOG_SPEEDUP_RATIO_PREFIX = "DTS speedup ratio (T_run / sum(task_exec))"
+DTS_PERF_LOG_SPEEDUP_RATIO_PREFIX = "DTS speedup ratio (total_exec / t_run_wall)"
 DTS_PERF_LOG_SPEEDUP_SKIPPED_PREFIX = "DTS speedup ratio skipped"
 
 # 由 runner 在 spawn 前创建后注入子进程，供 scheduler 共享任务抢占使用。

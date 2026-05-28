@@ -507,7 +507,6 @@ def _run_dts_dp_serial_oracle_equivalence_worker(
         except Exception:
             pass
     finally:
-        DistributedTaskScheduler.set_global_disable_parallel(False)
         clear_distributed_task_work_queue()
 
 
