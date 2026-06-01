@@ -86,6 +86,7 @@ nav:
       - LLM大模型接入指南: "zh/developer_guide/integrating_models.md"
       - 多模态理解模型接入: "zh/developer_guide/integrating_multimodal_understanding_model.md"
       - 量化格式接入指南: "zh/developer_guide/iformat_integration_guide.md"
+      - 多卡量化适配指南: "zh/developer_guide/multi-card_quantization_adaptation.md"
       - 项目目录结构: "zh/dir_structure.md"
   - 六、调试案例集:
       - 精度调优案例:
