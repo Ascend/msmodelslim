@@ -18,6 +18,16 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
+import torch
+from torch import nn
+import torch.nn.functional as F
+from msmodelslim.utils.logging import get_logger
+from transformers.activations import ACT2FN
+
+logger = get_logger(__name__)
+
+
 """
 Qwen3-VL MoE Model Utilities for Quantization
 
@@ -32,18 +42,9 @@ Key Features:
 """
 
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from msmodelslim.utils.logging import get_logger
-from transformers.activations import ACT2FN
-
-logger = get_logger(__name__)
-
-
 class Qwen3_5MoeExpertMLP(nn.Module):
     """Single expert MLP with separate gate_proj, up_proj, and down_proj layers."""
-    
+
     def __init__(self, hidden_dim: int, intermediate_dim: int, act_fn):
         super().__init__()
         self.hidden_dim = hidden_dim
@@ -52,13 +53,13 @@ class Qwen3_5MoeExpertMLP(nn.Module):
         self.up_proj = nn.Linear(hidden_dim, intermediate_dim, bias=False)
         self.down_proj = nn.Linear(intermediate_dim, hidden_dim, bias=False)
         self.act_fn = act_fn
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the expert MLP.
-        
+
         Args:
             x: Input tensor of shape (batch_size, hidden_dim)
-        
+
         Returns:
             Output tensor of shape (batch_size, hidden_dim)
         """
@@ -104,10 +105,9 @@ class Qwen3_5MoeSparseMoeBlockWithMLP(nn.Module):
         self.gate = Qwen3_5MoeTopKRouter(config)
 
         # Keep experts as a flat ModuleList to avoid nested experts.experts path.
-        self.experts = nn.ModuleList([
-            Qwen3_5MoeExpertMLP(self.hidden_dim, self.intermediate_dim, self.act_fn)
-            for _ in range(self.num_experts)
-        ])
+        self.experts = nn.ModuleList(
+            [Qwen3_5MoeExpertMLP(self.hidden_dim, self.intermediate_dim, self.act_fn) for _ in range(self.num_experts)]
+        )
 
         self.shared_expert = Qwen3_5MoeExpertMLP(
             config.hidden_size,
@@ -166,9 +166,7 @@ def convert_experts_to_mlp(
 
             new_moe_block.experts[expert_idx].gate_proj.weight.copy_(gate_weight)
             new_moe_block.experts[expert_idx].up_proj.weight.copy_(up_weight)
-            new_moe_block.experts[expert_idx].down_proj.weight.copy_(
-                original_moe_block.experts.down_proj[expert_idx]
-            )
+            new_moe_block.experts[expert_idx].down_proj.weight.copy_(original_moe_block.experts.down_proj[expert_idx])
 
         # Shared expert and gate
         new_moe_block.shared_expert.gate_proj.weight.copy_(original_moe_block.shared_expert.gate_proj.weight)
@@ -181,4 +179,3 @@ def convert_experts_to_mlp(
         dtype=original_moe_block.gate.weight.dtype,
     )
     return new_moe_block
-

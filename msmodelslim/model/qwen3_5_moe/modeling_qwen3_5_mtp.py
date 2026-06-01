@@ -32,7 +32,7 @@ import logging
 from typing import Optional
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from transformers.cache_utils import Cache
 from .moe_utils import Qwen3_5MoeSparseMoeBlockWithMLP
@@ -44,7 +44,9 @@ from transformers.models.qwen3_5.modeling_qwen3_5 import (
     Qwen3_5RMSNorm,
     Qwen3_5TextRotaryEmbedding,
 )
+
 logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # MTP Decoder Layer
@@ -140,10 +142,7 @@ class Qwen3_5MultiTokenPredictor(nn.Module):
         self.fc = nn.Linear(config.hidden_size * 2, config.hidden_size, bias=False)
 
         # MTP decoder layers (always full attention)
-        self.layers = nn.ModuleList([
-            Qwen3_5MtpDecoderLayer(config, layer_idx=i)
-            for i in range(self.num_mtp_layers)
-        ])
+        self.layers = nn.ModuleList([Qwen3_5MtpDecoderLayer(config, layer_idx=i) for i in range(self.num_mtp_layers)])
 
         # Final normalization (reuse Qwen3_5RMSNorm)
         self.norm = Qwen3_5RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
@@ -191,9 +190,7 @@ class Qwen3_5MultiTokenPredictor(nn.Module):
                 position_ids = cache_position.view(1, 1, -1).expand(3, hidden_states.shape[0], -1)
             else:
                 past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
-                cache_position = torch.arange(
-                    past_seen_tokens, past_seen_tokens + seq_len, device=hidden_states.device
-                )
+                cache_position = torch.arange(past_seen_tokens, past_seen_tokens + seq_len, device=hidden_states.device)
                 position_ids = cache_position.view(1, 1, -1).expand(3, hidden_states.shape[0], -1)
         elif position_ids.ndim == 2:
             position_ids = position_ids[None, ...].expand(3, position_ids.shape[0], -1)
@@ -319,20 +316,23 @@ class Qwen3_5MtpForCausalLM(nn.Module):
 
             # --- Direct loading ---
             if mapped_name not in params_dict:
-                logger.warning(f"Parameter {mapped_name} (from {name}) not found, skipping")
+                logger.warning("Parameter %s (from %s) not found, skipping", mapped_name, name)
                 continue
 
             param = params_dict[mapped_name]
             if param.shape != loaded_weight.shape:
                 logger.warning(
-                    f"Shape mismatch for {mapped_name}: expected {param.shape}, got {loaded_weight.shape}, skipping"
+                    "Shape mismatch for %s: expected %s, got %s, skipping",
+                    mapped_name,
+                    param.shape,
+                    loaded_weight.shape,
                 )
                 continue
 
             param.data.copy_(loaded_weight)
             loaded_params.add(mapped_name)
 
-        logger.info(f"Loaded {len(loaded_params)} parameters for MTP model")
+        logger.info("Loaded %d parameters for MTP model", len(loaded_params))
         return loaded_params
 
     def _remap_weight_name(self, name: str) -> Optional[str]:
@@ -388,13 +388,13 @@ class Qwen3_5MtpForCausalLM(nn.Module):
                 params_dict[gate_name].data.copy_(gate_weight)
                 loaded_params.add(gate_name)
             else:
-                logger.warning(f"Parameter {gate_name} not found, skipping")
+                logger.warning("Parameter %s not found, skipping", gate_name)
 
             if up_name in params_dict:
                 params_dict[up_name].data.copy_(up_weight)
                 loaded_params.add(up_name)
             else:
-                logger.warning(f"Parameter {up_name} not found, skipping")
+                logger.warning("Parameter %s not found, skipping", up_name)
 
     def _load_packed_down_experts(
         self,
@@ -426,4 +426,4 @@ class Qwen3_5MtpForCausalLM(nn.Module):
                 params_dict[down_name].data.copy_(down_weight)
                 loaded_params.add(down_name)
             else:
-                logger.warning(f"Parameter {down_name} not found, skipping")
+                logger.warning("Parameter %s not found, skipping", down_name)
