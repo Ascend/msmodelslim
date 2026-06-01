@@ -114,6 +114,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Tuple
@@ -125,16 +126,14 @@ from torch.ao.quantization import HistogramObserver as TorchHistogramObserver
 
 from msmodelslim.ir.qal import QDType, QScope, QStorage
 from msmodelslim.ir.api import calculate_qparam, fake_quantize
-from msmodelslim.utils.exception import (
-    SpecError,
-    UnexpectedError
-)
+from msmodelslim.utils.exception import SpecError, UnexpectedError
 from msmodelslim.utils.logging import get_logger
 
 
 @dataclass
 class HistogramUpscaleParams:
     """直方图上采样参数类，用于封装_upscale_histogram函数的参数"""
+
     histogram: torch.Tensor
     orig_min: torch.Tensor
     orig_max: torch.Tensor
@@ -148,10 +147,10 @@ class HistogramUpscaleParams:
 def _upscale_histogram(params: HistogramUpscaleParams) -> torch.Tensor:
     """
     对直方图进行上采样以减少量化误差
-    
+
     Args:
         params: 包含所有上采样参数的HistogramUpscaleParams对象
-        
+
     Returns:
         更新后的直方图张量
     """
@@ -161,22 +160,19 @@ def _upscale_histogram(params: HistogramUpscaleParams) -> torch.Tensor:
     histogram = params.histogram.repeat_interleave(upsample_rate) / upsample_rate
     bin_size = (params.orig_max - params.orig_min) / (params.bins * upsample_rate)
     mid_points_histogram = (
-            torch.linspace(
-                params.orig_min,
-                params.orig_max,
-                params.bins * upsample_rate + 1,
-                device=params.orig_min.device,
-            )[:-1].to(histogram.device)
-            + 0.5 * bin_size
+        torch.linspace(
+            params.orig_min,
+            params.orig_max,
+            params.bins * upsample_rate + 1,
+            device=params.orig_min.device,
+        )[:-1].to(histogram.device)
+        + 0.5 * bin_size
     )
     boundaries_new_histogram = torch.linspace(
         params.update_min, params.update_max, params.bins + 1, device=params.update_min.device
     ).to(histogram.device)
     # this maps the mid-points of the histogram to the new histogram's space
-    bucket_assignments = (
-            torch.bucketize(mid_points_histogram, boundaries_new_histogram, right=True)
-            - 1
-    )
+    bucket_assignments = torch.bucketize(mid_points_histogram, boundaries_new_histogram, right=True) - 1
     # this then maps the histogram mid-points in the new space, weighted by the original histogram's values
     # this is just the old histogram in the new histogram's space
 
@@ -184,27 +180,19 @@ def _upscale_histogram(params: HistogramUpscaleParams) -> torch.Tensor:
     bucket_assignments[bucket_assignments >= params.bins] = params.bins - 1
     bucket_assignments[bucket_assignments < 0] = 0
 
-    update_histogram = torch.bincount(
-        bucket_assignments, weights=histogram, minlength=params.bins
-    )
+    update_histogram = torch.bincount(bucket_assignments, weights=histogram, minlength=params.bins)
     return update_histogram
 
 
 def _merge_histogram(
-        histogram_list: List[torch.Tensor],
-        min_val_list: List[torch.Tensor],
-        max_val_list: List[torch.Tensor]
+    histogram_list: List[torch.Tensor], min_val_list: List[torch.Tensor], max_val_list: List[torch.Tensor]
 ):
     new_min_val = torch.min(torch.stack(min_val_list))
     new_max_val = torch.max(torch.stack(max_val_list))
     histogram_list = [
         _upscale_histogram(
             HistogramUpscaleParams(
-                histogram=histogram,
-                orig_min=min_val,
-                orig_max=max_val,
-                update_min=new_min_val,
-                update_max=new_max_val
+                histogram=histogram, orig_min=min_val, orig_max=max_val, update_min=new_min_val, update_max=new_max_val
             )
         )
         for histogram, min_val, max_val in zip(histogram_list, min_val_list, max_val_list)
@@ -217,6 +205,7 @@ def _merge_histogram(
 
 class SearchMethod(str, Enum):
     """搜索方法枚举类"""
+
     L2_NORM = "l2_norm"  # L2范数搜索
     KL_DIVERGENCE = "kl_divergence"  # KL散度搜索
 
@@ -224,9 +213,10 @@ class SearchMethod(str, Enum):
 class HistogramObserverConfig(BaseModel):
     """
     直方图观察器配置类
-    
+
     目前支持两种搜索方法来优化量化参数，包括L2范数、KL散度
     """
+
     symmetric: bool = False
     search_method: SearchMethod = SearchMethod.L2_NORM
     dtype: QDType = QDType.INT8
@@ -241,7 +231,7 @@ class HistogramObserver(TorchHistogramObserver):
     以便后续计算量化的 scale 和 zero_point。
 
     主要功能说明：
-    基于直方图分布，自动搜索最优的截断区间（clip_min, clip_max），以最小化量化误差    
+    基于直方图分布，自动搜索最优的截断区间（clip_min, clip_max），以最小化量化误差
     基于clip_min, clip_max计算量化参数（scale, zero_point），与 MinMaxObserver 类似
 
     主要成员变量：
@@ -256,6 +246,11 @@ class HistogramObserver(TorchHistogramObserver):
         self.config = config
         self.clip_min = None
         self.clip_max = None
+        # The following three attributes are initialized by TorchHistogramObserver.__init__();
+        # they are declared here only for pylint/type checkers.
+        self.histogram: torch.Tensor
+        self.min_val: torch.Tensor
+        self.max_val: torch.Tensor
         self.upsample_rate = 16
 
     def update(self, x: torch.Tensor, sync: bool = False, group: Optional[dist.ProcessGroup] = None):
@@ -265,11 +260,11 @@ class HistogramObserver(TorchHistogramObserver):
         Args:
             x: 输入张量
             sync: 是否同步
-            group: 进程组   
+            group: 进程组
 
         Returns:
             None
-            
+
         Raises:
             InvalidModelError: 当输入张量无效时抛出
         """
@@ -277,15 +272,11 @@ class HistogramObserver(TorchHistogramObserver):
         # 输入检测
         if (x is None) or (not isinstance(x, torch.Tensor)):
             raise SpecError(
-                "Input must be a valid torch.Tensor",
-                action="Please ensure the input is a valid PyTorch tensor"
+                "Input must be a valid torch.Tensor", action="Please ensure the input is a valid PyTorch tensor"
             )
 
         if x.numel() == 0:
-            raise SpecError(
-                "Input tensor is empty",
-                action="Please check if the input tensor is empty"
-            )
+            raise SpecError("Input tensor is empty", action="Please check if the input tensor is empty")
 
         if x.isnan().any():
             get_logger().warning(
@@ -294,10 +285,7 @@ class HistogramObserver(TorchHistogramObserver):
             mask = ~x.isnan()
             x = x[mask]
             if x.numel() == 0:
-                raise SpecError(
-                    "Input tensor is empty",
-                    action="Please check if the input tensor is empty"
-                )
+                raise SpecError("Input tensor is empty", action="Please check if the input tensor is empty")
 
         if x.isinf().any():
             get_logger().warning(
@@ -306,24 +294,27 @@ class HistogramObserver(TorchHistogramObserver):
             mask = ~x.isinf()
             x = x[mask]
             if x.numel() == 0:
-                raise SpecError(
-                    "Input tensor is empty",
-                    action="Please check if the input tensor is empty"
-                )
+                raise SpecError("Input tensor is empty", action="Please check if the input tensor is empty")
 
         # 更新直方图
         x_min, x_max = torch.aminmax(x)
         if x_min == x_max:
             # torch.histc 不支持min = max的情况，且此时所有值都相同，不需要搜索参数
-            get_logger().warning(
-                f"[HistogramObserver] Input tensor is all the same value: {x_min}, skip search."
-            )
+            get_logger().warning("[HistogramObserver] Input tensor is all the same value: %s, skip search.", x_min)
             self.clip_min, self.clip_max = x_min, x_max
             return
         else:
             # torch_npu.histc 不支持bfloat16
-            dtype_support_list = [torch.float, torch.float32, torch.float16, torch.int64,
-                                  torch.int32, torch.int16, torch.int8, torch.uint8]
+            dtype_support_list = [
+                torch.float,
+                torch.float32,
+                torch.float16,
+                torch.int64,
+                torch.int32,
+                torch.int16,
+                torch.int8,
+                torch.uint8,
+            ]
             device = x.device
             if x.dtype not in dtype_support_list:
                 x = x.to(torch.float32)
@@ -343,8 +334,7 @@ class HistogramObserver(TorchHistogramObserver):
         # 多卡量化 目前尚没有入口
         if sync and group:
             self.forward(x)
-            histogram_list = [torch.zeros(self.histogram.shape)
-                              for _ in range(dist.get_world_size(group))]
+            histogram_list = [torch.zeros(self.histogram.shape) for _ in range(dist.get_world_size(group))]
             min_val_list = [torch.zeros(self.min_val.shape) for _ in range(dist.get_world_size(group))]
             max_val_list = [torch.zeros(self.max_val.shape) for _ in range(dist.get_world_size(group))]
             dist.all_gather(histogram_list, self.histogram, group=group)
@@ -369,18 +359,15 @@ class HistogramObserver(TorchHistogramObserver):
     def get_clip_bounds(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         返回用于量化截断的上下界（clip bounds），并非真实的最小最大值，而是通过直方图搜索得到、能减小量化误差的截断范围。
-        
+
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: (clip_min, clip_max) 截断的上下界
-            
+
         Raises:
             SpecError: 当clip_min或clip_max未设置时抛出
         """
         if self.clip_min is None or self.clip_max is None:
-            raise SpecError(
-                "Clip min or clip max is not set.",
-                action=" Please call update first."
-            )
+            raise SpecError("Clip min or clip max is not set.", action=" Please call update first.")
 
         # 处理无穷值情况
         finfo_dtype = torch.finfo(self.clip_min.dtype)
@@ -394,11 +381,11 @@ class HistogramObserver(TorchHistogramObserver):
     def _compute_quantization_error(self, start_bin: int, end_bin: int) -> float:
         """
         选择量化方法，计算量化误差，目前支持L2范数，KL散度
-        
+
         Args:
             start_bin: 起始bin索引
             end_bin: 结束bin索引
-            
+
         Returns:
             float: 量化误差值
         """
@@ -408,17 +395,22 @@ class HistogramObserver(TorchHistogramObserver):
             ans = self._compute_l2_error(start_bin, end_bin)
         elif method == SearchMethod.KL_DIVERGENCE:
             ans = self._compute_kl_error(start_bin, end_bin)
+        else:
+            raise SpecError(
+                f"Unsupported search method: {method}",
+                action="Please set search_method to L2_NORM or KL_DIVERGENCE.",
+            )
         return ans
 
     def _compute_kl_error(self, next_start_bin: int, next_end_bin: int) -> float:
         """
         计算KL散度误差
-        
+
         Args:
             next_start_bin: 起始bin索引
             next_end_bin: 结束bin索引
-            
-        Returns:    
+
+        Returns:
             float: KL散度误差
 
         算法原理：
@@ -434,7 +426,7 @@ class HistogramObserver(TorchHistogramObserver):
         KL = sum(p_i * log(p_i / q_i)), p为真实分布，q为量化分布。
         """
         eps = torch.tensor(torch.finfo(self.histogram.dtype).eps).to(self.histogram.device)
-        bin_width = (self.max_val.item() / self.bins - self.min_val.item() / self.bins)
+        bin_width = self.max_val.item() / self.bins - self.min_val.item() / self.bins
 
         # 计算真实分布
         true_dist = self.histogram / self.histogram.sum()
@@ -458,7 +450,7 @@ class HistogramObserver(TorchHistogramObserver):
         fake_quantized_dist = fake_quantize(QStorage(dtype=QDType.FLOAT, value=quant_mid_points), q_param).value
         fake_quantized_dist[:next_start_bin] = quant_min_val
         fake_quantized_dist[next_end_bin:] = quant_max_val
-        fake_quantized_dist = ((fake_quantized_dist - quant_min_val) // bin_width + next_start_bin)
+        fake_quantized_dist = (fake_quantized_dist - quant_min_val) // bin_width + next_start_bin
         fake_quantized_dist = fake_quantized_dist.clamp(next_start_bin, next_end_bin).int()
         # 计算候选分布
         candidate_dist = torch.zeros_like(self.histogram).float()
@@ -480,36 +472,36 @@ class HistogramObserver(TorchHistogramObserver):
         r"""
         这一段代码来自torch.ao.quantization.observer.HistogramObserver._compute_quantization_error
         计算L2范数误差
-        
+
         Args:
             next_start_bin: 起始bin索引
             next_end_bin: 结束bin索引
-            
-        Returns:    
+
+        Returns:
             float: L2范数误差
 
         算法原理：
         使用L2范数作为量化误差度量，计算量化前后分布的差异。
         1.计算目标bin宽度。
         根据截断区间[next_start_bin, next_end_bin]和目标量化位数dst_nbins，计算量化后的bin宽度dst_bin_width。
-        
+
         2.计算源bin到目标bin的映射关系。
         对于每个源bin，计算其起始位置和结束位置在目标量化空间中的对应位置：
         - src_bin_begin: 源bin起始位置相对于截断区间起始的偏移
         - src_bin_end: 源bin结束位置相对于截断区间起始的偏移
         - dst_bin_of_begin: 源bin起始位置对应的目标bin索引
         - dst_bin_of_end: 源bin结束位置对应的目标bin索引
-        
+
         3.计算L2范数误差。
         将每个源bin的误差分解为三个部分：
         - 起始部分：从源bin起始到第一个完整目标bin的误差
         - 中间部分：完整目标bin覆盖的误差（如果有多个完整bin）
         - 结束部分：从最后一个完整目标bin到源bin结束的误差
-        
+
         每个部分的误差通过_get_norm方法计算，该方法基于密度函数和位置偏移计算L2范数。
         最终将所有部分的误差累加得到总的L2范数误差。
         """
-        bin_width = (self.max_val.item() / self.bins - self.min_val.item() / self.bins)
+        bin_width = self.max_val.item() / self.bins - self.min_val.item() / self.bins
 
         dst_bin_width = bin_width * (next_end_bin - next_start_bin + 1) / self.dst_nbins
         if dst_bin_width == 0.0:
@@ -558,9 +550,7 @@ class HistogramObserver(TorchHistogramObserver):
 
         return norm.sum().item()
 
-    def _get_norm(
-            self, delta_begin: torch.Tensor, delta_end: torch.Tensor, density: torch.Tensor
-    ) -> torch.Tensor:
+    def _get_norm(self, delta_begin: torch.Tensor, delta_end: torch.Tensor, density: torch.Tensor) -> torch.Tensor:
         r"""
         Compute the norm of the values uniformaly distributed between
         delta_begin and delta_end.
@@ -569,9 +559,7 @@ class HistogramObserver(TorchHistogramObserver):
         norm = density * (integral_{begin, end} x^2)
              = density * (end^3 - begin^3) / 3
         """
-        norm = (
-                       delta_end * delta_end * delta_end - delta_begin * delta_begin * delta_begin
-               ) / 3
+        norm = (delta_end * delta_end * delta_end - delta_begin * delta_begin * delta_begin) / 3
         return density * norm
 
     def _non_linear_param_search(self) -> tuple[torch.Tensor, torch.Tensor]:
@@ -583,10 +571,10 @@ class HistogramObserver(TorchHistogramObserver):
         通过选择新的min/max，可以过滤输入分布中的离群值（outlier）。
         搜索方法为：
         每次将下界和上界移动固定的百分位数，计算量化误差，直到量化误差不再变小，或者下界超过了上界。
-        
+
         Returns:
             tuple[torch.Tensor, torch.Tensor]: (new_min, new_max) 搜索得到的最优截断值
-            
+
         Raises:
             UnexpectedError: 当搜索过程中发生意外错误时抛出
         """
@@ -594,9 +582,9 @@ class HistogramObserver(TorchHistogramObserver):
             if self.histogram.size()[0] != self.bins:
                 raise UnexpectedError(
                     f"Histogram bins mismatch: expected {self.bins}, got {self.histogram.size()[0]}",
-                    action="Please check if the histogram configuration is correct"
+                    action="Please check if the histogram configuration is correct",
                 )
-            bin_width = (self.max_val / self.bins - self.min_val / self.bins)  # 避免溢出
+            bin_width = self.max_val / self.bins - self.min_val / self.bins  # 避免溢出
 
             # cumulative sum
             total = torch.sum(self.histogram).item()
@@ -661,5 +649,5 @@ class HistogramObserver(TorchHistogramObserver):
         except Exception as e:
             raise UnexpectedError(
                 f"Unexpected error during non-linear parameter search: {e}",
-                action="Please check if the histogram data is valid"
+                action="Please check if the histogram data is valid",
             ) from e

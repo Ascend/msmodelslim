@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from typing import Any, Dict
 from msmodelslim.core.context.base import BaseContext, BaseNamespace
 from .peercred_manager import PeercredManager
@@ -26,9 +27,7 @@ from .peercred_manager import PeercredManager
 class SharedNamespace(BaseNamespace):
     """Shared namespace for multi-process scenarios."""
 
-    def __init__(
-        self, enable_debug: bool = False, manager: PeercredManager = None
-    ) -> None:
+    def __init__(self, enable_debug: bool = False, manager: PeercredManager = None) -> None:
         super().__init__(enable_debug, dict_factory=manager.validated_dict)
 
     def __repr__(self) -> str:
@@ -36,7 +35,6 @@ class SharedNamespace(BaseNamespace):
 
 
 class SharedDictContext(BaseContext):
-
     def __init__(self, enable_debug: bool = False) -> None:
         super().__init__(enable_debug)
         self._manager = PeercredManager()

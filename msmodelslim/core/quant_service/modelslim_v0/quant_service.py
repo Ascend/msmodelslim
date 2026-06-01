@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+# pylint: disable=duplicate-code
 
 """
 -------------------------------------------------------------------------
@@ -18,6 +19,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import os
 from pathlib import Path
 from typing import Optional, List, Literal
@@ -60,6 +62,7 @@ def copy_files(input_path, output_path):
 
 class ModelslimV0QuantServiceConfig(QuantServiceConfig):
     """modelslim_v0 量化服务配置，用于插件选择与 QuantService 初始化。"""
+
     apiversion: Literal["modelslim_v0"] = "modelslim_v0"
 
 
@@ -81,47 +84,50 @@ class ModelslimV0QuantService(IQuantService):
         self.debug_info_persistence = debug_info_persistence
 
     def quantize(
-            self,
-            quant_config: BaseQuantConfig,
-            model_adapter: IModel,
-            save_path: Optional[Path] = None,
-            device: DeviceType = DeviceType.NPU,
-            device_indices: Optional[List[int]] = None,
+        self,
+        quant_config: BaseQuantConfig,
+        model_adapter: IModel,
+        save_path: Optional[Path] = None,
+        device: DeviceType = DeviceType.NPU,
+        device_indices: Optional[List[int]] = None,
     ) -> None:
         if not isinstance(quant_config, BaseQuantConfig):
-            raise SchemaValidateError("task must be a BaseTask",
-                                      action='Please make sure the task is a BaseTask')
+            raise SchemaValidateError("task must be a BaseTask", action='Please make sure the task is a BaseTask')
         if not isinstance(model_adapter, PipelineInterface):
-            raise SchemaValidateError("model must be a PipelineInterface",
-                                      action='Please make sure the model is a PipelineInterface')
+            raise SchemaValidateError(
+                "model must be a PipelineInterface", action='Please make sure the model is a PipelineInterface'
+            )
         if save_path is not None and not isinstance(save_path, Path):
-            raise SchemaValidateError("save_path must be a Path or None",
-                                      action='Please make sure the save_path is a Path or None')
+            raise SchemaValidateError(
+                "save_path must be a Path or None", action='Please make sure the save_path is a Path or None'
+            )
         if not isinstance(device, DeviceType):
-            raise SchemaValidateError("device must be a DeviceType",
-                                      action='Please make sure the device is a DeviceType')
+            raise SchemaValidateError(
+                "device must be a DeviceType", action='Please make sure the device is a DeviceType'
+            )
 
         if device_indices is not None:
             get_logger().warning(
-                "Specifying device indices is not supported in %s quant_service. "
-                "Device indices will be ignored.",
-                self.backend_name
+                "Specifying device indices is not supported in %s quant_service. Device indices will be ignored.",
+                self.backend_name,
             )
 
         return self.quant_process(ModelslimV0QuantConfig.from_base(quant_config), model_adapter, save_path, device)
 
-    def quant_process(self,
-                      quant_config: ModelslimV0QuantConfig,
-                      model_adapter: PipelineInterface,
-                      save_path: Optional[Path],
-                      device: DeviceType = DeviceType.NPU):
+    def quant_process(
+        self,
+        quant_config: ModelslimV0QuantConfig,
+        model_adapter: PipelineInterface,
+        save_path: Optional[Path],
+        device: DeviceType = DeviceType.NPU,
+    ):
         # init
         if device == DeviceType.NPU:
             # 如果使用npu进行量化需开启二进制编译，避免在线编译算子
             torch.npu.set_compile_mode(jit_compile=False)
 
         # handle dataset
-        get_logger().info(f"==========QUANTIZATION: PREPARE DATASET==========")
+        get_logger().info("==========QUANTIZATION: PREPARE DATASET==========")
         anti_dataset = quant_config.spec.anti_dataset
         calib_dataset = quant_config.spec.calib_dataset
         batch_size = quant_config.spec.batch_size
@@ -129,40 +135,36 @@ class ModelslimV0QuantService(IQuantService):
         calib_data = None
 
         if calib_dataset is not None:
-            get_logger().info(f"prepare calib_data from {calib_dataset}")
+            get_logger().info("prepare calib_data from %s", calib_dataset)
             dataset = self.dataset_loader.get_dataset_by_name(calib_dataset)
             calib_data = model_adapter.handle_dataset(dataset=dataset, device=device)
-            get_logger().info(f"prepare calib_data from {calib_dataset} success")
+            get_logger().info("prepare calib_data from %s success", calib_dataset)
 
         anti_data = calib_data
 
         if anti_dataset is not None:
-            get_logger().info(f"prepare anti_data from {anti_dataset}")
+            get_logger().info("prepare anti_data from %s", anti_dataset)
             dataset = self.dataset_loader.get_dataset_by_name(anti_dataset)
             anti_data = model_adapter.handle_dataset_by_batch(dataset=dataset, batch_size=batch_size, device=device)
-            get_logger().info(f"prepare anti_data from {anti_dataset} success")
+            get_logger().info("prepare anti_data from %s success", anti_dataset)
 
         # load model
-        get_logger().info(f"==========QUANTIZATION: LOAD MODEL==========")
+        get_logger().info("==========QUANTIZATION: LOAD MODEL==========")
         model = model_adapter.load_model(device=device)
-        get_logger().info(f"load model from {model_adapter.model_path} success")
+        get_logger().info("load model from %s success", model_adapter.model_path)
 
         # anti outlier
         if quant_config.spec.anti_cfg is not None:
-            get_logger().info(f"==========QUANTIZATION: ANTI OUTLIER==========")
-            get_logger().debug(f"anti outlier config: {quant_config.spec.anti_cfg}")
+            get_logger().info("==========QUANTIZATION: ANTI OUTLIER==========")
+            get_logger().debug("anti outlier config: %s", quant_config.spec.anti_cfg)
             anti_cfg = AntiOutlierConfig(dev_type=device.value, **quant_config.spec.anti_cfg)
-            anti_outlier = AntiOutlier(
-                model=model,
-                calib_data=anti_data,
-                cfg=anti_cfg,
-                **quant_config.spec.anti_params)
+            anti_outlier = AntiOutlier(model=model, calib_data=anti_data, cfg=anti_cfg, **quant_config.spec.anti_params)
             anti_outlier.process()
-            get_logger().info(f"anti outlier success")
+            get_logger().info("anti outlier success")
 
         # quantization
-        get_logger().info(f"==========QUANTIZATION: CALIBRATION==========")
-        get_logger().debug(f"calibration config: {quant_config.spec.calib_cfg}")
+        get_logger().info("==========QUANTIZATION: CALIBRATION==========")
+        get_logger().debug("calibration config: %s", quant_config.spec.calib_cfg)
 
         use_fa_quant = bool(quant_config.spec.calib_cfg.pop('use_fa_quant', False))
         fa_amp = quant_config.spec.calib_cfg.pop('fa_amp', 0)
@@ -170,33 +172,29 @@ class ModelslimV0QuantService(IQuantService):
         if use_fa_quant:
             calib_cfg = calib_cfg.fa_quant(fa_amp=fa_amp)
 
-        calibrator = Calibrator(
-            model=model,
-            cfg=calib_cfg,
-            calib_data=calib_data,
-            **quant_config.spec.calib_params)
+        calibrator = Calibrator(model=model, cfg=calib_cfg, calib_data=calib_data, **quant_config.spec.calib_params)
         calibrator.run()
-        get_logger().info(f"calibration success")
+        get_logger().info("calibration success")
 
         # persist stage
         if not save_path:
-            get_logger().warning(f"save_path is not provided, skip persist")
-            get_logger().info(f"==========QUANTIZATION: END==========")
+            get_logger().warning("save_path is not provided, skip persist")
+            get_logger().info("==========QUANTIZATION: END==========")
             return
 
         # persist
-        get_logger().info(f"==========QUANTIZATION: PERSIST==========")
+        get_logger().info("==========QUANTIZATION: PERSIST==========")
         calibrator.save(
             output_path=str(save_path),
             json_name='quant_model_description.json',
             save_type=['ascendV1'],
-            **quant_config.spec.calib_save_params
+            **quant_config.spec.calib_save_params,
         )
 
         # copy .json and .py files
         copy_files(str(model_adapter.model_path), str(save_path))
 
-        get_logger().info(f"==========QUANTIZATION: END==========")
+        get_logger().info("==========QUANTIZATION: END==========")
 
 
 def get_plugin():

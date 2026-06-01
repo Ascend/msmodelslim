@@ -47,13 +47,11 @@ class PipelineInterface(IModel):
         """
         raise UnsupportedError(
             "This model does not support generate dataset.",
-            action="Please implement generate_dataset in PipelineInterface.")
+            action="Please implement generate_dataset in PipelineInterface.",
+        )
 
     @abstractmethod
-    def handle_dataset_by_batch(self,
-                                dataset: Any,
-                                batch_size: int,
-                                device: DeviceType = DeviceType.NPU) -> List[Any]:
+    def handle_dataset_by_batch(self, dataset: Any, batch_size: int, device: DeviceType = DeviceType.NPU) -> List[Any]:
         """
         Handle the dataset for model inference with certain batch size.
         The dataset should be converted into a List of data
@@ -63,7 +61,8 @@ class PipelineInterface(IModel):
         """
         raise UnsupportedError(
             "This model does not support generate dataset by batch.",
-            action="Please implement generate_dataset_by_batch in PipelineInterface.")
+            action="Please implement generate_dataset_by_batch in PipelineInterface.",
+        )
 
     @abstractmethod
     def load_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
@@ -76,4 +75,5 @@ class PipelineInterface(IModel):
         """
         raise UnsupportedError(
             "This model does not support load model to specified device and torch dtype.",
-            action="Please implement load_model in PipelineInterface.")
+            action="Please implement load_model in PipelineInterface.",
+        )

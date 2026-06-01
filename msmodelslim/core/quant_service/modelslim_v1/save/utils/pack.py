@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import torch
 
 
@@ -33,6 +34,8 @@ def _pack_int4(weight) -> torch.Tensor:
         k, n = weight.shape
     elif len(weight.shape) == 3:
         e, k, n = weight.shape
+    else:
+        raise AssertionError("weight dimension should be 2 or 3")
     n_new = n // 2 + n % 2
 
     if n_new != n // 2:
@@ -85,6 +88,7 @@ def process_scale(name, bias, tp_num):
         down_bias = 8 * down_bias.sum(dim=1, keepdim=True)
         bias = down_bias.reshape(pre_shape, -1)
     return bias
+
 
 def pack_fp4_to_uint8(x: torch.Tensor) -> torch.Tensor:
     FLOAT_TO_E2M1 = [

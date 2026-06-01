@@ -88,8 +88,8 @@ def remove_quantization_config(output_path):
 
         if removed:
             json_safe_dump(config_data, config_file, indent=2, check_user_stat=True)
-    except Exception as e:
-        logger.warning(f"Failed to remove quantization_config in config.json!")
+    except Exception:
+        logger.warning("Failed to remove quantization_config in config.json!")
 
 
 class AscendV1Config(AutoSaverBaseConfig):
@@ -140,6 +140,7 @@ class AscendV1Config(AutoSaverBaseConfig):
 class QuaRotOptionalScopeInfo(BaseModel):
     rotation_map: Dict[str, str] = Field(default_factory=dict)
 
+
 ASCENDV1_DESC_JSON_NAME = "quant_model_description.json"
 ASCENDV1_SAFETENSORS_NAME = "quant_model_weights.safetensors"
 
@@ -152,15 +153,23 @@ class AscendV1Saver(AutoSaverProcessor):
 
     关于该格式的更多信息，请参考 AscendV1Config 中的说明。
     """
+
     # W4A8_DYNAMIC is hidden（不加入列表，混合时不作为 model_quant_type）。
     # 比特位数越低优先级越高（列表中越靠后 index 越大，混合时越优先被记录）。
     # 同比特内：W8A8 优先于 W8A8_DYNAMIC、W8A8_MIX，与 V0 一致。
     QUANT_TYPE_PRIORITY = [
-        'FLOAT', 'W16A16S', 'W8A16',                           # 高比特 → 低优先级
-        'W8A8_DYNAMIC', 'W8A8_MIX', 'W8A8',                    # 8w8a，W8A8 优先于 W8A8_DYNAMIC/W8A8_MIX
-        'WFP8AFP8_DYNAMIC', 'W8A8_MXFP8',                      # 8-bit 浮点量化
-        'W4A8_MXFP',                                           # 4w 浮点量化
-        'W4A4_DYNAMIC', 'W4A4_MXFP4', 'W4A4_MXFP4_DUALSCALE'                          # 4w4a → 高优先级
+        'FLOAT',
+        'W16A16S',
+        'W8A16',  # 高比特 → 低优先级
+        'W8A8_DYNAMIC',
+        'W8A8_MIX',
+        'W8A8',  # 8w8a，W8A8 优先于 W8A8_DYNAMIC/W8A8_MIX
+        'WFP8AFP8_DYNAMIC',
+        'W8A8_MXFP8',  # 8-bit 浮点量化
+        'W4A8_MXFP',  # 4w 浮点量化
+        'W4A4_DYNAMIC',
+        'W4A4_MXFP4',
+        'W4A4_MXFP4_DUALSCALE',  # 4w4a → 高优先级
     ]
 
     def __init__(self, model: nn.Module, config: AscendV1Config, adapter: object, **kwargs: Dict[str, Any]):
@@ -175,6 +184,7 @@ class AscendV1Saver(AutoSaverProcessor):
         self.dist_helper: Optional[DistHelper] = None
         self.shared_modules_slice: Optional[List[str]] = None
         self.quarot_info: Optional[qir.QuarotOnlineRotationInfo] = None
+        self.desc_quant = None
 
         self.version = "1.0.0"
         self.model_quant_type = "Unknown"
@@ -186,7 +196,6 @@ class AscendV1Saver(AutoSaverProcessor):
         return True
 
     def post_run(self) -> None:
-
         _convert_hookir_to_wrapper(self.model)
         for name, sub_module in self.model.named_modules(memo=self.processed_modules):
             self._process_module_maybe_wrapper_ir(name, sub_module)
@@ -201,17 +210,16 @@ class AscendV1Saver(AutoSaverProcessor):
         self.json_writer.write("model_quant_type", self.model_quant_type)
         self.json_writer.write("metadata", self.metadata)
         self.json_writer.write("group_size", self.group_size)
-        self.json_writer.write("optional", {
-            scope: scope_info.model_dump(mode='json')
-            for scope, scope_info in self.json_optional_infos.items()
-        })
+        self.json_writer.write(
+            "optional",
+            {scope: scope_info.model_dump(mode='json') for scope, scope_info in self.json_optional_infos.items()},
+        )
 
         self.json_writer.close()
         self.safetensors_writer.close()
 
         if not isinstance(self.adapter, IModel):
-            raise ToDoError(f'Model Adapter does NOT has attr model_path',
-                            action=f'Please implement IModel for saving')
+            raise ToDoError('Model Adapter does NOT has attr model_path', action='Please implement IModel for saving')
         copy_files(self.adapter.model_path, self.config.save_directory)
         remove_quantization_config(self.config.save_directory)
 
@@ -224,7 +232,7 @@ class AscendV1Saver(AutoSaverProcessor):
                 logger=logger,
                 max_gb_size=config.part_file_size,
                 save_directory=self.save_directory,
-                save_prefix=ASCENDV1_SAFETENSORS_NAME.removesuffix('.safetensors')
+                save_prefix=ASCENDV1_SAFETENSORS_NAME.removesuffix('.safetensors'),
             )
         else:
             return SafetensorsWriter(
@@ -234,6 +242,12 @@ class AscendV1Saver(AutoSaverProcessor):
 
     def get_rank_save_directory(self) -> str:
         return os.path.join(self.config.save_directory, f"rank_{dist.get_rank()}")
+
+    def merge_ranks(self) -> None:
+        raise ToDoError(
+            'AscendV1Saver does not implement merge_ranks',
+            action='Please use AscendV1DistributedSaver for distributed saving',
+        )
 
     def _resolve_is_bf16_from_adapter(self, adapter: object) -> bool:
         """从 adapter 的 AscendV1GlobalModelDtypeInterface 或 config 解析原始模型是否为 bfloat16，用于 deq_scale 是否转 int64。"""
@@ -269,9 +283,7 @@ class AscendV1Saver(AutoSaverProcessor):
             correction = quant_weight.to(torch.float32).sum(dim=1) * input_offset.to(torch.float32)
             correction = correction.unsqueeze(1) if deq_scale.ndim > 1 else correction
             quant_bias = torch.round(fp_weight_bias / deq_scale - correction).to(torch.int32)
-            deq_scale_to_write = deqscale2int64_by_dtype(
-                deq_scale.to(torch.float32), self._global_torch_dtype_is_bf16
-            )
+            deq_scale_to_write = deqscale2int64_by_dtype(deq_scale.to(torch.float32), self._global_torch_dtype_is_bf16)
             self.write_tensor(prefix + ".weight", "W8A8", quant_weight.to(torch.int8))
             self.write_tensor(prefix + ".quant_bias", "W8A8", quant_bias.to(torch.int32))
             self.write_tensor(prefix + ".input_scale", "W8A8", input_scale.to(torch.float32))
@@ -285,13 +297,14 @@ class AscendV1Saver(AutoSaverProcessor):
 
         with torch.device(module.weight.device):
             weight_scale = module.weight_scale.unsqueeze(-1) if module.weight_scale.ndim == 1 else module.weight_scale
-            weight_offset = module.weight_offset.unsqueeze(-1) if module.weight_offset.ndim == 1 else module.weight_offset
+            weight_offset = (
+                module.weight_offset.unsqueeze(-1) if module.weight_offset.ndim == 1 else module.weight_offset
+            )
             self.write_tensor(prefix + ".weight", "W8A16", module.weight.to(torch.int8))
             self.write_tensor(prefix + ".weight_scale", "W8A16", weight_scale.to(torch.float32))
             self.write_tensor(prefix + ".weight_offset", "W8A16", weight_offset.to(torch.float32))
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
-
 
     def on_w8a16_static_per_group(self, prefix: str, module: qir.W8A16StaticPerGroupFakeQuantLinear):
         self.update_quant_type("W8A16")
@@ -299,7 +312,9 @@ class AscendV1Saver(AutoSaverProcessor):
 
         with torch.device(module.weight.device):
             weight_scale = module.weight_scale.unsqueeze(-1) if module.weight_scale.ndim == 1 else module.weight_scale
-            weight_offset = module.weight_offset.unsqueeze(-1) if module.weight_offset.ndim == 1 else module.weight_offset
+            weight_offset = (
+                module.weight_offset.unsqueeze(-1) if module.weight_offset.ndim == 1 else module.weight_offset
+            )
             self.write_tensor(prefix + ".weight", "W8A16", module.weight.to(torch.int8))
             self.write_tensor(prefix + ".weight_scale", "W8A16", weight_scale.to(torch.float32))
             self.write_tensor(prefix + ".weight_offset", "W8A16", weight_offset.to(torch.float32))
@@ -313,8 +328,9 @@ class AscendV1Saver(AutoSaverProcessor):
             weight_scale = module.weight_scale.unsqueeze(-1)
             self.write_tensor(prefix + ".weight", "W8A8_DYNAMIC", module.weight.to(torch.int8))
             self.write_tensor(prefix + ".weight_scale", "W8A8_DYNAMIC", weight_scale.to(torch.float32))
-            self.write_tensor(prefix + ".weight_offset", "W8A8_DYNAMIC",
-                              torch.zeros_like(weight_scale).to(torch.float32))
+            self.write_tensor(
+                prefix + ".weight_offset", "W8A8_DYNAMIC", torch.zeros_like(weight_scale).to(torch.float32)
+            )
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
 
@@ -334,9 +350,7 @@ class AscendV1Saver(AutoSaverProcessor):
             correction = quant_weight.to(torch.float32).sum(dim=1) * input_offset.to(torch.float32)
             correction = correction.unsqueeze(1) if deq_scale.ndim > 1 else correction
             quant_bias = torch.round(fp_weight_bias / deq_scale - correction).to(torch.int32)
-            deq_scale_to_write = deqscale2int64_by_dtype(
-                deq_scale.to(torch.float32), self._global_torch_dtype_is_bf16
-            )
+            deq_scale_to_write = deqscale2int64_by_dtype(deq_scale.to(torch.float32), self._global_torch_dtype_is_bf16)
             self.write_tensor(prefix + ".weight", "W8A8_MIX", quant_weight.to(torch.int8))
             self.write_tensor(prefix + ".quant_bias", "W8A8_MIX", quant_bias.to(torch.int32))
             self.write_tensor(prefix + ".input_scale", "W8A8_MIX", input_scale.to(torch.float32))
@@ -345,8 +359,7 @@ class AscendV1Saver(AutoSaverProcessor):
 
             weight_scale = weight_scale.unsqueeze(-1)
             self.write_tensor(prefix + ".weight_scale", "W8A8_MIX", weight_scale.to(torch.float32))
-            self.write_tensor(prefix + ".weight_offset", "W8A8_MIX",
-                              torch.zeros_like(weight_scale).to(torch.float32))
+            self.write_tensor(prefix + ".weight_offset", "W8A8_MIX", torch.zeros_like(weight_scale).to(torch.float32))
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
 
@@ -358,8 +371,9 @@ class AscendV1Saver(AutoSaverProcessor):
             weight_scale = module.weight_scale
             self.write_tensor(prefix + ".weight", "W8A8_DYNAMIC", module.weight.to(torch.int8))
             self.write_tensor(prefix + ".weight_scale", "W8A8_DYNAMIC", weight_scale.to(torch.float32))
-            self.write_tensor(prefix + ".weight_offset", "W8A8_DYNAMIC",
-                              torch.zeros_like(weight_scale).to(torch.float32))
+            self.write_tensor(
+                prefix + ".weight_offset", "W8A8_DYNAMIC", torch.zeros_like(weight_scale).to(torch.float32)
+            )
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
 
@@ -369,8 +383,9 @@ class AscendV1Saver(AutoSaverProcessor):
             weight_scale = module.weight_scale.unsqueeze(-1)
             self.write_tensor(prefix + ".weight", "WFP8AFP8_DYNAMIC", module.weight.cpu().to(torch.float8_e4m3fn))
             self.write_tensor(prefix + ".weight_scale", "WFP8AFP8_DYNAMIC", weight_scale.to(torch.float32))
-            self.write_tensor(prefix + ".weight_offset", "WFP8AFP8_DYNAMIC",
-                              torch.zeros_like(weight_scale).to(torch.float32))
+            self.write_tensor(
+                prefix + ".weight_offset", "WFP8AFP8_DYNAMIC", torch.zeros_like(weight_scale).to(torch.float32)
+            )
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
 
@@ -386,7 +401,7 @@ class AscendV1Saver(AutoSaverProcessor):
             self.write_tensor(
                 prefix + ".weight_scale",
                 "W8A8_MXFP8",
-                (weight_scale.squeeze(dim=module.w_axes) + 127).to(torch.uint8)
+                (weight_scale.squeeze(dim=module.w_axes) + 127).to(torch.uint8),
                 # +127 是对 weight_scale 进行偏移处理，使其从-127~128偏移到0~255，正好覆盖torch_uint8的取值范围
             )
             if module.bias is not None:
@@ -402,8 +417,9 @@ class AscendV1Saver(AutoSaverProcessor):
             scale_bias = process_scale(prefix, deq_weight.T, 16)
             self.write_tensor(prefix + ".weight", "W4A8_DYNAMIC", w4a8_pack_int4(module.weight.to(torch.int8)))
             self.write_tensor(prefix + ".weight_scale", "W4A8_DYNAMIC", weight_scale.to(torch.float32))
-            self.write_tensor(prefix + ".weight_offset", "W4A8_DYNAMIC",
-                              torch.zeros_like(weight_scale).to(torch.float32))
+            self.write_tensor(
+                prefix + ".weight_offset", "W4A8_DYNAMIC", torch.zeros_like(weight_scale).to(torch.float32)
+            )
             self.write_tensor(prefix + '.scale_bias', "W4A8_DYNAMIC", scale_bias.to(torch.float32))
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
@@ -443,7 +459,7 @@ class AscendV1Saver(AutoSaverProcessor):
             self.write_tensor(
                 prefix + ".weight_scale",
                 "W4A4_MXFP4",
-                (weight_scale.squeeze(dim=module.w_axes) + 127).to(torch.uint8)
+                (weight_scale.squeeze(dim=module.w_axes) + 127).to(torch.uint8),
                 # +127 是对 weight_scale 进行偏移处理，使其从-127~128偏移到0~255，正好覆盖torch_uint8的取值范围
             )
             if module.bias is not None:
@@ -462,10 +478,12 @@ class AscendV1Saver(AutoSaverProcessor):
             self.write_tensor(
                 prefix + ".weight_scale",
                 "W4A4_MXFP4_DUALSCALE",
-                (weight_scale.squeeze(dim=module.w_axes) + 127).cpu().to(torch.uint8)
+                (weight_scale.squeeze(dim=module.w_axes) + 127).cpu().to(torch.uint8),
                 # +127 是对 weight_scale 进行偏移处理，使其从-127~128偏移到0~255，正好覆盖torch_uint8的取值范围
             )
-            self.write_tensor(prefix + ".weight_dual_scale", "W4A4_MXFP4_DUALSCALE", weight_dual_scale.cpu().to(torch.float32))
+            self.write_tensor(
+                prefix + ".weight_dual_scale", "W4A4_MXFP4_DUALSCALE", weight_dual_scale.cpu().to(torch.float32)
+            )
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "W4A4_MXFP4_DUALSCALE", module.bias.to(torch.float32))
 
@@ -481,7 +499,7 @@ class AscendV1Saver(AutoSaverProcessor):
             self.write_tensor(
                 prefix + ".weight_scale",
                 "W4A8_MXFP",
-                (weight_scale.squeeze(dim=module.w_axes) + 127).to(torch.uint8)
+                (weight_scale.squeeze(dim=module.w_axes) + 127).to(torch.uint8),
                 # +127 是对 weight_scale 进行偏移处理，使其从-127~128偏移到0~255，正好覆盖torch_uint8的取值范围
             )
             if module.bias is not None:
@@ -529,16 +547,15 @@ class AscendV1Saver(AutoSaverProcessor):
     def on_activation_per_token(self, prefix: str, module: qir.FakeQuantActivationPerToken):
         # 对于 per-token 动态量化，保存 quant_type 标签
         from msmodelslim.ir.qal import QDType, QScope
+
         # 保存格式为 self_attn.quant_type，而不是 fa3_q.quant_type
         # 提取父路径，例如 model.layers.0.self_attn.fa3_q -> model.layers.0.self_attn
         parent_prefix = prefix.rsplit('.', 1)[0]
         quant_type_key = parent_prefix + ".quant_type"
-        
-        if (module.x_q_scheme.dtype == QDType.FP8_E4M3 and 
-            module.x_q_scheme.scope == QScope.PER_TOKEN):
+
+        if module.x_q_scheme.dtype == QDType.FP8_E4M3 and module.x_q_scheme.scope == QScope.PER_TOKEN:
             self.json_writer.write(quant_type_key, "FP8_DYNAMIC")
-        elif (module.x_q_scheme.dtype == QDType.INT8 and 
-            module.x_q_scheme.scope == QScope.PER_TOKEN):
+        elif module.x_q_scheme.dtype == QDType.INT8 and module.x_q_scheme.scope == QScope.PER_TOKEN:
             self.json_writer.write(quant_type_key, "INT8_DYNAMIC")
         else:
             raise SchemaValidateError(f"FakeQuantActivationPerToken Unsupported dtype: {module.x_q_scheme.dtype}")
@@ -646,5 +663,8 @@ class AscendV1Saver(AutoSaverProcessor):
     def _process_module(self, prefix: str, module: nn.Module):
         if isinstance(self.adapter, AscendV1SaveInterface):
             self.processed_modules.add(module)
-            prefix, module = self.adapter.ascendv1_save_module_preprocess(prefix, module, self.model) or (prefix, module)
+            prefix, module = self.adapter.ascendv1_save_module_preprocess(prefix, module, self.model) or (
+                prefix,
+                module,
+            )
         super()._process_module(prefix=prefix, module=module)

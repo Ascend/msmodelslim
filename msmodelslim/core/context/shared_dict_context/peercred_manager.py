@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import os
 import socket
 import struct
@@ -26,7 +27,7 @@ import tempfile
 import threading
 import time
 import uuid
-import pickle
+import pickle  # nosec B403
 from collections.abc import MutableMapping
 from typing import Any, Dict, Optional, Set, Tuple
 from multiprocessing import Process, util
@@ -46,26 +47,26 @@ _platform_checked = False
 
 def _check_platform_support() -> None:
     """Check if the current platform supports SO_PEERCRED.
-    
+
     This function is called lazily - only when actual IPC communication
     is attempted. Importing the module alone will not trigger this check.
-    
+
     Raises:
         UnsupportedError: If platform is not Linux (SO_PEERCRED is Linux-only)
     """
     global _platform_checked
     if _platform_checked:
         return
-    
+
     if sys.platform != 'linux':
         platform_name = 'Windows' if sys.platform == 'win32' else sys.platform
         raise UnsupportedError(
             f"Multi-process shared context is not supported on {platform_name}. "
             f"The underlying mechanism relies on Linux-specific SO_PEERCRED for secure IPC.",
             action="Please run the quantization task on a Linux system, "
-                   "or use single-process mode (LocalContextFactory) instead."
+            "or use single-process mode (LocalContextFactory) instead.",
         )
-    
+
     _platform_checked = True
 
 
@@ -81,9 +82,9 @@ CONNECTION_TIMEOUT = 30.0  # Socket timeout for blocking operations
 
 def get_peer_credentials(sock: socket.socket) -> Tuple[int, int, int]:
     """Extract peer process credentials from Unix socket using SO_PEERCRED.
-    
+
     Requires Linux and appropriate permissions. Returns (pid, uid, gid).
-    
+
     Raises:
         UnsupportedError: If platform is not Linux
     """
@@ -95,7 +96,7 @@ def get_peer_credentials(sock: socket.socket) -> Tuple[int, int, int]:
 
 class PeercredListener:
     """Unix socket listener that authenticates clients via SO_PEERCRED."""
-    
+
     def __init__(self, address: str, allowed_uids: Optional[Set] = None):
         self.address = address
         self.allowed_uids = allowed_uids if allowed_uids is not None else {os.getuid()}
@@ -114,30 +115,30 @@ class PeercredListener:
         finally:
             os.umask(old_umask)
         self._socket.listen(SOCKET_BACKLOG)
-        get_logger().debug(f"PeercredListener started on {self.address}")
+        get_logger().debug("PeercredListener started on %s", self.address)
 
     def accept(self):
         """Accept connection and authenticate via peer credentials.
-        
+
         Raises:
             SecurityError: If connecting UID is not in allowed_uids
         """
         conn, addr = self._socket.accept()
         try:
             pid, uid, gid = get_peer_credentials(conn)
-            get_logger().debug(f"Connection from PID={pid}, UID={uid}, GID={gid}")
+            get_logger().debug("Connection from PID=%s, UID=%s, GID=%s", pid, uid, gid)
             if self.allowed_uids is not None and uid not in self.allowed_uids:
-                get_logger().warning(f"Rejecting connection from UID {uid}")
+                get_logger().warning("Rejecting connection from UID %s", uid)
                 try:
                     conn.close()
                 except OSError as close_err:
                     get_logger().debug("Ignoring error closing rejected connection: %s", close_err)
                 raise SecurityError(
                     f"UID {uid} not authorized for shared context access.",
-                    action="Please run all processes under the same user UID."
+                    action="Please run all processes under the same user UID.",
                 )
             return PeercredConnection(conn), (pid, uid, gid)
-        except Exception as e:
+        except Exception:
             conn.close()
             raise
 
@@ -154,12 +155,12 @@ class PeercredListener:
 
 class PeercredConnection:
     """Thread-safe socket wrapper with framing protocol.
-    
+
     Note: The lock protects against concurrent send/recv from multiple threads.
     In typical usage (one connection per request), the lock is not needed,
     but it's provided for safety in case of connection reuse.
     """
-    
+
     def __init__(self, sock: socket.socket, timeout: Optional[float] = CONNECTION_TIMEOUT):
         self._socket = sock
         self._socket.settimeout(timeout)
@@ -173,7 +174,7 @@ class PeercredConnection:
         if size > MAX_MESSAGE_SIZE:
             raise SecurityError(
                 f"Message size {size} exceeds maximum allowed {MAX_MESSAGE_SIZE}",
-                action="Please reduce the size of data stored in the shared context."
+                action="Please reduce the size of data stored in the shared context.",
             )
         size_bytes = struct.pack('!I', size)
         with self._send_lock:
@@ -188,10 +189,10 @@ class PeercredConnection:
             if size > MAX_MESSAGE_SIZE:
                 raise SecurityError(
                     f"Message size {size} exceeds maximum allowed {MAX_MESSAGE_SIZE}",
-                    action="Please reduce the size of data stored in the shared context."
+                    action="Please reduce the size of data stored in the shared context.",
                 )
             data = self._recvall(size)
-        return pickle.loads(data)
+        return pickle.loads(data)  # nosec B301
 
     def _recvall(self, n: int) -> bytes:
         """Receive exactly n bytes. Must be called with _recv_lock held."""
@@ -208,14 +209,33 @@ class PeercredConnection:
 
 
 # Method whitelist for shared objects - prevents calling dangerous methods
-ALLOWED_METHODS = frozenset({
-    # dict-like methods
-    '__getitem__', '__setitem__', '__delitem__', '__contains__', '__len__',
-    '__repr__', '__str__',
-    'get', 'keys', 'values', 'items', 'update', 'pop', 'clear', 'setdefault',
-    # list-like methods (for future extension)
-    'append', 'extend', 'insert', 'remove', 'index', 'count',
-})
+ALLOWED_METHODS = frozenset(
+    {
+        # dict-like methods
+        '__getitem__',
+        '__setitem__',
+        '__delitem__',
+        '__contains__',
+        '__len__',
+        '__repr__',
+        '__str__',
+        'get',
+        'keys',
+        'values',
+        'items',
+        'update',
+        'pop',
+        'clear',
+        'setdefault',
+        # list-like methods (for future extension)
+        'append',
+        'extend',
+        'insert',
+        'remove',
+        'index',
+        'count',
+    }
+)
 
 
 class PeercredSharedDict(MutableMapping):
@@ -263,9 +283,9 @@ class PeercredSharedDict(MutableMapping):
         with self._lock:
             return list(self._dict.items())
 
-    def update(self, *args, **kwargs):
+    def update(self, other=(), /, **kwargs):
         with self._lock:
-            self._dict.update(*args, **kwargs)
+            self._dict.update(other, **kwargs)
 
     def pop(self, key, *args):
         with self._lock:
@@ -281,7 +301,7 @@ class PeercredSharedDict(MutableMapping):
 
 
 class PeercredValidatedDict(PeercredSharedDict, IValidatedState):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):  # pylint: disable=super-init-not-called
         self._dict = ValidatedDict(*args, **kwargs)
         self._lock = threading.Lock()
 
@@ -292,12 +312,12 @@ _container_registry['validated_dict'] = PeercredValidatedDict
 
 class PeercredProxy:
     """Client-side proxy for remote shared objects.
-    
+
     Uses dynamic method dispatch via __getattr__ to forward any method
     call to the server. Magic methods (__getitem__, etc.) are explicitly
     defined as they cannot be intercepted by __getattr__.
     """
-    
+
     def __init__(self, address: str, obj_id: str, obj_type: str = 'dict'):
         self.address = address
         self.obj_id = obj_id
@@ -314,7 +334,7 @@ class PeercredProxy:
                     'obj_type': self.obj_type,
                     'method': method,
                     'args': args,
-                    'kwargs': kwargs
+                    'kwargs': kwargs,
                 }
                 conn.send(request)
                 result = conn.recv()
@@ -330,15 +350,16 @@ class PeercredProxy:
 
     def __getattr__(self, name: str):
         """Intercept any method call and forward to remote object.
-        
+
         This enables the proxy to support all methods of the wrapped
         object without explicitly defining them.
         """
         if name.startswith('_'):
             raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-        
+
         def method(*args, **kwargs):
             return self._call(name, *args, **kwargs)
+
         method.__name__ = name
         return method
 
@@ -363,12 +384,12 @@ class PeercredProxy:
 
 class PeercredServer:
     """Multi-threaded server managing shared objects and dispatching RPC calls.
-    
+
     Uses a registry pattern where objects are identified by (type, id) tuples,
     enabling support for multiple container types through a unified dispatch
     mechanism.
     """
-    
+
     def __init__(self, address: str, allowed_uids: Optional[Set]):
         self.address = address
         self.allowed_uids = allowed_uids
@@ -383,15 +404,12 @@ class PeercredServer:
         self._listener.start()
         # Set socket to non-blocking with timeout for clean shutdown
         self._listener._socket.settimeout(1.0)
-        get_logger().debug(f"PeercredServer serving at {self.address}")
+        get_logger().debug("PeercredServer serving at %s", self.address)
 
         while not self._shutdown_event.is_set():
             try:
                 conn, (pid, uid, gid) = self._listener.accept()
-                handler = threading.Thread(
-                    target=self._handle_client,
-                    args=(conn, pid, uid, gid)
-                )
+                handler = threading.Thread(target=self._handle_client, args=(conn, pid, uid, gid))
                 handler.daemon = True
                 handler.start()
             except socket.timeout:
@@ -401,13 +419,13 @@ class PeercredServer:
                 # Socket closed during shutdown
                 if self._shutdown_event.is_set():
                     break
-                get_logger().error(f"Error accepting connection: {e}")
+                get_logger().error("Error accepting connection: %s", e)
             except Exception as e:
                 if not self._shutdown_event.is_set():
-                    get_logger().error(f"Error accepting connection: {e}")
+                    get_logger().error("Error accepting connection: %s", e)
 
     def _handle_client(self, conn: PeercredConnection, pid: int, uid: int, gid: int):
-        get_logger().debug(f"Handling client PID={pid}, UID={uid}")
+        get_logger().debug("Handling client PID=%s, UID=%s", pid, uid)
 
         while True:
             try:
@@ -420,11 +438,11 @@ class PeercredServer:
             except EOFError:
                 break
             except Exception as e:
-                get_logger().error(f"Error handling client request: {e}")
+                get_logger().error("Error handling client request: %s", e)
                 break
 
         conn.close()
-        get_logger().debug(f"Client PID={pid} disconnected")
+        get_logger().debug("Client PID=%s disconnected", pid)
 
     def _dispatch_request(self, conn: PeercredConnection, request: Dict):
         action = request.get('action')
@@ -439,19 +457,19 @@ class PeercredServer:
         obj_type = request.get('obj_type', 'dict')
         args = request.get('args', ())
         kwargs = request.get('kwargs', {})
-        
+
         constructor = _container_registry.get(obj_type)
         if constructor is None:
             conn.send(SpecError(f"Unknown object type: {obj_type}"))
             return
-            
+
         with self._lock:
             self.registry[(obj_type, obj_id)] = constructor(*args, **kwargs)
         conn.send(None)
 
     def _handle_method_call(self, conn: PeercredConnection, request: Dict):
         """Dispatch method call to shared object via generic getattr.
-        
+
         Security: Only methods in ALLOWED_METHODS whitelist can be called.
         This prevents calling dangerous methods like __reduce__, __class__, etc.
         """
@@ -463,10 +481,12 @@ class PeercredServer:
 
         # Security: Check method whitelist
         if method not in ALLOWED_METHODS:
-            conn.send(SecurityError(
-                f"Method '{method}' is not allowed. Allowed methods: {sorted(ALLOWED_METHODS)}",
-                action="Please use only the supported dict-like methods for shared context access."
-            ))
+            conn.send(
+                SecurityError(
+                    f"Method '{method}' is not allowed. Allowed methods: {sorted(ALLOWED_METHODS)}",
+                    action="Please use only the supported dict-like methods for shared context access.",
+                )
+            )
             return
 
         with self._lock:
@@ -486,7 +506,7 @@ class PeercredServer:
         try:
             conn.send(error)
         except Exception:
-            get_logger().warning(f"Failed to send error to client: {error}")
+            get_logger().warning("Failed to send error to client: %s", error)
 
     def shutdown(self):
         """Signal server to stop accepting connections and close listener."""
@@ -502,15 +522,13 @@ def _run_server_process(address: str, allowed_uids: Optional[Set]):
 
 class PeercredManager:
     """High-level manager that spawns a server process and provides shared objects.
-    
+
     Can operate in server mode (spawns child process) or client mode (connects to existing).
     """
-    
-    def __init__(self, address: Optional[str] = None,
-                 allowed_uids: Optional[Set] = None):
+
+    def __init__(self, address: Optional[str] = None, allowed_uids: Optional[Set] = None):
         if address is None:
-            address = os.path.join(tempfile.gettempdir(),
-                                   f"peercred_manager_{os.getpid()}.sock")
+            address = os.path.join(tempfile.gettempdir(), f"peercred_manager_{os.getpid()}.sock")
             self._is_client = False
         else:
             self._is_client = self._check_server_exists(address)
@@ -538,12 +556,9 @@ class PeercredManager:
         if self._is_client:
             raise MisbehaviorError(
                 "Client mode manager cannot be started.",
-                action="Please create a new manager without address, or use it as a client."
+                action="Please create a new manager without address, or use it as a client.",
             )
-        self._process = Process(
-            target=_run_server_process,
-            args=(self.address, self.allowed_uids)
-        )
+        self._process = Process(target=_run_server_process, args=(self.address, self.allowed_uids))
         self._process.start()
         time.sleep(SERVER_STARTUP_DELAY)
         # Wait for socket file to be ready (may be slow with spawn child process or in CI environment)
@@ -564,20 +579,16 @@ class PeercredManager:
             self._finalize_manager(self._process, self.address)
             raise EnvError(
                 f"Server socket did not appear at {self.address} within {SERVER_SOCKET_WAIT_TIMEOUT}s",
-                action="Please check temp directory permissions and ensure no stale socket file exists."
+                action="Please check temp directory permissions and ensure no stale socket file exists.",
             )
-        get_logger().debug(f"PeercredManager started at {self.address}")
+        get_logger().debug("PeercredManager started at %s", self.address)
 
         # 注册 GC/atexit 时清理；不覆盖 self.shutdown，保留显式 shutdown() 供 __exit__ 调用
-        util.Finalize(
-            self, PeercredManager._finalize_manager,
-            args=(self._process, self.address),
-            exitpriority=0
-        )
+        util.Finalize(self, PeercredManager._finalize_manager, args=(self._process, self.address), exitpriority=0)
 
     def shutdown(self):
         """Explicitly shut down the manager: terminate the server process and delete socket file.
-        
+
         Safe to call multiple times. Only server mode performs actual cleanup.
         Client mode does nothing to avoid affecting the running server.
         """
@@ -585,18 +596,18 @@ class PeercredManager:
             if self._shutdown_called:
                 return
             self._shutdown_called = True
-        
+
         # Client mode should not terminate the server or delete socket
         if self._is_client:
             get_logger().debug("Client mode manager shutdown - no cleanup needed")
             return
-            
+
         PeercredManager._finalize_manager(self._process, self.address)
 
     @staticmethod
     def _finalize_manager(process, address):
         """Static cleanup method for use by Finalize and shutdown().
-        
+
         Note: This method may be called multiple times (by shutdown() and Finalize),
         but each operation is idempotent.
         """
@@ -608,8 +619,8 @@ class PeercredManager:
                 if process.is_alive():
                     process.kill()
                     process.join()
-            except Exception:
-                pass
+            except Exception as err:
+                get_logger().debug("Caught error during manager process cleanup: %s", err)
         if address and os.path.exists(address):
             try:
                 os.unlink(address)
@@ -624,13 +635,7 @@ class PeercredManager:
             sock.connect(self.address)
             conn = PeercredConnection(sock)
             try:
-                conn.send({
-                    'action': 'create',
-                    'obj_id': obj_id,
-                    'obj_type': obj_type,
-                    'args': args,
-                    'kwargs': kwargs
-                })
+                conn.send({'action': 'create', 'obj_id': obj_id, 'obj_type': obj_type, 'args': args, 'kwargs': kwargs})
                 response = conn.recv()
 
                 if isinstance(response, Exception):
@@ -649,4 +654,3 @@ class PeercredManager:
 
     def validated_dict(self, *args, **kwargs) -> PeercredProxy:
         return self._create_object('validated_dict', *args, **kwargs)
-

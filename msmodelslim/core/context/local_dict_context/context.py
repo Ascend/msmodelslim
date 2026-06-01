@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from typing import Dict
 
 from msmodelslim.core.context.base import BaseContext, BaseNamespace
@@ -29,7 +30,6 @@ class Namespace(BaseNamespace):
 
 
 class LocalDictContext(BaseContext):
-
     def __init__(self, enable_debug: bool = False) -> None:
         super().__init__(enable_debug)
         self._namespaces: Dict[str, Namespace] = {}

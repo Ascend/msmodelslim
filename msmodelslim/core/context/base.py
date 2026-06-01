@@ -18,7 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-from abc import ABC, abstractmethod
+
+from abc import ABC
 from typing import Any, Callable, Iterable, Optional
 from collections.abc import Sequence
 from collections.abc import MutableMapping
@@ -42,14 +43,12 @@ def _validate_namespace_value(
 ) -> None:
     if depth > max_depth:
         raise SchemaValidateError(
-            f"Unsupported nesting depth at {path}: {depth}. "
-            f"Maximum allowed depth is {max_depth}."
+            f"Unsupported nesting depth at {path}: {depth}. Maximum allowed depth is {max_depth}."
         )
     if _is_torch_tensor(value):
         if value.device.type != "cpu":
             raise SchemaValidateError(
-                f"Unsupported torch.Tensor device at {path}: {value.device.type}. "
-                "Only cpu tensors are allowed."
+                f"Unsupported torch.Tensor device at {path}: {value.device.type}. Only cpu tensors are allowed."
             )
         return
 
@@ -69,15 +68,12 @@ def _validate_namespace_value(
             _validate_namespace_value(item, whitelist, f"{path}[{repr(key)}]", depth + 1, max_depth)
         return
 
-    primitive_types = tuple(
-        t for t in whitelist if t not in (list, tuple, dict)
-    )
+    primitive_types = tuple(t for t in whitelist if t not in (list, tuple, dict))
     if isinstance(value, primitive_types):
         return
 
     raise SchemaValidateError(
-        f"Unsupported value type at {path}: {type(value)}. "
-        "Only Python basic types and cpu torch.Tensor are allowed."
+        f"Unsupported value type at {path}: {type(value)}. Only Python basic types and cpu torch.Tensor are allowed."
     )
 
 
@@ -122,7 +118,6 @@ class DebugDict(ValidatedDict):
 
 
 class BaseNamespace(INamespace):
-
     def __init__(
         self,
         enable_debug: bool = False,

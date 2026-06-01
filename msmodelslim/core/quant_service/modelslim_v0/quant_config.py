@@ -58,8 +58,7 @@ def load_specific_config(yaml_spec: object) -> QuantSpec:
     if isinstance(yaml_spec, QuantSpec):
         return yaml_spec
     if not isinstance(yaml_spec, dict):
-        raise SchemaValidateError("task spec must be dict",
-                                  action='Please make sure the task spec is a dictionary')
+        raise SchemaValidateError("task spec must be dict", action='Please make sure the task spec is a dictionary')
 
     config = QuantSpec()
     config.anti_cfg = yaml_spec.get('anti_cfg', None)

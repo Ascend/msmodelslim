@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -32,12 +33,12 @@ class PipelineBuilderInfra(ABC):
     @abstractmethod
     def template_modules(self, modules: List[str]) -> Self:
         """设置模板占位符 ``patterns`` / ``quant_modules`` 共用的模块列表，返回 self 以链式调用。"""
-        ...
+        raise NotImplementedError
 
     @abstractmethod
     def create(self) -> List[AutoProcessorConfig]:
         """渲染模板并返回 List[AutoProcessorConfig]。"""
-        ...
+        raise NotImplementedError
 
 
 class AnalysisPipelineLoaderInfra(ABC):
@@ -49,4 +50,4 @@ class AnalysisPipelineLoaderInfra(ABC):
         返回用于构建该 metrics 对应流水线配置的建造者。
         建造者已绑定对应模板，调用 template_modules() 后 create() 得到配置列表。
         """
-        ...
+        raise NotImplementedError

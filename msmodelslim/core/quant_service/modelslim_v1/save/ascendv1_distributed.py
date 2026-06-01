@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+# pylint: disable=duplicate-code
 
 """
 -------------------------------------------------------------------------
@@ -24,7 +25,7 @@ import inspect
 import json
 import os
 import shutil
-from typing import Dict, Any, Optional, List, Literal
+from typing import Dict, Any, List, Literal
 
 import torch
 import torch.distributed as dist
@@ -46,25 +47,26 @@ from .utils.json import JsonWriter
 class DistributedAscendV1Config(AscendV1Config):
     """
     支持分布式保存的 ascendV1 量化模型保存器配置。
-    
+
     该类继承自 AscendV1Config，用于在分布式模式下自动选择 DistributedAscendV1Saver。
     """
+
     type: Literal['ascendv1_saver_distributed'] = "ascendv1_saver_distributed"
 
 
 def convert_to_distributed_config_if_needed(configs: List[AscendV1Config]) -> List:
     """
     如果启用了分布式，将列表中的 AscendV1Config 转换为 DistributedAscendV1Config
-    
+
     Args:
         configs: 配置对象列表
-        
+
     Returns:
         转换后的配置对象列表
     """
     if not dist.is_initialized() or not configs:
         return configs
-    
+
     converted_configs = []
     for cfg in configs:
         if isinstance(cfg, AscendV1Config) and not isinstance(cfg, DistributedAscendV1Config):
@@ -72,20 +74,20 @@ def convert_to_distributed_config_if_needed(configs: List[AscendV1Config]) -> Li
                 type="ascendv1_saver_distributed",
                 save_directory=cfg.save_directory,
                 part_file_size=cfg.part_file_size,
-                ext=cfg.ext
+                ext=cfg.ext,
             )
             converted_configs.append(distributed_cfg)
-            logger.info(f"Converted AscendV1Config to DistributedAscendV1Config for distributed saving")
+            logger.info("Converted AscendV1Config to DistributedAscendV1Config for distributed saving")
         else:
             converted_configs.append(cfg)
-    
+
     return converted_configs
 
 
 def save_this_rank_only():
     """
     该函数用于装饰on_xxx系列方法，用于在分布式模式下，过滤掉不应属于当前rank的保存动作。
-    
+
     该装饰器会自动判断是否属于当前rank，若不属于当前rank，则不会调用被装饰的函数。
     """
 
@@ -93,14 +95,15 @@ def save_this_rank_only():
         # check function signature
         if inspect.signature(func).parameters.keys() != {'self', 'prefix', 'module'}:
             raise ValueError(
-                f"Function {func.__name__} has incorrect signature that cannot be decorated by save_this_rank_only")
+                f"Function {func.__name__} has incorrect signature that cannot be decorated by save_this_rank_only"
+            )
 
         @functools.wraps(func)
         def wrapper(self_instance: "DistributedAscendV1Saver", prefix: str, module: nn.Module) -> None:
             if not dist.is_initialized():
                 func(self_instance, prefix, module)
                 return
-            
+
             if self_instance.dist_helper is None:
                 if dist.get_rank() == 0:
                     func(self_instance, prefix, module)
@@ -142,7 +145,7 @@ def decorate_on_methods(cls):
                     if not hasattr(attr, '__wrapped__') or 'save_this_rank_only' not in str(attr):
                         setattr(cls, attr_name, save_this_rank_only()(attr))
         return cls
-    
+
     return wrapper_class()
 
 
@@ -170,7 +173,7 @@ class _DistIterCtx:
 class DistributedAscendV1Saver(AscendV1Saver):
     """
     支持分布式保存的 ascendV1 量化模型保存器。
-    
+
     该类继承自 AscendV1Saver，并添加了分布式保存支持。
     在分布式模式下，每个rank会保存自己的部分到独立的目录中，最后在rank 0上合并所有文件。
     """
@@ -187,7 +190,6 @@ class DistributedAscendV1Saver(AscendV1Saver):
             self.file_mappings = [{} for _ in range(dist.get_world_size())]
         else:
             self.file_mappings = [{}]
-
 
     def support_distributed(self) -> bool:
         return True
@@ -260,10 +262,10 @@ class DistributedAscendV1Saver(AscendV1Saver):
         self.json_writer.write("model_quant_type", self.model_quant_type)
         self.json_writer.write("metadata", self.metadata)
         self.json_writer.write("group_size", self.group_size)
-        self.json_writer.write("optional", {
-            scope: scope_info.model_dump(mode='json')
-            for scope, scope_info in self.json_optional_infos.items()
-        })
+        self.json_writer.write(
+            "optional",
+            {scope: scope_info.model_dump(mode='json') for scope, scope_info in self.json_optional_infos.items()},
+        )
 
         self.json_writer.close()
         self.safetensors_writer.close()
@@ -287,20 +289,20 @@ class DistributedAscendV1Saver(AscendV1Saver):
         file_counts = [torch.zeros(1, dtype=torch.int64)] * dist.get_world_size()
         local_count = len([f for f in os.listdir(self.save_directory) if f.endswith('.safetensors')])
         dist.all_gather_object(file_counts, local_count)
-        
+
         dist.barrier()
 
         if dist.get_rank() != 0:
             return
-        
+
         # 合并所有rank的文件
         self._merge_safetensor_files(file_counts)
         self._merge_index_files()
         self._merge_json_files()
         self._cleanup_rank_dirs()
-        
-        get_logger().info(f"Merge ranks completed successfully. Final weights saved to: {self.config.save_directory}")
-        
+
+        get_logger().info("Merge ranks completed successfully. Final weights saved to: %s", self.config.save_directory)
+
     def _merge_safetensor_files(self, file_counts):
         """合并所有rank的safetensors文件"""
         for rank in range(dist.get_world_size()):
@@ -318,8 +320,10 @@ class DistributedAscendV1Saver(AscendV1Saver):
                     dst = os.path.join(self.config.save_directory, self.safetensors_writer.save_prefix)
                 else:
                     file_name_prefix = self.safetensors_writer.save_prefix
-                    dst = os.path.join(self.config.save_directory,
-                                       f"{file_name_prefix}-{offset + i + 1:05d}-of-{sum(file_counts):05d}.safetensors")
+                    dst = os.path.join(
+                        self.config.save_directory,
+                        f"{file_name_prefix}-{offset + i + 1:05d}-of-{sum(file_counts):05d}.safetensors",
+                    )
                 # 记录文件映射关系
                 self.file_mappings[rank][file] = os.path.basename(dst)
                 shutil.move(src, dst)
@@ -332,12 +336,12 @@ class DistributedAscendV1Saver(AscendV1Saver):
             index_file = os.path.join(rank_dir, f"{self.safetensors_writer.save_prefix}.safetensors.index.json")
             if os.path.exists(index_file):
                 index_files.append((rank, index_file))
-        
+
         if index_files:
             # 合并index文件
             merged_index = {"metadata": {"total_size": 0}, "weight_map": {}}
             for rank, index_file in index_files:
-                with open(index_file, "r") as f:
+                with open(index_file, "r", encoding="utf-8") as f:
                     index_data = json.load(f)
                     merged_index["metadata"]["total_size"] += index_data["metadata"]["total_size"]
                     # 更新weight_map中的文件路径
@@ -347,14 +351,13 @@ class DistributedAscendV1Saver(AscendV1Saver):
                         # 使用对应rank的文件映射查找新文件名
                         new_file = self.file_mappings[rank].get(original_file)
                         if new_file is None:
-                            logger.warning(f"File {original_file} not found in rank {rank}")
+                            logger.warning("File %s not found in rank %s", original_file, rank)
                             continue
                         merged_index["weight_map"][key] = new_file
-            
+
             # 保存合并后的index文件
             final_index_path = os.path.join(
-                self.config.save_directory,
-                f"{self.safetensors_writer.save_prefix}.safetensors.index.json"
+                self.config.save_directory, f"{self.safetensors_writer.save_prefix}.safetensors.index.json"
             )
             json_safe_dump(merged_index, final_index_path, indent=2)
 
@@ -366,15 +369,15 @@ class DistributedAscendV1Saver(AscendV1Saver):
             json_file = os.path.join(rank_dir, self.json_writer.file_name)
             if os.path.exists(json_file):
                 json_files.append(json_file)
-        
+
         if json_files:
             # 合并json文件
             merged_meta = {}
             for json_file in json_files:
-                with open(json_file, "r") as f:
+                with open(json_file, "r", encoding="utf-8") as f:
                     meta = json.load(f)
                     merged_meta.update(meta)
-            
+
             # 对键进行排序
             sorted_meta = dict(sorted(merged_meta.items()))
 

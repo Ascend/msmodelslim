@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import torch
 
 from msmodelslim.core.const import DeviceType
@@ -26,7 +27,6 @@ from msmodelslim.core.runner.pipeline_interface import PipelineInterface
 from msmodelslim.core.quant_service.dataset_loader_infra import DatasetLoaderInfra
 from msmodelslim.core.context import ContextManager
 from msmodelslim.core.context.interface import IContextFactory
-from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.logging import logger_setter, get_logger
 
 from .pipeline_loader_infra import AnalysisPipelineLoaderInfra
@@ -42,10 +42,12 @@ from ..interface import (
 class PipelineAnalysisService(IAnalysisService):
     """Analysis service for layer sensitivity evaluation using various methods"""
 
-    def __init__(self,
-                 dataset_loader: DatasetLoaderInfra,
-                 context_factory: IContextFactory,
-                 pipeline_loader: AnalysisPipelineLoaderInfra):
+    def __init__(
+        self,
+        dataset_loader: DatasetLoaderInfra,
+        context_factory: IContextFactory,
+        pipeline_loader: AnalysisPipelineLoaderInfra,
+    ):
         self.dataset_loader = dataset_loader
         self.context_factory = context_factory
         self.pipeline_loader = pipeline_loader
@@ -82,10 +84,7 @@ class PipelineAnalysisService(IAnalysisService):
 
         with ContextManager(ctx=ctx):
             builder = self.pipeline_loader.get_pipeline_builder(analysis_config.metrics)
-            processor_configs = (
-                builder.template_modules(analysis_config.template_substitute_list())
-                .create()
-            )
+            processor_configs = builder.template_modules(analysis_config.template_substitute_list()).create()
             for cfg in processor_configs:
                 runner.add_processor(cfg)
 

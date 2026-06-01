@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+# pylint: disable=duplicate-code
 
 """
 -------------------------------------------------------------------------
@@ -18,25 +19,23 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import os
 import shutil
 from typing import Dict
 
+
 import torch
 from safetensors.torch import save_file
 
-from msmodelslim.utils.security import get_valid_write_path, SafeWriteUmask, get_write_directory, \
-    json_safe_dump
+from msmodelslim.utils.security import get_valid_write_path, SafeWriteUmask, get_write_directory, json_safe_dump
 
 ONE_GB_FILE_BYTES = 1073741824  # 1G, 1 * 1024 * 1024 * 1024
 FILE_TMP_SUFFIX = '-of-00000.safetensors'
 
 
 def get_index_json(file_map_dict, total_size):
-    index_json_dict = {
-        'metadata': {'total_size': total_size},
-        'weight_map': file_map_dict
-    }
+    index_json_dict = {'metadata': {'total_size': total_size}, 'weight_map': file_map_dict}
     return index_json_dict
 
 
@@ -57,13 +56,8 @@ class SafetensorsWriter:
 
 
 class BufferedSafetensorsWriter(SafetensorsWriter):
-
     def __init__(
-            self,
-            logger,
-            max_gb_size: int = 4,
-            save_directory: str = '.',
-            save_prefix: str = "quant_model_weight"
+        self, logger, max_gb_size: int = 4, save_directory: str = '.', save_prefix: str = "quant_model_weight"
     ):
         super().__init__(logger, save_prefix + '.safetensors')
         self.logger = logger
@@ -90,7 +84,7 @@ class BufferedSafetensorsWriter(SafetensorsWriter):
             suffix = f"-of-{self._save_count:05d}.safetensors"
         else:
             suffix = f"-of-{self._save_count}.safetensors"
-        for key in self.saved_keys_map.keys():
+        for key in self.saved_keys_map:
             self.saved_keys_map[key] = self.saved_keys_map[key].replace(FILE_TMP_SUFFIX, suffix)
 
         # save index json
@@ -112,7 +106,8 @@ class BufferedSafetensorsWriter(SafetensorsWriter):
             if ptr in seen_ptr:
                 self.logger.warning(
                     "Saving %s as clone (shares storage with %s) so both keys exist for tie_word_embeddings.",
-                    k, seen_ptr[ptr],
+                    k,
+                    seen_ptr[ptr],
                 )
                 out[k] = t.clone()
                 continue
@@ -127,8 +122,10 @@ class BufferedSafetensorsWriter(SafetensorsWriter):
 
         # one tensor larger than max size
         if self._wait_save_size > self.max_size:
-            self.logger.warning(f'Tensor is too large with size {self._wait_save_size / ONE_GB_FILE_BYTES}GB, '
-                                f'exceeds file size limit: {self.max_size / ONE_GB_FILE_BYTES}GB')
+            self.logger.warning(
+                f'Tensor is too large with size {self._wait_save_size / ONE_GB_FILE_BYTES}GB, '
+                f'exceeds file size limit: {self.max_size / ONE_GB_FILE_BYTES}GB'
+            )
 
         # Dedupe shared storage (e.g. tie_word_embeddings: lm_head.weight vs embed_tokens.weight)
         tensors_to_save = self._dedupe_shared_storage(self.wait_save_keys)
@@ -141,7 +138,7 @@ class BufferedSafetensorsWriter(SafetensorsWriter):
         self.logger.debug(f"Start save {full_save_file_name}")
         with SafeWriteUmask(umask=0o377):
             save_file(tensors_to_save, full_save_file_name)
-        self.saved_keys_map.update({key: save_file_name for key in self.wait_save_keys.keys()})
+        self.saved_keys_map.update({key: save_file_name for key in self.wait_save_keys})
         self.wait_save_keys.clear()
         self._wait_save_size = 0
         self.logger.debug(f"End save {full_save_file_name}")

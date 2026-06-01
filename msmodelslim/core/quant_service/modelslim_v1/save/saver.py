@@ -61,8 +61,7 @@ def validate_auto_saver_processor_config_list(v: Any) -> List['AutoProcessorConf
 
 
 AutoSaverConfigList = Annotated[
-    List[SerializeAsAny[AutoSaverBaseConfig]],
-    BeforeValidator(validate_auto_saver_processor_config_list)
+    List[SerializeAsAny[AutoSaverBaseConfig]], BeforeValidator(validate_auto_saver_processor_config_list)
 ]
 
 
@@ -84,11 +83,10 @@ def _convert_hookir_to_wrapper(module: nn.Module) -> None:
                     wrapper = hook.wrapper_module(sub_module)
                     # 将wrapper替换模块
                     module.set_submodule(name, wrapper)
-                    get_logger().info(f"Converted {type(hook)} to wrapper for module: {name}")
+                    get_logger().info("Converted %s to wrapper for module: %s", type(hook), name)
 
 
 class AutoSaverProcessor(AutoSessionProcessor):
-
     def __init__(self, model: nn.Module, config: AutoProcessorConfig, adapter: object, **kwargs: Dict[str, Any]):
         super().__init__(model)
         self.config = config
@@ -125,7 +123,6 @@ class AutoSaverProcessor(AutoSessionProcessor):
         }
 
     def support_distributed(self) -> bool:
-
         """
         是否支持分布式校准模式下保存导出件。
 
@@ -133,7 +130,7 @@ class AutoSaverProcessor(AutoSessionProcessor):
 
         分布式校准启用后，每个rank都会实例化一个AutoSaverProcessor，每个rank的
         实例将会收到全量的on_xxx系列调用，子类应当自行筛选属于本rank的内容进行保存。
-        
+
         最后，在post_run中，会调用一次merge_ranks方法，用于合并各个rank的导出件。
         """
 
@@ -146,7 +143,6 @@ class AutoSaverProcessor(AutoSessionProcessor):
         pass
 
     def post_run(self) -> None:
-
         for name, sub_module in self.model.named_modules(memo=self.processed_modules):
             self.on_float_module(name, sub_module)
 
@@ -164,7 +160,6 @@ class AutoSaverProcessor(AutoSessionProcessor):
 
     @abstractmethod
     def merge_ranks(self) -> None:
-
         """
         合并各个rank所保存的导出件。
         """
@@ -174,50 +169,62 @@ class AutoSaverProcessor(AutoSessionProcessor):
         raise NotImplementedError(f"You should implement the on_w8a8_static method for {self.__class__.__name__}")
 
     def on_w8a16_static_per_channel(self, prefix: str, module: qir.W8A16StaticPerChannelFakeQuantLinear):
-        raise NotImplementedError(f"You should implement the on_w8a16_static_per_channel method for {self.__class__.__name__}")
+        raise NotImplementedError(
+            f"You should implement the on_w8a16_static_per_channel method for {self.__class__.__name__}"
+        )
 
     def on_w8a16_static_per_group(self, prefix: str, module: qir.W8A16StaticPerGroupFakeQuantLinear):
-        raise NotImplementedError(f"You should implement the on_w8a16_static_per_group method for {self.__class__.__name__}")
+        raise NotImplementedError(
+            f"You should implement the on_w8a16_static_per_group method for {self.__class__.__name__}"
+        )
 
     def on_w8a8_dynamic_per_channel(self, prefix: str, module: qir.W8A8DynamicPerChannelFakeQuantLinear):
         raise NotImplementedError(
-            f"You should implement the on_w8a8_dynamic_per_channel method for {self.__class__.__name__}")
+            f"You should implement the on_w8a8_dynamic_per_channel method for {self.__class__.__name__}"
+        )
 
     def on_w8a8_pd_mix(self, prefix: str, module: qir.W8A8PDMixFakeQuantLinear):
-        raise NotImplementedError(
-            f"You should implement the on_w8a8_pd_mix method for {self.__class__.__name__}")
+        raise NotImplementedError(f"You should implement the on_w8a8_pd_mix method for {self.__class__.__name__}")
 
     def on_w8a8_dynamic_per_group(self, prefix: str, module: qir.W8A8DynamicPerGroupFakeQuantLinear):
         raise NotImplementedError(
-            f"You should implement the on_w8a8_dynamic_per_group method for {self.__class__.__name__}")
+            f"You should implement the on_w8a8_dynamic_per_group method for {self.__class__.__name__}"
+        )
 
     def on_wfp8afp8_dynamic_per_channel(self, prefix: str, module: qir.WFP8AFP8DynamicPerChannelFakeQuantLinear):
         raise NotImplementedError(
-            f"You should implement the on_wfp8afp8_dynamic_per_channel method for {self.__class__.__name__}")
+            f"You should implement the on_wfp8afp8_dynamic_per_channel method for {self.__class__.__name__}"
+        )
 
     def on_w4a4_dynamic_per_channel(self, prefix: str, module: qir.W4A4DynamicPerChannelFakeQuantLinear):
         raise NotImplementedError(
-            f"You should implement the on_w4a4_dynamic_per_channel method for {self.__class__.__name__}")
+            f"You should implement the on_w4a4_dynamic_per_channel method for {self.__class__.__name__}"
+        )
 
     def on_w4a4_dynamic_per_group(self, prefix: str, module: qir.W4A4DynamicPerGroupFakeQuantLinear):
         raise NotImplementedError(
-            f"You should implement the on_w4a4_dynamic_per_group method for {self.__class__.__name__}")
+            f"You should implement the on_w4a4_dynamic_per_group method for {self.__class__.__name__}"
+        )
 
     def on_w4a4_mx_dynamic_per_block(self, prefix: str, module: qir.W4A4MXDynamicPerBlockFakeQuantLinear):
         raise NotImplementedError(
-            f"You should implement the on_w4a4_mx_dynamic_per_block method for {self.__class__.__name__}")
+            f"You should implement the on_w4a4_mx_dynamic_per_block method for {self.__class__.__name__}"
+        )
 
     def on_w8a8_mx_dynamic_per_block(self, prefix: str, module: qir.W8A8MXDynamicPerBlockFakeQuantLinear):
         raise NotImplementedError(
-            f"You should implement the on_w8a8_mx_dynamic_per_block method for {self.__class__.__name__}")
+            f"You should implement the on_w8a8_mx_dynamic_per_block method for {self.__class__.__name__}"
+        )
 
     def on_w4a8_mx_dynamic_per_block(self, prefix: str, module: qir.W4A8MXDynamicPerBlockFakeQuantLinear):
         raise NotImplementedError(
-            f"You should implement the on_w4a8_mx_dynamic_per_block method for {self.__class__.__name__}")
+            f"You should implement the on_w4a8_mx_dynamic_per_block method for {self.__class__.__name__}"
+        )
 
     def on_w4a4_mx_dynamic_dual_scale(self, prefix: str, module: qir.W4A4MXDynamicDualScaleFakeQuantLinear):
         raise NotImplementedError(
-            f"You should implement the on_w4a4_mx_dynamic_dual_scale method for {self.__class__.__name__}")
+            f"You should implement the on_w4a4_mx_dynamic_dual_scale method for {self.__class__.__name__}"
+        )
 
     def on_w4a8_dynamic(self, prefix: str, module: qir.W4A8DynamicFakeQuantLinear):
         raise NotImplementedError(f"You should implement the on_w4a8_dynamic method for {self.__class__.__name__}")
@@ -230,16 +237,16 @@ class AutoSaverProcessor(AutoSessionProcessor):
 
     def on_dynamic_cache(self, prefix: str, module: qir.FakeQuantDynamicCache):
         raise NotImplementedError(f"You should implement the on_dynamic_cache method for {self.__class__.__name__}")
-    
+
     def on_activation_per_head(self, prefix: str, module: qir.FakeQuantActivationPerHead):
         raise NotImplementedError(
             f"You should implement the on_activation_per_head method for {self.__class__.__name__}"
-            )
-    
+        )
+
     def on_activation_per_token(self, prefix: str, module: qir.FakeQuantActivationPerToken):
         raise NotImplementedError(
             f"You should implement the on_activation_per_token method for {self.__class__.__name__}"
-            )
+        )
 
     def on_rotation_wrapper(self, prefix: str, module: qir.QuarotOnlineHeadRotationWrapper):
         """
@@ -275,7 +282,8 @@ class AutoSaverProcessor(AutoSessionProcessor):
         子类应实现：将 rotation_info 写入独立 safetensors，并在 JSON 中写入 optional.quarot.global_rotation 路径。
         """
         raise NotImplementedError(
-            f"You should implement the on_quarot_extra_info_wrapper method for {self.__class__.__name__}")
+            f"You should implement the on_quarot_extra_info_wrapper method for {self.__class__.__name__}"
+        )
 
     def on_flat_clip_wrapper(self, prefix: str, module: qir.FlatQuantOnlineWrapper):
         """
@@ -288,7 +296,7 @@ class AutoSaverProcessor(AutoSessionProcessor):
             module: FlatQuantOnlineWrapper模块实例
         """
         self._process_module(prefix, module.wrapped_module)
-    
+
     def on_non_fusion_smooth_quant_wrapper(self, prefix: str, module: qir.NonFusionSmoothQuantWrapper):
         """
         Args:
@@ -296,7 +304,8 @@ class AutoSaverProcessor(AutoSessionProcessor):
             module: NonFusionSmoothQuantWrapper模块实例
         """
         raise NotImplementedError(
-            f"You should implement the on_non_fusion_smooth_quant_wrapper method for {self.__class__.__name__}")
+            f"You should implement the on_non_fusion_smooth_quant_wrapper method for {self.__class__.__name__}"
+        )
 
     def on_wrapper_ir(self, prefix: str, module: qir.WrapperIR):
         """
@@ -332,9 +341,9 @@ class AutoSaverProcessor(AutoSessionProcessor):
     def on_online_rotation_wrapper(self, prefix: str, module: qir.OnlineRotationWrapper):
         """
         处理OnlineRotationWrapper类型的模块。
-        
+
         OnlineRotationWrapper使用旋转矩阵替换模块，在保存时需要保存旋转矩阵。
-        
+
         Args:
             prefix: 模块名称前缀
             module: OnlineRotationWrapper模块实例
@@ -360,11 +369,11 @@ class AutoSaverProcessor(AutoSessionProcessor):
             self.on_float_module(prefix, module)
 
         self.processed_modules.add(module)
-        
+
     def _process_module_maybe_wrapper_ir(self, prefix: str, module: nn.Module):
         """
         处理模块的通用方法，如果模块是WrapperIR，则调用on_wrapper_ir方法，否则调用_process_module方法。
-        
+
         Args:
             prefix: 模块名称前缀
             module: 要处理的模块

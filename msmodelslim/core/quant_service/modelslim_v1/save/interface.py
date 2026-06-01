@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 from typing import Tuple
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class AscendV1GlobalModelDtypeInterface(ABC):
@@ -35,7 +35,7 @@ class AscendV1GlobalModelDtypeInterface(ABC):
         Return the global torch dtype used for model loading/calibration.
         Used by Saver and other components to infer precision (e.g. whether bfloat16).
         """
-        ...
+        pass
 
 
 class AscendV1SaveInterface(ABC):
@@ -47,7 +47,9 @@ class AscendV1SaveInterface(ABC):
         """
         pass
 
-    def ascendv1_save_module_preprocess(self, prefix: str, module: nn.Module, model: nn.Module) -> Tuple[str, nn.Module]:
+    def ascendv1_save_module_preprocess(
+        self, prefix: str, module: nn.Module, model: nn.Module
+    ) -> Tuple[str, nn.Module]:
         """
         在保存模块前，对模块进行预处理，返回新的前缀和模块
         @param prefix: 模块的前缀路径

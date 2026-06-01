@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -108,5 +109,4 @@ class IAnalysisService(ABC):
             analysis_config: 分析配置（scope / metrics / calib_dataset / linear_pattern | quant_modules）
             device: 运行设备
         """
-        ...
-        
+        raise NotImplementedError

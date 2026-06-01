@@ -23,7 +23,6 @@ from msmodelslim.core.context.interface import IContextFactory, IContext
 
 
 class ContextFactory(IContextFactory):
-
     def __init__(self, enable_debug: bool = False):
         """Initialize ContextFactory with debug setting.
 
@@ -44,6 +43,8 @@ class ContextFactory(IContextFactory):
 
         if is_distributed:
             from msmodelslim.core.context.shared_dict_context.context import SharedDictContext
+
             return SharedDictContext(enable_debug=self.enable_debug)
         from msmodelslim.core.context.local_dict_context.context import LocalDictContext
+
         return LocalDictContext(enable_debug=self.enable_debug)

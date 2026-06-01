@@ -19,7 +19,6 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-
 from typing import Optional, Tuple, Union, List, Literal
 
 import torch
@@ -88,7 +87,8 @@ class _MaxMinMaxObserver(nn.Module):
             raise SpecError(
                 "Trying to get stats but no any update_stats invoked,"
                 "maybe you are quantifying a moe expert, but this expert has never been activated.",
-                action="Please check your model and quant config.")
+                action="Please check your model and quant config.",
+            )
         return self.min_val, self.max_val
 
 
@@ -96,12 +96,12 @@ class _MeanMinMaxObserver(nn.Module):
     def __init__(self, config: MinMaxObserverConfig):
         super().__init__()
         self.config = config
-        self.min_sum = None 
-        self.max_sum = None 
+        self.min_sum = None
+        self.max_sum = None
         self.batch_count = 0
         self.mean_min = None
-        self.mean_max = None 
-        self._orig_dtype = None 
+        self.mean_max = None
+        self._orig_dtype = None
 
     def update(self, x: torch.Tensor, sync: bool = False, group: Optional[dist.ProcessGroup] = None):
         current_min = torch.amin(x, self.config.dim, self.config.keepdim)
@@ -124,11 +124,7 @@ class _MeanMinMaxObserver(nn.Module):
                 temp_max_sum = self.max_sum.clone()
                 sync_base_operation(temp_min_sum, op='sum')
                 sync_base_operation(temp_max_sum, op='sum')
-                batch_count_tensor = torch.tensor(
-                    [self.batch_count],
-                    device=x.device,
-                    dtype=torch.int64
-                )
+                batch_count_tensor = torch.tensor([self.batch_count], device=x.device, dtype=torch.int64)
                 sync_base_operation(batch_count_tensor, op='sum')
                 global_batch_count = batch_count_tensor.item()
                 if global_batch_count > 0:
@@ -148,7 +144,8 @@ class _MeanMinMaxObserver(nn.Module):
             raise SpecError(
                 "Trying to get stats but no any update_stats invoked,"
                 "maybe you are quantifying a moe expert, but this expert has never been activated.",
-                action="Please check your model and quant config.")
+                action="Please check your model and quant config.",
+            )
         return self.mean_min, self.mean_max
 
 
@@ -158,7 +155,6 @@ class MinMaxBlockObserverConfig(BaseModel):
 
 
 class MsMinMaxBlockObserver(nn.Module):
-
     def __init__(self, config: MinMaxBlockObserverConfig):
         super().__init__()
         self.config = config
@@ -166,11 +162,11 @@ class MsMinMaxBlockObserver(nn.Module):
         self.max_val = None
 
     def update(
-            self,
-            x: torch.Tensor,
-            sync: bool = True,
-            group: Optional[dist.ProcessGroup] = None,
-            shared_exp_axes=None # 用于指定需要共享指数（或缩放因子）的维度
+        self,
+        x: torch.Tensor,
+        sync: bool = True,
+        group: Optional[dist.ProcessGroup] = None,
+        shared_exp_axes=None,  # 用于指定需要共享指数（或缩放因子）的维度
     ):
         if self.config.method == "max":
             if shared_exp_axes is None:
@@ -186,9 +182,9 @@ class MsMinMaxBlockObserver(nn.Module):
                     # 乘以配置的裁剪系数，对最大值进行限制（避免异常值影响）
                     self.max_val = self.max_val * self.config.clip
         elif self.config.method == 'none':
-            self.max_val = torch.abs(x) # 若方法为'none'，则直接记录每个元素的绝对值作为max_val
-        self.min_val = self.max_val.clone() # min_val暂用max_val的副本
-        
+            self.max_val = torch.abs(x)  # 若方法为'none'，则直接记录每个元素的绝对值作为max_val
+        self.min_val = self.max_val.clone()  # min_val暂用max_val的副本
+
         if sync and dist.is_initialized():
             sync_base_operation(self.min_val, op='min')
             sync_base_operation(self.max_val, op='max')
@@ -202,5 +198,6 @@ class MsMinMaxBlockObserver(nn.Module):
             raise SpecError(
                 "Trying to get stats but no any update_stats invoked,"
                 "maybe you are quantifying a moe expert, but this expert has never been activated.",
-                action="Please check your model and quant config.")
+                action="Please check your model and quant config.",
+            )
         return self.min_val, self.max_val

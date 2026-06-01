@@ -18,16 +18,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-from dataclasses import dataclass, field
+
+from dataclasses import dataclass
 from typing import Dict, List, Any, Optional
 
 # 支持的子图类型常量
-SUPPORTED_SUBGRAPH_TYPES = [
-    'norm-linear',
-    'linear-linear',
-    'ov',
-    'up-down'
-]
+SUPPORTED_SUBGRAPH_TYPES = ['norm-linear', 'linear-linear', 'ov', 'up-down']
 
 
 @dataclass
@@ -42,9 +38,10 @@ class MappingConfig:
 @dataclass
 class FusionConfig:
     """融合配置联合体
-    
+
     用于管理不同类型的融合配置，支持扩展新的融合类型
     """
+
     fusion_type: str = "none"  # 融合类型：none, qkv, custom等
 
     # QKV融合相关配置
@@ -74,9 +71,10 @@ class FusionConfig:
 @dataclass
 class AdapterConfig:
     """融合配置结构体
-    
+
     包含模型融合和子图处理的所有配置参数
     """
+
     # 子图类型（必需）
     subgraph_type: str
     # 自定义的映射关系（必需），支持融合 / 非融合两种配置

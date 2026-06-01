@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from abc import ABC, abstractmethod
 from typing import Any, Iterable, Optional
 from collections.abc import MutableMapping
@@ -38,7 +39,7 @@ NAMESPACE_VALUE_WHITELIST = (
 
 class IValidatedState(MutableMapping):
     """Abstract interface for validated context state.
-    
+
     validated context state is a context state that validates the values of the keys before setting them.
     Only python basic types and cpu torch.Tensor are allowed.
     Max depth is 10. If the depth is greater than 10, a SchemaValidateError will be raised.
@@ -68,7 +69,7 @@ class IValidatedState(MutableMapping):
 
 class INamespace(ABC):
     """Abstract interface for namespace.
-    
+
     Namespace provides organized storage with two predefined sections:
     - state: For storing configuration and state data
     - debug: For storing debug and diagnostic information
@@ -78,7 +79,7 @@ class INamespace(ABC):
     @abstractmethod
     def state(self) -> IValidatedState:
         """Get the state dictionary.
-        
+
         Returns:
             Dict-like object for storing state data.
         """
@@ -87,7 +88,7 @@ class INamespace(ABC):
     @abstractmethod
     def debug(self) -> IValidatedState:
         """Get the debug dictionary.
-        
+
         Returns:
             Dict-like object for storing debug/diagnostic data.
         """

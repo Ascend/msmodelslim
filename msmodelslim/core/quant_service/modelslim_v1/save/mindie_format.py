@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+# pylint: disable=duplicate-code
 
 """
 -------------------------------------------------------------------------
@@ -18,6 +19,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import functools
 import inspect
 import os
@@ -41,7 +43,8 @@ from msmodelslim.ir.qal import QDType, QScope
 from .saver import AutoSaverProcessor, AutoSaverBaseConfig
 from .utils.json import JsonWriter
 from .utils.safetensors import SafetensorsWriter, BufferedSafetensorsWriter
-from .utils.pack import w4a8_pack_int4, process_scale, pack_fp4_to_uint8
+from .utils.pack import pack_fp4_to_uint8
+
 
 def copy_files(input_path, output_path):
     """
@@ -101,6 +104,7 @@ class MindIEFormatConfig(AutoSaverBaseConfig):
     此时则会生成safetensors index文件，用于记录各个权重所处的safetensors文件。
 
     """
+
     type: Literal['mindie_format_saver'] = "mindie_format_saver"
     save_directory: str = Field(default=".", exclude=True)
     part_file_size: int = 4
@@ -108,6 +112,7 @@ class MindIEFormatConfig(AutoSaverBaseConfig):
 
     def set_save_directory(self, save_directory: str):
         self.save_directory = str(save_directory)
+
 
 DEFAULT_DESC_JSON_NAME = "quant_model_description.json"
 DEFAULT_SAFETENSORS_NAME = "quant_model_weight.safetensors"
@@ -133,7 +138,8 @@ def save_this_rank_only():
         # check function signature
         if inspect.signature(func).parameters.keys() != {'self', 'prefix', 'module'}:
             raise SchemaValidateError(
-                f"Function {func.__name__} has incorrect signature that cannot be decorated by save_this_rank_only")
+                f"Function {func.__name__} has incorrect signature that cannot be decorated by save_this_rank_only"
+            )
 
         @functools.wraps(func)
         def wrapper(self_instance: 'MindIEFormatSaver', prefix: str, module: nn.Module) -> None:
@@ -174,6 +180,7 @@ class MindIEFormatSaver(AutoSaverProcessor):
         self.safetensors_writer = self.get_safetensors_writer(config)
         self.dist_helper: Optional[DistHelper] = None
         self.shared_modules_slice: Optional[List[str]] = None
+        self.group_size = None
 
     def support_distributed(self) -> bool:
         return True
@@ -181,7 +188,7 @@ class MindIEFormatSaver(AutoSaverProcessor):
     def post_run(self) -> None:
         super().post_run()
 
-        if ValidJsonExt.JSON_APPEND in self.json_append.keys():
+        if ValidJsonExt.JSON_APPEND in self.json_append:
             json_append = self.json_append.get(ValidJsonExt.JSON_APPEND)
             for key, val in json_append.items():
                 self.json_writer.write(key, val)
@@ -190,8 +197,7 @@ class MindIEFormatSaver(AutoSaverProcessor):
             model_quant_type = self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type']
             self.json_writer.file_name = f"quant_model_description_{model_quant_type.lower()}.json"
             self.safetensors_writer.file_path = os.path.join(
-                self.save_directory,
-                f"quant_model_weight_{model_quant_type.lower()}.safetensors"
+                self.save_directory, f"quant_model_weight_{model_quant_type.lower()}.safetensors"
             )
 
         self.json_writer.close()
@@ -220,7 +226,7 @@ class MindIEFormatSaver(AutoSaverProcessor):
                 logger=logger,
                 max_gb_size=config.part_file_size,
                 save_directory=self.save_directory,
-                save_prefix=DEFAULT_SAFETENSORS_NAME.removesuffix('.safetensors')
+                save_prefix=DEFAULT_SAFETENSORS_NAME.removesuffix('.safetensors'),
             )
         elif config.part_file_size == 0:
             return SafetensorsWriter(
@@ -228,8 +234,9 @@ class MindIEFormatSaver(AutoSaverProcessor):
                 file_path=os.path.join(self.save_directory, DEFAULT_SAFETENSORS_NAME),
             )
         else:
-            raise SchemaValidateError("The save parameter part_file_size must be greater than or equal to 0."
-                                      "Please check.")
+            raise SchemaValidateError(
+                "The save parameter part_file_size must be greater than or equal to 0.Please check."
+            )
 
     def get_rank_save_directory(self) -> str:
         return os.path.join(self.config.save_directory, f"rank_{dist.get_rank()}")
@@ -242,6 +249,57 @@ class MindIEFormatSaver(AutoSaverProcessor):
         if dist.get_rank() != 0:
             return
         raise UnsupportedError("merge_ranks for mindie_format is not implemented now")
+
+    def _raise_ascendv1_saver_recommended(self, method_name: str) -> None:
+        raise UnsupportedError(
+            f"{method_name} is not supported by MindIEFormatSaver.",
+            action="Please use AscendV1Saver instead.",
+        )
+
+    def on_w8a16_static_per_channel(self, prefix: str, module: qir.W8A16StaticPerChannelFakeQuantLinear):
+        self._raise_ascendv1_saver_recommended("on_w8a16_static_per_channel")
+
+    def on_w8a16_static_per_group(self, prefix: str, module: qir.W8A16StaticPerGroupFakeQuantLinear):
+        self._raise_ascendv1_saver_recommended("on_w8a16_static_per_group")
+
+    def on_w8a8_pd_mix(self, prefix: str, module: qir.W8A8PDMixFakeQuantLinear):
+        self._raise_ascendv1_saver_recommended("on_w8a8_pd_mix")
+
+    def on_w8a8_dynamic_per_group(self, prefix: str, module: qir.W8A8DynamicPerGroupFakeQuantLinear):
+        self._raise_ascendv1_saver_recommended("on_w8a8_dynamic_per_group")
+
+    def on_wfp8afp8_dynamic_per_channel(self, prefix: str, module: qir.WFP8AFP8DynamicPerChannelFakeQuantLinear):
+        self._raise_ascendv1_saver_recommended("on_wfp8afp8_dynamic_per_channel")
+
+    def on_w4a4_dynamic_per_channel(self, prefix: str, module: qir.W4A4DynamicPerChannelFakeQuantLinear):
+        self._raise_ascendv1_saver_recommended("on_w4a4_dynamic_per_channel")
+
+    def on_w4a4_dynamic_per_group(self, prefix: str, module: qir.W4A4DynamicPerGroupFakeQuantLinear):
+        self._raise_ascendv1_saver_recommended("on_w4a4_dynamic_per_group")
+
+    def on_w4a4_mx_dynamic_per_block(self, prefix: str, module: qir.W4A4MXDynamicPerBlockFakeQuantLinear):
+        self._raise_ascendv1_saver_recommended("on_w4a4_mx_dynamic_per_block")
+
+    def on_w4a8_mx_dynamic_per_block(self, prefix: str, module: qir.W4A8MXDynamicPerBlockFakeQuantLinear):
+        self._raise_ascendv1_saver_recommended("on_w4a8_mx_dynamic_per_block")
+
+    def on_w4a8_dynamic(self, prefix: str, module: qir.W4A8DynamicFakeQuantLinear):
+        self._raise_ascendv1_saver_recommended("on_w4a8_dynamic")
+
+    def on_dynamic_cache(self, prefix: str, module: qir.FakeQuantDynamicCache):
+        self._raise_ascendv1_saver_recommended("on_dynamic_cache")
+
+    def on_activation_per_head(self, prefix: str, module: qir.FakeQuantActivationPerHead):
+        self._raise_ascendv1_saver_recommended("on_activation_per_head")
+
+    def on_quarot_extra_info_wrapper(self, prefix: str, module: qir.QuaRotExtraInfoWrapperIR):
+        self._raise_ascendv1_saver_recommended("on_quarot_extra_info_wrapper")
+
+    def on_non_fusion_smooth_quant_wrapper(self, prefix: str, module: qir.NonFusionSmoothQuantWrapper):
+        self._raise_ascendv1_saver_recommended("on_non_fusion_smooth_quant_wrapper")
+
+    def on_w16a16s(self, prefix: str, module: qir.W16A16sLinear):
+        self._raise_ascendv1_saver_recommended("on_w16a16s")
 
     @save_this_rank_only()
     def on_w8a8_static(self, prefix: str, module: qir.W8A8StaticFakeQuantLinear):
@@ -264,7 +322,7 @@ class MindIEFormatSaver(AutoSaverProcessor):
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
 
-        if ValidJsonExt.JSON_APPEND not in self.json_append.keys():
+        if ValidJsonExt.JSON_APPEND not in self.json_append:
             self.json_append[ValidJsonExt.JSON_APPEND] = dict()
         self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W8A8"
 
@@ -274,15 +332,15 @@ class MindIEFormatSaver(AutoSaverProcessor):
             weight_scale = module.weight_scale.unsqueeze(-1)
             self.write_tensor(prefix + ".weight", "W8A8_DYNAMIC", module.weight.to(torch.int8))
             self.write_tensor(prefix + ".weight_scale", "W8A8_DYNAMIC", weight_scale.to(torch.float32))
-            self.write_tensor(prefix + ".weight_offset", "W8A8_DYNAMIC",
-                              torch.zeros_like(weight_scale).to(torch.float32))
+            self.write_tensor(
+                prefix + ".weight_offset", "W8A8_DYNAMIC", torch.zeros_like(weight_scale).to(torch.float32)
+            )
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
 
-        if ValidJsonExt.JSON_APPEND not in self.json_append.keys():
+        if ValidJsonExt.JSON_APPEND not in self.json_append:
             self.json_append[ValidJsonExt.JSON_APPEND] = dict()
         self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W8A8_DYNAMIC"
-
 
     @save_this_rank_only()
     def on_w8a8_mx_dynamic_per_block(self, prefix: str, module: qir.W8A8MXDynamicPerBlockFakeQuantLinear):
@@ -295,13 +353,13 @@ class MindIEFormatSaver(AutoSaverProcessor):
             self.write_tensor(
                 prefix + ".weight_scale",
                 "W8A8_MXFP8",
-                (weight_scale.squeeze(dim=module.w_axes) + 127).to(torch.uint8)
+                (weight_scale.squeeze(dim=module.w_axes) + 127).to(torch.uint8),
                 # +127 是对 weight_scale 进行偏移处理，使其从-127~128偏移到0~255，正好覆盖torch_uint8的取值范围
             )
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
 
-        if ValidJsonExt.JSON_APPEND not in self.json_append.keys():
+        if ValidJsonExt.JSON_APPEND not in self.json_append:
             self.json_append[ValidJsonExt.JSON_APPEND] = dict()
         self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W8A8_MXFP8"
 
@@ -316,14 +374,16 @@ class MindIEFormatSaver(AutoSaverProcessor):
             self.write_tensor(
                 prefix + ".weight_scale",
                 "W4A4_MXFP4_DUALSCALE",
-                (weight_scale.squeeze(dim=module.w_axes) + 127).cpu().to(torch.uint8)
+                (weight_scale.squeeze(dim=module.w_axes) + 127).cpu().to(torch.uint8),
                 # +127 是对 weight_scale 进行偏移处理，使其从-127~128偏移到0~255，正好覆盖torch_uint8的取值范围
             )
-            self.write_tensor(prefix + ".weight_dual_scale", "W4A4_MXFP4_DUALSCALE", weight_dual_scale.cpu().to(torch.float32))
+            self.write_tensor(
+                prefix + ".weight_dual_scale", "W4A4_MXFP4_DUALSCALE", weight_dual_scale.cpu().to(torch.float32)
+            )
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
 
-        if ValidJsonExt.JSON_APPEND not in self.json_append.keys():
+        if ValidJsonExt.JSON_APPEND not in self.json_append:
             self.json_append[ValidJsonExt.JSON_APPEND] = dict()
         self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W4A4_MXFP4_DUALSCALE"
 
@@ -346,8 +406,7 @@ class MindIEFormatSaver(AutoSaverProcessor):
 
     def on_activation_per_token(self, prefix: str, module: qir.FakeQuantActivationPerToken):
         # 对于FP8 per-token动态量化，保存quant_type标签
-        if (module.x_q_scheme.dtype == QDType.FP8_E4M3 and 
-            module.x_q_scheme.scope == QScope.PER_TOKEN):
+        if module.x_q_scheme.dtype == QDType.FP8_E4M3 and module.x_q_scheme.scope == QScope.PER_TOKEN:
             # 保存格式为 self_attn.quant_type，而不是 fa3_q.quant_type
             # 提取父路径，例如 model.layers.0.self_attn.fa3_q -> model.layers.0.self_attn
             parent_prefix = prefix.rsplit('.', 1)[0]

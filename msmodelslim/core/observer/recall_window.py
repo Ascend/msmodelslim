@@ -19,7 +19,6 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-
 from typing import Optional
 
 import torch
@@ -37,7 +36,6 @@ class RecallWindowObserverConfig(BaseModel):
 
 
 class RecallWindowObserver(nn.Module):
-
     def __init__(self, config: RecallWindowObserverConfig):
         super().__init__()
         self.config = config
@@ -45,10 +43,7 @@ class RecallWindowObserver(nn.Module):
         self._max_values = None
 
     def update(self, x: torch.Tensor, sync: bool = False, group: Optional[dist.ProcessGroup] = None):
-        sample_min, sample_max = recall_window(x,
-                                               self.config.ratio,
-                                               self.config.dim,
-                                               self.config.keepdim)
+        sample_min, sample_max = recall_window(x, self.config.ratio, self.config.dim, self.config.keepdim)
         if self._min_values is None:
             self._min_values = sample_min
         else:
@@ -74,7 +69,8 @@ class RecallWindowObserver(nn.Module):
             raise SpecError(
                 "Trying to get min but no any update_stats invoked,"
                 "maybe you are quantifying a moe expert, but this expert has never been activated.",
-                action="Please check your model and quant config.")
+                action="Please check your model and quant config.",
+            )
         return self._min_values
 
     def get_max(self) -> torch.Tensor:
@@ -82,7 +78,8 @@ class RecallWindowObserver(nn.Module):
             raise SpecError(
                 "Trying to get max but no any update_stats invoked,"
                 "maybe you are quantifying a moe expert, but this expert has never been activated.",
-                action="Please check your model and quant config.")
+                action="Please check your model and quant config.",
+            )
         return self._max_values
 
 

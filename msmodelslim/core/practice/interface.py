@@ -18,7 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-from dataclasses import field
+
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -50,14 +50,14 @@ class Metadata(BaseModel):
     # e.g., # {'w_bit': 8, 'a_bit': 8, 'is_sparse': True, 'kv_cache': True}
     label: dict = Field(default_factory=dict)
     # verified model types, e.g., ['LLaMa3.1-70B', 'Qwen2.5-72B']
-    verified_model_types: List[str] = field(default_factory=list)
+    verified_model_types: List[str] = Field(default_factory=list)
     # verified_tags: Dict[model_type, List[List[tags]]]
     # key: model_type; value: list of scenarios, each scenario is a list of tags (e.g. ["MindIE","Atlas_A2_Inference"], ["vLLM-Ascend","Atlas_A3_Inference"])
     verified_tags: Dict[str, List[List[str]]] = Field(default_factory=dict)
 
 
 class PracticeConfig(BaseQuantConfig):
-    metadata: Metadata = Field(default_factory=Metadata) # metadata of the quantization config
+    metadata: Metadata = Field(default_factory=Metadata)  # metadata of the quantization config
 
     def extract_quant_config(self) -> BaseQuantConfig:
         """提取量化任务配置（apiversion + spec，不含 metadata）。"""
@@ -78,7 +78,7 @@ class PracticeConfig(BaseQuantConfig):
             return ScenarioTagMatch.NO_MATCH
         if not scenario_tags:
             return ScenarioTagMatch.MATCH
-            
+
         user_lower = [t.lower() for t in scenario_tags]
         for scenario_tags_list in scenarios:
             scenario_lower = [str(t).lower() for t in scenario_tags_list]
