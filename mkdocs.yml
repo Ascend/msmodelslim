@@ -78,9 +78,14 @@ nav:
           - 伪量化精度测试工具: "zh/feature_guide/traditional_quantization_v0/fake_quantization_accuracy_testing_tool.md"
           - 多模态生成模型推理优化: "zh/feature_guide/traditional_quantization_v0/inference_optimization_for_multimodal_generative_model.md"
           - 常见代码示例: "zh/feature_guide/traditional_quantization_v0/quantization_and_sparse_quantization_scenario_import_code_examples.md"
+  - 量化格式:
+      - 格式支持矩阵: "zh/quantization_formats/README.md"
+      - AscendV1 格式说明: "zh/quantization_formats/ascendv1.md"
+      - compressed-tensors 格式说明: "zh/quantization_formats/compressed_tensors.md"
   - 五、开发者指南:
       - LLM大模型接入指南: "zh/developer_guide/integrating_models.md"
       - 多模态理解模型接入: "zh/developer_guide/integrating_multimodal_understanding_model.md"
+      - 量化格式接入指南: "zh/developer_guide/iformat_integration_guide.md"
       - 项目目录结构: "zh/dir_structure.md"
   - 六、调试案例集:
       - 精度调优案例:

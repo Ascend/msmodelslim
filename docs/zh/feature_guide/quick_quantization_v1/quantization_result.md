@@ -119,9 +119,12 @@
 
 基于 `quant_model_description.json` 中的字段，本节详细介绍不同量化模式的参数结构。**不同量化模式的量化参数不同，safetensors权重文件和json描述文件也不同。**
 
+> [!Tip] 完整格式规范
+> 各量化模式的**公式推导、参数语义与对照总表**请参阅独立的 [AscendV1 格式说明](../../quantization_formats/ascendv1.md)。本文档侧重输出文件概览与参数结构速查。
+
 ### 各量化模式参数详解
 
-以下内容基于 `AscendV1Saver` 实现，详细介绍各量化模式的参数结构。
+以下内容基于 `AscendV1Saver` 实现，详细介绍各量化模式的参数结构。完整公式请参见《[AscendV1 格式说明](../../quantization_formats/ascendv1.md)》。
 
 #### FLOAT（未量化）
 
@@ -728,7 +731,7 @@ with open("debug_info/debug_info.json", "r") as f:
 with safe_open("debug_info/debug_info.safetensors", framework="pt") as f:
     # 获取所有张量的键名
     tensor_keys = f.keys()
-    
+
     # 加载特定张量
     for key in tensor_keys:
         tensor = f.get_tensor(key)
