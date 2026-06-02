@@ -34,7 +34,7 @@ class AscendV1JsonWriterInfra(ABC):
         pass
 
 
-class AscendV1JsonWriterCreatorInfra(ABC):
+class AscendV1JsonWriterFactoryInfra(ABC):
     @abstractmethod
     def create_json_writer(self, save_directory: str, file_name: str) -> AscendV1JsonWriterInfra:
         pass
@@ -42,5 +42,5 @@ class AscendV1JsonWriterCreatorInfra(ABC):
 
 __all__ = [
     "AscendV1JsonWriterInfra",
-    "AscendV1JsonWriterCreatorInfra",
+    "AscendV1JsonWriterFactoryInfra",
 ]

@@ -19,15 +19,22 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from .compressed_tensors import CompressedTensorsQuantFormat, CompressedTensorsQuantFormatConfig
-from .compressed_tensors_safetensors_writer_factory_infra import (
-    CompressedTensorSafetensorsWriterFactoryInfra,
-    CompressedTensorSafetensorsWriterInfra,
-)
+from __future__ import annotations
 
-__all__ = [
-    "CompressedTensorSafetensorsWriterInfra",
-    "CompressedTensorSafetensorsWriterFactoryInfra",
-    "CompressedTensorsQuantFormatConfig",
-    "CompressedTensorsQuantFormat",
-]
+from abc import ABC, abstractmethod
+from typing import Any
+
+
+class CompressedTensorJsonWriterInfra(ABC):
+    @abstractmethod
+    def dump(self, data: dict[str, Any], *, indent: int = 2) -> None:
+        pass
+
+
+class CompressedTensorJsonWriterFactoryInfra(ABC):
+    @abstractmethod
+    def create_json_writer(self, save_directory: str, file_name: str) -> CompressedTensorJsonWriterInfra:
+        pass
+
+
+__all__ = ["CompressedTensorJsonWriterFactoryInfra", "CompressedTensorJsonWriterInfra"]

@@ -18,29 +18,3 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
-from __future__ import annotations
-
-from abc import ABC, abstractmethod
-
-
-class MindIEJsonWriterInfra(ABC):
-    @abstractmethod
-    def write(self, prefix: str, desc: object) -> None:
-        pass
-
-    @abstractmethod
-    def close(self) -> None:
-        pass
-
-
-class MindIEJsonWriterCreatorInfra(ABC):
-    @abstractmethod
-    def create_json_writer(self, save_directory: str, file_name: str) -> MindIEJsonWriterInfra:
-        pass
-
-
-__all__ = [
-    "MindIEJsonWriterInfra",
-    "MindIEJsonWriterCreatorInfra",
-]

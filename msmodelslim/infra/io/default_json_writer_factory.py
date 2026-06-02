@@ -17,44 +17,38 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
-
-内存聚合若干 prefix→描述，最终在 ``close()`` 时写入单个 JSON（AscendV1 / MindIE 共用实现）。
 """
 
 from __future__ import annotations
 
-import os
-from typing import Any
 from msmodelslim.format.ascendV1_format.ascendV1_json_writer_factory_infra import (
+    AscendV1JsonWriterFactoryInfra,
     AscendV1JsonWriterInfra,
-)
-from msmodelslim.format.mindie_format.mindie_json_writer_factory_infra import (
-    MindIEJsonWriterInfra,
 )
 from msmodelslim.format.compressed_tensors_format.compressed_tensors_json_writer_factory_infra import (
+    CompressedTensorJsonWriterFactoryInfra,
     CompressedTensorJsonWriterInfra,
 )
-from msmodelslim.utils.security import json_safe_dump
-
-
-class JsonWriter(
-    AscendV1JsonWriterInfra,
+from msmodelslim.format.mindie_format.mindie_json_writer_factory_infra import (
+    MindIEJsonWriterFactoryInfra,
     MindIEJsonWriterInfra,
-    CompressedTensorJsonWriterInfra,
+)
+from msmodelslim.infra.io.json_writer import JsonWriter
+
+
+class DefaultJsonWriterFactory(
+    AscendV1JsonWriterFactoryInfra,
+    MindIEJsonWriterFactoryInfra,
+    CompressedTensorJsonWriterFactoryInfra,
 ):
-    def __init__(self, save_directory: str, file_name: str) -> None:
-        self.save_directory = save_directory
-        self.file_name = file_name
-        self.value_map: dict[str, object] = {}
+    """描述 JSON 落盘：AscendV1/MindIE 使用聚合 JsonWriter，compressed-tensors 使用 ConfigJsonWriter。"""
 
-    def write(self, prefix: str, desc: object) -> None:
-        self.value_map[prefix] = desc
-
-    def close(self) -> None:
-        json_safe_dump(self.value_map, os.path.join(self.save_directory, self.file_name), indent=4)
-
-    def dump(self, data: dict[str, Any], *, indent: int = 2) -> None:
-        json_safe_dump(data, os.path.join(self.save_directory, self.file_name), indent=indent)
+    def create_json_writer(
+        self,
+        save_directory: str,
+        file_name: str,
+    ) -> AscendV1JsonWriterInfra | MindIEJsonWriterInfra | CompressedTensorJsonWriterInfra:
+        return JsonWriter(save_directory, file_name)
 
 
-__all__ = ["JsonWriter"]
+__all__ = ["DefaultJsonWriterFactory"]

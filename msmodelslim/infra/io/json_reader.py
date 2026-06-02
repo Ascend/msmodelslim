@@ -17,17 +17,26 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
+
+按文件路径读取 JSON 对象（compressed-tensors ``config.json`` 等场景）。
 """
 
-from .compressed_tensors import CompressedTensorsQuantFormat, CompressedTensorsQuantFormatConfig
-from .compressed_tensors_safetensors_writer_factory_infra import (
-    CompressedTensorSafetensorsWriterFactoryInfra,
-    CompressedTensorSafetensorsWriterInfra,
-)
+from __future__ import annotations
 
-__all__ = [
-    "CompressedTensorSafetensorsWriterInfra",
-    "CompressedTensorSafetensorsWriterFactoryInfra",
-    "CompressedTensorsQuantFormatConfig",
-    "CompressedTensorsQuantFormat",
-]
+from typing import Any
+
+from msmodelslim.format.compressed_tensors_format.compressed_tensors_json_reader_factory_infra import (
+    CompressedTensorJsonReaderInfra,
+)
+from msmodelslim.utils.security import get_valid_read_path, json_safe_load
+
+
+class JsonReader(CompressedTensorJsonReaderInfra):
+    def __init__(self, file_path: str) -> None:
+        self._file_path = file_path
+
+    def load(self) -> dict[str, Any]:
+        return json_safe_load(get_valid_read_path(self._file_path))
+
+
+__all__ = ["JsonReader"]

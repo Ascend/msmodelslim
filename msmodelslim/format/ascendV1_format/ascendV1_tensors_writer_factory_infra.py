@@ -22,10 +22,11 @@ See the Mulan PSL v2 for more details.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+
 import torch
 
 
-class CompressedTensorSafetensorsWriterInfra(ABC):
+class AscendV1SafetensorsWriterInfra(ABC):
     @abstractmethod
     def write(self, key: str, value: torch.Tensor) -> None:
         pass
@@ -35,12 +36,15 @@ class CompressedTensorSafetensorsWriterInfra(ABC):
         pass
 
 
-class CompressedTensorSafetensorsWriterCreatorInfra(ABC):
+class AscendV1SafetensorsWriterFactoryInfra(ABC):
     @abstractmethod
     def create_safetensors_writer(
         self, part_file_size: int, save_directory: str, save_prefix: str
-    ) -> CompressedTensorSafetensorsWriterInfra:
+    ) -> AscendV1SafetensorsWriterInfra:
         pass
 
 
-__all__ = ["CompressedTensorSafetensorsWriterCreatorInfra", "CompressedTensorSafetensorsWriterInfra"]
+__all__ = [
+    "AscendV1SafetensorsWriterInfra",
+    "AscendV1SafetensorsWriterFactoryInfra",
+]

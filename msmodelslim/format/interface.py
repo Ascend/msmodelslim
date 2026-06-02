@@ -61,11 +61,6 @@ class IFormat(ABC):
         pass
 
     @abstractmethod
-    def support_distributed(self) -> bool:
-        """是否支持多 rank 导出及合并。"""
-        pass
-
-    @abstractmethod
     def process_module_tensors(self, prefix: str, module: nn.Module) -> None:
         """导出 ``module`` 子树内的量化张量（不含全局元数据）。"""
         pass
@@ -73,10 +68,6 @@ class IFormat(ABC):
     @abstractmethod
     def finalize_export(self, model: nn.Module) -> None:
         """收尾：关闭 writer，写入全模型元数据。"""
-        pass
-
-    def merge_ranks(self) -> None:
-        """合并各 rank 导出分片（可选，默认空实现）。"""
         pass
 
 

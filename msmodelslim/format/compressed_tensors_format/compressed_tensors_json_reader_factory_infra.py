@@ -22,29 +22,19 @@ See the Mulan PSL v2 for more details.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
-import torch
 
-
-class MindIESafetensorsWriterInfra(ABC):
+class CompressedTensorJsonReaderInfra(ABC):
     @abstractmethod
-    def write(self, key: str, value: torch.Tensor) -> None:
-        pass
-
-    @abstractmethod
-    def close(self) -> None:
+    def load(self) -> dict[str, Any]:
         pass
 
 
-class MindIESafetensorsWriterCreatorInfra(ABC):
+class CompressedTensorJsonReaderFactoryInfra(ABC):
     @abstractmethod
-    def create_safetensors_writer(
-        self, part_file_size: int, save_directory: str, save_prefix: str
-    ) -> MindIESafetensorsWriterInfra:
+    def create_json_reader(self, file_path: str) -> CompressedTensorJsonReaderInfra:
         pass
 
 
-__all__ = [
-    "MindIESafetensorsWriterInfra",
-    "MindIESafetensorsWriterCreatorInfra",
-]
+__all__ = ["CompressedTensorJsonReaderFactoryInfra", "CompressedTensorJsonReaderInfra"]

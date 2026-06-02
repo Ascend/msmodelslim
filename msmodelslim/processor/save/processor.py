@@ -19,13 +19,13 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
+from pathlib import Path
 from typing import Any, Literal
 
 from msmodelslim.format.base import QuantFormatConfig
 from msmodelslim.format.interface import ExportContext
-from msmodelslim.infra.io.default_json_export_writer_creator import DefaultJsonExportWriterCreator
-from msmodelslim.infra.io.default_safetensors_export_writer_creator import DefaultSafetensorsExportWriterCreator
-from pydantic import Field, SerializeAsAny, field_validator
+from msmodelslim.format.registry import QuantFormatFactory
+from pydantic import Field, SerializeAsAny
 from torch import nn
 
 import msmodelslim.ir as qir
@@ -33,7 +33,6 @@ from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.ir.qal import QABCRegistry
 from msmodelslim.processor.base import AutoSessionProcessor, AutoProcessorConfig
 from msmodelslim.utils.logging import get_logger, logger_setter
-from msmodelslim.processor.save.registry import create_quant_format
 
 
 def _convert_hookir_to_wrapper(module: nn.Module) -> None:
@@ -57,20 +56,6 @@ class QuantSaveProcessorConfig(AutoProcessorConfig):
     format: SerializeAsAny[QuantFormatConfig]
     save_directory: str = Field(default="", exclude=True)
 
-    @field_validator("format", mode="before")
-    @classmethod
-    def _format_via_parse_save_config(cls, v: Any) -> Any:
-        if isinstance(v, dict):
-            from msmodelslim.processor.save.registry import parse_save_config
-
-            return parse_save_config(v)
-        if isinstance(v, QuantFormatConfig):
-            return v
-        raise TypeError(
-            "QuantSaveProcessorConfig.format must be a dict with registered ``type`` "
-            f"or a concrete QuantFormatConfig subclass instance, got {type(v)!r}"
-        )
-
     def set_save_directory(self, save_directory: str):
         self.save_directory = str(save_directory)
 
@@ -83,22 +68,24 @@ class QuantSaveProcessor(AutoSessionProcessor):
     与 :class:`~msmodelslim.format.interface.IFormat` 三段式协议对齐。
     """
 
-    def __init__(self, model: nn.Module, config: Any, adapter: object, **kwargs: Any):
+    def __init__(
+        self,
+        model: nn.Module,
+        config: Any,
+        adapter: object,
+        **kwargs: Any,
+    ):
         super().__init__(model)
         save_dir = str(getattr(config, "save_directory", "") or "")
         source_model_path = str(getattr(adapter, "model_path", "") or "")
         config.format.set_save_directory(save_dir)
-        ctx = ExportContext(save_dir, source_model_path=source_model_path)
-
-        self._format = create_quant_format(
-            config,
-            ctx,
-            DefaultJsonExportWriterCreator(),
-            DefaultSafetensorsExportWriterCreator(),
+        ctx = ExportContext(
+            Path(save_dir),
+            source_model_path=Path(source_model_path) if source_model_path else None,
         )
 
-    def support_distributed(self) -> bool:
-        return self._format.support_distributed()
+        self._quant_format_factory = QuantFormatFactory()
+        self._format = self._quant_format_factory.create(config.format, ctx)
 
     def pre_run(self) -> None:
         self._format.prepare_export()
@@ -110,8 +97,6 @@ class QuantSaveProcessor(AutoSessionProcessor):
 
     def post_run(self) -> None:
         self._format.finalize_export(self.model)
-        if self.support_distributed():
-            self._format.merge_ranks()
 
 
 __all__ = [

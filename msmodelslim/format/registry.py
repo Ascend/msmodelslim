@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Tuple, Type, Union
+from typing import Any, List, Union
 
 from pydantic import Field, TypeAdapter
 from typing_extensions import Annotated
@@ -31,10 +31,19 @@ from msmodelslim.format.compressed_tensors_format.compressed_tensors import (
     CompressedTensorsQuantFormat,
     CompressedTensorsQuantFormatConfig,
 )
-from msmodelslim.format.interface import IFormat
+from msmodelslim.format.compressed_tensors_format.compressed_tensors_json_reader_factory_infra import (
+    CompressedTensorJsonReaderFactoryInfra,
+)
+from msmodelslim.format.compressed_tensors_format.compressed_tensors_json_writer_factory_infra import (
+    CompressedTensorJsonWriterFactoryInfra,
+)
+from msmodelslim.format.compressed_tensors_format.compressed_tensors_safetensors_writer_factory_infra import (
+    CompressedTensorSafetensorsWriterFactoryInfra,
+)
 from msmodelslim.format.base import QuantFormatConfig
+from msmodelslim.format.interface import ExportContext, IFormat
+from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.format.mindie_format.mindie import MindIEQuantFormatConfig
-from msmodelslim.processor.save.registry import register_quant_format
 
 QuantFormatConfigUnion = Annotated[
     Union[
@@ -56,18 +65,58 @@ def parse_format_config(data: dict[str, Any]) -> QuantFormatConfig:
 
 
 class QuantFormatFactory:
-    #: 仅注册走新 ``QuantSaveProcessor`` + ``IFormat`` 的格式；AscendV1/MindIE 由旧 Saver 处理。
-    BUILTIN_BINDINGS: ClassVar[Tuple[Tuple[Type[QuantFormatConfig], Type[IFormat]], ...]] = (
-        (CompressedTensorsQuantFormatConfig, CompressedTensorsQuantFormat),
-    )
+    """注册内置格式，并持有默认 IO factory 以构造 ``IFormat`` 实例。"""
 
-    @classmethod
-    def install(cls) -> None:
-        for config_cls, format_cls in cls.BUILTIN_BINDINGS:
-            register_quant_format(config_cls, format_cls)
+    def __init__(
+        self,
+        safetensors_writer_factory_infra: CompressedTensorSafetensorsWriterFactoryInfra | None = None,
+        json_writer_factory_infra: CompressedTensorJsonWriterFactoryInfra | None = None,
+        json_reader_factory_infra: CompressedTensorJsonReaderFactoryInfra | None = None,
+    ) -> None:
+        if safetensors_writer_factory_infra is None:
+            from msmodelslim.infra.io.default_safetensors_writer_factory import (
+                DefaultSafetensorsWriterFactory,
+            )
 
+            safetensors_writer_factory_infra = DefaultSafetensorsWriterFactory()
+        if json_writer_factory_infra is None:
+            from msmodelslim.infra.io.default_json_writer_factory import (
+                DefaultJsonWriterFactory,
+            )
 
-QuantFormatFactory.install()
+            json_writer_factory_infra = DefaultJsonWriterFactory()
+        if json_reader_factory_infra is None:
+            from msmodelslim.infra.io.default_json_reader_factory import (
+                DefaultJsonReaderFactory,
+            )
+
+            json_reader_factory_infra = DefaultJsonReaderFactory()
+
+        self._safetensors_writer_factory_infra = safetensors_writer_factory_infra
+        self._json_writer_factory_infra = json_writer_factory_infra
+        self._json_reader_factory_infra = json_reader_factory_infra
+
+    def create_compressed_tensors_quant_format(
+        self,
+        config: CompressedTensorsQuantFormatConfig,
+        ctx: ExportContext,
+    ) -> CompressedTensorsQuantFormat:
+        return CompressedTensorsQuantFormat(
+            config,
+            ctx,
+            self._safetensors_writer_factory_infra,
+            self._json_writer_factory_infra,
+            self._json_reader_factory_infra,
+        )
+
+    def create(self, config: QuantFormatConfig, ctx: ExportContext) -> IFormat:
+        if isinstance(config, CompressedTensorsQuantFormatConfig):
+            return self.create_compressed_tensors_quant_format(config, ctx)
+        raise SchemaValidateError(
+            f"Unsupported quant format config type: {type(config).__name__}",
+            action="Use a supported format config such as compressed_tensors.",
+        )
+
 
 __all__ = [
     "QuantFormatFactory",

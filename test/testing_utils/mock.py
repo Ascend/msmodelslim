@@ -19,9 +19,9 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-
 import json
 import os
+import shutil
 import stat
 import sys
 import yaml
@@ -68,6 +68,21 @@ def _mock_json_safe_load(path, *args, **kwargs):
         return json.load(file)
 
 
+def _mock_safe_copy_file(src_path, dest_path, **kwargs):
+    shutil.copy2(src_path, dest_path, follow_symlinks=False)
+
+
+class _MockSafeWriteUmask:
+    def __init__(self, umask=None):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
 def mock_kia_library():
     sys.modules['msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils'] = MagicMock()
     sys.modules['msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs'] = MagicMock()
@@ -87,6 +102,8 @@ def mock_security_library():
     sys.modules['msmodelslim.utils.security.path'].get_valid_path = _mock_get_valid_write_path
     sys.modules['msmodelslim.utils.security.path'].get_valid_read_path = _mock_get_valid_write_path
     sys.modules['msmodelslim.utils.security.path'].get_write_directory = _mock_get_valid_write_path
+    sys.modules['msmodelslim.utils.security.path'].safe_copy_file = _mock_safe_copy_file
+    sys.modules['msmodelslim.utils.security.path'].SafeWriteUmask = _MockSafeWriteUmask
 
     sys.modules['ascend_utils.common.security.path'] = MagicMock()
     sys.modules['ascend_utils.common.security.path'].json_safe_dump = _mock_json_safe_dump
