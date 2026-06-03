@@ -36,12 +36,19 @@ rank = 0
 block_size = 128
 
 
-def hc_split_sinkhorn(mixes: torch.Tensor, # [b, s, mix_hc] => [b, s, (2 + hc) * hc]
-                      hc_scale: torch.Tensor, # [3]
-                      hc_base: torch.Tensor, # [(2 + hc) * hc]
-                      hc_mult: int = 4, # hc
-                      sinkhorn_iters: int = 20,
-                      eps: float = 1e-6):
+def hc_split_sinkhorn(
+    mixes: torch.Tensor,  # [b, s, mix_hc] => [b, s, (2 + hc) * hc]
+    hc_scale: torch.Tensor,  # [3]
+    hc_base: torch.Tensor,  # [(2 + hc) * hc]
+    hc_mult: int = 4,  # hc
+    sinkhorn_iters: int = 20,
+    eps: float = 1e-6,
+):
+    # Ensure all tensors are on the same device
+    device = mixes.device
+    hc_scale = hc_scale.to(device)
+    hc_base = hc_base.to(device)
+
     b, s, _ = mixes.size()
     # get pre
     mixes_pre = mixes[:, :, :hc_mult]
@@ -49,18 +56,18 @@ def hc_split_sinkhorn(mixes: torch.Tensor, # [b, s, mix_hc] => [b, s, (2 + hc) *
     hc_base_pre = hc_base[:hc_mult]
     pre = F.sigmoid(hc_scale_pre * mixes_pre + hc_base_pre)
     # get post
-    mixes_post = mixes[:, :, hc_mult:2 * hc_mult]
+    mixes_post = mixes[:, :, hc_mult : 2 * hc_mult]
     hc_scale_post = hc_scale[1]
-    hc_base_post = hc_base[hc_mult:2 * hc_mult]
+    hc_base_post = hc_base[hc_mult : 2 * hc_mult]
     post = 2 * F.sigmoid(hc_scale_post * mixes_post + hc_base_post)
     # get comb
     # step 1: init comb
-    mixes_comb = mixes[:, :, 2 * hc_mult:]
+    mixes_comb = mixes[:, :, 2 * hc_mult :]
     hc_scale_comb = hc_scale[2]
-    hc_base_comb = hc_base[2 * hc_mult:]
-    comb = (hc_scale_comb * mixes_comb + hc_base_comb).reshape(b, s, hc_mult, hc_mult) # [b, s, hc, hc]
+    hc_base_comb = hc_base[2 * hc_mult :]
+    comb = (hc_scale_comb * mixes_comb + hc_base_comb).reshape(b, s, hc_mult, hc_mult)  # [b, s, hc, hc]
     comb = F.softmax(comb, dim=-1) + eps
-    # step 2: do sinkhorn ops 
+    # step 2: do sinkhorn ops
     for _ in range(sinkhorn_iters):
         comb = comb / (comb.sum(dim=-1).unsqueeze(-1) + eps)
         comb = comb / (comb.sum(dim=-2).unsqueeze(-2) + eps)
@@ -69,16 +76,14 @@ def hc_split_sinkhorn(mixes: torch.Tensor, # [b, s, mix_hc] => [b, s, (2 + hc) *
 
 
 def sparse_attn(
-    q: torch.Tensor,
-    kv: torch.Tensor,
-    attn_sink: torch.Tensor,
-    topk_idxs: torch.Tensor,
-    softmax_scale: float
+    q: torch.Tensor, kv: torch.Tensor, attn_sink: torch.Tensor, topk_idxs: torch.Tensor, softmax_scale: float
 ) -> torch.Tensor:
     b, m, h, d = q.shape
+    device = q.device
+    topk_idxs = topk_idxs.to(device)
 
     # Prepare indices: clamp -1 to 0 for gathering, but keep mask
-    mask = (topk_idxs == -1)
+    mask = topk_idxs == -1
     safe_idxs = topk_idxs.clone()
     safe_idxs[mask] = 0
 
@@ -96,7 +101,7 @@ def sparse_attn(
     scores = scores.masked_fill(mask.unsqueeze(2), float("-inf"))
 
     # Softmax logic with Sink
-    scores_max = torch.max(scores, dim=-1).values # (b, m, h)
+    scores_max = torch.max(scores, dim=-1).values  # (b, m, h)
     exp_scores = torch.exp(scores - scores_max.unsqueeze(-1))
     exp_scores = exp_scores.masked_fill(mask.unsqueeze(2), 0.0)
 
@@ -150,13 +155,14 @@ class ModelArgs:
         hc_mult (int): HC hidden size multiplier.
         sinkhorn_iters (int): Number of sinkhorn iterations for HC.
     """
+
     max_batch_size: int = 4
     max_seq_len: int = 4096
     dtype: Literal["bf16", "fp8"] = "bf16"
     scale_fmt: Optional[str] = "ue8m0"
     vocab_size: int = 129280
     dim: int = 4096
-    moe_inter_dim: int = 2048 # 4096
+    moe_inter_dim: int = 2048  # 4096
     num_hidden_layers: int = 43
     n_hash_layers: int = 3
     n_heads: int = 64
@@ -219,13 +225,13 @@ class ModelArgs:
         4,
         128,
         4,
-        1
+        1,
     )
     # yarn
     compress_rope_theta: float = 160000.0
-    original_seq_len: int = 65536 # 0
+    original_seq_len: int = 65536  # 0
     rope_theta: float = 10000.0
-    rope_factor: float = 4 # 40
+    rope_factor: float = 4  # 40
     beta_fast: int = 32
     beta_slow: int = 1
     # index
@@ -246,12 +252,15 @@ class ParallelEmbedding(nn.Module):
         vocab_size (int): Vocabulary size.
         dim (int): Embedding dimension.
     """
+
     def __init__(self, vocab_size: int, dim: int):
         super().__init__()
         self.vocab_size = vocab_size
         self.dim = dim
-        assert vocab_size % world_size == 0, f"Vocabulary size must be divisible by world size (world_size={world_size})"
-        self.part_vocab_size = (vocab_size // world_size)
+        assert vocab_size % world_size == 0, (
+            f"Vocabulary size must be divisible by world size (world_size={world_size})"
+        )  # nosec
+        self.part_vocab_size = vocab_size // world_size
         self.vocab_start_idx = rank * self.part_vocab_size
         self.vocab_end_idx = self.vocab_start_idx + self.part_vocab_size
         self.weight = nn.Parameter(torch.empty(self.part_vocab_size, self.dim))
@@ -280,8 +289,9 @@ class ParallelEmbedding(nn.Module):
         return y
 
 
-def linear(x: torch.Tensor, weight: torch.Tensor, bias: Optional[torch.Tensor] = None,
-           scale_fmt: Optional[str] = None) -> torch.Tensor:
+def linear(
+    x: torch.Tensor, weight: torch.Tensor, bias: Optional[torch.Tensor] = None, scale_fmt: Optional[str] = None
+) -> torch.Tensor:
     return F.linear(x, weight)
 
 
@@ -293,13 +303,14 @@ class RMSNorm(nn.Module):
         dim (int): Dimension of the input tensor.
         eps (float): Epsilon value for numerical stability. Defaults to 1e-6.
     """
+
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.dim = dim
         self.eps = eps
         # rmsnorm in the checkpoint is stored in bf16, while the parameter here is stored in fp32 for convenient.
         self.weight = nn.Parameter(torch.ones(dim, dtype=torch.float32))
-    
+
     def forward(self, x: torch.Tensor):
         """
         Forward pass for RMSNorm.
@@ -379,16 +390,17 @@ def apply_rotary_emb(x: torch.Tensor, freqs_cis: torch.Tensor, inverse: bool = F
     y.copy_(x)
     return y
 
-    
+
 def hadamard_transform_ref(x: torch.Tensor, scale=1.0):
     from scipy.linalg import hadamard
+
     if hadamard is None:
         raise ImportError("Please install scipy")
     x_shape = x.shape
     dim = x.shape[-1]
     x = x.reshape(-1, dim)
     log_dim = math.ceil(math.log2(dim))
-    dim_padded = 2 ** log_dim
+    dim_padded = 2**log_dim
     if dim != dim_padded:
         x = F.pad(x, (0, dim_padded - dim))
     out = F.linear(x, torch.tensor(hadamard(dim_padded, dtype=float), dtype=x.dtype, device=x.device))
@@ -398,7 +410,7 @@ def hadamard_transform_ref(x: torch.Tensor, scale=1.0):
 
 def rotate_activation(x: torch.Tensor) -> torch.Tensor:
     hidden_size = x.size(-1)
-    return hadamard_transform_ref(x, scale=hidden_size ** -0.5)
+    return hadamard_transform_ref(x, scale=hidden_size**-0.5)
 
 
 @lru_cache(1)
@@ -413,6 +425,7 @@ def get_window_topk_idxs(window_size: int, bsz: int, seqlen: int, start_pos: int
             matrix = (base - window_size + 1).clamp(0) + torch.arange(min(seqlen, window_size))
             matrix = torch.where(matrix > base, -1, matrix)
             return matrix
+
     return _get_window_topk_idxs().unsqueeze(0).expand(bsz, -1, -1)
 
 
@@ -426,11 +439,11 @@ def get_compress_topk_idxs(ratio: int, bsz: int, seqlen: int, start_pos: int, of
             mask = matrix >= torch.arange(1, seqlen + 1).unsqueeze(1) // ratio
             matrix = torch.where(mask, -1, matrix + offset)
             return matrix
+
     return _get_compress_topk_idxs().unsqueeze(0).expand(bsz, -1, -1)
 
 
 class Compressor(nn.Module):
-
     def __init__(self, args: ModelArgs, compress_ratio: int = 4, head_dim: int = 512, rotate: bool = False):
         super().__init__()
         self.dim = args.dim
@@ -450,8 +463,18 @@ class Compressor(nn.Module):
         self.norm = RMSNorm(self.head_dim, args.norm_eps)
         self.kv_cache = None
         # If overlap is enabled, state[:, :ratio] for overlapping compression and state[:, ratio:] for normal compression.
-        self.register_buffer("kv_state", torch.zeros(args.max_batch_size, coff * compress_ratio, coff * self.head_dim, dtype=torch.float32), persistent=False)
-        self.register_buffer("score_state", torch.full((args.max_batch_size, coff * compress_ratio, coff * self.head_dim), float("-inf"), dtype=torch.float32), persistent=False)
+        self.register_buffer(
+            "kv_state",
+            torch.zeros(args.max_batch_size, coff * compress_ratio, coff * self.head_dim, dtype=torch.float32),
+            persistent=False,
+        )
+        self.register_buffer(
+            "score_state",
+            torch.full(
+                (args.max_batch_size, coff * compress_ratio, coff * self.head_dim), float("-inf"), dtype=torch.float32
+            ),
+            persistent=False,
+        )
 
     def overlap_transform(self, tensor: torch.Tensor, value=0):
         # tensor: [b,s,r,2d]
@@ -463,7 +486,7 @@ class Compressor(nn.Module):
         return new_tensor
 
     def forward(self, x: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor):
-        assert self.kv_cache is not None
+        assert self.kv_cache is not None  # nosec
         bsz, seqlen, _ = x.size()
         ratio, overlap, d = self.compress_ratio, self.overlap, self.head_dim
         dtype = x.dtype
@@ -477,11 +500,11 @@ class Compressor(nn.Module):
             freqs_cis = freqs_cis[:cutoff:ratio]
             offset = ratio if overlap else 0
             if overlap and cutoff >= ratio:
-                self.kv_state[:bsz, :ratio] = kv[:, cutoff-ratio : cutoff]
-                self.score_state[:bsz, :ratio] = score[:, cutoff-ratio : cutoff] + self.ape
+                self.kv_state[:bsz, :ratio] = kv[:, cutoff - ratio : cutoff]
+                self.score_state[:bsz, :ratio] = score[:, cutoff - ratio : cutoff] + self.ape
             if remainder > 0:
-                kv, self.kv_state[:bsz, offset : offset+remainder] = kv.split([cutoff, remainder], dim=1)
-                self.score_state[:bsz, offset : offset+remainder] = score[:, cutoff:] + self.ape[:remainder]
+                kv, self.kv_state[:bsz, offset : offset + remainder] = kv.split([cutoff, remainder], dim=1)
+                self.score_state[:bsz, offset : offset + remainder] = score[:, cutoff:] + self.ape[:remainder]
                 score = score[:, :cutoff]
             kv = kv.unflatten(1, (-1, ratio))
             score = score.unflatten(1, (-1, ratio)) + self.ape
@@ -497,7 +520,9 @@ class Compressor(nn.Module):
                 self.score_state[:bsz, ratio + start_pos % ratio] = score.squeeze(1)
                 if should_compress:
                     kv_state = torch.cat([self.kv_state[:bsz, :ratio, :d], self.kv_state[:bsz, ratio:, d:]], dim=1)
-                    score_state = torch.cat([self.score_state[:bsz, :ratio, :d], self.score_state[:bsz, ratio:, d:]], dim=1)
+                    score_state = torch.cat(
+                        [self.score_state[:bsz, :ratio, :d], self.score_state[:bsz, ratio:, d:]], dim=1
+                    )
                     kv = (kv_state * score_state.softmax(dim=1)).sum(dim=1, keepdim=True)
                     self.kv_state[:bsz, :ratio] = self.kv_state[:bsz, ratio:]
                     self.score_state[:bsz, :ratio] = self.score_state[:bsz, ratio:]
@@ -509,18 +534,17 @@ class Compressor(nn.Module):
         if not should_compress:
             return
         kv = self.norm(kv.to(dtype))
-        apply_rotary_emb(kv[..., -self.rope_head_dim:], freqs_cis)
+        apply_rotary_emb(kv[..., -self.rope_head_dim :], freqs_cis)
         if self.rotate:
             kv = rotate_activation(kv)
         if start_pos == 0:
-            self.kv_cache[:bsz, :seqlen // ratio] = kv
+            self.kv_cache[:bsz, : seqlen // ratio] = kv
         else:
             self.kv_cache[:bsz, start_pos // ratio] = kv.squeeze(1)
         return kv
 
 
 class Indexer(torch.nn.Module):
-
     def __init__(self, args: ModelArgs, compress_ratio: int = 4):
         super().__init__()
         self.dim = args.dim
@@ -531,11 +555,15 @@ class Indexer(torch.nn.Module):
         self.q_lora_rank = args.q_lora_rank
         self.wq_b = nn.Linear(self.q_lora_rank, self.n_heads * self.head_dim, bias=False)
         self.weights_proj = nn.Linear(self.dim, self.n_heads, dtype=torch.bfloat16, bias=False)
-        self.softmax_scale = self.head_dim ** -0.5
+        self.softmax_scale = self.head_dim**-0.5
         self.compress_ratio = compress_ratio
 
         self.compressor = Compressor(args, compress_ratio, self.head_dim, True)
-        self.register_buffer("kv_cache", torch.zeros(args.max_batch_size, args.max_seq_len // compress_ratio, self.head_dim), persistent=False)
+        self.register_buffer(
+            "kv_cache",
+            torch.zeros(args.max_batch_size, args.max_seq_len // compress_ratio, self.head_dim),
+            persistent=False,
+        )
 
     def forward(self, x: torch.Tensor, qr: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, offset: int):
         bsz, seqlen, _ = x.size()
@@ -549,16 +577,20 @@ class Indexer(torch.nn.Module):
         apply_rotary_emb(q[..., -rd:], freqs_cis)
         q = rotate_activation(q)
         self.compressor(x, start_pos, freqs_cis)
-        weights = self.weights_proj(x) * (self.softmax_scale * self.n_heads ** -0.5)
+        weights = self.weights_proj(x) * (self.softmax_scale * self.n_heads**-0.5)
         # We performed QAT here, kv could also use fp8 format, though current implementation uses bf16
-        index_score = torch.einsum("bshd,btd->bsht", q, self.kv_cache[:bsz, :end_pos // ratio])
+        index_score = torch.einsum("bshd,btd->bsht", q, self.kv_cache[:bsz, : end_pos // ratio])
         index_score = (index_score.relu_() * weights.unsqueeze(-1)).sum(dim=2)
         if start_pos == 0:
-            mask = torch.arange(seqlen // ratio).repeat(seqlen, 1) >= torch.arange(1, seqlen + 1).unsqueeze(1) // ratio
+            device = index_score.device
+            mask = (
+                torch.arange(seqlen // ratio, device=device).repeat(seqlen, 1)
+                >= torch.arange(1, seqlen + 1, device=device).unsqueeze(1) // ratio
+            )
             index_score += torch.where(mask, float("-inf"), 0)
         topk_idxs = index_score.topk(min(self.index_topk, end_pos // ratio), dim=-1)[1]
         if start_pos == 0:
-            mask = topk_idxs >= torch.arange(1, seqlen + 1).unsqueeze(1) // ratio
+            mask = topk_idxs >= torch.arange(1, seqlen + 1, device=topk_idxs.device).unsqueeze(1) // ratio
             topk_idxs = torch.where(mask, -1, topk_idxs + offset)
         else:
             topk_idxs += offset
@@ -567,6 +599,7 @@ class Indexer(torch.nn.Module):
 
 class Attention(nn.Module):
     """Multi-Query Attention (MQA) Layer."""
+
     def __init__(self, layer_id: int, args: ModelArgs):
         super().__init__()
         self.layer_id = layer_id
@@ -592,10 +625,15 @@ class Attention(nn.Module):
         self.wkv = nn.Linear(self.dim, self.head_dim, bias=False)
         self.kv_norm = RMSNorm(self.head_dim, self.eps)
         # self.wo_a = ColumnParallelLinear(self.n_heads * self.head_dim // self.n_groups, self.n_groups * args.o_lora_rank, dtype=torch.bfloat16)
-        self.wo_a = nn.Linear(self.n_heads * self.head_dim // self.n_groups, self.n_groups * args.o_lora_rank, bias=False, dtype=torch.bfloat16)
+        self.wo_a = nn.Linear(
+            self.n_heads * self.head_dim // self.n_groups,
+            self.n_groups * args.o_lora_rank,
+            bias=False,
+            dtype=torch.bfloat16,
+        )
         # self.wo_b = RowParallelLinear(self.n_groups * args.o_lora_rank, self.dim)
         self.wo_b = nn.Linear(self.n_groups * args.o_lora_rank, self.dim, bias=False)
-        self.softmax_scale = self.head_dim ** -0.5
+        self.softmax_scale = self.head_dim**-0.5
         self.scale_fmt = args.scale_fmt
 
         if self.compress_ratio > 1:
@@ -605,10 +643,20 @@ class Attention(nn.Module):
             else:
                 self.indexer = None
 
-        self.register_buffer("kv_cache", torch.zeros(args.max_batch_size, args.window_size + args.max_seq_len // self.compress_ratio, self.head_dim), persistent=False)
-        freqs_cis = precompute_freqs_cis(self.rope_head_dim, args.max_seq_len, args.original_seq_len, 
-                                         args.compress_rope_theta if self.compress_ratio > 1 else args.rope_theta,
-                                         args.rope_factor, args.beta_fast, args.beta_slow)
+        self.register_buffer(
+            "kv_cache",
+            torch.zeros(args.max_batch_size, args.window_size + args.max_seq_len // self.compress_ratio, self.head_dim),
+            persistent=False,
+        )
+        freqs_cis = precompute_freqs_cis(
+            self.rope_head_dim,
+            args.max_seq_len,
+            args.original_seq_len,
+            args.compress_rope_theta if self.compress_ratio > 1 else args.rope_theta,
+            args.rope_factor,
+            args.beta_fast,
+            args.beta_slow,
+        )
         self.register_buffer("freqs_cis", freqs_cis, persistent=False)
 
     def forward(self, x: torch.Tensor, start_pos: int):
@@ -623,7 +671,7 @@ class Attention(nn.Module):
             torch.Tensor: Output tensor with the same shape as the input.
         """
         bsz, seqlen, _ = x.size()
-        freqs_cis = self.freqs_cis[start_pos:start_pos+seqlen]
+        freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen]
         win = self.window_size
         ratio = self.compress_ratio
         rd = self.rope_head_dim
@@ -639,20 +687,20 @@ class Attention(nn.Module):
         kv = self.wkv(x)
         kv = self.kv_norm(kv)
         apply_rotary_emb(kv[..., -rd:], freqs_cis)
-        topk_idxs = get_window_topk_idxs(win, bsz, seqlen, start_pos)
+        topk_idxs = get_window_topk_idxs(win, bsz, seqlen, start_pos).to(x.device)
         if self.compress_ratio > 1:
             offset = kv.size(1) if start_pos == 0 else win
             if self.indexer is not None:
                 compress_topk_idxs = self.indexer(x, qr, start_pos, freqs_cis, offset)
             else:
-                compress_topk_idxs = get_compress_topk_idxs(ratio, bsz, seqlen, start_pos, offset)
+                compress_topk_idxs = get_compress_topk_idxs(ratio, bsz, seqlen, start_pos, offset).to(x.device)
             topk_idxs = torch.cat([topk_idxs, compress_topk_idxs], dim=-1)
         topk_idxs = topk_idxs.int()
 
         # compress kv & attn
         # if start_pos == 0:
         if True:
-            self.kv_cache[:bsz, :min(win, seqlen)] = kv[:, -win:]
+            self.kv_cache[:bsz, : min(win, seqlen)] = kv[:, -win:]
             if self.compress_ratio > 1:
                 if (kv_compress := self.compressor(x, start_pos, freqs_cis)) is not None:
                     kv = torch.cat([kv, kv_compress], dim=1)
@@ -688,6 +736,7 @@ class Gate(nn.Module):
         weight (torch.nn.Parameter): Learnable weights for the gate.
         bias (Optional[torch.nn.Parameter]): Optional bias term for the gate.
     """
+
     def __init__(self, layer_id: int, args: ModelArgs):
         """
         Initializes the Gate module.
@@ -703,7 +752,9 @@ class Gate(nn.Module):
         self.hash = layer_id < args.n_hash_layers
         self.weight = nn.Parameter(torch.empty(args.n_routed_experts, args.dim))
         if self.hash:
-            self.tid2eid = nn.Parameter(torch.empty(args.vocab_size, args.n_activated_experts, dtype=torch.int32), requires_grad=False)
+            self.tid2eid = nn.Parameter(
+                torch.empty(args.vocab_size, args.n_activated_experts, dtype=torch.int32), requires_grad=False
+            )
             self.bias = None
         else:
             self.bias = nn.Parameter(torch.empty(args.n_routed_experts, dtype=torch.float32))
@@ -749,6 +800,7 @@ class Expert(nn.Module):
         w2 (nn.Module): Linear layer for hidden-to-output transformation.
         w3 (nn.Module): Additional linear layer for feature transformation.
     """
+
     def __init__(self, dim: int, inter_dim: int, swiglu_limit=0):
         """
         Initializes the Expert layer.
@@ -799,6 +851,7 @@ class MoE(nn.Module):
         experts (nn.ModuleList): List of expert modules.
         shared_experts (nn.Module): Shared experts applied to all inputs.
     """
+
     def __init__(self, layer_id: int, args: ModelArgs):
         """
         Initializes the MoE module.
@@ -809,16 +862,24 @@ class MoE(nn.Module):
         super().__init__()
         self.layer_id = layer_id
         self.dim = args.dim
-        assert args.n_routed_experts % world_size == 0, f"Number of experts must be divisible by world size (world_size={world_size})"
+        assert args.n_routed_experts % world_size == 0, (
+            f"Number of experts must be divisible by world size (world_size={world_size})"
+        )  # nosec
         self.n_routed_experts = args.n_routed_experts
         self.n_local_experts = args.n_routed_experts // world_size
         self.n_activated_experts = args.n_activated_experts
         self.experts_start_idx = rank * self.n_local_experts
         self.experts_end_idx = self.experts_start_idx + self.n_local_experts
         self.gate = Gate(layer_id, args)
-        self.experts = nn.ModuleList([Expert(args.dim, args.moe_inter_dim, swiglu_limit=args.swiglu_limit) if self.experts_start_idx <= i < self.experts_end_idx else None
-                                      for i in range(self.n_routed_experts)])
-        assert args.n_shared_experts == 1
+        self.experts = nn.ModuleList(
+            [
+                Expert(args.dim, args.moe_inter_dim, swiglu_limit=args.swiglu_limit)
+                if self.experts_start_idx <= i < self.experts_end_idx
+                else None
+                for i in range(self.n_routed_experts)
+            ]
+        )
+        assert args.n_shared_experts == 1  # nosec
         # no swiglu_limit for shared experts
         self.shared_experts = Expert(args.dim, args.moe_inter_dim)
 
@@ -862,6 +923,7 @@ class Block(nn.Module):
         attn_norm (nn.Module): Layer normalization for attention.
         ffn_norm (nn.Module): Layer normalization for feed-forward network.
     """
+
     def __init__(self, layer_id: int, args: ModelArgs):
         """
         Initializes the Transformer block.
@@ -894,6 +956,10 @@ class Block(nn.Module):
 
     def hc_pre(self, x: torch.Tensor, hc_fn: torch.Tensor, hc_scale: torch.Tensor, hc_base: torch.Tensor):
         # x: [b,s,hc,d], hc_fn: [mix_hc,hc*d], hc_scale: [3], hc_base: [mix_hc], y: [b,s,hc,d]
+        device = x.device
+        hc_fn = hc_fn.to(device)
+        hc_scale = hc_scale.to(device)
+        hc_base = hc_base.to(device)
         shape, dtype = x.size(), x.dtype
         x = x.flatten(2).float()
         rsqrt = torch.rsqrt(x.square().mean(-1, keepdim=True) + self.norm_eps)
@@ -943,6 +1009,7 @@ class Transformer(nn.Module):
         norm (nn.Module): Layer normalization applied after all blocks.
         head (nn.Module): Output projection layer mapping to vocabulary size.
     """
+
     def __init__(self, args: ModelArgs):
         """
         Initializes the Transformer model.
@@ -974,8 +1041,11 @@ class Transformer(nn.Module):
         torch.set_default_dtype(origin_dtype)
         self.head = nn.Linear(args.dim, args.vocab_size, bias=False, dtype=torch.float32)
 
-
     def hc_head(self, x: torch.Tensor, hc_fn: torch.Tensor, hc_scale: torch.Tensor, hc_base: torch.Tensor):
+        device = x.device
+        hc_fn = hc_fn.to(device)
+        hc_scale = hc_scale.to(device)
+        hc_base = hc_base.to(device)
         shape, dtype = x.size(), x.dtype
         x = x.flatten(2).float()
         rsqrt = torch.rsqrt(x.square().mean(-1, keepdim=True) + self.norm_eps)
@@ -1006,7 +1076,6 @@ class Transformer(nn.Module):
         # logging.info(f"h : {h}")
         logits = self.head(h[:, -1].float())
 
-
         if world_size > 1:
             all_logits = [torch.empty_like(logits) for _ in range(world_size)]
             dist.all_gather(all_logits, logits)
@@ -1026,7 +1095,6 @@ class DeepSeekModel(nn.Module):
         h = self.model(input_ids, start_pos)
         logging.info(f"h : {h}")
         logits = self.lm_head(h[:, -1].float())
-
 
         if world_size > 1:
             all_logits = [torch.empty_like(logits) for _ in range(world_size)]

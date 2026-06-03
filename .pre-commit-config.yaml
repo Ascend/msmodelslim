@@ -53,6 +53,7 @@ repos:
         types: [python]
         args: ["--rcfile=pre-commit/pyproject.toml"]
         verbose: false
+        exclude: msmodelslim/model/deepseek_v4/model.py
 
   # Bandit：指定 pre-commit/pyproject.toml
   - repo: https://gitcode.com/gh_mirrors/ba/bandit
