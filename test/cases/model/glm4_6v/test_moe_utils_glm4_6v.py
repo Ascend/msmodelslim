@@ -9,9 +9,8 @@ UnstackedGlm4vTextTopkRouter, UnstackedGlm4vMoeTextMoE.
 
 import types
 
-import pytest
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.model.glm4_6v.moe_utils import (
     UnstackedGlm4vTextExpertMLP,
@@ -37,9 +36,7 @@ class TestGlm4_6VMoeUtils:
     """Single test class for glm4_6v.moe_utils."""
 
     def test_expert_mlp_init_creates_linear_layers_when_called_with_valid_args(self):
-        mlp = UnstackedGlm4vTextExpertMLP(
-            hidden_size=8, intermediate_size=4, hidden_act="silu", dtype=torch.float32
-        )
+        mlp = UnstackedGlm4vTextExpertMLP(hidden_size=8, intermediate_size=4, hidden_act="silu", dtype=torch.float32)
         assert isinstance(mlp.gate_proj, nn.Linear)
         assert isinstance(mlp.up_proj, nn.Linear)
         assert isinstance(mlp.down_proj, nn.Linear)
@@ -48,18 +45,14 @@ class TestGlm4_6VMoeUtils:
         assert mlp.down_proj.weight.shape == (8, 4)
 
     def test_expert_mlp_forward_return_tensor_with_hidden_size_when_input_2d(self):
-        mlp = UnstackedGlm4vTextExpertMLP(
-            hidden_size=8, intermediate_size=4, hidden_act="silu", dtype=torch.float32
-        )
+        mlp = UnstackedGlm4vTextExpertMLP(hidden_size=8, intermediate_size=4, hidden_act="silu", dtype=torch.float32)
         x = torch.randn(2, 8)
         y = mlp(x)
         assert y.shape == (2, 8)
         assert not torch.isnan(y).any() and not torch.isinf(y).any()
 
     def test_expert_mlp_forward_return_correct_shape_when_dtype_is_bfloat16(self):
-        mlp = UnstackedGlm4vTextExpertMLP(
-            hidden_size=4, intermediate_size=8, hidden_act="silu", dtype=torch.bfloat16
-        )
+        mlp = UnstackedGlm4vTextExpertMLP(hidden_size=4, intermediate_size=8, hidden_act="silu", dtype=torch.bfloat16)
         x = torch.randn(1, 4, dtype=torch.bfloat16)
         y = mlp(x)
         assert y.shape == (1, 4)

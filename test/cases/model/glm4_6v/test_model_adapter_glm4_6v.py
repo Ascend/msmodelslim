@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.model.glm4_6v.model_adapter import GLM4_6VModelAdapter
 from msmodelslim.utils.exception import InvalidDatasetError
@@ -85,10 +85,7 @@ class TestGLM4_6VModelAdapter:
     def test_get_adapter_config_for_subgraph_return_contains_up_down_when_dense_layer(self):
         adapter = self._build_adapter()
         result = adapter.get_adapter_config_for_subgraph()
-        has_up_down = any(
-            c.subgraph_type == "up-down" and "layers.0.mlp.up_proj" in c.mapping.source
-            for c in result
-        )
+        has_up_down = any(c.subgraph_type == "up-down" and "layers.0.mlp.up_proj" in c.mapping.source for c in result)
         assert has_up_down is True
 
     def test_handle_dataset_raise_invalid_dataset_error_when_image_or_text_missing(self):
@@ -104,9 +101,13 @@ class TestGLM4_6VModelAdapter:
         fake_inputs = types.SimpleNamespace()
         fake_processor = MagicMock()
         fake_processor.apply_chat_template.return_value = fake_inputs
-        with patch("msmodelslim.model.glm4_6v.model_adapter.AutoProcessor.from_pretrained", return_value=fake_processor), \
-             patch("msmodelslim.model.glm4_6v.model_adapter.get_valid_read_path", return_value="a.jpg"), \
-             patch.object(adapter, "_collect_inputs_to_device", return_value={"input_ids": torch.ones(1, 2, dtype=torch.long)}):
+        with (
+            patch("msmodelslim.model.glm4_6v.model_adapter.AutoProcessor.from_pretrained", return_value=fake_processor),
+            patch("msmodelslim.model.glm4_6v.model_adapter.get_valid_read_path", return_value="a.jpg"),
+            patch.object(
+                adapter, "_collect_inputs_to_device", return_value={"input_ids": torch.ones(1, 2, dtype=torch.long)}
+            ),
+        ):
             result = adapter.handle_dataset(dataset)
         assert isinstance(result, list)
         assert len(result) == 1
@@ -117,9 +118,11 @@ class TestGLM4_6VModelAdapter:
         module = nn.Linear(4, 3, bias=False)
         weight_map = {"model.language_model.layers.0.weight": "model-00001.safetensors"}
         tensor_map = {"model.language_model.layers.0.weight": torch.ones_like(module.weight)}
-        with patch.object(adapter, "_get_weight_map", return_value=weight_map), \
-             patch("msmodelslim.model.glm4_6v.model_adapter.get_valid_read_path", side_effect=lambda p, **_: p), \
-             patch("msmodelslim.model.glm4_6v.model_adapter.safe_open", return_value=_SafeOpenCtx(tensor_map)):
+        with (
+            patch.object(adapter, "_get_weight_map", return_value=weight_map),
+            patch("msmodelslim.model.glm4_6v.model_adapter.get_valid_read_path", side_effect=lambda p, **_: p),
+            patch("msmodelslim.model.glm4_6v.model_adapter.safe_open", return_value=_SafeOpenCtx(tensor_map)),
+        ):
             sd = adapter._get_state_dict(module, prefix="model.language_model.layers.0")
         assert "weight" in sd
         assert torch.equal(sd["weight"], tensor_map["model.language_model.layers.0.weight"])
@@ -140,8 +143,10 @@ class TestGLM4_6VModelAdapter:
             get_submodule=lambda _name: (_ for _ in ()).throw(AttributeError("not found")),
             model=types.SimpleNamespace(language_model=types.SimpleNamespace(layers=nn.ModuleList())),
         )
-        with patch("msmodelslim.model.glm4_6v.model_adapter.Glm4vMoeTextDecoderLayer", _FakeDecoderLayer), \
-             patch.object(adapter, "_get_state_dict", return_value=_FakeDecoderLayer().state_dict()):
+        with (
+            patch("msmodelslim.model.glm4_6v.model_adapter.Glm4vMoeTextDecoderLayer", _FakeDecoderLayer),
+            patch.object(adapter, "_get_state_dict", return_value=_FakeDecoderLayer().state_dict()),
+        ):
             layer = adapter._load_decoder_if_not_exist(model, "model.language_model.layers.0", 0)
         assert isinstance(layer, _FakeDecoderLayer)
         assert len(model.model.language_model.layers) == 1
@@ -155,8 +160,7 @@ class TestGLM4_6VModelAdapter:
 
     def test_init_sets_processor_to_none_when_called(self):
         with patch("msmodelslim.model.glm4_6v.model_adapter.VLMBaseModelAdapter.__init__", return_value=None):
-            adapter = GLM4_6VModelAdapter.__new__(GLM4_6VModelAdapter)
-            adapter.__init__("glm4_6v", Path("fake-model"), False)
+            adapter = GLM4_6VModelAdapter("glm4_6v", Path("fake-model"), False)
         assert adapter._processor is None
 
     def test_create_model_instance_return_model_when_called(self):
@@ -200,9 +204,13 @@ class TestGLM4_6VModelAdapter:
         fake_inputs = types.SimpleNamespace()
         fake_processor = MagicMock()
         fake_processor.apply_chat_template.return_value = fake_inputs
-        with patch("msmodelslim.model.glm4_6v.model_adapter.AutoProcessor.from_pretrained", return_value=fake_processor), \
-             patch("msmodelslim.model.glm4_6v.model_adapter.get_valid_read_path", side_effect=lambda p, **_: p), \
-             patch.object(adapter, "_collect_inputs_to_device", return_value={"input_ids": torch.ones(1, 2, dtype=torch.long)}):
+        with (
+            patch("msmodelslim.model.glm4_6v.model_adapter.AutoProcessor.from_pretrained", return_value=fake_processor),
+            patch("msmodelslim.model.glm4_6v.model_adapter.get_valid_read_path", side_effect=lambda p, **_: p),
+            patch.object(
+                adapter, "_collect_inputs_to_device", return_value={"input_ids": torch.ones(1, 2, dtype=torch.long)}
+            ),
+        ):
             result = adapter.handle_dataset(dataset)
         assert isinstance(result, list)
         assert len(result) == 2
@@ -224,9 +232,11 @@ class TestGLM4_6VModelAdapter:
             "input_layernorm.bias": fake_decoder.input_layernorm.bias.data.clone(),
             "self_attn.weight": fake_decoder.self_attn.weight.data.clone(),
         }
-        with patch("msmodelslim.model.glm4_6v.model_adapter.Glm4vMoeTextDecoderLayer", return_value=fake_decoder), \
-             patch("msmodelslim.model.glm4_6v.model_adapter.UnstackedGlm4vMoeTextMoE") as mock_unstacked, \
-             patch.object(adapter, "_get_state_dict", return_value=expected_state_dict):
+        with (
+            patch("msmodelslim.model.glm4_6v.model_adapter.Glm4vMoeTextDecoderLayer", return_value=fake_decoder),
+            patch("msmodelslim.model.glm4_6v.model_adapter.UnstackedGlm4vMoeTextMoE") as mock_unstacked,
+            patch.object(adapter, "_get_state_dict", return_value=expected_state_dict),
+        ):
             mock_unstacked.return_value = unstacked_moe
             layer = adapter._load_decoder_if_not_exist(model, "model.language_model.layers.1", 1)
         assert layer is not None
@@ -237,19 +247,21 @@ class TestGLM4_6VModelAdapter:
         meta_layer = _FakeDecoderLayer()
         model = MagicMock()
         model.get_submodule.return_value = meta_layer
-        
+
         # 创建一个会抛出RuntimeError的weight对象
         class MetaWeightParam(nn.Parameter):
             @property
             def device(self):
                 raise RuntimeError("device is meta")
-        
+
         meta_layer.input_layernorm.weight = MetaWeightParam(meta_layer.input_layernorm.weight.data)
-        
+
         fake_decoder = _FakeDecoderLayer()
         model.model = types.SimpleNamespace(language_model=types.SimpleNamespace(layers=nn.ModuleList()))
-        with patch("msmodelslim.model.glm4_6v.model_adapter.Glm4vMoeTextDecoderLayer", return_value=fake_decoder), \
-             patch.object(adapter, "_get_state_dict", return_value=fake_decoder.state_dict()):
+        with (
+            patch("msmodelslim.model.glm4_6v.model_adapter.Glm4vMoeTextDecoderLayer", return_value=fake_decoder),
+            patch.object(adapter, "_get_state_dict", return_value=fake_decoder.state_dict()),
+        ):
             adapter.config.text_config.first_k_dense_replace = 10
             layer = adapter._load_decoder_if_not_exist(model, "model.language_model.layers.0", 0)
         assert layer is not None
@@ -267,12 +279,13 @@ class TestGLM4_6VModelAdapter:
     def test_generate_model_visit_yield_vision_and_decoder_layers_when_called(self):
         adapter = self._build_adapter()
         from msmodelslim.core.base.protocol import ProcessRequest
+
         fake_layer = MagicMock()
-        model = types.SimpleNamespace(
-            model=types.SimpleNamespace(visual=MagicMock())
-        )
-        with patch.object(adapter, "generate_decoder_layer", return_value=iter([("layers.0", fake_layer)])), \
-             patch("msmodelslim.model.glm4_6v.model_adapter.generated_decoder_layer_visit_func") as mock_visit:
+        model = types.SimpleNamespace(model=types.SimpleNamespace(visual=MagicMock()))
+        with (
+            patch.object(adapter, "generate_decoder_layer", return_value=iter([("layers.0", fake_layer)])),
+            patch("msmodelslim.model.glm4_6v.model_adapter.generated_decoder_layer_visit_func") as mock_visit,
+        ):
             mock_visit.return_value = iter([ProcessRequest(name="layers.0", module=fake_layer, args=(), kwargs={})])
             requests = list(adapter.generate_model_visit(model))
         assert len(requests) >= 1
@@ -298,9 +311,11 @@ class TestGLM4_6VModelAdapter:
             ),
             eval=MagicMock(return_value=None),
         )
-        with patch.object(adapter, "_create_model_instance", return_value=fake_model), \
-             patch("msmodelslim.model.glm4_6v.model_adapter.get_valid_read_path", return_value=adapter.model_path), \
-             patch("msmodelslim.model.glm4_6v.model_adapter.Glm4vMoeForConditionalGeneration"):
+        with (
+            patch.object(adapter, "_create_model_instance", return_value=fake_model),
+            patch("msmodelslim.model.glm4_6v.model_adapter.get_valid_read_path", return_value=adapter.model_path),
+            patch("msmodelslim.model.glm4_6v.model_adapter.Glm4vMoeForConditionalGeneration"),
+        ):
             result = adapter.init_model()
         assert result is fake_model
         assert adapter.config.text_config.num_hidden_layers == 2  # 应该恢复原值

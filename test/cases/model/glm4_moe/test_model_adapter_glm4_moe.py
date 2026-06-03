@@ -18,11 +18,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph import AdapterConfig
@@ -49,9 +50,7 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
         """测试get_model_type方法：初始化后应返回正确的模型类型"""
         with patch('msmodelslim.model.glm4_moe.model_adapter.TransformersModel.__init__', return_value=None):
             adapter = GLM4MoeModelAdapter(
-                model_type=self.model_type,
-                model_path=self.model_path,
-                trust_remote_code=self.trust_remote_code
+                model_type=self.model_type, model_path=self.model_path, trust_remote_code=self.trust_remote_code
             )
             adapter.model_type = self.model_type
 
@@ -63,9 +62,7 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
         """测试get_model_pedigree方法：应返回'glm4_moe'"""
         with patch('msmodelslim.model.glm4_moe.model_adapter.TransformersModel.__init__', return_value=None):
             adapter = GLM4MoeModelAdapter(
-                model_type=self.model_type,
-                model_path=self.model_path,
-                trust_remote_code=self.trust_remote_code
+                model_type=self.model_type, model_path=self.model_path, trust_remote_code=self.trust_remote_code
             )
 
             result = adapter.get_model_pedigree()
@@ -75,10 +72,7 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
     def test_handle_dataset_when_called_then_return_tokenized_data(self):
         """测试handle_dataset方法：应返回tokenized数据"""
         with patch('msmodelslim.model.glm4_moe.model_adapter.TransformersModel.__init__', return_value=None):
-            adapter = GLM4MoeModelAdapter(
-                model_type=self.model_type,
-                model_path=self.model_path
-            )
+            adapter = GLM4MoeModelAdapter(model_type=self.model_type, model_path=self.model_path)
 
             mock_dataset = ['data1', 'data2']
             adapter._get_tokenized_data = MagicMock(return_value=mock_dataset)
@@ -91,10 +85,7 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
     def test_init_model_when_called_then_delegate_to_load_model(self):
         """测试init_model方法：应委托给_load_model方法"""
         with patch('msmodelslim.model.glm4_moe.model_adapter.TransformersModel.__init__', return_value=None):
-            adapter = GLM4MoeModelAdapter(
-                model_type=self.model_type,
-                model_path=self.model_path
-            )
+            adapter = GLM4MoeModelAdapter(model_type=self.model_type, model_path=self.model_path)
 
             mock_model = nn.Linear(10, 10)
             adapter._load_model = MagicMock(return_value=mock_model)
@@ -107,26 +98,20 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
     def test_enable_kv_cache_when_called_then_delegate_to_enable_kv_cache(self):
         """测试enable_kv_cache方法：应委托给_enable_kv_cache方法"""
         with patch('msmodelslim.model.glm4_moe.model_adapter.TransformersModel.__init__', return_value=None):
-            adapter = GLM4MoeModelAdapter(
-                model_type=self.model_type,
-                model_path=self.model_path
-            )
+            adapter = GLM4MoeModelAdapter(model_type=self.model_type, model_path=self.model_path)
 
             mock_model = nn.Linear(10, 10)
             adapter._enable_kv_cache = MagicMock(return_value=None)
 
             result = adapter.enable_kv_cache(model=mock_model, need_kv_cache=True)
+            print(f"result: {result}")
 
-            # 验证_enable_kv_cache被调用
             adapter._enable_kv_cache.assert_called_once_with(mock_model, True)
 
     def test_enable_kv_cache_with_false_then_disable_cache(self):
         """测试enable_kv_cache方法：传入False时应禁用缓存"""
         with patch('msmodelslim.model.glm4_moe.model_adapter.TransformersModel.__init__', return_value=None):
-            adapter = GLM4MoeModelAdapter(
-                model_type=self.model_type,
-                model_path=self.model_path
-            )
+            adapter = GLM4MoeModelAdapter(model_type=self.model_type, model_path=self.model_path)
 
             mock_model = nn.Linear(10, 10)
             adapter._enable_kv_cache = MagicMock(return_value=None)
@@ -139,10 +124,7 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
     def test_get_adapter_config_for_subgraph_when_called_then_return_adapter_configs(self):
         """测试get_adapter_config_for_subgraph方法：应返回适配器配置列表"""
         with patch('msmodelslim.model.glm4_moe.model_adapter.TransformersModel.__init__', return_value=None):
-            adapter = GLM4MoeModelAdapter(
-                model_type=self.model_type,
-                model_path=self.model_path
-            )
+            adapter = GLM4MoeModelAdapter(model_type=self.model_type, model_path=self.model_path)
             adapter.config = DummyConfig()
 
             result = adapter.get_adapter_config_for_subgraph()
@@ -160,10 +142,7 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
     def test_get_adapter_config_for_subgraph_when_zero_layers_then_return_empty_list(self):
         """测试get_adapter_config_for_subgraph方法：0层时应返回空列表"""
         with patch('msmodelslim.model.glm4_moe.model_adapter.TransformersModel.__init__', return_value=None):
-            adapter = GLM4MoeModelAdapter(
-                model_type=self.model_type,
-                model_path=self.model_path
-            )
+            adapter = GLM4MoeModelAdapter(model_type=self.model_type, model_path=self.model_path)
             adapter.config = DummyConfig()
             adapter.config.num_hidden_layers = 0
 
@@ -175,7 +154,6 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
 
 
 class TestGLM4MoeModuleFunctions(unittest.TestCase):
-
     def setUp(self):
         """测试前的准备工作"""
         self.config = DummyConfig()
@@ -203,7 +181,7 @@ class TestGLM4MoeModuleFunctions(unittest.TestCase):
         expected_input_targets = [
             "model.layers.0.self_attn.q_proj",
             "model.layers.0.self_attn.k_proj",
-            "model.layers.0.self_attn.v_proj"
+            "model.layers.0.self_attn.v_proj",
         ]
         for target in expected_input_targets:
             self.assertIn(target, input_ln_targets)

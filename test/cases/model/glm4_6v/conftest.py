@@ -19,10 +19,6 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-"""
-Pytest config for glm4_6v tests. Mocks transformers components when missing.
-"""
-
 import sys
 import types
 from unittest.mock import MagicMock
@@ -33,7 +29,6 @@ _original_modules = {}
 
 def _setup_mock_modules():
     """注入 transformers 相关 mock，确保在导入 model_adapter 前生效"""
-    import transformers  # ensure loaded before we store reference
 
     _original_modules["transformers"] = sys.modules["transformers"]
     transformers_module = sys.modules["transformers"]
@@ -45,7 +40,7 @@ def _setup_mock_modules():
     for attr_name, attr_value in required_attrs.items():
         if not hasattr(transformers_module, attr_name):
             setattr(transformers_module, attr_name, attr_value)
-    
+
     _original_modules["transformers.models"] = sys.modules["transformers.models"]
     models_module = sys.modules["transformers.models"]
 
@@ -56,9 +51,7 @@ def _setup_mock_modules():
         setattr(models_module, "glm4v_moe", glm4v_moe_module)
         _created_modules["transformers.models.glm4v_moe"] = glm4v_moe_module
     else:
-        _original_modules["transformers.models.glm4v_moe"] = sys.modules[
-            "transformers.models.glm4v_moe"
-        ]
+        _original_modules["transformers.models.glm4v_moe"] = sys.modules["transformers.models.glm4v_moe"]
         glm4v_moe_module = sys.modules["transformers.models.glm4v_moe"]
 
     if 'transformers.models.glm4v_moe.modeling_glm4v_moe' not in sys.modules:
@@ -83,7 +76,7 @@ def _setup_mock_modules():
             modeling.Glm4vMoeTextMoE = MagicMock()
         if not hasattr(modeling, 'Glm4vMoeTextNaiveMoe'):
             modeling.Glm4vMoeTextNaiveMoe = MagicMock()
-    
+
     if "transformers.masking_utils" not in sys.modules:
         _original_modules["transformers.masking_utils"] = None
         masking_utils_module = types.ModuleType("transformers.masking_utils")
@@ -93,9 +86,8 @@ def _setup_mock_modules():
         setattr(transformers_module, "masking_utils", masking_utils_module)
         _created_modules["transformers.masking_utils"] = masking_utils_module
     else:
-        _original_modules["transformers.masking_utils"] = sys.modules[
-            "transformers.masking_utils"
-        ]
+        _original_modules["transformers.masking_utils"] = sys.modules["transformers.masking_utils"]
+
 
 _setup_mock_modules()
 
