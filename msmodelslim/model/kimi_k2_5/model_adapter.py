@@ -44,7 +44,6 @@ from msmodelslim.model.interface_hub import (
     LayerWiseOffloadOptionalInterface,
     AscendV1SaveInterface,
 )
-from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.model.common.vlm_base import SafeGenerator, VLMBaseModelAdapter
 from msmodelslim.utils.exception import UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
@@ -79,7 +78,7 @@ def default_dtype(dtype):
 
 
 @logger_setter()
-class KimiK25ModelAdapter(
+class KimiK25ModelAdapter(  # pylint: disable=too-many-ancestors
     VLMBaseModelAdapter,
     ModelInfoInterface,
     ModelSlimPipelineInterfaceV1,
@@ -88,10 +87,7 @@ class KimiK25ModelAdapter(
     LayerWiseOffloadOptionalInterface,
     AscendV1SaveInterface,
 ):
-
-    def __init__(
-        self, model_type: str, model_path: Path, trust_remote_code: bool = False
-    ):
+    def __init__(self, model_type: str, model_path: Path, trust_remote_code: bool = False):
         # Cache for processor (used in dataset handling)
         self._processor = None
         self._tokenizer = None
@@ -109,9 +105,7 @@ class KimiK25ModelAdapter(
         """Return preferred offload device for layer-wise runner."""
         return "meta"
 
-    def handle_dataset(
-        self, dataset: Any, device: DeviceType = DeviceType.NPU
-    ) -> List[Any]:
+    def handle_dataset(self, dataset: Any, device: DeviceType = DeviceType.NPU) -> List[Any]:
         """
         Handle multimodal Kimi2.5 calibration dataset.
 
@@ -129,15 +123,17 @@ class KimiK25ModelAdapter(
 
         # 从模型目录动态加载 processor（权重目录自带源码时可直接使用）
         try:
-            self._processor = AutoProcessor.from_pretrained(
+            self._processor = AutoProcessor.from_pretrained(  # nosec B615
                 self.model_path,
                 trust_remote_code=self.trust_remote_code,
                 local_files_only=True,
             )
         except Exception as e:
-            get_logger().warning(f"AutoProcessor load failed from {self.model_path}, try tokenizer fallback: {str(e)}")
+            get_logger().warning(
+                "AutoProcessor load failed from %s, try tokenizer fallback: %s", self.model_path, str(e)
+            )
             try:
-                self._tokenizer = AutoTokenizer.from_pretrained(
+                self._tokenizer = AutoTokenizer.from_pretrained(  # nosec B615
                     self.model_path,
                     trust_remote_code=self.trust_remote_code,
                     local_files_only=True,
@@ -165,25 +161,24 @@ class KimiK25ModelAdapter(
             if item.image is None or item.text is None:
                 raise UnsupportedError(
                     "Kimi2.5 adapter requires both image and text for calibration.",
-                    action="Use multimodal (image+text) data only."
+                    action="Use multimodal (image+text) data only.",
                 )
 
         processed_data = []
         for item in tqdm(dataset, desc="Processing Kimi2.5 calibration dataset"):
             # Construct messages in Kimi2.5 expected format
-            messages = [{
-                "role": "user",
-                "content": [
-                    {"type": "image_url", "image_url": get_valid_read_path(item.image)},
-                    {"type": "text", "text": item.text}
-                ]
-            }]
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": get_valid_read_path(item.image)},
+                        {"type": "text", "text": item.text},
+                    ],
+                }
+            ]
 
             # End-to-end processing: tokenize + vision encoding
-            inputs = self._processor(
-                messages=messages,
-                return_tensors="pt"
-            )  # Returns BatchFeature
+            inputs = self._processor(messages=messages, return_tensors="pt")  # Returns BatchFeature
 
             # Collect required tensors and move to device
             processed_item = self._collect_inputs_to_device(
@@ -195,7 +190,7 @@ class KimiK25ModelAdapter(
                     "grid_thws",  # Kimi2.5 uses 'grid_thws' (plural)
                     "attention_mask",
                 ],
-                defaults={}
+                defaults={},
             )
             processed_data.append(processed_item)
 
@@ -221,16 +216,16 @@ class KimiK25ModelAdapter(
         with default_dtype(torch.bfloat16):
             origin_layers = self.config.text_config.num_hidden_layers
             get_logger().info(
-                f"Model with {origin_layers} text layers + {self.config.vision_config.vt_num_hidden_layers} vision layers"
+                "Model with %d text layers + %d vision layers",
+                origin_layers,
+                self.config.vision_config.vt_num_hidden_layers,
             )
             # Temporarily set to 1 layer for initialization
             self.config.text_config.num_hidden_layers = 1
             self.config.use_cache = False  # Disable cache to save memory
 
             # Validate model path
-            self.model_path = get_valid_read_path(
-                str(self.model_path), is_dir=True, check_user_stat=True
-            )
+            self.model_path = get_valid_read_path(str(self.model_path), is_dir=True, check_user_stat=True)
 
             # Load model with only 1 text decoder layer
             # Vision encoder is fully loaded, text decoder has only 1 layer
@@ -251,7 +246,8 @@ class KimiK25ModelAdapter(
                     device_map="cpu",
                     torch_dtype="auto",
                     low_cpu_mem_usage=False,
-                    attn_implementation='eager')
+                    attn_implementation='eager',
+                )
             finally:
                 PreTrainedModel._initialize_missing_keys = _original_initialize_missing_keys
 
@@ -264,9 +260,7 @@ class KimiK25ModelAdapter(
             self.config.vision_config._attn_implementation = "eager"
 
             # Load full state_dict for the first layer + vision encoder + lm_head
-            get_logger().info(
-                "Loading weights for vision encoder, first decoder layer, and lm_head..."
-            )
+            get_logger().info("Loading weights for vision encoder, first decoder layer, and lm_head...")
             state_dict = self._get_state_dict(model)
             model.load_state_dict(state_dict, strict=False)
             auto_convert_module_int4_to_bf16("", model, str(self.model_path))
@@ -294,27 +288,19 @@ class KimiK25ModelAdapter(
             # BaseSmoothProcessor._apply_standard_ov_smooth() reads from model.config, not model.config.text_config
             # This must be done AFTER model is loaded
             if hasattr(model.config.text_config, "num_attention_heads"):
-                model.config.num_attention_heads = (
-                    model.config.text_config.num_attention_heads
-                )
-                get_logger().info(
-                    f"Set model.config.num_attention_heads = {model.config.num_attention_heads}"
-                )
+                model.config.num_attention_heads = model.config.text_config.num_attention_heads
+                get_logger().info("Set model.config.num_attention_heads = %d", model.config.num_attention_heads)
             if hasattr(model.config.text_config, "num_key_value_heads"):
-                model.config.num_key_value_heads = (
-                    model.config.text_config.num_key_value_heads
-                )
-                get_logger().info(f"Set model.config.num_key_value_heads = {model.config.num_key_value_heads}")
+                model.config.num_key_value_heads = model.config.text_config.num_key_value_heads
+                get_logger().info("Set model.config.num_key_value_heads = %d", model.config.num_key_value_heads)
 
             get_logger().info(
-                f"Model initialized with {origin_layers} layers (1 loaded, others will be loaded on-demand)"
+                "Model initialized with %d layers (1 loaded, others will be loaded on-demand)", origin_layers
             )
 
             return model
 
-    def generate_model_visit(
-        self, model: nn.Module
-    ) -> Generator[ProcessRequest, Any, None]:
+    def generate_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
         """
         Generate model visit pipeline for layer-wise processing.
 
@@ -330,25 +316,17 @@ class KimiK25ModelAdapter(
         """
         # 1. Process vision encoder first
         get_logger().info("Processing vision encoder...")
-        yield ProcessRequest(
-            name="vision_tower", module=model.vision_tower, args=(), kwargs={}
-        )
+        yield ProcessRequest(name="vision_tower", module=model.vision_tower, args=(), kwargs={})
 
         # 2. Process multimodal projector (if present)
         get_logger().info("Processing mm_projector encoder...")
-        yield ProcessRequest(
-            name="mm_projector", module=model.mm_projector, args=(), kwargs={}
-        )
+        yield ProcessRequest(name="mm_projector", module=model.mm_projector, args=(), kwargs={})
 
         # 3. Process text decoder layers one by one using standard visit function
         get_logger().info("Processing text decoder layers...")
-        yield from generated_decoder_layer_visit_func(
-            model, transformer_blocks=self.generate_decoder_layer(model)
-        )
+        yield from generated_decoder_layer_visit_func(model, transformer_blocks=self.generate_decoder_layer(model))
 
-    def generate_model_forward(
-        self, model: nn.Module, inputs: Any
-    ) -> Generator[ProcessRequest, Any, None]:
+    def generate_model_forward(self, model: nn.Module, inputs: Any) -> Generator[ProcessRequest, Any, None]:
         """
         Generate forward pipeline for Kimi2.5 (Llava-style) multimodal model calibration.
 
@@ -398,10 +376,7 @@ class KimiK25ModelAdapter(
         )
 
         if pixel_values is None or len(pixel_values) == 0 or input_ids.shape[1] == 1:
-
-            position_ids = torch.arange(
-                input_ids.shape[1], device=input_ids.device
-            ).unsqueeze(0).expand_as(input_ids)
+            position_ids = torch.arange(input_ids.shape[1], device=input_ids.device).unsqueeze(0).expand_as(input_ids)
             if attention_mask is None:
                 attention_mask = torch.ones_like(input_ids)
 
@@ -418,7 +393,7 @@ class KimiK25ModelAdapter(
                 image_features = yield ProcessRequest(
                     name="mm_projector",
                     module=model.mm_projector,
-                    args=(image_features, ),
+                    args=(image_features,),
                     kwargs={},
                 )
 
@@ -463,9 +438,7 @@ class KimiK25ModelAdapter(
             if isinstance(hidden_states, tuple):
                 hidden_states = hidden_states[0]
 
-    def generate_decoder_layer(
-        self, model: nn.Module
-    ) -> Generator[Tuple[str, nn.Module], None, None]:
+    def generate_decoder_layer(self, model: nn.Module) -> Generator[Tuple[str, nn.Module], None, None]:
         """
         Generate Kimi2.5 text decoder layers, loading them on-demand.
 
@@ -491,7 +464,7 @@ class KimiK25ModelAdapter(
         For calibration, we typically don't need KV cache.
         """
         model.config.use_cache = need_kv_cache
-        get_logger().info(f"KV cache {'enabled' if need_kv_cache else 'disabled'}")
+        get_logger().info("KV cache %s", "enabled" if need_kv_cache else "disabled")
 
     def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
         adapter_config = []
@@ -502,15 +475,17 @@ class KimiK25ModelAdapter(
                 # KV_b投影层
                 source=f"language_model.model.layers.{layer_idx}.self_attn.kv_b_proj",
                 # 输出投影层
-                targets=[f"language_model.model.layers.{layer_idx}.self_attn.o_proj"]
+                targets=[f"language_model.model.layers.{layer_idx}.self_attn.o_proj"],
             )
 
             # Norm-Linear融合的映射配置1：q_a_proj, kv_a_proj_with_mqa -> input_layernorm
             norm_linear_mapping_config1 = MappingConfig(
                 # 第一个LayerNorm
                 source=f"language_model.model.layers.{layer_idx}.input_layernorm",
-                targets=[f"language_model.model.layers.{layer_idx}.self_attn.q_a_proj",
-                         f"language_model.model.layers.{layer_idx}.self_attn.kv_a_proj_with_mqa"]  # 注意力层的Q_a,KV_a投影
+                targets=[
+                    f"language_model.model.layers.{layer_idx}.self_attn.q_a_proj",
+                    f"language_model.model.layers.{layer_idx}.self_attn.kv_a_proj_with_mqa",
+                ],  # 注意力层的Q_a,KV_a投影
             )
 
             # Norm-Linear融合的映射配置2：q_b_proj -> q_a_layernorm
@@ -518,36 +493,30 @@ class KimiK25ModelAdapter(
                 # q_a_layernorm
                 source=f"language_model.model.layers.{layer_idx}.self_attn.q_a_layernorm",
                 # q_b投影
-                targets=[f"language_model.model.layers.{layer_idx}.self_attn.q_b_proj"]
+                targets=[f"language_model.model.layers.{layer_idx}.self_attn.q_b_proj"],
             )
 
             # 为当前layer添加4个配置
-            adapter_config.extend([
-                AdapterConfig(
-                    subgraph_type="ov",
-                    mapping=okv_b_mapping_config,
-                    extra_config={
-                        'group_method': 'max'
-                    },
-                    fusion=FusionConfig(
-                        fusion_type="kv",
-                        num_attention_heads=self.config.text_config.num_attention_heads,
-                        num_key_value_heads=self.config.text_config.num_key_value_heads,
-                        custom_config={
-                            'qk_nope_head_dim': self.config.text_config.qk_nope_head_dim,
-                            'v_head_dim': self.config.text_config.v_head_dim,
-                        }
+            adapter_config.extend(
+                [
+                    AdapterConfig(
+                        subgraph_type="ov",
+                        mapping=okv_b_mapping_config,
+                        extra_config={'group_method': 'max'},
+                        fusion=FusionConfig(
+                            fusion_type="kv",
+                            num_attention_heads=self.config.text_config.num_attention_heads,
+                            num_key_value_heads=self.config.text_config.num_key_value_heads,
+                            custom_config={
+                                'qk_nope_head_dim': self.config.text_config.qk_nope_head_dim,
+                                'v_head_dim': self.config.text_config.v_head_dim,
+                            },
+                        ),
                     ),
-                ),
-                AdapterConfig(
-                    subgraph_type="norm-linear",
-                    mapping=norm_linear_mapping_config1
-                ),
-                AdapterConfig(
-                    subgraph_type="norm-linear",
-                    mapping=norm_linear_mapping_config2
-                ),
-            ])
+                    AdapterConfig(subgraph_type="norm-linear", mapping=norm_linear_mapping_config1),
+                    AdapterConfig(subgraph_type="norm-linear", mapping=norm_linear_mapping_config2),
+                ]
+            )
 
         return adapter_config
 
@@ -570,9 +539,7 @@ class KimiK25ModelAdapter(
         index_data = json_safe_load(index_path)
         return index_data["weight_map"]
 
-    def _get_state_dict(
-        self, module: nn.Module, prefix: str = ""
-    ) -> Dict[str, torch.Tensor]:
+    def _get_state_dict(self, module: nn.Module, prefix: str = "") -> Dict[str, torch.Tensor]:
         """
         Load state dict for a specific module from safetensors files.
 
@@ -598,13 +565,9 @@ class KimiK25ModelAdapter(
 
         # Load weights file by file
         state_dict = {}
-        for file_name, names in tqdm(
-            file_groups.items(), desc=f"Loading {prefix}", leave=False
-        ):
+        for file_name, names in tqdm(file_groups.items(), desc=f"Loading {prefix}", leave=False):
             file_path = os.path.join(self.model_path, file_name)
-            file_path = get_valid_read_path(
-                file_path, extensions="safetensors", size_max=MAX_READ_FILE_SIZE_32G
-            )
+            file_path = get_valid_read_path(file_path, extensions="safetensors", size_max=MAX_READ_FILE_SIZE_32G)
 
             with safe_open(file_path, framework="pt", device="cpu") as f:
                 for param_name in names:
@@ -613,9 +576,7 @@ class KimiK25ModelAdapter(
 
         return state_dict
 
-    def _load_decoder_if_not_exist(
-        self, model: nn.Module, name: str, idx: int
-    ) -> nn.Module:
+    def _load_decoder_if_not_exist(self, model: nn.Module, name: str, idx: int) -> nn.Module:
         """
         Load a specific decoder layer from safetensors if not already loaded.
 
@@ -640,7 +601,7 @@ class KimiK25ModelAdapter(
             try:
                 _ = decoder.input_layernorm.weight.device
                 # If we can access the device, layer is loaded
-                get_logger().debug(f"Layer {idx} already loaded")
+                get_logger().debug("Layer %d already loaded", idx)
                 return decoder
             except RuntimeError:
                 # Weight is on meta device, need to load
@@ -649,12 +610,12 @@ class KimiK25ModelAdapter(
             # Layer doesn't exist in the module list yet
             pass
 
-        get_logger().info(f"Loading decoder layer {idx}...")
+        get_logger().info("Loading decoder layer %d...", idx)
 
         # Disable reset_parameters to avoid slow and unnecessary initialization
         # We will load weights from safetensors immediately after
         with patch.object(nn.Linear, "reset_parameters", lambda _self: None), default_dtype(torch.bfloat16):
-            get_logger().info(f"Creating decoder layer {idx} structure...")
+            get_logger().info("Creating decoder layer %d structure...", idx)
 
             # Create layer structure (weights will be on meta or uninitialized)
             layer_cls = None
@@ -684,7 +645,7 @@ class KimiK25ModelAdapter(
             else:
                 module_list[idx] = decoder
 
-            get_logger().info(f"Decoder layer {idx} loaded successfully")
+            get_logger().info("Decoder layer %d loaded successfully", idx)
 
         # Perform architecture adaptation if needed
         # Similar to DeepSeek-V3's MTP layer wrapping in load_mtp_if_not_load

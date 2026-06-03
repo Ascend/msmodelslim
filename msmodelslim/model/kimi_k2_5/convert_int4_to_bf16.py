@@ -52,6 +52,7 @@ def load_tensor_by_full_name(model_path: str, full_name: str):
     file_state = load_file(file_path, device="cpu")
     return file_state.get(full_name)
 
+
 npu_available = False
 try:
     __import__("torch_npu")
@@ -61,8 +62,9 @@ else:
     npu_available = True
 
 
-def _unpack_from_int32_torch(value: torch.Tensor, num_bits: int, shape: torch.Size,
-                             packed_dim: Union[Literal[0], Literal[1]] = 1) -> torch.Tensor:
+def _unpack_from_int32_torch(
+    value: torch.Tensor, num_bits: int, shape: torch.Size, packed_dim: Union[Literal[0], Literal[1]] = 1
+) -> torch.Tensor:
     if value.dtype is not torch.int32:
         raise SchemaValidateError(f"Expected {torch.int32} but got {value.dtype}, Aborting unpack.")
     if num_bits > 8:
@@ -75,18 +77,19 @@ def _unpack_from_int32_torch(value: torch.Tensor, num_bits: int, shape: torch.Si
         unpacked = torch.zeros((value.shape[0], value.shape[1] * pack_factor), device=value.device, dtype=torch.int32)
         for i in range(pack_factor):
             unpacked[:, i::pack_factor] = (value >> (num_bits * i)) & mask
-        unpacked = unpacked[:, :int(shape[1])]
+        unpacked = unpacked[:, : int(shape[1])]
     else:
         unpacked = torch.zeros((value.shape[0] * pack_factor, value.shape[1]), device=value.device, dtype=torch.int32)
         for i in range(pack_factor):
             unpacked[i::pack_factor, :] = (value >> (num_bits * i)) & mask
-        unpacked = unpacked[:int(shape[0]), :]
+        unpacked = unpacked[: int(shape[0]), :]
 
     return (unpacked - (1 << (num_bits - 1))).to(torch.int8)
 
 
-def _unpack_from_int32_numpy(value: torch.Tensor, num_bits: int, shape: torch.Size,
-                             packed_dim: Union[Literal[0], Literal[1]] = 1) -> torch.Tensor:
+def _unpack_from_int32_numpy(
+    value: torch.Tensor, num_bits: int, shape: torch.Size, packed_dim: Union[Literal[0], Literal[1]] = 1
+) -> torch.Tensor:
     if np is None:
         return _unpack_from_int32_torch(value, num_bits, shape, packed_dim)
 
@@ -102,17 +105,20 @@ def _unpack_from_int32_numpy(value: torch.Tensor, num_bits: int, shape: torch.Si
 
     if packed_dim == 1:
         unpacked = ((value_np[:, :, None] >> shifts) & mask).reshape(value_np.shape[0], value_np.shape[1] * pack_factor)
-        unpacked = unpacked[:, :int(shape[1])]
+        unpacked = unpacked[:, : int(shape[1])]
     else:
-        unpacked = ((value_np[:, None, :] >> shifts.transpose(0, 2, 1)) & mask).reshape(value_np.shape[0] * pack_factor, value_np.shape[1])
-        unpacked = unpacked[:int(shape[0]), :]
+        unpacked = ((value_np[:, None, :] >> shifts.transpose(0, 2, 1)) & mask).reshape(
+            value_np.shape[0] * pack_factor, value_np.shape[1]
+        )
+        unpacked = unpacked[: int(shape[0]), :]
 
     unpacked = (unpacked - (1 << (num_bits - 1))).astype(np.int8, copy=False)
     return torch.from_numpy(unpacked)
 
 
-def unpack_from_int32(value: torch.Tensor, num_bits: int, shape: torch.Size,
-                      packed_dim: Union[Literal[0], Literal[1]] = 1) -> torch.Tensor:
+def unpack_from_int32(
+    value: torch.Tensor, num_bits: int, shape: torch.Size, packed_dim: Union[Literal[0], Literal[1]] = 1
+) -> torch.Tensor:
     return _unpack_from_int32_numpy(value, num_bits, shape, packed_dim)
 
 
@@ -134,7 +140,9 @@ def weight_dequant(weight: torch.Tensor, scale: torch.Tensor) -> torch.Tensor:
 @lru_cache(maxsize=1)
 def get_int4_weight_map(model_path: str):
     model_index = json_safe_load(os.path.join(model_path, "model.safetensors.index.json"))
-    return {k[:-len(".weight_packed")]: v for k, v in model_index["weight_map"].items() if k.endswith(".weight_packed")}
+    return {
+        k[: -len(".weight_packed")]: v for k, v in model_index["weight_map"].items() if k.endswith(".weight_packed")
+    }
 
 
 @lru_cache(maxsize=16)
@@ -148,7 +156,11 @@ def auto_convert_module_int4_to_bf16(name: str, module: nn.Module, model_path: s
     if not weight_map:
         return
     try:
-        sub_weight_map = {sub_name: weight_map[sub_name] for sub_name, _ in module.named_modules(prefix=name) if sub_name in weight_map}
+        sub_weight_map = {
+            sub_name: weight_map[sub_name]
+            for sub_name, _ in module.named_modules(prefix=name)
+            if sub_name in weight_map
+        }
         convert_module_int4_to_bf16(name, module, model_path, weight_map=sub_weight_map)
     except KeyError:
         get_logger().warning("Safetensors files not match index.json, please check whether model is of bf16.")
@@ -170,7 +182,11 @@ def replace_compressed_linear_with_bf16(root_module: nn.Module, root_prefix: str
 
         if weight is None and all(hasattr(mod, k) for k in ("weight_packed", "weight_scale", "weight_shape")):
             packed = mod.weight_packed.detach().to(torch.int32)
-            shape = mod.weight_shape.detach() if isinstance(mod.weight_shape, torch.Tensor) else torch.tensor(mod.weight_shape)
+            shape = (
+                mod.weight_shape.detach()
+                if isinstance(mod.weight_shape, torch.Tensor)
+                else torch.tensor(mod.weight_shape)
+            )
             scale = mod.weight_scale.detach()
             unpacked = unpack_from_int32(packed, num_bits=4, shape=shape, packed_dim=1)
             weight = weight_dequant(unpacked, scale).to(torch.bfloat16)
@@ -203,7 +219,11 @@ def replace_compressed_linear_with_bf16(root_module: nn.Module, root_prefix: str
         new_root = _to_linear(root_prefix, root_module)
         return new_root if new_root is not None else root_module
 
-    targets = [(name, mod) for name, mod in root_module.named_modules() if name and mod.__class__.__name__ == "CompressedLinear"]
+    targets = [
+        (name, mod)
+        for name, mod in root_module.named_modules()
+        if name and mod.__class__.__name__ == "CompressedLinear"
+    ]
     for name, mod in targets:
         full_name = f"{root_prefix}.{name}"
         new_linear = _to_linear(full_name, mod)
@@ -216,12 +236,14 @@ def replace_compressed_linear_with_bf16(root_module: nn.Module, root_prefix: str
 
 @torch.no_grad()
 def convert_module_int4_to_bf16(name: str, module: nn.Module, model_path: str, weight_map: Dict[str, str]):
-    target_sub_modules = {sub_name: sub_module for sub_name, sub_module in module.named_modules(prefix=name) if sub_name in weight_map}
+    target_sub_modules = {
+        sub_name: sub_module for sub_name, sub_module in module.named_modules(prefix=name) if sub_name in weight_map
+    }
     file_to_sub_names: Dict[str, List[str]] = defaultdict(list)
     for sub_name in target_sub_modules:
         file_to_sub_names[weight_map[sub_name]].append(sub_name)
 
-    with tqdm(total=len(target_sub_modules), desc="int4 to bf16") as bar:
+    with tqdm(total=len(target_sub_modules), desc="int4 to bf16") as bars:
         for file_name, sub_names in file_to_sub_names.items():
             file_state = _load_int4_file_state_dict(model_path, file_name)
             for sub_name in sub_names:
@@ -242,15 +264,18 @@ def convert_module_int4_to_bf16(name: str, module: nn.Module, model_path: str, w
                     bias_data = None
                     if getattr(sub_module, "bias", None) is not None:
                         bias_data = sub_module.bias.detach().to(torch.get_default_dtype())
-                    new_linear = nn.Linear(sub_module.in_features, sub_module.out_features,
-                                           bias=bias_data is not None,
-                                           device=dequant_weight.device,
-                                           dtype=torch.get_default_dtype())
+                    new_linear = nn.Linear(
+                        sub_module.in_features,
+                        sub_module.out_features,
+                        bias=bias_data is not None,
+                        device=dequant_weight.device,
+                        dtype=torch.get_default_dtype(),
+                    )
                     new_linear.weight.data.copy_(dequant_weight)
                     if bias_data is not None:
                         new_linear.bias.data.copy_(bias_data)
                     new_linear.eval()
-                    relative_name = sub_name[len(name) + 1:] if name else sub_name
+                    relative_name = sub_name[len(name) + 1 :] if name else sub_name
                     module.set_submodule(relative_name, new_linear)
                 else:
                     target_weight = sub_module.weight
@@ -261,15 +286,15 @@ def convert_module_int4_to_bf16(name: str, module: nn.Module, model_path: str, w
                     del bias_data
                 if "new_linear" in locals():
                     del new_linear
-                bar.update(1)
+                bars.update(1)
 
             del file_state
             gc.collect()
             if npu_available:
                 try:
                     torch.npu.empty_cache()
-                except Exception:
-                    pass
+                except Exception as exc:
+                    get_logger().warning("Failed to clear NPU cache: %s", exc)
 
     cache_clear = getattr(_load_int4_file_state_dict, "cache_clear", None)
     if callable(cache_clear):
