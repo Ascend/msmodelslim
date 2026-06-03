@@ -278,9 +278,6 @@ class MindIEFormatSaver(AutoSaverProcessor):
     def on_w4a4_dynamic_per_group(self, prefix: str, module: qir.W4A4DynamicPerGroupFakeQuantLinear):
         self._raise_ascendv1_saver_recommended("on_w4a4_dynamic_per_group")
 
-    def on_w4a4_mx_dynamic_per_block(self, prefix: str, module: qir.W4A4MXDynamicPerBlockFakeQuantLinear):
-        self._raise_ascendv1_saver_recommended("on_w4a4_mx_dynamic_per_block")
-
     def on_w4a8_mx_dynamic_per_block(self, prefix: str, module: qir.W4A8MXDynamicPerBlockFakeQuantLinear):
         self._raise_ascendv1_saver_recommended("on_w4a8_mx_dynamic_per_block")
 
@@ -358,7 +355,7 @@ class MindIEFormatSaver(AutoSaverProcessor):
                 prefix + ".weight_scale",
                 "W8A8_MXFP8",
                 (weight_scale.squeeze(dim=module.w_axes) + 127).to(torch.uint8),
-                # +127 是对 weight_scale 进行偏移处理，使其从-127~128偏移到0~255，正好覆盖torch_uint8的取值范围
+                # +127 将 e8m0 指数格式（signed int8 指数）偏移为 uint8，以适配 safetensors 存储
             )
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
@@ -367,13 +364,33 @@ class MindIEFormatSaver(AutoSaverProcessor):
             self.json_append[ValidJsonExt.JSON_APPEND] = dict()
         self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W8A8_MXFP8"
 
+    @save_this_rank_only()
+    def on_w4a4_mx_dynamic_per_block(self, prefix: str, module: qir.W4A4MXDynamicPerBlockFakeQuantLinear):
+        with torch.device(module.weight.device):
+            if not (isinstance(module.w_axes, (int, list))):
+                raise SchemaValidateError("w_axes must be int or list[int].")
+            weight_scale = module.weight_scale
+            self.group_size = DEFAULT_GROUP_SIZE
+            self.write_tensor(prefix + ".weight", "W4A4_MXFP4", pack_fp4_to_uint8(module.weight.cpu()))
+            self.write_tensor(
+                prefix + ".weight_scale",
+                "W4A4_MXFP4",
+                (weight_scale.squeeze(dim=module.w_axes) + 127).to(torch.uint8),
+                # +127 将 e8m0 指数格式（signed int8 指数）偏移为 uint8，以适配 safetensors 存储
+            )
+            if module.bias is not None:
+                self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
+        if ValidJsonExt.JSON_APPEND not in self.json_append:
+            self.json_append[ValidJsonExt.JSON_APPEND] = dict()
+        self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W4A4_MXFP4"
+
     def on_w4a4_mx_dynamic_dual_scale(self, prefix: str, module: qir.W4A4MXDynamicDualScaleFakeQuantLinear):
         with torch.device(module.weight.device):
             if not (isinstance(module.w_axes, (int, list))):
                 raise SchemaValidateError("w_axes must be int or list[int].")
             weight_scale = module.weight_scale
             weight_dual_scale = module.weight_dual_scale
-            self.group_size = 32
+            self.group_size = DEFAULT_GROUP_SIZE
             self.write_tensor(prefix + ".weight", "W4A4_MXFP4_DUALSCALE", pack_fp4_to_uint8(module.weight.cpu()))
             self.write_tensor(
                 prefix + ".weight_scale",
@@ -409,13 +426,9 @@ class MindIEFormatSaver(AutoSaverProcessor):
             self.write_tensor(name, "FLOAT", param)
 
     def on_activation_per_token(self, prefix: str, module: qir.FakeQuantActivationPerToken):
-        # 对于FP8 per-token动态量化，保存quant_type标签
         if module.x_q_scheme.dtype == QDType.FP8_E4M3 and module.x_q_scheme.scope == QScope.PER_TOKEN:
-            # 保存格式为 self_attn.quant_type，而不是 fa3_q.quant_type
-            # 提取父路径，例如 model.layers.0.self_attn.fa3_q -> model.layers.0.self_attn
             parent_prefix = prefix.rsplit('.', 1)[0]
             quant_type_key = parent_prefix + ".quant_type"
-
             self.json_writer.write(quant_type_key, "FP8_DYNAMIC")
         else:
             raise SchemaValidateError(f"FakeQuantActivationPerToken Unsupported dtype: {module.x_q_scheme.dtype}")

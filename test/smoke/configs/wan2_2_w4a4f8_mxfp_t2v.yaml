@@ -1,0 +1,51 @@
+apiversion: multimodal_sd_modelslim_v1
+spec:
+  process:
+  - type: linear_quant
+    qconfig:
+      act:
+        scope: per_block
+        dtype: mxfp4
+        symmetric: true
+        method: minmax
+      weight:
+        scope: per_block
+        dtype: mxfp4
+        symmetric: true
+        method: fouroversix
+    include:
+    - '*'
+    exclude:
+    - '*.bias'
+  - type: online_quarot
+    include:
+    - '*.self_attn.*'
+  - type: fa3_quant
+    qconfig:
+      dtype: fp8_e4m3
+      scope: per_token
+      symmetric: true
+      method: minmax
+    include:
+    - '*self_attn'
+  save:
+  - type: mindie_format_saver
+    part_file_size: 0
+  multimodal_sd_config:
+    dump_config:
+      capture_mode: args
+      dump_data_dir: ''
+    model_config:
+      prompt: A stylish woman walks down a Tokyo street filled with warm glowing neon
+        and animated city signage. She wears a black leather jacket, a long red dress,
+        and black boots, and carries a black purse. She wears sunglasses and red lipstick.
+        She walks confidently and casually. The street is damp and reflective, creating
+        a mirror effect of the colorful lights. Many pedestrians walk about.
+      convert_model_dtype: true
+      task: t2v-A14B
+metadata:
+  config_id: Unknown
+  score: 100.0
+  label: {}
+  verified_model_types: []
+  verified_tags: {}
