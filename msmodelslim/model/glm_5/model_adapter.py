@@ -20,17 +20,20 @@ See the Mulan PSL v2 for more details.
 """
 
 import os.path
+import types
 from collections import defaultdict
 from functools import lru_cache
-from typing import List, Any, Generator, Optional, Tuple, Dict, Union
+from typing import List, Any, Generator, Optional, Tuple, Dict, Union, Callable
 from unittest.mock import patch
 
 import torch
+from einops import rearrange
 from safetensors import safe_open
 from torch import distributed as dist
 from torch import nn
 from tqdm import tqdm
 
+from msmodelslim import ir as qir
 from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInterface
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
@@ -39,25 +42,33 @@ from msmodelslim.ir import QuaRotExtraInfoWrapperIR
 from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
-from msmodelslim.utils.security import get_valid_read_path, json_safe_load, MAX_READ_FILE_SIZE_32G
+from msmodelslim.utils.security import get_valid_read_path, json_safe_load, json_safe_dump, MAX_READ_FILE_SIZE_32G
 from .quarot import get_ln_fuse_map, get_rotate_map
 from .convert_fp8_to_bf16 import auto_convert_module_fp8_to_bf16
 from .model import Transformer, ModelArgs
 from .mtp_quant_module import MTPLayer, wrap_mtp_decoder, remove_zero_and_shift
 from ..common.layer_wise_forward import generated_decoder_layer_visit_func, TransformersForwardBreak
 from ..common.transformers import TransformersModel
-from ..interface_hub import ModelSlimPipelineInterfaceV1, FlexSmoothQuantInterface, AscendV1SaveInterface
+from ..interface_hub import (
+    ModelSlimPipelineInterfaceV1,
+    FlexSmoothQuantInterface,
+    FA3QuantAdapterInterface,
+    FA3QuantPlaceHolder,
+    OnlineQuaRotInterface,
+    AscendV1SaveInterface,
+)
 from msmodelslim.model.common.utils import _get_expert_range
 
 
 @logger_setter("msmodelslim.model.glm_5")
-# pylint: disable=too-many-ancestors
-class GLM5ModelAdapter(
+class GLM5ModelAdapter(  # pylint: disable=too-many-ancestors
     TransformersModel,
     ModelInfoInterface,
     ModelSlimPipelineInterfaceV1,
     FlexSmoothQuantInterface,
     QuaRotInterface,
+    FA3QuantAdapterInterface,
+    OnlineQuaRotInterface,
     AscendV1SaveInterface,
 ):
     def get_model_pedigree(self) -> str:
@@ -408,9 +419,118 @@ class GLM5ModelAdapter(
             ]
         return [pre_run], list(rot_pairs.values())
 
-    def ascendv1_save_postprocess(self, model: nn.Module, save_directory: str) -> None:
-        from msmodelslim.utils.security import json_safe_dump
+    def get_online_rotation_configs(self, model: Optional[nn.Module] = None):
+        configs = {}
+        shared_seed = 1234
+        head_dim = self.config.index_head_dim
 
+        for layer_idx in range(self.config.num_hidden_layers):
+            name = f"model.layers.{layer_idx}.self_attn.indexer"
+
+            configs[f"{name}.q_rot"] = OnlineQuaRotInterface.RotationConfig(
+                rotation_type="replace",
+                rotation_size=head_dim,
+                rotation_mode=OnlineQuaRotInterface.QuaRotMode.HADAMARD,
+                block_size=-1,
+                seed=shared_seed,
+                dtype=torch.bfloat16,
+            )
+
+            configs[f"{name}.k_rot"] = OnlineQuaRotInterface.RotationConfig(
+                rotation_type="replace",
+                rotation_size=head_dim,
+                rotation_mode=OnlineQuaRotInterface.QuaRotMode.HADAMARD,
+                block_size=-1,
+                seed=shared_seed,
+                dtype=torch.bfloat16,
+            )
+
+        return configs
+
+    def inject_fa3_placeholders(self, root_name: str, root_module: nn.Module, should_inject) -> None:
+        from importlib import import_module
+        from .model import rotate_activation, fp8_index
+
+        def _wrap_indexer_forward(indexer_mod: nn.Module):
+            glm5_module = import_module(indexer_mod.forward.__module__)
+            apply_rotary_emb = glm5_module.apply_rotary_emb
+
+            def new_indexer_forward(
+                self,
+                x: torch.Tensor,
+                qr: torch.Tensor,
+                start_pos: int,
+                freqs_cis: torch.Tensor,
+                mask: Optional[torch.Tensor],
+            ):
+                bsz, seqlen, _ = x.size()
+                end_pos = start_pos + seqlen
+
+                q = self.wq_b(qr)
+                q = rearrange(q, 'b s (h d) -> b s h d', d=self.head_dim)
+                q_pe, q_nope = torch.split(q, [self.rope_head_dim, self.head_dim - self.rope_head_dim], dim=-1)
+                q_pe = apply_rotary_emb(q_pe, freqs_cis)
+                q = torch.cat([q_pe, q_nope], dim=-1)
+
+                k = self.wk(x)
+                k = self.k_norm(k)
+                k_pe, k_nope = torch.split(k, [self.rope_head_dim, self.head_dim - self.rope_head_dim], dim=-1)
+                k_pe = apply_rotary_emb(k_pe.unsqueeze(2), freqs_cis).squeeze(2)
+                k = torch.cat([k_pe, k_nope], dim=-1)
+
+                if hasattr(self, 'q_rot'):
+                    q = self.q_rot(q)
+                else:
+                    q = rotate_activation(q)
+                if hasattr(self, 'k_rot'):
+                    k = self.k_rot(k)
+                else:
+                    k = rotate_activation(k)
+
+                if hasattr(self, 'fa3_q'):
+                    q = self.fa3_q(q)
+                if hasattr(self, 'fa3_k'):
+                    k = self.fa3_k(k)
+
+                q_scale = torch.ones(*q.size()[:-1], q.size(-1) // 128, dtype=torch.float32).npu()
+                weights = self.weights_proj(x) * self.n_heads**-0.5
+                weights = weights.unsqueeze(-1) * q_scale * self.softmax_scale
+
+                k = k.view(bsz, -1, 1, self.head_dim)
+                index_score = fp8_index(q.contiguous(), weights, k)
+
+                if mask is not None:
+                    index_score += mask
+                topk_indices = index_score.topk(min(self.index_topk, end_pos), dim=-1)[1]
+                return topk_indices.clone()
+
+            indexer_mod.forward = types.MethodType(new_indexer_forward, indexer_mod)
+
+        for name, module in root_module.named_modules():
+            module_type = module.__class__.__name__
+
+            if module_type not in ["Indexer"]:
+                continue
+
+            full_name = f"{root_name}.{name}" if root_name else name
+            if not should_inject(full_name):
+                continue
+
+            if name != "":
+                root_module.set_submodule(f'{name}.fa3_q', FA3QuantPlaceHolder(ratio=0.9999))
+                root_module.set_submodule(f'{name}.fa3_k', FA3QuantPlaceHolder(ratio=0.9999))
+            else:
+                root_module.set_submodule('fa3_q', FA3QuantPlaceHolder(ratio=0.9999))
+                root_module.set_submodule('fa3_k', FA3QuantPlaceHolder(ratio=0.9999))
+            _wrap_indexer_forward(module)
+
+    def get_attention_module_cls(self) -> str:
+        return "MLA"
+
+    def get_attention_output_extractor(self) -> Callable[[Union[tuple, torch.Tensor]], torch.Tensor]:
+        return lambda x: x
+
+    def ascendv1_save_postprocess(self, model: nn.Module, save_directory: str) -> None:
         global_rotation, norm_weight = None, None
 
         # catch the global rotation
@@ -468,6 +588,18 @@ class GLM5ModelAdapter(
         index_data = json_safe_load(index_path)
         index_data["weight_map"]["rot.weight"] = "rot.safetensors"
         json_safe_dump(index_data, index_path, indent=2)
+
+        use_per_token_c8 = False
+        for _, module in model.named_modules():
+            if isinstance(module, qir.FakeQuantActivationPerToken):
+                use_per_token_c8 = True
+                break
+
+        if use_per_token_c8:
+            description_file = os.path.join(save_directory, "quant_model_description.json")
+            description_data = json_safe_load(description_file, check_user_stat=False)
+            description_data["indexer_quant_type"] = "INT8_DYNAMIC"
+            json_safe_dump(description_data, description_file, indent=2, check_user_stat=False)
 
     def _load_config(self, trust_remote_code=False) -> object:
         return ModelArgs()
