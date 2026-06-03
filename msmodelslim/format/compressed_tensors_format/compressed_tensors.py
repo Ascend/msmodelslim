@@ -50,6 +50,7 @@ from msmodelslim.utils.security import (
     get_valid_read_path,
     get_valid_write_path,
     safe_copy_file,
+    set_file_stat,
 )
 
 _HF_COPY_SUFFIXES = (".json", ".py", ".txt", ".jinja")
@@ -122,6 +123,7 @@ class CompressedTensorsQuantFormat(QuantFormatBase):
         }
 
     def finalize_export(self, model: nn.Module) -> None:
+        self._sweep_unprocessed_modules(model)
         try:
             if self.ctx.source_model_path is not None:
                 self._copy_hf_files(str(self.ctx.source_model_path), str(self.ctx.save_directory))
@@ -131,6 +133,16 @@ class CompressedTensorsQuantFormat(QuantFormatBase):
             if self.safetensors_writer is not None:
                 self.safetensors_writer.close()
                 self.safetensors_writer = None
+
+    def _sweep_unprocessed_modules(self, model: nn.Module) -> None:
+        """补扫 LayerWise 未 visit 的模块（如 embed_tokens、norm、lm_head）。"""
+        for name, sub_module in model.named_modules(memo=self.processed_modules):
+            logger.debug(
+                "sweep_unprocessed_modules: name=%r, type=%s",
+                name,
+                type(sub_module).__qualname__,
+            )
+            self._process_module_maybe_wrapper_ir(name, sub_module)
 
     def on_w8a8_static(self, prefix: str, module: qir.W8A8StaticFakeQuantLinear) -> None:
         with torch.device(module.weight.device):
@@ -175,8 +187,10 @@ class CompressedTensorsQuantFormat(QuantFormatBase):
                 continue
             ori_file = os.path.join(input_path, file)
             dest_file = os.path.join(output_path, file)
+            set_file_stat(dest_file, "600")
             with SafeWriteUmask(umask=_WRITE_UMASK):
                 safe_copy_file(src_path=ori_file, dest_path=dest_file)
+            set_file_stat(dest_file, "600")
 
     def _update_config_json(self, model: nn.Module) -> None:
         config_path = os.path.join(self.config.save_directory, "config.json")
