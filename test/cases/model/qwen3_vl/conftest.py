@@ -19,15 +19,10 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-"""
-Pytest config for qwen3_vl tests. Mocks transformers.masking_utils when missing.
-"""
-
 import sys
 import types
 from unittest.mock import MagicMock
 
-import pytest
 
 _created_modules = {}
 _original_modules = {}
@@ -47,6 +42,14 @@ def _setup_mock_modules():
 
     if 'transformers' in sys.modules:
         setattr(sys.modules['transformers'], 'masking_utils', masking_utils)
+    else:
+        transformers_mod = types.ModuleType('transformers')
+        transformers_mod.masking_utils = masking_utils
+        sys.modules['transformers'] = transformers_mod
+
+    transformers_mod = sys.modules['transformers']
+    if not hasattr(transformers_mod, 'Qwen3VLForConditionalGeneration'):
+        transformers_mod.Qwen3VLForConditionalGeneration = MagicMock(name='Qwen3VLForConditionalGeneration')
 
     # transformers.models.qwen3_vl（缺失时注入，以便 model_adapter 能 import Qwen3VLTextDecoderLayer）
     try:
