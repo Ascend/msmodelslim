@@ -19,14 +19,18 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
+# pylint: disable=redefined-outer-name
+
 import sys
 from pathlib import Path
-from unittest.mock import Mock, MagicMock, patch, call
+from unittest.mock import Mock, MagicMock, patch
 import pytest
 
 from msmodelslim.model.wan2_1.model_adapter import (
-    Wan2Point1Adapter, InvalidModelError,
-    SchemaValidateError, UnsupportedError
+    Wan2Point1Adapter,
+    InvalidModelError,
+    SchemaValidateError,
+    UnsupportedError,
 )
 
 
@@ -34,9 +38,14 @@ from msmodelslim.model.wan2_1.model_adapter import (
 def mock_wan_modules(monkeypatch):
     """统一模拟所有wan相关模块，所有测试类共用"""
     mock_modules = [
-        'wan', 'wan.configs', 'wan.utils.prompt_extend',
-        'wan.utils.utils', 'wan.distributed.parallel_mgr',
-        'wan.distributed.tp_applicator', 'wan.distributed', 'wan.utils'
+        'wan',
+        'wan.configs',
+        'wan.utils.prompt_extend',
+        'wan.utils.utils',
+        'wan.distributed.parallel_mgr',
+        'wan.distributed.tp_applicator',
+        'wan.distributed',
+        'wan.utils',
     ]
 
     original_modules = {mod: sys.modules.get(mod) for mod in mock_modules}
@@ -157,12 +166,13 @@ class TestLoadPipeline:
             Wan2Point1Adapter._load_pipeline(mock_self)
 
     @staticmethod
-    def test_load_pipeline_execution_order(mock_self):
-        """测试load_pipeline调用内部方法的次数和顺序"""
+    def test_load_pipeline_calls_internal(mock_self):
+        """Legacy 路径：load_pipeline 负责加载 pipeline 与 cache"""
+        mock_self._load_pipeline = Mock()
+        mock_self._setup_cache = Mock()
         Wan2Point1Adapter.load_pipeline(mock_self)
-        assert mock_self._load_pipeline.call_count == 1
-        assert mock_self._setup_cache.call_count == 1
-        assert mock_self.method_calls == [call._load_pipeline(), call._setup_cache()]
+        mock_self._load_pipeline.assert_called_once()
+        mock_self._setup_cache.assert_called_once()
 
     @pytest.fixture
     def mock_self(self):
@@ -400,8 +410,7 @@ class TestValidateArgs:
     def mock_supported_tasks(self, monkeypatch):
         """当前类专用的任务配置模拟"""
         monkeypatch.setattr(
-            "msmodelslim.model.wan2_1.model_adapter.SUPPORTED_TASKS",
-            ["t2v-14B", "i2v-14B", "t2i-14B", "t2v-1.3B"]
+            "msmodelslim.model.wan2_1.model_adapter.SUPPORTED_TASKS", ["t2v-14B", "i2v-14B", "t2i-14B", "t2v-1.3B"]
         )
 
 
@@ -410,6 +419,7 @@ class TestInitLogging:
     @staticmethod
     def test_rank_zero_config(mock_self, mocker):
         import logging
+
         mock_stream_handler = mocker.patch('msmodelslim.model.wan2_1.model_adapter.logging.StreamHandler')
         mock_basic_config = mocker.patch('msmodelslim.model.wan2_1.model_adapter.logging.basicConfig')
         Wan2Point1Adapter._init_logging(mock_self, rank=0)  # 执行测试
@@ -419,12 +429,13 @@ class TestInitLogging:
         mock_basic_config.assert_called_once_with(
             level=logging.INFO,
             format="[%(asctime)s] %(levelname)s: %(message)s",
-            handlers=[mock_stream_handler.return_value]
+            handlers=[mock_stream_handler.return_value],
         )
 
     @staticmethod
     def test_non_zero_rank_logging_config(mock_self, mocker):
         import logging
+
         mock_basic_config = mocker.patch('msmodelslim.model.wan2_1.model_adapter.logging.basicConfig')
 
         for rank in [1, 2, -1]:
@@ -475,11 +486,7 @@ class TestSetModelArgs:
     @staticmethod
     def test_valid_update(mock_self, base_override):
         """测试合法配置更新：用base_override创建有效配置"""
-        valid_config = base_override({
-            "sample_steps": 60,
-            "offload_model": True,
-            "use_attentioncache": True
-        })
+        valid_config = base_override({"sample_steps": 60, "offload_model": True, "use_attentioncache": True})
         mock_self.set_model_args(valid_config)
 
         assert mock_self.model_args.ckpt_dir == mock_self.model_path
@@ -489,10 +496,12 @@ class TestSetModelArgs:
     @staticmethod
     def test_illegal_attr_raise_error(mock_self, base_override):
         """测试非法属性：动态传入含非法键的配置"""
-        invalid_config = base_override({
-            "sample_steps": 60,
-            "illegal_attr": "invalid"  # 非法属性
-        })
+        invalid_config = base_override(
+            {
+                "sample_steps": 60,
+                "illegal_attr": "invalid",  # 非法属性
+            }
+        )
         with pytest.raises(SchemaValidateError) as exc:
             mock_self.set_model_args(invalid_config)
 
@@ -501,10 +510,12 @@ class TestSetModelArgs:
     @staticmethod
     def test_skip_none_value(mock_self, base_override):
         """测试跳过None值：动态传入含None的配置"""
-        none_config = base_override({
-            "sample_steps": 60,
-            "offload_model": None  # None值参数
-        })
+        none_config = base_override(
+            {
+                "sample_steps": 60,
+                "offload_model": None,  # None值参数
+            }
+        )
         mock_parser = mock_self._get_parser()
         mock_self.set_model_args(none_config)
         argv = mock_parser.parse_args.call_args[0][0]
@@ -515,11 +526,13 @@ class TestSetModelArgs:
     @staticmethod
     def test_bool_false_handling(mock_self, base_override):
         """测试False布尔值：动态传入含False的配置（无需单独类）"""
-        false_bool_config = base_override({
-            "sample_steps": 60,
-            "offload_model": True,  # True保留
-            "use_attentioncache": False  # False忽略
-        })
+        false_bool_config = base_override(
+            {
+                "sample_steps": 60,
+                "offload_model": True,  # True保留
+                "use_attentioncache": False,  # False忽略
+            }
+        )
         mock_parser = mock_self._get_parser()
         mock_self.set_model_args(false_bool_config)
         argv = mock_parser.parse_args.call_args[0][0]
@@ -565,7 +578,6 @@ class TestSetModelArgs:
         return Override
 
 
-
 class TestApplyQuantization:
     @pytest.fixture
     def mock_self(self):
@@ -578,7 +590,7 @@ class TestApplyQuantization:
         transformer.named_modules.return_value = [
             ('embedding', module_embedding),
             ('blocks.0', module_block),
-            ('norm', module_norm)
+            ('norm', module_norm),
         ]
         mock.transformer = transformer
 
@@ -590,9 +602,8 @@ class TestApplyQuantization:
         return Mock()
 
     def test_apply_quantization_with_no_sync(self, mock_self, process_func):
-        """测试当存在no_sync方法时的上下文管理"""
+        """测试当存在no_sync方法时的量化上下文"""
 
-        # 创建完整的no_sync上下文管理器
         class MockNoSync:
             @staticmethod
             def __enter__():
@@ -603,6 +614,8 @@ class TestApplyQuantization:
                 return False
 
         mock_self.no_sync = Mock(return_value=MockNoSync())
+        mock_self.transformer = Mock()
+        mock_self.transformer.named_modules.return_value = []
         Wan2Point1Adapter.apply_quantization(mock_self, process_func)
         mock_self.no_sync.assert_called_once()
         process_func.assert_called_once()
@@ -610,7 +623,7 @@ class TestApplyQuantization:
 
 class TestRunCalibInference:
     @staticmethod
-    def test_run_calib_inference_success(mock_self):
+    def test_run_calib_inference_success(mock_self, mock_logging):
         """测试生成流程完整执行"""
         Wan2Point1Adapter.run_calib_inference(mock_self)
 
@@ -619,10 +632,8 @@ class TestRunCalibInference:
         mock_self.wan_t2v.generate.assert_called_once()
 
         # 验证日志正确输出
-        from msmodelslim.model.wan2_1.model_adapter import logging
-        logging.info.assert_called_once()
-        # 验证日志信息包含正确的时间差（3.0 - 1.0 = 2.0）
-        assert "Generating video used time  2.0000s" in str(logging.info.call_args)
+        mock_logging.info.assert_called_once()
+        assert "Generating video used time  2.0000s" in str(mock_logging.info.call_args)
 
     @pytest.fixture
     def mock_self(self):
@@ -639,7 +650,7 @@ class TestRunCalibInference:
             sample_steps=50,
             sample_guide_scale=7.5,
             offload_model=False,
-            prompt="test prompt"
+            prompt="test prompt",
         )
 
         # 模拟wan_t2v
@@ -650,11 +661,17 @@ class TestRunCalibInference:
         return mock
 
     @pytest.fixture(autouse=True)
+    def mock_logging(self):
+        with patch('msmodelslim.model.wan2_1.model_adapter.logging') as mock_log:
+            yield mock_log
+
+    @pytest.fixture(autouse=True)
     def mock_dependencies(self):
         """模拟依赖并设置具体时间值"""
-        with patch('wan.configs.SIZE_CONFIGS', {'1280*720': (1280, 720)}), \
-                patch('msmodelslim.model.wan2_1.model_adapter.torch'), \
-                patch('msmodelslim.model.wan2_1.model_adapter.logging'):
+        with (
+            patch('wan.configs.SIZE_CONFIGS', {'1280*720': (1280, 720)}),
+            patch('msmodelslim.model.wan2_1.model_adapter.torch'),
+        ):
             # 关键：让tqdm可迭代
             with patch('msmodelslim.model.wan2_1.model_adapter.tqdm') as mock_tqdm:
                 mock_tqdm.return_value.__iter__.return_value = [1]

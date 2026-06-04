@@ -24,6 +24,11 @@ See the Mulan PSL v2 for more details.
 # Each interface represents a series of demands to model for specific component dedicated to specific domain.
 # It is unnecessary to implement all the interfaces in a model adapter.
 # Just implement the interfaces for components you need.
+# Interface hub collects all the interfaces in the project to assist the model adapter's development.
+#
+# Each interface represents a series of demands to model for specific component dedicated to specific domain.
+# It is unnecessary to implement all the interfaces in a model adapter.
+# Just implement the interfaces for components you need.
 
 from msmodelslim.app.auto_tuning.model_info_interface import ModelInfoInterface as atmi
 from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInterface as nami

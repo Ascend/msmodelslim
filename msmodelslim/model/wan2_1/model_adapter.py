@@ -20,6 +20,8 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
+# pylint: disable=logging-fstring-interpolation,too-many-ancestors,consider-merging-isinstance,arguments-renamed,consider-using-from-import,attribute-defined-outside-init,invalid-envvar-default,unnecessary-comprehension
+
 import argparse
 import logging
 import os
@@ -36,36 +38,36 @@ from tqdm import tqdm
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.model.base import BaseModelAdapter
-from msmodelslim.model.common.layer_wise_forward import TransformersForwardBreak, \
-    generated_decoder_layer_visit_func_with_keyword
+from msmodelslim.model.common.layer_wise_forward import (
+    TransformersForwardBreak,
+    generated_decoder_layer_visit_func_with_keyword,
+)
 from msmodelslim.utils.cache import to_device
 from msmodelslim.utils.exception import InvalidModelError, SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter
-from ..interface_hub import ModelInfoInterface, MultimodalSDPipelineInterface
+from ..interface_hub import ModelInfoInterface, LegacyMultimodalPipelineInterface
 
 MAX_RECURSION_DEPTH = 20
 
 EXAMPLE_PROMPT = {
     "t2v-1.3B": {
         "prompt": "Two anthropomorphic cats in comfy boxing gear and bright gloves fight intensely on a spotlighted "
-                  "stage.",
+        "stage.",
     },
     "t2v-14B": {
         "prompt": "Two anthropomorphic cats in comfy boxing gear and bright gloves fight intensely on a spotlighted "
-                  "stage.",
+        "stage.",
     },
     "t2i-14B": {
         "prompt": "一个朴素端庄的美人",
     },
     "i2v-14B": {
-        "prompt":
-            "Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred "
-            "feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the "
-            "background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. "
-            "The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up "
-            "shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.",
-        "image":
-            "examples/i2v_input.JPG",
+        "prompt": "Summer beach vacation style, a white cat wearing sunglasses sits on a surfboard. The fluffy-furred "
+        "feline gazes directly at the camera with a relaxed expression. Blurred beach scenery forms the "
+        "background featuring crystal-clear waters, distant green hills, and a blue sky dotted with white clouds. "
+        "The cat assumes a naturally relaxed posture, as if savoring the sea breeze and warm sunlight. A close-up "
+        "shot highlights the feline's intricate details and the refreshing atmosphere of the seaside.",
+        "image": "examples/i2v_input.JPG",
     },
 }
 
@@ -77,14 +79,12 @@ TASK_CONFIGS = {
 
 
 @logger_setter()
-class Wan2Point1Adapter(BaseModelAdapter,
-                        ModelInfoInterface,
-                        MultimodalSDPipelineInterface,
-                        ):
-    def __init__(self,
-                 model_type: str,
-                 model_path: Path,
-                 trust_remote_code: bool = False):
+class Wan2Point1Adapter(
+    BaseModelAdapter,
+    ModelInfoInterface,
+    LegacyMultimodalPipelineInterface,
+):
+    def __init__(self, model_type: str, model_path: Path, trust_remote_code: bool = False):
         super().__init__(model_type, model_path, trust_remote_code)
         self.pipeline = None
         self.transformer = None
@@ -104,9 +104,11 @@ class Wan2Point1Adapter(BaseModelAdapter,
     def init_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
         return {'': self.transformer}
 
-    def generate_model_forward(self, model: torch.nn.Module,
-                               inputs: Any,
-                               ) -> Generator[ProcessRequest, Any, None]:
+    def generate_model_forward(
+        self,
+        model: torch.nn.Module,
+        inputs: Any,
+    ) -> Generator[ProcessRequest, Any, None]:
         transformer_blocks = [
             (name, module)
             for name, module in model.named_modules()
@@ -118,7 +120,10 @@ class Wan2Point1Adapter(BaseModelAdapter,
 
         def break_hook(module: nn.Module, hook_args: Tuple[Any, ...], hook_kwargs: Dict[str, Any]):
             nonlocal first_block_input
-            first_block_input = (hook_args, hook_kwargs,)
+            first_block_input = (
+                hook_args,
+                hook_kwargs,
+            )
             raise TransformersForwardBreak()
 
         hooks = [transformer_blocks[0][1].register_forward_pre_hook(break_hook, with_kwargs=True)]
@@ -155,9 +160,11 @@ class Wan2Point1Adapter(BaseModelAdapter,
             hidden_states = outputs
             current_inputs = ((hidden_states,), current_inputs[1])
 
-    def generate_model_visit(self, model: torch.nn.Module,
-                             transformer_blocks: Optional[List[Tuple[str, torch.nn.Module]]] = None,
-                             ) -> Generator[ProcessRequest, Any, None]:
+    def generate_model_visit(
+        self,
+        model: torch.nn.Module,
+        transformer_blocks: Optional[List[Tuple[str, torch.nn.Module]]] = None,
+    ) -> Generator[ProcessRequest, Any, None]:
         return generated_decoder_layer_visit_func_with_keyword(model, keyword="attentionblock")
 
     def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
@@ -166,6 +173,7 @@ class Wan2Point1Adapter(BaseModelAdapter,
     def run_calib_inference(self):
         """运行校准推理"""
         from wan.configs import SIZE_CONFIGS
+
         stream = torch.npu.Stream()
         args = self.model_args
 
@@ -178,7 +186,7 @@ class Wan2Point1Adapter(BaseModelAdapter,
             torch.npu.manual_seed_all(args.base_seed)
 
             begin = time.time()
-            video = self.wan_t2v.generate(
+            _ = self.wan_t2v.generate(
                 self.model_args.prompt,
                 size=SIZE_CONFIGS[args.size],
                 frame_num=args.frame_num,
@@ -187,7 +195,8 @@ class Wan2Point1Adapter(BaseModelAdapter,
                 sampling_steps=args.sample_steps,
                 guide_scale=args.sample_guide_scale,
                 seed=args.base_seed,
-                offload_model=args.offload_model)
+                offload_model=args.offload_model,
+            )
             stream.synchronize()
             end = time.time()
             logging.info(f"Generating video used time {end - begin: .4f}s")
@@ -233,8 +242,7 @@ class Wan2Point1Adapter(BaseModelAdapter,
         if missing_attrs:
             available = [a for a in dir(self.model_args)]
             raise SchemaValidateError(
-                f"illegal config attributes: {missing_attrs}. \n"
-                f"supported config attributes: {available}"
+                f"illegal config attributes: {missing_attrs}. \nsupported config attributes: {available}"
             )
 
         # 执行更新
@@ -281,9 +289,7 @@ class Wan2Point1Adapter(BaseModelAdapter,
             from mindiesd import CacheConfig, CacheAgent
         except ImportError as e:
             # Concise import error message
-            raise ImportError(
-                "Failed to import required components from mindiesd. "
-            ) from e
+            raise ImportError("Failed to import required components from mindiesd. ") from e
 
         if self.model_args.use_attentioncache:
             config = CacheConfig(
@@ -292,13 +298,13 @@ class Wan2Point1Adapter(BaseModelAdapter,
                 steps_count=self.model_args.sample_steps,
                 step_start=self.model_args.start_step,
                 step_interval=self.model_args.attentioncache_interval,
-                step_end=self.model_args.end_step
+                step_end=self.model_args.end_step,
             )
         else:
             config = CacheConfig(
                 method="attention_cache",
                 blocks_count=len(self.transformer.blocks),
-                steps_count=self.model_args.sample_steps
+                steps_count=self.model_args.sample_steps,
             )
         cache = CacheAgent(config)
         if self.model_args.dit_fsdp:
@@ -311,13 +317,18 @@ class Wan2Point1Adapter(BaseModelAdapter,
                 block.args = self.model_args
 
     def _check_import_dependency(self):
+        import importlib
+
         try:
-            import wan
-            from wan.configs import WAN_CONFIGS, SIZE_CONFIGS, MAX_AREA_CONFIGS, SUPPORTED_SIZES
-            from wan.utils.prompt_extend import DashScopePromptExpander, QwenPromptExpander
-            from wan.utils.utils import cache_video, cache_image, str2bool
-            from wan.distributed.parallel_mgr import ParallelConfig, init_parallel_env, finalize_parallel_env
-            from wan.distributed.tp_applicator import TensorParallelApplicator
+            for mod in (
+                "wan",
+                "wan.configs",
+                "wan.utils.prompt_extend",
+                "wan.utils.utils",
+                "wan.distributed.parallel_mgr",
+                "wan.distributed.tp_applicator",
+            ):
+                importlib.import_module(mod)
         except ImportError as e:
             # Concise import error message
             raise ImportError(
@@ -339,20 +350,15 @@ class Wan2Point1Adapter(BaseModelAdapter,
         if not isinstance(args.task, str):
             raise SchemaValidateError(f"task must be a str, but got {type(args.task)}")
         if args.task not in SUPPORTED_TASKS:
-            raise UnsupportedError(
-                "Unsupported task: %r. Supported tasks are: %s"
-                % (args.task, SUPPORTED_TASKS)
-            )
+            raise UnsupportedError("Unsupported task: %r. Supported tasks are: %s" % (args.task, SUPPORTED_TASKS))
 
         # The default sampling steps are 40 for image-to-video tasks and 50 for text-to-video tasks.
         if args.sample_steps is None:
             args.sample_steps = 40 if "i2v" in args.task else 50
         if not isinstance(args.sample_steps, int):
-            raise SchemaValidateError(
-                f"sample_steps must be an integer, got {type(args.sample_steps).__name__}"
-            )
+            raise SchemaValidateError(f"sample_steps must be an integer, got {type(args.sample_steps).__name__}")
         if args.sample_steps <= 0:
-            raise SchemaValidateError(f"sample_steps must be greater than 0")
+            raise SchemaValidateError("sample_steps must be greater than 0")
 
         if args.sample_shift is None:
             args.sample_shift = 5.0
@@ -363,20 +369,15 @@ class Wan2Point1Adapter(BaseModelAdapter,
         if args.frame_num is None:
             args.frame_num = 1 if "t2i" in args.task else 81
         if not isinstance(args.frame_num, int):
-            raise SchemaValidateError(
-                f"frame_num must be an integer, got {type(args.frame_num).__name__}"
-            )
+            raise SchemaValidateError(f"frame_num must be an integer, got {type(args.frame_num).__name__}")
         if args.frame_num <= 0:
             raise SchemaValidateError("frame_num must be greater than 0")
 
         # T2I frame_num check
         if "t2i" in args.task and args.frame_num != 1:
-            raise UnsupportedError(
-                "Unsupported frame_num %r for task %r"
-                % (args.frame_num, args.task)
-            )
+            raise UnsupportedError("Unsupported frame_num %r for task %r" % (args.frame_num, args.task))
 
-        args.base_seed = args.base_seed if args.base_seed >= 0 else random.randint(0, sys.maxsize)
+        args.base_seed = args.base_seed if args.base_seed >= 0 else random.randint(0, sys.maxsize)  # nosec B311
         # Size check
         if args.size not in SUPPORTED_SIZES[args.task]:
             raise UnsupportedError(
@@ -396,7 +397,8 @@ class Wan2Point1Adapter(BaseModelAdapter,
         # Validate offload_model
         if "offload_model" in args and args.offload_model and not isinstance(args.offload_model, bool):
             raise SchemaValidateError(
-                f"offload_model must be a boolean (True/False), got {type(args.offload_model).__name__}")
+                f"offload_model must be a boolean (True/False), got {type(args.offload_model).__name__}"
+            )
 
     def _get_parser(self) -> Dict[str, Any]:
         """Get default parameter configuration, integrating wan config parameters"""
@@ -405,145 +407,81 @@ class Wan2Point1Adapter(BaseModelAdapter,
         from wan.utils.utils import str2bool
 
         # Create argument parser and add all necessary configurations
-        parser = argparse.ArgumentParser(
-            description="Generate a image or video from a text prompt or image using Wan"
-        )
+        parser = argparse.ArgumentParser(description="Generate a image or video from a text prompt or image using Wan")
         parser.add_argument(
-            "--task",
-            type=str,
-            default="t2v-14B",
-            choices=list(WAN_CONFIGS.keys()),
-            help="The task to run.")
+            "--task", type=str, default="t2v-14B", choices=list(WAN_CONFIGS.keys()), help="The task to run."
+        )
         parser.add_argument(
             "--size",
             type=str,
             default="1280*720",
             choices=list(SIZE_CONFIGS.keys()),
             help="The area (width*height) of the generated video. For the I2V task,"
-                 "the aspect ratio of the output video will follow that of the input image."
+            "the aspect ratio of the output video will follow that of the input image.",
         )
         parser.add_argument(
             "--frame_num",
             type=int,
             default=None,
-            help="How many frames to sample from a image or video. The number should be 4n+1"
+            help="How many frames to sample from a image or video. The number should be 4n+1",
         )
-        parser.add_argument(
-            "--ckpt_dir",
-            type=str,
-            default=None,
-            help="The path to the checkpoint directory.")
+        parser.add_argument("--ckpt_dir", type=str, default=None, help="The path to the checkpoint directory.")
         parser.add_argument(
             "--offload_model",
             type=str2bool,
             default=None,
-            help="Whether to offload the model to CPU after each model forward, reducing GPU memory usage."
+            help="Whether to offload the model to CPU after each model forward, reducing GPU memory usage.",
         )
+        parser.add_argument("--cfg_size", type=int, default=1, help="The size of the cfg parallelism in DiT.")
+        parser.add_argument("--ulysses_size", type=int, default=1, help="The size of the ulysses parallelism in DiT.")
         parser.add_argument(
-            "--cfg_size",
-            type=int,
-            default=1,
-            help="The size of the cfg parallelism in DiT.")
+            "--ring_size", type=int, default=1, help="The size of the ring attention parallelism in DiT."
+        )
+        parser.add_argument("--tp_size", type=int, default=1, help="The size of the tensor parallelism in DiT.")
         parser.add_argument(
-            "--ulysses_size",
-            type=int,
-            default=1,
-            help="The size of the ulysses parallelism in DiT.")
+            "--vae_parallel", action="store_true", default=False, help="Whether to use parallel for vae."
+        )
+        parser.add_argument("--t5_fsdp", action="store_true", default=False, help="Whether to use FSDP for T5.")
+        parser.add_argument("--t5_cpu", action="store_true", default=False, help="Whether to place T5 model on CPU.")
+        parser.add_argument("--dit_fsdp", action="store_true", default=False, help="Whether to use FSDP for DiT.")
         parser.add_argument(
-            "--ring_size",
-            type=int,
-            default=1,
-            help="The size of the ring attention parallelism in DiT.")
+            "--save_file", type=str, default=None, help="The file to save the generated image or video to."
+        )
+        parser.add_argument("--prompt", type=str, default=None, help="The prompt to generate the image or video from.")
         parser.add_argument(
-            "--tp_size",
-            type=int,
-            default=1,
-            help="The size of the tensor parallelism in DiT.")
-        parser.add_argument(
-            "--vae_parallel",
-            action="store_true",
-            default=False,
-            help="Whether to use parallel for vae.")
-        parser.add_argument(
-            "--t5_fsdp",
-            action="store_true",
-            default=False,
-            help="Whether to use FSDP for T5.")
-        parser.add_argument(
-            "--t5_cpu",
-            action="store_true",
-            default=False,
-            help="Whether to place T5 model on CPU.")
-        parser.add_argument(
-            "--dit_fsdp",
-            action="store_true",
-            default=False,
-            help="Whether to use FSDP for DiT.")
-        parser.add_argument(
-            "--save_file",
-            type=str,
-            default=None,
-            help="The file to save the generated image or video to.")
-        parser.add_argument(
-            "--prompt",
-            type=str,
-            default=None,
-            help="The prompt to generate the image or video from.")
-        parser.add_argument(
-            "--use_prompt_extend",
-            action="store_true",
-            default=False,
-            help="Whether to use prompt extend.")
+            "--use_prompt_extend", action="store_true", default=False, help="Whether to use prompt extend."
+        )
         parser.add_argument(
             "--prompt_extend_method",
             type=str,
             default="local_qwen",
             choices=["dashscope", "local_qwen"],
-            help="The prompt extend method to use.")
-        parser.add_argument(
-            "--prompt_extend_model",
-            type=str,
-            default=None,
-            help="The prompt extend model to use.")
+            help="The prompt extend method to use.",
+        )
+        parser.add_argument("--prompt_extend_model", type=str, default=None, help="The prompt extend model to use.")
         parser.add_argument(
             "--prompt_extend_target_lang",
             type=str,
             default="zh",
             choices=["zh", "en"],
-            help="The target language of prompt extend.")
+            help="The target language of prompt extend.",
+        )
         parser.add_argument(
-            "--base_seed",
-            type=int,
-            default=-1,
-            help="The seed to use for generating the image or video.")
+            "--base_seed", type=int, default=-1, help="The seed to use for generating the image or video."
+        )
+        parser.add_argument("--image", type=str, default=None, help="The image to generate the video from.")
         parser.add_argument(
-            "--image",
-            type=str,
-            default=None,
-            help="The image to generate the video from.")
+            "--sample_solver", type=str, default='unipc', choices=['unipc', 'dpm++'], help="The solver used to sample."
+        )
+        parser.add_argument("--sample_steps", type=int, default=None, help="The sampling steps.")
         parser.add_argument(
-            "--sample_solver",
-            type=str,
-            default='unipc',
-            choices=['unipc', 'dpm++'],
-            help="The solver used to sample.")
-        parser.add_argument(
-            "--sample_steps", type=int, default=None, help="The sampling steps.")
-        parser.add_argument(
-            "--sample_shift",
-            type=float,
-            default=None,
-            help="Sampling shift factor for flow matching schedulers.")
-        parser.add_argument(
-            "--sample_guide_scale",
-            type=float,
-            default=5.0,
-            help="Classifier free guidance scale.")
+            "--sample_shift", type=float, default=None, help="Sampling shift factor for flow matching schedulers."
+        )
+        parser.add_argument("--sample_guide_scale", type=float, default=5.0, help="Classifier free guidance scale.")
         parser = self._add_attentioncache_args(parser)
         return parser
 
     def _get_default_model_args(self):
-
         parser = self._get_parser()
         args = parser.parse_args([])
         self.model_args = args
@@ -555,7 +493,8 @@ class Wan2Point1Adapter(BaseModelAdapter,
             logging.basicConfig(
                 level=logging.INFO,
                 format="[%(asctime)s] %(levelname)s: %(message)s",
-                handlers=[logging.StreamHandler(stream=sys.stdout)])
+                handlers=[logging.StreamHandler(stream=sys.stdout)],
+            )
         else:
             logging.basicConfig(level=logging.ERROR)
 
@@ -567,7 +506,7 @@ class Wan2Point1Adapter(BaseModelAdapter,
         from wan.configs import WAN_CONFIGS
 
         rank = int(os.getenv("RANK", 0))
-        world_size = int(os.getenv("WORLD_SIZE", 1))
+        _ = int(os.getenv("WORLD_SIZE", 1))
         local_rank = int(os.getenv("LOCAL_RANK", 0))
         device = local_rank
         self._init_logging(rank)

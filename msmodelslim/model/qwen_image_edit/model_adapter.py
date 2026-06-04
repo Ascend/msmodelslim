@@ -48,7 +48,7 @@ from msmodelslim.utils.security import get_valid_read_path
 from msmodelslim.utils.cache import to_device
 from msmodelslim.utils.exception import InvalidModelError, SchemaValidateError
 from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
-from ..interface_hub import ModelInfoInterface, MultimodalSDPipelineInterface, OnlineQuaRotInterface
+from ..interface_hub import ModelInfoInterface, LegacyMultimodalPipelineInterface, OnlineQuaRotInterface
 
 # QwenImageTransformer2DModel (diffusers) uses blocks with "TransformerBlock" in class name
 # (e.g. BasicTransformerBlock). Match by keyword for visit/forward.
@@ -61,7 +61,7 @@ QWEN_IMAGE_EDIT_ATTENTION_BLOCK_CLASS = "QwenImageTransformerBlock"
 class QwenImageEditModelAdapter(
     BaseModelAdapter,
     ModelInfoInterface,
-    MultimodalSDPipelineInterface,
+    LegacyMultimodalPipelineInterface,
     FA3QuantAdapterInterface,
     OnlineQuaRotInterface,
 ):
