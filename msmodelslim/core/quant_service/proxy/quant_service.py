@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from pathlib import Path
 from typing import Optional, Any, List, Dict, Literal
 
@@ -41,6 +42,7 @@ _QUANT_SERVICE_FACTORY = TypedFactory[IQuantService](config_base_class=QuantServ
 
 class QuantServiceProxyConfig(QuantServiceConfig):
     """proxy 调度入口的配置，用于 CLI 等直接构造 QuantServiceProxy。proxy 不作为插件注册。"""
+
     apiversion: Literal["proxy"] = "proxy"
 
 
@@ -66,12 +68,12 @@ class QuantServiceProxy(IQuantService):
         self.debug_info_persistence = debug_info_persistence
 
     def quantize(
-            self,
-            quant_config: BaseQuantConfig,
-            model_adapter: Any,
-            save_path: Optional[Path] = None,
-            device: DeviceType = DeviceType.NPU,
-            device_indices: Optional[List[int]] = None,
+        self,
+        quant_config: BaseQuantConfig,
+        model_adapter: Any,
+        save_path: Optional[Path] = None,
+        device: DeviceType = DeviceType.NPU,
+        device_indices: Optional[List[int]] = None,
     ) -> None:
         api_version = quant_config.apiversion
         dataset_loader = self._dataset_loader_for_apiversion(api_version)
@@ -94,7 +96,7 @@ class QuantServiceProxy(IQuantService):
         )
 
     def _dataset_loader_for_apiversion(self, apiversion: str) -> DatasetLoaderInfra:
-        """按 apiversion 选择数据集加载器：VLM 用 vlm_dataset_loader，其余用 dataset_loader。"""
-        if apiversion == 'multimodal_vlm_modelslim_v1':
+        """按 apiversion 选择数据集加载器：VLM/SD 用 vlm_dataset_loader，其余用 dataset_loader。"""
+        if apiversion in {'multimodal_vlm_modelslim_v1', 'multimodal_sd_modelslim_v1'}:
             return self.vlm_dataset_loader
         return self.dataset_loader

@@ -21,23 +21,26 @@ See the Mulan PSL v2 for more details.
 
 # pylint: disable=duplicate-code
 
+import logging
 from dataclasses import dataclass
-from typing import Dict, Any, Union, List
+from typing import Dict, Any, Union, Optional, List
 from pathlib import Path
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, ValidationError, model_validator
 from typing_extensions import Self, Literal
 from torch import nn
 
 from msmodelslim.core.const import RunnerType
 from msmodelslim.core.quant_service.interface import BaseQuantConfig
-from msmodelslim.core.quant_service.modelslim_v1.quant_config import ModelslimV1QuantConfig
+from msmodelslim.core.quant_service.modelslim_v1.quant_config import ModelslimV1QuantConfig, PriorStageConfig
+from msmodelslim.core.quant_service.modelslim_v1.save.saver import AutoSaverConfigList
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.exception_decorator import exception_handler
-from .pipeline_interface import MultimodalPipelineInterface
 from msmodelslim.processor.base import AutoProcessorConfigList
-from msmodelslim.core.quant_service.modelslim_v1.quant_config import PriorStageConfig
-from msmodelslim.core.quant_service.modelslim_v1.save.saver import AutoSaverConfigList
+from .legacy_pipeline_interface import LegacyMultimodalPipelineInterface
+from .pipeline_interface import MultimodalPipelineInterface
+
+MultimodalSDPipelineAdapter = Union[LegacyMultimodalPipelineInterface, MultimodalPipelineInterface]
 
 
 class DumpConfig(BaseModel):
@@ -49,13 +52,47 @@ class DumpConfig(BaseModel):
 # 多模态基础配置
 class MultimodalSDConfig(BaseModel):
     dump_config: DumpConfig
-    # 允许接收未定义的额外参数
+    # 推理参数
+    inference_config: Optional[Dict[str, Any]] = Field(default=None)
+    # 允许接收未定义的额外参数（迁移期旧字段 model_config 等可落在 model_extra）
     model_config = {"extra": "allow"}
 
     # 可选：将额外参数转换为字典属性，方便访问
     @property
     def extra_params(self) -> Dict[str, Any]:
         return self.model_extra or {}
+
+    def resolve_inference_raw(self) -> Dict[str, Any]:
+        """
+        解析 YAML 中的推理配置字典。
+
+        inference_config 为 MultimodalSDConfig 声明字段，由 Pydantic 解析到 self.inference_config
+        （不会进入 model_extra）。与迁移期 extra 字段 model_config 互斥；仅 model_config 时告警并回退读取。
+        """
+        extra = self.model_extra or {}
+        has_legacy_model = "model_config" in extra
+        if self.inference_config is not None and has_legacy_model:
+            raise SchemaValidateError(
+                "inference_config and model_config are mutually exclusive; please keep only one.",
+            )
+
+        if self.inference_config is not None:
+            if not isinstance(self.inference_config, dict):
+                raise SchemaValidateError(
+                    f"inference_config must be dict, got {type(self.inference_config)}",
+                )
+            return self.inference_config
+
+        if "model_config" in extra:
+            logging.warning(
+                "multimodal_sd_config.model_config will be deprecated.",
+            )
+            raw = extra["model_config"]
+            if not isinstance(raw, dict):
+                raise SchemaValidateError(f"model_config must be dict, got {type(raw)}")
+            return raw
+
+        return {}
 
 
 class MultimodalSDServiceConfig(BaseModel):
@@ -106,11 +143,27 @@ def load_specific_config(yaml_spec: object) -> MultimodalSDServiceConfig:
     return MultimodalSDServiceConfig.model_validate(yaml_spec)
 
 
+def validate_inference_config(
+    model_adapter: MultimodalPipelineInterface,
+    sd_config: MultimodalSDConfig,
+) -> BaseModel:
+    """
+    从 multimodal_sd_config 解析推理 dict，并用适配器 InferenceConfig 类做 model_validate。
+    """
+    raw = sd_config.resolve_inference_raw()
+    try:
+        return model_adapter.get_inference_config_class().model_validate(raw)
+    except ValidationError as e:
+        raise SchemaValidateError(
+            f"invalid inference_config for {model_adapter.model_type}: {e}",
+        ) from e
+
+
 @dataclass
 class MultiExpertQuantConfig:
     """多专家模型量化配置"""
 
-    model_adapter: MultimodalPipelineInterface
+    model_adapter: MultimodalSDPipelineAdapter
     models: dict[str, nn.Module]
     calib_data: dict[str, Any]
     quant_config: MultimodalSDModelslimV1QuantConfig
