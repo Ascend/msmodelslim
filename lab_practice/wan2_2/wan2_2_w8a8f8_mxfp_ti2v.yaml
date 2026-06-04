@@ -39,6 +39,9 @@ spec:
         method: "minmax"
       include:
         - "*self_attn"
+
+  dataset: wan2_2_ti2v
+
   save:
     - type: "mindie_format_saver"
       part_file_size: 0
@@ -46,11 +49,12 @@ spec:
   # 基础配置
   multimodal_sd_config:
     dump_config:
+      enable_dump: False
       capture_mode: "args"
       dump_data_dir: ""  # default is save_path
-    model_config:
-      prompt: "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about."
-      # 模型加载参数
+    inference_config:
+      size: "1280*704"
+      frame_num: 81
+      sample_steps: 50
       convert_model_dtype: True
       task: "ti2v-5B"
-      size: "1280*704"

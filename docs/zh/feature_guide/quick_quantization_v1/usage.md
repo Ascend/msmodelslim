@@ -520,25 +520,28 @@ spec:                          # 规格定义
 
 #### 功能说明
 
-multimodal_sd_modelslim_v1是专门为多模态生成模型（如Wan2.1等）设计的量化服务，基于modelslim_v1框架构建。
+multimodal_sd_modelslim_v1 面向文生视频 / 图生视频等多模态**生成**模型，基于 modelslim_v1 框架构建，默认采用逐层量化（`layer_wise`）。
 
 **核心特性**:
 
-- **多模态支持**：针对文本到视频等任务的模型优化。
-- **动态静态量化**：支持动态、静态激活值量化，适应不同的输入场景。
-- **逐层处理**：支持逐层量化，显著减少大模型量化时的显存消耗。
-- **校准数据缓存**：支持校准数据的缓存和复用，提高量化效率。
+- **多模态生成**：支持文本、图像等校准样本，经适配器桥接原推理仓完成浮点重放与 dump。
+- **双编排路径**：按模型适配器接口自动分发——新模型走 `MultimodalPipelineInterface`（`inference_config` + `prepare_calib_data`）；主仓已接入模型保留 `LegacyMultimodalPipelineInterface`（`model_config` + `run_calib_inference`）。
+- **多专家量化**：双 DiT 专家（如 Wan2.2）按专家名分别 dump、量化与保存。
+- **校准数据缓存**：按专家命名 pth 文件，存在则加载，缺失则触发浮点推理生成。
 
-**适用模型类型**:
+**适用模型类型**（`--model_type` 须与 [`config/config.ini`](../../../../config/config.ini) 一致）:
 
-- Wan2.1：支持文本到视频等任务
-- 其他多模态生成模型：待后续逐步支持
+| 编排 | 典型 `model_type` | 说明 |
+|------|-------------------|------|
+| 重构 | `Wan2.2-T2V-A14B`、`Wan2.2-I2V-A14B`、`Wan2.2-TI2V-5B`、`HunyuanVideo` | 使用 `inference_config`；详见[《多模态生成模型接入指南》](../../developer_guide/integrating_multimodal_generation_model.md) |
+| Legacy | `Wan2_1` / `Wan2.1`、`Wan2_2` / `Wan2.2`（单体）、`flux1`、`qwen_image_edit` 等 | 使用迁移期 `model_config`；行为与主仓历史版本兼容 |
 
 **配置特点**:
 
-- 支持`multimodal_sd_config`字段，包含模型特定的配置参数
-- 支持`dump_config`配置，用于校准数据的捕获和存储
-- 支持`model_config`配置，包含模型加载和推理的相关参数
+- `spec.dataset`：校准样本（短名称 / 路径），重构路径下由适配器 `handle_dataset` 加载为 `VlmCalibSample` 列表。
+- `multimodal_sd_config.dump_config`：校准 pth 的目录与捕获模式。
+- `multimodal_sd_config.inference_config`：**推荐**；推理参数经 Pydantic 强校验后桥接到原推理仓 CLI。
+- `multimodal_sd_config.model_config`：**即将废弃**（仅 Legacy）；与 `inference_config` 不可同时配置。
 
 #### runner - 量化调度器类型
 
@@ -576,7 +579,7 @@ spec:
 
 **作用**: 多模态生成模型特有的配置参数，包含校准数据捕获和模型加载与推理配置。
 
-##### dump_config - 校准数据捕获配置
+##### <span id="dump_config---校准数据捕获配置">dump_config - 校准数据捕获配置</span>
 
 **作用**: 配置校准数据的捕获方式和存储路径。
 
@@ -595,19 +598,55 @@ spec:
 
 | 字段名 | 作用 | 说明                                                                                                            | 可选值 |
 |--------|------|---------------------------------------------------------------------------------------------------------------|--------|
-| enable_dump | 是否启用 dump | 控制是否进行校准数据的加载与保存。当为 **False** 时，不会加载或保存校准数据。**注意**：在 enable_dump=False 时，工具会输出日志提示并**要求用户进行交互式确认**（输入 y 继续，否则退出），以确认使用场景是否需要 dump 数据，仅纯动态量化场景不需要校准数据，涉及静态量化或离群值抑制需要校准数据。若需 dump 校准数据，请设置 enable_dump: True | True（默认）/ False |
+| enable_dump | 是否启用 dump | **Legacy 路径**：为 **False** 时不 load/dump，并**交互式确认**（输入 y 继续）后各专家 `calib_data` 置为 `None`。**重构路径**：量化服务将校准准备委托给适配器 `prepare_calib_data`；通常配合 `dump_data_dir` 下按专家命名的 pth——文件齐全则加载，缺失则浮点 dump。纯动态量化（如 W8A8 MXFP8）可设 `False` 且不依赖 pth，但量化时仍须为每个专家保留 `calib_data` 的 key | True（默认）/ False |
 | capture_mode | 数据捕获模式 | 指定如何捕获模型的输入数据                                                                                                 | 当前仅支持"args"，其他模式待后续扩展 |
-| dump_data_dir | 校准数据目录 | 指定校准数据的检索和保存路径，空字符串时自动处理为使用权重保存路径。指定路径存在calib_data.pth时，直接加载作为校准数据，当calib_data.pth文件不存在时程序自动通过dump机制保存并加载校准数据。**仅在 enable_dump=True 时生效** | 字符串路径 |
+| dump_data_dir | 校准数据目录 | 检索与保存 pth 的根目录；空字符串时使用权重 `save_path`。重构路径下按专家生成文件名 `calib_data_<task_config>_<expert_name>.pth`（如 `calib_data_t2v-A14B_low_noise_model.pth`）。**全部 pth 已存在则直接加载；任一缺失则执行浮点推理 dump 后写入** | 字符串路径 |
 
 **捕获模式说明**:
 
-- **args**: 捕获位置参数，适用于大多数多模态生成模型
+- **args**: 捕获位置参数，适用于大多数多模态生成模型。
 
-##### model_config - 模型加载与推理配置
+**校准数据文件命名（重构路径）**:
 
-**作用**: 配置模型加载与推理时的相关参数，用于自定义模型默认加载和推理参数。model_config中可配置的字段与类型限制以多模态生成模型原始推理工程仓为准。
+- 单 DiT（如 HunyuanVideo）：`calib_data_<task_config>_.pth`（`expert_name` 为空字符串）
+- 双专家 Wan2.2：`calib_data_<task_config>_low_noise_model.pth`、`calib_data_<task_config>_high_noise_model.pth`
+- 量化阶段要求 `init_model()` 返回的每个专家在 `calib_data` 中均有对应 **key**；缺 key 将 fail-fast。`calib_data[expert]=None` 表示该专家无 dump 张量（如全动态量化），仍须保留 key。
 
-**配置示例**:
+**Legacy 路径补充**：`enable_dump=False` 时不会 load/dump，并会**交互式确认**是否继续；Legacy 缓存文件名仍为 `calib_data_<task_config>_<expert>.pth`（与重构命名一致），不再使用单一 `calib_data.pth`。
+
+##### inference_config - 推理参数配置（推荐）
+
+**作用**: 配置浮点推理重放与量化桥接参数。由量化服务调用 `validate_inference_config`，使用适配器声明的 `InferenceConfig`（Pydantic，`extra="forbid"`）校验后，再经 `configure_runtime` 合并为原推理仓的 `model_args`。
+
+**配置示例**（Wan2.2-T2V-A14B）:
+
+```yaml
+spec:
+  dataset: wan2_2_t2v
+  multimodal_sd_config:
+    inference_config:
+      size: "1280*720"
+      frame_num: 81
+      sample_steps: 40
+      convert_model_dtype: True
+      task: "t2v-A14B"   # 须与当前 --model_type 绑定，勿用于切换 T2V/I2V/TI2V
+```
+
+**字段说明**:
+
+| 要点 | 说明 |
+|------|------|
+| 合法字段 | 以各模型适配器 `*InferenceConfig` 及原推理仓 CLI 为准；非法字段校验失败 |
+| 与 `model_type`的关系 | 场景由 CLI `--model_type` 固定（如 `Wan2.2-T2V-A14B`），勿仅依赖 YAML 中的 `task` 切换场景 |
+| 互斥 | 与 `model_config` 不可同时出现在同一 YAML 中 |
+
+##### model_config - 模型加载与推理配置（Legacy，将废弃）
+
+**作用**: 仅 **Legacy** 适配器（`LegacyMultimodalPipelineInterface`）在 `set_model_args` 阶段读取；字段以原推理仓为准。
+
+**迁移**: 新接入与重构后的模型请改用 `inference_config`。单独配置 `model_config` 时会打印废弃告警；与 `inference_config` 同时配置将报错。
+
+**配置示例**（Legacy Wan2.1）:
 
 ```yaml
 spec:
@@ -619,27 +658,33 @@ spec:
       task: "t2v-14B"              # 任务类型
       size: "1280*720"             # 生成尺寸规格
       sample_steps: 50             # 采样步数
-      ......
 ```
 
-**字段说明**:
+#### dataset - 校准数据集配置 {#multimodal-sd-dataset}
 
-| 字段名 | 作用 | 说明 | 可选值 |
-|--------|------|------|--------|
-| prompt | 校准提示词 | 用于生成校准数据的文本描述 | 字符串 |
-| offload_model | 模型卸载 | 是否在推理后卸载模型到CPU，值为True时开启 | True/False |
-| frame_num | 生成帧数 | 视频生成的帧数 | 大于0的整数 |
-| task | 任务类型 | 指定模型任务类型，"t2v-14B"表示14B模型的文本生成视频任务、"t2v-1.3B"表示1.3B模型的文本生成视频任务 | "t2v-14B", "t2v-1.3B" |
-| size | 生成尺寸 | 视频或图像的尺寸规格 | "1280\*720", "832\*480" |
-| sample_steps | 采样步数 | 扩散模型的采样步数 | 大于0的整数 |
+**作用**: 指定校准样本，供重构路径 `handle_dataset` / Legacy 路径 `run_calib_inference` 使用。
 
-#### dataset - 校准数据集配置
+**类型**: `string`（短名称、绝对路径或相对路径）。短名称在 [`lab_calib`](../../../../lab_calib/) 下解析。
 
-不支持通过dataset字段配置校准数据集。由于多模态生成模型的量化校准数据处理方式与大语言模型存在明显差异，将通过识别指定 dump_data_dir 目录中是否存在名为"calib_data.pth"的校准数据，选择直接加载或自动获取并保存两种方式。详见[dump_config - 校准数据捕获配置](#dump_config---校准数据捕获配置)
+**样本格式**: 推荐 **`index.json` / `index.jsonl`**，每条至少包含非空 **`text`**；图生视频场景需按模型要求提供 **`image`**。字段约定与多模态理解类似，详见 [dataset - 校准数据路径配置](#dataset---校准数据路径配置)。
+
+**各场景样本要求**（重构 Wan2.2）:
+
+| `model_type` | 样本要求 |
+|--------------|----------|
+| `Wan2.2-T2V-A14B` | 必须有 `text`，不得带 `image` |
+| `Wan2.2-I2V-A14B` | 必须有 `text` 与可访问的 `image` |
+| `Wan2.2-TI2V-5B` | 必须有 `text`；`image` 可选 |
+
+校准 pth 的生成与复用逻辑见 [dump_config - 校准数据捕获配置](#dump_config---校准数据捕获配置)。
 
 #### 使用示例
 
-- Wan2.1模型W8A8动态量化：[wan2_1_w8a8_dynamic.yaml](https://gitcode.com/Ascend/msmodelslim/blob/master/lab_practice/wan2_1/wan2_1_w8a8_dynamic.yaml)
+- Wan2.1 Legacy W8A8 动态量化：[wan2_1_w8a8_dynamic.yaml](../../../../lab_practice/wan2_1/wan2_1_w8a8_dynamic.yaml)
+- Wan2.2-T2V W8A8 MXFP8 + QuaRot + FA3：[wan2_2_w8a8f8_mxfp_t2v.yaml](../../../../lab_practice/wan2_2/wan2_2_w8a8f8_mxfp_t2v.yaml)
+- Wan2.2-I2V W8A8 MXFP8 + QuaRot + FA3：[wan2_2_w8a8f8_mxfp_i2v.yaml](../../../../lab_practice/wan2_2/wan2_2_w8a8f8_mxfp_i2v.yaml)
+- Wan2.2-TI2V W8A8 MXFP8 + QuaRot + FA3：[wan2_2_w8a8f8_mxfp_ti2v.yaml](../../../../lab_practice/wan2_2/wan2_2_w8a8f8_mxfp_ti2v.yaml)
+- HunyuanVideo：[hunyuan_video_w8a8f8_mxfp.yaml](../../../../lab_practice/hunyuan_video/hunyuan_video_w8a8f8_mxfp.yaml)
 
 ### multimodal_vlm_modelslim_v1 配置详解
 
@@ -693,7 +738,7 @@ spec:
       part_file_size: 4        # 分片文件大小（GB）。建议大模型进行分片保存
 ```
 
-#### dataset - 校准数据路径配置
+#### <span id="dataset---校准数据路径配置">dataset - 校准数据路径配置</span>
 
 **作用**: 指定校准数据集的路径。
 

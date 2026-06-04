@@ -41,6 +41,9 @@ spec:
         method: "minmax"
       include:
         - "*"
+
+  dataset: hunyuanvideo
+
   save:
     - type: "mindie_format_saver"
       part_file_size: 0
@@ -48,8 +51,10 @@ spec:
   # 基础配置
   multimodal_sd_config:
     dump_config:
+      enable_dump: False
       capture_mode: "args"
       dump_data_dir: ""  # default is save_path
-    model_config:
-      prompt: "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about."
-      # 模型加载参数
+    inference_config:
+      model_resolution: "720p"
+      video_size: [720, 1280]
+      infer_steps: 50
