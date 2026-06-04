@@ -19,9 +19,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-
 import numpy as np
-import pytest
 import torch
 
 from msmodelslim.core.quant_service.modelslim_v1.save.utils.deqscale import (

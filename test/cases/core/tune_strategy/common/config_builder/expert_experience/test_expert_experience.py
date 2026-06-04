@@ -2,10 +2,21 @@
 # -*- coding: UTF-8 -*-
 
 """
-Unit tests for msmodelslim.core.tune_strategy.common.config_builder.expert_experience.
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2025 Huawei Technologies Co.,Ltd.
 
-命名约定：test_对象_断言_when_条件（或：被测方法/场景 + 前置条件/状态 + 预期行为）。
-注释中需写清：场景、预期，必要时说明前置条件，便于看护默认值与行为。
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
 """
 
 import pytest

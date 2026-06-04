@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+# pylint: disable=redefined-outer-name
+
 import inspect
 import json
 import shutil
@@ -18,6 +20,10 @@ from msmodelslim.ir.qal import QScope, QDType
 from msmodelslim.utils.exception import SchemaValidateError
 
 
+def _copy_file_stub(src_path, dest_path):
+    shutil.copy(src_path, dest_path)
+
+
 class _Adapter:
     def __init__(self, model_path: str):
         self.model_path = Path(model_path)
@@ -26,8 +32,12 @@ class _Adapter:
 @pytest.fixture
 def saver():
     tmp = tempfile.mkdtemp()
-    with patch("msmodelslim.core.quant_service.modelslim_v1.save.mindie_format.dist.is_initialized", return_value=False):
-        saver_ins = MindIEFormatSaver(nn.Linear(4, 4), MindIEFormatConfig(save_directory=tmp, part_file_size=0), _Adapter(tmp))
+    with patch(
+        "msmodelslim.core.quant_service.modelslim_v1.save.mindie_format.dist.is_initialized", return_value=False
+    ):
+        saver_ins = MindIEFormatSaver(
+            nn.Linear(4, 4), MindIEFormatConfig(save_directory=tmp, part_file_size=0), _Adapter(tmp)
+        )
     saver_ins.json_writer = MagicMock()
     saver_ins.safetensors_writer = MagicMock()
     return saver_ins
@@ -45,30 +55,48 @@ def _capture_write_tensor(saver_ins: MindIEFormatSaver):
 
 def _mindie_post_run_case(method_name: str):
     if method_name == "on_w8a8_static":
-        return "m.q", SimpleNamespace(
-            weight=torch.randint(-8, 7, (4, 4), dtype=torch.int8),
-            input_scale=torch.tensor([0.5], dtype=torch.float32),
-            input_offset=torch.tensor([0.0], dtype=torch.float32),
-            weight_scale=torch.ones(4, dtype=torch.float32),
-            bias=torch.zeros(4, dtype=torch.float32),
-        ), "m.q.weight", "w8a8"
+        return (
+            "m.q",
+            SimpleNamespace(
+                weight=torch.randint(-8, 7, (4, 4), dtype=torch.int8),
+                input_scale=torch.tensor([0.5], dtype=torch.float32),
+                input_offset=torch.tensor([0.0], dtype=torch.float32),
+                weight_scale=torch.ones(4, dtype=torch.float32),
+                bias=torch.zeros(4, dtype=torch.float32),
+            ),
+            "m.q.weight",
+            "w8a8",
+        )
     if method_name == "on_w8a8_dynamic_per_channel":
-        return "m.dq", SimpleNamespace(
-            weight=torch.randint(-8, 7, (4, 4), dtype=torch.int8),
-            weight_scale=torch.ones(4, dtype=torch.float32),
-            bias=torch.zeros(4, dtype=torch.float32),
-        ), "m.dq.weight", "w8a8_dynamic"
+        return (
+            "m.dq",
+            SimpleNamespace(
+                weight=torch.randint(-8, 7, (4, 4), dtype=torch.int8),
+                weight_scale=torch.ones(4, dtype=torch.float32),
+                bias=torch.zeros(4, dtype=torch.float32),
+            ),
+            "m.dq.weight",
+            "w8a8_dynamic",
+        )
     if method_name == "on_w8a8_mx_dynamic_per_block":
-        return "m.mx", SimpleNamespace(
-            weight=torch.randn(4, 4, dtype=torch.float32),
-            weight_scale=torch.zeros((4, 1), dtype=torch.int32),
-            w_axes=1,
-            bias=torch.zeros(4, dtype=torch.float32),
-        ), "m.mx.weight", "w8a8_mxfp8"
+        return (
+            "m.mx",
+            SimpleNamespace(
+                weight=torch.randn(4, 4, dtype=torch.float32),
+                weight_scale=torch.zeros((4, 1), dtype=torch.int32),
+                w_axes=1,
+                bias=torch.zeros(4, dtype=torch.float32),
+            ),
+            "m.mx.weight",
+            "w8a8_mxfp8",
+        )
     if method_name == "on_online_rotation_wrapper":
-        return "model.rotation", SimpleNamespace(
-            rotation_info=SimpleNamespace(rotation_matrix=torch.eye(4, dtype=torch.float32))
-        ), "model.rotation", None
+        return (
+            "model.rotation",
+            SimpleNamespace(rotation_info=SimpleNamespace(rotation_matrix=torch.eye(4, dtype=torch.float32))),
+            "model.rotation",
+            None,
+        )
     if method_name == "on_float_linear":
         return "m.float", nn.Linear(4, 3, bias=True), "m.float.weight", None
     if method_name == "on_float_module":
@@ -76,9 +104,12 @@ def _mindie_post_run_case(method_name: str):
         mod.register_parameter("weight", nn.Parameter(torch.ones(2, 2)))
         return "m.module", mod, "m.module.weight", None
     if method_name == "on_activation_per_token":
-        return "model.layers.0.self_attn.fa3_q", SimpleNamespace(
-            x_q_scheme=SimpleNamespace(dtype=QDType.FP8_E4M3, scope=QScope.PER_TOKEN)
-        ), "model.layers.0.self_attn.quant_type", None
+        return (
+            "model.layers.0.self_attn.fa3_q",
+            SimpleNamespace(x_q_scheme=SimpleNamespace(dtype=QDType.FP8_E4M3, scope=QScope.PER_TOKEN)),
+            "model.layers.0.self_attn.quant_type",
+            None,
+        )
     raise AssertionError(method_name)
 
 
@@ -229,7 +260,7 @@ class TestMindIEFormatSaver:
 
         with patch(
             "msmodelslim.core.quant_service.modelslim_v1.save.mindie_format.safe_copy_file",
-            side_effect=lambda src_path, dest_path: shutil.copy(src_path, dest_path),
+            side_effect=_copy_file_stub,
         ):
             saver_ins.post_run()
 

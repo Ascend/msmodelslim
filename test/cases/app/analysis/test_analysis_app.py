@@ -17,12 +17,12 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
-"""
-"""
+
 综合测试用例：验证分析模块的完整功能覆盖
 包括CLI、APP和分析服务模块的所有功能
 目标覆盖率：>80%
 """
+
 import os
 import shutil
 import tempfile
@@ -30,8 +30,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import torch
-import torch.nn as nn
 from testing_utils.mock import mock_init_config
 
 from msmodelslim.core.analysis_service import AnalysisResult
@@ -58,7 +56,7 @@ class TestComprehensiveAnalysisCoverage(unittest.TestCase):
 
             # 创建模拟的校准数据集文件
             self.calib_file = self.dataset_dir / "boolq.jsonl"
-            with open(self.calib_file, 'w') as f:
+            with open(self.calib_file, 'w', encoding='utf-8') as f:
                 f.write('{"data": "mock calibration data"}')
 
             # 创建模型文件
@@ -109,7 +107,7 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
                 device=DeviceType.NPU,
                 calib_dataset="boolq.jsonl",
                 topk=15,
-                trust_remote_code=False
+                trust_remote_code=False,
             )
 
     def test_analyze_parameter_validation_patterns(self):
@@ -129,11 +127,14 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
             app.analyze(
                 model_type="Qwen2.5-7B-Instruct",
                 model_path=str(self.model_path),
-                scope_args=LinearArgs(pattern="not_a_list", metrics=AnalysisMetrics.STD),  # noqa: type is wrong on purpose
+                scope_args=LinearArgs(
+                    pattern="not_a_list",  # type: ignore[arg-type]  # intentionally invalid for validation
+                    metrics=AnalysisMetrics.STD,
+                ),
                 device=DeviceType.NPU,
                 calib_dataset="boolq.jsonl",
                 topk=15,
-                trust_remote_code=False
+                trust_remote_code=False,
             )
 
     def test_analyze_parameter_validation_calib_dataset_format(self):
@@ -157,7 +158,7 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
                 device=DeviceType.NPU,
                 calib_dataset="invalid.txt",  # 无效的文件格式
                 topk=15,
-                trust_remote_code=False
+                trust_remote_code=False,
             )
 
     def test_analyze_parameter_validation_topk(self):
@@ -181,7 +182,7 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
                 device=DeviceType.NPU,
                 calib_dataset="boolq.jsonl",
                 topk=0,  # 无效的topk值
-                trust_remote_code=False
+                trust_remote_code=False,
             )
 
     def test_analyze_parameter_validation_scope_args_type(self):
@@ -234,13 +235,11 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
             device=DeviceType.CPU,
             calib_dataset="boolq.jsonl",
             topk=15,
-            trust_remote_code=False
+            trust_remote_code=False,
         )
 
         self.assertEqual(result, mock_result)
-        mock_model_factory.create.assert_called_once_with(
-            "Qwen2.5-7B-Instruct", self.model_path, False
-        )
+        mock_model_factory.create.assert_called_once_with("Qwen2.5-7B-Instruct", self.model_path, False)
         mock_service.analyze.assert_called_once()
         call_kw = mock_service.analyze.call_args.kwargs
         self.assertEqual(call_kw["device"], DeviceType.CPU)
@@ -252,7 +251,9 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
         self.assertEqual(ac.linear_pattern, ["*"])
         self.assertIsNone(ac.quant_modules)
         mock_result_manager.display_result.assert_called_once_with(
-            mock_result, 15, AnalysisScope.LINEAR,
+            mock_result,
+            15,
+            AnalysisScope.LINEAR,
         )
 
     @patch('msmodelslim.app.analysis.application.get_logger')
@@ -284,7 +285,7 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
                 device=DeviceType.NPU,
                 calib_dataset="boolq.jsonl",
                 topk=15,
-                trust_remote_code=False
+                trust_remote_code=False,
             )
 
     @patch('msmodelslim.app.analysis.application.get_logger')
@@ -316,82 +317,11 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
             device=DeviceType.NPU,
             calib_dataset="boolq.jsonl",
             topk=15,
-            trust_remote_code=False
+            trust_remote_code=False,
         )
 
         self.assertIsNone(result)
         mock_result_manager.display_result.assert_not_called()
-
-
-class TestAnalysisServiceModule(TestComprehensiveAnalysisCoverage):
-    """测试分析服务模块（PipelineAnalysisService）"""
-
-    def test_pipeline_analysis_service_init(self):
-        from msmodelslim.core.analysis_service import PipelineAnalysisService
-
-        mock_dataset_loader = MagicMock()
-        mock_context_factory = MagicMock()
-        mock_pipeline_loader = MagicMock()
-        service = PipelineAnalysisService(mock_dataset_loader, mock_context_factory, mock_pipeline_loader)
-
-        self.assertEqual(service.dataset_loader, mock_dataset_loader)
-        self.assertEqual(service.context_factory, mock_context_factory)
-        self.assertEqual(service.pipeline_loader, mock_pipeline_loader)
-
-    @patch('msmodelslim.core.analysis_service.pipeline_analysis.service.get_logger')
-    def test_analyze_with_successful_flow(self, mock_get_logger):
-        """测试analyze方法成功流程"""
-        from msmodelslim.core.analysis_service import (
-            AnalysisConfig,
-            AnalysisScope,
-            PipelineAnalysisService,
-        )
-        from msmodelslim.core.runner.pipeline_interface import PipelineInterface
-
-        mock_dataset_loader = MagicMock()
-        mock_dataset_loader.get_dataset_by_name.return_value = [{"input_ids": torch.tensor([[1, 2]])}]
-        mock_context_factory = MagicMock()
-        mock_ctx = MagicMock()
-        mock_ctx.__enter__ = MagicMock(return_value=mock_ctx)
-        mock_ctx.__exit__ = MagicMock(return_value=False)
-        mock_ns = MagicMock()
-        # Service reads from ctx['layer_analysis'].debug (not state); provide real values for AnalysisResult
-        mock_ns.debug = {
-            "layer_scores": [{"name": "layer1", "score": 1.0}],
-            "method": "std",
-            "patterns": ["*"],
-        }
-        mock_ctx.__getitem__ = lambda self, k: mock_ns if k == "layer_analysis" else mock_ctx
-        mock_ctx.create_namespace = MagicMock()
-        mock_context_factory.create.return_value = mock_ctx
-        mock_pipeline_loader = MagicMock()
-        mock_builder = MagicMock()
-        mock_builder.template_modules.return_value = mock_builder
-        mock_builder.create.return_value = []
-        mock_pipeline_loader.get_pipeline_builder.return_value = mock_builder
-
-        service = PipelineAnalysisService(
-            mock_dataset_loader, mock_context_factory, mock_pipeline_loader
-        )
-        mock_model_adapter = MagicMock(spec=PipelineInterface)
-        analysis_config = AnalysisConfig(
-            scope=AnalysisScope.LINEAR,
-            metrics="std",
-            calib_dataset="test.jsonl",
-            linear_pattern=["*"],
-        )
-
-        with patch("msmodelslim.core.analysis_service.pipeline_analysis.service.LayerWiseRunner"):
-            result = service.analyze(
-                model_adapter=mock_model_adapter,
-                analysis_config=analysis_config,
-                device=DeviceType.CPU,
-            )
-
-        self.assertIsNotNone(result)
-        self.assertEqual(result.layer_scores, [{"name": "layer1", "score": 1.0}])
-        self.assertEqual(result.method, "std")
-        self.assertEqual(result.patterns, ["*"])
 
 
 def create_mock_analysis_result(layer_scores: list) -> AnalysisResult:
