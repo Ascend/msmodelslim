@@ -29,6 +29,7 @@ from pydantic import Field, BaseModel, AfterValidator
 from torch import nn
 
 from msmodelslim import logger, ir as qir
+from msmodelslim.ir.qal import QDType, QScope
 from msmodelslim.ir.qal.qregistry import QABCRegistry
 from msmodelslim.model import IModel
 from msmodelslim.processor.base import AutoSessionProcessor
@@ -144,6 +145,10 @@ class QuaRotOptionalScopeInfo(BaseModel):
 
 ASCENDV1_DESC_JSON_NAME = "quant_model_description.json"
 ASCENDV1_SAFETENSORS_NAME = "quant_model_weights.safetensors"
+DTYPE_PREFIX_MAP = {
+    QDType.FP8_E4M3: "FP8",
+    QDType.INT8: "INT8",
+}
 
 
 @QABCRegistry.register(dispatch_key=AscendV1Config, abc_class=AutoSessionProcessor)
@@ -186,6 +191,7 @@ class AscendV1Saver(AutoSaverProcessor):
         self.shared_modules_slice: Optional[List[str]] = None
         self.quarot_info: Optional[qir.QuarotOnlineRotationInfo] = None
         self.desc_quant = None
+        self.fa_quant_states = {}
 
         self.version = "1.0.0"
         self.model_quant_type = "Unknown"
@@ -536,31 +542,82 @@ class AscendV1Saver(AutoSaverProcessor):
         for name, param in module.named_parameters(recurse=False, prefix=prefix):
             self.write_tensor(name, "W16A16S", param)
 
-    def on_activation_per_head(self, prefix: str, module: qir.FakeQuantActivationPerHead):
+    def _save_activation_per_head(self, prefix: str, module: qir.FakeQuantActivationPerHead, offset_dtype: torch.dtype):
         scale = module.input_scale.to(torch.float32).unsqueeze(-1)
-        # 对于1维张量（fa_k.scale, fa_v.scale），转化为2维（与fa_q.scale对齐维数）
         if scale.dim() == 1:
             scale = scale.unsqueeze(-1)
-        offset = torch.zeros_like(scale, dtype=torch.int8)
+        offset = torch.zeros_like(scale, dtype=offset_dtype)
         self.write_tensor(prefix + ".scale", "FAQuant", scale)
         self.write_tensor(prefix + ".offset", "FAQuant", offset)
-        self.json_append['fa_quant_type'] = "FAKQuant"
+        self.update_fa_quant_type(prefix, module)
+        self.update_global_fa_quant_type('FAKQuant')
+
+    def on_int8_activation_per_head(self, prefix: str, module: qir.INT8FakeQuantActivationPerHead):
+        # FA3 INT8 静态策略保存
+        self._save_activation_per_head(prefix, module, torch.int8)
+
+    def on_fp8_activation_per_head(self, prefix: str, module: qir.FP8FakeQuantActivationPerHead):
+        # FA3 FP8静态保存策略
+        self._save_activation_per_head(prefix, module, torch.float32)
 
     def on_activation_per_token(self, prefix: str, module: qir.FakeQuantActivationPerToken):
-        # 对于 per-token 动态量化，保存 quant_type 标签
-        from msmodelslim.ir.qal import QDType, QScope
+        # FA3动态量化保存策略
+        self.update_fa_quant_type(prefix, module)
 
-        # 保存格式为 self_attn.quant_type，而不是 fa3_q.quant_type
-        # 提取父路径，例如 model.layers.0.self_attn.fa3_q -> model.layers.0.self_attn
-        parent_prefix = prefix.rsplit('.', 1)[0]
-        quant_type_key = parent_prefix + ".quant_type"
+    def update_fa_quant_type(self, prefix: str, module):
+        """
+        拼装和更新FA3量化策略字符串
+        """
+        parent_prefix, act_name_raw = prefix.rsplit('.', 1)
+        quant_type_key = f"{parent_prefix}.quant_type"
+        act = act_name_raw.split('_')[-1].upper()
 
-        if module.x_q_scheme.dtype == QDType.FP8_E4M3 and module.x_q_scheme.scope == QScope.PER_TOKEN:
-            self.json_writer.write(quant_type_key, "FP8_DYNAMIC")
-        elif module.x_q_scheme.dtype == QDType.INT8 and module.x_q_scheme.scope == QScope.PER_TOKEN:
-            self.json_writer.write(quant_type_key, "INT8_DYNAMIC")
-        else:
-            raise SchemaValidateError(f"FakeQuantActivationPerToken Unsupported dtype: {module.x_q_scheme.dtype}")
+        dtype = DTYPE_PREFIX_MAP.get(module.x_q_scheme.dtype)
+        if not dtype:
+            raise SchemaValidateError(f"AutoFakeQuantActivation Unsupported dtype: {module.x_q_scheme.dtype}")
+        is_dynamic = module.x_q_scheme.scope == QScope.PER_TOKEN
+        strategy = "DYNAMIC" if is_dynamic else "STATIC"
+
+        if parent_prefix not in self.fa_quant_states:
+            self.fa_quant_states[parent_prefix] = {}
+
+        # 记录格式: parent_prefix -> { 'Q': ('FP8', 'DYNAMIC'), 'K': ('INT8', 'STATIC'), ... }
+        self.fa_quant_states[parent_prefix][act] = (dtype, strategy)
+        layer_states = self.fa_quant_states[parent_prefix]
+
+        # 使用字典保存 { (dtype, strategy) : ['Q', 'K'] }
+        # 按照 Q, K, V, P 的严格顺序遍历，确保输出的合并顺序稳定（如始终是 KV_FP8 而不是 VK_FP8）
+        config_to_acts = {}
+        for expected_act in ['Q', 'K', 'V', 'P']:
+            if expected_act in layer_states:
+                cfg = layer_states[expected_act]
+                if cfg not in config_to_acts:
+                    config_to_acts[cfg] = []
+                config_to_acts[cfg].append(expected_act)
+
+        parts = []
+        for (cfg_dtype, cfg_strategy), acts in config_to_acts.items():
+            act_prefix = "".join(acts)
+            # 规则: 如果 Q、K、V 配置一致，省略激活值前缀
+            if act_prefix == "QKV":
+                act_prefix = ""
+            # 规则: 静态(STATIC)省略后缀，动态保留 "_DYNAMIC"
+            strat_suffix = "_DYNAMIC" if cfg_strategy == "DYNAMIC" else ""
+            # 基础格式如: "FP8_DYNAMIC" 或是 "INT8"
+            config_str = f"{cfg_dtype}{strat_suffix}"
+
+            if act_prefix:
+                parts.append(f"{act_prefix}_{config_str}")
+            else:
+                # 当 act_prefix 被省略时（如QKV的情况），直接使用 config_str
+                parts.append(config_str)
+
+        final_quant_type = "_".join(parts)
+        self.json_writer.write(quant_type_key, final_quant_type)
+
+    def update_global_fa_quant_type(self, states=None):
+        if self.fa_quant_states:
+            self.json_append['fa_quant_type'] = states
 
     def on_online_rotation_wrapper(self, prefix: str, module: qir.OnlineRotationWrapper):
         """

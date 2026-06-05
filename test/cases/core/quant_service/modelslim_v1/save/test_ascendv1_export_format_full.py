@@ -9,7 +9,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, Mock
 
 import pytest
 import torch
@@ -47,16 +47,6 @@ class _IModelAdapter(IModel):
         return False
 
 
-@pytest.fixture
-def saver():
-    tmp = tempfile.mkdtemp()
-    with patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.dist.is_initialized", return_value=False):
-        saver_ins = AscendV1Saver(nn.Linear(4, 4), AscendV1Config(save_directory=tmp, part_file_size=0), _Adapter(tmp))
-    saver_ins.json_writer = MagicMock()
-    saver_ins.safetensors_writer = MagicMock()
-    return saver_ins
-
-
 def _capture_write_tensor(saver_ins: AscendV1Saver):
     calls = []
 
@@ -68,6 +58,17 @@ def _capture_write_tensor(saver_ins: AscendV1Saver):
 
 
 class TestAscendV1ExportFormatMethods:
+    @pytest.fixture
+    def saver(self):
+        tmp = tempfile.mkdtemp()
+        with patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.dist.is_initialized", return_value=False):
+            saver_ins = AscendV1Saver(
+                nn.Linear(4, 4), AscendV1Config(save_directory=tmp, part_file_size=0), _Adapter(tmp)
+            )
+        saver_ins.json_writer = MagicMock()
+        saver_ins.safetensors_writer = MagicMock()
+        return saver_ins
+
     def test_AscendV1Saver_on_methods_should_be_covered_when_reflecting_class(self):
         expected = {
             "on_w8a8_static",
@@ -87,7 +88,8 @@ class TestAscendV1ExportFormatMethods:
             "on_float_module",
             "on_dynamic_cache",
             "on_w16a16s",
-            "on_activation_per_head",
+            "on_int8_activation_per_head",
+            "on_fp8_activation_per_head",
             "on_activation_per_token",
             "on_online_rotation_wrapper",
             "on_rotation_wrapper",
@@ -282,19 +284,19 @@ class TestAscendV1ExportFormatMethods:
 
     def test_activation_per_head_should_export_scale_when_invoked(self, saver):
         calls = _capture_write_tensor(saver)
-        head = SimpleNamespace(input_scale=torch.ones(2))
-        saver.on_activation_per_head("m.head", head)
+        head = SimpleNamespace(input_scale=torch.ones(2), x_q_scheme=Mock(dtype=QDType.INT8, scope=QScope.PER_HEAD))
+        saver.on_int8_activation_per_head("m.head", head)
         assert ("m.head.scale", "FAQuant", torch.float32) in calls
 
     def test_activation_per_token_should_write_fp8_quant_type_when_dtype_fp8(self, saver):
         token = SimpleNamespace(x_q_scheme=SimpleNamespace(dtype=QDType.FP8_E4M3, scope=QScope.PER_TOKEN))
         saver.on_activation_per_token("model.layers.0.self_attn.fa3_q", token)
-        saver.json_writer.write.assert_called_with("model.layers.0.self_attn.quant_type", "FP8_DYNAMIC")
+        saver.json_writer.write.assert_called_with("model.layers.0.self_attn.quant_type", "Q_FP8_DYNAMIC")
 
     def test_activation_per_token_should_write_int8_quant_type_when_dtype_int8(self, saver):
         token = SimpleNamespace(x_q_scheme=SimpleNamespace(dtype=QDType.INT8, scope=QScope.PER_TOKEN))
         saver.on_activation_per_token("model.layers.0.self_attn.fa3_k", token)
-        saver.json_writer.write.assert_called_with("model.layers.0.self_attn.quant_type", "INT8_DYNAMIC")
+        saver.json_writer.write.assert_called_with("model.layers.0.self_attn.quant_type", "K_INT8_DYNAMIC")
 
     def test_activation_per_token_should_raise_error_when_dtype_invalid(self, saver):
         token = SimpleNamespace(x_q_scheme=SimpleNamespace(dtype=QDType.INT4, scope=QScope.PER_TOKEN))
@@ -364,7 +366,7 @@ def _build_post_run_case_module(method_name: str):
             ),
             "m.q.weight",
         )
-    if method_name in {"on_w8a16_static_per_channel", "on_w8a16_static_per_group"}:
+    elif method_name in {"on_w8a16_static_per_channel", "on_w8a16_static_per_group"}:
         mod = SimpleNamespace(
             weight=torch.randint(-8, 7, (4, 4), dtype=torch.int8),
             weight_scale=torch.ones(4, dtype=torch.float32),
@@ -374,7 +376,7 @@ def _build_post_run_case_module(method_name: str):
         if method_name == "on_w8a16_static_per_group":
             mod.group_size = 64
         return "m.w8a16", mod, "m.w8a16.weight"
-    if method_name in {"on_w8a8_dynamic_per_channel", "on_w8a8_dynamic_per_group"}:
+    elif method_name in {"on_w8a8_dynamic_per_channel", "on_w8a8_dynamic_per_group"}:
         mod = SimpleNamespace(
             weight=torch.randint(-8, 7, (4, 4), dtype=torch.int8),
             weight_scale=torch.ones((4, 2), dtype=torch.float32)
@@ -385,7 +387,7 @@ def _build_post_run_case_module(method_name: str):
         if method_name.endswith("group"):
             mod.group_size = 128
         return "m.w8dyn", mod, "m.w8dyn.weight"
-    if method_name == "on_wfp8afp8_dynamic_per_channel":
+    elif method_name == "on_wfp8afp8_dynamic_per_channel":
         return (
             "m.fp8",
             SimpleNamespace(
@@ -395,7 +397,11 @@ def _build_post_run_case_module(method_name: str):
             ),
             "m.fp8.weight",
         )
-    if method_name in {"on_w8a8_mx_dynamic_per_block", "on_w4a4_mx_dynamic_per_block", "on_w4a8_mx_dynamic_per_block"}:
+    elif method_name in {
+        "on_w8a8_mx_dynamic_per_block",
+        "on_w4a4_mx_dynamic_per_block",
+        "on_w4a8_mx_dynamic_per_block",
+    }:
         return (
             "m.mx",
             SimpleNamespace(
@@ -406,7 +412,7 @@ def _build_post_run_case_module(method_name: str):
             ),
             "m.mx.weight",
         )
-    if method_name == "on_w4a8_dynamic":
+    elif method_name == "on_w4a8_dynamic":
         return (
             "m.w4a8",
             SimpleNamespace(
@@ -416,7 +422,7 @@ def _build_post_run_case_module(method_name: str):
             ),
             "m.w4a8.weight",
         )
-    if method_name in {"on_w4a4_dynamic_per_channel", "on_w4a4_dynamic_per_group"}:
+    elif method_name in {"on_w4a4_dynamic_per_channel", "on_w4a4_dynamic_per_group"}:
         mod = SimpleNamespace(
             weight=torch.randint(-8, 7, (4, 4), dtype=torch.int8),
             weight_scale=torch.ones(4),
@@ -426,13 +432,13 @@ def _build_post_run_case_module(method_name: str):
         if method_name.endswith("group"):
             mod.group_size = 32
         return "m.w4a4", mod, "m.w4a4.weight"
-    if method_name == "on_float_linear":
+    elif method_name == "on_float_linear":
         return "m.float", nn.Linear(4, 3, bias=True), "m.float.weight"
-    if method_name == "on_float_module":
+    elif method_name == "on_float_module":
         mod = nn.Module()
         mod.register_parameter("weight", nn.Parameter(torch.ones(2, 2)))
         return "m.module", mod, "m.module.weight"
-    if method_name == "on_dynamic_cache":
+    elif method_name == "on_dynamic_cache":
         return (
             "model.layers.0.self_attn.key_states",
             SimpleNamespace(
@@ -441,27 +447,37 @@ def _build_post_run_case_module(method_name: str):
             ),
             "model.layers.0.self_attn.k_proj.kv_cache_scale",
         )
-    if method_name == "on_w16a16s":
+    elif method_name == "on_w16a16s":
         return (
             "m.w16",
             SimpleNamespace(named_parameters=lambda recurse=False, prefix="": [("m.w16.weight", torch.ones(2, 2))]),
             "m.w16.weight",
         )
-    if method_name == "on_activation_per_head":
-        return "m.head", SimpleNamespace(input_scale=torch.ones(2)), "m.head.scale"
-    if method_name == "on_activation_per_token":
+    elif method_name == "on_int8_activation_per_head":
+        return (
+            "m.head",
+            SimpleNamespace(input_scale=torch.ones(2), x_q_scheme=Mock(dtype=QDType.INT8, scope=QScope.PER_HEAD)),
+            "m.head.scale",
+        )
+    elif method_name == "on_fp8_activation_per_head":
+        return (
+            "m.head",
+            SimpleNamespace(input_scale=torch.ones(2), x_q_scheme=Mock(dtype=QDType.FP8_E4M3, scope=QScope.PER_HEAD)),
+            "m.head.scale",
+        )
+    elif method_name == "on_activation_per_token":
         return (
             "model.layers.0.self_attn.fa3_q",
             SimpleNamespace(x_q_scheme=SimpleNamespace(dtype=QDType.FP8_E4M3, scope=QScope.PER_TOKEN)),
             "model.layers.0.self_attn.quant_type",
         )
-    if method_name == "on_online_rotation_wrapper":
+    elif method_name == "on_online_rotation_wrapper":
         return (
             "model.rotation",
             SimpleNamespace(rotation_info=SimpleNamespace(rotation_matrix=torch.eye(4))),
             "model.rotation",
         )
-    if method_name == "on_rotation_wrapper":
+    elif method_name == "on_rotation_wrapper":
         rot_info = SimpleNamespace(heads_rotation=torch.eye(2))
         rot_info.get_quarot_save_info = lambda: {"heads_rotation": {"layers": []}}
         return (
@@ -469,7 +485,7 @@ def _build_post_run_case_module(method_name: str):
             SimpleNamespace(rotation_info=rot_info),
             "model.layers.0.self_attn.heads_rotation",
         )
-    if method_name == "on_kronecker_rotation_wrapper":
+    elif method_name == "on_kronecker_rotation_wrapper":
         rot_info = SimpleNamespace(kronecker_rotation_m=torch.eye(2), kronecker_rotation_n=torch.eye(2))
         rot_info.get_quarot_save_info = lambda: {"kronecker_rotation": {"layers": []}}
         return (
@@ -477,9 +493,9 @@ def _build_post_run_case_module(method_name: str):
             SimpleNamespace(rotation_info=rot_info),
             "model.layers.0.self_attn.kronecker_rotation_m",
         )
-    if method_name == "on_quarot_extra_info_wrapper":
+    elif method_name == "on_quarot_extra_info_wrapper":
         return "model", SimpleNamespace(rotation_info=SimpleNamespace(global_rotation=torch.eye(2))), "optional"
-    if method_name == "on_flat_clip_wrapper":
+    elif method_name == "on_flat_clip_wrapper":
         return (
             "model.layers.0.ffn",
             SimpleNamespace(
@@ -489,7 +505,7 @@ def _build_post_run_case_module(method_name: str):
             ),
             "model.layers.0.ffn.left_trans",
         )
-    if method_name == "on_non_fusion_smooth_quant_wrapper":
+    elif method_name == "on_non_fusion_smooth_quant_wrapper":
         return (
             "model.layers.1.mlp",
             SimpleNamespace(
@@ -520,8 +536,9 @@ def _expected_desc_value_and_group_size(method_name: str):
         "on_float_module": "FLOAT",
         "on_dynamic_cache": "C8",
         "on_w16a16s": "W16A16S",
-        "on_activation_per_head": "FAQuant",
-        "on_activation_per_token": "FP8_DYNAMIC",
+        "on_int8_activation_per_head": "FAQuant",
+        "on_fp8_activation_per_head": "FAQuant",
+        "on_activation_per_token": "Q_FP8_DYNAMIC",
         "on_online_rotation_wrapper": "FLOAT",
         "on_flat_clip_wrapper": "W8A8_FLATQUANT_DYNAMIC",
         "on_non_fusion_smooth_quant_wrapper": "FLOAT",
@@ -560,7 +577,8 @@ class TestAscendV1PostRunArtifacts:
             "on_float_module",
             "on_dynamic_cache",
             "on_w16a16s",
-            "on_activation_per_head",
+            "on_int8_activation_per_head",
+            "on_fp8_activation_per_head",
             "on_activation_per_token",
             "on_online_rotation_wrapper",
             "on_rotation_wrapper",
@@ -619,7 +637,7 @@ class TestAscendV1PostRunArtifacts:
         copied_config = json.loads((save_dir / "config.json").read_text(encoding="utf-8"))
         assert "quantization_config" not in copied_config
         assert desc.get("group_size") == expected_group_size
-        if method_name == "on_activation_per_head":
+        if method_name == "on_int8_activation_per_head":
             assert desc.get("fa_quant_type") == "FAKQuant"
 
         if expected_key == "optional":

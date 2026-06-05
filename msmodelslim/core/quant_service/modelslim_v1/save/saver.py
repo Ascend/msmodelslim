@@ -110,7 +110,8 @@ class AutoSaverProcessor(AutoSessionProcessor):
             nn.Linear: self.on_float_linear,
             nn.Module: self.on_float_module,
             qir.FakeQuantDynamicCache: self.on_dynamic_cache,
-            qir.FakeQuantActivationPerHead: self.on_activation_per_head,
+            qir.INT8FakeQuantActivationPerHead: self.on_int8_activation_per_head,
+            qir.FP8FakeQuantActivationPerHead: self.on_fp8_activation_per_head,
             qir.FakeQuantActivationPerToken: self.on_activation_per_token,
             qir.W16A16sLinear: self.on_w16a16s,
             qir.QuarotOnlineHeadRotationWrapper: self.on_rotation_wrapper,
@@ -238,14 +239,19 @@ class AutoSaverProcessor(AutoSessionProcessor):
     def on_dynamic_cache(self, prefix: str, module: qir.FakeQuantDynamicCache):
         raise NotImplementedError(f"You should implement the on_dynamic_cache method for {self.__class__.__name__}")
 
-    def on_activation_per_head(self, prefix: str, module: qir.FakeQuantActivationPerHead):
-        raise NotImplementedError(
-            f"You should implement the on_activation_per_head method for {self.__class__.__name__}"
-        )
-
     def on_activation_per_token(self, prefix: str, module: qir.FakeQuantActivationPerToken):
         raise NotImplementedError(
             f"You should implement the on_activation_per_token method for {self.__class__.__name__}"
+        )
+
+    def on_int8_activation_per_head(self, prefix: str, module: qir.INT8FakeQuantActivationPerHead):
+        raise NotImplementedError(
+            f"You should implement the on_int8_activation_per_head method for {self.__class__.__name__}"
+        )
+
+    def on_fp8_activation_per_head(self, prefix: str, module: qir.FP8FakeQuantActivationPerHead):
+        raise NotImplementedError(
+            f"You should implement the on_fp8_activation_per_head method for {self.__class__.__name__}"
         )
 
     def on_rotation_wrapper(self, prefix: str, module: qir.QuarotOnlineHeadRotationWrapper):

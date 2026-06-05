@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -20,24 +21,15 @@ See the Mulan PSL v2 for more details.
 """
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.ir.api import fake_quantize
-from msmodelslim.ir.qal import QABCRegistry, QScheme, QScope, QDType, QParam, QStorage
-from msmodelslim.utils.logging import logger_setter
-from .auto import AutoFakeQuantActivation
-from .const import int8_per_head_sym
+from msmodelslim.ir.qal import QScheme, QScope, QDType, QParam, QStorage
+from msmodelslim.ir.auto import AutoFakeQuantActivation
 
 
-@QABCRegistry.multi_register(
-    dispatch_key=[
-        int8_per_head_sym,
-    ],
-    abc_type=AutoFakeQuantActivation
-)
-@logger_setter()
 class FakeQuantActivationPerHead(AutoFakeQuantActivation):
-    """对称 per-head 伪量化/反量化。
+    """对称 per-head 伪量化/反量化基类。
 
     输入形状: (batch_size, num_head, seq_len, head_dim)，按第 1 维做 per-head。
     仅需 ext['scale']，忽略 offset。
@@ -49,7 +41,8 @@ class FakeQuantActivationPerHead(AutoFakeQuantActivation):
 
         scale = x_q_param.ext.get("scale")
         if scale is None:
-            raise ValueError("`scale` is needed in ext but is missing for FakeQuantActivationPerHead")
+            class_name = self.__class__.__name__
+            raise ValueError(f"`scale` is needed in ext but is missing for {class_name}")
 
         self.input_scale = nn.Parameter(scale, requires_grad=False)
 
@@ -59,8 +52,7 @@ class FakeQuantActivationPerHead(AutoFakeQuantActivation):
         last_dim = x_perm.shape[-1]
         x_2d = x_perm.reshape(-1, last_dim)
 
-        per_channel_scheme = QScheme(scope=QScope.PER_CHANNEL, dtype=self.x_q_scheme.dtype,
-                                     symmetric=True)
+        per_channel_scheme = QScheme(scope=QScope.PER_CHANNEL, dtype=self.x_q_scheme.dtype, symmetric=True)
         ext = {"scale": self.input_scale.data}
 
         x_q_param = QParam(scheme=per_channel_scheme, ext=ext)

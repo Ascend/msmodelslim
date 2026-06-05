@@ -8,6 +8,7 @@
  	 ignore-global = true
  	 ignore-parent = true
 
+
  	 [default]
  	 binary = false
  	 check-filename = false
@@ -21,6 +22,7 @@
  	     ".*ot.*", ".*[Tt]h[rR].*"]
  	 extend-ignore-words-re = ["CANN", "cann","ND","alog","datas"]
  	 extend-ignore-re = []
+
 
  	 [default.extend-identifiers]
  	 datas = "datas"
@@ -40,6 +42,7 @@
  	 DepthWiseSeperableConv1d = "DepthWiseSeperableConv1d"
  	 depthwise_seperable_CNN = "depthwise_seperable_CNN"
 
+
  	 [default.extend-words]
  	 iy = "iy"
  	 tendencias = "tendencias"
@@ -55,12 +58,15 @@
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.py.extend-identifiers]
  	 arange = "arange"
  	 NDArray = "NDArray"
  	 EOFError = "EOFError"
 
+
  	 [type.py.extend-words]
+
 
  	 [type.cpp]
  	 extend-glob = []
@@ -68,10 +74,13 @@
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.cpp.extend-identifiers]
  	 countr_one = "countr_one"
 
+
  	 [type.cpp.extend-words]
+
 
  	 [type.rust]
  	 extend-glob = []
@@ -79,11 +88,14 @@
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.rust.extend-identifiers]
  	 flate2 = "flate2"
 
+
  	 [type.rust.extend-words]
  	 ser = "ser"
+
 
  	 [type.lock]
  	 extend-glob = []
@@ -92,9 +104,12 @@
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.lock.extend-identifiers]
 
+
  	 [type.lock.extend-words]
+
 
  	 [type.jl]
  	 extend-glob = []
@@ -102,7 +117,9 @@
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.jl.extend-identifiers]
+
 
  	 [type.jl.extend-words]
  	 modul = "modul"
@@ -110,16 +127,20 @@
  	 usig = "usig"
  	 egal = "egal"
 
+
  	 [type.go]
  	 extend-glob = []
  	 extend-ignore-identifiers-re = []
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.go.extend-identifiers]
  	 flate = "flate"
 
+
  	 [type.go.extend-words]
+
 
  	 [type.css]
  	 extend-glob = []
@@ -127,10 +148,13 @@
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.css.extend-identifiers]
  	 nd = "nd"
 
+
  	 [type.css.extend-words]
+
 
  	 [type.man]
  	 extend-glob = []
@@ -138,10 +162,13 @@
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.man.extend-identifiers]
  	 Nd = "Nd"
 
+
  	 [type.man.extend-words]
+
 
  	 [type.cert]
  	 extend-glob = []
@@ -150,9 +177,12 @@
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.cert.extend-identifiers]
 
+
  	 [type.cert.extend-words]
+
 
  	 [type.sh]
  	 extend-glob = []
@@ -160,11 +190,14 @@
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.sh.extend-identifiers]
  	 stap = "stap"
  	 ot = "ot"
 
+
  	 [type.sh.extend-words]
+
 
  	 [type.vimscript]
  	 extend-glob = []
@@ -172,7 +205,9 @@
  	 extend-ignore-words-re = []
  	 extend-ignore-re = []
 
+
  	 [type.vimscript.extend-identifiers]
  	 windo = "windo"
+
 
  	 [type.vimscript.extend-words]

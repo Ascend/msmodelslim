@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# pylint: disable=duplicate-code
 
 """
 -------------------------------------------------------------------------
@@ -287,8 +286,11 @@ class MindIEFormatSaver(AutoSaverProcessor):
     def on_dynamic_cache(self, prefix: str, module: qir.FakeQuantDynamicCache):
         self._raise_ascendv1_saver_recommended("on_dynamic_cache")
 
-    def on_activation_per_head(self, prefix: str, module: qir.FakeQuantActivationPerHead):
-        self._raise_ascendv1_saver_recommended("on_activation_per_head")
+    def on_int8_activation_per_head(self, prefix: str, module: qir.INT8FakeQuantActivationPerHead):
+        self._raise_ascendv1_saver_recommended("on_int8_activation_per_head")
+
+    def on_fp8_activation_per_head(self, prefix: str, module: qir.FP8FakeQuantActivationPerHead):
+        self._raise_ascendv1_saver_recommended("on_fp8_activation_per_head")
 
     def on_quarot_extra_info_wrapper(self, prefix: str, module: qir.QuaRotExtraInfoWrapperIR):
         self._raise_ascendv1_saver_recommended("on_quarot_extra_info_wrapper")

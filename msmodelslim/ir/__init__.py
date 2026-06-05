@@ -53,12 +53,13 @@ __all__ = [
     "OnlineRotationInputHookIR",
     "OnlineRotationOutputHookIR",
     "W16A16sLinear",
+    "INT8FakeQuantActivationPerHead",
+    "FP8FakeQuantActivationPerHead",
     "FakeQuantActivationPerHead",
     "FakeQuantActivationPerToken",
     "FlatQuantOnlineWrapper",
     "FlatQuantOnlineHookIR",
     "NonFusionSmoothQuantWrapper",
-
     "int8_per_tensor_sym",
     "int8_per_channel_sym",
     "int8_per_channel_asym",
@@ -68,7 +69,6 @@ __all__ = [
     "int8_per_tensor_asym",
     "int8_per_token_asym",
     "int8_pd_mix_asym",
-
     "int4_per_tensor_sym",
     "int4_per_channel_sym",
     "int4_per_channel_asym",
@@ -81,27 +81,68 @@ __all__ = [
     "mxfp4_dual_scale_sym",
     "mxfp8_per_block_sym",
     "float_per_tensor_sym",
+    "fp8_e4m3_per_head_sym",
+    "fp8_e4m3_per_token_sym",
+    "fp8_e4m3_per_tensor_sym",
+    "fp8_e4m3_per_channel_sym",
+    "int8_per_head_sym",
     "PDMixState",
+    "int_quantization",
+    "fp_quantization",
+    "mx_quantization",
 ]
 
-from .activation import FakeQuantActivationPerHead
+from .int8_activation_static import INT8FakeQuantActivationPerHead
+from .fp8_activation_static import FP8FakeQuantActivationPerHead
+from .activation_static import FakeQuantActivationPerHead
 from .activation_dynamic import FakeQuantActivationPerToken
-from .api.api_main import *
+from .api.impl import int_quantization, fp_quantization, mx_quantization
 from .attention import FakeQuantDynamicCache
 from .auto import AutoFakeQuantLinear, AutoFakeQuantActivation, AutoFakeQuantDynamicCache
-from .const import int8_per_tensor_sym, int8_per_channel_sym, int8_per_token_sym, int8_per_group_sym, \
-    int8_per_group_asym, int8_per_tensor_asym, int8_per_token_asym, int8_per_channel_asym, int4_per_channel_sym, \
-    int8_per_tensor_asym, int8_per_token_asym, int8_per_channel_asym, int4_per_tensor_sym, int4_per_channel_sym, \
-    int4_per_channel_asym, int4_per_token_sym, int4_per_group_sym, int4_per_group_asym, int4_per_tensor_asym, \
-    int4_per_token_asym, int8_pd_mix_asym, mxfp4_per_block_sym, mxfp4_dual_scale_sym, mxfp8_per_block_sym, \
-    fp8_e4m3_per_token_sym, fp8_e4m3_per_tensor_sym, fp8_e4m3_per_channel_sym, float_per_tensor_sym, \
-    int8_per_head_sym
+from .const import (
+    int8_per_tensor_sym,
+    int8_per_channel_sym,
+    int8_per_token_sym,
+    int8_per_group_sym,
+    int8_per_group_asym,
+    int8_per_tensor_asym,
+    int8_per_token_asym,
+    int8_per_channel_asym,
+    int4_per_tensor_sym,
+    int4_per_channel_sym,
+    int4_per_channel_asym,
+    int4_per_token_sym,
+    int4_per_group_sym,
+    int4_per_group_asym,
+    int4_per_tensor_asym,
+    int4_per_token_asym,
+    int8_pd_mix_asym,
+    mxfp4_per_block_sym,
+    mxfp4_dual_scale_sym,
+    mxfp8_per_block_sym,
+    fp8_e4m3_per_token_sym,
+    fp8_e4m3_per_tensor_sym,
+    fp8_e4m3_per_channel_sym,
+    fp8_e4m3_per_head_sym,
+    float_per_tensor_sym,
+    int8_per_head_sym,
+)
 from .flatquant import FlatQuantOnlineWrapper, FlatQuantOnlineHookIR
 from .non_fusion_smooth_quant_ir import NonFusionSmoothQuantWrapper
-from .quarot import QuarotOnlineRotationInfo, QuarotOfflineRotationInfo, QuarotOnlineHeadRotationWrapper, \
-    QuarotOnlineKroneckerRotationWrapper, \
-    QuarotHeadsRotationHookIR, QuarotKroneckerRotationHookIR, QuaRotExtraInfoHookIR, QuaRotExtraInfoWrapperIR, \
-    OnlineRotationInfo, OnlineRotationWrapper, OnlineRotationInputHookIR, OnlineRotationOutputHookIR
+from .quarot import (
+    QuarotOnlineRotationInfo,
+    QuarotOfflineRotationInfo,
+    QuarotOnlineHeadRotationWrapper,
+    QuarotOnlineKroneckerRotationWrapper,
+    QuarotHeadsRotationHookIR,
+    QuarotKroneckerRotationHookIR,
+    QuaRotExtraInfoHookIR,
+    QuaRotExtraInfoWrapperIR,
+    OnlineRotationInfo,
+    OnlineRotationWrapper,
+    OnlineRotationInputHookIR,
+    OnlineRotationOutputHookIR,
+)
 from .w16a16s import W16A16sLinear
 from .w4a4_dynamic import W4A4DynamicPerChannelFakeQuantLinear, W4A4DynamicPerGroupFakeQuantLinear
 from .w4a4_mx_dynamic import W4A4MXDynamicPerBlockFakeQuantLinear
