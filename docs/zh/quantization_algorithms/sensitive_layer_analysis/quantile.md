@@ -12,8 +12,10 @@
 ## 原理
 
 1. 计算激活的第 1/4、第 3/4 分位数 $Q_1$、$Q_3$，以及用于幅度项的统计量。
-2. 计算 score：`score = 2 × max(|max_value|, |min_value|) / 254 / (Q3 - Q1)`。
-3. **解读**：score 越大表示该层对量化越敏感。IQR 越大 score 越小（主体越分散），绝对值越大 score 越大。
+2. 计算 score：`score = 2 × max(|max_value|, |min_value|) / 254 / (Q3 - Q1)`，其中分子 `max(|max_value|, |min_value|)` 为激活绝对值的最大值，分母 `Q3 - Q1` 即四分位距（IQR）。
+3. **解读**：score 越大表示该层对量化越敏感。具体地：
+   - 激活绝对值的最大值越大 —— 量化步长相对越大，量化误差越显著，score 越大；
+   - IQR 越大 —— 激活主体分布越分散，相同动态范围下每个量化区间的代表值越多，相对误差越小，score 越小。
 
 ## 适用要求
 
@@ -41,5 +43,6 @@ msmodelslim analyze linear \
 |------|------|
 | `linear` | 线性层敏感度分析 |
 | `--metrics` | 指定分析算法，取值为 `quantile` 时使用本算法 |
+| `--pattern` | 层名通配符，过滤待分析线性层 |
 
 完整参数见[敏感层分析工具使用指南参数说明](../../feature_guide/sensitive_layer_analysis/usage.md#参数说明)。

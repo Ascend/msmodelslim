@@ -2,7 +2,7 @@
 
 ## 简介
 
-- **概述**：`mse_layer_wise` 用于**layer**范围分析：在每个 **Decoder 块**内，对由 `quant_modules` 选中的子模块（实现上主要为块内 Linear）分别做浮点与量化前向，在子模块输出上计算 MSE（均方误差，Mean Squared Error）并在**块内取均值**得到敏感度分数，输出 **Decoder 块粒度**排序，指导整层或整块（如整段 attention / MLP）回退。
+- **概述**：`mse_layer_wise` 用于**layer**范围分析：在每个 **Decoder 块**内，对由 `quant_modules` 选中的子模块（实现上主要为块内 Linear）分别做浮点与量化前向，在子模块输出上计算 MSE（均方误差，Mean Squared Error）并在**块内取均值**得到敏感度分数，输出 **Decoder 块粒度**排序，指导整层或整块（如整段 attention/MLP）回退。
 - **核心思想**：块内聚合的量化重构误差越大，该块在当前量化子集下越敏感。
 
 ## 使用前准备
@@ -50,6 +50,6 @@ msmodelslim analyze layer \
 
 ### 换 `quant_modules` 后层排序变了，是否正常？
 
-**现象**: 调整 `quant_modules` 通配后，各层 TopK 顺序与调整前不一致。  
+**现象**: 调整 `quant_modules` 通配后，各层 TopK 顺序与调整前不一致。
 
 **解决方案**: 属于预期，调整 `quant_modules` 后，参与量化对比的子模块集合发生变化，块内 MSE 的聚合结果随之改变，因此各层相对名次也会不同。请按目标量化方案固定一版配置后再解读；同一命令仍不稳定时再排查校准顺序与随机性。

@@ -122,13 +122,13 @@ msmodelslim analyze layer [通用参数] [layer参数]
 
 **model_type 支持说明**
 
-- 多数敏感层分析指标（`linear` / `layer` 下的 metrics）下可选的 `model_type` 与 ModelslimV1 量化一致。
+- 多数敏感层分析指标（`linear`/`layer` 下的 metrics）下可选的 `model_type` 与 ModelslimV1 量化一致。
 - `attn --metrics mse` 不在上述范围，需对应 `model_type` 的模型适配器实现 **AttentionMSEAnalysisInterface** 方可使用。该算法的模型支持列表见[Attention MSE 算法适用要求](../../quantization_algorithms/sensitive_layer_analysis/attention_mse.md#适用要求)。
 
 **模型路径和数据集要求**
 
 - **`model_path`**：须为真实存在的绝对或相对路径，且包含有效权重与配置。
-- **`calib_dataset`**：须为 `.json` / `.jsonl` 格式。其中 JSON 为字符串列表，每项表示一条校准文本，而 JSONL 为每行一个 JSON 对象。可以直接使用工具提供的 [`lab_calib`](../../../../lab_calib/) 示例校准集目录下的校准集，数据集使用相对路径时即在该目录下解析。
+- **`calib_dataset`**：须为 `.json`/`.jsonl` 格式。其中 JSON 为字符串列表，每项表示一条校准文本，而 JSONL 为每行一个 JSON 对象。可直接使用工具提供的 [`lab_calib`](../../../../lab_calib/) 示例校准集目录下的校准集。若数据集使用相对路径，解析规则如下：优先在命令启动路径下查找，找到则直接使用；未找到时，在示例校准集目录下匹配同名数据集；均未找到时抛出异常。
 
 **层级选择**
 
@@ -140,7 +140,7 @@ msmodelslim analyze layer [通用参数] [layer参数]
 
 ### 分析算法说明
 
-敏感度度量按**分析范围（scope）**与输出粒度分为三类，各类下 `--metrics` 的详细说明见下列分篇。
+敏感度度量按分析范围（scope）与输出粒度分为三类，各类下 `--metrics` 的详细说明见下列分篇。
 
 #### linear（线性层）
 
@@ -160,7 +160,7 @@ msmodelslim analyze layer [通用参数] [layer参数]
 
 #### layer（decoder 层级输出）
 
-对**Decoder block**做敏感度分析，结果为**层级粒度**排序，用于整层回退或整块回退（如整块 attention / MLP）。可选 `--metrics`：`mse_layer_wise`、`mse_model_wise`；均无需模型适配器额外实现分析接口。各算法详细说明请参见：
+对**Decoder block**做敏感度分析，结果为**层级粒度**排序，用于整层回退或整块回退（如整块 attention/MLP）。可选 `--metrics`：`mse_layer_wise`、`mse_model_wise`；均无需模型适配器额外实现分析接口。各算法详细说明请参见：
 
 - 《[层级 MSE（mse_layer_wise）：敏感层分析算法说明](../../quantization_algorithms/sensitive_layer_analysis/mse_layer_wise.md)》
 - 《[模型级 MSE（mse_model_wise）：敏感层分析算法说明](../../quantization_algorithms/sensitive_layer_analysis/mse_model_wise.md)》
