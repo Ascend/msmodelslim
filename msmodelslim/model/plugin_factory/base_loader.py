@@ -43,24 +43,37 @@ class BaseModelAdapterLoader(AdapterLoaderInterface):
     def __init__(self):
         self._is_match = True
         self._requirements = {}
+        self._failed_requirements = {}
 
     def get_loader_requirements(self) -> Dict[str, str]:
         return get_require_packages(self)
 
-    @staticmethod
     def check_requirements(
+        self,
         plugin_name: str,
         requirements: Dict[str, str],
     ) -> bool:
         DependencyChecker.set_plugin(plugin_name, requirements)
-        try:
-            DependencyChecker.check_plugin(plugin_name)
+        failed = {}
+        for pkg, spec in requirements.items():
+            try:
+                DependencyChecker._check_single(pkg, spec)
+            except VersionError:
+                failed[pkg] = spec
+
+        if not failed:
             return True
-        except VersionError as exc:
-            if plugin_name not in BaseModelAdapterLoader._logged_plugins:
-                get_logger().warning("Dependency check failed for plugin '%s': %s", plugin_name, exc)
-                BaseModelAdapterLoader._logged_plugins.add(plugin_name)
-            return False
+
+        self._failed_requirements.update(failed)
+
+        if plugin_name not in BaseModelAdapterLoader._logged_plugins:
+            dep_list = " ".join([f"{pkg}{spec}" for pkg, spec in failed.items()])
+            get_logger().warning(
+                "Environment does not meet dependency requirements: %s. Compatibility issues may occur.",
+                dep_list,
+            )
+            BaseModelAdapterLoader._logged_plugins.add(plugin_name)
+        return False
 
     def precheck(
         self,
@@ -101,12 +114,12 @@ class BaseModelAdapterLoader(AdapterLoaderInterface):
             )
         module_path, class_name = self.ADAPTER_CLASS_PATH.split(":", 1)
 
-        def get_action_msg(reqs):
-            dep_list = " ".join([f"{pkg}{spec}" for pkg, spec in reqs.items()])
+        def get_action_msg(failed_reqs):
+            dep_list = " ".join([f"{pkg}{spec}" for pkg, spec in failed_reqs.items()])
             return f"Dependency version mismatch detected. Recommended dependencies: {dep_list}"
 
         if not self._is_match:
-            action_msg = get_action_msg(self._requirements)
+            action_msg = get_action_msg(self._failed_requirements)
             with exception_handler(err_cls=Exception, ms_err_cls=VersionError, action=action_msg):
                 adapter_module = import_module(module_path)
                 adapter_class = getattr(adapter_module, class_name)
@@ -125,7 +138,7 @@ class BaseModelAdapterLoader(AdapterLoaderInterface):
             self._requirements.update(adapter_reqs)
 
         if not self._is_match:
-            action_msg = get_action_msg(self._requirements)
+            action_msg = get_action_msg(self._failed_requirements)
             with exception_handler(err_cls=Exception, ms_err_cls=VersionError, action=action_msg):
                 adapter_instance = adapter_class(
                     model_type=model_type,

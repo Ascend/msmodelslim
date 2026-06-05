@@ -140,7 +140,7 @@ def test_precheck_should_not_raise_error_when_dependency_check_fails():
         SimpleNamespace(model_adapter_dependencies={}),
     ):
         with patch(
-            "msmodelslim.model.plugin_factory.base_loader.DependencyChecker.check_plugin",
+            "msmodelslim.model.plugin_factory.base_loader.DependencyChecker._check_single",
             side_effect=VersionError("dependency mismatch"),
         ):
             loader.precheck(
@@ -179,7 +179,7 @@ def test_load_should_decorate_when_adapter_dependency_check_fails():
     with patch("msmodelslim.model.plugin_factory.base_loader.import_module") as mock_import_module:
         mock_import_module.return_value = SimpleNamespace(DummyAdapter=DummyAdapter)
         with patch(
-            "msmodelslim.model.plugin_factory.base_loader.DependencyChecker.check_plugin",
+            "msmodelslim.model.plugin_factory.base_loader.DependencyChecker._check_single",
             side_effect=VersionError("mock error"),
         ):
             adapter_instance = loader.load(

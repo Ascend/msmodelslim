@@ -56,7 +56,7 @@ class TestQwen1_5AdapterLoaderLoad(unittest.TestCase):
     def test_load_with_valid_params_when_called_then_return_qwen15_model_adapter(self):
         """正常：load应实例化并返回Qwen15ModelAdapter"""
         with patch('msmodelslim.model.plugin_factory.base_loader.DependencyChecker.set_plugin'):
-            with patch('msmodelslim.model.plugin_factory.base_loader.DependencyChecker.check_plugin'):
+            with patch('msmodelslim.model.plugin_factory.base_loader.DependencyChecker._check_single'):
                 with patch('msmodelslim.model.plugin_factory.base_loader.get_require_packages', return_value={}):
                     with patch('msmodelslim.model.plugin_factory.base_loader.import_module') as mock_import:
                         mock_import.return_value = SimpleNamespace(Qwen15ModelAdapter=Qwen15ModelAdapter)
@@ -78,7 +78,7 @@ class TestQwen1_5AdapterLoaderLoad(unittest.TestCase):
     def test_load_with_trust_remote_code_false_when_called_then_pass_false(self):
         """边界：trust_remote_code默认False时应传递False"""
         with patch('msmodelslim.model.plugin_factory.base_loader.DependencyChecker.set_plugin'):
-            with patch('msmodelslim.model.plugin_factory.base_loader.DependencyChecker.check_plugin'):
+            with patch('msmodelslim.model.plugin_factory.base_loader.DependencyChecker._check_single'):
                 with patch('msmodelslim.model.plugin_factory.base_loader.get_require_packages', return_value={}):
                     with patch('msmodelslim.model.plugin_factory.base_loader.import_module') as mock_import:
                         mock_import.return_value = SimpleNamespace(Qwen15ModelAdapter=Qwen15ModelAdapter)
@@ -109,7 +109,7 @@ class TestQwen1_5AdapterLoaderPrecheck(unittest.TestCase):
             SimpleNamespace(model_adapter_dependencies={}),
         ):
             with patch('msmodelslim.model.plugin_factory.base_loader.DependencyChecker.set_plugin') as mock_set:
-                with patch('msmodelslim.model.plugin_factory.base_loader.DependencyChecker.check_plugin'):
+                with patch('msmodelslim.model.plugin_factory.base_loader.DependencyChecker._check_single'):
                     self.loader.precheck(
                         model_type=self.model_type,
                         model_path=self.model_path,
@@ -120,12 +120,13 @@ class TestQwen1_5AdapterLoaderPrecheck(unittest.TestCase):
 
     def test_precheck_when_dependency_check_fails_then_set_is_match_false(self):
         """异常：依赖检查失败时应设置 _is_match 为 False"""
+        self.loader._require_packages = {"numpy": ">=1.26"}
         with patch(
             'msmodelslim.model.plugin_factory.base_loader.msmodelslim_config',
             SimpleNamespace(model_adapter_dependencies={}),
         ):
             with patch(
-                'msmodelslim.model.plugin_factory.base_loader.DependencyChecker.check_plugin',
+                'msmodelslim.model.plugin_factory.base_loader.DependencyChecker._check_single',
                 side_effect=VersionError('dependency mismatch'),
             ):
                 self.loader.precheck(
