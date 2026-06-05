@@ -484,6 +484,10 @@ class TestGetValidReadPathExtended:
 class TestGetValidWritePathExtended:
     """测试 get_valid_write_path / check_write_directory 扩展分支"""
 
+    def setup_method(self):
+        """确保TEST_DIR存在，因为teardown_module可能已删除"""
+        os.makedirs(TEST_DIR, mode=int("700", 8), exist_ok=True)
+
     def test_get_valid_write_path_raise_when_target_is_directory(self):
         """写入目标是目录时应抛出 SecurityError"""
         from msmodelslim.utils.security.path import get_valid_write_path
@@ -499,7 +503,8 @@ class TestGetValidWritePathExtended:
             pytest.skip("root 用户跳过属主检查")
         other_file = tmp_path / "other.txt"
         other_file.write_text("x", encoding="utf-8")
-        with patch("os.stat") as mock_stat:
+        # 仅patch path模块内的os.stat，避免影响os.path.exists等系统调用
+        with patch("msmodelslim.utils.security.path.os.stat") as mock_stat:
             mock_stat.return_value.st_uid = os.getuid() + 999
             mock_stat.return_value.st_mode = stat.S_IWUSR | stat.S_IRUSR
             with pytest.raises(SecurityError, match="doesn't belong"):

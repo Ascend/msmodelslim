@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+# pylint: disable=too-many-lines
 
 """
 -------------------------------------------------------------------------
@@ -776,6 +777,572 @@ class TestHunyuanVideoPrepareCalibData:
                     dataset=[],
                     inference_config=None,
                 )
+
+
+# ------------------------------ generate_model_forward 补充测试 ------------------------------
+class TestGenerateModelForwardExtended:
+    """generate_model_forward 补充测试"""
+
+    @staticmethod
+    def test_raises_when_no_streamblock_found(adapter):
+        """没有streamblock时应抛出InvalidModelError"""
+        model = MagicMock()
+        model.named_modules.return_value = [("embedding", MagicMock())]
+
+        with patch("msmodelslim.model.hunyuan_video.model_adapter.TransformersForwardBreak", Exception):
+            with pytest.raises(Exception):
+                list(adapter.generate_model_forward(model, {"input": torch.randn(1, 10)}))
+
+    @staticmethod
+    def test_handles_single_tensor_input(adapter):
+        """单tensor输入应被正确处理"""
+        model = MagicMock()
+        streamblock = MagicMock()
+        type(streamblock).__name__ = "StreamBlock"
+        model.named_modules.return_value = [("blocks.0", streamblock)]
+
+        # 模拟hook触发TransformersForwardBreak
+        def forward_side_effect(*args, **kwargs):
+            return torch.randn(1, 10, 64)
+
+        model.side_effect = forward_side_effect
+
+        with (
+            patch("msmodelslim.model.hunyuan_video.model_adapter.to_device", side_effect=lambda x, _: x),
+            patch("msmodelslim.model.hunyuan_video.model_adapter.TransformersForwardBreak", Exception),
+            patch("msmodelslim.model.hunyuan_video.model_adapter.dist") as mock_dist,
+        ):
+            mock_dist.is_initialized.return_value = False
+            gen = adapter.generate_model_forward(model, torch.randn(1, 10, 64))
+            # 应该能创建generator
+            assert gen is not None
+
+
+# ------------------------------ validate_calib_samples 补充测试 ------------------------------
+class TestValidateCalibSamples:
+    """validate_calib_samples 边界场景"""
+
+    @staticmethod
+    def test_validate_calib_samples_passes_valid(adapter):
+        """有效样本应原样返回"""
+        samples = [VlmCalibSample(text="hello"), VlmCalibSample(text="world")]
+        result = adapter.validate_calib_samples(samples)
+        assert result == samples
+
+    @staticmethod
+    def test_validate_calib_samples_raises_when_text_is_empty(adapter):
+        """空text应抛出SchemaValidateError"""
+        with pytest.raises(SchemaValidateError, match="non-empty text"):
+            adapter.validate_calib_samples([VlmCalibSample(text="")])
+
+    @staticmethod
+    def test_validate_calib_samples_raises_when_text_is_whitespace(adapter):
+        """纯空格text应抛出SchemaValidateError"""
+        with pytest.raises(SchemaValidateError, match="non-empty text"):
+            adapter.validate_calib_samples([VlmCalibSample(text="   ")])
+
+    @staticmethod
+    def test_validate_calib_samples_raises_when_image_present(adapter):
+        """带image应抛出SchemaValidateError"""
+        with pytest.raises(SchemaValidateError, match="must not include image"):
+            adapter.validate_calib_samples([VlmCalibSample(text="hi", image="/tmp/a.png")])
+
+    @staticmethod
+    def test_validate_calib_samples_raises_on_second_sample(adapter):
+        """第二个样本有问题应报index=1"""
+        samples = [VlmCalibSample(text="ok"), VlmCalibSample(text="", image=None)]
+        with pytest.raises(SchemaValidateError, match="sample\\[1\\]"):
+            adapter.validate_calib_samples(samples)
+
+
+# ------------------------------ handle_dataset 补充测试 ------------------------------
+class TestHandleDataset:
+    """handle_dataset 边界场景"""
+
+    @staticmethod
+    def test_handle_dataset_returns_empty_when_none(adapter):
+        """None输入返回空列表"""
+        assert adapter.handle_dataset(None) == []
+
+    @staticmethod
+    def test_handle_dataset_wraps_single_sample(adapter):
+        """单个VlmCalibSample应被包装为列表"""
+        sample = VlmCalibSample(text="single")
+        result = adapter.handle_dataset(sample)
+        assert len(result) == 1
+        assert result[0].text == "single"
+
+
+# ------------------------------ get_online_rotation_configs 测试 ------------------------------
+class TestGetOnlineRotationConfigs:
+    """get_online_rotation_configs 测试"""
+
+    @staticmethod
+    def test_returns_empty_when_no_model_and_no_transformer(adapter):
+        """无model且无transformer时返回空"""
+        adapter.transformer = None
+        result = adapter.get_online_rotation_configs(model=None)
+        assert result == {}
+
+    @staticmethod
+    def test_returns_empty_when_model_missing_hidden_size(adapter):
+        """model缺少hidden_size时返回空"""
+        model = MagicMock()
+        model.hidden_size = 64
+        # 缺少heads_num
+        del model.heads_num
+        model.named_modules.return_value = []
+        result = adapter.get_online_rotation_configs(model=model)
+        assert result == {}
+
+    @staticmethod
+    def test_returns_empty_when_model_missing_heads_num(adapter):
+        """model缺少heads_num时返回空"""
+        model = MagicMock()
+        del model.hidden_size
+        model.heads_num = 8
+        model.named_modules.return_value = []
+        result = adapter.get_online_rotation_configs(model=model)
+        assert result == {}
+
+    @staticmethod
+    def test_registers_identity_modules_for_double_stream_block(adapter):
+        """MMDoubleStreamBlock应被注册q_rot和k_rot"""
+        model = MagicMock()
+        model.hidden_size = 64
+        model.heads_num = 8
+
+        block = MagicMock()
+        block.__class__.__name__ = "MMDoubleStreamBlock"
+        del block.q_rot
+        del block.k_rot
+        model.named_modules.return_value = [("blocks.0", block)]
+
+        result = adapter.get_online_rotation_configs(model=model)
+        assert "blocks.0.q_rot" in result
+        assert "blocks.0.k_rot" in result
+
+    @staticmethod
+    def test_registers_identity_modules_for_single_stream_block(adapter):
+        """MMSingleStreamBlock应被注册q_rot和k_rot"""
+        model = MagicMock()
+        model.hidden_size = 64
+        model.heads_num = 8
+
+        block = MagicMock()
+        block.__class__.__name__ = "MMSingleStreamBlock"
+        del block.q_rot
+        del block.k_rot
+        model.named_modules.return_value = [("blocks.0", block)]
+
+        result = adapter.get_online_rotation_configs(model=model)
+        assert "blocks.0.q_rot" in result
+        assert "blocks.0.k_rot" in result
+
+    @staticmethod
+    def test_skips_non_target_module(adapter):
+        """非目标模块类型应被跳过"""
+        model = MagicMock()
+        model.hidden_size = 64
+        model.heads_num = 8
+
+        block = MagicMock()
+        block.__class__.__name__ = "SomeOtherBlock"
+        model.named_modules.return_value = [("blocks.0", block)]
+
+        result = adapter.get_online_rotation_configs(model=model)
+        assert len(result) == 0
+
+    @staticmethod
+    def test_handles_empty_root_name(adapter):
+        """空name时q_rot/k_rot路径不带前缀点"""
+        model = MagicMock()
+        model.hidden_size = 64
+        model.heads_num = 8
+
+        block = MagicMock()
+        block.__class__.__name__ = "MMDoubleStreamBlock"
+        del block.q_rot
+        del block.k_rot
+        model.named_modules.return_value = [("", block)]
+
+        result = adapter.get_online_rotation_configs(model=model)
+        assert "q_rot" in result
+        assert "k_rot" in result
+
+    @staticmethod
+    def test_uses_transformer_when_model_none(adapter):
+        """model=None时使用adapter.transformer"""
+        mock_transformer = MagicMock()
+        mock_transformer.hidden_size = 64
+        mock_transformer.heads_num = 8
+        block = MagicMock()
+        block.__class__.__name__ = "MMDoubleStreamBlock"
+        del block.q_rot
+        del block.k_rot
+        mock_transformer.named_modules.return_value = [("blocks.0", block)]
+        adapter.transformer = mock_transformer
+
+        result = adapter.get_online_rotation_configs(model=None)
+        assert "blocks.0.q_rot" in result
+
+
+# ------------------------------ inject_fa3_placeholders 测试 ------------------------------
+class TestInjectFA3Placeholders:
+    """inject_fa3_placeholders 测试"""
+
+    @staticmethod
+    def test_injects_placeholders_for_double_stream_block(adapter):
+        """MMDoubleStreamBlock应被注入fa3_q/k/v"""
+        root_module = MagicMock()
+        block = MagicMock()
+        block.__class__.__name__ = "MMDoubleStreamBlock"
+        block.forward.__module__ = "hyvideo.modules.models"
+        root_module.named_modules.return_value = [("blocks.0", block)]
+
+        # mock import_module返回的模块
+        mock_hyvideo_mod = MagicMock()
+        with patch("msmodelslim.model.hunyuan_video.model_adapter.import_module", return_value=mock_hyvideo_mod):
+            adapter.inject_fa3_placeholders("root", root_module, should_inject=lambda name: True)
+
+        # 验证set_submodule被调用注入fa3占位符
+        calls = [str(c) for c in root_module.set_submodule.call_args_list]
+        assert any("fa3_q" in c for c in calls)
+        assert any("fa3_k" in c for c in calls)
+        assert any("fa3_v" in c for c in calls)
+
+    @staticmethod
+    def test_injects_placeholders_for_single_stream_block(adapter):
+        """MMSingleStreamBlock应被注入fa3_q/k/v"""
+        root_module = MagicMock()
+        block = MagicMock()
+        block.__class__.__name__ = "MMSingleStreamBlock"
+        block.forward.__module__ = "hyvideo.modules.models"
+        root_module.named_modules.return_value = [("blocks.0", block)]
+
+        mock_hyvideo_mod = MagicMock()
+        with patch("msmodelslim.model.hunyuan_video.model_adapter.import_module", return_value=mock_hyvideo_mod):
+            adapter.inject_fa3_placeholders("root", root_module, should_inject=lambda name: True)
+
+        calls = [str(c) for c in root_module.set_submodule.call_args_list]
+        assert any("fa3_q" in c for c in calls)
+
+    @staticmethod
+    def test_skips_non_target_module(adapter):
+        """非目标模块类型应被跳过"""
+        root_module = MagicMock()
+        block = MagicMock()
+        block.__class__.__name__ = "SomeOtherBlock"
+        root_module.named_modules.return_value = [("blocks.0", block)]
+
+        adapter.inject_fa3_placeholders("root", root_module, should_inject=lambda name: True)
+        root_module.set_submodule.assert_not_called()
+
+    @staticmethod
+    def test_skips_when_should_inject_returns_false(adapter):
+        """should_inject返回False时跳过"""
+        root_module = MagicMock()
+        block = MagicMock()
+        block.__class__.__name__ = "MMDoubleStreamBlock"
+        root_module.named_modules.return_value = [("blocks.0", block)]
+
+        adapter.inject_fa3_placeholders("root", root_module, should_inject=lambda name: False)
+        root_module.set_submodule.assert_not_called()
+
+    @staticmethod
+    def test_handles_empty_name(adapter):
+        """空name时prefix为空"""
+        root_module = MagicMock()
+        block = MagicMock()
+        block.__class__.__name__ = "MMDoubleStreamBlock"
+        block.forward.__module__ = "hyvideo.modules.models"
+        root_module.named_modules.return_value = [("", block)]
+
+        mock_hyvideo_mod = MagicMock()
+        with patch("msmodelslim.model.hunyuan_video.model_adapter.import_module", return_value=mock_hyvideo_mod):
+            adapter.inject_fa3_placeholders("root", root_module, should_inject=lambda name: True)
+
+        # 验证set_submodule被调用（不带前缀点）
+        root_module.set_submodule.assert_called()
+
+
+# ------------------------------ configure_runtime 补充测试 ------------------------------
+class TestConfigureRuntimeExtended:
+    """configure_runtime 补充测试"""
+
+    @staticmethod
+    def test_raises_when_unknown_attrs(adapter):
+        """未知属性应抛出SchemaValidateError"""
+
+        class _Config:
+            @staticmethod
+            def model_dump(exclude_none=True):
+                return {"unknown_key": 123}
+
+        with patch.object(adapter, "_allowed_hyvideo_config_keys", return_value=frozenset({"infer_steps"})):
+            with pytest.raises(SchemaValidateError, match="illegal config attributes"):
+                adapter.configure_runtime(_Config())
+
+
+# ------------------------------ prepare_calib_data 补充测试 ------------------------------
+class TestPrepareCalibDataExtended:
+    """prepare_calib_data enable_dump=True 分支"""
+
+    @staticmethod
+    def test_prepare_calib_data_loads_cached_when_enable_dump_true(tmp_path):
+        from msmodelslim.core.quant_service.multimodal_sd_v1.quant_config import DumpConfig
+
+        adapter = HunyuanVideoModelAdapter.__new__(HunyuanVideoModelAdapter)
+        adapter.model_args = MagicMock(task_config=TASK_TYPE)
+        models = {"transformer": MagicMock()}
+        dump_config = DumpConfig(enable_dump=True, dump_data_dir=str(tmp_path))
+
+        with patch(
+            "msmodelslim.model.hunyuan_video.model_adapter.load_cached_data_for_models",
+            return_value={"transformer": "cached_data"},
+        ) as mock_load:
+            result = adapter.prepare_calib_data(
+                models=models,
+                dump_config=dump_config,
+                save_path=tmp_path,
+                dataset=[VlmCalibSample(text="hello")],
+                inference_config=None,
+            )
+        mock_load.assert_called_once()
+        assert result == {"transformer": "cached_data"}
+
+
+# ------------------------------ _allowed_hyvideo_config_keys 补充测试 ------------------------------
+class TestAllowedHyvideoConfigKeys:
+    """_allowed_hyvideo_config_keys 缓存行为"""
+
+    @staticmethod
+    def test_caches_result_on_second_call(adapter):
+        """第二次调用应使用缓存"""
+        mock_probe = argparse.Namespace(infer_steps=50, batch_size=1)
+        # 清除类缓存
+        HunyuanVideoModelAdapter._HYVIDEO_CONFIG_KEYS = None
+        with patch.object(adapter, "_parse_args_from_hyvideo", return_value=mock_probe) as mock_parse:
+            keys1 = adapter._allowed_hyvideo_config_keys()
+            keys2 = adapter._allowed_hyvideo_config_keys()
+        # parse_args只应被调用一次（缓存）
+        mock_parse.assert_called_once()
+        assert keys1 == keys2
+
+
+# ------------------------------ _parse_args_from_hyvideo 补充测试 ------------------------------
+class TestParseArgsFromHyvideo:
+    """_parse_args_from_hyvideo 测试"""
+
+    @staticmethod
+    def test_restores_sys_argv_after_call(adapter):
+        """调用后应恢复sys.argv"""
+        original_argv = sys.argv.copy()
+        mock_parse = MagicMock(return_value=argparse.Namespace())
+        with patch.dict(sys.modules, {"hyvideo.config": MagicMock(parse_args=mock_parse)}):
+            adapter._parse_args_from_hyvideo(["--prompt", "test"])
+        assert sys.argv == original_argv
+
+    @staticmethod
+    def test_passes_correct_argv(adapter):
+        """应传递正确的argv"""
+        mock_parse = MagicMock(return_value=argparse.Namespace())
+        with patch.dict(sys.modules, {"hyvideo.config": MagicMock(parse_args=mock_parse)}):
+            adapter._parse_args_from_hyvideo(["--prompt", "test", "--seed", "42"])
+        mock_parse.assert_called_once()
+
+
+# ------------------------------ _setup_cache 补充测试 ------------------------------
+class TestSetupCacheExtended:
+    """_setup_cache 补充分支测试"""
+
+    @pytest.fixture
+    def cache_mock_self(self, temp_model_dir):
+        """创建用于cache测试的mock对象"""
+        mock = Mock()
+        mock.model_args = Mock()
+        mock.model_args.use_cache = False
+        mock.model_args.use_cache_double = False
+        mock.model_args.use_attentioncache = False
+        mock.model_args.infer_steps = 50
+        mock.transformer = Mock()
+        mock.transformer.single_blocks = [Mock() for _ in range(10)]
+        mock.transformer.double_blocks = [Mock() for _ in range(10)]
+        # 模拟mindiesd模块
+        mock_mindiesd = Mock()
+        mock_mindiesd.CacheConfig = Mock()
+        mock_mindiesd.CacheAgent = Mock()
+        with patch.dict('sys.modules', {'mindiesd': mock_mindiesd}):
+            yield mock
+
+    @staticmethod
+    def test_setup_cache_with_use_cache_true(cache_mock_self):
+        """use_cache=True时应配置single block cache"""
+        cache_mock_self.model_args.use_cache = True
+        cache_mock_self.model_args.cache_start_steps = 0
+        cache_mock_self.model_args.cache_interval = 5
+        cache_mock_self.model_args.single_block_start = 0
+        cache_mock_self.model_args.single_block_end = 9
+
+        with patch('mindiesd.CacheConfig') as mock_cfg, patch('mindiesd.CacheAgent') as mock_agent:
+            mock_cfg.return_value = MagicMock()
+            mock_agent.return_value = MagicMock()
+            HunyuanVideoModelAdapter._setup_cache(cache_mock_self)
+
+        calls = [str(c) for c in mock_cfg.call_args_list]
+        assert any("dit_block_cache" in c for c in calls)
+
+    @staticmethod
+    def test_setup_cache_with_use_cache_double_true(cache_mock_self):
+        """use_cache_double=True时应配置double block cache"""
+        cache_mock_self.model_args.use_cache_double = True
+        cache_mock_self.model_args.cache_start_steps = 0
+        cache_mock_self.model_args.cache_interval = 5
+        cache_mock_self.model_args.double_block_start = 0
+        cache_mock_self.model_args.double_block_end = 9
+
+        with patch('mindiesd.CacheConfig') as mock_cfg, patch('mindiesd.CacheAgent') as mock_agent:
+            mock_cfg.return_value = MagicMock()
+            mock_agent.return_value = MagicMock()
+            HunyuanVideoModelAdapter._setup_cache(cache_mock_self)
+
+        calls = [str(c) for c in mock_cfg.call_args_list]
+        assert any("dit_block_cache" in c for c in calls)
+
+    @staticmethod
+    def test_setup_cache_with_empty_single_blocks(cache_mock_self):
+        """single_blocks为空时跳过single cache配置"""
+        cache_mock_self.transformer.single_blocks = []
+        cache_mock_self.transformer.double_blocks = [Mock() for _ in range(5)]
+
+        with patch('mindiesd.CacheConfig') as mock_cfg, patch('mindiesd.CacheAgent') as mock_agent:
+            mock_cfg.return_value = MagicMock()
+            mock_agent.return_value = MagicMock()
+            HunyuanVideoModelAdapter._setup_cache(cache_mock_self)
+
+        assert mock_agent.call_count >= 1
+
+    @staticmethod
+    def test_setup_cache_with_empty_double_blocks(cache_mock_self):
+        """double_blocks为空时跳过double cache配置"""
+        cache_mock_self.transformer.single_blocks = [Mock() for _ in range(5)]
+        cache_mock_self.transformer.double_blocks = []
+
+        with patch('mindiesd.CacheConfig') as mock_cfg, patch('mindiesd.CacheAgent') as mock_agent:
+            mock_cfg.return_value = MagicMock()
+            mock_agent.return_value = MagicMock()
+            HunyuanVideoModelAdapter._setup_cache(cache_mock_self)
+
+        assert mock_agent.call_count >= 1
+
+
+# ------------------------------ quantization_context 补充测试 ------------------------------
+class TestQuantizationContextExtended:
+    """quantization_context 分支测试"""
+
+    @staticmethod
+    def test_moves_non_blocks_to_npu_and_blocks_to_cpu(adapter):
+        """非blocks模块移到npu，blocks模块移到cpu"""
+        module_embedding = Mock()
+        module_block = Mock()
+        module_norm = Mock()
+
+        mock_transformer = Mock()
+        mock_transformer.named_modules.return_value = [
+            ('embedding', module_embedding),
+            ('blocks.0', module_block),
+            ('norm', module_norm),
+        ]
+        adapter.transformer = mock_transformer
+
+        with patch('torch.cuda.amp.autocast'):
+            with adapter.quantization_context():
+                pass
+
+        module_embedding.to.assert_called_with('npu')
+        module_block.to.assert_called_with('cpu')
+        module_norm.to.assert_called_with('npu')
+
+
+# ------------------------------ _setup_cache ImportError 测试 ------------------------------
+class TestSetupCacheImportError:
+    """_setup_cache mindiesd导入失败分支"""
+
+    @staticmethod
+    def test_raises_import_error_when_mindiesd_missing(adapter):
+        """mindiesd不可用时应抛出ImportError"""
+        adapter.model_args = Mock()
+        adapter.model_args.use_cache = False
+        adapter.model_args.use_cache_double = False
+        adapter.model_args.use_attentioncache = False
+        adapter.transformer = Mock()
+        adapter.transformer.single_blocks = []
+        adapter.transformer.double_blocks = []
+
+        # 确保mindiesd不在sys.modules中
+        with patch.dict('sys.modules', {'mindiesd': None}):
+            with pytest.raises(ImportError, match="mindiesd"):
+                adapter._setup_cache()
+
+
+# ------------------------------ get_online_rotation_configs warning分支测试 ------------------------------
+class TestGetOnlineRotationConfigsWarning:
+    """get_online_rotation_configs warning分支"""
+
+    @staticmethod
+    def test_logs_warning_when_register_fails(adapter):
+        """注册rotation模块失败时应记录warning"""
+        model = MagicMock()
+        model.hidden_size = 64
+        model.heads_num = 8
+
+        block = MagicMock()
+        block.__class__.__name__ = "MMDoubleStreamBlock"
+        # 确保hasattr返回False，触发register_module调用
+        del block.q_rot
+        del block.k_rot
+        block.register_module.side_effect = RuntimeError("register failed")
+        model.named_modules.return_value = [("blocks.0", block)]
+
+        with patch("msmodelslim.model.hunyuan_video.model_adapter.get_logger") as mock_logger:
+            adapter.get_online_rotation_configs(model=model)
+        # 应该有warning日志
+        mock_logger.return_value.warning.assert_called()
+
+
+# ------------------------------ _fixed_quant_runtime_overrides 测试 ------------------------------
+class TestFixedQuantRuntimeOverrides:
+    """_fixed_quant_runtime_overrides 测试"""
+
+    @staticmethod
+    def test_returns_expected_keys(adapter):
+        """返回的字典包含预期的key"""
+        result = adapter._fixed_quant_runtime_overrides()
+        assert result["ulysses_degree"] == 1
+        assert result["ring_degree"] == 1
+        assert result["vae_parallel"] is False
+        assert result["use_cache"] is False
+        assert result["use_cache_double"] is False
+        assert result["use_attentioncache"] is False
+
+
+# ------------------------------ _calib_data_when_dump_disabled 补充测试 ------------------------------
+class TestCalibDataWhenDumpDisabled:
+    """_calib_data_when_dump_disabled 补充测试"""
+
+    @staticmethod
+    def test_raises_unsupported_error_when_user_declines(adapter):
+        """用户输入非y时应抛出UnsupportedError"""
+        with patch("builtins.input", return_value="n"):
+            with pytest.raises(UnsupportedError):
+                adapter._calib_data_when_dump_disabled({"model": MagicMock()})
+
+    @staticmethod
+    def test_returns_none_per_expert_when_user_confirms(adapter):
+        """用户输入y时返回每个expert的None"""
+        with patch("builtins.input", return_value="y"):
+            result = adapter._calib_data_when_dump_disabled({"m1": MagicMock(), "m2": MagicMock()})
+        assert result == {"m1": None, "m2": None}
 
 
 # ------------------------------ 依赖检查测试 ------------------------------

@@ -36,3 +36,27 @@ class TestNamespaceToArgv:
             }
         )
         assert argv == []
+
+    @staticmethod
+    def test_skips_none_values():
+        """None值应被跳过"""
+        argv = HunyuanVideoModelAdapter._namespace_to_argv({"infer_steps": None, "seed": 42})
+        assert "--infer-steps" not in argv
+        assert argv == ["--seed", "42"]
+
+    @staticmethod
+    def test_bool_true_appends_flag():
+        """True布尔值应只添加flag，不带值"""
+        argv = HunyuanVideoModelAdapter._namespace_to_argv({"use_cache": True})
+        assert argv == ["--use-cache"]
+
+    @staticmethod
+    def test_bool_false_skipped():
+        """False布尔值应被跳过"""
+        argv = HunyuanVideoModelAdapter._namespace_to_argv({"use_cache": False})
+        assert argv == []
+
+    @staticmethod
+    def test_empty_dict_returns_empty():
+        """空字典返回空列表"""
+        assert HunyuanVideoModelAdapter._namespace_to_argv({}) == []
