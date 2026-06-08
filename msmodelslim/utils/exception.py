@@ -117,7 +117,7 @@ class UnexpectedError(ModelslimError):
     def clear_tips(cls) -> None:
         cls.tips.clear()
 
-    def _all_tips(self) -> list[str]:
+    def _all_tips(self):
         all_tips = []
         if self.action:
             all_tips.append(self.action)
