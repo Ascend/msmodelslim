@@ -47,7 +47,6 @@ from msmodelslim.model.interface_hub import (
 )
 from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
-from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VLMDatasetLoader
 from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import (
@@ -57,6 +56,7 @@ from msmodelslim.utils.security import (
 )
 
 
+# pylint: disable=too-many-ancestors
 @logger_setter()
 class Qwen3VLModelAdapter(
     VLMBaseModelAdapter,
@@ -66,10 +66,7 @@ class Qwen3VLModelAdapter(
     FlexSmoothQuantInterface,
     QuaRotInterface,
 ):
-
-    def __init__(
-        self, model_type: str, model_path: Path, trust_remote_code: bool = False
-    ):
+    def __init__(self, model_type: str, model_path: Path, trust_remote_code: bool = False):
         # Cache for processor (used in dataset handling)
         self._processor = None
         self._tokenizer = None
@@ -83,9 +80,7 @@ class Qwen3VLModelAdapter(
         """Return model type"""
         return self.model_type
 
-    def handle_dataset(
-        self, dataset: Any, device: DeviceType = DeviceType.NPU
-    ) -> List[Any]:
+    def handle_dataset(self, dataset: Any, device: DeviceType = DeviceType.NPU) -> List[Any]:
         """
         Handle multimodal VLM calibration dataset.
 
@@ -102,7 +97,7 @@ class Qwen3VLModelAdapter(
 
         Returns a list of processor-ready dicts for LayerWiseRunner.
         """
-        self._processor = AutoProcessor.from_pretrained(
+        self._processor = AutoProcessor.from_pretrained(  # nosec B615: model_path is validated and local_files_only blocks Hub downloads.
             self.model_path,
             trust_remote_code=self.trust_remote_code,
             local_files_only=True,
@@ -114,10 +109,7 @@ class Qwen3VLModelAdapter(
             text = item.text
             if image_path is None or text is None:
                 raise UnsupportedError(
-                    (
-                        "Qwen3-VL adapter currently requires both image and text "
-                        "for calibration."
-                    ),
+                    ("Qwen3-VL adapter currently requires both image and text for calibration."),
                     action=(
                         "Please use multimodal (image+text) calibration data; pure-text or "
                         "missing image is not supported yet."
@@ -170,7 +162,7 @@ class Qwen3VLModelAdapter(
 
             processed_data.append(processed_item)
 
-        get_logger().info(f"Processed {len(processed_data)} multimodal vlm samples")
+        get_logger().info("Processed %d multimodal vlm samples", len(processed_data))
         return processed_data
 
     def init_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
@@ -191,21 +183,18 @@ class Qwen3VLModelAdapter(
             from transformers import Qwen3VLForConditionalGeneration
         except ImportError as e:
             raise InvalidModelError(
-                "Failed to import Qwen3VLForConditionalGeneration. "
-                "Please install transformers with Qwen3-VL support.",
+                "Failed to import Qwen3VLForConditionalGeneration. Please install transformers with Qwen3-VL support.",
                 action="pip install transformers==4.57.1",
             ) from e
 
-        get_logger().info(
-            "Initializing Qwen3-VL model with v1 framework (layer-wise loading)..."
-        )
+        get_logger().info("Initializing Qwen3-VL model with v1 framework (layer-wise loading)...")
 
         global_torch_dtype = self.get_global_model_torch_dtype()
 
         # Save original layer count
         origin_layers = self.config.text_config.num_hidden_layers
         get_logger().info(
-            f"Model with {origin_layers} text layers + {self.config.vision_config.depth} vision layers"
+            "Model with %d text layers + %d vision layers", origin_layers, self.config.vision_config.depth
         )
 
         # Temporarily set to 1 layer for initialization
@@ -213,14 +202,12 @@ class Qwen3VLModelAdapter(
         self.config.use_cache = False  # Disable cache to save memory
 
         # Validate model path
-        self.model_path = get_valid_read_path(
-            str(self.model_path), is_dir=True, check_user_stat=True
-        )
+        self.model_path = get_valid_read_path(str(self.model_path), is_dir=True, check_user_stat=True)
 
         # Load model with only 1 text decoder layer
         # Vision encoder is fully loaded, text decoder has only 1 layer
         get_logger().info("Loading vision encoder and first text decoder layer...")
-        model = Qwen3VLForConditionalGeneration.from_pretrained(
+        model = Qwen3VLForConditionalGeneration.from_pretrained(  # nosec B615: model_path is validated and local_files_only blocks Hub downloads.
             self.model_path,
             config=self.config,
             trust_remote_code=self.trust_remote_code,
@@ -238,9 +225,7 @@ class Qwen3VLModelAdapter(
         self.config.text_config._attn_implementation = "eager"
 
         # Load full state_dict for the first layer + vision encoder + lm_head
-        get_logger().info(
-            "Loading weights for vision encoder, first decoder layer, and lm_head..."
-        )
+        get_logger().info("Loading weights for vision encoder, first decoder layer, and lm_head...")
         state_dict = self._get_state_dict(model)
         # Convert state_dict to target_dtype so safetensors (e.g. bfloat16) do not overwrite config precision
         state_dict = {k: v.to(global_torch_dtype) for k, v in state_dict.items()}
@@ -255,29 +240,17 @@ class Qwen3VLModelAdapter(
         # BaseSmoothProcessor._apply_standard_ov_smooth() reads from model.config, not model.config.text_config
         # This must be done AFTER model is loaded
         if hasattr(model.config.text_config, "num_attention_heads"):
-            model.config.num_attention_heads = (
-                model.config.text_config.num_attention_heads
-            )
-            get_logger().info(
-                f"Set model.config.num_attention_heads = {model.config.num_attention_heads}"
-            )
+            model.config.num_attention_heads = model.config.text_config.num_attention_heads
+            get_logger().info("Set model.config.num_attention_heads = %d", model.config.num_attention_heads)
         if hasattr(model.config.text_config, "num_key_value_heads"):
-            model.config.num_key_value_heads = (
-                model.config.text_config.num_key_value_heads
-            )
-            get_logger().info(
-                f"Set model.config.num_key_value_heads = {model.config.num_key_value_heads}"
-            )
+            model.config.num_key_value_heads = model.config.text_config.num_key_value_heads
+            get_logger().info("Set model.config.num_key_value_heads = %d", model.config.num_key_value_heads)
 
-        get_logger().info(
-            f"Model initialized with {origin_layers} layers (1 loaded, others will be loaded on-demand)"
-        )
+        get_logger().info("Model initialized with %d layers (1 loaded, others will be loaded on-demand)", origin_layers)
 
         return model
 
-    def generate_model_visit(
-        self, model: nn.Module
-    ) -> Generator[ProcessRequest, Any, None]:
+    def generate_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
         """
         Generate model visit pipeline for layer-wise processing.
 
@@ -292,19 +265,13 @@ class Qwen3VLModelAdapter(
         """
         # 1. Process vision encoder first
         get_logger().info("Processing vision encoder...")
-        yield ProcessRequest(
-            name="model.visual", module=model.model.visual, args=(), kwargs={}
-        )
+        yield ProcessRequest(name="model.visual", module=model.model.visual, args=(), kwargs={})
 
         # 2. Process text decoder layers one by one using standard visit function
         get_logger().info("Processing text decoder layers...")
-        yield from generated_decoder_layer_visit_func(
-            model, transformer_blocks=self.generate_decoder_layer(model)
-        )
+        yield from generated_decoder_layer_visit_func(model, transformer_blocks=self.generate_decoder_layer(model))
 
-    def generate_model_forward(
-        self, model: nn.Module, inputs: Any
-    ) -> Generator[ProcessRequest, Any, None]:
+    def generate_model_forward(self, model: nn.Module, inputs: Any) -> Generator[ProcessRequest, Any, None]:
         """
         Generate model forward pipeline for calibration.
 
@@ -351,20 +318,12 @@ class Qwen3VLModelAdapter(
         # CRITICAL: Merge visual features into text embeddings
         # This mimics Qwen3VLModel.forward (lines 1320-1358)
         if isinstance(image_embeds, (list, tuple)):
-            image_embeds_cat = torch.cat(image_embeds, dim=0).to(
-                inputs_embeds.device, inputs_embeds.dtype
-            )
+            image_embeds_cat = torch.cat(image_embeds, dim=0).to(inputs_embeds.device, inputs_embeds.dtype)
         else:
-            image_embeds_cat = image_embeds.to(
-                inputs_embeds.device, inputs_embeds.dtype
-            )
+            image_embeds_cat = image_embeds.to(inputs_embeds.device, inputs_embeds.dtype)
 
         # Get image token mask for fusion
-        image_mask = (
-            (input_ids == model.config.image_token_id)
-            .unsqueeze(-1)
-            .expand_as(inputs_embeds)
-        )
+        image_mask = (input_ids == model.config.image_token_id).unsqueeze(-1).expand_as(inputs_embeds)
         inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds_cat)
 
         # Prepare deepstack visual injection
@@ -374,9 +333,7 @@ class Qwen3VLModelAdapter(
         # deepstack_image_embeds is already a list of tensors, one per layer
 
         # Get cache_position for attention mask creation
-        cache_position = torch.arange(
-            0, inputs_embeds.shape[1], device=inputs_embeds.device
-        )
+        cache_position = torch.arange(0, inputs_embeds.shape[1], device=inputs_embeds.device)
 
         # Get position ids
         position_ids, rope_deltas = model.model.get_rope_index(
@@ -404,14 +361,11 @@ class Qwen3VLModelAdapter(
         )
 
         # Create position embeddings (shared across layers)
-        position_embeddings = model.model.language_model.rotary_emb(
-            inputs_embeds, position_ids
-        )
+        position_embeddings = model.model.language_model.rotary_emb(inputs_embeds, position_ids)
 
         # 4. Process each decoder layer
         hidden_states = inputs_embeds
         for layer_idx, (name, layer) in enumerate(self.generate_decoder_layer(model)):
-
             hidden_states = yield ProcessRequest(
                 name=name,
                 module=layer,
@@ -428,21 +382,13 @@ class Qwen3VLModelAdapter(
 
             # CRITICAL: Inject deepstack visual features after specific layers
             # This mimics Qwen3VLTextModel.forward (lines 996-1001)
-            if deepstack_image_embeds is not None and layer_idx < len(
-                deepstack_image_embeds
-            ):
+            if deepstack_image_embeds is not None and layer_idx < len(deepstack_image_embeds):
                 # _deepstack_process: hidden_states[visual_pos_masks, :] += visual_embeds
-                visual_embeds = deepstack_image_embeds[layer_idx].to(
-                    hidden_states.device, hidden_states.dtype
-                )
+                visual_embeds = deepstack_image_embeds[layer_idx].to(hidden_states.device, hidden_states.dtype)
                 hidden_states = hidden_states.clone()
-                hidden_states[visual_pos_masks, :] = (
-                    hidden_states[visual_pos_masks, :] + visual_embeds
-                )
+                hidden_states[visual_pos_masks, :] = hidden_states[visual_pos_masks, :] + visual_embeds
 
-    def generate_decoder_layer(
-        self, model: nn.Module
-    ) -> Generator[Tuple[str, nn.Module], None, None]:
+    def generate_decoder_layer(self, model: nn.Module) -> Generator[Tuple[str, nn.Module], None, None]:
         """
         Generate decoder layers, loading them on-demand.
 
@@ -469,7 +415,7 @@ class Qwen3VLModelAdapter(
         For calibration, we typically don't need KV cache.
         """
         model.config.use_cache = need_kv_cache
-        get_logger().info(f"KV cache {'enabled' if need_kv_cache else 'disabled'}")
+        get_logger().info("KV cache %s", "enabled" if need_kv_cache else "disabled")
 
     def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
         """
@@ -510,9 +456,7 @@ class Qwen3VLModelAdapter(
 
             up_down_mapping_config = MappingConfig(
                 source=f"model.language_model.layers.{layer_idx}.mlp.up_proj",  # 上投影层
-                targets=[
-                    f"model.language_model.layers.{layer_idx}.mlp.down_proj"
-                ],  # 下投影层
+                targets=[f"model.language_model.layers.{layer_idx}.mlp.down_proj"],  # 下投影层
             )
 
             adapter_config.extend(
@@ -532,9 +476,7 @@ class Qwen3VLModelAdapter(
                             "group_method": "max",
                         },
                     ),
-                    AdapterConfig(
-                        subgraph_type="up-down", mapping=up_down_mapping_config
-                    ),
+                    AdapterConfig(subgraph_type="up-down", mapping=up_down_mapping_config),
                 ]
             )
 
@@ -612,25 +554,37 @@ class Qwen3VLModelAdapter(
         if tie_emb:
             raise UnsupportedError(
                 "Qwen3-VL with tie_word_embeddings=True does not support QuaRot (rotation).",
-                action=(
-                    "Remove 'quarot' from spec.process or use a model without tied embeddings."
-                ),
+                action=("Remove 'quarot' from spec.process or use a model without tied embeddings."),
             )
         # Pass full config (includes vision_config) for visual projections
         pre_run, rot_pairs = _qwen3_vl_get_rotate_map(self.config, block_size)
 
-        return [pre_run], [pair for pair in rot_pairs.values()]
+        return [pre_run], list(rot_pairs.values())
 
     @lru_cache(maxsize=1)
     def _get_weight_map(self) -> Dict[str, str]:
-        """Get weight map from model.safetensors.index.json"""
+        """Get weight map from model.safetensors.index.json, or build from safetensors files."""
         index_path = os.path.join(self.model_path, "model.safetensors.index.json")
-        index_data = json_safe_load(index_path)
-        return index_data["weight_map"]
+        if os.path.exists(index_path):
+            index_data = json_safe_load(index_path)
+            return index_data["weight_map"]
 
-    def _get_state_dict(
-        self, module: nn.Module, prefix: str = ""
-    ) -> Dict[str, torch.Tensor]:
+        get_logger().warning(
+            "If the model.safetensors.index.json file does not exist, and it is not Qwen3-VL-Embedding-2B or Qwen3-VL-Reranker-2B, make sure to check whether the weight file is complete."
+        )
+        # For small models, such as Qwen3-VL-Embedding-2B and Qwen3-VL-Reranker-2B, there is no model.safetensors.index.json file,
+        # create the weight_map by reading the keys of the safetensors.
+        weight_map = {}
+        safetensors_files = sorted(Path(self.model_path).glob("*.safetensors"))
+        for sf_file in safetensors_files:
+            file_name = sf_file.name
+            file_path = get_valid_read_path(str(sf_file), extensions="safetensors", size_max=MAX_READ_FILE_SIZE_32G)
+            with safe_open(file_path, framework="pt", device="cpu") as f:
+                for key in f.keys():
+                    weight_map[key] = file_name
+        return weight_map
+
+    def _get_state_dict(self, module: nn.Module, prefix: str = "") -> Dict[str, torch.Tensor]:
         """
         Load state dict for a specific module from safetensors files.
 
@@ -656,13 +610,9 @@ class Qwen3VLModelAdapter(
 
         # Load weights file by file
         state_dict = {}
-        for file_name, names in tqdm(
-            file_groups.items(), desc=f"Loading {prefix}", leave=False
-        ):
+        for file_name, names in tqdm(file_groups.items(), desc=f"Loading {prefix}", leave=False):
             file_path = os.path.join(self.model_path, file_name)
-            file_path = get_valid_read_path(
-                file_path, extensions="safetensors", size_max=MAX_READ_FILE_SIZE_32G
-            )
+            file_path = get_valid_read_path(file_path, extensions="safetensors", size_max=MAX_READ_FILE_SIZE_32G)
 
             with safe_open(file_path, framework="pt", device="cpu") as f:
                 for param_name in names:
@@ -671,9 +621,7 @@ class Qwen3VLModelAdapter(
 
         return state_dict
 
-    def _load_decoder_if_not_exist(
-        self, model: nn.Module, name: str, idx: int
-    ) -> nn.Module:
+    def _load_decoder_if_not_exist(self, model: nn.Module, name: str, idx: int) -> nn.Module:
         """
         Load a specific decoder layer from safetensors if not already loaded.
 
@@ -698,7 +646,7 @@ class Qwen3VLModelAdapter(
             try:
                 _ = decoder.input_layernorm.weight.device
                 # If we can access the device, layer is loaded
-                get_logger().debug(f"Layer {idx} already loaded")
+                get_logger().debug("Layer %d already loaded", idx)
                 return decoder
             except RuntimeError:
                 # Weight is on meta device, need to load
@@ -707,12 +655,12 @@ class Qwen3VLModelAdapter(
             # Layer doesn't exist in the module list yet
             pass
 
-        get_logger().info(f"Loading decoder layer {idx}...")
+        get_logger().info("Loading decoder layer %d...", idx)
 
         # Disable reset_parameters to avoid slow and unnecessary initialization
         # We will load weights from safetensors immediately after
         with patch.object(nn.Linear, "reset_parameters", lambda _self: None):
-            get_logger().info(f"Creating decoder layer {idx} structure...")
+            get_logger().info("Creating decoder layer %d structure...", idx)
 
             # Create layer structure (weights will be on meta or uninitialized)
             decoder = Qwen3VLTextDecoderLayer(self.config.text_config, layer_idx=idx)
@@ -731,7 +679,7 @@ class Qwen3VLModelAdapter(
             else:
                 module_list[idx] = decoder
 
-            get_logger().info(f"Decoder layer {idx} loaded successfully")
+            get_logger().info("Decoder layer %d loaded successfully", idx)
 
         # Perform architecture adaptation if needed
         # Similar to DeepSeek-V3's MTP layer wrapping in load_mtp_if_not_load
@@ -760,11 +708,8 @@ def _qwen3_vl_get_ln_fuse_map(config):
             f"model.language_model.layers.{layer_idx}.self_attn.v_proj",
         ]
 
-        ln_linear_map[
-            f"model.language_model.layers.{layer_idx}.post_attention_layernorm"
-        ] = [
-            f"model.language_model.layers.{layer_idx}.mlp.{proj}"
-            for proj in ["gate_proj", "up_proj"]
+        ln_linear_map[f"model.language_model.layers.{layer_idx}.post_attention_layernorm"] = [
+            f"model.language_model.layers.{layer_idx}.mlp.{proj}" for proj in ["gate_proj", "up_proj"]
         ]
 
     # Final norm → lm_head
@@ -820,20 +765,18 @@ def _qwen3_vl_get_rotate_map(config, block_size):
 
     # 1. Rotate text embedding layer (output will be rotated)
     # W_new = W_old @ R (right rotation for embedding output)
-    right_rot[f"model.language_model.embed_tokens"] = rot
+    right_rot["model.language_model.embed_tokens"] = rot
 
     # 2. Rotate visual merger output projection (to match rotated text embeddings)
     # visual.merger.linear_fc2 has weight shape [out_features=4096, in_features=4608]
     # Forward: y = x @ W.T, we want y' = y @ R = x @ W.T @ R
     # So: W'^T = W.T @ R, i.e., W' = R^T @ W (left rotation with R^T)
-    left_rot[f"model.visual.merger.linear_fc2"] = rot
+    left_rot["model.visual.merger.linear_fc2"] = rot
 
     # 3. Rotate deepstack visual merger output projections
     # These provide visual features to intermediate text decoder layers
     # Same logic as merger.linear_fc2: left rotation with R^T
-    if hasattr(config, "vision_config") and hasattr(
-        config.vision_config, "deepstack_visual_indexes"
-    ):
+    if hasattr(config, "vision_config") and hasattr(config.vision_config, "deepstack_visual_indexes"):
         num_deepstack_layers = len(config.vision_config.deepstack_visual_indexes)
         for i in range(num_deepstack_layers):
             left_rot[f"model.visual.deepstack_merger_list.{i}.linear_fc2"] = rot
@@ -846,7 +789,7 @@ def _qwen3_vl_get_rotate_map(config, block_size):
     left_rot = {}
     right_rot = {}
     # Add lm_head rotation (visual features will be rotated to match)
-    right_rot[f"lm_head"] = rot
+    right_rot["lm_head"] = rot
 
     for layer_idx in range(config.text_config.num_hidden_layers):
         # Attention: QKV right rotation, O left rotation
@@ -861,24 +804,16 @@ def _qwen3_vl_get_rotate_map(config, block_size):
         right_rot[f"model.language_model.layers.{layer_idx}.mlp.up_proj"] = rot
         left_rot[f"model.language_model.layers.{layer_idx}.mlp.down_proj"] = rot
 
-    rot_pairs["rot"] = QuaRotInterface.RotatePair(
-        left_rot=left_rot, right_rot=right_rot
-    )
+    rot_pairs["rot"] = QuaRotInterface.RotatePair(left_rot=left_rot, right_rot=right_rot)
 
     # OV special rotation
     # Safe: self-contained transformation within attention
     left_rot_uv = {}
     right_rot_uv = {}
     for layer_idx in range(config.text_config.num_hidden_layers):
-        left_rot_uv[f"model.language_model.layers.{layer_idx}.self_attn.v_proj"] = (
-            rot_uv
-        )
-        right_rot_uv[f"model.language_model.layers.{layer_idx}.self_attn.o_proj"] = (
-            rot_uv
-        )
+        left_rot_uv[f"model.language_model.layers.{layer_idx}.self_attn.v_proj"] = rot_uv
+        right_rot_uv[f"model.language_model.layers.{layer_idx}.self_attn.o_proj"] = rot_uv
 
-    rot_pairs["rot_uv"] = QuaRotInterface.RotatePair(
-        left_rot=left_rot_uv, right_rot=right_rot_uv
-    )
+    rot_pairs["rot_uv"] = QuaRotInterface.RotatePair(left_rot=left_rot_uv, right_rot=right_rot_uv)
 
     return pre_run, rot_pairs

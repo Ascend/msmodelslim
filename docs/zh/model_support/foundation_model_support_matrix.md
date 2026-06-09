@@ -838,6 +838,39 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
+      <td rowspan="4">Qwen3-VL-Embedding&Reranker系列</td>
+      <td>Qwen3-VL-Embedding-2B</td>
+      <td>transformers==4.57.1</td>
+      <td>√</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>Qwen3-VL-Embedding-8B</td>
+      <td>transformers==4.57.1</td>
+      <td>√</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>Qwen3-VL-Reranker-2B</td>
+      <td>transformers==4.57.1</td>
+      <td>√</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>Qwen3-VL-Reranker-8B</td>
+      <td>transformers==4.57.1</td>
+      <td>√</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen3-VL-MoE/README.md">Qwen3-VL-MoE系列</a></strong></td>
       <td>Qwen3-VL-235B-A22B</td>
       <td>transformers==4.57.1, flax</td>

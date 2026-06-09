@@ -20,6 +20,9 @@ See the Mulan PSL v2 for more details.
 """
 
 import builtins
+import contextlib
+import json
+import os
 import sys
 import tempfile
 import types
@@ -628,24 +631,112 @@ class TestQwen3VLModelAdapterGetWeightMap(unittest.TestCase):
 
     def setUp(self):
         self.model_type = "Qwen3-VL-8B-Instruct"
-        self.model_path = Path(".")
-
-    def test_get_weight_map_with_valid_index_when_called_then_return_weight_map(self):
-        """正常：应从index.json加载weight_map"""
-        adapter = _make_adapter(self.model_type, self.model_path)
+        self._stack = contextlib.ExitStack()
+        self.tmpdir = self._stack.enter_context(tempfile.TemporaryDirectory())
+        self.model_path = Path(self.tmpdir)
         index_data = {
             "weight_map": {
                 "model.language_model.layers.0.weight": "model-00001.safetensors",
             }
         }
+        index_path = os.path.join(self.model_path, "model.safetensors.index.json")
+        with open(index_path, "w", encoding="utf-8") as f:
+            json.dump(index_data, f)
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            adapter.model_path = tmpdir
-            with patch("msmodelslim.model.qwen3_vl.model_adapter.json_safe_load", return_value=index_data):
-                adapter._get_weight_map.cache_clear()
-                result = adapter._get_weight_map()
+    def tearDown(self):
+        self._stack.close()
 
+    def test_get_weight_map_with_valid_index_when_called_then_return_weight_map(self):
+        adapter = _make_adapter(self.model_type, self.model_path)
+        adapter._get_weight_map.cache_clear()
+        result = adapter._get_weight_map()
         self.assertEqual(result["model.language_model.layers.0.weight"], "model-00001.safetensors")
+
+
+@unittest.skipUnless(_QWEN3_VL_IMPORT_OK, "Qwen3-VL dependencies are not available for import")
+class TestQwen3VLModelAdapterGetWeightMapNull(unittest.TestCase):
+    """测试Qwen3VLModelAdapter的_get_weight_map方法"""
+
+    def setUp(self):
+        self.model_type = "Qwen3-VL-8B-Instruct"
+        self._stack = contextlib.ExitStack()
+        self.tmpdir = self._stack.enter_context(tempfile.TemporaryDirectory())
+        self.model_path = Path(self.tmpdir)
+
+    def tearDown(self):
+        self._stack.close()
+
+    def test_get_weight_map_with_valid_index_when_called_then_return_weight_map(self):
+        adapter = _make_adapter(self.model_type, self.model_path)
+        adapter._get_weight_map.cache_clear()
+        result = adapter._get_weight_map()
+        self.assertEqual(result, {})
+
+
+@unittest.skipUnless(_QWEN3_VL_IMPORT_OK, "Qwen3-VL dependencies are not available for import")
+class TestQwen3VLModelAdapterGetWeightMapFallback(unittest.TestCase):
+    """测试_get_weight_map的safetensors回退路径（无index.json但有safetensors文件）"""
+
+    def setUp(self):
+        self.model_type = "Qwen3-VL-8B-Instruct"
+        self._stack = contextlib.ExitStack()
+        self.tmpdir = self._stack.enter_context(tempfile.TemporaryDirectory())
+        self.model_path = Path(self.tmpdir)
+
+    def tearDown(self):
+        self._stack.close()
+
+    def test_get_weight_map_with_safetensors_fallback_when_called_then_build_from_files(self):
+        """正常：无index.json但有safetensors文件时应从文件构建weight_map"""
+        adapter = _make_adapter(self.model_type, self.model_path)
+        adapter._get_weight_map.cache_clear()
+
+        mock_sf_path = MagicMock()
+        mock_sf_path.name = "model-00001.safetensors"
+
+        with patch.object(Path, "glob", return_value=[mock_sf_path]):
+            with patch("msmodelslim.model.qwen3_vl.model_adapter.safe_open") as mock_safe_open:
+                mock_f = MagicMock()
+                mock_f.keys.return_value = ["model.layers.0.weight", "model.layers.0.bias"]
+                mock_safe_open.return_value.__enter__ = MagicMock(return_value=mock_f)
+                mock_safe_open.return_value.__exit__ = MagicMock(return_value=False)
+                with patch(
+                    "msmodelslim.model.qwen3_vl.model_adapter.get_valid_read_path",
+                    side_effect=lambda p, *a, **k: p,
+                ):
+                    result = adapter._get_weight_map()
+
+        self.assertEqual(result["model.layers.0.weight"], "model-00001.safetensors")
+        self.assertEqual(result["model.layers.0.bias"], "model-00001.safetensors")
+
+    def test_get_weight_map_with_multiple_safetensors_when_called_then_aggregate_all_keys(self):
+        """正常：多个safetensors文件时应聚合所有文件的key"""
+        adapter = _make_adapter(self.model_type, self.model_path)
+        adapter._get_weight_map.cache_clear()
+
+        mock_sf1 = MagicMock()
+        mock_sf1.name = "model-00001.safetensors"
+        mock_sf1.__lt__ = lambda s, o: s.name < o.name
+        mock_sf2 = MagicMock()
+        mock_sf2.name = "model-00002.safetensors"
+        mock_sf2.__lt__ = lambda s, o: s.name < o.name
+
+        with patch.object(Path, "glob", return_value=[mock_sf1, mock_sf2]):
+            with patch("msmodelslim.model.qwen3_vl.model_adapter.safe_open") as mock_safe_open:
+                mock_f1 = MagicMock()
+                mock_f1.keys.return_value = ["model.layers.0.weight"]
+                mock_f2 = MagicMock()
+                mock_f2.keys.return_value = ["model.layers.1.weight"]
+                mock_safe_open.return_value.__enter__ = MagicMock(side_effect=[mock_f1, mock_f2])
+                mock_safe_open.return_value.__exit__ = MagicMock(return_value=False)
+                with patch(
+                    "msmodelslim.model.qwen3_vl.model_adapter.get_valid_read_path",
+                    side_effect=lambda p, *a, **k: p,
+                ):
+                    result = adapter._get_weight_map()
+
+        self.assertEqual(result["model.layers.0.weight"], "model-00001.safetensors")
+        self.assertEqual(result["model.layers.1.weight"], "model-00002.safetensors")
 
 
 @unittest.skipUnless(_QWEN3_VL_IMPORT_OK, "Qwen3-VL dependencies are not available for import")
