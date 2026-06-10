@@ -1,11 +1,14 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
 apiversion: multimodal_vlm_modelslim_v1
 metadata:
-  config_id: Qwen3_5_moe_w8a8
+  config_id: qwen3_5_235B_w8a8
   score: 90
-  verified_model_types:
-    - Qwen3.5-122B-A10B
-    - Qwen3.5-35B-A3B
+  verified_tags:
+    Qwen3.5-397B-A17B:
+      - - vLLM_Ascend
+        - Atlas_A2_Inference
+      - - vLLM_Ascend
+        - Atlas_A3_Inference
   label:
     w_bit: 8
     a_bit: 8
@@ -32,9 +35,11 @@ spec:
           qconfig: *default_w8a8_dynamic
           include:
             - "*self_attn*"
+            - "*visual.blocks*"
           exclude:
             - "*self_attn.o_proj*"
             - "mtp*"
+            - "*linear_fc2*"
         - type: "linear_quant"
           qconfig: *default_w8a8_dynamic
           include:
