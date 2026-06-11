@@ -58,7 +58,9 @@ msmodelslim quant --model_path /path/to/Qwen3-VL-Reranker-2B \
 - 更多参数配置要求，请参考《[参数说明](../../../docs/zh/feature_guide/quick_quantization_v1/usage.md)》。
 
 
-> [!Note] 说明
+> [!Note]
 >
 > - Qwen3-VL-Embedding & Qwen3-VL-Reranker 默认精度为`bfloat16`，建议在支持bfloat16精度的设备上量化权重，若修改模型权重路径下`config.json`中的`torch_dtype`为`float16`进行量化，可能会导致模型精度异常。
 > - 若硬件只支持float16精度推理（例如Atlas 300I/300T系列），建议采用默认精度`bfloat16`量化后将模型权重路径下`config.json`中的`torch_dtype`修改为`float16`进行推理。
+> - 若在精度掉点可接受范围内期望获得更高推理性能，可尝试去除配置文件[qwen3_vl_embedding_w8a8.yaml](../../../lab_practice/qwen3_vl/qwen3_vl_embedding_w8a8.yaml)中的`model.language_model.layers.*.mlp.up_proj`、`model.language_model.layers.*.mlp.gate_proj`字段获得更大量化，量化命令参考如下：<br>
+  `msmodelslim quant --model_path /path/to/Qwen3-VL-Reranker-2B --save_path /path/to/Qwen3-VL-Reranker-2B-quantied --device npu --model_type Qwen3-VL-Reranker-2B --config /path/to/lab_practice/qwen3_vl/qwen3_vl_embedding_w8a8.yaml`
