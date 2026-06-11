@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from pathlib import Path
 from typing import Literal, List, Annotated
 
@@ -43,64 +44,71 @@ class ServiceOrientedEvaluateServiceConfig(EvaluateServiceConfig):
     demand: EvaluateDemand
     evaluation: AisbenchServerConfig
     inference_engine: VllmAscendConfig
-    
+
     @model_validator(mode='after')
     def validate_datasets_exist(self):
         """校验 expectations 中的所有 dataset 都在 evaluation.evaluation.datasets 中配置了"""
         if not self.demand.expectations:
             return self
-        
+
         available_datasets = set(self.evaluation.datasets.keys())
         missing_datasets = []
-        
+
         for expectation in self.demand.expectations:
             if expectation.dataset not in available_datasets:
                 missing_datasets.append(expectation.dataset)
-        
+
         if missing_datasets:
             raise SchemaValidateError(
                 f"Dataset(s) {missing_datasets} in expectations are not configured in evaluation.datasets. "
                 f"Available datasets: {list(available_datasets)}",
-                action="Please add the missing dataset(s) to evaluation.aisbench.datasets or remove them from expectations"
+                action="Please add the missing dataset(s) to evaluation.aisbench.datasets or remove them from expectations",
             )
-        
+
         return self
 
 
 @logger_setter()
 class ServiceOrientedEvaluateService(EvaluateServiceInfra):
-    def evaluate(self,
-                 context: EvaluateContext,
-                 evaluate_config: ServiceOrientedEvaluateServiceConfig,
-                 model_path: Path,
-                 ) -> EvaluateResult:
+    def evaluate(
+        self,
+        context: EvaluateContext,
+        evaluate_config: ServiceOrientedEvaluateServiceConfig,
+        model_path: Path,
+    ) -> EvaluateResult:
         server = None
         try:
             server = VllmAscendServer(
                 context=context,
                 model_path=model_path,
                 server_config=evaluate_config.inference_engine,
-                log_file_path=context.working_dir / "vllm_server.log"
+                log_file_path=context.working_dir / "vllm_server.log",
             )
 
             if not server.start():
                 raise SpecError("[ServiceOrientedEvaluateService] VLLM failed to start")
 
-            bencher = AisBenchServer(
-                context=context,
-                eval_config=evaluate_config.evaluation,
-                datasets=[d.dataset for d in evaluate_config.demand.expectations],
-                quantized_model_path=model_path,
-                current_run_dir=context.working_dir,
-            )
-            accuracies = bencher.run()
+            accuracies: List[EvaluateAccuracy] = []
+            for expectation in evaluate_config.demand.expectations:
+                bencher = AisBenchServer(
+                    context=context,
+                    eval_config=evaluate_config.evaluation,
+                    datasets=[expectation.dataset],
+                    quantized_model_path=model_path,
+                    current_run_dir=context.working_dir,
+                )
+                accuracies.extend(bencher.run())
+                if not is_demand_satisfied(demand=evaluate_config.demand.expectations, evaluate_result=accuracies):
+                    return EvaluateResult(
+                        accuracies=accuracies,
+                        expectations=evaluate_config.demand.expectations,
+                        is_satisfied=False,
+                    )
+
             return EvaluateResult(
                 accuracies=accuracies,
                 expectations=evaluate_config.demand.expectations,
-                is_satisfied=is_demand_satisfied(
-                    demand=evaluate_config.demand.expectations,
-                    evaluate_result=accuracies,
-                ),
+                is_satisfied=True,
             )
         finally:
             if server and server.process.process:
@@ -108,8 +116,8 @@ class ServiceOrientedEvaluateService(EvaluateServiceInfra):
 
 
 def is_demand_satisfied(
-        demand: List[AccuracyExpectation],
-        evaluate_result: List[EvaluateAccuracy],
+    demand: List[AccuracyExpectation],
+    evaluate_result: List[EvaluateAccuracy],
 ) -> bool:
     """判断 result 是否覆盖并满足所有 demand 的精度要求。"""
 

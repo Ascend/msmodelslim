@@ -176,3 +176,4 @@ ${SAVE_PATH}/
 - **调优算法**：对于自动调优支持的多种策略和算法，可以参考相关文档：
   - [Standing High 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high.md)：基于量化回退层选择和离群值抑制策略的自动调优算法
   - [Standing High With Experience 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high_with_experience.md)：基于专家经验的摸高算法策略
+  - [Binary Fallback 调优算法](../../quantization_algorithms/auto_tuning_strategies/binary_fallback.md)：仅二分搜索回退层；未配置 `rollback_candidates` 时须 **`ModelSlimPipelineInterfaceV1`**

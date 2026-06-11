@@ -17,7 +17,7 @@
 
 ```yaml
 strategy:
-  type: <strategy_type>  # 调优策略类型，如 standing_high、standing_high_with_experience
+  type: <strategy_type>  # 调优策略类型，如 standing_high、standing_high_with_experience、binary_fallback
   # 不同策略有不同的配置字段与语义，详见各策略文档
 
 evaluation:
@@ -44,7 +44,7 @@ evaluation:
 
 **类型**: `string`
 
-**可选值**: 根据已实现的调优策略而定，例如 `standing_high`、`standing_high_with_experience`。
+**可选值**: 根据已实现的调优策略而定，例如 `standing_high`、`standing_high_with_experience`、`binary_fallback`。
 
 **模型适配（按策略）**
 
@@ -56,6 +56,7 @@ evaluation:
 |------|----------------|
 | `standing_high` | **`ModelSlimPipelineInterfaceV1`**（始终自动敏感层分析） |
 | `standing_high_with_experience` | 上表接口 + **`StandingHighWithExperienceInterface`**（`load_model`，离群值抑制能力探测） |
+| `binary_fallback` | 配置了非空 `rollback_candidates` 时无额外要求（跳过敏感层分析）；否则须 **`ModelSlimPipelineInterfaceV1`** |
 
 详见各策略文档「适用要求 / 模型适配」章节及 [LLM 大模型接入指南](../../developer_guide/integrating_models.md#自动调优与敏感层分析)。
 
@@ -65,6 +66,7 @@ evaluation:
 
 - [Standing High 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high.md)
 - [Standing High With Experience 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high_with_experience.md)
+- [Binary Fallback 调优算法](../../quantization_algorithms/auto_tuning_strategies/binary_fallback.md)
 
 ### evaluation - 评估服务配置
 
@@ -374,3 +376,4 @@ inference_engine:
 
 - standing_high 调优策略配置：[standing_high.yaml](./example/standing_high.yaml)
 - standing_high_with_experience 调优策略配置：[standing_high_with_experience.yaml](./example/standing_high_with_experience.yaml)
+- binary_fallback 调优策略配置：[binary_fallback.yaml](./example/binary_fallback.yaml)

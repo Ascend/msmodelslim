@@ -86,7 +86,7 @@ msmodelslim/
 ├── quant/            # Multimodal quantization capabilities (V0 framework)
 ├── utils/            # Common modules, such as logging, configuration, validation, and security (V1 framework)
 ├── Third_Party_Open_Source_Software_Notice
-└── __init__.py 
+└── __init__.py
 ```
 
 The V1 framework involves the following directories:
@@ -102,7 +102,7 @@ msmodelslim/
 ├── processor/        # Domain layer implementing quantization execution processors such as the GPTQ algorithm
 ├── utils/            # Common modules, such as logging, configuration, validation, and security
 ├── Third_Party_Open_Source_Software_Notice
-└── __init__.py 
+└── __init__.py
 ```
 
 > Note: The following section describes the V1 framework directory components.
@@ -185,14 +185,14 @@ core/                     # Domain layer organizing and managing quantization ca
 │   ├── histogram.py              # Histogram statistics
 │   ├── minmax.py                 # Min-max statistics
 │   └── recall_window.py          # Sliding-window statistics
-├── practice/                 # Best practice module (to be optimized; currently only one schema is supporte)
+├── practice/                 # Best practice module (to be optimized; currently only one schema is supported)
 │   ├── __init__.py
 │   └── interface.py              # Best practice definition
 ├── quant_service/            # Quantization service module that converts floating-point models into quantized models and generates quantized weights
 │   ├── __init__.py
 │   ├── dataset_loader_infra.py   # Infrastructure interface for dataset loading
 │   ├── interface.py              # Definition and protocol for the quantization service
-│   ├── key_info_persistence_infra.py   
+│   ├── key_info_persistence_infra.py
 │   ├── modelslim_v0/             # msModelSlim V0-based LLM quantization service
 │   ├── modelslim_v1/             # msModelSlim V1-based LLM quantization service
 │   ├── multimodal_sd_v1/         # msModelSlim V1-based multimodal generative model quantization service
@@ -200,9 +200,9 @@ core/                     # Domain layer organizing and managing quantization ca
 │   └── proxy/                    # Comprehensive quantization service based on the preceding quantization services
 ├── quantizer/                # Weight and activation quantization module (to be organized)
 │   ├── __init__.py
-│   ├── attention.py              
-│   ├── base.py            
-│   ├── impl/                     
+│   ├── attention.py
+│   ├── base.py
+│   ├── impl/
 │   └── linear.py
 ├── runner/                   # Scheduling module (to be organized)
 │   ├── __init__.py
@@ -237,7 +237,7 @@ infra/                                     # Infrastructure module for external 
 ├── debug_info_persistence.py                  # JSON and Safetensors-based debug information persistence component
 ├── file_dataset_loader.py                     # File-based LLM dataset loader
 ├── logging_analysis_result_displayer.py       # Log-based analysis result displayer
-├── plugin_practice_dirs.py                    
+├── plugin_practice_dirs.py
 ├── service_oriented_evaluate_service.py       # Service-based model evaluation service
 ├── vllm_ascend_server.py                      # vLLM-Ascend-based service serving infrastructure
 ├── yaml_plan_manager.py                       # YAML-based tuning plan manager

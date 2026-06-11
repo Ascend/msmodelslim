@@ -49,6 +49,7 @@ nav:
       - 自动调优策略:
           - Standing High: "zh/quantization_algorithms/auto_tuning_strategies/standing_high.md"
           - Standing High With Experience: "zh/quantization_algorithms/auto_tuning_strategies/standing_high_with_experience.md"
+          - Binary Fallback: "zh/quantization_algorithms/auto_tuning_strategies/binary_fallback.md"
       - 敏感层分析算法:
           - Std: "zh/quantization_algorithms/sensitive_layer_analysis/std.md"
           - Quantile: "zh/quantization_algorithms/sensitive_layer_analysis/quantile.md"

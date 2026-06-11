@@ -46,6 +46,7 @@ The following section summarizes the strategies that enable automated searches f
 | :--- | :--- | :--- | :--- |
 | **Standing High** | Combines outlier suppression strategies with a binary search approach to minimize the number of fallback layers while meeting accuracy requirements.| Scenarios requiring fine-grained control over templates and strategies alongside a complete quantization configuration| [View details](auto_tuning_strategies/standing_high.md)|
 | **Standing High With Experience** | Automatically generates a quantization configuration based on expert knowledge, requiring only the quantization type and structural layout.| Scenarios where users are familiar with the model architecture and prefer not to provide a complete quantization configuration| [View details](auto_tuning_strategies/standing_high_with_experience.md)|
+| **Binary Fallback** | Binary-searches the minimum rollback prefix only; `template` is a full PracticeConfig.| Scenarios where outlier suppression is fixed in `template` and rollback path must be explicit| [View details](auto_tuning_strategies/binary_fallback.md)|
 
 ## Algorithm Selection Suggestions
 
