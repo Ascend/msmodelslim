@@ -41,20 +41,15 @@ from ..base import AutoActQuantizer, AutoWeightQuantizer, QConfig
         (qir.int8_per_tensor_asym, "minmax"),
         (qir.fp8_e4m3_per_tensor_sym, "minmax"),
     ],
-    abc_type=AutoActQuantizer
+    abc_type=AutoActQuantizer,
 )
 @logger_setter()
 class ActPerTensorMinmax(AutoActQuantizer):
-
     def __init__(self, config: QConfig):
         super().__init__()
         self.config = config
         aggregation_type = config.ext.get("aggregation_type", "max")
-        minmax_config = MinMaxObserverConfig(
-            dim=[],
-            keepdim=False,
-            aggregation_type=aggregation_type
-        )
+        minmax_config = MinMaxObserverConfig(dim=[], keepdim=False, aggregation_type=aggregation_type)
         self.minmax_observer = MsMinMaxObserver(minmax_config)
         self.q_param: Optional[QParam] = None
 
@@ -82,19 +77,14 @@ class ActPerTensorMinmax(AutoActQuantizer):
         (qir.int8_per_token_sym, "minmax"),
         (qir.fp8_e4m3_per_token_sym, "minmax"),
     ],
-    abc_type=AutoActQuantizer
+    abc_type=AutoActQuantizer,
 )
 @logger_setter()
 class ActPerTokenMinmax(AutoActQuantizer):
-
     def __init__(self, config: QConfig):
         super().__init__()
         self.config = config
-        minmax_config = MinMaxObserverConfig(
-            dim=[],
-            keepdim=False,
-            aggregation_type="max"
-        )
+        minmax_config = MinMaxObserverConfig(dim=[], keepdim=False, aggregation_type="max")
         self.minmax_observer = MsMinMaxObserver(minmax_config)
         self.q_param: Optional[QParam] = None
 
@@ -131,18 +121,14 @@ class ActPerTokenMinmax(AutoActQuantizer):
         (qir.int8_per_channel_asym, "minmax"),
         (qir.fp8_e4m3_per_channel_sym, "minmax"),
     ],
-    abc_type=AutoActQuantizer
+    abc_type=AutoActQuantizer,
 )
 class ActPerChannelMinmax(AutoActQuantizer):
     def __init__(self, config: QConfig):
         super().__init__()
         self.config = config
         aggregation_type = config.ext.get("aggregation_type", "max")
-        minmax_config = MinMaxObserverConfig(
-            dim=[0],
-            keepdim=False,
-            aggregation_type=aggregation_type
-        )
+        minmax_config = MinMaxObserverConfig(dim=[0], keepdim=False, aggregation_type=aggregation_type)
         self.minmax_observer = MsMinMaxObserver(minmax_config)
         self.q_param: Optional[QParam] = None
 
@@ -167,29 +153,15 @@ class ActPerChannelMinmax(AutoActQuantizer):
         return self.q_param
 
 
-@QABCRegistry.multi_register(
-    dispatch_key=[
-        (qir.int8_pd_mix_asym, "minmax")
-    ],
-    abc_type=AutoActQuantizer
-)
+@QABCRegistry.multi_register(dispatch_key=[(qir.int8_pd_mix_asym, "minmax")], abc_type=AutoActQuantizer)
 @logger_setter()
 class ActPDMixMinmax(AutoActQuantizer):
-
     def __init__(self, config: QConfig):
         super().__init__()
         self.config = config
         aggregation_type = config.ext.get("aggregation_type", "max")
-        prefilling_config = MinMaxObserverConfig(
-            dim=[],
-            keepdim=False,
-            aggregation_type="max"
-        )
-        decoding_config = MinMaxObserverConfig(
-            dim=[],
-            keepdim=False,
-            aggregation_type=aggregation_type
-        )
+        prefilling_config = MinMaxObserverConfig(dim=[], keepdim=False, aggregation_type="max")
+        decoding_config = MinMaxObserverConfig(dim=[], keepdim=False, aggregation_type=aggregation_type)
         self.prefilling_observer = MsMinMaxObserver(prefilling_config)
         self.decoding_observer = MsMinMaxObserver(decoding_config)
         self.q_param: Optional[QParam] = None
@@ -233,17 +205,13 @@ class ActPDMixMinmax(AutoActQuantizer):
         (qir.int4_per_channel_sym, "minmax"),
         (qir.fp8_e4m3_per_channel_sym, "minmax"),
     ],
-    abc_type=AutoWeightQuantizer
+    abc_type=AutoWeightQuantizer,
 )
 @logger_setter()
 class WeightPerChannelMinmax(AutoWeightQuantizer):
     def __init__(self, config: QConfig):
         super().__init__()
-        minmax_config = MinMaxObserverConfig(
-            dim=[0],
-            keepdim=False,
-            aggregation_type="max"
-        )
+        minmax_config = MinMaxObserverConfig(dim=[0], keepdim=False, aggregation_type="max")
         self.config = config
         self.minmax_observer = MsMinMaxObserver(minmax_config)
         self.weight: Optional[QStorage] = None
@@ -287,7 +255,7 @@ class WeightPerChannelMinmax(AutoWeightQuantizer):
         (qir.mxfp8_per_block_sym, "minmax"),
         (qir.mxfp4_per_block_sym, "minmax"),
     ],
-    abc_type=AutoWeightQuantizer
+    abc_type=AutoWeightQuantizer,
 )
 @logger_setter()
 class MXWeightPerBlockMinmax(AutoWeightQuantizer):
@@ -298,56 +266,80 @@ class MXWeightPerBlockMinmax(AutoWeightQuantizer):
 
         self.axes = config.ext.get('axes', -1)
         if not isinstance(self.axes, (int, list)):
-            raise SchemaValidateError(
-                f"Invalid value for 'axes': {self.axes}. Expected int or list[int]."
-            )
+            raise SchemaValidateError(f"Invalid value for 'axes': {self.axes}. Expected int or list[int].")
         self.block_size = config.dtype.mx_finfo.block_size
 
+        # Lazy quantization state: init_weight stores weight, forward triggers _quantize.
+        # Unified entry point ensures consistent behavior across single-card and DTS multi-card.
+        self.weight: Optional[QStorage] = None
         self.w_q_param: Optional[QParam] = None
         self.w_q_storage: Optional[QStorage] = None
+        self.w_q_storage_orig: Optional[QStorage] = None
+        self._orig_shape = None
+        self._padded_shape = None
+        self._axes = None
+        self.is_quantized = False
 
     def forward(self, x: Optional[torch.Tensor] = None) -> torch.Tensor:
-        if self.weight is None:
-            raise SpecError("No weight was set", action="please call init_weight first")
+        if not self.is_quantized:
+            if self.weight is None:
+                raise SpecError("No weight was set", action="please call init_weight first")
+            self._quantize()
+            self.is_quantized = True
 
         dequant_value = dequantize(self.w_q_storage, self.w_q_param).value
-        dequant_value = undo_reshape_to_blocks(dequant_value, padded_shape, orig_shape, axes)
+        dequant_value = undo_reshape_to_blocks(dequant_value, self._padded_shape, self._orig_shape, self._axes)
         return dequant_value
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def init_weight(self, weight: QStorage, bias: Optional[torch.Tensor] = None) -> None:
-        minmax_config = MinMaxBlockObserverConfig(axes=self.axes)
-        minmax_block_observer = MsMinMaxBlockObserver(minmax_config)
-        weight_value = weight.value.detach()
+        # 量化延迟到 forward() 首次调用时执行（惰性量化），
+        # 统一入口确保 DTS 场景下单卡多卡行为一致。
+        self.weight = weight
+
+    def _quantize(self) -> None:
+        weight_value = self.weight.value.detach()
         axes = self.axes
         axes = [axes] if isinstance(axes, int) else axes
         axes = [x + weight_value.ndim if x < 0 else x for x in axes]
 
+        minmax_config = MinMaxBlockObserverConfig(axes=self.axes)
+        minmax_block_observer = MsMinMaxBlockObserver(minmax_config)
+
         weight_value, axes_, orig_shape, padded_shape = reshape_to_blocks(weight_value, axes, self.block_size)
         shared_exp_axes = [x + 1 for x in axes_] if self.block_size > 0 else axes_
 
-        minmax_block_observer.update(weight_value, sync=self.sync, shared_exp_axes=shared_exp_axes)
+        minmax_block_observer.update(weight_value, sync=False, shared_exp_axes=shared_exp_axes)
 
         min_val, max_val = minmax_block_observer.get_min_max()
 
+        self._axes = axes
+        self._orig_shape = orig_shape
+        self._padded_shape = padded_shape
         self.w_q_param = calculate_qparam(
             min_val=min_val,
             max_val=max_val,
             q_dtype=QDType(self.config.dtype),
             q_scope=QScope(self.config.scope),
             symmetric=self.config.symmetric,
-            axes=self.config.ext.get('axes')
+            axes=self.config.ext.get('axes'),
         )
         self.w_q_param.ext['axes'] = self.axes
         self.w_q_storage = quantize(QStorage(QDType.FLOAT, weight_value), self.w_q_param)
-        dequant_value = dequantize(self.w_q_storage, self.w_q_param).value
-        dequant_value = undo_reshape_to_blocks(dequant_value, padded_shape, orig_shape, axes)
-        self.w_q_storage.value = undo_reshape_to_blocks(self.w_q_storage.value, padded_shape, orig_shape, axes)
+        # keep w_q_storage in block shape for forward(); store original shape separately
+        w_q_storage_orig_value = undo_reshape_to_blocks(self.w_q_storage.value.clone(), padded_shape, orig_shape, axes)
+        self.w_q_storage_orig = QStorage(self.w_q_storage.dtype, w_q_storage_orig_value)
+        del self.weight
+        self.weight = None
 
     def get_q_storage(self) -> QStorage:
-        return self.w_q_storage
+        if self.w_q_storage_orig is None:
+            _ = self.forward(None)
+        return self.w_q_storage_orig
 
     def get_q_param(self) -> QParam:
+        if self.w_q_param is None:
+            _ = self.forward(None)
         return self.w_q_param
 
 
@@ -356,28 +348,23 @@ class MXWeightPerBlockMinmax(AutoWeightQuantizer):
         (qir.mxfp8_per_block_sym, "minmax"),
         (qir.mxfp4_per_block_sym, "minmax"),
     ],
-    abc_type=AutoActQuantizer
+    abc_type=AutoActQuantizer,
 )
 @logger_setter()
 class MXActPerBlockMinmax(AutoActQuantizer):
-
     def __init__(self, config: QConfig):
         super().__init__()
         self.config = config
         self.axes = config.ext.get('axes', -1)
         if not isinstance(self.axes, (int, list)):
-            raise SchemaValidateError(
-                f"Invalid value for 'axes': {self.axes}. Expected int or list[int]."
-            )
+            raise SchemaValidateError(f"Invalid value for 'axes': {self.axes}. Expected int or list[int].")
         self.q_param = QParam(
             scheme=QScheme(
                 dtype=config.dtype,
                 scope=config.scope,
                 symmetric=config.symmetric,
             ),
-            ext={
-                'axes': self.axes
-            }
+            ext={'axes': self.axes},
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -387,7 +374,7 @@ class MXActPerBlockMinmax(AutoActQuantizer):
         if self.q_param is None:
             return QParam(scheme=self.config.to_scheme())
         return self.q_param
-    
+
     def is_data_free(self) -> bool:
         """
         mxfp8、mxfp4的per_block量化为data free场景

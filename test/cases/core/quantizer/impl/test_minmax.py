@@ -26,8 +26,14 @@ from pydantic import ValidationError
 from msmodelslim.ir.qal.qbase import QStorage, QDType, QScheme, QScope
 from msmodelslim import ir as qir
 from msmodelslim.core.observer import MsMinMaxObserver
-from msmodelslim.core.quantizer.base import QConfig, AutoActQuantizer
-from msmodelslim.core.quantizer.impl.minmax import ActPerTensorMinmax, ActPerTokenMinmax, WeightPerChannelMinmax
+from msmodelslim.core.quantizer.base import QConfig, AutoActQuantizer, AutoWeightQuantizer
+from msmodelslim.core.quantizer.impl.minmax import (
+    ActPerTensorMinmax,
+    ActPerTokenMinmax,
+    WeightPerChannelMinmax,
+    MXWeightPerBlockMinmax,
+)
+from msmodelslim.utils.exception import SpecError, SchemaValidateError
 
 
 def to_qconfig(q_scheme: QScheme, method: str) -> QConfig:
@@ -257,7 +263,318 @@ class TestWeightPerChannelMinmax:  # pylint: disable=attribute-defined-outside-i
     )
     def test_creation_with_auto_quantizer(self, qconfig):
         """测试通过自动量化器创建"""
-        from msmodelslim.core.quantizer.base import AutoWeightQuantizer
-
         quantizer = AutoWeightQuantizer.from_config(qconfig)
         assert isinstance(quantizer, WeightPerChannelMinmax)
+
+    def test_get_q_storage_returns_storage_when_not_forwarded(self):
+        """边界：未执行 forward 时 get_q_storage 应自动触发量化。"""
+        config = QConfig(dtype="int8", scope="per_channel", method="minmax", symmetric=True)
+        quantizer = WeightPerChannelMinmax(config)
+        weight = QStorage(QDType.FLOAT, torch.randn(10, 20))
+        quantizer.init_weight(weight)
+        storage = quantizer.get_q_storage()
+        assert storage is not None
+
+    def test_get_q_param_returns_qparam_when_not_forwarded(self):
+        """边界：未执行 forward 时 get_q_param 应自动触发量化。"""
+        config = QConfig(dtype="int8", scope="per_channel", method="minmax", symmetric=True)
+        quantizer = WeightPerChannelMinmax(config)
+        weight = QStorage(QDType.FLOAT, torch.randn(10, 20))
+        quantizer.init_weight(weight)
+        qp = quantizer.get_q_param()
+        assert qp is not None
+
+
+def _make_mxfp_qconfig(dtype: QDType, **ext_kwargs) -> QConfig:
+    return QConfig(
+        dtype=dtype,
+        scope=QScope.PER_BLOCK,
+        symmetric=True,
+        method="minmax",
+        ext=ext_kwargs,
+    )
+
+
+class TestMXWeightPerBlockMinmax:
+    """Test suite for MXWeightPerBlockMinmax — MXFP8/MXFP4 per-block weight quantizer."""
+
+    # ---------- 正常情形 ----------
+
+    def test_forward_returns_same_shape_when_mxfp8(self):
+        """正常：MXFP8 权重量化应返回与输入相同 shape。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = MXWeightPerBlockMinmax(config)
+        w = torch.randn(64, 128)
+        wq.init_weight(QStorage(QDType.FLOAT, w))
+        out = wq.forward(None)
+        assert out.shape == w.shape
+
+    def test_forward_returns_same_shape_when_mxfp4(self):
+        """正常：MXFP4 权重量化应返回与输入相同 shape。"""
+        config = _make_mxfp_qconfig(QDType.MXFP4)
+        wq = AutoWeightQuantizer.from_config(config)
+        w = torch.randn(64, 128)
+        wq.init_weight(QStorage(QDType.FLOAT, w))
+        out = wq.forward(None)
+        assert out.shape == w.shape
+
+    def test_forward_returns_same_shape_when_called_twice(self):
+        """正常：多次调用 forward 结果应稳定。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        wq.init_weight(QStorage(QDType.FLOAT, torch.randn(32, 64)))
+        out1 = wq.forward(None)
+        out2 = wq.forward(None)
+        assert out1.shape == out2.shape
+
+    def test_get_q_storage_returns_original_shape_when_quantized(self):
+        """正常：量化后 get_q_storage 应返回原始 shape。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        orig = torch.randn(32, 64)
+        wq.init_weight(QStorage(QDType.FLOAT, orig))
+        wq.forward(None)
+        storage = wq.get_q_storage()
+        assert storage.value.shape == orig.shape
+
+    def test_get_q_param_returns_qparam_with_scale_when_quantized(self):
+        """正常：量化后 get_q_param 应返回包含 scale 和 axes 的 QParam。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        wq.init_weight(QStorage(QDType.FLOAT, torch.randn(32, 64)))
+        qp = wq.get_q_param()
+        assert "scale" in qp.ext
+        assert "axes" in qp.ext
+
+    def test_is_data_free_returns_true_when_default_config(self):
+        """正常：is_data_free 应返回 True。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        assert wq.is_data_free() is True
+
+    def test_support_distributed_returns_true_when_default_config(self):
+        """正常：support_distributed 应返回 True。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        assert wq.support_distributed() is True
+
+    # ---------- 重构等价性验证 ----------
+
+    def test_lazy_quantize_matches_eager_quantize_when_mxfp4(self):
+        """重构等价：MXFP4 惰性量化应与 eager 量化产生完全一致的 scale 和 storage。"""
+        dtype, scope = QDType.MXFP4, QScope.PER_BLOCK
+        config = _make_mxfp_qconfig(dtype)
+        weight = torch.randn(64, 128)
+        block_size = dtype.mx_finfo.block_size
+
+        # eager flow (original init_weight logic)
+        from msmodelslim.core.observer import MsMinMaxBlockObserver, MinMaxBlockObserverConfig
+        from msmodelslim.ir.api import calculate_qparam, quantize
+        from msmodelslim.ir.utils import reshape_to_blocks, undo_reshape_to_blocks
+
+        obs = MsMinMaxBlockObserver(MinMaxBlockObserverConfig(axes=-1))
+        proc_axes = [-1]
+        proc_axes = [x + weight.ndim if x < 0 else x for x in proc_axes]
+        wb, _, os_, ps_ = reshape_to_blocks(weight.detach(), proc_axes, block_size)
+        sa = [x + 1 for x in _] if block_size > 0 else []
+        obs.update(wb, sync=False, shared_exp_axes=sa)
+        mv, xv = obs.get_min_max()
+        eager_qp = calculate_qparam(mv, xv, q_dtype=QDType(dtype), q_scope=QScope(scope), symmetric=True, axes=-1)
+        eager_qp.ext['axes'] = proc_axes
+        eager_qs = quantize(QStorage(QDType.FLOAT, wb), eager_qp)
+        eager_qs.value = undo_reshape_to_blocks(eager_qs.value, ps_, os_, proc_axes)
+
+        # lazy flow (refactored)
+        wq = AutoWeightQuantizer.from_config(config)
+        wq.init_weight(QStorage(QDType.FLOAT, weight))
+        wq.forward(None)
+        lazy_qp = wq.get_q_param()
+        lazy_qs = wq.get_q_storage()
+
+        assert torch.allclose(eager_qp.ext['scale'], lazy_qp.ext['scale']), "scale mismatch"
+        assert torch.allclose(eager_qs.value, lazy_qs.value, atol=1e-7), "storage mismatch"
+
+    def test_lazy_quantize_matches_eager_quantize_when_mxfp8(self):
+        """重构等价：MXFP8 惰性量化应与 eager 量化产生完全一致的 scale 和 storage。"""
+        dtype, scope = QDType.MXFP8, QScope.PER_BLOCK
+        config = _make_mxfp_qconfig(dtype)
+        weight = torch.randn(64, 128)
+        block_size = dtype.mx_finfo.block_size
+
+        from msmodelslim.core.observer import MsMinMaxBlockObserver, MinMaxBlockObserverConfig
+        from msmodelslim.ir.api import calculate_qparam, quantize
+        from msmodelslim.ir.utils import reshape_to_blocks, undo_reshape_to_blocks
+
+        obs = MsMinMaxBlockObserver(MinMaxBlockObserverConfig(axes=-1))
+        proc_axes = [-1]
+        proc_axes = [x + weight.ndim if x < 0 else x for x in proc_axes]
+        wb, _, os_, ps_ = reshape_to_blocks(weight.detach(), proc_axes, block_size)
+        sa = [x + 1 for x in _] if block_size > 0 else []
+        obs.update(wb, sync=False, shared_exp_axes=sa)
+        mv, xv = obs.get_min_max()
+        eager_qp = calculate_qparam(mv, xv, q_dtype=QDType(dtype), q_scope=QScope(scope), symmetric=True, axes=-1)
+        eager_qp.ext['axes'] = proc_axes
+        eager_qs = quantize(QStorage(QDType.FLOAT, wb), eager_qp)
+        eager_qs.value = undo_reshape_to_blocks(eager_qs.value, ps_, os_, proc_axes)
+
+        wq = AutoWeightQuantizer.from_config(config)
+        wq.init_weight(QStorage(QDType.FLOAT, weight))
+        wq.forward(None)
+        lazy_qp = wq.get_q_param()
+        lazy_qs = wq.get_q_storage()
+
+        assert torch.allclose(eager_qp.ext['scale'], lazy_qp.ext['scale']), "scale mismatch"
+        assert torch.allclose(eager_qs.value, lazy_qs.value, atol=1e-7), "storage mismatch"
+
+    # ---------- 边界情形 ----------
+
+    def test_forward_returns_same_shape_when_1d_weight(self):
+        """边界：1D 权重应正常处理。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        wq.init_weight(QStorage(QDType.FLOAT, torch.randn(64)))
+        out = wq.forward(None)
+        assert out.shape == (64,)
+
+    def test_forward_returns_same_shape_when_3d_weight(self):
+        """边界：3D 权重应正常处理。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        wq.init_weight(QStorage(QDType.FLOAT, torch.randn(4, 32, 64)))
+        out = wq.forward(None)
+        assert out.shape == (4, 32, 64)
+
+    def test_forward_returns_same_shape_when_zero_weight(self):
+        """边界：全零权重应正常量化。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        wq.init_weight(QStorage(QDType.FLOAT, torch.zeros(32, 64)))
+        out = wq.forward(None)
+        assert out.shape == (32, 64)
+
+    def test_forward_returns_same_shape_when_axes_is_zero(self):
+        """边界：axes=0 时应正常量化。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8, axes=0)
+        wq = AutoWeightQuantizer.from_config(config)
+        wq.init_weight(QStorage(QDType.FLOAT, torch.randn(32, 64)))
+        out = wq.forward(None)
+        assert out.shape == (32, 64)
+
+    def test_get_q_storage_returns_same_shape_when_called_twice(self):
+        """边界：多次调用 get_q_storage 应返回一致结果。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        wq.init_weight(QStorage(QDType.FLOAT, torch.randn(32, 64)))
+        wq.forward(None)
+        s1 = wq.get_q_storage()
+        s2 = wq.get_q_storage()
+        assert s1.value.shape == s2.value.shape
+
+    def test_get_q_storage_returns_original_shape_when_not_forwarded(self):
+        """边界：未 forward 时 get_q_storage 应自动触发量化并返回原始 shape。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        w = torch.randn(32, 64)
+        wq.init_weight(QStorage(QDType.FLOAT, w))
+        storage = wq.get_q_storage()
+        assert storage.value.shape == w.shape
+
+    def test_get_q_param_returns_qparam_with_scale_when_not_forwarded(self):
+        """边界：未 forward 时 get_q_param 应自动触发量化并返回 scale。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        wq.init_weight(QStorage(QDType.FLOAT, torch.randn(32, 64)))
+        qp = wq.get_q_param()
+        assert "scale" in qp.ext
+
+    # ---------- 异常情形 ----------
+
+    def test_forward_raises_spec_error_when_weight_not_set(self):
+        """异常：未 init_weight 时 forward 应报 SpecError。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        with pytest.raises(SpecError):
+            wq.forward(None)
+
+    def test_from_config_raises_schema_validate_error_when_axes_is_invalid(self):
+        """异常：非法的 axes 类型应报 SchemaValidateError。"""
+        with pytest.raises(SchemaValidateError):
+            AutoWeightQuantizer.from_config(_make_mxfp_qconfig(QDType.MXFP8, axes="invalid"))
+
+    def test_get_q_storage_raises_spec_error_when_weight_not_set(self):
+        """异常：未 init_weight 时 get_q_storage 应报 SpecError。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        with pytest.raises(SpecError):
+            wq.get_q_storage()
+
+    def test_get_q_param_raises_spec_error_when_weight_not_set(self):
+        """异常：未 init_weight 时 get_q_param 应报 SpecError。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        wq = AutoWeightQuantizer.from_config(config)
+        with pytest.raises(SpecError):
+            wq.get_q_param()
+
+    # ---------- 自动创建 ----------
+
+    @pytest.mark.parametrize(
+        "qconfig",
+        [
+            _make_mxfp_qconfig(QDType.MXFP8),
+            _make_mxfp_qconfig(QDType.MXFP4),
+        ],
+    )
+    def test_from_config_returns_mx_weight_per_block_minmax_when_mxfp_config(self, qconfig):
+        """自动：from_config 应正确创建 MXWeightPerBlockMinmax 实例。"""
+        quantizer = AutoWeightQuantizer.from_config(qconfig)
+        assert isinstance(quantizer, MXWeightPerBlockMinmax)
+
+
+class TestMXActPerBlockMinmax:
+    """Test suite for MXActPerBlockMinmax — MXFP8/MXFP4 per-block activation quantizer."""
+
+    def test_init_returns_qparam_with_axes_when_mxfp8(self):
+        """正常：MXFP8 初始化应设置含 axes 的 q_param。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        quantizer = AutoActQuantizer.from_config(config)
+        qp = quantizer.get_q_param()
+        assert qp.scheme.dtype == QDType.MXFP8
+        assert qp.scheme.scope == QScope.PER_BLOCK
+        assert "axes" in qp.ext
+
+    def test_init_returns_qparam_with_axes_when_mxfp4(self):
+        """正常：MXFP4 初始化应设置含 axes 的 q_param。"""
+        config = _make_mxfp_qconfig(QDType.MXFP4)
+        quantizer = AutoActQuantizer.from_config(config)
+        qp = quantizer.get_q_param()
+        assert qp.scheme.dtype == QDType.MXFP4
+
+    def test_forward_returns_input_unchanged_when_any_input(self):
+        """正常：forward 应直接返回输入不做修改。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        quantizer = AutoActQuantizer.from_config(config)
+        x = torch.randn(2, 4)
+        result = quantizer(x)
+        assert torch.equal(result, x)
+
+    def test_is_data_free_returns_true_when_default_config(self):
+        """正常：is_data_free 应返回 True。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        quantizer = AutoActQuantizer.from_config(config)
+        assert quantizer.is_data_free() is True
+
+    def test_from_config_raises_schema_validate_error_when_axes_is_invalid(self):
+        """异常：非法的 axes 类型应报 SchemaValidateError。"""
+        with pytest.raises(SchemaValidateError):
+            config = QConfig(
+                dtype=QDType.MXFP8, scope=QScope.PER_BLOCK, symmetric=True, method="minmax", ext={"axes": "bad"}
+            )
+            AutoActQuantizer.from_config(config)
+
+    def test_get_q_param_returns_default_scheme_when_q_param_is_none(self):
+        """边界：q_param 为 None 时应返回兜底 QParam。"""
+        config = _make_mxfp_qconfig(QDType.MXFP8)
+        quantizer = AutoActQuantizer.from_config(config)
+        quantizer.q_param = None
+        qp = quantizer.get_q_param()
+        assert qp is not None
