@@ -31,15 +31,30 @@ logger = get_logger()
 def _lazy_init_unsaved_modules(context: ConvertContext, tree: nn.Module) -> None:
     """保存前加载未参与 IR 转换的模块（PassthroughModule、未 quant 的 ModelFreeLinear）。"""
     from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeModule
+    from msmodelslim.infra.io.shard_handle_cache import ShardHandleCache
 
     reader = context.reader
     if reader is None:
         return
     n = 0
-    for mod in tree.modules():
-        if isinstance(mod, ModelFreeModule) and not mod.lazy_initialized:
-            mod.lazy_init(reader, device="cpu")
-            n += 1
+    had_shard_attr = hasattr(reader, "shard_handle_cache")
+    old_shard_cache = getattr(reader, "shard_handle_cache", None)
+    shard_cache = ShardHandleCache(max_shards=context.config.parallel.shard_cache_size)
+    reader.shard_handle_cache = shard_cache
+    try:
+        for mod in tree.modules():
+            if isinstance(mod, ModelFreeModule) and not mod.lazy_initialized:
+                mod.lazy_init(reader, device="cpu")
+                n += 1
+    finally:
+        shard_cache.clear()
+        if had_shard_attr:
+            reader.shard_handle_cache = old_shard_cache
+        else:
+            try:
+                delattr(reader, "shard_handle_cache")
+            except AttributeError:
+                pass
     if n:
         logger.info("Lazy-loaded %d module(s) before save (passthrough / FLOAT linear)", n)
 

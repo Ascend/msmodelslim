@@ -144,11 +144,15 @@ class CheckpointReader(ICheckpointReader):
         cache = getattr(self, "shard_handle_cache", None)
         if isinstance(cache, ShardHandleCache):
             return cache.load_tensors(self.model_path, inverse_weight_map, device=device)
-        return ShardHandleCache(max_shards=1).load_tensors(
-            self.model_path,
-            inverse_weight_map,
-            device=device,
-        )
+        local_cache = ShardHandleCache(max_shards=1)
+        try:
+            return local_cache.load_tensors(
+                self.model_path,
+                inverse_weight_map,
+                device=device,
+            )
+        finally:
+            local_cache.clear()
 
     def read_model_config(self) -> dict[str, Any]:
         """读取 ``config.json``（不存在则返回空 dict）。"""

@@ -1,0 +1,19 @@
+apiversion: modelslim_convert
+
+# Kimi K2.5 INT4(per_group) -> BF16 权重转换：
+#   - 源权重为 .weight_packed + .weight_scale + .weight_shape
+#   - 匹配到的 linear 反量化为 FLOAT(bf16)
+#   - 未匹配的权重自动原样保留并写入 save_path
+spec:
+  linears:
+    - match:
+        - "language_model.model.layers.*.mlp.experts.*"
+      target: FLOAT
+      route: auto
+
+  save:
+    - type: huggingface
+      part_file_size: 4
+
+  parallel:
+    workers: 8

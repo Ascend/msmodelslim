@@ -53,16 +53,20 @@ def _candidate_module_paths(catalog_keys: set[str], rule_match: str) -> list[str
     """
     从 catalog key 反推 module_path，再用 fnmatch 过滤。
 
-    仅处理 ``*.weight`` 结尾的 key（预处理后 MoE 均为 per-expert 2D weight）。
+    处理 ``*.weight`` 与 ``*.weight_packed`` 结尾的 key。后者用于 INT4 packed
+    权重，转换时再通过 ``weight_scale`` / ``weight_shape`` 反量化到 FLOAT。
     """
     seen: set[str] = set()
     out: list[str] = []
     for key in catalog_keys:
         if key.endswith(WEIGHT_SCALE_INV_SUFFIX):
             continue
-        if not key.endswith(".weight"):
+        if key.endswith(".weight"):
+            path = key[: -len(".weight")]
+        elif key.endswith(".weight_packed"):
+            path = key[: -len(".weight_packed")]
+        else:
             continue
-        path = key[: -len(".weight")]
         if path in seen:
             continue
         if fnmatch.fnmatch(path, rule_match):
@@ -82,6 +86,10 @@ def _collect_binding_keys(config: ConvertConfig, catalog_keys: set[str]) -> set[
             scale_key = path + WEIGHT_SCALE_INV_SUFFIX
             if scale_key in catalog_keys:
                 keys.add(scale_key)
+            for suffix in (".weight_packed", ".weight_scale", ".weight_shape", ".bias"):
+                key = f"{path}{suffix}"
+                if key in catalog_keys:
+                    keys.add(key)
             for _, pat in rule.tensor_map.items():
                 resolved = pat.replace("{module}", path)
                 if resolved in catalog_keys:
@@ -119,6 +127,26 @@ def _resolve_bindings(
             )
     else:
         bindings = {k: _fill_ref(v, catalog) for k, v in bindings.items()}
+    if not bindings:
+        packed_key = f"{module_path}.weight_packed"
+        if packed_key in catalog_keys:
+            for logical, suffix in (
+                ("weight_packed", ".weight_packed"),
+                ("weight_scale", ".weight_scale"),
+                ("weight_shape", ".weight_shape"),
+                ("bias", ".bias"),
+            ):
+                key = f"{module_path}{suffix}"
+                if key in catalog_keys:
+                    e = catalog.get(key)
+                    bindings[logical] = TensorRef(
+                        logical,
+                        key,
+                        e.shard,
+                        e.dtype,
+                        e.shape,
+                        meta=dict(e.meta),
+                    )
     return bindings
 
 

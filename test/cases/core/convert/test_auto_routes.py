@@ -27,10 +27,14 @@ class TestResolveAutoRoute:
         route = resolve_auto_route(IRKind.FLOAT, IRKind.W8A8_MXFP8)
         assert route == [IRKind.FLOAT, IRKind.W8A8_MXFP8]
 
+    def test_resolve_auto_route_return_int4_packed_to_float_when_src_int4_dst_float(self):
+        route = resolve_auto_route(IRKind.INT4_PACKED, IRKind.FLOAT)
+        assert route == [IRKind.INT4_PACKED, IRKind.FLOAT]
+
     def test_resolve_auto_route_return_same_ir_when_src_equals_dst(self):
         route = resolve_auto_route(IRKind.FLOAT, IRKind.FLOAT)
         assert route == [IRKind.FLOAT]  # 校验同 IR 仅返回自身
 
     def test_resolve_auto_route_raise_error_when_pair_not_in_table(self):
         with pytest.raises(UnsupportedError, match="No auto route"):
-            resolve_auto_route(IRKind.INT4_PACKED, IRKind.FLOAT)
+            resolve_auto_route(IRKind.INT4_PACKED, IRKind.W8A8_MXFP8)

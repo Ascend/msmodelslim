@@ -179,6 +179,15 @@ _SOURCE_IR_BINDINGS: dict[IRKind, tuple[str, dict[str, str]]] = {
         "fp8_block",
         {"weight": "{module}.weight", "weight_scale_inv": "{module}.weight_scale_inv"},
     ),
+    IRKind.INT4_PACKED: (
+        "int4_per_group",
+        {
+            "weight_packed": "{module}.weight_packed",
+            "weight_scale": "{module}.weight_scale",
+            "weight_shape": "{module}.weight_shape",
+            "bias": "{module}.bias",
+        },
+    ),
     IRKind.FLOAT: ("bf16", {"weight": "{module}.weight"}),
 }
 
