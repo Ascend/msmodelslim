@@ -21,15 +21,58 @@ See the Mulan PSL v2 for more details.
 
 import logging
 import os
+import shutil
 from configparser import ConfigParser
 
 from setuptools import setup, find_packages
+from setuptools.command.develop import develop as _develop
+
+
+def _ensure_data_symlinks():
+    """pip -e 安装时为数据目录创建符号链接, 保持单一数据源。"""
+    pkg_dir = os.path.dirname(os.path.abspath(__file__))
+    ms_dir = os.path.join(pkg_dir, 'msmodelslim')
+    for d in ('config', 'lab_practice', 'lab_calib'):
+        link = os.path.join(ms_dir, d)
+        target = os.path.join(pkg_dir, d)
+
+        # 已是最新符号链接则跳过
+        if os.path.islink(link) and os.readlink(link) == os.path.relpath(target, ms_dir):
+            continue
+
+        # 清理旧的符号链接或 copytree 残留目录
+        if os.path.islink(link):
+            os.unlink(link)
+        elif os.path.exists(link):
+            shutil.rmtree(link)
+
+        # 优先创建符号链接（Windows 也尝试，可能因权限失败）
+        try:
+            os.symlink(os.path.relpath(target, ms_dir), link)
+        except OSError:
+            if os.path.exists(target):
+                shutil.copytree(target, link)
+                logging.warning(
+                    "Failed to create symlink for '%s', using directory copy instead. "
+                    "Debug by modifying files under msmodelslim/%s/, but sync changes "
+                    "back to %s before committing.",
+                    d,
+                    d,
+                    target,
+                )
+
+
+class _DevelopWithSymlinks(_develop):
+    def run(self):
+        _ensure_data_symlinks()
+        _develop.run(self)
+
 
 config = ConfigParser()
 config.read('./config/config.ini')
 
 abs_path = os.path.dirname(os.path.realpath(__file__))
-with open(os.path.join(abs_path, "requirements.txt")) as f:
+with open(os.path.join(abs_path, "requirements.txt"), encoding='utf-8') as f:
     required = f.read().splitlines()
 
 model_adapter_plugins = []
@@ -40,7 +83,7 @@ for group, models in config.items("ModelAdapter"):
     if group in entry_section:
         entry_point = entry_section[group]
     else:
-        logging.warning(f"ModelAdapter group '{group}' has no entry point defined in ModelAdapterEntryPoints")
+        logging.warning("ModelAdapter group '%s' has no entry point defined in ModelAdapterEntryPoints", group)
         continue
 
     for model in model_list:
@@ -71,8 +114,14 @@ setup(
     description='msModelSlim, MindStudio ModelSlim Tools',
     long_description_content_type='text/markdown',
     url=config.get('URL', 'repository_url'),
-    packages=find_packages(exclude=['precision_tool', 'security', ]) + ['msmodelslim.config', 'msmodelslim.lab_calib',
-                                                                        'msmodelslim.lab_practice'],
+    cmdclass={'develop': _DevelopWithSymlinks},
+    packages=find_packages(
+        exclude=[
+            'precision_tool',
+            'security',
+        ]
+    )
+    + ['msmodelslim.config', 'msmodelslim.lab_calib', 'msmodelslim.lab_practice'],
     package_dir={
         'msmodelslim': 'msmodelslim',
         'msmodelslim.config': 'config',
@@ -104,9 +153,7 @@ setup(
     python_requires='>=3.7',
     install_requires=required,
     entry_points={
-        'console_scripts': [
-            'msmodelslim=msmodelslim.cli.__main__:main'
-        ],
+        'console_scripts': ['msmodelslim=msmodelslim.cli.__main__:main'],
         "msmodelslim.model_adapter.plugins": model_adapter_plugins,
         **plugin_entry_points,  # 从 config.ini 读取的插件配置（含 quant_service、tuning_strategy、evaluation 等）
     },

@@ -1,1 +1,4 @@
 *.pyc
+msmodelslim/config
+msmodelslim/lab_practice
+msmodelslim/lab_calib
