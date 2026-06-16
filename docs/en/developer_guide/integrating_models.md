@@ -122,7 +122,7 @@ wan2_2 = msmodelslim.model.wan2_2.model_adapter:Wan2Point2Adapter
 
 ## Automatic Tuning and Sensitivity Analysis
 
-When using [automatic tuning](../feature_guide/auto_precision_tuning/usage.md) and the strategy must **automatically build rollback candidates** (`standing_high` always; `standing_high_with_experience` delegates to Standing High), the model adapter must implement **`ModelSlimPipelineInterfaceV1`**:
+When using [Automatic Tuning Usage Guide](../feature_guide/auto_precision_tuning/usage.md) and the strategy must **automatically build rollback candidates** (`standing_high` always; `standing_high_with_experience` delegates to Standing High), the model adapter must implement **`ModelSlimPipelineInterfaceV1`**. Import it as follows:
 
 ```python
 from msmodelslim.model.interface_hub import ModelSlimPipelineInterfaceV1

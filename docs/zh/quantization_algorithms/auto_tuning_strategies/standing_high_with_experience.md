@@ -2,7 +2,7 @@
 
 ## 简介
 
-Standing High With Experience（基于专家经验的摸高算法）是在 [Standing High](standing_high.md) 摸高算法基础上，结合**专家经验**的自动调优策略。该策略基于专家经验自动生成完整的摸高配置，用户只需指定**量化类型**（`quant_type`）和**模型结构配置**（`structure_configs`），无需提供完整的量化配置，即可启动摸高调优。
+Standing High With Experience（基于专家经验的摸高算法）是在 《[Standing High 调优算法](standing_high.md)》 摸高算法基础上，结合**专家经验**的自动调优策略。该策略基于专家经验自动生成完整的摸高配置，用户只需指定**量化类型**（`quant_type`）和**模型结构配置**（`structure_configs`），无需提供完整的量化配置，即可启动摸高调优。
 
 算法内部将生成的完整配置委托给 Standing High 策略执行，因此摸高流程（二分搜索最小回退级别、摸高过程、离群值抑制策略遍历等）与 Standing High 一致，区别仅在于**配置来源**由专家经验自动填充。
 
@@ -14,7 +14,7 @@ Standing High With Experience 的核心思想是**配置简化 + 专家经验填
 
 1. **用户侧**：仅配置 `quant_type`（如 `w8a8`、`w4a8`）和 `structure_configs`（如 GQA、FFN 等结构类型及其 `include`/`exclude` 模式）。
 2. **策略侧**：根据 `quant_type` 和 `structure_configs` 基于专家经验生成完整摸高配置，并组装为 `StandingHighStrategyConfig`。
-3. **执行侧**：将生成的配置交给 `StandingHighStrategy` 执行摸高，后续与 [Standing High](standing_high.md) 一致，迭代优化直至得到满足精度要求的最优配置。
+3. **执行侧**：将生成的配置交给 `StandingHighStrategy` 执行摸高，后续与 《[Standing High 调优算法](standing_high.md)》 一致，迭代优化直至得到满足精度要求的最优配置。
 
 ### 算法特点
 
@@ -31,13 +31,13 @@ Standing High With Experience 的核心思想是**配置简化 + 专家经验填
 
 - 须实现 **`ModelSlimPipelineInterfaceV1`**（自动敏感层分析，委托 Standing High 执行）及 **`StandingHighWithExperienceInterface`**（仅 `load_model`，用于过滤当前模型不支持的离群值抑制策略）。
 - 常见写法：模型适配器同时继承 **`StandingHighWithExperienceInterface`**（`load_model` 探测）与 **`ModelSlimPipelineInterfaceV1`**（敏感层分析与量化 pipeline）。
-- 敏感层分析不会在策略侧预先 `load_model`；详见 [自动调优配置协议说明](../../feature_guide/auto_precision_tuning/configuration_protocols.md#strategy---调优策略配置) 与 [LLM 大模型接入指南 — 自动调优与敏感层分析](../../developer_guide/integrating_models.md#自动调优与敏感层分析)。
+- 敏感层分析不会在策略侧预先 `load_model`；详见《[自动调优配置协议说明](../../feature_guide/auto_precision_tuning/configuration_protocols.md#strategy---调优策略配置)》与《[LLM 大模型接入指南 — 自动调优与敏感层分析](../../developer_guide/integrating_models.md#自动调优与敏感层分析)》。
 
 ## 功能介绍
 
 ### 使用说明
 
-在自动调优流程中通过 `msmodelslim tune` 启动；在调优 YAML 的 `strategy` 字段将 `type` 设为 `standing_high_with_experience`，并按下文配置其他字段即可。完整调优配置与命令参数见 [自动调优使用说明](../../feature_guide/auto_precision_tuning/usage.md)。
+在自动调优流程中通过 `msmodelslim tune` 启动；在调优 YAML 的 `strategy` 字段将 `type` 设为 `standing_high_with_experience`，并按下文配置其他字段即可。完整调优配置与命令参数见 《[自动调优使用说明](../../feature_guide/auto_precision_tuning/usage.md)》。
 
 **与 Standing High 的对比**
 

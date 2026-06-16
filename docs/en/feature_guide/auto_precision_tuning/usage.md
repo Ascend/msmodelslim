@@ -141,32 +141,14 @@ ${SAVE_PATH}/
 └── aisbench_output/      # Detailed AISBench output
 ```
 
-- **Quantized model weights**
-  - **Path**: `${SAVE_PATH}/quant_model`
-  - **Description**: Stores the quantized model weight file generated in the last iteration. This file is saved based on the saver type specified in the `save` field of the quantization configuration.
-
-- **Tuning history records**
-  - **Path**: `${SAVE_PATH}/history`
-  - **Description**: Stores the tuning history records of all iterations, including:
-    - `history.yaml`: tuning history index file, which records basic information (such as configuration IDs and accuracy metrics) of each iteration.
-    - `accuracy.yaml`: accuracy cache file, which records the evaluation and quantization configuration results that have been evaluated, allowing them to be reused during interruption recovery.
-    - Quantization configuration YAML file of each iteration: a YAML file named after the configuration ID, which records the quantization configuration used in each iteration.
-
-- **vLLM service logs**
-  - **Path**: `${SAVE_PATH}/vllm_server.log`
-  - **Description**: Stores the log information about the latest startup and operation of the vLLM-Ascend service, including model loading, service startup, and inference request processing logs.
-
-- **AISBench evaluation logs**
-  - **Path**: `${SAVE_PATH}/aisbench_logs`
-  - **Description**: Stores the AISBench evaluation log file of each iteration, which records the evaluation process logs.
-
-- **Detailed AISBench output**
-  - **Path**: `${SAVE_PATH}/aisbench_output`
-  - **Description**: Stores the detailed AISBench evaluation output of each iteration, containing evaluation task configurations, inference and evaluation logs, inference results, accuracy evaluation results, and summary reports.
-
-- **Final quantization configuration YAML**
-  - **Path** (when the accuracy meets requirements and is written into the best practice library): If the environment variable `MSMODELSLIM_CUSTOM_PRACTICE_REPO` is set, a directory is generated under this path based on the model lineage, and the YAML file is written to it, such as `qwen3/xxx.yaml`.
-  - **Description**: If `MSMODELSLIM_CUSTOM_PRACTICE_REPO` is not set, the configuration will not be written to the best practice library. In this case, you can view the quantization configuration and accuracy results of each iteration in `${SAVE_PATH}/history`, and select the corresponding `<config_id>.yaml` to replicate the results as needed. The YAML file written to the best practice library can be directly used for subsequent model quantization tasks. If the process stops because the maximum number of iterations or the timeout duration is reached, the final configuration will not be written to the best practice library.
+| Output | Path | Description |
+| --- | --- | --- |
+| Quantized model weights | `${SAVE_PATH}/quant_model` | Stores the quantized model weight file generated in the last iteration, based on the saver type specified in the `save` field of the quantization configuration. |
+| Tuning history records | `${SAVE_PATH}/history` | Stores tuning history of all iterations, including `history.yaml` (index), `accuracy.yaml` (accuracy cache), and per-iteration `<config_id>.yaml` (quantization configuration). |
+| vLLM service logs | `${SAVE_PATH}/vllm_server.log` | Logs from the latest vLLM-Ascend service startup and runtime, including model loading, service startup, and inference request processing. |
+| AISBench evaluation logs | `${SAVE_PATH}/aisbench_logs` | AISBench evaluation log files for each iteration. |
+| Detailed AISBench output | `${SAVE_PATH}/aisbench_output` | Detailed AISBench evaluation output for each iteration, including task configuration, inference/evaluation logs, results, and summary reports. |
+| Final quantization configuration YAML | When accuracy meets requirements and is written to the best practice library: under `MSMODELSLIM_CUSTOM_PRACTICE_REPO` by model lineage (e.g. `qwen3/xxx.yaml`) | If `MSMODELSLIM_CUSTOM_PRACTICE_REPO` is not set, nothing is written to the best practice library; use `${SAVE_PATH}/history` to pick a `<config_id>.yaml` for reproduction. YAML written to the library can be reused for quantization; no final config is written if tuning stops due to max iterations or timeout. |
 
 ## Appendix
 

@@ -11,7 +11,7 @@ toc_depth: 3
 
 使用自动调优功能前，需要完成以下工具的安装：
 
-1. **msModelSlim**：用于自动调优任务的启动与执行。安装方式请参考 [msModelSlim 工具安装指南](../../getting_started/install_guide.md)。
+1. **msModelSlim**：用于自动调优任务的启动与执行。安装方式请参考 《[安装指南](../../getting_started/install_guide.md)》。
 2. **vLLM-Ascend**：用于量化后模型服务化启动。自动调优功能在评估量化后模型精度时，需要使用 vLLM-Ascend 将量化后的模型以服务化方式启动。建议直接使用官方提供的镜像进行安装，详细安装说明请参考 [vLLM-Ascend 安装文档](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/installation.html)。
 3. **AISBench**：用于量化后模型测试。自动调优功能使用 [AISBench](https://github.com/AISBench/benchmark) 对量化后的模型进行精度评估和测试。完成安装后，还需要参考 [AISBench 数据集准备指南](https://yh-ais-bench-benchmark.readthedocs.io/zh-cn/latest/base_tutorials/all_params/datasets.html) 准备对应的数据集。
 
@@ -63,7 +63,7 @@ toc_depth: 3
 **重要提示**：在使用自动调优功能之前，请确保使用的模型是支持的。需要同时满足以下条件：
 
 1. **模型类型限制**：当前自动调优服务仅支持**大语言模型（LLM）**，且对 **MoE** 模型支持有限（MoE 通常包含大量专家非共享子层，回退/搜索空间更大，导致迭代优化轮次更多，整体调优耗时更长）。
-2. **量化工具支持**：模型需要在量化工具的支持列表中，可以通过查看 [config/config.ini](https://gitcode.com/Ascend/msmodelslim/blob/master/config/config.ini) 中的 `[ModelAdapter]` 确定模型是否支持，其中包含了当前支持的模型适配器及其支持的模型名。如果模型不在支持列表中，需要先进行模型适配，实现相应的模型接口后才能使用自动调优功能。模型适配说明可参考 [LLM 大模型接入指南](../../developer_guide/integrating_models.md)。
+2. **量化工具支持**：模型需要在量化工具的支持列表中，可以通过查看 [config/config.ini](https://gitcode.com/Ascend/msmodelslim/blob/master/config/config.ini) 中的 `[ModelAdapter]` 确定模型是否支持，其中包含了当前支持的模型适配器及其支持的模型名。如果模型不在支持列表中，需要先进行模型适配，实现相应的模型接口后才能使用自动调优功能。模型适配说明可参考 《[LLM 大模型接入指南](../../developer_guide/integrating_models.md)》。
 3. **vLLM-Ascend 支持**：模型需要被 vLLM-Ascend 支持，能够将量化后的模型以服务化方式启动。请先确定 vLLM-Ascend 是否支持量化后模型服务化启动。
 4. **transformers 版本兼容**：量化工具与推理引擎（vLLM-Ascend）对 `transformers` 的版本有各自的要求，需确保当前环境中的版本能同时满足二者。若某一模型在使用的过程中，量化工具与推理引擎所需的 `transformers` 版本不一致，且**不存在一个 transformers 版本能同时满足两边要求**，则无法在该环境下启动自动调优服务。使用前，请参照双方依赖说明确认当前环境中的 `transformers` 版本兼容：**量化工具侧**各模型对 transformers 等依赖的版本要求见 [config/config.ini](https://gitcode.com/Ascend/msmodelslim/blob/master/config/config.ini) 中的 `[ModelAdapterDependencies]` 配置项；**推理引擎侧**各版本 vLLM-Ascend 的依赖要求见 [vLLM-Ascend 发布说明](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/user_guide/release_notes.html#id5) 中各版本的 Dependencies 小节。
 5. **单机服务化**：当前自动调优服务不支持跨机部署。对于需要跨机才能完成服务化启动的超大规模模型，暂时无法使用自动调优功能。
@@ -108,9 +108,9 @@ msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${
 |-------------------|-----------|-------------------|--------------------------------------------------------------------------------------|
 | model_path        | 模型路径      | 必选                | 类型：Str                                                                               |
 | save_path         | 调优结果保存路径  | 必选                | 类型：Str                                                                               |
-| config            | 调优配置文件路径  | 必选                | 1. 类型：Str <br>2. 配置文件路径，必须为完整的文件路径 <br>3. 配置文件格式为 YAML，配置协议说明见 [自动调优配置协议说明](configuration_protocols.md)，示例配置见 [example](example) |
-| device            | 量化设备      | 可选                | 1. 类型：Str <br>2. 参考值：'npu','npu:0,1,2,3','cpu' <br>3. 默认值为"npu"（单设备）<br>4. 指定多个设备时（如：'npu:0,1,2,3'），系统可启动分布式逐层量化（DP）。算法支持范围与配置方式详见[逐层量化及分布式逐层量化](../quick_quantization_v1/usage.md#逐层量化及分布式逐层量化) |
-| model_type        | 模型名称      | 可选                | 1. 类型：Str <br>2. 默认值为"default" <br>3. 大小写敏感，请参考[大模型支持矩阵](../../model_support/foundation_model_support_matrix.md) |
+| config            | 调优配置文件路径  | 必选                | 1. 类型：Str <br>2. 配置文件路径，必须为完整的文件路径 <br>3. 配置文件格式为 YAML，配置协议说明见 《[自动调优配置协议说明](configuration_protocols.md)》，示例配置见 [example](example) |
+| device            | 量化设备      | 可选                | 1. 类型：Str <br>2. 参考值：'npu','npu:0,1,2,3','cpu' <br>3. 默认值为"npu"（单设备）<br>4. 指定多个设备时（如：'npu:0,1,2,3'），系统可启动分布式逐层量化（DP）。算法支持范围与配置方式详见《[一键量化使用说明](../quick_quantization_v1/usage.md#逐层量化及分布式逐层量化)》 |
+| model_type        | 模型名称      | 可选                | 1. 类型：Str <br>2. 默认值为"default" <br>3. 大小写敏感，请参考《[大模型支持矩阵](../../model_support/foundation_model_support_matrix.md)》 |
 | timeout           | 调优超时时间    | 可选                | 1. 类型：Str <br>2. 格式：`<天数>D`、`<小时数>H` 或 `<天数>D<小时数>H` <br>3. 示例：'1D'、'2H'、'3D4H' <br>4. 默认值：None（无超时限制） |
 | trust_remote_code | 是否信任自定义代码 | 可选                | 1. 类型：Bool，默认值：False <br>2. 请确保加载的自定义代码文件的安全性，设置为True有安全风险。                          |
 | h, help           | 命令行参数帮助信息 | 可选                |               -            |
@@ -141,39 +141,21 @@ ${SAVE_PATH}/
 └── aisbench_output/      # AISBench 详细输出
 ```
 
-- **量化模型权重**
-  - **路径**：`${SAVE_PATH}/quant_model`
-  - **说明**：保存最后一次迭代生成的量化模型权重文件。根据量化配置中 `save` 字段指定的保存器类型。
-
-- **调优历史记录**
-  - **路径**：`${SAVE_PATH}/history`
-  - **说明**：保存所有迭代的调优历史记录，包括：
-    - `history.yaml`：调优历史索引文件，记录每次迭代的基本信息（配置ID、精度指标等）
-    - `accuracy.yaml`：精度缓存文件，记录已评估过的评估配置和量化配置的精度结果，用于中断恢复时复用评估结果。
-    - 每次迭代的量化配置 YAML 文件：以配置 ID 命名的 YAML 文件，记录每次迭代使用的量化配置
-
-- **vLLM 服务日志**
-  - **路径**：`${SAVE_PATH}/vllm_server.log`
-  - **说明**：记录最近一次 vLLM-Ascend 服务启动和运行过程中的日志信息，包括模型加载、服务启动、推理请求处理等日志。
-
-- **AISBench 评估日志**
-  - **路径**：`${SAVE_PATH}/aisbench_logs`
-  - **说明**：保存每次迭代的 AISBench 评估日志文件，记录每次迭代的评估过程日志。
-
-- **AISBench 详细输出**
-  - **路径**：`${SAVE_PATH}/aisbench_output`
-  - **说明**：保存每次迭代的 AISBench 详细评估输出，包含评估任务配置、推理和评估日志、推理结果、精度评估结果及汇总报告等文件。
-
-- **最终量化配置 YAML**
-  - **路径**（精度达标且写入最佳实践库时）：若设置了环境变量 `MSMODELSLIM_CUSTOM_PRACTICE_REPO`，会在该路径下按模型谱系生成目录并写入 YAML，如 `qwen3/xxx.yaml`。
-  - **说明**：未设置 `MSMODELSLIM_CUSTOM_PRACTICE_REPO` 时**不会**写入最佳实践库；此时可在 `${SAVE_PATH}/history` 中查看各次迭代的量化配置与精度结果，并根据需要自行选择对应的 `<config_id>.yaml` 进行复现。写入最佳实践库的 YAML 可直接用于后续模型量化任务。若因达到最大迭代次数或超时而停止，则不会向最佳实践库写入最终配置。
+| 目录 | 路径 | 说明 |
+| --- | --- | --- |
+| 量化模型权重 | `${SAVE_PATH}/quant_model` | 保存最后一次迭代生成的量化模型权重文件。根据量化配置中 `save` 字段指定的保存器类型。 |
+| 调优历史记录 | `${SAVE_PATH}/history` | 保存所有迭代的调优历史记录，包括 `history.yaml`（调优历史索引）、`accuracy.yaml`（精度缓存）及各次迭代的 `<config_id>.yaml`（量化配置）。 |
+| vLLM 服务日志 | `${SAVE_PATH}/vllm_server.log` | 记录最近一次 vLLM-Ascend 服务启动和运行过程中的日志信息，包括模型加载、服务启动、推理请求处理等日志。 |
+| AISBench 评估日志 | `${SAVE_PATH}/aisbench_logs` | 保存每次迭代的 AISBench 评估日志文件，记录每次迭代的评估过程日志。 |
+| AISBench 详细输出 | `${SAVE_PATH}/aisbench_output` | 保存每次迭代的 AISBench 详细评估输出，包含评估任务配置、推理和评估日志、推理结果、精度评估结果及汇总报告等文件。 |
+| 最终量化配置 YAML | 精度达标且写入最佳实践库时：由 `MSMODELSLIM_CUSTOM_PRACTICE_REPO` 指定路径下按模型谱系生成（如 `qwen3/xxx.yaml`） | 未设置 `MSMODELSLIM_CUSTOM_PRACTICE_REPO` 时**不会**写入最佳实践库；可在 `${SAVE_PATH}/history` 中查看各次迭代配置与精度并选择 `<config_id>.yaml` 复现。写入最佳实践库的 YAML 可直接用于后续量化；若因达到最大迭代次数或超时而停止，则不会写入最终配置。 |
 
 ## 附录
 
 ### 相关资料
 
-- **配置协议**：调优配置文件的详细说明，可以参考 [自动调优配置协议说明](configuration_protocols.md)。完整的配置文件示例，可以参考 [example](example)。
+- **配置协议**：调优配置文件的详细说明，可以参考 《[自动调优配置协议说明](configuration_protocols.md)》。完整的配置文件示例，可以参考 [example](example)。
 - **调优算法**：对于自动调优支持的多种策略和算法，可以参考相关文档：
-  - [Standing High 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high.md)：基于量化回退层选择和离群值抑制策略的自动调优算法
-  - [Standing High With Experience 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high_with_experience.md)：基于专家经验的摸高算法策略
-  - [Binary Fallback 调优算法](../../quantization_algorithms/auto_tuning_strategies/binary_fallback.md)：仅二分搜索回退层；未配置 `rollback_candidates` 时须 **`ModelSlimPipelineInterfaceV1`**
+  - 《[Standing High 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high.md)》：基于量化回退层选择和离群值抑制策略的自动调优算法
+  - 《[Standing High With Experience 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high_with_experience.md)》：基于专家经验的摸高算法策略
+  - 《[Binary Fallback 调优算法](../../quantization_algorithms/auto_tuning_strategies/binary_fallback.md)》：仅二分搜索回退层；未配置 `rollback_candidates` 时须 **`ModelSlimPipelineInterfaceV1`**

@@ -85,6 +85,7 @@ nav:
       - compressed-tensors 格式说明: "zh/quantization_formats/compressed_tensors.md"
   - 五、开发者指南:
       - 架构说明: "zh/developer_guide/architecture.md"
+      - 编码规范: "zh/developer_guide/coding_standards.md"
       - LLM大模型接入指南: "zh/developer_guide/integrating_models.md"
       - 多模态理解模型接入: "zh/developer_guide/integrating_multimodal_understanding_model.md"
       - 量化格式接入指南: "zh/developer_guide/iformat_integration_guide.md"

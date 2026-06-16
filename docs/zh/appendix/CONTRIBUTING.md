@@ -27,12 +27,16 @@
 
 遵循我们的 Pull Request [模板与规范](https://gitcode.com/Ascend/msmodelslim/blob/master/.gitcode/PULL_REQUEST_TEMPLATE.md)
 
-参考开发者文档 [模型接入指南](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/developer_guide/integrating_models/)
+参考开发者文档 《[LLM 大模型接入指南](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/developer_guide/integrating_models/)》
+
+参考开发者文档 《[编码规范](../developer_guide/coding_standards.md)》。
+
+提交代码前须在本地通过 pre-commit 检查（首次开发请执行 `pre-commit install`，详见《[编码规范](../developer_guide/coding_standards.md)》）。
 
 对涉及用户端功能的改动，请同步更新对应的用户和开发者文档
 
 在 CI 工作流中 添加或更新测试；若无需测试，请说明原因
-  
+
 在上述准备工作完成后提交代码，请输入 compile 命令触发机器人编译流水线
 
 流水线编译通过后请联系[仓库管理和维护成员](https://gitcode.com/Ascend/msmodelslim/member)进行检视与合入
@@ -118,7 +122,7 @@ git push --force-with-lease origin your-branch-name
 
 ### 单元测试指南
 
-如果您需要运行 msModelSlim 单元测试，请参阅详细的[开发者测试指南](../developer_guide/testing_guide.md)。该指南涵盖了：
+如果您需要运行 msModelSlim 单元测试，请参阅详细的《[开发者测试指南](../developer_guide/testing_guide.md)》。该指南涵盖了：
 
 - 准备环境与安装依赖
 - 运行 modelslim_v1 模块测试

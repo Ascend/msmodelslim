@@ -48,7 +48,7 @@ evaluation:
 
 **模型适配（按策略）**
 
-若调优策略需**自动运行敏感层分析**（生成回退候选），模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**（即 `core/runner/pipeline_interface.py` 中的 `PipelineInterface`，与 CLI `msmodelslim analyze` 及 [敏感层分析](../sensitive_layer_analysis/usage.md) 要求相同）。策略内由领域层 `PipelineAnalysisService` 调用 `init_model`、`handle_dataset` 及 visit/forward pipeline；**不会在策略侧预先 `load_model`**。
+若调优策略需**自动运行敏感层分析**（生成回退候选），模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**（即 `core/runner/pipeline_interface.py` 中的 `PipelineInterface`，与 CLI `msmodelslim analyze` 及 《[敏感层分析使用说明](../sensitive_layer_analysis/usage.md)》 要求相同）。策略内由领域层 `PipelineAnalysisService` 调用 `init_model`、`handle_dataset` 及 visit/forward pipeline；**不会在策略侧预先 `load_model`**。
 
 各策略在自动敏感层分析之上的**额外**要求如下：
 
@@ -58,15 +58,15 @@ evaluation:
 | `standing_high_with_experience` | 上表接口 + **`StandingHighWithExperienceInterface`**（`load_model`，离群值抑制能力探测） |
 | `binary_fallback` | 配置了非空 `rollback_candidates` 时无额外要求（跳过敏感层分析）；否则须 **`ModelSlimPipelineInterfaceV1`** |
 
-详见各策略文档「适用要求 / 模型适配」章节及 [LLM 大模型接入指南](../../developer_guide/integrating_models.md#自动调优与敏感层分析)。
+详见各策略文档「适用要求 / 模型适配」章节及 《[LLM 大模型接入指南](../../developer_guide/integrating_models.md#自动调优与敏感层分析)》。
 
 **策略特有配置字段**
 
 不同调优策略的配置字段差异较大，详细的配置项请参考相应算法文档的「YAML 配置字段详解」章节。目前已支持的算法如下：
 
-- [Standing High 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high.md)
-- [Standing High With Experience 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high_with_experience.md)
-- [Binary Fallback 调优算法](../../quantization_algorithms/auto_tuning_strategies/binary_fallback.md)
+- 《[Standing High 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high.md)》
+- 《[Standing High With Experience 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high_with_experience.md)》
+- 《[Binary Fallback 调优算法](../../quantization_algorithms/auto_tuning_strategies/binary_fallback.md)》
 
 ### evaluation - 评估服务配置
 

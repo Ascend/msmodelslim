@@ -122,7 +122,7 @@ wan2_2 = msmodelslim.model.wan2_2.model_adapter:Wan2Point2Adapter
 
 ## 自动调优与敏感层分析
 
-使用 [自动调优](../feature_guide/auto_precision_tuning/usage.md) 且策略需**自动生成回退候选**时（`standing_high` 始终；`binary_fallback` 在未配置非空 `rollback_candidates` 时；`standing_high_with_experience` 委托 Standing High 执行），模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**：
+使用 《[自动调优使用说明](../feature_guide/auto_precision_tuning/usage.md)》 且策略需**自动生成回退候选**时（`standing_high` 始终；`binary_fallback` 在未配置非空 `rollback_candidates` 时；`standing_high_with_experience` 委托 Standing High 执行），模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**，执行脚本如下：
 
 ```python
 from msmodelslim.model.interface_hub import ModelSlimPipelineInterfaceV1
@@ -136,7 +136,7 @@ from msmodelslim.model.interface_hub import ModelSlimPipelineInterfaceV1
 | `binary_fallback` | 配置了非空 `rollback_candidates` 时跳过 | 无 |
 | `standing_high_with_experience` | 委托 Standing High | **`StandingHighWithExperienceInterface`**（`load_model`，离群值抑制能力探测）；**`ModelSlimPipelineInterfaceV1` 须单独继承** |
 
-详见 [自动调优配置协议说明](../feature_guide/auto_precision_tuning/configuration_protocols.md) 及各策略算法文档。
+详见 《[自动调优配置协议说明](../feature_guide/auto_precision_tuning/configuration_protocols.md)》 及各策略算法文档。
 
 ## 量化自有模型
 
@@ -181,4 +181,4 @@ msmodelslim quant --model_path ${MODEL_PATH} \
                   --trust_remote_code False
 ```
 
-- 详细用法与参数说明请参阅：[`一键量化使用说明`](../feature_guide/quick_quantization_v1/usage.md)
+- 详细用法与参数说明请参阅：《[一键量化使用说明](../feature_guide/quick_quantization_v1/usage.md)》
