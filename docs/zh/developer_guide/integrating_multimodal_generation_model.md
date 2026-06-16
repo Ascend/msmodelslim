@@ -1,19 +1,6 @@
 # 多模态生成模型接入指南
 
-## 目录
-
-1. [总体实现思路](#总体实现思路)
-2. [msModelSlim 架构与编排](#msmodelslim-架构与编排)
-3. [分步实现指南](#分步实现指南)
-   - 3.1 [场景一：单网络 DiT（HunyuanVideo）](#场景一单网络-dithunyuanvideo)
-   - 3.2 [场景二：双专家 DiT（Wan2.2）](#场景二双专家-ditwan22)
-4. [量化自有模型](#量化自有模型)
-5. [常见问题与排障](#常见问题与排障)
-6. [参考实现](#参考实现)
-
----
-
-## 总体实现思路 {#总体实现思路}
+## 总体实现思路
 
 ### 核心目标
 
@@ -31,14 +18,14 @@
 
 ### 接入原则
 
-1. **配置优先于硬编码**：通过 `inference_config`（Pydantic 强校验）而非 `model_config`（字符串映射）定义参数
-2. **复用原仓逻辑**：桥接原推理仓的 `parse_args` + `_validate_args`，不重复实现参数校验
-3. **分层解耦**：基类管公共能力（参数桥接、缓存装配），子类管场景差异（样本校验、具体生成逻辑）
-4. **双路径兼容**：新模型实现 `MultimodalPipelineInterface`；主仓已接入模型保留 `LegacyMultimodalPipelineInterface`，由 `MultimodalSDModelslimV1QuantService` 按适配器类型自动分发
+1. **配置优先于硬编码**：通过 `inference_config`（Pydantic 强校验）而非 `model_config`（字符串映射）定义参数。
+2. **复用原仓逻辑**：桥接原推理仓的 `parse_args` + `_validate_args`，不重复实现参数校验。
+3. **分层解耦**：基类管公共能力（参数桥接、缓存装配），子类管场景差异（样本校验、具体生成逻辑）。
+4. **双路径兼容**：新模型实现 `MultimodalPipelineInterface`；主仓已接入模型保留 `LegacyMultimodalPipelineInterface`，由 `MultimodalSDModelslimV1QuantService` 按适配器类型自动分发。
 
 ---
 
-## msModelSlim 架构与编排 {#msmodelslim-架构与编排}
+## msModelSlim 架构与编排
 
 ### 量化服务双分支（必读）
 
@@ -167,10 +154,11 @@ classDiagram
     FA3QuantAdapterInterface <|.. Wan2_2ExpertSubAdapter : implements
 ```
 
-**说明**：
-- 两类场景的主适配器继承完全相同的 5 个基类/接口
-- `Wan2_2ExpertSubAdapter` 是**组合关系**（非继承），由基类在分区 5 创建并持有
-- 子适配器**独立实现** `OnlineQuaRotInterface` 和 `FA3QuantAdapterInterface`，供 `LayerWiseRunner` 按专家单独调度
+>[!NOTE]
+>
+>- 两类场景的主适配器继承完全相同的 5 个基类/接口。
+>- `Wan2_2ExpertSubAdapter` 是**组合关系**（非继承），由基类在分区 5 创建并持有。
+>- 子适配器**独立实现** `OnlineQuaRotInterface` 和 `FA3QuantAdapterInterface`，供 `LayerWiseRunner` 按专家单独调度。
 
 ### 配置分层模型
 
@@ -190,7 +178,9 @@ flowchart TD
     K --> L[init_model / prepare_calib_data / 量化]
 ```
 
-说明：`inference_config` 为 `MultimodalSDConfig` **声明字段**，由 Pydantic 解析到 `self.inference_config`，**不会**进入 `model_extra`；勿依赖「通过 extra 传 inference_config」。
+>[!NOTE]
+>
+>`inference_config` 为 `MultimodalSDConfig` **声明字段**，由 Pydantic 解析到 `self.inference_config`，**不会**进入 `model_extra`；勿依赖「通过 extra 传 inference_config」。
 
 ### 代码分区规范（必读）
 
@@ -221,24 +211,25 @@ flowchart TD
 分区 8：量化扩展接口          # get_online_rotation_configs, inject_fa3_placeholders, _attach_attention_cache_to_blocks
 ```
 
-**关键差异说明**：
-- 分区 2 的 `configure_runtime` 在两场景中都位于**分区 2**；它调用的 argv/parse_args 辅助方法分别在 HunyuanVideo **分区 5**、Wan2.2 **分区 6**
-- Wan2.2 **分区 5** 为双专家特有的子适配器装配，HunyuanVideo 无对应分区
-- Wan2.2 基类 **分区 4** 额外提供 `_quantization_context_with_no_sync`，供子类 `quantization_context` 复用
+>[!NOTE]
+>
+>- 分区 2 的 `configure_runtime` 在两场景中都位于**分区 2**；它调用的 argv/parse_args 辅助方法分别在 HunyuanVideo **分区 5**、Wan2.2 **分区 6**。
+>- Wan2.2 **分区 5** 为双专家特有的子适配器装配，HunyuanVideo 无对应分区。
+>- Wan2.2 基类 **分区 4** 额外提供 `_quantization_context_with_no_sync`，供子类 `quantization_context` 复用。
 
 ---
 
-## 分步实现指南 {#分步实现指南}
+## 分步实现指南
 
 ### 前置准备
 
-1. 确认原推理仓可正常运行浮点推理
-2. 准备校准数据集（图文对或纯文本列表）
-3. 确定 DiT 结构类型：**单网络** vs **双专家**
+1. 确认原推理仓可正常运行浮点推理。
+2. 准备校准数据集（图文对或纯文本列表）。
+3. 确定 DiT 结构类型：**单网络** vs **双专家**。
 
 ---
 
-### 场景一：单网络 DiT（HunyuanVideo） {#场景一单网络-dithunyuanvideo}
+### 场景一：单网络 DiT（HunyuanVideo）
 
 **适用特征**：单个 `transformer` 主干；`init_model` 返回 `{'': self.transformer}`。
 
@@ -708,7 +699,7 @@ def inject_fa3_placeholders(
 
 ---
 
-### 场景二：双专家 DiT（Wan2.2） {#场景二双专家-ditwan22}
+### 场景二：双专家 DiT（Wan2.2）
 
 **适用特征**：`low_noise_model` + `high_noise_model` 两个 DiT 专家；`init_model` 返回 `{"low_noise_model": ..., "high_noise_model": ...}`。
 **代码分工**：`base_model_adapter.py` 实现分区 1~8 的公共能力；`t2v/`、`i2v/`、`ti2v/` 各子目录下的 `model_adapter.py` 补充分区 1~3 的场景差异；`expert_sub_adapter.py` 供 LayerWiseRunner **按专家**调度量化。
@@ -1221,7 +1212,7 @@ class Wan2_2BaseModelAdapter(
 
 ---
 
-## 量化自有模型 {#量化自有模型}
+## 量化自有模型
 
 完成模型适配器编写、注册、YAML 配置与校准数据准备后，即可对自有文生视频 / 图生视频模型执行量化。本节以 **Wan2.2-T2V-A14B** 为例说明；HunyuanVideo 等单 DiT 模型流程相同，仅 `model_type`、YAML 与 `dataset` 名称不同。
 
@@ -1386,34 +1377,28 @@ msmodelslim quant \
     --trust_remote_code True
 ```
 
-**参数说明**：
+请注意`trust_remote_code`为`True`时可能执行浮点模型权重中的代码文件，请确保浮点模型来源安全可靠。其中 `${MODEL_PATH}` 为原始浮点权重路径，`${SAVE_PATH}` 为用户自定义的量化权重保存路径，model_type对应配置为注册的模型名称，`${CONFIG_PATH}` 为YAML配置文件路径。
 
-- `${MODEL_PATH}`：原始浮点权重目录（须包含原推理仓所需的配置与 safetensors）。
-- `${SAVE_PATH}`：量化权重输出目录。
-- `${MODEL_TYPE}`：须与 `config.ini` 中注册的名称一致（如 `Wan2.2-T2V-A14B`），且与适配器 `scene_task` 绑定。
-- `${CONFIG_PATH}`：上述 YAML 路径（方式二）。
-- `--trust_remote_code True` 可能执行权重目录中的自定义代码，请确保模型来源可信。
+- 更多命令示例见《[Wan2.2 量化使用说明](https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_sd/Wan2_2/README.md)》。
 
-更多命令示例见 [example/multimodal_sd/Wan2_2/README.md](https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_sd/Wan2_2/README.md)。
-
-## 常见问题与排障 {#常见问题与排障}
+## 常见问题与排障
 
 ### Q1: 配置报错 `SchemaValidateError: illegal config attributes`
 
 **原因**：`inference_config` 中写了原推理仓不支持的字段。
 
 **排查**：
-1. 确认字段名与 CLI 参数对应
-2. 使用 `_allowed_*_config_keys()` 探测合法字段
-3. 检查 `extra="forbid"` 是否误删必要字段
+1. 确认字段名与 CLI 参数对应。
+2. 使用 `_allowed_*_config_keys()` 探测合法字段。
+3. 检查 `extra="forbid"` 是否误删必要字段。
 
 ### Q2: 原仓 parse_args 断言失败（如 `Unsupported size for task`）
 
 **原因**：`_build_default_quant_cli` 提供的默认值与原仓该任务的校验冲突。
 
 **排查**：
-- 查看原仓 `_validate_args` 或 `WAN_CONFIGS` 中该任务的约束
-- 确保 `scene_task` 与默认值匹配（如 ti2v-5B 只支持 704x1280 或 1280x704）
+1. 查看原仓 `_validate_args` 或 `WAN_CONFIGS` 中该任务的约束。
+2. 确保 `scene_task` 与默认值匹配（如 ti2v-5B 只支持 704x1280 或 1280x704）。
 
 ### Q3: 运行时报 `AttributeError: 'NoneType' object has no attribute 'apply'`
 
@@ -1442,7 +1427,7 @@ msmodelslim quant \
 
 ---
 
-## 参考实现 {#参考实现}
+## 参考实现
 
 - **多模态生成量化服务**：[quant_service.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/multimodal_sd_v1/quant_service.py)
 - **Pipeline 接口**：[pipeline_interface.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py)、[legacy_pipeline_interface.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/multimodal_sd_v1/legacy_pipeline_interface.py)

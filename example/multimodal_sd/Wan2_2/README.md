@@ -169,17 +169,25 @@ spec:
   - `capture_mode`：当前仅支持 `"args"`。
   - `dump_data_dir`：pth 根目录；为空时使用 `--save_path`。
   - **pth 命名**（双专家）：`calib_data_<task>_low_noise_model.pth`、`calib_data_<task>_high_noise_model.pth`（例如 `calib_data_t2v-A14B_low_noise_model.pth`）。目录内文件齐全则加载，任一缺失则触发浮点推理 dump。
-- **inference_config**（推荐）：推理参数，字段须与原 Wan2.2 推理仓 CLI 一致，由适配器 Pydantic 校验后桥接到 `model_args`。合法字段以各场景 `*InferenceConfig` 为准。
+- **inference_config**（推荐）：推理参数，字段须与原 Wan2.2 推理仓 `generate.py` CLI 对齐，由适配器 Pydantic 校验后桥接到 `model_args`。合法字段以各场景 `*InferenceConfig` 为准（`extra=forbid`，未声明字段会报错）。
 - **model_config**（Legacy）：仅 `--model_type Wan2_2` / `Wan2.2` 单体入口使用，**将废弃**；与 `inference_config` 不可同配。
 
-| inference_config 常见字段 | 作用 | 说明 |
-|---------------------------|------|------|
-| size | 生成尺寸 | 如 `"1280*720"`，须在原仓 `SUPPORTED_SIZES` 内 |
-| frame_num | 帧数 | 正整数 |
-| sample_steps | 扩散步数 | 正整数 |
-| task | 任务标识 | 若填写须与当前 `model_type` 绑定（如 T2V 为 `t2v-A14B`） |
-| convert_model_dtype | 权重 dtype 转换 | 布尔 |
-| base_seed | 随机种子 | 可选 |
+**不在 `inference_config` 中配置的项**：`prompt` / `image` 来自 `dataset`（见上文校准数据规则）；`ckpt_dir` 由 `--model_path` 注入；并行、`attentioncache`、`rainfusion` 等由适配器在量化路径固定为单卡默认值。
+
+**T2V / I2V / TI2V 共用字段**（各场景默认值见下表「说明」列；完整声明见 `msmodelslim/model/wan2_2/{t2v,i2v,ti2v}/model_adapter.py` 中的 `*InferenceConfig`）：
+
+| 参数 | 可选/必选 | 说明 |
+|------|----------|------|
+| `size` | 可选 | 输出分辨率，键名须落在原仓 `SIZE_CONFIGS` / `SUPPORTED_SIZES[task]` 内。**T2V / I2V**（`task` 为 `t2v-A14B` / `i2v-A14B`）：`720*1280`、`1280*720`、`480*832`、`832*480`、`432*768`、`768*432`，默认 `1280*720`。**TI2V**（`ti2v-5B`）：仅 `704*1280`、`1280*704`，默认 `1280*704`。I2V 实际按输入图宽高比输出，该字段主要约束 `max_area`。 |
+| `frame_num` | 可选 | 生成帧数。填写时须 **>1** 且满足 **4n+1**（n>0），与 `generate._validate_args` 一致。省略时用 `WAN_CONFIGS` 默认（适配器默认 **81**）。 |
+| `sample_steps` | 可选 | 扩散采样步数；填写时须 **≥1**。省略时用 `WAN_CONFIGS` 默认（T2V/I2V **40**，TI2V **50**）。 |
+| `sample_shift` | 可选 | 流匹配 scheduler 的 shift；填写时须 **>0**。省略时用 `WAN_CONFIGS` 默认（T2V **12.0**，I2V/TI2V **5.0**）。 |
+| `sample_solver` | 可选 | 采样器，仅 `unipc` 或 `dpm++`（默认 `unipc`），对应 `--sample_solver`。 |
+| `sample_guide_scale` | 可选 | CFG 引导强度；**仅支持单个 float**（与 `--sample_guide_scale` 一致），**不可**写 `(low, high)` 二元组或列表。T2V/I2V 省略时由 `WAN_CONFIGS` 为双专家分别回填；TI2V 默认 **5.0**。填写时须 **>0**。 |
+| `base_seed` | 可选 | 随机种子，对应 `--base_seed`。省略时走推理仓默认（**-1** 表示随机）；**≥0** 时固定种子。校准 dump 时对每条样本在推理前设置种子。 |
+| `offload_model` | 可选 | 是否在每步 forward 后将模型卸载到 CPU（`str2bool`）。省略时推理仓规则：多卡为 `false`，单卡为 `true`。 |
+| `convert_model_dtype` | 可选 | 是否在 **Wan pipeline 加载 DiT 后**将双专家/单 DiT 的**权重 dtype** 显式转为 `WAN_CONFIGS[task].param_dtype`（通常为 **bfloat16**）。对应 `generate.py --convert_model_dtype`；默认 **false**。仅在不启用 DiT FSDP 时生效（msModelSlim 量化路径固定单卡、已关闭 FSDP）。**建议量化校准时设为 `true`**，避免 checkpoint 中仍有 fp32 参数时浮点 dump 与后续 NPU 推理 dtype 不一致。 |
+| `task` | 可选 | 任务标识；若填写须与当前 `--model_type` / 场景一致：**T2V** `t2v-A14B`、**I2V** `i2v-A14B`、**TI2V** `ti2v-5B`。建议仅通过 `model_type` 选场景，一般不必在 YAML 中重复填写。 |
 
 ## FAQ
 

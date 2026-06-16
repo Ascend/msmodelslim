@@ -193,6 +193,102 @@ msmodelslim quant \
     --trust_remote_code True
 ```
 
+完整 lab 配置见 [`lab_practice/hunyuan_video/hunyuan_video_w8a8f8_mxfp.yaml`](../../../lab_practice/hunyuan_video/hunyuan_video_w8a8f8_mxfp.yaml)。
+
+##### 配置文件说明
+
+###### 基础配置结构
+
+```yaml
+apiversion: multimodal_sd_modelslim_v1
+
+spec:
+  process:
+    - type: "linear_quant"
+      qconfig:
+        act:
+          scope: "per_block"
+          dtype: "mxfp8"
+          symmetric: True
+          method: "minmax"
+        weight:
+          scope: "per_block"
+          dtype: "mxfp8"
+          symmetric: True
+          method: "minmax"
+      include:
+        - "*"
+      exclude:
+        - "*mod*"
+    - type: "online_quarot"
+      include: ["*"]
+    - type: "fa3_quant"
+      qconfig:
+        dtype: "fp8_e4m3"
+        scope: "per_token"
+        symmetric: True
+        method: "minmax"
+      include:
+        - "*"
+
+  dataset: hunyuanvideo
+
+  save:
+    - type: "mindie_format_saver"
+      part_file_size: 0
+
+  multimodal_sd_config:
+    dump_config:
+      enable_dump: False    # 全动态量化示例；静态/离群值抑制请改为 True
+      capture_mode: "args"
+      dump_data_dir: ""     # 空则使用 save_path；pth 见下文命名规则
+    inference_config:       # 推荐；勿与已废弃的 model_config 同时配置
+      model_resolution: "720p"
+      video_size: [720, 1280]
+      video_length: 129
+      infer_steps: 50
+```
+
+**关键配置参数**
+
+**量化配置 (process)**
+
+- **linear_quant**：DiT 线性层 W8A8（MXFP8 per-block）；示例排除 `*mod*` 调制层。
+- **online_quarot**：全图注意力在线旋转。
+- **fa3_quant**：注意力 FA3 动态 FP8 量化。
+
+**校准数据集 (dataset)**
+
+- **作用**：指定 `index.json` / `index.jsonl` 或目录路径；短名称 `hunyuanvideo` 在 [`lab_calib`](../../../lab_calib) 下解析。
+- **格式**：每条须含非空 `text`（校准 prompt）；**不提供** `image`（HunyuanVideo-T2V 为纯文本生成）。
+
+**多模态配置 (multimodal_sd_config)**
+
+- **dump_config**
+  - `enable_dump`：是否 load/dump 校准数据；纯动态量化可设 `False`。
+  - `capture_mode`：当前仅支持 `"args"`。
+  - `dump_data_dir`：pth 根目录；为空时使用 `--save_path`。
+- **inference_config**（推荐）：推理参数，字段须与 HunyuanVideo 推理仓 `hyvideo.config.parse_args` CLI 对齐，由适配器 Pydantic 校验后桥接到 `model_args`。合法字段以 `HunyuanVideoInferenceConfig` 为准（`extra=forbid`）。
+- **model_config**（Legacy）：旧单体入口使用，**将废弃**；与 `inference_config` 不可同配。
+
+**不在 `inference_config` 中配置的项**：`prompt` 来自 `dataset`；`model_base`、`dit_weight`、`vae_path`、`text_encoder_path`、`text_encoder_2_path` 由 `--model_path` 与适配器默认相对路径注入；`ulysses_degree` / `ring_degree` / `vae_parallel` / `use_cache` 等由适配器在量化路径固定为单卡默认值。
+
+**`inference_config` 字段**（完整声明见 `msmodelslim/model/hunyuan_video/model_adapter.py` 中的 `HunyuanVideoInferenceConfig`）：
+
+| 参数 | 可选/必选 | 说明 |
+|------|----------|------|
+| `model_resolution` | 可选 | 分辨率档位，仅 `540p` 或 `720p`（默认 **720p**，与 t2v-720p 权重目录对齐）。须与 `video_size` 组合落在 `SUPPORT_SIZES[model_resolution]` 内。 |
+| `video_size` | 可选 | 生成视频 **[高, 宽]**，对应 `--video-size`（`nargs=+`）。**720p** 可选：`(720,1280)`、`(1280,720)`、`(1104,832)`、`(832,1104)`、`(960,960)`；**540p** 可选：`(544,960)`、`(960,544)`、`(624,832)`、`(832,624)`、`(720,720)`。默认 `(720, 1280)`。YAML 可写列表 `[720, 1280]`。 |
+| `video_length` | 可选 | 采样帧数，对应 `--video-length`；3D VAE 场景须满足 **4n+1**（默认 **129**）。 |
+| `infer_steps` | 可选 | 去噪步数，对应 `--infer-steps`（默认 **50**）。若启用 cache/attentioncache 相关能力，步数须大于 cache 起始步（量化路径默认关闭 cache）。 |
+| `seed` | 可选 | 随机种子，对应 `--seed`。省略为 `None`（推理仓按 `seed_type` 处理）；**≥0** 时校准时对每条样本在推理前固定种子。 |
+| `neg_prompt` | 可选 | 负向 prompt，对应 `--neg-prompt`；省略为 `None`。 |
+| `cfg_scale` | 可选 | Classifier-Free Guidance 强度，对应 `--cfg-scale`（默认 **1.0**）。 |
+| `embedded_cfg_scale` | 可选 | 嵌入式 CFG 强度，对应 `--embedded-cfg-scale`（默认 **6.0**）。 |
+| `num_videos` | 可选 | 每个 prompt 生成视频条数，对应 `--num-videos`（默认 **1**）。 |
+| `flow_shift` | 可选 | Flow Matching scheduler 的 shift，对应 `--flow-shift`（默认 **7.0**）。 |
+| `batch_size` | 可选 | 推理 batch 大小，对应 `--batch-size`（默认 **1**）。 |
+
 #### 脚本量化启动命令
 
 W8A8(INT8)+FA3(INT8静态)
@@ -473,3 +569,10 @@ quant_model(model, session_cfg)
 | quant_type | 指定量化类型 | 可选。<br>数据类型：字符串。默认值"w8a8_timestep"。<br>可选值："w8a8_timestep"、"w8a8_dynamic_fa3"、"w8a8_dynamic"。|
 | anti_method | 指定异常值抑制方法 | 可选。<br>数据类型：字符串。默认值None。<br>可选值：'m3'、'm4'、'm6'。|
 | do_save_video | 是否进行推理视频保存 | 可选。<br>数据类型：布尔型。默认False，即不启动推理视频保存。只有显式传入 --do_save_video 则变为True，启动视频保存。|
+
+### 相关资源
+
+- [HunyuanVideo 模型仓库（魔乐）](https://modelers.cn/models/MindIE/hunyuan_video)
+- 《[多模态生成模型接入指南（开发者）](../../../docs/zh/developer_guide/integrating_multimodal_generation_model.md)》
+- [一键量化配置协议说明](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/feature_guide/quick_quantization_v1/usage/#%E9%87%8F%E5%8C%96%E9%85%8D%E7%BD%AE%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3)
+- [逐层量化特性说明](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/feature_guide/quick_quantization_v1/usage/#%E9%80%90%E5%B1%82%E9%87%8F%E5%8C%96%E5%8F%8A%E5%88%86%E5%B8%83%E5%BC%8F%E9%80%90%E5%B1%82%E9%87%8F%E5%8C%96)
