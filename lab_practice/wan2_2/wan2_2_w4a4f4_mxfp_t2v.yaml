@@ -1,0 +1,110 @@
+apiversion: multimodal_sd_modelslim_v1
+metadata:
+  config_id: wan2_2_w4a4f4_mxfp_t2v
+  score: 90
+  verified_tags:
+    Wan2.2-T2V-A14B:
+      - - MindIE-SD
+        - Atlas_350
+  label:
+    w_bit: 4
+    a_bit: 4
+    is_sparse: False
+    fa_quant: True
+    fa_bit: 4
+
+w4a4_include: &w4a4_include
+  - "*"
+w4a4_exclude: &w4a4_exclude
+  - "*blocks.0.*"
+  - "*blocks.1.*"
+  - "*blocks.2.*"
+  - "*blocks.3.*"
+  - "*blocks.4.*"
+
+w4a4_qconfig: &w4a4_qconfig
+  act:
+    scope: "per_block"
+    dtype: "mxfp4"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_block"
+    dtype: "mxfp4"
+    symmetric: True
+    method: "ceil_x"
+    ext: {
+      enable_search: True
+    }
+
+w8a8_include: &w8a8_include
+  - "*blocks.0.*"
+  - "*blocks.1.*"
+  - "*blocks.2.*"
+  - "*blocks.3.*"
+  - "*blocks.4.*"
+
+w8a8_qconfig: &w8a8_qconfig
+  act:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "mse_round"
+
+fa3_mxfp4_qconfig: &fa3_mxfp4_qconfig
+  dtype: "mxfp4"
+  scope: "per_block"
+  symmetric: True
+  method: "minmax"
+
+fa3_fp8_qconfig: &fa3_fp8_qconfig
+  dtype: "fp8_e4m3"
+  scope: "per_token"
+  symmetric: True
+  method: "minmax"
+
+spec:
+  process:
+    - type: "linear_quant"
+      qconfig: *w4a4_qconfig
+      include: *w4a4_include
+      exclude: *w4a4_exclude
+    - type: "linear_quant"
+      qconfig: *w8a8_qconfig
+      include: *w8a8_include
+    - type: "online_quarot"
+      include:
+        - "*.self_attn.*"
+    - type: "fa3_quant"
+      qconfig: *fa3_mxfp4_qconfig
+      include:
+        - "*self_attn"
+      exclude:
+        - "blocks.0*"
+    - type: "fa3_quant"
+      qconfig: *fa3_fp8_qconfig
+      include:
+        - "blocks.0.self_attn"
+
+  dataset: wan2_2_t2v
+
+  save:
+    - type: "mindie_format_saver"
+      part_file_size: 0
+
+  # 基础配置
+  multimodal_sd_config:
+    dump_config:
+      enable_dump: False
+      capture_mode: "args"
+      dump_data_dir: ""
+    inference_config:
+      size: "1280*720"
+      frame_num: 81
+      convert_model_dtype: True
+      task: "t2v-A14B"

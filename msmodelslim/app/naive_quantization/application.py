@@ -180,14 +180,13 @@ class NaiveQuantizationApplication:
     ) -> ScenarioTagMatch:
         label = config.metadata.label
         # Parse quant_type parameters
-        match_result = re.match(r'^w(\d+)a(\d+)((?:c8|f8)?)(s?)$', quant_type.value)
+        match_result = re.match(r'^w(\d+)a(\d+)((?:c8|f[48])?)(s?)$', quant_type.value)
         if not match_result:
             raise ValueError(f"Invalid quant_type format: {quant_type.value}")
         w_bit = int(match_result.group(1))
         a_bit = int(match_result.group(2))
         suffix = match_result.group(3) or ''
-        use_kv_cache = suffix == 'c8'
-        use_fa_quant = suffix == 'f8'
+        fa_bit = {'f4': 4, 'f8': 8}.get(suffix)
         is_sparse = bool(match_result.group(4))
 
         # Check if the label matches the quantization parameters
@@ -197,9 +196,14 @@ class NaiveQuantizationApplication:
             return ScenarioTagMatch.NO_MATCH
         if is_sparse ^ label.get('is_sparse', False):
             return ScenarioTagMatch.NO_MATCH
-        if use_kv_cache ^ label.get('kv_cache', False):
+        if (suffix == 'c8') ^ label.get('kv_cache', False):
             return ScenarioTagMatch.NO_MATCH
-        if use_fa_quant ^ label.get('fa_quant', False):
+
+        # FA3 精度匹配：fa_bit 精确匹配，若无 fa_bit 则 fa_quant=True 默认 8bit
+        label_fa_bit = label.get('fa_bit')
+        if label_fa_bit is None:
+            label_fa_bit = 8 if label.get('fa_quant', False) else None
+        if fa_bit != label_fa_bit:
             return ScenarioTagMatch.NO_MATCH
         if is_default:
             return ScenarioTagMatch.MATCH
