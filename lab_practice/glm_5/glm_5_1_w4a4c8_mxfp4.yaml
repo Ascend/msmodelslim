@@ -1,0 +1,105 @@
+apiversion: modelslim_v1
+metadata:
+  config_id: glm_5_1_w4a4c8_mxfp4
+  score: 86.0
+  verified_tags:
+    GLM-5.1:
+      - - vLLM_Ascend
+        - Atlas_350
+  label:
+    w_bit: 4
+    a_bit: 4
+    is_sparse: False
+    kv_cache: True
+
+default_w4a4_mxfp_dynamic:
+  act:
+    scope: per_block
+    dtype: mxfp4
+    symmetric: True
+    method: minmax
+    ext:
+      axes: -1
+  weight:
+    scope: per_block
+    dtype: mxfp4
+    symmetric: True
+    method: minmax
+
+default_w8a8_mxfp_dynamic:
+  act:
+    scope: per_block
+    dtype: mxfp8
+    symmetric: True
+    method: minmax
+    ext:
+      axes: -1
+  weight:
+    scope: per_block
+    dtype: mxfp8
+    symmetric: True
+    method: minmax
+
+spec:
+  process:
+  - type: group
+    configs:
+    - type: linear_quant
+      qconfig:
+        act:
+          scope: per_block
+          dtype: mxfp8
+          symmetric: True
+          method: minmax
+          ext:
+            axes: -1
+        weight:
+          scope: per_block
+          dtype: mxfp8
+          symmetric: True
+          method: minmax
+      include:
+      - '*self_attn*'
+      exclude:
+      - '*kv_b_proj'
+      - '*wk'
+      - '*weights_proj'
+    - type: linear_quant
+      qconfig:
+        act:
+          scope: per_block
+          dtype: mxfp8
+          symmetric: True
+          method: minmax
+          ext:
+            axes: -1
+        weight:
+          scope: per_block
+          dtype: mxfp8
+          symmetric: True
+          method: minmax
+      include:
+      - '*mlp*'
+      exclude:
+      - '*gate'
+      - '*mlp.experts.*'
+    - type: linear_quant
+      qconfig:
+        act:
+          scope: per_block
+          dtype: mxfp4
+          symmetric: True
+          method: minmax
+          ext:
+            axes: -1
+        weight:
+          scope: per_block
+          dtype: mxfp4
+          symmetric: True
+          method: minmax
+      include:
+      - '*mlp.experts.*'
+  dataset: qwen3_cot_w4a4.json
+  save:
+  - type: ascendv1_saver
+    part_file_size: 4
