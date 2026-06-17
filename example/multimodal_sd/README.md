@@ -50,6 +50,7 @@
 | **Wan2.2** | Wan2.2-T2V-A14B | [Wan2.2-T2V-A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) | ✅ | | | | | |✅ | | | [FA3+W8A8动态量化](#wan22-fa3w8a8动态量化)|
 | **Wan2.2** | Wan2.2-I2V-A14B | [Wan2.2-I2V-A14B](https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B) | ✅ | | | | | |✅ | | |  [FA3+W8A8动态量化](#wan22-fa3w8a8动态量化)|
 | **Wan2.2** | Wan2.2-TI2V-5B | [Wan2.2-TI2V-5B](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B) | ✅ | | | | | |✅ | | | [FA3+W8A8动态量化](#wan22-fa3w8a8动态量化)|
+| **Wan2.2** | Wan2.2-T2V-A14B | [Wan2.2-T2V-A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) | | | | ✅ | | | ✅ | | | [FA3+W4A4动态量化](#wan22-fa3w4a4动态量化) |
 | **Qwen-Image-Edit** | Qwen-Image-Edit-2509 | [Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) | ✅ | | | | | |✅ | | | [FA3+W8A8动态量化](#qwen-image-edit-2509-fa3w8a8动态量化)|
 
 **说明：**
@@ -72,52 +73,56 @@
 
 ### <span id="sd3-medium-w8a8静态量化">SD3-Medium W8A8静态量化</span>
 
-请参考[SD3-Medium 量化使用说明](./SD3/README.md)
+请参考《[SD3-Medium 量化使用说明](./SD3/README.md)》
 
 ### <span id="open-sora-plan-v12-w8a8静态量化">Open-Sora-Plan v1.2 W8A8静态量化</span>
 
-请参考[Open-Sora-Plan V1.2 量化使用说明](./OpenSoraPlanV1_2/README.md)
+请参考《[Open-Sora-Plan V1.2 量化使用说明](./OpenSoraPlanV1_2/README.md)》
 
 ### <span id="flux1-dev-w8a8静态量化">FLUX.1-dev W8A8静态量化</span>
 
-请参考[FLUX.1-dev 量化使用说明](./Flux/README.md)
+请参考《[FLUX.1-dev 量化使用说明](./Flux/README.md)》
 
 ### <span id="flux1-dev-w8a8分时间步量化">FLUX.1-dev W8A8分时间步量化</span>
 
-请参考[FLUX.1-dev 量化使用说明](./Flux/README.md)
+请参考《[FLUX.1-dev 量化使用说明](./Flux/README.md)》
 
 ### <span id="flux1-dev-fa3w8a8动态量化">FLUX.1-dev FA3+W8A8动态量化</span>
 
-请参考[FLUX.1-dev 量化使用说明](./Flux/README.md)
+请参考《[FLUX.1-dev 量化使用说明](./Flux/README.md)》
 
 ### <span id="flux1-dev-异常值抑制w8a8动态量化">FLUX.1-dev 异常值抑制+W8A8动态量化</span>
 
-请参考[FLUX.1-dev 量化使用说明](./Flux/README.md)
+请参考《[FLUX.1-dev 量化使用说明](./Flux/README.md)》
 
 ### <span id="hunyuanvideo-w8a8静态量化">HunyuanVideo W8A8静态量化</span>
 
-请参考[HunyuanVideo 量化使用说明](./HunYuanVideo/README.md)
+请参考《[HunyuanVideo 量化使用说明](./HunYuanVideo/README.md)》
 
 ### <span id="hunyuanvideo-w8a8分时间步量化">HunyuanVideo W8A8分时间步量化</span>
 
-请参考[HunyuanVideo 量化使用说明](./HunYuanVideo/README.md)
+请参考《[HunyuanVideo 量化使用说明](./HunYuanVideo/README.md)》
 
 ### <span id="hunyuanvideo-fa3w8a8动态量化">HunyuanVideo FA3+W8A8动态量化</span>
 
-请参考[HunyuanVideo 量化使用说明](./HunYuanVideo/README.md)
+请参考《[HunyuanVideo 量化使用说明](./HunYuanVideo/README.md)》
 
 ### <span id="hunyuanvideo-异常值抑制w8a8动态量化">HunyuanVideo 异常值抑制+W8A8动态量化</span>
 
-请参考[HunyuanVideo 量化使用说明](./HunYuanVideo/README.md)
+请参考《[HunyuanVideo 量化使用说明](./HunYuanVideo/README.md)》
 
 ### <span id="wan21-w8a8动态量化">Wan2.1 W8A8动态量化</span>
 
-请参考[Wan2.1 量化使用说明](./Wan2_1/README.md)
+请参考《[Wan2.1 量化使用说明](./Wan2_1/README.md)》
 
 ### <span id="wan22-fa3w8a8动态量化">Wan2.2 FA3+W8A8动态量化</span>
 
-请参考[Wan2.2 量化使用说明](./Wan2_2/README.md)
+请参考《[Wan2.2 量化使用说明](./Wan2_2/README.md)》
+
+### <span id="wan22-fa3w4a4动态量化">Wan2.2 FA3+W4A4动态量化</span>
+
+请参考《[Wan2.2 量化使用说明](./Wan2_2/README.md)》
 
 ### <span id="qwen-image-edit-2509-fa3w8a8动态量化">Qwen-Image-Edit-2509 FA3+W8A8动态量化</span>
 
-请参考[Qwen Image Edit 量化使用说明](./QwenImageEdit/README.md)
+请参考《[Qwen Image Edit 量化使用说明](./QwenImageEdit/README.md)》

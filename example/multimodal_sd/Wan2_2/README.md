@@ -2,20 +2,22 @@
 
 ## Wan2.2 模型介绍
 
-Wan2.2 是阿里巴巴在 Wan 系列上的新一代开源视频基础模型，面向更高质量、更可控的影视级视频生成；在 Wan2.1 的基础上进一步扩充训练数据与能力，并引入面向视频扩散的混合专家（MoE）等设计，在保持开放生态的同时提升生成效率与观感。支持文本到视频（T2V）、图像到视频（I2V）以及文本+图像到视频（TI2V） 等多种模式。
+Wan2.2 是阿里巴巴在 Wan 系列上的新一代开源视频基础模型，面向更高质量、更可控的影视级视频生成；在 Wan2.1 的基础上进一步扩充训练数据与能力，并引入面向视频扩散的混合专家（MoE）等设计，在保持开放生态的同时提升生成效率与观感。支持文本到视频（T2V）、图像到视频（I2V）以及文本+图像到视频（TI2V）
+等多种模式。
 
 ## 使用前准备
 
-- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/install_guide/)。
+- 安装 msModelSlim 工具，详情请参见《[msModelSlim工具安装指南](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/install_guide/)》。
 - 环境安装参考魔乐社区[Wan2.2](https://modelers.cn/models/MindIE/Wan2.2)
 
 ## 支持的模型版本与量化策略
 
-| 模型系列 | 模型版本 | 模型仓库链接 | W8A8 | W8A16 | W4A16 | W4A4 | 时间步量化 | FA3量化 | 异常值抑制量化 | 量化命令 |
-|---------|---------|-------------|-----|-------|-------|------|-----------|---------|-------------|----------|
-| **Wan2.2** | Wan2.2-T2V-A14B | [Wan2.2-T2V-A14B](https://modelers.cn/models/MindIE/Wan2.2) | ✅ |   |   |   |   | ✅ |   | [FA3+W8A8动态量化](#wan22-t2v-fa3w8a8动态量化) |
-| | Wan2.2-I2V-A14B | [Wan2.2-I2V-A14B](https://modelers.cn/models/MindIE/Wan2.2) | ✅ |   |   |   |   | ✅  |  | [FA3+W8A8动态量化](#wan22-i2v-fa3w8a8动态量化) |
-| | Wan2.2-TI2V-5B | [Wan2.2-TI2V-5B](https://modelers.cn/models/MindIE/Wan2.2) | ✅ |   |   |   |   | ✅  |  | [FA3+W8A8动态量化](#wan22-ti2v-fa3w8a8动态量化) |
+| 模型系列       | 模型版本            | 模型仓库链接                                                      | W8A8 | W8A16 | W4A16 | W4A4 | 时间步量化 | FA3量化 | 异常值抑制量化 | 量化命令                                       |
+|------------|-----------------|-------------------------------------------------------------|------|-------|-------|------|-------|-------|---------|--------------------------------------------|
+| **Wan2.2** | Wan2.2-T2V-A14B | [Wan2.2-T2V-A14B](https://modelers.cn/models/MindIE/Wan2.2) | ✅    |       |       |      |       | ✅     |         | [FA3+W8A8动态量化](#wan22-t2v-fa3w8a8动态量化)     |
+|            | Wan2.2-I2V-A14B | [Wan2.2-I2V-A14B](https://modelers.cn/models/MindIE/Wan2.2) | ✅    |       |       |      |       | ✅     |         | [FA3+W8A8动态量化](#wan22-i2v-fa3w8a8动态量化)     |
+|            | Wan2.2-TI2V-5B  | [Wan2.2-TI2V-5B](https://modelers.cn/models/MindIE/Wan2.2)  | ✅    |       |       |      |       | ✅     |         | [FA3+W8A8动态量化](#wan22-ti2v-fa3w8a8动态量化)    |
+|            | Wan2.2-T2V-A14B | [Wan2.2-T2V-A14B](https://modelers.cn/models/MindIE/Wan2.2) |      |       |       | ✅    |       | ✅     |         | [FA3+W4A4动态量化](#wan22-t2v-w4a4f8_mxfp动态量化) |
 
 **说明：**
 
@@ -86,6 +88,22 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2.2-TI2V-5B \
     --quant_type w8a8f8 \
+    --trust_remote_code True
+```
+
+### <span id="wan22-t2v-w4a4f8_mxfp动态量化">Wan2.2-T2V-A14B W4A4F8 MXFP动态量化</span>
+
+#### 使用quant_type参数进行一键量化
+
+W4A4(MXFP4)+FA3(FP8动态)
+
+```bash
+msmodelslim quant \
+    --model_path /path/to/wan2_2_t2v_float_weights \
+    --save_path /path/to/wan2_2_t2v_quantized_weights \
+    --device npu \
+    --model_type Wan2.2-T2V-A14B \
+    --quant_type w4a4f8 \
     --trust_remote_code True
 ```
 
