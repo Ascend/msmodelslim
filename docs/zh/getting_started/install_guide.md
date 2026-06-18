@@ -2,9 +2,11 @@
 
 ## 1. 安装说明
 
-安装本工具前需要安装CANN，具体操作请参见《[CANN 快速安装](https://www.hiascend.com/cann/download)》安装昇腾NPU驱动和CANN软件（包含Toolkit和ops包），并配置环境变量。
+1. 本工具支持[在线安装](#21-在线安装)、[离线安装](#22-离线安装)、[源码安装](#23-源码安装)三种安装方式，请根据您的实际环境选择最合适的方案。 
 
-本工具支持[在线安装](#21-在线安装)、[离线安装](#22-离线安装)、[源码安装](#23-源码安装)三种安装方式，请根据您的实际环境选择最合适的方案。
+2. 本工具依赖的Python版本不低于3.8，且不高于3.12。
+
+3. 若使用昇腾NPU设备，则需安装PTA及其对应的相关依赖，PTA包的安装请参考[Ascend Extension for PyTorch 安装](https://www.hiascend.com/document/detail/zh/Pytorch/710/configandinstg/instg/insg_0004.html)。
 
 ## 2. 安装方式
 
@@ -18,21 +20,15 @@
 
 ### 2.3 源码安装
 
-#### 2.3.1 安装前准备
-
-准备Python环境：需要 Python 3.8 或更高版本。
-
-#### 2.3.2 源码构建安装
-
 **源码构建安装步骤如下：**
 
-1. git clone msmodelslim代码。
+1. git clone msmodelslim代码。 
 
    ```shell
    git clone https://gitcode.com/Ascend/msmodelslim.git -b 26.0.0
    ```
 
-2. 进入到msmodelslim目录并运行安装脚本。
+2. 进入到msmodelslim目录并运行安装脚本。 
 
    ```shell
    cd msmodelslim
