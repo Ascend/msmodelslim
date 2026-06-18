@@ -1,0 +1,80 @@
+apiversion: modelslim_v1
+metadata:
+  config_id: longcat_flash_w4a4_mxfp4
+  score: 95
+  verified_tags:
+    LongCat-Flash-Chat:
+      - [SGLang, Atlas_A5_Interface]
+  label:
+    w_bit: 4
+    a_bit: 4
+    is_sparse: False
+    kv_cache: False
+
+mxfp4_w4a4: &mxfp4_w4a4
+  act:
+    scope: "per_block"
+    dtype: "mxfp4"
+    symmetric: True
+    method: "minmax"
+    ext:
+      axes: -1
+  weight:
+    scope: "per_block"
+    dtype: "mxfp4"
+    symmetric: True
+    method: "minmax"
+    ext:
+      axes: -1
+
+mxfp8_w8a8: &mxfp8_w8a8
+  act:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+
+spec:
+  process:
+    - type: "iter_smooth"
+      enable_subgraph_type:
+        - "norm-linear"
+        - "up-down"
+      include:
+        - "*mlp.experts*"
+        - "*input_layernorm*"
+        - "*q_a_layernorm*"
+      exclude:
+        - "*mlps*"
+        - "*kv_b_proj*"
+        - "*o_proj*"
+        - "*mlp.router*"
+    - type: "linear_quant"
+      qconfig: *mxfp4_w4a4
+      include:
+        - "*mlp.experts*"
+      exclude:
+        - "*mlps*"
+        - "*self_attn*"
+        - "*mlp.router*"
+    - type: "linear_quant"
+      qconfig: *mxfp8_w8a8
+      include:
+        - "*kv_a_proj_with_mqa*"
+        - "*q_a_proj*"
+        - "*q_b_proj*"
+        - "*mlps*"
+      exclude:
+        - "*mlp.experts*"
+        - "*kv_b_proj*"
+        - "*o_proj*"
+        - "*mlp.router*"
+  dataset: mix_calib.jsonl
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
