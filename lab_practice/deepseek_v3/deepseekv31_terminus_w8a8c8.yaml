@@ -1,0 +1,62 @@
+apiversion: modelslim_v1
+
+metadata:
+  config_id: deepseekv31_w8a8c8
+  score: 90
+  verified_tags:
+    DeepSeek-V3.1-Terminus:
+      - - vLLM_Ascend
+        - Atlas_350
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: True
+
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+
+
+spec:
+  process:
+    - type: "fa3_quant"
+      details:
+        fa_q:
+          dtype: "fp8_e4m3"
+          scope: "per_token"
+          symmetric: True
+          method: "minmax"
+        fa_k:
+          dtype: "fp8_e4m3"
+          scope: "per_head"
+          symmetric: True
+          method: "minmax"
+        fa_v:
+          dtype: "fp8_e4m3"
+          scope: "per_head"
+          symmetric: True
+          method: "minmax"
+      include:
+        - "*"
+    - type: "group"
+      configs:
+        - type: "linear_quant"
+          qconfig: *default_w8a8_dynamic
+          include:
+            - "*self_attn*"
+            - "*mlp*"
+          exclude:
+            - "*self_attn.kv_b_proj*"
+
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
