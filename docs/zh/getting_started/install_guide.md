@@ -24,37 +24,62 @@
 
 #### 2.3.2 源码构建安装
 
-```shell
-# 1.git clone msmodelslim代码。
-git clone https://gitcode.com/Ascend/msmodelslim.git
+**源码构建安装步骤如下：**
 
-# 2.进入到msmodelslim目录并运行安装脚本。
-cd msmodelslim
-bash install.sh
-# 打印如下信息时，表示msModelSlim构建安装成功。
-Successfully installed msmodelslim-{version}
+1. git clone msmodelslim代码。
 
-# 注：如果需要进行稀疏量化和压缩，需要安装CANN 8.2.RC1及以上版本，并继续以下操作。
-# 3.进入python环境下的site_packages包管理路径，其中${python_envs}为Python环境路径。
-cd ${python_envs}/site-packages/msmodelslim/pytorch/weight_compression/compress_graph/  
-# 以下是以/usr/local/为用户所在目录、Python版本为3.11.10为例。
-cd /usr/local/lib/python3.11/site-packages/msmodelslim/pytorch/weight_compression/compress_graph/
+   ```shell
+   git clone https://gitcode.com/Ascend/msmodelslim.git -b 26.0.0
+   ```
 
-# 4.编译weight_compression组件，其中${install_path}为CANN软件的安装目录。
-sudo bash build.sh ${install_path}/ascend-toolkit/latest
-# 打印如下信息，表示编译成功，生成build文件夹。
-build created successfully
+2. 进入到msmodelslim目录并运行安装脚本。
 
-# 5.上一步编译操作会得到build文件夹，给build文件夹相关权限。
-chmod -R 550 build
-```
+   ```shell
+   cd msmodelslim
+   bash install.sh
+   # 打印如下信息时，表示msModelSlim构建安装成功。
+   Successfully installed msmodelslim-{version}
+   ```
+
+**如果需要进行稀疏量化和压缩，需要安装CANN 8.2.RC1及以上版本，执行源码构建安装后，并继续以下操作：**
+
+1. 进入python环境下的site_packages包管理路径，其中${python_envs}为Python环境路径。
+
+   ```shell
+   cd ${python_envs}/site-packages/msmodelslim/pytorch/weight_compression/compress_graph/
+   # 以下是以/usr/local/为用户所在目录、Python版本为3.11.10为例。
+   cd /usr/local/lib/python3.11/site-packages/msmodelslim/pytorch/weight_compression/compress_graph/
+   ```
+
+2. 编译weight_compression组件，其中${install_path}为CANN软件的安装目录。
+
+   ```shell
+   sudo bash build.sh ${install_path}/ascend-toolkit/latest
+   # 打印如下信息，表示编译成功，生成build文件夹。
+   build created successfully
+   ```
+
+3. 上一步编译操作会得到build文件夹，给build文件夹相关权限。
+
+   `chmod -R 550 build`
 
 >[!NOTE]
 >
 > 1. 使用 `msModelSlim` 命令行工具时，请勿在 `msModelSlim` 的源码目录下直接运行命令。这可能会因 Python 在导入模块时出现源码路径和安装路径冲突，导致命令执行失败。  
-> 2. 若安装 `msmodelslim` 时遇到报错，请先查阅 [FAQ](../appendix/faq.md) 寻找解决方案。如问题仍未解决，欢迎提交 [Issue](https://gitcode.com/Ascend/msmodelslim/issues)，并附上您的运行环境及完整的错误日志，我们将尽快为您排查。
+> 2. 若安装 `msModelSlim` 时遇到报错，请先查阅 [FAQ](../appendix/faq.md) 寻找解决方案。如问题仍未解决，欢迎提交 [Issue](https://gitcode.com/Ascend/msmodelslim/issues)，并附上您的运行环境及完整的错误日志，我们将尽快为您排查。
+> 3. 目前仅Atlas 300l Duo系列产品支持在稀疏量化后进行压缩。
 
-## 3. 卸载
+## 3. 验证安装
+
+安装完成后，执行以下命令验证工具是否安装成功：
+
+```shell
+  msmodelslim --help
+```
+
+若输出不报错，且能显示版本信息，则表明安装成功。
+
+## 4. 卸载
 
 可通过如下步骤卸载：
 
@@ -83,6 +108,7 @@ chmod -R 550 build
    Successfully uninstalled 1 tool ({tools_name})
    ```
 
-## 4. 升级
+## 5. 升级
 
-升级即“先卸后装”。直接执行安装命令，工具将自动卸载旧版本，并引导您完成覆盖安装。
+升级即“先卸后装”。直接执行安装命令，工具将自动卸载旧版本，并引导您完成覆盖安装。<br>
+可通过`pip show msmodelslim`命令查看当前环境的版本信息，再选择需要升级的版本。升级版本时需要关注版本配套关系，请参见《[版本说明](https://gitcode.com/Ascend/release-management/blob/master/MindStudio/26.0.0/release_notes.md)》。
