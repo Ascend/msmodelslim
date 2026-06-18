@@ -2,9 +2,11 @@
 
 ## 1. 安装说明
 
-安装本工具前需要安装CANN，具体操作请参见《[CANN 快速安装](https://www.hiascend.com/cann/download)》安装昇腾NPU驱动和CANN软件（包含Toolkit和ops包），并配置环境变量。
+1. 本工具支持[在线安装](#21-在线安装)、[离线安装](#22-离线安装)、[源码安装](#23-源码安装)三种安装方式，请根据您的实际环境选择最合适的方案。
 
-本工具支持[在线安装](#21-在线安装)、[离线安装](#22-离线安装)、[源码安装](#23-源码安装)三种安装方式，请根据您的实际环境选择最合适的方案。
+2. 本工具依赖的Python版本不低于3.8，且不高于3.12。
+
+3. 若使用昇腾NPU设备，则需安装PTA及其对应的相关依赖，PTA包的安装请参考[Ascend Extension for PyTorch 安装](https://www.hiascend.com/document/detail/zh/Pytorch/710/configandinstg/instg/insg_0004.html)。
 
 ## 2. 安装方式
 
@@ -17,12 +19,6 @@
 对处于企业内网等无外网环境的设备，请先在可联网的机器上下载完整的离线安装包，再将其传输至目标设备进行安装。请参见昇腾社区MindStudio[下载](https://www.hiascend.com/developer/software/mindstudio/download)页面，选择对应的CANN版本，并在安装方式中选择“离线安装”，获取对应的安装包及操作指引。
 
 ### 2.3 源码安装
-
-#### 2.3.1 安装前准备
-
-准备Python环境：需要 Python 3.8 或更高版本。
-
-#### 2.3.2 源码构建安装
 
 **源码构建安装步骤如下：**
 
@@ -65,7 +61,7 @@
 
 >[!NOTE]
 >
-> 1. 使用 `msModelSlim` 命令行工具时，请勿在 `msModelSlim` 的源码目录下直接运行命令。这可能会因 Python 在导入模块时出现源码路径和安装路径冲突，导致命令执行失败。  
+> 1. 使用 `msModelSlim` 命令行工具时，请勿在 `msModelSlim` 的源码目录下直接运行命令。这可能会因 Python 在导入模块时出现源码路径和安装路径冲突，导致命令执行失败。
 > 2. 若安装 `msModelSlim` 时遇到报错，请先查阅 [FAQ](../appendix/faq.md) 寻找解决方案。如问题仍未解决，欢迎提交 [Issue](https://gitcode.com/Ascend/msmodelslim/issues)，并附上您的运行环境及完整的错误日志，我们将尽快为您排查。
 > 3. 目前仅Atlas 300l Duo系列产品支持在稀疏量化后进行压缩。
 
