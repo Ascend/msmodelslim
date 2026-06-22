@@ -1,0 +1,105 @@
+@startuml QuaRot时序图
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam roundcorner 10
+skinparam maxmessagesize 60
+skinparam ParticipantPadding 20
+
+participant "Runner" as Runner
+participant "QuaRotProcessor" as Processor
+participant "ModelAdapter" as Adapter
+participant "QuaRotOnlineProcessor" as OnlineProcessor
+
+== pre_run阶段 ==
+
+Runner -> Processor: pre_run()
+activate Processor
+
+note over Processor: 从ModelAdapter获取旋转配置信息
+
+Processor -> Adapter: 获取配置信息
+activate Adapter
+note right of Adapter: get_ln_fuse_map()\nget_bake_names()\nget_rotate_map(block_size)\n返回融合映射、bake名称、旋转映射对
+Adapter --> Processor: (pre_run_fused_ln, fused_map,\npre_run_bake_names, bake_names,\npre_run_pairs, rotate_pairs)
+deactivate Adapter
+
+note over Processor: 执行pre_run阶段的旋转操作
+
+Processor -> Processor: get_rotate_command(pre_run_pairs)
+note right: 将RotatePair转换为RotateCommand列表
+
+Processor -> Processor: 执行旋转操作
+note right: _fuse_norm(): 融合LayerNorm和Linear层\n_bake_mean(): 将mean融合到Linear层权重\n_rotate(): 执行旋转\n(如embed_tokens的右旋转)
+
+note over Processor: 准备后续循环中的旋转命令
+
+Processor -> Processor: get_rotate_command(rotate_pairs)
+note right: 生成所有层的旋转命令\n保存到self.rotate_commands
+
+opt 如果config.online为True
+    Processor -> OnlineProcessor: pre_run()
+    activate OnlineProcessor
+
+    note over OnlineProcessor: 创建在线旋转矩阵
+
+    OnlineProcessor -> OnlineProcessor: _get_available_device()
+    note right: 获取可用设备(npu/cuda/cpu)
+
+    OnlineProcessor -> Adapter: 获取模型信息
+    activate Adapter
+    note right of Adapter: get_num_attention_heads()\nget_head_dim()
+    Adapter --> OnlineProcessor: (num_attn_heads, head_dim)
+    deactivate Adapter
+
+    OnlineProcessor -> OnlineProcessor: 创建旋转矩阵和旋转信息
+    note right: _add_online_rotations(): 创建rot1, rot2, rot_online_o_proj\n(HADAMARD模式)\ntorch.eye(): 创建identity矩阵\n创建QuarotOnlineRotationInfo保存旋转信息
+
+    OnlineProcessor --> Processor: 返回
+    deactivate OnlineProcessor
+end
+
+Processor --> Runner: 返回
+deactivate Processor
+
+== 循环处理每一层DecoderLayer ==
+
+loop 对每一层DecoderLayer (layer_idx = 0 to num_hidden_layers-1)
+    Runner -> Processor: preprocess(request)
+    activate Processor
+    note right of Runner: request.name = "model.layers.{layer_idx}"\n包含该DecoderLayer的模块信息
+
+    note over Processor: 根据prefix过滤该层相关的操作
+
+    Processor -> Processor: 过滤该层相关操作
+    note right: prefix = request.name\n_filter_fused_map(): 过滤融合映射\n_filter_bake_names(): 过滤bake名称\n_filter_commands(): 过滤旋转命令
+
+    note over Processor: 执行该层的旋转操作
+
+    Processor -> Processor: 执行旋转操作
+    note right: _fuse_norm(): 融合LayerNorm和Linear层\n_bake_mean(): 将mean融合到Linear层权重\n_rotate(): 执行旋转，指令来自模型适配器
+
+    opt 如果config.online为True
+        Processor -> OnlineProcessor: preprocess(request)
+        activate OnlineProcessor
+
+        OnlineProcessor -> Adapter: 获取该层的模块对
+        activate Adapter
+        note right of Adapter: get_layer_wise_ov_pair()\nget_layer_wise_up_down_pair()\n返回o_proj/v_proj和up_proj/down_proj映射对
+        Adapter --> OnlineProcessor: (ov_pairs, up_down_pairs)
+        deactivate Adapter
+
+        OnlineProcessor -> OnlineProcessor: 执行在线旋转
+        note right: 提取layer_idx\n如果满足条件:\n- online_rotate_o_proj_input(): 对o_proj输入旋转\n- online_rotate_down_proj(): 对down_proj旋转\n  (使用Kronecker积旋转矩阵)
+
+        OnlineProcessor -> OnlineProcessor: 注册在线旋转HookIR
+        note right: 为down_proj注册QuarotKroneckerRotationHookIR\n为o_proj注册QuarotHeadsRotationHookIR\n用于在前向传播时执行旋转
+
+        OnlineProcessor --> Processor: 返回
+        deactivate OnlineProcessor
+    end
+
+    Processor --> Runner: 返回
+    deactivate Processor
+end
+
+@enduml

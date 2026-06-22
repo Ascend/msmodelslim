@@ -4,7 +4,7 @@
 
 本文档面向需要将**新量化落盘格式**接入 msModelSlim 的外部开发者。以 `compressed_tensors` 为完整 1-shot 示例，说明如何基于 `IFormat` 协议实现格式导出，并通过 YAML 配置启用。
 
-> 格式选型请参见《[格式支持矩阵](../quantization_formats/README.md)》。AscendV1、MindIE 等旧格式走 Legacy Saver 路径，不在本文档范围内。
+> 格式选型请参见《[格式支持矩阵](../user_guide/quantization_formats/README.md)》。AscendV1、MindIE 等旧格式走 Legacy Saver 路径，不在本文档范围内。
 
 ## 导出生命周期
 
@@ -226,6 +226,6 @@ def build_module_handler_map(self):
 
 ## 相关文档
 
-- 《[格式支持矩阵](../quantization_formats/README.md)》
-- 《[compressed-tensors 格式说明](../quantization_formats/compressed_tensors.md)》 — 1-shot 参考实现的目标格式
-- 《[AscendV1 格式说明](../quantization_formats/ascendv1.md)》 — Legacy 格式对比参考
+- 《[格式支持矩阵](../user_guide/quantization_formats/README.md)》
+- 《[compressed-tensors 格式说明](../user_guide/quantization_formats/compressed_tensors.md)》 — 1-shot 参考实现的目标格式
+- 《[AscendV1 格式说明](../user_guide/quantization_formats/ascendv1.md)》 — Legacy 格式对比参考

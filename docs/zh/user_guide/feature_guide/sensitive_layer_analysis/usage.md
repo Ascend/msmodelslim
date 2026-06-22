@@ -123,7 +123,7 @@ msmodelslim analyze layer [通用参数] [layer参数]
 **model_type 支持说明**
 
 - 多数敏感层分析指标（`linear`/`layer` 下的 metrics）下可选的 `model_type` 与 ModelslimV1 量化一致。
-- `attn --metrics mse` 不在上述范围，需对应 `model_type` 的模型适配器实现 **AttentionMSEAnalysisInterface** 方可使用。该算法的模型支持列表见[Attention MSE 算法适用要求](../../../quantization_algorithms/sensitive_layer_analysis/attention_mse.md#适用要求)。
+- `attn --metrics mse` 不在上述范围，需对应 `model_type` 的模型适配器实现 **AttentionMSEAnalysisInterface** 方可使用。该算法的模型支持列表见[Attention MSE 算法适用要求](../../quantization_algorithms/sensitive_layer_analysis/attention_mse.md#适用要求)。
 
 **模型路径和数据集要求**
 
@@ -146,9 +146,9 @@ msmodelslim analyze layer [通用参数] [layer参数]
 
 对模型中**单个线性层**（及实现支持的卷积层等）做敏感度分析，结果为**线性层粒度**排序。可选 `--metrics`：`std`、`quantile`、`kurtosis`；均无需模型适配器额外实现分析接口。各算法详细说明请参见：
 
-- 《[Std：敏感层分析算法说明](../../../quantization_algorithms/sensitive_layer_analysis/std.md)》
-- 《[Quantile：敏感层分析算法说明](../../../quantization_algorithms/sensitive_layer_analysis/quantile.md)》
-- 《[Kurtosis：敏感层分析算法说明](../../../quantization_algorithms/sensitive_layer_analysis/kurtosis.md)》
+- 《[Std：敏感层分析算法说明](../../quantization_algorithms/sensitive_layer_analysis/std.md)》
+- 《[Quantile：敏感层分析算法说明](../../quantization_algorithms/sensitive_layer_analysis/quantile.md)》
+- 《[Kurtosis：敏感层分析算法说明](../../quantization_algorithms/sensitive_layer_analysis/kurtosis.md)》
 
 > **推荐**：`linear` 可首选 `kurtosis`，该指标对激活尖峰敏感，能有效识别分布极端值对量化的影响；若数据含较多离群点可配合 `quantile`，若关注范围与离散度比值可配合 `std`。
 
@@ -156,14 +156,14 @@ msmodelslim analyze layer [通用参数] [layer参数]
 
 对模型中**attention 结构**做敏感度分析，结果为**attention 模块粒度**排序。可选 `--metrics`：`mse`。需对应 `model_type` 的模型适配器实现 **AttentionMSEAnalysisInterface**。各算法详细说明请参见：
 
-- 《[Attention MSE（mse）：敏感层分析算法说明](../../../quantization_algorithms/sensitive_layer_analysis/attention_mse.md)》
+- 《[Attention MSE（mse）：敏感层分析算法说明](../../quantization_algorithms/sensitive_layer_analysis/attention_mse.md)》
 
 #### 3.5.3 layer（decoder 层级输出）
 
 对**Decoder block**做敏感度分析，结果为**层级粒度**排序，用于整层回退或整块回退（如整块 attention/MLP）。可选 `--metrics`：`mse_layer_wise`、`mse_model_wise`；均无需模型适配器额外实现分析接口。各算法详细说明请参见：
 
-- 《[层级 MSE（mse_layer_wise）：敏感层分析算法说明](../../../quantization_algorithms/sensitive_layer_analysis/mse_layer_wise.md)》
-- 《[模型级 MSE（mse_model_wise）：敏感层分析算法说明](../../../quantization_algorithms/sensitive_layer_analysis/mse_model_wise.md)》
+- 《[层级 MSE（mse_layer_wise）：敏感层分析算法说明](../../quantization_algorithms/sensitive_layer_analysis/mse_layer_wise.md)》
+- 《[模型级 MSE（mse_model_wise）：敏感层分析算法说明](../../quantization_algorithms/sensitive_layer_analysis/mse_model_wise.md)》
 
 > **推荐**：`layer` 优先使用 `mse_layer_wise`。`mse_model_wise` 依赖链式前向将上一层输出传入下一层来模拟真实推理路径，部分架构上可能因张量形状无法对齐而跳过后续层，且校准规模与中间缓存也会增加显存压力。
 

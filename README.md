@@ -21,9 +21,19 @@
 
 <span style="font-size:14px;">
 
-🔹 **[2026.06.01]**：新增对 `InternVL3_5-38B`（W8A8）、`InternVL3_5-241B-A28B`（W8A8）及 `Kimi-K2.6`（W4A8）模型的量化支持
-🔹 **[2026.04.01]**：新增对 `DeepSeek-V4-Flash`（W8A8）与 `Kimi-K2.5`（W4A8）模型的量化支持
-🔹 **[2026.03.01]**：新增对 `GLM-4.6V`（W8A8）模型的量化支持
+🔹 **[2026.06.01]**
+
+- 新增对 `InternVL3_5-38B`（W8A8）、`InternVL3_5-241B-A28B`（W8A8）模型的量化支持
+- 新增对 `Kimi-K2.6`（W4A8）模型的量化支持
+
+🔹 **[2026.04.01]**
+
+- 新增对 `DeepSeek-V4-Flash`（W8A8）模型的量化支持
+- 新增对 `Kimi-K2.5`（W4A8）模型的量化支持
+
+🔹 **[2026.03.01]**
+
+- 新增对 `GLM-4.6V`（W8A8）模型的量化支持
 
 </span>
 
@@ -76,7 +86,7 @@
 
 ## 📖 简介
 
-**MindStudio ModelSlim（msModelSlim）** 是昇腾生态下的高性能模型压缩工具，支持稠密LLM、MoE及多模态模型的量化与压缩，开发者可通过Python API快速调优并导出适配MindIE、vLLM-Ascend等框架的模型，在昇腾AI处理器上高效部署。
+**MindStudio ModelSlim（msModelSlim）** 是昇腾生态下的高性能模型压缩工具，支持稠密LLM、MoE及多模态模型的量化与压缩，开发者可通过ModelSlim工具快速调优并导出适配MindIE、vLLM-Ascend等框架的模型，在昇腾AI处理器上实现高效部署。
 
 ## ⚙️ 功能介绍
 
@@ -88,7 +98,7 @@
 | **自动调优** | 根据精度目标自动迭代搜索量化配置，量化与评估全流程自动化，无需人工反复调参。 |
 | **权重转换** | 无需校准集，离线对已有量化权重做格式与精度变换（如 FP8→BF16、BF16→MXFP8）。 |
 
-> **模型支持情况概览**：各功能所适配的模型及其量化类型详见《[模型支持矩阵](./docs/zh/model_support/foundation_model_support_matrix.md)》。
+> **模型支持情况概览**：各功能所适配的模型及其量化类型详见《[模型支持矩阵](./docs/zh/user_guide/model_support/foundation_model_support_matrix.md)》。
 
 ## 🚀 快速入门
 
@@ -112,9 +122,9 @@
 
 ## 🌌 智能检索
 
-为提升文档查阅效率，我们提供多种高效检索方式：
-🔹 [AI 问答（DeepWiki）](https://deepwiki.com/Keithwwa/msmodelslim)：自然语言问答，快速把握项目架构与模块关系。
-🔹 [精确搜索（ReadTheDocs）](https://msmodelslim.readthedocs.io/zh-cn/latest/)：关键词全文检索，直达接口、参数与报错等信息。
+为提升文档查阅效率，我们提供多种高效检索方式：<br>
+🔹 [AI 问答（DeepWiki）](https://deepwiki.com/Keithwwa/msmodelslim)：自然语言问答，快速把握项目架构与模块关系。<br>
+🔹 [精确搜索（ReadTheDocs）](https://msmodelslim.readthedocs.io/zh-cn/latest/)：关键词全文检索，直达接口、参数与报错等信息。<br>
 
 ## 🛠️ 贡献指南
 
@@ -122,10 +132,10 @@
 
 ## ⚖️ 相关说明
 
-🔹 《[版本说明](docs/zh/release_notes/release_notes.md)》
-🔹 《[许可证声明](docs/zh/legal/license_notice.md)》
-🔹 《[安全声明](docs/zh/appendix/security_statement.md)》
-🔹 《[免责声明](docs/zh/legal/disclaimer.md)》
+🔹 《[版本说明](docs/zh/release_notes/release_notes.md)》<br>
+🔹 《[许可证声明](docs/zh/legal/license_notice.md)》<br>
+🔹 《[安全声明](docs/zh/appendix/security_statement.md)》<br>
+🔹 《[免责声明](docs/zh/legal/disclaimer.md)》<br>
 
 ## 🤝 建议与交流
 
@@ -137,10 +147,10 @@
 
 ## 🙏 致谢
 
-本工具由华为公司的下列部门联合贡献：
-🔹 昇腾计算MindStudio开发部
-🔹 昇腾计算生态使能部
-🔹 昇腾计算技术开发部
-🔹 2012实验室
+本工具由华为公司的下列部门联合贡献：<br>
+🔹 昇腾计算MindStudio开发部<br>
+🔹 昇腾计算生态使能部<br>
+🔹 昇腾计算技术开发部<br>
+🔹 2012实验室<br>
 
 感谢来自社区的每一个 PR，欢迎贡献！

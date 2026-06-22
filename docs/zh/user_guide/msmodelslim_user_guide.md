@@ -12,7 +12,7 @@
 
 本功能基于 msModelSlim 在不同架构下的能力支持情况，提供相应的使用说明与操作指引。
 
-详细使用方法请参见《[一键量化使用指南](../user_guide/feature_guide/quick_quantization_v1/usage.md)》，您可在左侧导航栏中选择具体功能模块查看相关介绍。
+详细使用方法请参见《[一键量化使用指南](./feature_guide/quick_quantization_v1/usage.md)》，您可在左侧导航栏中选择具体功能模块查看相关介绍。
 
 ### 2.2 自主量化
 

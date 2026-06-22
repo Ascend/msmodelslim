@@ -33,7 +33,7 @@ msModelSlim认识到量化机制和算法都有适用范围和局限性，而新
 
 模型适配器类必须继承自[`BaseModelAdapter`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/base.py)。
 
-根据经验，W8A8动态量化的精度损失很小，无需搭配离群值抑制算法，也很少需要回退；因此，在场景示例中，我们仅需支持量化调度，无需支持离群值量化、敏感层分析等额外功能。需要接入其他算法可以参考[`算法总览`](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/quantization_algorithms/)
+根据经验，W8A8动态量化的精度损失很小，无需搭配离群值抑制算法，也很少需要回退；因此，在场景示例中，我们仅需支持量化调度，无需支持离群值量化、敏感层分析等额外功能。需要接入其他算法可以参考[`算法总览`](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/user_guide/quantization_algorithms/)
 
 ```python
 from msmodelslim.model.interface_hub import ModelSlimPipelineInterfaceV1

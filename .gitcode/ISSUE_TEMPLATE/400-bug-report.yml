@@ -10,7 +10,7 @@ body:
       value: |
         ## 👉 遇到问题先看这里
         ### 🌟 第一次使用工具遇到问题？
-        按[🚀 快速入门](https://gitcode.com/Ascend/msmodelslim/docs/zh/quantization_quick_start.md)
+        按[🚀 快速入门](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/quick_start/quantization_quick_start.md)
 
         ### ❓ 搜索历史issue，查看冷门的同类问题
         在[🔖 Issue](https://gitcode.com/Ascend/msmodelslim/issues)中搜索历史类似问题

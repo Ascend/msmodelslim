@@ -9,7 +9,7 @@ body:
   attributes:
     label: Documentation Location (Multiple document links can be specified) | 文档位置（可指定多个文档链接）
     placeholder: |
-      E.g., https://gitcode.com/Ascend/msmodelslim/docs/zh/algorithms_instruction/iterative_smooth.md
+      E.g., https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/development_guide/architecture.md
   validations:
     required: true
 - type: textarea

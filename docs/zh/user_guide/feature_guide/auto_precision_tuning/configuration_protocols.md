@@ -64,9 +64,9 @@ evaluation:
 
 不同调优策略的配置字段差异较大，详细的配置项请参考相应算法文档的「YAML 配置字段详解」章节。目前已支持的算法如下：
 
-- 《[Standing High 调优算法](../../../quantization_algorithms/auto_tuning_strategies/standing_high.md)》
-- 《[Standing High With Experience 调优算法](../../../quantization_algorithms/auto_tuning_strategies/standing_high_with_experience.md)》
-- 《[Binary Fallback 调优算法](../../../quantization_algorithms/auto_tuning_strategies/binary_fallback.md)》
+- 《[Standing High 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high.md)》
+- 《[Standing High With Experience 调优算法](../../quantization_algorithms/auto_tuning_strategies/standing_high_with_experience.md)》
+- 《[Binary Fallback 调优算法](../../quantization_algorithms/auto_tuning_strategies/binary_fallback.md)》
 
 ### 2.2 evaluation - 评估服务配置
 

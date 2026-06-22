@@ -338,7 +338,7 @@ spec:
 
 - 一键量化总体流程与常规量化配置：《[一键量化完整指南](../usage.md)》
 - AscendV1 量化权重文件说明：《[一键量化生成结果](../quantization_result.md)》
-- 格式支持矩阵：《[格式支持矩阵](../../../../quantization_formats/README.md)》
+- 格式支持矩阵：《[格式支持矩阵](../../../quantization_formats/README.md)》
 
 ### 常见问题
 

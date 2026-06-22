@@ -646,7 +646,7 @@ class Qwen3VLMoeModelAdapter(VlmBaseModelAdapter,
         return adapter_config
 ```
 
-详见：[Iterative Smooth 适配](../quantization_algorithms/outlier_suppression_algorithms/iterative_smooth.md#模型适配)
+详见：[Iterative Smooth 适配](../user_guide/quantization_algorithms/outlier_suppression_algorithms/iterative_smooth.md#模型适配)
 
 #### 支持QuaRot旋转离群值抑制算法
 
@@ -681,7 +681,7 @@ class Qwen3VLMoeModelAdapter(VlmBaseModelAdapter,
         pass
 ```
 
-详见：[QuaRot 适配](../quantization_algorithms/outlier_suppression_algorithms/quarot.md#模型适配)
+详见：[QuaRot 适配](../user_guide/quantization_algorithms/outlier_suppression_algorithms/quarot.md#模型适配)
 
 ### 参考资料
 

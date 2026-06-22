@@ -125,7 +125,7 @@ For details, see [Quick Start](https://msmodelslim.readthedocs.io/zh-cn/latest/z
 
 The model support matrix presents the adaptation status of different features and models in various scenarios in a table format.
 
-For details, see [Model Support Matrix](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/model_support/foundation_model_support_matrix/).
+For details, see [Model Support Matrix](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/user_guide/model_support/foundation_model_support_matrix/).
 
 ### 📘 Feature Guide
 

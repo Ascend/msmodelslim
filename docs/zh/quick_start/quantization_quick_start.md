@@ -240,7 +240,7 @@ for output in outputs:
 
 ### 6.1 支持的模型和量化类型
 
-可通过[大模型支持矩阵](../model_support/foundation_model_support_matrix.md)查看不同模型的支持情况：
+可通过[大模型支持矩阵](../user_guide/model_support/foundation_model_support_matrix.md)查看不同模型的支持情况：
 
 - 标记了`一键量化`的模型支持一键量化方式
 - 所有在 `example/` 目录下有量化脚本的模型都支持传统量化方式
@@ -254,7 +254,7 @@ for output in outputs:
 
 ### 6.3 支持的量化算法
 
-对于一键量化支持的多种算法，可以参考[一键量化 V1 架构支持的算法](../quantization_algorithms/README.md)。
+对于一键量化支持的多种算法，可以参考[一键量化 V1 架构支持的算法](../user_guide/quantization_algorithms/README.md)。
 
 ### 6.4 常见问题
 

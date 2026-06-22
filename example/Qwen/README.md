@@ -179,7 +179,7 @@
 
 #### <span id="qwen25-72b-支持attention量化">Qwen2.5-72B 支持Attention量化</span>
 
-- 需修改`modeling_qwen2.py`文件和`config.json`文件，配置方法参考[FA量化使用说明](../../docs/zh/quantization_algorithms/quantization_algorithms/fa3_quant.md)。
+- 需修改`modeling_qwen2.py`文件和`config.json`文件，配置方法参考[FA量化使用说明](../../docs/zh/user_guide/quantization_algorithms/quantization_algorithms/fa3_quant.md)。
 - 相比于W8A8量化，需额外设置`use_fa_quant`参数为True
 
   ```shell
