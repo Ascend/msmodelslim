@@ -33,6 +33,8 @@ from msmodelslim.core.context.shared_dict_context.peercred_manager import (
     PeercredServer,
     PeercredSharedDict,
     PeercredValidatedDict,
+    generate_default_address,
+    make_abstract_address,
 )
 from msmodelslim.utils.exception import (
     MisbehaviorError,
@@ -87,6 +89,66 @@ class TestPeercredConnection:
             server_sock.close()
             client_sock.close()
 
+    def test_send_raises_schema_error_when_value_not_in_whitelist(self):
+        """场景：发送非白名单对象。预期：pickle 前抛出 SchemaValidateError。"""
+
+        class _Bad:
+            pass
+
+        server_sock, client_sock = socket.socketpair()
+        try:
+            client = PeercredConnection(client_sock)
+            with pytest.raises(SchemaValidateError, match="Unsupported value type"):
+                client.send(
+                    {
+                        'obj_id': 'validated_dict_1',
+                        'obj_type': 'validated_dict',
+                        'method': '__setitem__',
+                        'args': ('key', _Bad()),
+                        'kwargs': {},
+                    }
+                )
+        finally:
+            server_sock.close()
+            client_sock.close()
+
+    def test_send_allows_none_and_exception_when_control_payload(self):
+        """场景：发送 None 或异常对象。预期：可正常收发。"""
+        server_sock, client_sock = socket.socketpair()
+        try:
+            server = PeercredConnection(server_sock)
+            client = PeercredConnection(client_sock)
+            client.send(None)
+            assert server.recv() is None
+            client.send(SpecError("test error"))
+            received = server.recv()
+            assert isinstance(received, SpecError)
+            assert "test error" in str(received)
+        finally:
+            server_sock.close()
+            client_sock.close()
+
+
+class TestAbstractSocketAddress:
+    """Tests for abstract namespace address helpers."""
+
+    def test_make_abstract_address_prepends_null_byte_when_plain_name(self):
+        assert make_abstract_address("foo") == "\0foo"
+
+    def test_make_abstract_address_is_idempotent_when_already_abstract(self):
+        addr = "\0foo"
+        assert make_abstract_address(addr) == addr
+
+    def test_generate_default_address_includes_pid_and_timestamp(self):
+        import os
+
+        addr = generate_default_address()
+        assert addr.startswith("\0peercred_manager_")
+        suffix = addr[len("\0peercred_manager_") :]
+        pid_str, timestamp_str = suffix.split("_", 1)
+        assert pid_str == str(os.getpid())
+        assert timestamp_str.isdigit()
+
 
 @pytest.mark.skipif(sys.platform != "linux", reason="SO_PEERCRED requires Linux")
 class TestPeercredListener:
@@ -95,25 +157,23 @@ class TestPeercredListener:
     def test_accept_returns_peer_credentials_when_local_socket(self):
         """场景：本地 Unix socket 连接。预期：accept 返回 pid/uid/gid。"""
         import os
-        import tempfile
 
         from msmodelslim.core.context.shared_dict_context.peercred_manager import PeercredListener
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            addr = os.path.join(tmpdir, "test.sock")
-            listener = PeercredListener(addr)
-            listener.start()
-            try:
-                client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)  # pylint: disable=no-member
-                client.connect(addr)
-                server_conn, (pid, uid, gid) = listener.accept()
-                assert pid > 0
-                assert uid == os.getuid()  # pylint: disable=no-member
-                assert gid == os.getgid()  # pylint: disable=no-member
-                server_conn.close()
-                client.close()
-            finally:
-                listener.close()
+        addr = make_abstract_address(f"test_listener_{os.getpid()}")
+        listener = PeercredListener(addr)
+        listener.start()
+        try:
+            client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)  # pylint: disable=no-member
+            client.connect(addr)
+            server_conn, (pid, uid, gid) = listener.accept()
+            assert pid > 0
+            assert uid == os.getuid()  # pylint: disable=no-member
+            assert gid == os.getgid()  # pylint: disable=no-member
+            server_conn.close()
+            client.close()
+        finally:
+            listener.close()
 
 
 class TestPeercredSharedDict:
@@ -254,6 +314,7 @@ class TestPeercredManager:
         manager = PeercredManager()
         try:
             manager.start()
+            assert manager.address.startswith("\0peercred_manager_")
             proxy = manager.validated_dict()
             proxy["key"] = "value"
             assert proxy["key"] == "value"
@@ -265,13 +326,13 @@ class TestPeercredManager:
         return_value=1000,
         create=True,
     )
-    def test_check_server_exists_returns_false_when_no_socket_file(self, _mock_getuid):
-        """场景：socket 文件不存在。预期：非 client 模式。"""
-        with patch(
-            "msmodelslim.core.context.shared_dict_context.peercred_manager.os.path.exists",
-            return_value=False,
-        ):
-            mgr = PeercredManager(address="/nonexistent/path/peercred.sock")
+    @patch(
+        "msmodelslim.core.context.shared_dict_context.peercred_manager._try_connect_unix",
+        return_value=False,
+    )
+    def test_check_server_exists_returns_false_when_connect_fails(self, _mock_connect, _mock_getuid):
+        """场景：抽象 socket 不可连接。预期：非 client 模式。"""
+        mgr = PeercredManager(address=make_abstract_address("missing_server"))
         assert mgr._is_client is False
 
     @patch(
@@ -279,15 +340,13 @@ class TestPeercredManager:
         return_value=1000,
         create=True,
     )
-    @patch("msmodelslim.core.context.shared_dict_context.peercred_manager.os.path.exists", return_value=True)
-    @patch("msmodelslim.core.context.shared_dict_context.peercred_manager.socket")
-    def test_check_server_exists_returns_true_when_connect_succeeds(self, mock_socket_mod, _mock_exists, _mock_getuid):
-        """场景：socket 存在且可连接。预期：client 模式。"""
-        mock_socket_mod.AF_UNIX = 1
-        mock_socket_mod.SOCK_STREAM = 1
-        mock_sock = MagicMock()
-        mock_socket_mod.socket.return_value = mock_sock
-        mgr = PeercredManager(address="/tmp/running.sock")
+    @patch(
+        "msmodelslim.core.context.shared_dict_context.peercred_manager._try_connect_unix",
+        return_value=True,
+    )
+    def test_check_server_exists_returns_true_when_connect_succeeds(self, _mock_connect, _mock_getuid):
+        """场景：抽象 socket 可连接。预期：client 模式。"""
+        mgr = PeercredManager(address=make_abstract_address("running_server"))
         assert mgr._is_client is True
 
     @patch(
@@ -299,7 +358,7 @@ class TestPeercredManager:
         """场景：client 模式调用 start。预期：MisbehaviorError。"""
         mgr = PeercredManager.__new__(PeercredManager)
         mgr._is_client = True
-        mgr.address = "/tmp/x.sock"
+        mgr.address = make_abstract_address("client_mode_test")
         mgr.allowed_uids = {0}
         mgr._process = None
         mgr._shutdown_called = False

@@ -23,7 +23,6 @@ import os
 import socket
 import struct
 import sys
-import tempfile
 import threading
 import time
 import uuid
@@ -32,10 +31,17 @@ from collections.abc import MutableMapping
 from typing import Any, Dict, Optional, Set, Tuple
 from multiprocessing import Process, util
 
-from msmodelslim.utils.exception import EnvError, MisbehaviorError, SecurityError, SpecError, UnsupportedError
+from msmodelslim.utils.exception import (
+    EnvError,
+    MisbehaviorError,
+    SchemaValidateError,
+    SecurityError,
+    SpecError,
+    UnsupportedError,
+)
 from msmodelslim.utils.logging import get_logger
-from msmodelslim.core.context.base import ValidatedDict
-from msmodelslim.core.context.interface import IValidatedState
+from msmodelslim.core.context.base import ValidatedDict, _validate_namespace_value
+from msmodelslim.core.context.interface import IValidatedState, NAMESPACE_VALUE_WHITELIST
 
 
 # Global registry for container types: name -> class
@@ -76,8 +82,129 @@ PEERCRED_STRUCT_SIZE = 12  # sizeof(struct ucred) on Linux: pid_t + uid_t + gid_
 SIZE_HEADER_BYTES = 4  # uint32 for message size prefix
 SOCKET_BACKLOG = 5  # Unix socket listen backlog
 SERVER_STARTUP_DELAY = 0.2  # Seconds to wait for server process startup
-SERVER_SOCKET_WAIT_TIMEOUT = 10.0  # Max seconds to wait for socket file to appear
+SERVER_SOCKET_WAIT_TIMEOUT = 10.0  # Max seconds to wait for server socket to accept connections
 CONNECTION_TIMEOUT = 30.0  # Socket timeout for blocking operations
+ABSTRACT_SOCKET_PREFIX = '\0'
+ABSTRACT_SOCKET_NAME_PREFIX = 'peercred_manager'
+_WRITE_METHODS_REQUIRING_VALIDATION = frozenset({'__setitem__', 'update', 'setdefault', 'append', 'extend', 'insert'})
+_READ_METHODS_REQUIRING_VALIDATION = frozenset({'__getitem__', 'get', 'pop', 'keys', 'values', 'items'})
+
+
+def _validate_mapping_like_items(mapping: Any, path_prefix: str) -> None:
+    if isinstance(mapping, dict):
+        for key, value in mapping.items():
+            _validate_namespace_value(key, whitelist=NAMESPACE_VALUE_WHITELIST, path=f"{path_prefix}.key")
+            _validate_namespace_value(value, whitelist=NAMESPACE_VALUE_WHITELIST, path=f"{path_prefix}[{repr(key)}]")
+        return
+    if isinstance(mapping, (list, tuple)):
+        for idx, item in enumerate(mapping):
+            if isinstance(item, (list, tuple)) and len(item) == 2:
+                _validate_namespace_value(
+                    item[0], whitelist=NAMESPACE_VALUE_WHITELIST, path=f"{path_prefix}[{idx}].key"
+                )
+                _validate_namespace_value(
+                    item[1], whitelist=NAMESPACE_VALUE_WHITELIST, path=f"{path_prefix}[{idx}].value"
+                )
+            else:
+                raise SchemaValidateError(
+                    f"Invalid mapping item at {path_prefix}[{idx}]: expected a length-2 key-value pair, "
+                    f"got {type(item).__name__}."
+                )
+
+
+def _validate_validated_dict_init(args: tuple, kwargs: dict) -> None:
+    if args:
+        _validate_mapping_like_items(args[0], "args[0]")
+    _validate_mapping_like_items(kwargs, "kwargs")
+
+
+def _validate_rpc_write_args(method: str, args: tuple, kwargs: dict) -> None:
+    if method == '__setitem__':
+        if len(args) >= 2:
+            _validate_namespace_value(args[0], whitelist=NAMESPACE_VALUE_WHITELIST, path="key")
+            _validate_namespace_value(args[1], whitelist=NAMESPACE_VALUE_WHITELIST, path="value")
+        return
+    if method == 'setdefault':
+        if len(args) >= 2:
+            _validate_namespace_value(args[0], whitelist=NAMESPACE_VALUE_WHITELIST, path="key")
+            _validate_namespace_value(args[1], whitelist=NAMESPACE_VALUE_WHITELIST, path="default")
+        elif len(args) >= 1:
+            _validate_namespace_value(args[0], whitelist=NAMESPACE_VALUE_WHITELIST, path="key")
+            if 'default' in kwargs:
+                _validate_namespace_value(kwargs['default'], whitelist=NAMESPACE_VALUE_WHITELIST, path="default")
+        return
+    if method == 'update':
+        if args:
+            _validate_mapping_like_items(args[0], "update")
+        _validate_mapping_like_items(kwargs, "update_kwargs")
+        return
+    if method in {'append', 'extend', 'insert'} and args:
+        if method == 'insert' and len(args) >= 2:
+            _validate_namespace_value(args[1], whitelist=NAMESPACE_VALUE_WHITELIST, path="value")
+        elif method == 'extend' and isinstance(args[0], (list, tuple)):
+            for idx, item in enumerate(args[0]):
+                _validate_namespace_value(item, whitelist=NAMESPACE_VALUE_WHITELIST, path=f"extend[{idx}]")
+        else:
+            _validate_namespace_value(args[0], whitelist=NAMESPACE_VALUE_WHITELIST, path="value")
+
+
+def _validate_rpc_read_result(method: str, result: Any) -> None:
+    if method in {'keys', 'values', 'items'}:
+        _validate_namespace_value(list(result), whitelist=NAMESPACE_VALUE_WHITELIST, path=method)
+        return
+    _validate_namespace_value(result, whitelist=NAMESPACE_VALUE_WHITELIST, path="result")
+
+
+def _validate_ipc_payload(obj: Any) -> None:
+    """Validate IPC request payload against namespace whitelist before pickle serialization."""
+    if obj is None or isinstance(obj, BaseException):
+        return
+
+    if not isinstance(obj, dict):
+        return
+
+    if obj.get('action') == 'create' and obj.get('obj_type') == 'validated_dict':
+        _validate_validated_dict_init(obj.get('args', ()), obj.get('kwargs', {}))
+        return
+
+    if 'method' in obj and 'obj_id' in obj:
+        if obj.get('obj_type') == 'validated_dict':
+            method = obj.get('method')
+            if method in _WRITE_METHODS_REQUIRING_VALIDATION:
+                _validate_rpc_write_args(method, obj.get('args', ()), obj.get('kwargs', {}))
+
+
+def make_abstract_address(name: str) -> str:
+    """Wrap a logical socket name in the Linux abstract namespace."""
+    if name.startswith(ABSTRACT_SOCKET_PREFIX):
+        return name
+    return ABSTRACT_SOCKET_PREFIX + name
+
+
+def generate_default_address() -> str:
+    """Generate a unique abstract socket address using PID and nanosecond timestamp."""
+    name = f"{ABSTRACT_SOCKET_NAME_PREFIX}_{os.getpid()}_{time.time_ns()}"
+    return make_abstract_address(name)
+
+
+def format_address_for_log(address: str) -> str:
+    """Format socket address for logging (abstract names omit leading null byte)."""
+    if address.startswith(ABSTRACT_SOCKET_PREFIX):
+        return f"@{address[1:]}"
+    return address
+
+
+def _try_connect_unix(address: str, timeout: float = 0.1) -> bool:
+    """Return True if a Unix domain socket at address accepts connections."""
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        sock.settimeout(timeout)
+        sock.connect(address)
+        return True
+    except (socket.error, OSError):
+        return False
+    finally:
+        sock.close()
 
 
 def get_peer_credentials(sock: socket.socket) -> Tuple[int, int, int]:
@@ -105,17 +232,9 @@ class PeercredListener:
 
     def start(self):
         self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        try:
-            os.unlink(self.address)
-        except FileNotFoundError:
-            pass
-        old_umask = os.umask(0o177)
-        try:
-            self._socket.bind(self.address)
-        finally:
-            os.umask(old_umask)
+        self._socket.bind(self.address)
         self._socket.listen(SOCKET_BACKLOG)
-        get_logger().debug("PeercredListener started on %s", self.address)
+        get_logger().debug("PeercredListener started on %s", format_address_for_log(self.address))
 
     def accept(self):
         """Accept connection and authenticate via peer credentials.
@@ -147,10 +266,6 @@ class PeercredListener:
             self._closed = True
             if self._socket:
                 self._socket.close()
-            try:
-                os.unlink(self.address)
-            except FileNotFoundError:
-                pass
 
 
 class PeercredConnection:
@@ -169,6 +284,7 @@ class PeercredConnection:
 
     def send(self, obj):
         """Send object using length-prefixed framing. Format: [4-byte size][data]"""
+        _validate_ipc_payload(obj)
         data = pickle.dumps(obj)
         size = len(data)
         if size > MAX_MESSAGE_SIZE:
@@ -404,7 +520,7 @@ class PeercredServer:
         self._listener.start()
         # Set socket to non-blocking with timeout for clean shutdown
         self._listener._socket.settimeout(1.0)
-        get_logger().debug("PeercredServer serving at %s", self.address)
+        get_logger().debug("PeercredServer serving at %s", format_address_for_log(self.address))
 
         while not self._shutdown_event.is_set():
             try:
@@ -498,6 +614,8 @@ class PeercredServer:
 
         try:
             result = getattr(obj, method)(*args, **kwargs)
+            if obj_type == 'validated_dict' and method in _READ_METHODS_REQUIRING_VALIDATION:
+                _validate_rpc_read_result(method, result)
             conn.send(result)
         except Exception as e:
             self._send_error(conn, e)
@@ -528,7 +646,7 @@ class PeercredManager:
 
     def __init__(self, address: Optional[str] = None, allowed_uids: Optional[Set] = None):
         if address is None:
-            address = os.path.join(tempfile.gettempdir(), f"peercred_manager_{os.getpid()}.sock")
+            address = generate_default_address()
             self._is_client = False
         else:
             self._is_client = self._check_server_exists(address)
@@ -541,16 +659,7 @@ class PeercredManager:
         self._shutdown_called = False  # Guard against multiple cleanup calls
 
     def _check_server_exists(self, address: str) -> bool:
-        if not os.path.exists(address):
-            return False
-        try:
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.settimeout(0.1)
-            sock.connect(address)
-            sock.close()
-            return True
-        except (socket.error, OSError):
-            return False
+        return _try_connect_unix(address, timeout=0.1)
 
     def start(self):
         if self._is_client:
@@ -561,33 +670,26 @@ class PeercredManager:
         self._process = Process(target=_run_server_process, args=(self.address, self.allowed_uids))
         self._process.start()
         time.sleep(SERVER_STARTUP_DELAY)
-        # Wait for socket file to be ready (may be slow with spawn child process or in CI environment)
+        # Wait for abstract socket to accept connections (may be slow with spawn child process or in CI)
         deadline = time.monotonic() + SERVER_SOCKET_WAIT_TIMEOUT
         while time.monotonic() < deadline:
-            if os.path.exists(self.address):
-                try:
-                    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                    sock.settimeout(1.0)
-                    sock.connect(self.address)
-                    sock.close()
-                    break
-                except (socket.error, OSError):
-                    time.sleep(0.05)
-                    continue
+            if _try_connect_unix(self.address, timeout=1.0):
+                break
             time.sleep(0.05)
         else:
-            self._finalize_manager(self._process, self.address)
+            self._finalize_manager(self._process)
             raise EnvError(
-                f"Server socket did not appear at {self.address} within {SERVER_SOCKET_WAIT_TIMEOUT}s",
-                action="Please check temp directory permissions and ensure no stale socket file exists.",
+                f"Server socket did not become ready at {format_address_for_log(self.address)} "
+                f"within {SERVER_SOCKET_WAIT_TIMEOUT}s",
+                action="Please ensure the manager server process can start and bind its abstract socket.",
             )
-        get_logger().debug("PeercredManager started at %s", self.address)
+        get_logger().debug("PeercredManager started at %s", format_address_for_log(self.address))
 
         # 注册 GC/atexit 时清理；不覆盖 self.shutdown，保留显式 shutdown() 供 __exit__ 调用
-        util.Finalize(self, PeercredManager._finalize_manager, args=(self._process, self.address), exitpriority=0)
+        util.Finalize(self, PeercredManager._finalize_manager, args=(self._process,), exitpriority=0)
 
     def shutdown(self):
-        """Explicitly shut down the manager: terminate the server process and delete socket file.
+        """Explicitly shut down the manager: terminate the server process.
 
         Safe to call multiple times. Only server mode performs actual cleanup.
         Client mode does nothing to avoid affecting the running server.
@@ -602,14 +704,15 @@ class PeercredManager:
             get_logger().debug("Client mode manager shutdown - no cleanup needed")
             return
 
-        PeercredManager._finalize_manager(self._process, self.address)
+        PeercredManager._finalize_manager(self._process)
 
     @staticmethod
-    def _finalize_manager(process, address):
+    def _finalize_manager(process):
         """Static cleanup method for use by Finalize and shutdown().
 
         Note: This method may be called multiple times (by shutdown() and Finalize),
-        but each operation is idempotent.
+        but each operation is idempotent. Abstract sockets are released by the kernel
+        when the server process exits.
         """
         if process is not None and process.is_alive():
             get_logger().debug('Sending shutdown to manager')
@@ -621,11 +724,6 @@ class PeercredManager:
                     process.join()
             except Exception as err:
                 get_logger().debug("Caught error during manager process cleanup: %s", err)
-        if address and os.path.exists(address):
-            try:
-                os.unlink(address)
-            except FileNotFoundError:
-                pass
 
     def _create_object(self, obj_type: str, *args, **kwargs) -> PeercredProxy:
         obj_id = f"{obj_type}_{os.getpid()}_{uuid.uuid4().hex[:8]}"
