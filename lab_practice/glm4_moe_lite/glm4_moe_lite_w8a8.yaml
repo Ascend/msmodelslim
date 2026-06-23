@@ -1,0 +1,66 @@
+apiversion: modelslim_v1
+metadata:
+  config_id: glm4_moe_lite_w8a8
+  score: 90
+  verified_model_types:
+    GLM-4.7-Flash:
+      - - SGLang
+        - Atlas_A2_Inference
+      - - SGLang
+        - Atlas_A3_Inference
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: False
+
+default_w8a8: &default_w8a8
+  act:
+    scope: "per_tensor"
+    dtype: "int8"
+    symmetric: False
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+
+spec:
+  process:
+    - type: "quarot"
+      export_extra_info: True
+    - type: "flex_smooth_quant"
+      enable_subgraph_type:
+        - 'norm-linear'
+        - 'ov'
+      include:
+        - "*"
+    - type: "linear_quant"
+      qconfig: *default_w8a8
+      include:
+        - "*self_attn*"
+      exclude:
+        - "*kv_b_proj"
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*mlp*"
+      exclude:
+        - "*gate"
+  dataset: mix_calib.jsonl
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
