@@ -825,7 +825,6 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     </tr>
   </tbody>
 </table>
-
 </div>
 
 **注释说明：**
@@ -1193,7 +1192,6 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     </tr>
   </tbody>
 </table>
-
 </div>
 
 **注释说明：**
