@@ -70,7 +70,7 @@ FLOAT → W16A16S → W8A16 → W8A8_DYNAMIC → W8A8_MIX → W8A8
 | `W8A8` | W8A8 静态量化 |
 | `W8A8_DYNAMIC` | W8A8 动态量化（激活 per-token） |
 | `W8A8_MIX` | W8A8 混合量化（PDMIX） |
-| `W8A16` | 权 8bit、激活 16bit |
+| `W8A16` | 权重 8bit、激活 16bit |
 | `W4A4_DYNAMIC` | W4A4 动态量化 |
 | `W4A8_DYNAMIC` | W4A8 动态量化 |
 | `WFP8AFP8_DYNAMIC` | FP8 动态量化 |
