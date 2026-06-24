@@ -23,21 +23,27 @@ default_w8a8_dynamic: &default_w8a8_dynamic
     method: "minmax"
 
 spec:
-  runner: "dp_layer_wise"
   process:
     - type: "flex_smooth_quant"
       enable_subgraph_type:
         - 'norm-linear'
       include:
         - "*"
+      exclude:
+        - "model.layers.92.*"
     - type: "group"
       configs:
         - type: "linear_quant"
           qconfig: *default_w8a8_dynamic
           include: ["*self_attn*"]
+          exclude:
+          - "model.layers.92.*"
         - type: "linear_quant"
           qconfig: *default_w8a8_dynamic
           include: ["*mlp.experts*"]
+          exclude:
+          - "model.layers.92.*"
+
 
   save:
     - type: "ascendv1_saver"

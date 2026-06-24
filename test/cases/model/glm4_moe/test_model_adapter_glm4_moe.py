@@ -86,8 +86,20 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
         """测试init_model方法：应委托给_load_model方法"""
         with patch('msmodelslim.model.glm4_moe.model_adapter.TransformersModel.__init__', return_value=None):
             adapter = GLM4MoeModelAdapter(model_type=self.model_type, model_path=self.model_path)
+            adapter.config = DummyConfig()
 
-            mock_model = nn.Linear(10, 10)
+            # 模拟一个具有完整模型结构的对象，包含 model.layers (nn.ModuleList)
+            class MockDecoderLayer(nn.Module):
+                def __init__(self, *args, **kwargs):
+                    super().__init__()
+
+                def forward(self, x):
+                    return x
+
+            mock_layer = MockDecoderLayer()
+            mock_model = MagicMock(spec=nn.Module)
+            mock_model.model = MagicMock(spec=nn.Module)
+            mock_model.model.layers = nn.ModuleList([mock_layer])
             adapter._load_model = MagicMock(return_value=mock_model)
 
             result = adapter.init_model(device=DeviceType.NPU)
@@ -103,8 +115,7 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
             mock_model = nn.Linear(10, 10)
             adapter._enable_kv_cache = MagicMock(return_value=None)
 
-            result = adapter.enable_kv_cache(model=mock_model, need_kv_cache=True)
-            print(f"result: {result}")
+            adapter.enable_kv_cache(model=mock_model, need_kv_cache=True)
 
             adapter._enable_kv_cache.assert_called_once_with(mock_model, True)
 
@@ -156,11 +167,12 @@ class TestGLM4MoeModelAdapter(unittest.TestCase):
 class TestGLM4MoeModuleFunctions(unittest.TestCase):
     def setUp(self):
         """测试前的准备工作"""
+        self.model_type = 'GLM-4.7'
+        self.model_path = Path('.')
         self.config = DummyConfig()
-        # 为测试函数添加必要的配置属性
-        self.config.num_experts = 4  # 添加专家数量
-        self.config.hidden_size = 128  # 添加隐藏层大小
-        self.config.head_dim = 64  # 添加头维度
+        self.config.num_experts = 4
+        self.config.hidden_size = 128
+        self.config.head_dim = 64
 
     def test_glm4_moe_get_ln_fuse_map_when_called_then_return_correct_mapping(self):
         """测试glm4_moe_get_ln_fuse_map方法：调用时应返回正确的融合映射"""
@@ -239,6 +251,19 @@ class TestGLM4MoeModuleFunctions(unittest.TestCase):
             # 验证gate
             gate_key = f"model.layers.{layer_idx}.mlp.gate"
             self.assertIn(gate_key, rot_pair.right_rot)
+
+    def test_get_adapter_config_for_subgraph_with_mtp_then_include_mtp_layer(self):
+        """测试get_adapter_config_for_subgraph：含MTP层时应多2个配置"""
+        with patch('msmodelslim.model.glm4_moe.model_adapter.TransformersModel.__init__', return_value=None):
+            adapter = GLM4MoeModelAdapter(model_type=self.model_type, model_path=self.model_path)
+            adapter.config = DummyConfig()
+
+            result = adapter.get_adapter_config_for_subgraph()
+
+            self.assertIsInstance(result, list)
+            expected_configs = adapter.config.num_hidden_layers * 2
+            self.assertEqual(len(result), expected_configs)
+            self.assertIsInstance(result[0], AdapterConfig)
 
 
 if __name__ == '__main__':
