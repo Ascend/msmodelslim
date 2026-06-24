@@ -10,7 +10,7 @@
   <strong>Ascend Model Compression Tool</strong>
   <!--Replace the background with a dividing line.-->
 
-[![License](https://img.shields.io/badge/license-MulanPSL--2.0-blue)](https://gitcode.com/Ascend/msmodelslim/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/license-MulanPSL--2.0-blue)](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Keithwwa/msmodelslim)
 <br><br>
 [🌐 Project homepage](https://gitcode.com/Ascend/msmodelslim) |
@@ -107,17 +107,17 @@ The following list describes the key project directories. For a comprehensive br
 
 ## 🧾 Release Notes
 
-The release notes of msModelSlim include the software version mapping, software package download, and feature updates of each version. For details, see [Release Notes](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/appendix/release_notes/).
+The release notes of msModelSlim include the software version mapping, software package download, and feature updates of each version. For details, see [Release Notes](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/appendix/release_notes.md).
 
 ## 🛠️ Environment Setup
 
-For details about the installation procedure, see the [msModelSlim Installation Guide](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/install_guide/).
+For details about the installation procedure, see the [msModelSlim Installation Guide](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/getting_started/install_guide.md).
 
 ## 🚀 Quick Start
 
 This section helps you quickly get started with the quick quantization of foundation models.
 
-For details, see [Quick Start](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/quantization_quick_start/).
+For details, see [Quick Start](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/getting_started/quantization_quick_start.md).
 
 ## ✨ Feature Description
 
@@ -125,19 +125,19 @@ For details, see [Quick Start](https://msmodelslim.readthedocs.io/zh-cn/latest/z
 
 The model support matrix presents the adaptation status of different features and models in various scenarios in a table format.
 
-For details, see [Model Support Matrix](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/user_guide/model_support/foundation_model_support_matrix/).
+For details, see [Model Support Matrix](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/model_support/foundation_model_support_matrix.md).
 
 ### 📘 Feature Guide
 
 The feature guide provides feature introductions and usage instructions based on the features supported by msModelSlim across different architectures.
 
-For details, see [Tool Documentation](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/feature_guide/quick_quantization_v1/usage/). In the navigation tree on the left, select the feature you want to view.
+For details, see [Tool Documentation](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/feature_guide/quick_quantization_v1/usage.md). In the navigation tree on the left, select the feature you want to view.
 
 ### ⚙️ Custom Model Quantization
 
 This section provides guidance for developers who need to connect their own models to msModelSlim and perform quick quantization.
 
-For details about model connection, see [LLM Model Integration Guide](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/developer_guide/integrating_models/) and [Multimodal Understanding Model Integration Guide](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/developer_guide/integrating_multimodal_understanding_model/).
+For details about model connection, see [LLM Model Integration Guide](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/developer_guide/integrating_models.md) and [Multimodal Understanding Model Integration Guide](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/developer_guide/integrating_multimodal_understanding_model.md).
 
 ### 🧪 Cases Studies
 
@@ -154,39 +154,39 @@ The case collection provides text descriptions and code samples based on actual 
   <tbody>
     <tr>
       <td>v1 framework quantization accuracy tuning</td>
-      <td><a href="https://msmodelslim.readthedocs.io/zh-cn/latest/zh/case_studies/quantization_precision_tuning_guide/">v1 Framework Quantization Accuracy Tuning Guide</a></td>
+      <td><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/case_studies/quantization_precision_tuning_guide.md">v1 Framework Quantization Accuracy Tuning Guide</a></td>
     </tr>
     <tr>
       <td>v1 framework Qwen3-32B accuracy tuning</td>
-      <td><a href="https://msmodelslim.readthedocs.io/zh-cn/latest/zh/case_studies/qwen3_32b_w8a8_precision_tuning_case/">v1 Framework Qwen3-32B w8a8 Accuracy Tuning Case</a></td>
+      <td><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/case_studies/qwen3_32b_w8a8_precision_tuning_case.md">v1 Framework Qwen3-32B w8a8 Accuracy Tuning Case</a></td>
     </tr>
     <tr>
       <td><strong>Weight Conversion</strong></td>
       <td>Guide for Using msModelSlim Quantized Weights with AutoAWQ and AutoGPTQ</td>
-      <td><a href="https://msmodelslim.readthedocs.io/zh-cn/latest/zh/case_studies/msmodelslim_quantized_weight_to_autoawq_autogptq/">Quantized weight format conversion guide</a></td>
+      <td><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/case_studies/msmodelslim_quantized_weight_to_autoawq_autogptq.md">Quantized weight format conversion guide</a></td>
     </tr>
     <tr>
       <td><strong>Inference and Deployment</strong></td>
       <td>Quantized Weight Usage Cases in Acceleration Library and MindIE-Torch Scenarios</td>
-      <td><a href="https://msmodelslim.readthedocs.io/zh-cn/latest/zh/case_studies/quantization_weight_use_cases_in_acceleration_and_mindie_torch/">Usage methods of quantized weights in inference acceleration libraries</a></td>
+      <td><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/case_studies/quantization_weight_use_cases_in_acceleration_and_mindie_torch.md">Usage methods of quantized weights in inference acceleration libraries</a></td>
     </tr>
   </tbody>
 </table>
 
 ## ❓ FAQ
 
-For details about the frequently asked questions, see [FAQ](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/appendix/faq/).
+For details about the frequently asked questions, see [FAQ](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/appendix/faq.md).
 
 ## 🤝 Contribution Guide
 
-For details, see [Contribution Guide](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/appendix/CONTRIBUTING/).
+For details, see [Contribution Guide](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/appendix/CONTRIBUTING.md).
 
 ## 📌 Related Statements
 
 <details>
 <summary>🛡️ Security Statement</summary>
 
-Describes the security hardening information, public network address information, and communication matrix of msModelSlim. For details, see [msModelSlim Security Statement](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/appendix/security_statement/).
+Describes the security hardening information, public network address information, and communication matrix of msModelSlim. For details, see [msModelSlim Security Statement](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/docs/en/appendix/security_statement.md).
 
 </details>
 

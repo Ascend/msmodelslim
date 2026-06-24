@@ -12,7 +12,7 @@
 
 我们期待您的参与！
 
-## 寻找可以贡献的Issue
+## 1. 寻找可以贡献的Issue
 
 正在寻找新issue的切入点？ 可以查看以下议题：
 
@@ -21,13 +21,13 @@
 - 除了上述两个新手友好issue外，我们也提供了其他的[issue模板](https://gitcode.com/Ascend/msmodelslim/tree/master/.gitcode/ISSUE_TEMPLATE)来作为参考。
 - 此外，您也可以通过 [RFC](https://gitcode.com/Ascend/msmodelslim/issues?categorysearch=%255B%257B%22field%22:%22order_by_sort%22,%22value%22:%22created_at_desc%22,%22label%22:%22%E6%9C%80%E8%BF%91%E5%88%9B%E5%BB%BA%22%257D,%257B%22field%22:%22labels%22,%22value%22:%255B%257B%22id%22:25328,%22name%22:%22rfc%22%257D%255D,%22label%22:%22rfc%22%257D%255D&state=all&order_by=created_at&sort=desc&scope=all&page=1) 和 [Roadmap](https://gitcode.com/Ascend/msmodelslim/issues?categorysearch=%255B%257B%22field%22:%22labels%22,%22value%22:%255B%257B%22id%22:22807,%22name%22:%22roadmap%22%257D%255D,%22label%22:%22roadmap%22%257D,%257B%22field%22:%22order_by_sort%22,%22value%22:%22created_at_desc%22,%22label%22:%22%E6%8E%92%E5%BA%8F%22%257D%255D&state=all&order_by=created_at&sort=desc&scope=all&page=1)来了解开发计划与规划。
 
-## Pull Requests 与 Code Reviews
+## 2. Pull Requests 与 Code Reviews
 
 感谢您提交 PR！为优化审查流程，请遵循以下指南：
 
 遵循我们的 Pull Request [模板与规范](https://gitcode.com/Ascend/msmodelslim/blob/master/.gitcode/PULL_REQUEST_TEMPLATE.md)
 
-参考开发者文档 《[LLM 大模型接入指南](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/developer_guide/integrating_models/)》
+参考开发者文档 《[LLM 大模型接入指南](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/development_guide/integrating_models/)》
 
 参考开发者文档 《[编码规范](../common/coding_standards.md)》。
 
@@ -50,18 +50,18 @@ Pull Request需要依次集齐如下四个标签即可完成代码合入：
 
    当您的Pull Request集齐四个标签后，您的PR将被合并到主干分支。
 
-### Pull Request最佳实践
+### 2.1 Pull Request最佳实践
 
 - 保持PR的大小适中，便于审查
 - 一个PR只解决一个问题或实现一个功能
 - 及时响应审查意见
 - 保持与主分支同步，及时解决冲突
 
-## 构建与测试
+## 3. 构建与测试
 
 在提交PR之后，评论 compile 即可触发流水线PR-pipeline，平台会自动进行编译、构建、代码检查和开发者测试。如有错误，请根据报错自行整改，疑问请咨询[仓库管理和维护成员](https://gitcode.com/Ascend/msmodelslim/member)
 
-### PR标题与分类
+### 3.1 PR标题与分类
 
 只有特定类型的PR才会被审核。请在PR标题前添加合适的前缀，以明确PR类型。请使用以下分类之一:
 
@@ -70,12 +70,12 @@ Pull Request需要依次集齐如下四个标签即可完成代码合入：
 - `[Doc]`: 文档相关代码。
 - `[Test]`: 开发者测试相关代码。
 
-### Commit Requirement
+### 3.2 Commit Requirement
 
 为保持commit记录清晰，请确保每个PR仅包含一个commit。
 如果您的PR当前包含多个commits，请在提交前使用以下任一方法（包括但不限于）将其合并为单个commit。(尽管GitCode在合并PR时提供了`Squash 合并`的选项, 提前将PR整理为单个简洁的commit仍然被视为最佳实践，并且深受committer们的欢迎。)
 
-#### 方式一：交互式变基（推荐）
+#### 3.2.1 方式一：交互式变基（推荐）
 
 - 查看需要合并的最近几个commit（例如最近3个）：
 
@@ -99,7 +99,7 @@ git rebase -i HEAD~N
 git push --force-with-lease origin your-branch-name
 ```
 
-#### 方式二：reset + 新建commit
+#### 3.2.2 方式二：reset + 新建commit
 
 ```bash
 # 获取最新的待合入的目标分支（如master）
@@ -120,7 +120,7 @@ git push --force-with-lease origin your-branch-name
 <br/>
 > 警告：切勿对共享或受保护的分支执行强制推送。
 
-### 单元测试指南
+### 3.3 单元测试指南
 
 如果您需要运行或编写 msModelSlim 单元测试，请参阅详细的《[开发者测试指南](../common/testing_guide.md)》。该指南涵盖了：
 
@@ -128,6 +128,6 @@ git push --force-with-lease origin your-branch-name
 - **单元测试执行**：运行 modelslim_v1 模块测试。
 - **单元测试编写**：目录结构映射、命名规范、场景化测试设计、conftest.py 使用等。
 
-## 感谢
+## 4. 感谢
 
 我们感谢您对 MindStudio ModelSlim 的贡献。您的每一份努力，都让这个项目变得更强大、更易用。祝您创造愉快，编程开心！
