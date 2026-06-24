@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import os
 import tempfile
 import unittest
@@ -25,7 +26,7 @@ from unittest.mock import patch
 import shutil
 
 import torch
-import torch.nn as nn
+from torch import nn
 from transformers import PretrainedConfig
 
 from msmodelslim.model.deepseek_v3.mtp_quant_module import (
@@ -40,13 +41,11 @@ from msmodelslim.model.deepseek_v3.mtp_quant_module import (
 
 class DummyConfig(PretrainedConfig):
     """模拟配置对象"""
+
     model_type = "dummy"
 
     def __init__(self, **kwargs):
-        super().__init__(
-            pad_token_id=0,
-            **kwargs
-        )
+        super().__init__(pad_token_id=0, **kwargs)
         self.hidden_size = 128
         self.vocab_size = 1000
         self.rms_norm_eps = 1e-6
@@ -76,10 +75,7 @@ class DummyModel(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.layers = nn.ModuleList([
-            DummyDecoderLayer(config.hidden_size)
-            for _ in range(config.num_hidden_layers)
-        ])
+        self.layers = nn.ModuleList([DummyDecoderLayer(config.hidden_size) for _ in range(config.num_hidden_layers)])
 
     def forward(self, input_ids=None, **kwargs):
         # 返回一个简单的输出结构
@@ -97,26 +93,17 @@ class DummyBaseModel(nn.Module):
 
 
 class TestRemoveZeroAndShift(unittest.TestCase):
-
     def setUp(self):
         torch.manual_seed(42)
 
     def test_remove_zero_and_shift_when_matrix_has_zeros_then_shift_and_pad(self):
         """测试remove_zero_and_shift方法：矩阵包含0时应移除并前移元素"""
-        matrix = torch.tensor([
-            [1, 2, 0, 3, 4],
-            [5, 0, 6, 7, 8],
-            [0, 9, 10, 11, 12]
-        ])
+        matrix = torch.tensor([[1, 2, 0, 3, 4], [5, 0, 6, 7, 8], [0, 9, 10, 11, 12]])
 
         result = remove_zero_and_shift(matrix)
 
         self.assertEqual(result.shape, matrix.shape)
-        expected = torch.tensor([
-            [1, 2, 3, 4, 0],
-            [5, 6, 7, 8, 0],
-            [9, 10, 11, 12, 0]
-        ])
+        expected = torch.tensor([[1, 2, 3, 4, 0], [5, 6, 7, 8, 0], [9, 10, 11, 12, 0]])
         self.assertTrue(torch.equal(result, expected))
 
     def test_remove_zero_and_shift_when_single_row_then_process_correctly(self):
@@ -139,8 +126,25 @@ class TestRemoveZeroAndShift(unittest.TestCase):
         self.assertEqual(result.dtype, matrix.dtype)
 
 
-class TestDeepseekV3RMSNorm(unittest.TestCase):
+class TestMtpPositionIds(unittest.TestCase):
+    def test_get_mtp_position_ids_matches_megatron_roll(self):
+        from msmodelslim.model.deepseek_v3.mtp_quant_module import get_mtp_position_ids
 
+        seq_len = 8
+        position_ids = get_mtp_position_ids(seq_len, torch.device('cpu'))
+        self.assertTrue(torch.equal(position_ids, torch.tensor([[1, 2, 3, 4, 5, 6, 7, 0]])))
+
+    def test_get_mtp_position_ids_avoids_rope_oob_at_max_seq_len(self):
+        from msmodelslim.model.deepseek_v3.mtp_quant_module import get_mtp_position_ids
+
+        seq_len = 512
+        position_ids = get_mtp_position_ids(seq_len, torch.device('cpu'))
+        self.assertEqual(position_ids.max().item(), seq_len - 1)
+        cos = torch.zeros(seq_len, 64)
+        self.assertEqual(cos[position_ids].shape, (1, seq_len, 64))
+
+
+class TestDeepseekV3RMSNorm(unittest.TestCase):
     def setUp(self):
         torch.manual_seed(42)
 
@@ -187,7 +191,6 @@ class TestDeepseekV3RMSNorm(unittest.TestCase):
 
 
 class TestSharedHead(unittest.TestCase):
-
     def setUp(self):
         torch.manual_seed(42)
         self.config = DummyConfig()
@@ -220,7 +223,6 @@ class TestSharedHead(unittest.TestCase):
 
 
 class TestMTPLayer(unittest.TestCase):
-
     def setUp(self):
         torch.manual_seed(42)
         self.config = DummyConfig()
@@ -246,7 +248,6 @@ class TestMTPLayer(unittest.TestCase):
 
 
 class TestMTPModuleFunctions(unittest.TestCase):
-
     def setUp(self):
         torch.manual_seed(42)
         self.config = DummyConfig()
@@ -261,7 +262,7 @@ class TestMTPModuleFunctions(unittest.TestCase):
         """测试get_mtp_layer方法：调用时应返回初始化后的MTPLayer"""
         # 创建模拟的权重文件
         safetensor_path = os.path.join(self.temp_dir, "model-00163-of-000163.safetensors")
-        
+
         # 创建模拟的权重数据，确保包含所有必要的键
         mock_weights = {
             'model.layers.61.enorm.weight': torch.ones(self.config.hidden_size),
@@ -269,17 +270,18 @@ class TestMTPModuleFunctions(unittest.TestCase):
             'model.layers.61.eh_proj.weight': torch.ones((self.config.hidden_size, self.config.hidden_size * 2)),
             'model.layers.61.embed_tokens.weight': torch.ones((self.config.vocab_size, self.config.hidden_size)),
             'model.layers.61.shared_head.head.weight': torch.ones((self.config.vocab_size, self.config.hidden_size)),
-            'model.layers.61.shared_head.norm.weight': torch.ones(self.config.hidden_size)
+            'model.layers.61.shared_head.norm.weight': torch.ones(self.config.hidden_size),
         }
 
-        with patch('msmodelslim.model.deepseek_v3.mtp_quant_module.load_file') as mock_load, \
-             patch('msmodelslim.model.deepseek_v3.mtp_quant_module.get_valid_read_path') as mock_get_path, \
-             patch('msmodelslim.model.deepseek_v3.mtp_quant_module.get_logger'):
-
+        with (
+            patch('msmodelslim.model.deepseek_v3.mtp_quant_module.load_file') as mock_load,
+            patch('msmodelslim.model.deepseek_v3.mtp_quant_module.get_valid_read_path') as mock_get_path,
+            patch('msmodelslim.model.deepseek_v3.mtp_quant_module.get_logger'),
+        ):
             # 设置mock返回值
             mock_get_path.return_value = safetensor_path
             mock_load.return_value = mock_weights
-            
+
             # 调用函数
             result = get_mtp_layer(self.config, self.temp_dir)
 
@@ -298,15 +300,16 @@ class TestMTPModuleFunctions(unittest.TestCase):
             'model.layers.61.eh_proj.weight': torch.ones((self.config.hidden_size, self.config.hidden_size * 2)),
             'model.layers.61.embed_tokens.weight': torch.ones((self.config.vocab_size, self.config.hidden_size)),
             'model.layers.61.shared_head.head.weight': torch.ones((self.config.vocab_size, self.config.hidden_size)),
-            'model.layers.61.shared_head.norm.weight': torch.ones(self.config.hidden_size)
+            'model.layers.61.shared_head.norm.weight': torch.ones(self.config.hidden_size),
         }
 
         safetensor_path = os.path.join(self.temp_dir, "model-00163-of-000163.safetensors")
 
-        with patch('msmodelslim.model.deepseek_v3.mtp_quant_module.load_file') as mock_load, \
-             patch('msmodelslim.model.deepseek_v3.mtp_quant_module.get_valid_read_path') as mock_get_path, \
-             patch('msmodelslim.model.deepseek_v3.mtp_quant_module.get_logger'):
-
+        with (
+            patch('msmodelslim.model.deepseek_v3.mtp_quant_module.load_file') as mock_load,
+            patch('msmodelslim.model.deepseek_v3.mtp_quant_module.get_valid_read_path') as mock_get_path,
+            patch('msmodelslim.model.deepseek_v3.mtp_quant_module.get_logger'),
+        ):
             mock_get_path.return_value = safetensor_path
             mock_load.return_value = mock_weights
 

@@ -49,7 +49,7 @@ from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import json_safe_load, json_safe_dump, get_valid_read_path, MAX_READ_FILE_SIZE_32G
 from msmodelslim.utils.security.model import SafeGenerator
 from .convert_fp8_to_bf16 import auto_convert_module_fp8_to_bf16
-from .mtp_quant_module import remove_zero_and_shift, get_mtp_layer, wrap_mtp_decoder
+from .mtp_quant_module import remove_zero_and_shift, get_mtp_layer, wrap_mtp_decoder, get_mtp_position_ids
 from .quarot import get_ln_fuse_map, get_rotate_map
 from ..default.model_adapter import DefaultModelAdapter
 from ..interface_hub import (
@@ -217,17 +217,7 @@ class DeepSeekV3ModelAdapter(
         input_ids = inputs['input_ids'] if isinstance(inputs, dict) else inputs[0]
         # pylint: disable=duplicate-code
         input_ids_mtp = remove_zero_and_shift(input_ids)
-        position_ids = (
-            torch.arange(
-                0,
-                input_ids_mtp.shape[-1],
-                dtype=torch.long,
-                device=input_ids.device,
-            )
-            + 1
-        )
-        position_ids = position_ids.unsqueeze(0)
-        logits[:, -1, :].argmax(dim=1)
+        position_ids = get_mtp_position_ids(input_ids_mtp.shape[-1], input_ids.device)
         input_ids_mtp[:, -1] = logits[:, -1, :].argmax(dim=1)
 
         input_embeds_mtp = wrap_device(mtp_decoder.embed_tokens)(input_ids_mtp)

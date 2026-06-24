@@ -23,15 +23,13 @@ import os
 import types
 from typing import List, Optional, Tuple, Union
 import torch
-import torch.nn as nn
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
-from transformers.modeling_outputs import CausalLMOutputWithPast
-from transformers.modeling_utils import PreTrainedModel
-from transformers.modeling_attn_mask_utils import _prepare_4d_causal_attention_mask
-from safetensors.torch import load_file, save_file
+from torch import nn
 from safetensors import safe_open
+from safetensors.torch import load_file, save_file
 from transformers.cache_utils import Cache, DynamicCache
-from transformers.modeling_outputs import BaseModelOutputWithPast
+from transformers.modeling_attn_mask_utils import _prepare_4d_causal_attention_mask
+from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
+from transformers.modeling_utils import PreTrainedModel
 
 from add_safetensors import find_file_with_pattern, get_weight_map
 from example.common.security.path import json_safe_load, json_safe_dump
@@ -53,7 +51,7 @@ def remove_zero_and_shift(matrix):
     # Step 2: 构造掩码，标记要保留的元素（排除每行的第一个 0）
     # 生成一个 [n, m] 的坐标矩阵，标记每列是否等于 zero_pos
     col_indices = torch.arange(m, device=matrix.device).expand(n, -1)  # [n, m]
-    mask = (col_indices != zero_pos.unsqueeze(1))  # [n, m]
+    mask = col_indices != zero_pos.unsqueeze(1)  # [n, m]
 
     # Step 3: 用掩码筛选元素（自动展平，需要重新调整形状）
     filtered = matrix[mask].view(n, m - 1)  # [n, m-1]
@@ -62,6 +60,13 @@ def remove_zero_and_shift(matrix):
     result = torch.cat([filtered, torch.zeros(n, 1, device=matrix.device)], dim=1)  # [n, m]
 
     return result.to(matrix)
+
+
+def get_mtp_position_ids(seq_len: int, device: torch.device) -> torch.Tensor:
+    """Roll main-model position ids [0..T-1] into [1..T-1, 0] for MTP RoPE."""
+    position_ids = torch.arange(seq_len, dtype=torch.long, device=device)
+    position_ids = torch.roll(position_ids, shifts=-1, dims=-1)
+    return position_ids.unsqueeze(0)
 
 
 def custom_model_forward(
@@ -76,27 +81,17 @@ def custom_model_forward(
     output_hidden_states: Optional[bool] = None,
     return_dict: Optional[bool] = None,
 ) -> Union[Tuple, BaseModelOutputWithPast]:
-    output_attentions = (
-        output_attentions
-        if output_attentions is not None
-        else self.config.output_attentions
-    )
+    output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
     output_hidden_states = (
-        output_hidden_states
-        if output_hidden_states is not None
-        else self.config.output_hidden_states
+        output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
     )
     use_cache = use_cache if use_cache is not None else self.config.use_cache
 
-    return_dict = (
-        return_dict if return_dict is not None else self.config.use_return_dict
-    )
+    return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
     # retrieve input_ids and inputs_embeds
     if input_ids is not None and inputs_embeds is not None:
-        raise ValueError(
-            "You cannot specify both input_ids and inputs_embeds at the same time"
-        )
+        raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
     elif input_ids is not None:
         batch_size, seq_length = input_ids.shape[:2]
     elif inputs_embeds is not None:
@@ -126,11 +121,7 @@ def custom_model_forward(
 
     if self._use_flash_attention_2:
         # 2d mask is passed through the layers
-        attention_mask = (
-            attention_mask
-            if (attention_mask is not None and 0 in attention_mask)
-            else None
-        )
+        attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
     else:
         # 4d mask is passed through the layers
         attention_mask = _prepare_4d_causal_attention_mask(
@@ -175,17 +166,9 @@ def custom_model_forward(
 
     next_cache = None
     if use_cache:
-        next_cache = (
-            next_decoder_cache.to_legacy_cache()
-            if use_legacy_cache
-            else next_decoder_cache
-        )
+        next_cache = next_decoder_cache.to_legacy_cache() if use_legacy_cache else next_decoder_cache
     if not return_dict:
-        return tuple(
-            v
-            for v in [hidden_states, next_cache, all_hidden_states, all_self_attns]
-            if v is not None
-        )
+        return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
     return BaseModelOutputWithPast(
         last_hidden_state=hidden_states,
         past_key_values=next_cache,
@@ -197,9 +180,7 @@ def custom_model_forward(
 class SharedHead(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.norm = DeepseekV3RMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
-        )
+        self.norm = DeepseekV3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
     def forward(self, hidden_states):
@@ -228,23 +209,13 @@ class DeepseekV3RMSNorm(nn.Module):
 class MTPLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.enorm = DeepseekV3RMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
-        )
-        self.hnorm = DeepseekV3RMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
-        )
+        self.enorm = DeepseekV3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.hnorm = DeepseekV3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.shared_head = SharedHead(config)
 
-        self.eh_proj = nn.Linear(
-            config.hidden_size * 2,
-            config.hidden_size,
-            bias=False
-        )
-        self.embed_tokens = nn.Embedding(
-            config.vocab_size, config.hidden_size, config.pad_token_id
-        )
+        self.eh_proj = nn.Linear(config.hidden_size * 2, config.hidden_size, bias=False)
+        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, config.pad_token_id)
 
 
 class MTPModel(PreTrainedModel):
@@ -263,32 +234,23 @@ class MTPModel(PreTrainedModel):
         self.model.forward = types.MethodType(custom_model_forward, self.model)
 
     def forward(
-            self,
-            input_ids: torch.LongTensor = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            past_key_values: Optional[List[torch.FloatTensor]] = None,
-            inputs_embeds: Optional[torch.FloatTensor] = None,
-            labels: Optional[torch.LongTensor] = None,
-            use_cache: Optional[bool] = None,
-            output_attentions: Optional[bool] = None,
-            output_hidden_states: Optional[bool] = None,
-            return_dict: Optional[bool] = None,
+        self,
+        input_ids: torch.LongTensor = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
-
-        output_attentions = (
-            output_attentions
-            if output_attentions is not None
-            else self.config.output_attentions
-        )
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
-            output_hidden_states
-            if output_hidden_states is not None
-            else self.config.output_hidden_states
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
-        return_dict = (
-            return_dict if return_dict is not None else self.config.use_return_dict
-        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
         outputs = self.model(
@@ -310,14 +272,7 @@ class MTPModel(PreTrainedModel):
 
         ####################### MTP LAYER ######################
         input_ids_mtp = remove_zero_and_shift(input_ids)
-        position_ids = torch.arange(
-            0,
-            input_ids_mtp.shape[-1],
-            dtype=torch.long,
-            device=input_ids.device,
-        ) + 1
-        position_ids = position_ids.unsqueeze(0)
-        logits[:, -1, :].argmax(dim=1)
+        position_ids = get_mtp_position_ids(input_ids_mtp.shape[-1], input_ids.device)
         input_ids_mtp[:, -1] = logits[:, -1, :].argmax(dim=1)
 
         input_embeds_mtp = self.mtp_layer.embed_tokens(input_ids_mtp)
@@ -340,7 +295,7 @@ class MTPModel(PreTrainedModel):
             output_attentions=False,
             use_cache=False,
         )
-        logits_mtp = self.mtp_layer.shared_head(layer_outputs_mtp[0])
+        self.mtp_layer.shared_head(layer_outputs_mtp[0])
         ####################### MTP LAYER ######################
 
         loss = None
@@ -349,7 +304,7 @@ class MTPModel(PreTrainedModel):
             shift_logits = logits[..., :-1, :].contiguous()
             shift_labels = labels[..., 1:].contiguous()
             # Flatten the tokens
-            loss_fct = CrossEntropyLoss()
+            loss_fct = nn.CrossEntropyLoss()
             shift_logits = shift_logits.view(-1, self.config.vocab_size)
             shift_labels = shift_labels.view(-1)
             # Enable model parallelism
@@ -372,23 +327,20 @@ class MTPModel(PreTrainedModel):
 def warp_mtp_model(config, base_model, model_path):
     """
     从预训练模型加载MTP层权重，并封装为MTP_Model
-    
+
     Args:
         config (Config): 模型配置对象
         base_model (PreTrainedModel): 原始基础模型
         model_path (str): 预训练模型路径
         mtp_layer_class (nn.Module): MTP层类（默认: MTP_Layer）
-    
+
     Returns:
         MTP_Model: 封装后的MTP模型
     """
     mtp_layer = MTPLayer(config)
     mtp_safetensor = os.path.join(model_path, "model-00163-of-000163.safetensors")
     mtp_safetensor = get_valid_read_path(
-        mtp_safetensor, 
-        size_max=MAX_READ_FILE_SIZE_16G, 
-        is_dir=False, 
-        check_user_stat=True
+        mtp_safetensor, size_max=MAX_READ_FILE_SIZE_16G, is_dir=False, check_user_stat=True
     )
     mtp_weight = load_file(mtp_safetensor)
     new_state_dict = {}
