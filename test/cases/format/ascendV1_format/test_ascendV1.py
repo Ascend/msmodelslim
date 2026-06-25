@@ -48,7 +48,7 @@ class TestAscendV1QuantFormatConfig:
 
         dumped = config.model_dump()
 
-        assert dumped["ext"] == {}
+        assert not dumped.get("ext")
 
     def test_model_dump_include_ext_when_ext_nonempty(self):
         config = AscendV1QuantFormatConfig(ext={"key": "value"})

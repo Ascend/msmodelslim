@@ -16,6 +16,7 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 import argparse
+import importlib.util
 import logging
 import os
 import shutil
@@ -83,18 +84,51 @@ class BuildManager:
                 logging.info("Archiving: %s -> %s", artifact, destination)
                 shutil.copy2(artifact, destination)
 
+    def _prepare_runtime_dependencies(self):
+        """安装运行时依赖（来源 requirements.txt，由 install.sh 完成）。"""
+        self._execute_command(["bash", "install.sh"], cwd=self.project_root)
+
+    def _prepare_test_dependencies(self):
+        """安装测试专用依赖（在运行时依赖之上额外安装，来源 test/requirements.txt）。"""
+        self._execute_command(
+            ["pip", "install", "-r", str(self.project_root / "test" / "requirements.txt")],
+            cwd=self.project_root,
+        )
+
+    def _check_torch_npu_conflict(self):
+        """检测环境是否安装了 torch_npu，存在则告警。
+
+        UT 基于“纯 torch + mock torch_npu”运行，若环境真实安装了 torch_npu，
+        测试用例中的 mock 兜底逻辑会被跳过，torch_npu 指向真实 NPU 后端，
+        在无 NPU 硬件的 UT 环境下可能导致用例失败或行为异常。
+        此处仅告警，不卸载，避免隐式修改系统级环境。
+        """
+        if importlib.util.find_spec("torch_npu") is not None:
+            logging.warning(
+                "torch_npu is installed in the current environment. "
+                "UT runs on pure torch with mocked torch.npu; "
+                "a real torch_npu may cause test failures."
+            )
+
     def run(self):
         os.chdir(self.project_root)
+        is_local = 'local' in self.args.command
+        is_test = 'test' in self.args.command
 
         # 在非 local 场景下按需更新依赖；在 local 场景下仅使用本地已有代码，不更新依赖。
-        if 'local' not in self.args.command:
-            # 补充依赖下载处理
-            pass
+        if not is_local:
+            if is_test:
+                # 测试：先安装测试专用依赖，再安装运行时依赖，可减少一些重复安装
+                self._prepare_test_dependencies()
+                self._prepare_runtime_dependencies()
+            else:
+                # 构建：setup.py bdist_wheel 直接读取 requirements.txt 作为 install_requires，无需预先安装
+                pass
 
-        if 'test' in self.args.command:
+        if is_test:
             # -------------------- 单元测试 --------------------
-            self._execute_command(["bash", "install.sh"], cwd=self.project_root)
-            self._execute_command(["bash", "run_ut.sh"], cwd=self.project_root / "test")
+            self._check_torch_npu_conflict()
+            self._execute_command(["bash", "run_ut.sh", "--modelslim_v1"], cwd=self.project_root / "test")
         else:
             # -------------------- 产品构建 --------------------
             logging.info("--version: %s", self.args.version)
