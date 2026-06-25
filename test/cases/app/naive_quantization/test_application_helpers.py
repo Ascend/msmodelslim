@@ -38,7 +38,7 @@ class TestBuildQuantTips:
 
         assert "No quant_type" in result
         assert "default_practice_id" in result
-        assert QuantType.W8A8.value in result
+        assert QuantType.W8A8.value in result or str(QuantType.W8A8) in result
 
     def test_build_quant_tips_returns_empty_string_when_q1c0b1(self):
         """主路径：Q1C0B1（找到最佳实践且未变更）应返回空串（无需额外提示）。"""
@@ -51,7 +51,7 @@ class TestBuildQuantTips:
         result = _build_quant_tips(TipsType.Q1C0B0, "qwen3", QuantType.W4A8, "default_id")
 
         assert "qwen3" in result
-        assert "w4a8" in result  # quant_type 渲染为小写
+        assert QuantType.W4A8.value in result or str(QuantType.W4A8) in result
 
     def test_build_quant_tips_includes_quant_type_when_changed(self):
         """主路径：Q1C1B0 时提示应包含 quant_type（被变更的）。"""

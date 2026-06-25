@@ -29,6 +29,7 @@ python --version  # 应显示 Python 3.10.x
 
 ```bash
 pip install pytest
+pip install pytest-mock
 pip install coverage
 pip install torch==2.1.0
 pip install easydict==1.13
