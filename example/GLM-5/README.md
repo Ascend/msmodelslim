@@ -6,18 +6,19 @@
 
 ## 使用前准备
 
-- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/install_guide/)。
-- transformers版本需要配置安装 5.2.0 版本：
+- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](../../docs/zh/install_guide/install_guide.md)。
+- transformers版本需要配置安装 5.4.0 版本：
 
   ```bash
-  pip install transformers==5.2.0
+  pip install transformers==5.4.0
   ```
 
 ## 支持的模型版本与量化策略
 
-| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A16 | W4A8 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
-|---------|---------|---------------------------------------------------------------|-----|-----|-----|--------|------|---------|----------|-----------|-----------------------------------------------|
-| **GLM5-MOE** | GLM-5 | <https://huggingface.co/zai-org/GLM-5> | ✅ |  | ✅ |        |   |  |   |   ||
+| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A8C8 | W8A16 | W4A8 | W4A8C8 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
+|---------|---------|---------------------------------------------------------------|-----|-----|-----|-----|-----|--------|------|---------|----------|-----------|-----------------------------------------------|
+| **GLM5-MOE** | GLM-5 | <https://huggingface.co/zai-org/GLM-5> | ✅ |  |  | ✅ |  |        |   |  |   |   ||
+| **GLM5-MOE** | GLM-5.1 | <https://huggingface.co/zai-org/GLM-5.1> | ✅ | ✅ |  | ✅ | ✅ |        |   |  |   |   ||
 
 **说明：**
 
@@ -27,7 +28,7 @@
 
 ## 一键量化生成量化权重
 
-一键量化命令参考[《一键量化使用指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/feature_guide/quick_quantization_v1/usage/)。
+一键量化命令参考[《一键量化使用指南》](../../docs/zh/user_guide/feature_guide/quick_quantization_v1/usage.md)。
 
 ### GLM-5 一键量化命令示例
 
@@ -43,3 +44,19 @@ msmodelslim quant \
 
 - 其中`MODEL_PATH`为GLM-5模型的路径，`SAVE_PATH`为量化后的权重保存路径。
 - 该一键量化命令匹配使用的量化配置文件为[glm_5_w8a8.yaml](../../lab_practice/glm_5/glm_5_w8a8.yaml)，可以在其中查看具体的量化策略。
+
+### GLM-5.1 一键量化命令示例
+
+``` bash
+msmodelslim quant \
+  --model_path ${MODEL_PATH} \
+  --save_path ${SAVE_PATH} \
+  --device npu:0 \
+  --model_type GLM-5.1 \
+  --quant_type w8a8 \
+  --trust_remote_code True
+```
+
+- 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
+- 如需使用 W4A8 量化，将 `--quant_type` 替换为 `w4a8` 即可。
+- 该一键量化命令匹配使用的量化配置文件为[glm_5_1_w8a8.yaml](../../lab_practice/glm_5/glm_5_1_w8a8.yaml)，可以在其中查看具体的量化策略。

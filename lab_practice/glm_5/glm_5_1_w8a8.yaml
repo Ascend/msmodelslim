@@ -1,0 +1,75 @@
+apiversion: modelslim_v1
+metadata:
+  config_id: glm_5_1_w8a8
+  score: 90
+  verified_tags:
+    GLM-5.1:
+      - - vLLM_Ascend
+        - Atlas_A2_Inference
+      - - vLLM_Ascend
+        - Atlas_A3_Inference
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: False
+
+default_w8a8: &default_w8a8
+  act:
+    scope: "per_tensor"
+    dtype: "int8"
+    symmetric: False
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+
+spec:
+  process:
+    - type: "quarot"
+      export_extra_info: True
+
+    - type: "flex_smooth_quant"
+      enable_subgraph_type:
+        - 'norm-linear'
+        - 'ov'
+      include:
+        - "*"
+
+    - type: "group"
+      configs:
+        - type: "linear_quant"
+          qconfig: *default_w8a8
+          include:
+            - "*self_attn*"
+          exclude:
+            - "model.layers.78.*"
+            - "*kv_b_proj"
+            - "*wk"
+            - "*weights_proj"
+        - type: "linear_quant"
+          qconfig: *default_w8a8_dynamic
+          include:
+            - "*mlp*"
+          exclude:
+            - "model.layers.78.*"
+            - "*gate"
+
+  dataset: mix_calib.jsonl
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
