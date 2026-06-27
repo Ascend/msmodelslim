@@ -705,6 +705,20 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
+      <td rowspan="1"><strong><a href="../../../../example/longcat_flash/README.md">LongCat-Flash系列</a></strong></td>
+      <td>LongCat-Flash-Chat</td>
+      <td>transformers==4.55.0</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>√(一键量化)</td>
+    </tr>
+    <tr>
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/InternLM2/README.md">InternLM系列</a></strong></td>
       <td>InternLM2-20B</td>
       <td>-</td>
