@@ -2,7 +2,7 @@
 
 ## 模型介绍
 
-[MiniMax-M2.7](https://huggingface.co/MiniMaxAI/MiniMax-M2.7) 是 MiniMax 开源的大语言模型。msModelSlim 已适配 MiniMax-M2.7 的 W8A8 与 W8A8C8 一键量化实践，量化结果可用于 vLLM Ascend 推理。
+[MiniMax-M2.7](https://huggingface.co/MiniMaxAI/MiniMax-M2.7) 是 MiniMax 开源的大语言模型。msModelSlim 已适配 MiniMax-M2.7 的 W8A8、W8A8C8 与 W8A8 MXFP8 一键量化实践，量化结果可用于 vLLM Ascend 推理。
 
 ## 使用前准备
 
@@ -12,12 +12,13 @@
 ## 昇腾AI处理器支持情况
 
 - 支持 Atlas A3 训练、推理产品。
+- 支持 Atlas A5 训练、推理产品。
 
 ## 支持的模型版本与量化策略
 
-| 模型系列 | 模型版本 | HuggingFace链接 | W8A8 | W8A16 | W4A8 | W8A8C8 | W4A8C8 | 稀疏量化 | KV Cache | Attention | 量化命令 |
-|---------|---------|----------------|------|-------|------|--------|--------|---------|----------|-----------|----------|
-| **MiniMax-M2** | MiniMax-M2.7 | [MiniMax-M2.7](https://huggingface.co/MiniMaxAI/MiniMax-M2.7) | ✅ |  |  | ✅ |  |  | ✅ |  | [W8A8](#minimax-m27-w8a8量化) / [W8A8C8](#minimax-m27-w8a8c8量化) |
+| 模型系列 | 模型版本 | HuggingFace链接 | W8A8 | W8A8 MXFP8 | W8A16 | W4A8 | W8A8C8 | W4A8C8 | 稀疏量化 | KV Cache | Attention | 量化命令 |
+|---------|---------|----------------|------|------------|-------|------|--------|--------|---------|----------|-----------|----------|
+| **MiniMax-M2** | MiniMax-M2.7 | [MiniMax-M2.7](https://huggingface.co/MiniMaxAI/MiniMax-M2.7) | ✅ | ✅ |  |  | ✅ |  |  | ✅ |  | [W8A8](#minimax-m27-w8a8量化) / [W8A8 MXFP8](#minimax-m27-w8a8-mxfp8量化) / [W8A8C8](#minimax-m27-w8a8c8量化) |
 
 >[!NOTE]
 >
@@ -62,3 +63,20 @@ msmodelslim quant \
 ```
 
 该一键量化命令匹配使用的量化配置文件为[minimax_m27_w8a8c8.yaml](../../lab_practice/minimax_m2/minimax_m27_w8a8c8.yaml)，可以在其中查看具体的量化策略。
+
+#### <span id="minimax-m27-w8a8-mxfp8量化">MiniMax-M2.7 W8A8 MXFP8量化</span>
+
+生成 MiniMax-M2.7 模型 W8A8 MXFP8 量化权重：
+
+```shell
+msmodelslim quant \
+  --model_path ${MODEL_PATH} \
+  --save_path ${SAVE_PATH} \
+  --device npu \
+  --model_type MiniMax-M2.7 \
+  --quant_type w8a8 \
+  --tag Atlas_A5_Interface \
+  --trust_remote_code True
+```
+
+该一键量化命令匹配使用的量化配置文件为[minimax_m27_w8a8_mxfp8.yaml](../../lab_practice/minimax_m2/minimax_m27_w8a8_mxfp8.yaml)，可以在其中查看具体的量化策略。
