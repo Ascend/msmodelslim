@@ -272,7 +272,13 @@ class MultimodalSDModelslimV1QuantService(IQuantService):
         device: DeviceType = DeviceType.NPU,
     ):
         """主仓兼容编排：set_model_args → load_pipeline → run_calib_inference。"""
-        model_adapter.set_model_args(quant_config.spec.multimodal_sd_config.model_extra['model_config'])
+        sd_config = quant_config.spec.multimodal_sd_config
+        inference_raw = sd_config.resolve_inference_raw()
+        if not inference_raw:
+            raise SchemaValidateError(
+                "Legacy pipeline requires inference_config or model_config in multimodal_sd_config.",
+            )
+        model_adapter.set_model_args(inference_raw)
         model_adapter.load_pipeline()
 
         get_logger().info("==========QUANTIZATION: Prepare Dataset==========")

@@ -32,8 +32,10 @@ from msmodelslim.core.quant_service.multimodal_sd_v1.legacy_pipeline_interface i
     LegacyMultimodalPipelineInterface,
 )
 from msmodelslim.core.quant_service.multimodal_sd_v1.quant_config import (
+    DumpConfig,
     MultimodalSDModelslimV1QuantConfig,
     MultimodalPipelineInterface,
+    MultimodalSDConfig,
     SchemaValidateError,
 )
 from msmodelslim.core.quant_service.multimodal_sd_v1.quant_service import (
@@ -56,9 +58,10 @@ class TestQuantProcessComplete:  # pylint: disable=attribute-defined-outside-ini
         # 1. 简化配置层级：用MagicMock自动支持属性访问
         self.mock_quant_spec = MagicMock()
         # 量化配置核心属性
-        self.mock_quant_spec.multimodal_sd_config.model_extra = {"model_config": "test_config"}
-        self.mock_quant_spec.multimodal_sd_config.dump_config = MagicMock(
-            capture_mode='args', dump_data_dir="/tmp/test_dump", enable_dump=True
+        self.legacy_inference_raw = {"sample_steps": 40}
+        self.mock_quant_spec.multimodal_sd_config = MultimodalSDConfig(
+            dump_config=DumpConfig(capture_mode='args', dump_data_dir="/tmp/test_dump", enable_dump=True),
+            model_config=self.legacy_inference_raw,
         )
         # 处理/保存配置（2个实例，覆盖多配置场景）
         self.mock_quant_spec.process = [Mock(), Mock()]
@@ -176,7 +179,7 @@ class TestQuantProcessComplete:  # pylint: disable=attribute-defined-outside-ini
 
         # 3. 核心步骤验证（按执行顺序）
         # 模型配置与加载
-        self.model_adapter.set_model_args.assert_called_once_with("test_config")
+        self.model_adapter.set_model_args.assert_called_once_with(self.legacy_inference_raw)
         self.model_adapter.load_pipeline.assert_called_once()
         # 数据加载与设备转换（路径用 Path 规范化，避免 Windows/Unix 分隔符差异）
         expected_pth_list = {
@@ -231,7 +234,7 @@ class TestQuantProcessComplete:  # pylint: disable=attribute-defined-outside-ini
 
         # 3. 核心步骤验证（按执行顺序）
         # 模型配置与加载
-        self.model_adapter.set_model_args.assert_called_once_with("test_config")
+        self.model_adapter.set_model_args.assert_called_once_with(self.legacy_inference_raw)
         self.model_adapter.load_pipeline.assert_called_once()
         # 数据加载与设备转换（路径用 Path 规范化，避免 Windows/Unix 分隔符差异）
         expected_pth_list = {'': Path('/tmp/test_dump/calib_data__.pth')}
@@ -260,6 +263,44 @@ class TestQuantProcessComplete:  # pylint: disable=attribute-defined-outside-ini
             "device": self.device,
             "model": self.mock_model1,
         }
+
+    @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.load_cached_data_for_models")
+    @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.to_device")
+    @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.LayerWiseRunner")
+    def test_quant_process_legacy_uses_inference_config_when_model_config_absent(
+        self, mock_runner_cls, mock_to_device, mock_load_cache
+    ):
+        """Legacy 路径应通过 resolve_inference_raw 读取 inference_config。"""
+        inference_raw = {
+            "size": "1280*720",
+            "frame_num": 81,
+            "sample_steps": 40,
+            "convert_model_dtype": True,
+            "task": "t2v-A14B",
+        }
+        self.mock_quant_spec.multimodal_sd_config = MultimodalSDConfig(
+            dump_config=DumpConfig(enable_dump=False),
+            inference_config=inference_raw,
+        )
+        self.model_adapter.init_model.return_value = {'': self.mock_model1}
+        mock_to_device.return_value = {'': None}
+        mock_runner_cls.return_value = Mock()
+
+        with patch("builtins.input", return_value="y"):
+            self.service.quant_process(self.quant_config, self.model_adapter, self.save_path, self.device)
+
+        self.model_adapter.set_model_args.assert_called_once_with(inference_raw)
+
+    def test_quant_process_legacy_raises_when_inference_config_missing(self):
+        """Legacy 路径在 inference_config/model_config 均缺失时应明确报错。"""
+        self.mock_quant_spec.multimodal_sd_config = MultimodalSDConfig(
+            dump_config=DumpConfig(enable_dump=False),
+        )
+
+        with pytest.raises(SchemaValidateError) as excinfo:
+            self.service.quant_process(self.quant_config, self.model_adapter, self.save_path, self.device)
+
+        assert "Legacy pipeline requires inference_config or model_config" in str(excinfo.value)
 
     @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.load_cached_data_for_models")
     @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.get_logger")
