@@ -34,7 +34,7 @@ from msmodelslim.core.quant_service import KeyInfoPersistenceInfra
 from msmodelslim.core.runner.layer_wise_runner import LayerWiseRunner
 from msmodelslim.model import IModel
 from msmodelslim.utils.cache import load_cached_data_for_models, to_device
-from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
+from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.core.context import IContextFactory, ContextManager
 from .legacy_pipeline_interface import LegacyMultimodalPipelineInterface
@@ -309,19 +309,9 @@ class MultimodalSDModelslimV1QuantService(IQuantService):
 
             get_logger().info(f"prepare calib_data from {base_dir} success")
         else:
-            tips = (
-                "With enable_dump=False in the current config, calibration data will not be loaded/dumped. "
-                "Please confirm whether your use case requires dump data: pure dynamic quantization does not need "
-                "calibration data; static quantization or outlier suppression requires it. "
-                "If you don't need it, enter y to continue."
+            get_logger().info(
+                "enable_dump=False in config, skipping calibration data load/dump",
             )
-            user_input = input(tips + " (Enter y to continue, otherwise it will exit): ").strip().lower()[:3]
-            if user_input != 'y':
-                raise UnsupportedError(
-                    tips,
-                    action="To dump calibration data, set multimodal_sd_config.dump_config.enable_dump: True in your config.",
-                )
-            get_logger().info("enable_dump=False, skipping calibration data load/dump")
             calib_data = {expert_name: None for expert_name in models}
 
         calib_data = to_device(calib_data, device.value)

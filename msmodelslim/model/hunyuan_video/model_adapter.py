@@ -245,25 +245,9 @@ class HunyuanVideoModelAdapter(
         self.model_args.task_config = TASK_TYPE
 
     # ===== 分区 3：公共校准执行 =====
-    _ENABLE_DUMP_FALSE_TIPS = (
-        "With enable_dump=False in the current config, calibration data will not be loaded/dumped. "
-        "Please confirm whether your use case requires dump data: pure dynamic quantization does not need "
-        "calibration data; static quantization or outlier suppression requires it. "
-        "If you don't need it, enter y to continue."
-    )
-
     def _calib_data_when_dump_disabled(self, models: Dict[str, nn.Module]) -> Dict[str, Any]:
         """enable_dump=False 时跳过 pth 加载/浮点 dump，与 Legacy 量化路径行为一致。"""
-        tips = self._ENABLE_DUMP_FALSE_TIPS
-        user_input = input(tips + " (Enter y to continue, otherwise it will exit): ").strip().lower()[:3]
-        if user_input != "y":
-            raise UnsupportedError(
-                tips,
-                action=(
-                    "To dump calibration data, set multimodal_sd_config.dump_config.enable_dump: True in your config."
-                ),
-            )
-        get_logger().info("enable_dump=False, skipping calibration data load/dump")
+        get_logger().info("enable_dump=False in config, skipping calibration data load/dump")
         return {expert_name: None for expert_name in models}
 
     def prepare_calib_data(

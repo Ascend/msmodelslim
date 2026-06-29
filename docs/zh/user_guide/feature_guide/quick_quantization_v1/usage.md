@@ -603,7 +603,7 @@ spec:
 
 | 字段名 | 作用 | 说明                                                                                                            | 可选值 |
 |--------|------|---------------------------------------------------------------------------------------------------------------|--------|
-| enable_dump | 是否启用 dump | **Legacy 路径**：为 **False** 时不 load/dump，并**交互式确认**（输入 y 继续）后各专家 `calib_data` 置为 `None`。**重构路径**：量化服务将校准准备委托给适配器 `prepare_calib_data`；通常配合 `dump_data_dir` 下按专家命名的 pth——文件齐全则加载，缺失则浮点 dump。纯动态量化（如 W8A8 MXFP8）可设 `False` 且不依赖 pth，但量化时仍须为每个专家保留 `calib_data` 的 key | True（默认）/ False |
+| enable_dump | 是否启用 dump | **Legacy 路径**：为 **False** 时不 load/dump，各专家 `calib_data` 直接置为 `None`（YAML 已显式配置，无需二次确认）。**重构路径**：量化服务将校准准备委托给适配器 `prepare_calib_data`；通常配合 `dump_data_dir` 下按专家命名的 pth——文件齐全则加载，缺失则浮点 dump。纯动态量化（如 W8A8 MXFP8）可设 `False` 且不依赖 pth，但量化时仍须为每个专家保留 `calib_data` 的 key | True（默认）/ False |
 | capture_mode | 数据捕获模式 | 指定如何捕获模型的输入数据                                                                                                 | 当前仅支持"args"，其他模式待后续扩展 |
 | dump_data_dir | 校准数据目录 | 检索与保存 pth 的根目录；空字符串时使用权重 `save_path`。重构路径下按专家生成文件名 `calib_data_<task_config>_<expert_name>.pth`（如 `calib_data_t2v-A14B_low_noise_model.pth`）。**全部 pth 已存在则直接加载；任一缺失则执行浮点推理 dump 后写入** | 字符串路径 |
 
@@ -617,7 +617,7 @@ spec:
 - 双专家 Wan2.2：`calib_data_<task_config>_low_noise_model.pth`、`calib_data_<task_config>_high_noise_model.pth`
 - 量化阶段要求 `init_model()` 返回的每个专家在 `calib_data` 中均有对应 **key**；缺 key 将 fail-fast。`calib_data[expert]=None` 表示该专家无 dump 张量（如全动态量化），仍须保留 key。
 
-**Legacy 路径补充**：`enable_dump=False` 时不会 load/dump，并会**交互式确认**是否继续；Legacy 缓存文件名仍为 `calib_data_<task_config>_<expert>.pth`（与重构命名一致），不再使用单一 `calib_data.pth`。
+**Legacy 路径补充**：`enable_dump=False` 时不会 load/dump，各专家 `calib_data` 直接置为 `None`；Legacy 缓存文件名仍为 `calib_data_<task_config>_<expert>.pth`（与重构命名一致），不再使用单一 `calib_data.pth`。
 
 ##### 6.3.5.2 inference_config - 推理参数配置（推荐）
 
