@@ -194,6 +194,19 @@ spec:
 现象：如何自定义量化配置？
 解决方案：可以修改配置文件中的process部分，调整量化参数和层选择策略。
 
+问题：在Atlas 350 加速卡环境上量化Wan2.1-14B失败，报错 `RuntimeError: Current device only support aclnn operator, but current operator npu_layer_norm_eval do not have aclnn implementation`？
+解决方案：Atlas 350 加速卡产品需要设置以下环境变量来解决算子兼容性问题：
+
+```bash
+export ENABLE_LAYERNORM_SCALE_SHIFT=1
+export ENABLE_FUSED_VAE_RMSNORM=1
+export ENABLE_FAST_LAYERNORM=1
+export ENABLE_FAST_GELU=1
+export ENABLE_ROPE_BF16=1
+```
+
+设置完成后重新执行量化命令即可正常量化。
+
 ## 附录
 
 ### 相关资源
