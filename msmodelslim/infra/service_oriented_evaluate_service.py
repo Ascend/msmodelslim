@@ -30,7 +30,7 @@ from msmodelslim.core.tune_strategy import EvaluateResult, EvaluateAccuracy, Acc
 from msmodelslim.infra.evaluation.aisbench_server import AisBenchServer, AisbenchServerConfig
 from msmodelslim.infra.vllm_ascend_server import VllmAscendServer, VllmAscendConfig
 from msmodelslim.utils.exception import SpecError, SchemaValidateError
-from msmodelslim.utils.logging import logger_setter
+from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.utils.plugin import TypedConfig
 from msmodelslim.utils.validation.pydantic import at_least_one_element
 
@@ -89,7 +89,17 @@ class ServiceOrientedEvaluateService(EvaluateServiceInfra):
                 raise SpecError("[ServiceOrientedEvaluateService] VLLM failed to start")
 
             accuracies: List[EvaluateAccuracy] = []
-            for expectation in evaluate_config.demand.expectations:
+            for idx, expectation in enumerate(evaluate_config.demand.expectations):
+                get_logger().info(
+                    "[AccuracyEval] Start evaluating dataset '%s' "
+                    "(expectation: target=%.4f, tolerance=%.4f, dataset=%d/%d)",
+                    expectation.dataset,
+                    expectation.target,
+                    expectation.tolerance,
+                    idx + 1,
+                    len(evaluate_config.demand.expectations),
+                )
+
                 bencher = AisBenchServer(
                     context=context,
                     eval_config=evaluate_config.evaluation,
@@ -101,6 +111,12 @@ class ServiceOrientedEvaluateService(EvaluateServiceInfra):
 
                 current_accuracy = accuracies[-1] if accuracies else None
                 if not current_accuracy or current_accuracy.dataset != expectation.dataset:
+                    get_logger().warning(
+                        "[AccuracyEval] Dataset '%s' evaluation returned no valid result. "
+                        "Skip remaining dataset(s) %s due to fast fail.",
+                        expectation.dataset,
+                        [e.dataset for e in evaluate_config.demand.expectations[idx + 1 :]],
+                    )
                     return EvaluateResult(
                         accuracies=accuracies,
                         expectations=evaluate_config.demand.expectations,
@@ -108,11 +124,28 @@ class ServiceOrientedEvaluateService(EvaluateServiceInfra):
                     )
 
                 if expectation.target - current_accuracy.accuracy > expectation.tolerance:
+                    get_logger().warning(
+                        "[AccuracyEval] Dataset '%s' failed precision check: "
+                        "target=%.4f, actual=%.4f, tolerance=%.4f, gap=%.4f. "
+                        "Skip remaining dataset(s) %s due to fast fail.",
+                        expectation.dataset,
+                        expectation.target,
+                        current_accuracy.accuracy,
+                        expectation.tolerance,
+                        expectation.target - current_accuracy.accuracy,
+                        [e.dataset for e in evaluate_config.demand.expectations[idx + 1 :]],
+                    )
                     return EvaluateResult(
                         accuracies=accuracies,
                         expectations=evaluate_config.demand.expectations,
                         is_satisfied=False,
                     )
+
+                get_logger().info(
+                    "[AccuracyEval] Dataset '%s' passed (accuracy=%.4f).",
+                    expectation.dataset,
+                    current_accuracy.accuracy,
+                )
 
             return EvaluateResult(
                 accuracies=accuracies,
