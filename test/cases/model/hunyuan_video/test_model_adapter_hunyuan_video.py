@@ -736,7 +736,7 @@ class TestHunyuanVideoPrepareCalibData:
     """HunyuanVideoModelAdapter.prepare_calib_data"""
 
     @staticmethod
-    def test_prepare_calib_data_returns_none_per_expert_when_enable_dump_false_and_user_confirms(tmp_path):
+    def test_prepare_calib_data_returns_none_per_expert_when_enable_dump_false(tmp_path):
         from msmodelslim.core.quant_service.multimodal_sd_v1.quant_config import DumpConfig
 
         adapter = HunyuanVideoModelAdapter.__new__(HunyuanVideoModelAdapter)
@@ -744,39 +744,19 @@ class TestHunyuanVideoPrepareCalibData:
         models = {"transformer": MagicMock()}
         dump_config = DumpConfig(enable_dump=False)
 
-        with patch("builtins.input", return_value="y"):
-            with patch(
-                "msmodelslim.model.hunyuan_video.model_adapter.load_cached_data_for_models",
-            ) as mock_load:
-                result = adapter.prepare_calib_data(
-                    models=models,
-                    dump_config=dump_config,
-                    save_path=Path(tmp_path),
-                    dataset=[VlmCalibSample(text="hello")],
-                    inference_config=None,
-                )
+        with patch(
+            "msmodelslim.model.hunyuan_video.model_adapter.load_cached_data_for_models",
+        ) as mock_load:
+            result = adapter.prepare_calib_data(
+                models=models,
+                dump_config=dump_config,
+                save_path=Path(tmp_path),
+                dataset=[VlmCalibSample(text="hello")],
+                inference_config=None,
+            )
 
         mock_load.assert_not_called()
         assert result == {"transformer": None}
-
-    @staticmethod
-    def test_prepare_calib_data_raises_unsupported_error_when_enable_dump_false_and_user_declines(tmp_path):
-        from msmodelslim.core.quant_service.multimodal_sd_v1.quant_config import DumpConfig
-
-        adapter = HunyuanVideoModelAdapter.__new__(HunyuanVideoModelAdapter)
-        adapter.model_args = MagicMock(task_config=TASK_TYPE)
-        models = {"transformer": MagicMock()}
-        dump_config = DumpConfig(enable_dump=False)
-
-        with patch("builtins.input", return_value="n"):
-            with pytest.raises(UnsupportedError):
-                adapter.prepare_calib_data(
-                    models=models,
-                    dump_config=dump_config,
-                    save_path=Path(tmp_path),
-                    dataset=[],
-                    inference_config=None,
-                )
 
 
 # ------------------------------ generate_model_forward 补充测试 ------------------------------
@@ -1365,17 +1345,9 @@ class TestCalibDataWhenDumpDisabled:
     """_calib_data_when_dump_disabled 补充测试"""
 
     @staticmethod
-    def test_raises_unsupported_error_when_user_declines(adapter):
-        """用户输入非y时应抛出UnsupportedError"""
-        with patch("builtins.input", return_value="n"):
-            with pytest.raises(UnsupportedError):
-                adapter._calib_data_when_dump_disabled({"model": MagicMock()})
-
-    @staticmethod
-    def test_returns_none_per_expert_when_user_confirms(adapter):
-        """用户输入y时返回每个expert的None"""
-        with patch("builtins.input", return_value="y"):
-            result = adapter._calib_data_when_dump_disabled({"m1": MagicMock(), "m2": MagicMock()})
+    def test_returns_none_per_expert_when_dump_disabled(adapter):
+        """enable_dump=False 时返回每个 expert 的 None"""
+        result = adapter._calib_data_when_dump_disabled({"m1": MagicMock(), "m2": MagicMock()})
         assert result == {"m1": None, "m2": None}
 
 
