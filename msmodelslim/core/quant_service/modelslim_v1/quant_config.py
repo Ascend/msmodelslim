@@ -44,7 +44,9 @@ class ModelslimV1ServiceConfig(BaseModel):
     prior: List[PriorStageConfig] = Field(default_factory=list, description="前置阶段列表，每阶段含 process 与 dataset")
     process: AutoProcessorConfigList = Field(default_factory=list)
     save: QuantFormatConfigList = Field(default_factory=list)
-    dataset: str = Field(default='mix_calib.jsonl')
+    dataset: Annotated[str, AfterValidator(validate_str_length(max_len=4096))] = Field(
+        default='mix_calib.jsonl', description="数据集名称"
+    )
 
 
 class ModelslimV1QuantConfig(BaseQuantConfig):

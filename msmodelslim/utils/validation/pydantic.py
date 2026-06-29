@@ -23,7 +23,7 @@ from typing import Any, List
 
 from pydantic import ValidationInfo
 
-from msmodelslim.utils.exception import SchemaValidateError
+from msmodelslim.utils.exception import SchemaValidateError, SecurityError
 from msmodelslim.utils.security import validate_safe_host, validate_safe_endpoint
 from msmodelslim.utils.validation.value import (
     is_port as _is_port,
@@ -42,10 +42,10 @@ from msmodelslim.utils.validation.value import (
 
 
 def _to_value_error(func, *args, **kwargs):
-    """调用验证函数，将 SchemaValidateError 转为 ValueError 以便 Pydantic 收集多个错误。"""
+    """调用验证函数，将 SchemaValidateError / SecurityError 转为 ValueError 以便 Pydantic 收集多个错误。"""
     try:
         return func(*args, **kwargs)
-    except SchemaValidateError as e:
+    except (SchemaValidateError, SecurityError) as e:
         raise ValueError(str(e)) from e
 
 
