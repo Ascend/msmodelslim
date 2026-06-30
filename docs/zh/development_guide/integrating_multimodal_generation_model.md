@@ -186,7 +186,7 @@ flowchart TD
 
 两类场景的分区组织略有差异，必须严格遵循源码中的分区标记：
 
-**场景一：单网络 DiT（HunyuanVideo）—— 7 个分区**
+**场景一：单网络 DiT 类型的多模态生成模型接入（以 HunyuanVideo 为例）—— 7 个分区**
 
 ```text
 分区 1：公共流水线接口       # validate_calib_samples, handle_dataset, init_model, generate_model_visit/forward, enable_kv_cache
@@ -198,14 +198,14 @@ flowchart TD
 分区 7：量化扩展接口          # get_online_rotation_configs, inject_fa3_placeholders, _attach_attention_cache_to_blocks
 ```
 
-**场景二：双专家 DiT（Wan2.2）—— 8 个分区（基类）**
+**场景二：双专家 DiT 类型的多模态生成模型接入（以 Wan2.2 为例）—— 8 个分区（基类）**
 
 ```text
 分区 1：公共流水线接口       # validate_calib_samples, handle_dataset, init_model(抽象), generate_model_visit/forward, enable_kv_cache
 分区 2：公共运行时配置       # get_inference_config_class(子类), configure_runtime(基类)
 分区 3：公共校准执行         # prepare_calib_data, inference_dump_calib_data(抽象), quantization_context(抽象)
 分区 4：基类运行时通用辅助     # _runtime_value, _quantization_context_with_no_sync
-分区 5：私有专家子适配器装配   # _bind_expert_sub_adapters, _create_expert_sub_adapter
+分区 5（不同点）：私有专家子适配器装配   # _bind_expert_sub_adapters, _create_expert_sub_adapter
 分区 6：私有参数桥接          # _allowed_generate_config_keys, _build_default_generate_cli, _namespace_to_argv, _parse_args_from_generate
 分区 7：私有运行时与缓存装配   # _check_import_dependency, _init_logging, _load_pipeline, _setup_wan_dit_runtime, _setup_*_attention_cache
 分区 8：量化扩展接口          # get_online_rotation_configs, inject_fa3_placeholders, _attach_attention_cache_to_blocks
@@ -229,11 +229,17 @@ flowchart TD
 
 ---
 
-### 场景一：单网络 DiT（HunyuanVideo）
+### 场景一：单网络 DiT 类型的多模态生成模型接入（以 HunyuanVideo 为例）
 
 **适用特征**：单个 `transformer` 主干；`init_model` 返回 `{'': self.transformer}`。
 
 **实现顺序**：按源码分区 1 → 7 依次实现（与上文「代码分区规范」一致）。
+
+**接入新模型时的实现建议**：
+
+1. 先确认原推理仓 DiT block 的类名与 `forward` 签名（双流/单流是否都存在）。
+2. QuaRot：只需在 attention 入口为 Q/K 提供可替换的 `q_rot`/`k_rot` 子模块路径。
+3. FA3：在 Q/K/V 张量就绪后、进入 attention 算子前插入三个占位调用；勿改动扩散主循环逻辑。
 
 **核心类**（示例代码均写在类体内）：
 
@@ -691,20 +697,26 @@ def inject_fa3_placeholders(
     pass
 ```
 
-**接入新模型时的实现建议**：
-
-1. 先确认原推理仓 DiT block 的类名与 `forward` 签名（双流/单流是否都存在）。
-2. QuaRot：只需在 attention 入口为 Q/K 提供可替换的 `q_rot`/`k_rot` 子模块路径。
-3. FA3：在 Q/K/V 张量就绪后、进入 attention 算子前插入三个占位调用；勿改动扩散主循环逻辑。
-
 ---
 
-### 场景二：双专家 DiT（Wan2.2）
+### 场景二：双专家 DiT 类型的多模态生成模型接入（以 Wan2.2 为例）
 
 **适用特征**：`low_noise_model` + `high_noise_model` 两个 DiT 专家；`init_model` 返回 `{"low_noise_model": ..., "high_noise_model": ...}`。
 **代码分工**：`base_model_adapter.py` 实现分区 1~8 的公共能力；`t2v/`、`i2v/`、`ti2v/` 各子目录下的 `model_adapter.py` 补充分区 1~3 的场景差异；`expert_sub_adapter.py` 供 LayerWiseRunner **按专家**调度量化。
 
 **实现顺序**：基类按分区 1 → 8；子类在对应 Step 中覆盖标注的方法。
+
+**接入新模型时的实现建议**：
+
+1. 先为每个 `scene_task` 建子类 + `config.ini` 的 `model_type`，勿在 YAML 用 `task` 切换场景。
+2. `DEFAULT_SIZE` / `EXAMPLE_PROMPT` 须与原仓 `WAN_CONFIGS`、`SUPPORTED_SIZES` 一致，否则 `_validate_args` 失败。
+3. QuaRot/FA3 在基类分区 8 实现一次；专家子适配器只做委托，并**显式继承**扩展接口。
+
+**接入新模型时的差异要点**：
+
+1. `scene_task` 用子类 `ClassVar` 固定，与 `config.ini` 的 `model_type` 一一对应，勿在 YAML 里切换 task。
+2. 双专家必须在 `init_model` 后调用 `_bind_expert_sub_adapters`，并保证 `get_expert_adapter` 能按名取到子适配器。
+3. TI2V：`image` 可选；无图时 `_generate_video` 走 T2V 分支，有图走 I2V 分支（与推理仓默认行为一致）。
 
 **核心类**：
 
@@ -999,7 +1011,7 @@ class Wan2_2T2VModelAdapter(Wan2_2BaseModelAdapter):
         )
 ```
 
-#### Step 4：分区 4 —— 基类运行时通用辅助（Wan2.2 特有，HunyuanVideo 同分区 4 仅含 _runtime_value）
+#### Step 4：分区 4 —— 基类运行时通用辅助（基类模型适配器实现的、各子任务场景公用的辅助方法）
 
 ```python
 class Wan2_2BaseModelAdapter(
@@ -1030,7 +1042,7 @@ class Wan2_2BaseModelAdapter(
             yield
 ```
 
-#### Step 5：分区 5 —— 私有专家子适配器装配（Wan2.2 特有）
+#### Step 5：分区 5 —— 私有专家子适配器装配（对多个专家 DiT 分别实现适配器， 可实现各专家 DiT 的自定义扩展）
 
 **职责**：为 `low_noise_model` / `high_noise_model` 各创建一个 `Wan2_2ExpertSubAdapter`，供 LayerWiseRunner 按专家名调度。
 
@@ -1057,10 +1069,22 @@ class Wan2_2BaseModelAdapter(
             sub.bind_module(module)
             adapters[expert_name] = sub
         self._expert_adapters = adapters
+    
+    def _create_expert_sub_adapter(self, expert_name: str) -> Wan2_2ExpertSubAdapter:
+        """
+        工厂方法：按 expert_name 返回子适配器实例。
+        子类可覆盖，返回自定义的 low/high 子适配器实现。
+        """
+        if expert_name == "low_noise_model":
+            return Wan2_2LowNoiseSubAdapter(self, expert_name)
+        if expert_name == "high_noise_model":
+            return Wan2_2HighNoiseSubAdapter(self, expert_name)
+        return Wan2_2ExpertSubAdapter(self, expert_name)
+```
 
+expert_sub_adapter.py（独立文件）:
 
-# expert_sub_adapter.py（独立文件）
-
+```python
 class Wan2_2ExpertSubAdapter(OnlineQuaRotInterface, FA3QuantAdapterInterface):
     """
     单专家量化代理。必须显式继承扩展接口（不能仅靠 __getattr__），
@@ -1197,18 +1221,6 @@ class Wan2_2BaseModelAdapter(
         """
         pass
 ```
-
-**接入新模型时的实现建议**（Wan2.2）：
-
-1. 先为每个 `scene_task` 建子类 + `config.ini` 的 `model_type`，勿在 YAML 用 `task` 切换场景。
-2. `DEFAULT_SIZE` / `EXAMPLE_PROMPT` 须与原仓 `WAN_CONFIGS`、`SUPPORTED_SIZES` 一致，否则 `_validate_args` 失败。
-3. QuaRot/FA3 在基类分区 8 实现一次；专家子适配器只做委托，并**显式继承**扩展接口。
-
-**接入新模型时的差异要点**：
-
-1. `scene_task` 用子类 `ClassVar` 固定，与 `config.ini` 的 `model_type` 一一对应，勿在 YAML 里切换 task。
-2. 双专家必须在 `init_model` 后调用 `_bind_expert_sub_adapters`，并保证 `get_expert_adapter` 能按名取到子适配器。
-3. TI2V：`image` 可选；无图时 `_generate_video` 走 T2V 分支，有图走 I2V 分支（与推理仓默认行为一致）。
 
 ---
 
