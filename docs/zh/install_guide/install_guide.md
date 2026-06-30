@@ -12,7 +12,7 @@
 
 ### 2.1 在线安装
 
-若您的设备具备互联网访问能力，可通过一条命令自动完成工具的下载与安装。请参见昇腾社区MindStudio[下载](https://www.hiascend.com/developer/software/mindstudio/download)页面，选择对应的CANN版本，并在安装方式中选择“在线安装”，系统将引导您完成后续操作。
+若您的设备具备互联网访问能力，可通过一条命令自动完成工具的下载与安装。请参见昇腾社区MindStudio[下载](https://www.hiascend.com/developer/software/mindstudio/download?versionId=142&ids=45%2C26958bcc909e4cd48fa56d4c4a43ebec%2C90%2C49)页面，选择对应的CANN版本，并在安装方式中选择“在线安装”，系统将引导您完成后续操作。
 
 ### 2.2 离线安装
 
@@ -33,13 +33,17 @@
    ```shell
    cd msmodelslim
    bash install.sh
-   # 打印如下信息时，表示msModelSlim构建安装成功。
+   ```
+
+   打印如下信息时，表示msModelSlim构建安装成功。
+
+   ```ColdFusion
    Successfully installed msmodelslim-{version}
    ```
 
-**如果需要进行稀疏量化和压缩，需要安装CANN 8.2.RC1及以上版本，执行源码构建安装后，并继续以下操作：**
+**若需进行稀疏量化和压缩，请安装CANN 8.2.RC1及以上版本，完成源码构建安装后，请继续以下操作：**
 
-1. 进入python环境下的site_packages包管理路径，其中${python_envs}为Python环境路径。
+1. 进入python环境下的site-packages包管理路径，其中${python_envs}为Python环境路径。
 
    ```shell
    cd ${python_envs}/site-packages/msmodelslim/pytorch/weight_compression/compress_graph/
@@ -51,7 +55,11 @@
 
    ```shell
    sudo bash build.sh ${install_path}/ascend-toolkit/latest
-   # 打印如下信息，表示编译成功，生成build文件夹。
+   ```
+
+   打印如下信息，表示编译成功，生成build文件夹。
+
+   ```ColdFusion
    build created successfully
    ```
 
@@ -63,14 +71,14 @@
 >
 > 1. 使用 `msModelSlim` 命令行工具时，请勿在 `msModelSlim` 的源码目录下直接运行命令。这可能会因 Python 在导入模块时出现源码路径和安装路径冲突，导致命令执行失败。
 > 2. 若安装 `msModelSlim` 时遇到报错，请先查阅 [FAQ](../appendix/faq.md) 寻找解决方案。如问题仍未解决，欢迎提交 [Issue](https://gitcode.com/Ascend/msmodelslim/issues)，并附上您的运行环境及完整的错误日志，我们将尽快为您排查。
-> 3. 目前仅Atlas 300l Duo系列产品支持在稀疏量化后进行压缩。
+> 3. 目前仅Atlas 300I Duo系列产品支持在稀疏量化后进行压缩。
 
 ## 3. 验证安装
 
 安装完成后，执行以下命令验证工具是否安装成功：
 
 ```shell
-  msmodelslim --help
+msmodelslim --help
 ```
 
 若输出不报错，且能显示版本信息，则表明安装成功。

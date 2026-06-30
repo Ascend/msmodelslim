@@ -4,7 +4,7 @@ FLUX的推理量化依赖于FLUX.1-dev推理工程仓：[MindIE/FLUX.1-dev](http
 
 ## 使用前准备
 
-- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/install_guide/install_guide/)。
+- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/install_guide/install_guide.md)。
 - 硬件支持：Atlas 800I A2
 - 软件支持：FLUX.1-dev推理工程仓
 
@@ -432,7 +432,7 @@ quant_model(model, session_cfg)
 | height | 图像生成的高度 | 可选。<br>数据类型：整型。默认值1024。|
 | infer_steps | Flux图像推理步数 | 可选。<br>数据类型：整型。默认值50。|
 | seed | 设置提示词随机种子 | 可选。<br>数据类型：整型。默认值42。|
-| use_cache | 是否开启dit cache近似优化 | 可选。<br>数据类型：布尔型。默认值False。。只有显式传入 --use_cache 则变为True。|
+| use_cache | 是否开启dit cache近似优化 | 可选。<br>数据类型：布尔型。默认值False。只有显式传入 --use_cache 则变为True。|
 | batch_size | 指定prompt的batch size | 可选。<br>数据类型：整型。默认值1。<br>说明：大于1时以list形式送入pipeline。|
 | device_type | device类型 | 可选。<br>数据类型：字符串。默认值'A2-64g'。<br>可选值：'A2-32g-single'、'A2-32g-dual'或'A2-64g'。|
 | do_quant | 是否进行量化 | 必选。<br>数据类型：布尔型。默认False，即不启动量化。只有显式传入 --do_quant 则变为True，在进行Flux.1-dev模型推理量化时，必须使能该参数。|
