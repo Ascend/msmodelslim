@@ -127,7 +127,7 @@ flowchart TB
 
 #### DistHelper
 
-在多卡量化中，有的模块在各卡中均存在相同的副本，有的模块只在当前卡局部存在(如 EP 下的路由专家)。对于各卡都持有的共享模块，需要在合适的时机进行卡间通信以确保各卡的量化行为一致；而对于仅在局部存在的模块，则始终不应该做同步操作，否则会出现进程卡死等非预期行为。[`DistHelper`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_helper.py) 作为辅助工具类，在初始化时自动完成对网络模块的拓扑结构分类（区分共享/局部模块），并提供接口方法用于查询共享模块的列表。
+在多卡量化中，有的模块在各卡中均存在相同的副本，有的模块只在当前卡局部存在(如 EP 下的路由专家)。对于各卡都持有的共享模块，需要在合适的时机进行卡间通信以确保各卡的量化行为一致；而对于仅在局部存在的模块，则始终不应该做同步操作，否则会出现进程卡死等非预期行为。[`DistHelper`](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/msmodelslim/utils/distributed/dist_helper.py) 作为辅助工具类，在初始化时自动完成对网络模块的拓扑结构分类（区分共享/局部模块），并提供接口方法用于查询共享模块的列表。
 
 使用方法：
 
@@ -137,7 +137,7 @@ flowchart TB
 
 #### 工具函数
 
-跨 rank 聚合激活值或统计值时，可优先使用 [`msmodelslim/utils/distributed/dist_ops.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_ops.py) 中的存量工具函数：
+跨 rank 聚合激活值或统计值时，可优先使用 [`msmodelslim/utils/distributed/dist_ops.py`](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/msmodelslim/utils/distributed/dist_ops.py) 中的存量工具函数：
 
 | 函数名 | 主要入参 | 功能与典型场景 |
 |------|----------|----------------|
@@ -156,9 +156,9 @@ flowchart TB
 
 ### 适配案例：FA3Quant
 
-以 [`FA3QuantProcessor`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/fa3/processor.py) 的多卡量化适配为例。FA3 在默认的 `per_head` 配置下依赖校准前向收集各 head 的 min/max，再据此生成 IR `FakeQuantActivationPerHead`；多卡适配的目标是：**各 rank 得到与全量校准等价的 per-head 量化参数**。
+以 [`FA3QuantProcessor`](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/msmodelslim/processor/quant/fa3/processor.py) 的多卡量化适配为例。FA3 在默认的 `per_head` 配置下依赖校准前向收集各 head 的 min/max，再据此生成 IR `FakeQuantActivationPerHead`；多卡适配的目标是：**各 rank 得到与全量校准等价的 per-head 量化参数**。
 
-以下按 [接入步骤](#接入步骤) 四步对照源码（[`fa3/processor.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/fa3/processor.py)、[`recall_window.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/observer/recall_window.py)）进行说明。
+以下按 [接入步骤](#接入步骤) 四步对照源码（[`fa3/processor.py`](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/msmodelslim/processor/quant/fa3/processor.py)、[`recall_window.py`](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/msmodelslim/core/observer/recall_window.py)）进行说明。
 
 **步骤 1：声明支持**
 
@@ -234,7 +234,7 @@ if sync and dist.is_initialized():
 
 #### DistributedTaskScheduler
 
-[`DistributedTaskScheduler`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/task_scheduler/scheduler.py)在内部通过任务共享队列动态地向各 rank 下发任务，一个共享任务只被下发和执行一次，最终通过网络模块的同步实现各 rank 一致。开发者只需关心如何创建和提交算法子任务，DTS 内部自行完成任务调度。
+[`DistributedTaskScheduler`](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/msmodelslim/utils/distributed/task_scheduler/scheduler.py)在内部通过任务共享队列动态地向各 rank 下发任务，一个共享任务只被下发和执行一次，最终通过网络模块的同步实现各 rank 一致。开发者只需关心如何创建和提交算法子任务，DTS 内部自行完成任务调度。
 
 使用方法：
 
@@ -273,18 +273,18 @@ with DistributedTaskScheduler(self.model, disable_parallel=True) as scheduler:
 | 参数 / 机制 | 说明 |
 |-------------|------|
 | `sync_fn` | **任务级自定义同步**（`submit` 入参）；提供后**仅**执行该回调，不再对 `dependencies` 子树做下方模块级同步。适用于模型结构发生变化，如使用 IR 替换了模型结构，模块级同步无法满足需要，可自定义实现。|
-| `DTSMixin.distributed_sync` | **模块级自定义同步**：若 `dependencies` 子树中某子模块的类继承 [`DTSMixin`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/task_scheduler/sync.py) 并实现 `distributed_sync` 方法，则对该子模块调用自定义逻辑。适用于模型结构未产生变化，但默认同步又不能满足同步需要时，可自定义实现。|
+| `DTSMixin.distributed_sync` | **模块级自定义同步**：若 `dependencies` 子树中某子模块的类继承 [`DTSMixin`](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/msmodelslim/utils/distributed/task_scheduler/sync.py) 并实现 `distributed_sync` 方法，则对该子模块调用自定义逻辑。适用于模型结构未产生变化，但默认同步又不能满足同步需要时，可自定义实现。|
 | `default_module_state_sync` | **模块级默认同步**：以**执行该任务的 rank**（`record.executor_rank`）上的参数与 buffer 为源广播到各 rank，使各 rank 状态一致。 |
 
 ### 接入步骤
 
-**前置**：先完成 [完备性支持：接入多卡量化](#完备性支持接入多卡量化) 的适配和验证。
+1. 先完成 [完备性支持：接入多卡量化](#完备性支持接入多卡量化) 的适配和验证。
 
-1. **封装子任务函数（`fn`）**：将可拆分逻辑封装为 Processor 方法（如 `self._worker_fn`）。
+2. **封装子任务函数（`fn`）**：将可拆分逻辑封装为 Processor 方法（如 `self._worker_fn`）。
 
-2. **提交任务（`submit`）**：在 `with DistributedTaskScheduler(self.model, ...)` 内通过 `submit` 方法提交任务。
+3. **提交任务（`submit`）**：在 `with DistributedTaskScheduler(self.model, ...)` 内通过 `submit` 方法提交任务。
 
-3. **执行调度（`run`）**：各 rank 在同一 `with` 中完成全部 `submit` 后调用 `scheduler.run()`，由 DTS 自动分发并执行子任务，调用同步方法。
+4. **执行调度（`run`）**：各 rank 在同一 `with` 中完成全部 `submit` 后调用 `scheduler.run()`，由 DTS 自动分发并执行子任务，调用同步方法。
 
 **注意事项**
 
@@ -293,7 +293,7 @@ with DistributedTaskScheduler(self.model, disable_parallel=True) as scheduler:
 
 ### 接入案例：FlexAWQSSZ
 
-本小节以 [`FlexAWQSSZProcessor`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) 为例，说明如何在已完成 [完备性支持](#完备性支持接入多卡量化)之后接入 DTS 以进一步优化多卡量化效率。
+本小节以 [`FlexAWQSSZProcessor`](https://gitcode.com/Ascend/msmodelslim/blob/26.1.0/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) 为例，说明如何在已完成 [完备性支持](#完备性支持接入多卡量化)之后接入 DTS 以进一步优化多卡量化效率。
 
 **步骤 1：封装子任务函数**
 
