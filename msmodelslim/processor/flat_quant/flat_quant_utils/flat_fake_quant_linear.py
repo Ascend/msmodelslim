@@ -18,13 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import torch
-import torch.nn as nn
-from enum import Enum
+from torch import nn
 from typing import Any, ClassVar, Optional
 import torch.nn.functional as F
 from msmodelslim.processor.flat_quant.flat_quant_utils.fake_clip_quantizer import WeightQuantizer, ActivationQuantizer
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 
 class ForwardMode(BaseModel):
@@ -34,11 +34,7 @@ class ForwardMode(BaseModel):
 
     @classmethod
     def get_description(cls, mode: str) -> str:
-        descriptions = {
-            "org": "原生模式",
-            "calib": "校准模式",
-            "eval": "推理模式"
-        }
+        descriptions = {"org": "原生模式", "calib": "校准模式", "eval": "推理模式"}
         return descriptions.get(mode, "未知模式")
 
 
@@ -46,6 +42,7 @@ class FlatFakeQuantLinearConfig(BaseModel):
     """
     伪量化线性层的配置类，用于控制权重与激活的量化行为。
     """
+
     w_bits: int = Field(default=16, description="权重位宽")
     a_bits: int = Field(default=16, description="激活位宽")
     w_asym: bool = Field(default=False, description="权重是否使用非对称量化")
@@ -53,11 +50,14 @@ class FlatFakeQuantLinearConfig(BaseModel):
     lwc: bool = Field(default=False, description="是否启用权重的逐层量化（Layer-wise Weight Quantization）")
     lac: bool = Field(default=False, description="是否启用激活的逐层量化（Layer-wise Activation Quantization）")
     a_groupsize: int = Field(default=-1, description="激活分组大小（-1 表示按张量整体量化）")
-    a_per_tensor: bool = Field(default=False, description="激活是否按张量整体量化（True 表示 per-tensor，False 表示 per-channel）")
+    a_per_tensor: bool = Field(
+        default=False, description="激活是否按张量整体量化（True 表示 per-tensor，False 表示 per-channel）"
+    )
 
 
 class FlatFakeQuantLinear(nn.Module):
     """支持变换矩阵的伪量化线性层，具备模式切换与量化前向能力"""
+
     def __init__(
         self,
         config: FlatFakeQuantLinearConfig,
@@ -72,14 +72,14 @@ class FlatFakeQuantLinear(nn.Module):
             out_size=linear.weight.shape[0],
             perchannel=True,
             sym=not config.w_asym,
-            lwc=config.lwc
+            lwc=config.lwc,
         )
         self.act_quantizer = ActivationQuantizer(
             bits=config.a_bits,
             sym=not config.a_asym,
             lac=config.lac,
             groupsize=config.a_groupsize,
-            per_tensor=config.a_per_tensor
+            per_tensor=config.a_per_tensor,
         )
 
         self._mode = ForwardMode.ORG
@@ -102,7 +102,7 @@ class FlatFakeQuantLinear(nn.Module):
         return self.linear.weight
 
     @property
-    def bias(self) -> torch.Tensor | None:
+    def bias(self) -> Optional[torch.Tensor]:
         """获取当前层的偏置张量"""
         return self.linear.bias
 
@@ -117,10 +117,10 @@ class FlatFakeQuantLinear(nn.Module):
 
     def set_trans(
         self,
-        weight_in_trans: Any | None = None,
-        weight_out_trans: Any | None = None,
-        act_in_trans: Any | None = None,
-        save_trans: Any | None = None,
+        weight_in_trans: Optional[Any] = None,
+        weight_out_trans: Optional[Any] = None,
+        act_in_trans: Optional[Any] = None,
+        save_trans: Optional[Any] = None,
     ) -> None:
         """设置量化自适应变换矩阵，用于处理权重与激活的变换"""
         self.weight_in_trans = weight_in_trans
@@ -205,6 +205,7 @@ class FlatFakeQuantLinear(nn.Module):
 
 class FlatNormWrapper(nn.Module):
     """支持变换矩阵的归一化层包装器，用于在量化流程中处理归一化"""
+
     def __init__(
         self,
         norm: nn.Module,
@@ -229,7 +230,7 @@ class FlatNormWrapper(nn.Module):
         return self.norm.weight
 
     @property
-    def bias(self) -> torch.Tensor | None:
+    def bias(self) -> Optional[torch.Tensor]:
         """获取归一化层的偏置张量"""
         return self.norm.bias
 

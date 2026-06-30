@@ -12,7 +12,7 @@ Three rule families are kept separate on purpose:
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -29,7 +29,7 @@ class WeightOpConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: str
-    params: dict[str, Any] = Field(default_factory=dict)
+    params: Dict[str, Any] = Field(default_factory=dict)
 
 
 class WeightMappingRule(BaseModel):
@@ -43,9 +43,9 @@ class WeightMappingRule(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str
-    source_patterns: list[str]
-    target_patterns: list[str]
-    ops: list[WeightOpConfig] = Field(default_factory=list)
+    source_patterns: List[str]
+    target_patterns: List[str]
+    ops: List[WeightOpConfig] = Field(default_factory=list)
     module_kind: str = "linear"
     reversible: bool = True
 
@@ -59,11 +59,11 @@ class ModuleRule(BaseModel):
 
     match: str
     module_kind: str = "linear"
-    source_format: str | None = None
-    source_ir: IRKind | None = None
-    tensor_map: dict[str, str] = Field(default_factory=dict)
+    source_format: Optional[str] = None
+    source_ir: Optional[IRKind] = None
+    tensor_map: Dict[str, str] = Field(default_factory=dict)
     convert: bool = True
-    defaults: dict[str, Any] = Field(default_factory=dict)
+    defaults: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ConvertRule(BaseModel):
@@ -73,7 +73,7 @@ class ConvertRule(BaseModel):
 
     match: str
     target_ir: IRKind
-    route: list[IRKind] | Literal["auto"] = "auto"
+    route: Union[List[IRKind], Literal["auto"]] = "auto"
     action: Literal["transform", "passthrough", "skip"] = "transform"
 
 
@@ -84,7 +84,7 @@ class ConvertDefaults(BaseModel):
 
     src_format: str = "auto"
     dst_format: str = "ascendv1"
-    dst_ir: IRKind | None = None
+    dst_ir: Optional[IRKind] = None
 
 
 class ParallelConfig(BaseModel):
@@ -93,8 +93,8 @@ class ParallelConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     max_workers: int = 1
-    max_inflight_bytes: int | None = None
-    max_tensor_bytes_per_task: int | None = None
+    max_inflight_bytes: Optional[int] = None
+    max_tensor_bytes_per_task: Optional[int] = None
     shard_cache_size: int = 1
     worker_device: str = "cpu"
     # thread: 组内 ThreadPoolExecutor（受 GIL 限制）；process: 组间 ProcessPoolExecutor，纯 CPU 计算并行
@@ -107,7 +107,7 @@ class ParallelConfig(BaseModel):
     # 单个 dependency group 的最大任务数；超过则按任务切成多个子组分散到不同进程并行，
     # 缓解 MoE 大组（一层 512 个 expert 任务）只能单进程承包导致的收尾拖尾、多核空闲。
     # None 或 <=0 表示不拆分（保持整组，fused 缓存复用率最高）。
-    max_group_size: int | None = None
+    max_group_size: Optional[int] = None
 
 
 class ConvertConfig(BaseModel):
@@ -119,12 +119,12 @@ class ConvertConfig(BaseModel):
 
     model_path: str
     save_path: str
-    model_family: str | None = None
+    model_family: Optional[str] = None
     dst_format: str = "ascendv1"
     defaults: ConvertDefaults = Field(default_factory=ConvertDefaults)
-    preprocess_rules: list[WeightMappingRule] = Field(default_factory=list)
-    module_rules: list[ModuleRule] = Field(default_factory=list)
-    convert_rules: list[ConvertRule] = Field(default_factory=list)
+    preprocess_rules: List[WeightMappingRule] = Field(default_factory=list)
+    module_rules: List[ModuleRule] = Field(default_factory=list)
+    convert_rules: List[ConvertRule] = Field(default_factory=list)
     parallel: ParallelConfig = Field(default_factory=ParallelConfig)
 
     @field_validator("model_path", "save_path", mode="after")

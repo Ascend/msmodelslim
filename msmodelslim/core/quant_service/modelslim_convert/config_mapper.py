@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -40,32 +40,32 @@ class RenamePreprocessConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: Literal["rename"] = "rename"
-    patterns: list[RenamePattern] = Field(default_factory=list)
+    patterns: List[RenamePattern] = Field(default_factory=list)
 
 
 class ConvertOpConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     type: str
-    dim: int | None = None
-    projections: list[str] | None = None
+    dim: Optional[int] = None
+    projections: Optional[List[str]] = None
 
 
 class ConvertPreprocessConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: Literal["convert"] = "convert"
-    source: list[str] = Field(default_factory=list)
-    target: list[str] = Field(default_factory=list)
-    ops: list[ConvertOpConfig] = Field(default_factory=list)
+    source: List[str] = Field(default_factory=list)
+    target: List[str] = Field(default_factory=list)
+    ops: List[ConvertOpConfig] = Field(default_factory=list)
 
 
 class LinearConvertConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    match: list[str] = Field(default_factory=list)
+    match: List[str] = Field(default_factory=list)
     target: IRKind
-    route: list[IRKind] | Literal["auto"] = "auto"
+    route: Union[List[IRKind], Literal["auto"]] = "auto"
 
 
 class SaveConfig(BaseModel):
@@ -81,7 +81,7 @@ class ParallelSpecConfig(BaseModel):
     # workers=1：单进程组内线程（可配 NPU）；workers>1：组间多进程 + 组内线程（CPU，突破 GIL）
     workers: int = 1
     # 单组最大任务数；超过则拆成多个子组分散到不同进程，缓解 MoE 大组拖尾
-    max_group_size: int | None = None
+    max_group_size: Optional[int] = None
     # 仅 workers=1 且 worker_device 指向 NPU 时生效
     worker_device: str = "cpu"
     npu_max_workers: int = 1
@@ -92,9 +92,9 @@ class ModelslimConvertServiceConfig(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    preprocess: list[dict[str, Any]] = Field(default_factory=list)
-    linears: list[LinearConvertConfig] = Field(default_factory=list)
-    save: list[SaveConfig] = Field(default_factory=list)
+    preprocess: List[Dict[str, Any]] = Field(default_factory=list)
+    linears: List[LinearConvertConfig] = Field(default_factory=list)
+    save: List[SaveConfig] = Field(default_factory=list)
     parallel: ParallelSpecConfig = Field(default_factory=ParallelSpecConfig)
     defaults: ConvertDefaults = Field(default_factory=ConvertDefaults)
 
@@ -115,8 +115,8 @@ _DEFAULT_SHARD_CACHE_SIZE = 1
 _DEFAULT_WORKER_THREADS = 4
 
 
-def _preprocess_to_rules(spec: ModelslimConvertServiceConfig) -> list[WeightMappingRule]:
-    rules: list[WeightMappingRule] = []
+def _preprocess_to_rules(spec: ModelslimConvertServiceConfig) -> List[WeightMappingRule]:
+    rules: List[WeightMappingRule] = []
     for idx, raw in enumerate(spec.preprocess):
         ptype = raw.get("type")
         if ptype == "rename":
@@ -148,8 +148,8 @@ def _preprocess_to_rules(spec: ModelslimConvertServiceConfig) -> list[WeightMapp
     return rules
 
 
-def _map_convert_ops(ops: list[ConvertOpConfig]) -> list[WeightOpConfig]:
-    mapped: list[WeightOpConfig] = []
+def _map_convert_ops(ops: List[ConvertOpConfig]) -> List[WeightOpConfig]:
+    mapped: List[WeightOpConfig] = []
     for op in ops:
         if op.type == "chunk":
             mapped.append(
@@ -174,7 +174,7 @@ def _map_convert_ops(ops: list[ConvertOpConfig]) -> list[WeightOpConfig]:
 
 
 # 源 IR -> (source_format, 额外 tensor 绑定)。决定虚拟树如何绑定权重并供 router 选路。
-_SOURCE_IR_BINDINGS: dict[IRKind, tuple[str, dict[str, str]]] = {
+_SOURCE_IR_BINDINGS: Dict[IRKind, Tuple[str, Dict[str, str]]] = {
     IRKind.FP8_BLOCK: (
         "fp8_block",
         {"weight": "{module}.weight", "weight_scale_inv": "{module}.weight_scale_inv"},
@@ -192,7 +192,7 @@ _SOURCE_IR_BINDINGS: dict[IRKind, tuple[str, dict[str, str]]] = {
 }
 
 
-def _infer_source_ir(route: list[IRKind] | str) -> IRKind | None:
+def _infer_source_ir(route: Union[List[IRKind], str]) -> Optional[IRKind]:
     """显式 route 的首元素即源 IR；route=auto 时由虚拟树按 catalog dtype 推断。"""
     if route == "auto":
         return None
@@ -201,7 +201,9 @@ def _infer_source_ir(route: list[IRKind] | str) -> IRKind | None:
     return IRKind.FLOAT
 
 
-def _module_rule_fields_for_route(route: list[IRKind] | str) -> tuple[str | None, IRKind | None, dict[str, str]]:
+def _module_rule_fields_for_route(
+    route: Union[List[IRKind], str],
+) -> Tuple[Optional[str], Optional[IRKind], Dict[str, str]]:
     """Return (source_format, source_ir, tensor_map) for a linear route spec."""
     source_ir = _infer_source_ir(route)
     if source_ir is None:
@@ -218,10 +220,10 @@ def _module_rule_fields_for_route(route: list[IRKind] | str) -> tuple[str | None
 
 
 def _linears_to_module_and_convert_rules(
-    linears: list[LinearConvertConfig],
-) -> tuple[list[ModuleRule], list[ConvertRule]]:
-    module_rules: list[ModuleRule] = []
-    convert_rules: list[ConvertRule] = []
+    linears: List[LinearConvertConfig],
+) -> Tuple[List[ModuleRule], List[ConvertRule]]:
+    module_rules: List[ModuleRule] = []
+    convert_rules: List[ConvertRule] = []
     for linear in linears:
         source_format, source_ir, tensor_map = _module_rule_fields_for_route(linear.route)
         for pattern in linear.match:
@@ -244,17 +246,17 @@ def _linears_to_module_and_convert_rules(
     return module_rules, convert_rules
 
 
-def _resolve_dst_format(save: list[SaveConfig], defaults: ConvertDefaults) -> str:
+def _resolve_dst_format(save: List[SaveConfig], defaults: ConvertDefaults) -> str:
     if save:
         return _SAVE_TYPE_MAP.get(save[0].type.lower(), save[0].type.lower())
     return defaults.dst_format
 
 
 def spec_to_convert_config(
-    spec: ModelslimConvertServiceConfig | dict[str, Any],
+    spec: Union[ModelslimConvertServiceConfig, Dict[str, Any]],
     model_path: str,
     save_path: str,
-    model_family: str | None = None,
+    model_family: Optional[str] = None,
 ) -> ConvertConfig:
     """将 quant spec 转为可执行的 ``ConvertConfig``。"""
     if not isinstance(spec, ModelslimConvertServiceConfig):

@@ -23,21 +23,23 @@ from dataclasses import dataclass, fields, is_dataclass
 from typing import Any, Optional
 
 import torch
-import torch.nn as nn
+from torch import nn
 
-from msmodelslim.core.context.interface import IContext, IValidatedState, get_current_context 
+from msmodelslim.core.context.interface import IContext, IValidatedState, get_current_context
 from msmodelslim.processor.anti_outlier.awq.best_scales_search import AWQSearcher
 
 AWQ_CONTEXT_NAMESPACE = "awq"
+
 
 def get_global_awq_stats() -> IValidatedState:
     global_context: Optional[IContext] = get_current_context()
     if global_context is None:
         raise RuntimeError("No global context found when trying to get AWQ context.")
-    awq_namespace = global_context[AWQ_CONTEXT_NAMESPACE]
+    awq_namespace = global_context[AWQ_CONTEXT_NAMESPACE]  # pylint: disable=unsubscriptable-object
     if awq_namespace is None:
         raise RuntimeError("No AWQ context namespace found in the global context.")
     return awq_namespace.state
+
 
 @dataclass
 class AWQConfig:
@@ -47,6 +49,7 @@ class AWQConfig:
         version: Config version for dispatch.
         awq_searcher: The AWQSearcher instance to use for scale searching.
     """
+
     version: int
     awq_searcher: AWQSearcher
 
@@ -60,6 +63,7 @@ class AWQContext:
         inspect_module: The module being used for loss computation.
         inspect_module_args: Cached intermediate arguments for the inspect module.
     """
+
     act_mean: torch.Tensor
     inspect_module: nn.Module
     inspect_module_args: Any
@@ -69,38 +73,35 @@ def offload(data: Any, device: Optional[torch.device] = torch.device("cpu")) -> 
     """Recursively move all tensors in a value tree to ``device``."""
     if device is None:
         return data
-    match data:
-        case torch.Tensor():
-            return data.to(device) if device else data
-        case list():
-            return [offload(v, device) for v in data]
-        case tuple():
-            return tuple(offload(v, device) for v in data)
-        case dict():
-            return {k: offload(v, device) for k, v in data.items()}
-        case _ if is_dataclass(data):
-            for field in fields(data):
-                v = getattr(data, field.name)
-                setattr(data, field.name, offload(v, device))
-            return data
-        case _:
-            return data
+    if isinstance(data, torch.Tensor):
+        return data.to(device) if device else data
+    if isinstance(data, list):
+        return [offload(v, device) for v in data]
+    if isinstance(data, tuple):
+        return tuple(offload(v, device) for v in data)
+    if isinstance(data, dict):
+        return {k: offload(v, device) for k, v in data.items()}
+    if is_dataclass(data):
+        for field in fields(data):
+            v = getattr(data, field.name)
+            setattr(data, field.name, offload(v, device))
+        return data
+    return data
+
 
 def onload(data: Any, device: Optional[torch.device] = None) -> Any:
     """Recursively move all WrapperValue-wrapped tensors in a value tree to their onload device."""
-    match data:
-        case torch.Tensor():
-            return data.to(device) if device else data
-        case list():
-            return [onload(v, device) for v in data]
-        case tuple():
-            return tuple(onload(v, device) for v in data)
-        case dict():
-            return {k: onload(v, device) for k, v in data.items()}
-        case _ if is_dataclass(data):
-            for field in fields(data):
-                v = getattr(data, field.name)
-                setattr(data, field.name, onload(v, device))
-            return data
-        case _:
-            return data
+    if isinstance(data, torch.Tensor):
+        return data.to(device) if device else data
+    if isinstance(data, list):
+        return [onload(v, device) for v in data]
+    if isinstance(data, tuple):
+        return tuple(onload(v, device) for v in data)
+    if isinstance(data, dict):
+        return {k: onload(v, device) for k, v in data.items()}
+    if is_dataclass(data):
+        for field in fields(data):
+            v = getattr(data, field.name)
+            setattr(data, field.name, onload(v, device))
+        return data
+    return data
