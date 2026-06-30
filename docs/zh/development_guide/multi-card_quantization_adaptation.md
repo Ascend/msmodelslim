@@ -278,13 +278,13 @@ with DistributedTaskScheduler(self.model, disable_parallel=True) as scheduler:
 
 ### 接入步骤
 
-**前置**：先完成 [完备性支持：接入多卡量化](#完备性支持接入多卡量化) 的适配和验证。
+1. 先完成 [完备性支持：接入多卡量化](#完备性支持接入多卡量化) 的适配和验证。
 
-1. **封装子任务函数（`fn`）**：将可拆分逻辑封装为 Processor 方法（如 `self._worker_fn`）。
+2. **封装子任务函数（`fn`）**：将可拆分逻辑封装为 Processor 方法（如 `self._worker_fn`）。
 
-2. **提交任务（`submit`）**：在 `with DistributedTaskScheduler(self.model, ...)` 内通过 `submit` 方法提交任务。
+3. **提交任务（`submit`）**：在 `with DistributedTaskScheduler(self.model, ...)` 内通过 `submit` 方法提交任务。
 
-3. **执行调度（`run`）**：各 rank 在同一 `with` 中完成全部 `submit` 后调用 `scheduler.run()`，由 DTS 自动分发并执行子任务，调用同步方法。
+4. **执行调度（`run`）**：各 rank 在同一 `with` 中完成全部 `submit` 后调用 `scheduler.run()`，由 DTS 自动分发并执行子任务，调用同步方法。
 
 **注意事项**
 
