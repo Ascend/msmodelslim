@@ -15,15 +15,16 @@
 
 ## 支持的模型版本与量化策略
 
-| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A8C8 | W8A16 | W4A8 | W4A8C8 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
+| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A8C8 | W8A16 | W4A8 | W4A8C8 | W4A16 | W4A4C8(mxfp4)  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
 |---------|---------|---------------------------------------------------------------|-----|-----|-----|-----|-----|--------|------|---------|----------|-----------|-----------------------------------------------|
-| **GLM5-MOE** | GLM-5 | <https://huggingface.co/zai-org/GLM-5> | ✅ |  |  | ✅ |  |        |   |  |   |   ||
-| **GLM5-MOE** | GLM-5.1 | <https://huggingface.co/zai-org/GLM-5.1> | ✅ | ✅ |  | ✅ | ✅ |        |   |  |   |   ||
+| **GLM5-MOE** | GLM-5 | <https://huggingface.co/zai-org/GLM-5> | ✅ |  |  | ✅ |  |        |   |  |   |   | [W8A8](#glm-5-w8a8量化) / [W4A8](#glm-5-w4a8量化) |
+| **GLM5-MOE** | GLM-5.1 | <https://huggingface.co/zai-org/GLM-5.1> | ✅ | ✅ |  | ✅ | ✅ |        | ✅ ¹ |  |   |   | [W8A8](#glm-51-w8a8量化) / [W4A8](#glm-51-w4a8量化) / [W8A8C8](#glm-51-w8a8c8量化) / [W4A8C8](#glm-51-w4a8c8量化) / [W4A4C8](#glm-51-w4a4c8-mxfp4量化) |
 
 **说明：**
 
 - ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
 - 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- ✅ ¹ 表示该量化策略已验证，但不支持一键量化，需使用 `--config_path` 参数指定配置文件。
 - 点击量化命令列中的链接可跳转到对应的具体量化命令。
 
 ## 一键量化生成量化权重
@@ -31,6 +32,8 @@
 一键量化命令参考[《一键量化使用指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/user_guide/feature_guide/quick_quantization_v1/usage/)。
 
 ### GLM-5 一键量化命令示例
+
+#### GLM-5 W8A8量化
 
 ``` bash
 msmodelslim quant \
@@ -45,7 +48,24 @@ msmodelslim quant \
 - 其中`MODEL_PATH`为GLM-5模型的路径，`SAVE_PATH`为量化后的权重保存路径。
 - 该一键量化命令匹配使用的量化配置文件为[glm_5_w8a8.yaml](../../lab_practice/glm_5/glm_5_w8a8.yaml)，可以在其中查看具体的量化策略。
 
+#### GLM-5 W4A8量化
+
+``` bash
+msmodelslim quant \
+  --model_path ${MODEL_PATH} \
+  --save_path ${SAVE_PATH} \
+  --device npu:0 \
+  --model_type GLM-5 \
+  --quant_type w4a8 \
+  --trust_remote_code True
+```
+
+- 其中`MODEL_PATH`为GLM-5模型的路径，`SAVE_PATH`为量化后的权重保存路径。
+- 该一键量化命令匹配使用的量化配置文件为[glm_5_w4a8.yaml](../../lab_practice/glm_5/glm_5_w4a8.yaml)，可以在其中查看具体的量化策略。
+
 ### GLM-5.1 一键量化命令示例
+
+#### GLM-5.1 W8A8量化
 
 ``` bash
 msmodelslim quant \
@@ -58,5 +78,65 @@ msmodelslim quant \
 ```
 
 - 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
-- 如需使用 W4A8 量化，将 `--quant_type` 替换为 `w4a8` 即可。
 - 该一键量化命令匹配使用的量化配置文件为[glm_5_1_w8a8.yaml](../../lab_practice/glm_5/glm_5_1_w8a8.yaml)，可以在其中查看具体的量化策略。
+
+#### GLM-5.1 W4A8量化
+
+``` bash
+msmodelslim quant \
+  --model_path ${MODEL_PATH} \
+  --save_path ${SAVE_PATH} \
+  --device npu:0 \
+  --model_type GLM-5.1 \
+  --quant_type w4a8 \
+  --trust_remote_code True
+```
+
+- 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
+- 该一键量化命令匹配使用的量化配置文件为[glm_5_1_w4a8.yaml](../../lab_practice/glm_5/glm_5_1_w4a8.yaml)，可以在其中查看具体的量化策略。
+
+#### GLM-5.1 W8A8C8量化
+
+``` bash
+msmodelslim quant \
+  --model_path ${MODEL_PATH} \
+  --save_path ${SAVE_PATH} \
+  --device npu:0 \
+  --model_type GLM-5.1 \
+  --quant_type w8a8c8 \
+  --trust_remote_code True
+```
+
+- 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
+- 该一键量化命令匹配使用的量化配置文件为[glm_5_1_w8a8c8.yaml](../../lab_practice/glm_5/glm_5_1_w8a8c8.yaml)，可以在其中查看具体的量化策略。
+
+#### GLM-5.1 W4A8C8量化
+
+``` bash
+msmodelslim quant \
+  --model_path ${MODEL_PATH} \
+  --save_path ${SAVE_PATH} \
+  --device npu:0 \
+  --model_type GLM-5.1 \
+  --quant_type w4a8c8 \
+  --trust_remote_code True
+```
+
+- 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
+- 该一键量化命令匹配使用的量化配置文件为[glm_5_1_w4a8c8.yaml](../../lab_practice/glm_5/glm_5_1_w4a8c8.yaml)，可以在其中查看具体的量化策略。
+
+#### GLM-5.1 W4A4C8 (mxfp4)量化
+
+**注意：该量化类型不支持一键量化，需要使用配置文件路径方式。**
+
+``` bash
+msmodelslim quant \
+  --model_path ${MODEL_PATH} \
+  --save_path ${SAVE_PATH} \
+  --device npu:0 \
+  --config_path ../../lab_practice/glm_5/glm_5_1_w4a4c8_mxfp4.yaml \
+  --trust_remote_code True
+```
+
+- 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
+- 由于该量化类型不支持一键量化，需要通过`--config_path`参数指定量化配置文件[glm_5_1_w4a4c8_mxfp4.yaml](../../lab_practice/glm_5/glm_5_1_w4a4c8_mxfp4.yaml)，可以在其中查看具体的量化策略。
