@@ -48,15 +48,15 @@ evaluation:
 
 **模型适配（按策略）**
 
-若调优策略需**自动运行敏感层分析**（生成回退候选），模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**（即 `core/runner/pipeline_interface.py` 中的 `PipelineInterface`，与 CLI `msmodelslim analyze` 及 《[敏感层分析使用说明](../sensitive_layer_analysis/usage.md)》 要求相同）。策略内由领域层 `PipelineAnalysisService` 调用 `init_model`、`handle_dataset` 及 visit/forward pipeline；**不会在策略侧预先 `load_model`**。
+若调优策略需**自动运行敏感层分析**（生成回退候选），模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**（即 `core/runner/pipeline_interface.py` 中的 `PipelineInterface`，与 CLI `msmodelslim analyze` 及《[敏感层分析使用说明](../sensitive_layer_analysis/usage.md)》所要求的模型接口一致）。策略内由领域层 `PipelineAnalysisService` 调用 `init_model`、`handle_dataset` 及 visit/forward pipeline；**不会在策略侧预先 `load_model`**。
 
 各策略在自动敏感层分析之上的**额外**要求如下：
 
 | 策略 | 模型适配器要求 |
 |------|----------------|
 | `standing_high` | **`ModelSlimPipelineInterfaceV1`**（始终自动敏感层分析） |
-| `standing_high_with_experience` | 上表接口 + **`StandingHighWithExperienceInterface`**（`load_model`，离群值抑制能力探测） |
-| `binary_fallback` | 配置了非空 `rollback_candidates` 时无额外要求（跳过敏感层分析）；否则须 **`ModelSlimPipelineInterfaceV1`** |
+| `standing_high_with_experience` | **`ModelSlimPipelineInterfaceV1`** + **`StandingHighWithExperienceInterface`**（`load_model`，离群值抑制能力探测） |
+| `binary_fallback` | **`ModelSlimPipelineInterfaceV1`** (实现V1架构) |
 
 详见各策略文档「适用要求 / 模型适配」章节及 《[LLM 大模型接入指南](../../../development_guide/integrating_models.md#自动调优与敏感层分析)》。
 

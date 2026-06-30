@@ -28,7 +28,7 @@ strategy:
   type: binary_fallback
   rollback_path: spec.process.1.exclude
   rollback_candidates: []   # 省略或空 → 跑敏感层分析
-  analysis_dataset: mix_calib.jsonl  # 可选；默认 template.spec.dataset
+  analysis_dataset: mix_calib.jsonl  # 可选；默认取自 template.spec.dataset 字段的值
   template:
     apiversion: modelslim_v1
     metadata:
@@ -77,9 +77,9 @@ rollback_candidates:
 |------|------|
 | `type` | 固定为 `binary_fallback` |
 | `template` | 完整最佳实践 PracticeConfig（含 `apiversion`、`metadata`、`spec`）；`apiversion` 必须为 `modelslim_v1` |
-| `rollback_path` | 点分路径，指向 template 内**必须为 list** 的字段，如 `spec.process.1.exclude` |
+| `rollback_path` | 点分路径，指定 template 内需被算法操作的目标字段，该字段必须为 **list 类型**（算法将在此列表中写入回退层名），如 `spec.process.1.exclude` |
 | `rollback_candidates` | 可选有序回退候选；非空则跳过敏感层分析 |
-| `analysis_dataset` | 可选；敏感层分析校准集名称，默认 `template.spec.dataset` |
+| `analysis_dataset` | 可选；敏感层分析校准集名称，默认使用 template 中 `spec.dataset` 字段的值 |
 
 ### 与 Standing High 对比
 
