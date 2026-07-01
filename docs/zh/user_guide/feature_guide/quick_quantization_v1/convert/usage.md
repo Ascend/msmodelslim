@@ -177,7 +177,7 @@ spec:                           # 转换任务具体配置
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | match | 字符串列表 | 待转换模块路径模式，支持 `*` 通配。 |
-| target | IRKind | 目标 IR。当前支持：`FLOAT`（BF16 浮点）、`W8A8_MXFP8`、。 |
+| target | IRKind | 目标 IR。当前支持：`FLOAT`（BF16 浮点）、`W8A8_MXFP8`。 |
 | route | `"auto"` 或 IRKind 列表 | 源到目标的 IR 路径约束。默认 `"auto"`。 |
 
 **配置示例**（Qwen3-8B dense，7×36 个 linear 转 MXFP8）：
