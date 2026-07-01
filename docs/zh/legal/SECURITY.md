@@ -54,7 +54,7 @@ MindStudio 社区非常重视社区版本的安全性，专门设置了漏洞管
 
 对于每一个安全漏洞，MindStudio 社区会安排人员进行跟踪和处理，漏洞处理的端到端流程如下图所示。
 
-   ![漏洞处理流程](images/vulnerability_handling_process.png)
+   ![漏洞处理流程](./images/vulnerability_handling_process.png)
 
 下面将重点解释漏洞上报、漏洞评估、漏洞披露的流程。
 
@@ -144,7 +144,7 @@ MindStudio 通过以下向量评估一个漏洞的严重等级：
 
 ## 公网地址声明
 
-参考[公网URL说明](public_urls.xlsx)。
+参考[公网URL说明](./public_urls.xlsx)。
 
 ## 公开接口声明
 

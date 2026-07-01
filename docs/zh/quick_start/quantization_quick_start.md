@@ -17,7 +17,7 @@ vllm-ascend提供用于部署的Docker镜像，可以从镜像仓库[ascend/vllm
 
 ### 2.2 镜像内安装 msModelSlim
 
-安装命令具体参考[msModelSlim安装指导](../install_guide/install_guide.md)
+安装命令具体参考《[msModelSlim安装指导](../install_guide/install_guide.md)》
 
 ### 2.3 下载大模型原始浮点权重
 
@@ -47,7 +47,7 @@ msmodelslim quant [ARGS]
 
 #### 3.1.2 参数说明
 
-参数说明可以参考[一键量化参数说明](../user_guide/feature_guide/quick_quantization_v1/usage.md#42-参数说明)
+参数说明可以参考《[一键量化参数说明](../user_guide/feature_guide/quick_quantization_v1/usage.md#42-参数说明)》
 
 **说明：**
 
@@ -60,7 +60,7 @@ msmodelslim quant [ARGS]
 使用一键量化功能量化 Qwen2.5-7B-Instruct 模型，量化方式采用 w8a8：
 
 ```bash
-msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu:0,1 --model_type Qwen2.5-7B-Instruct --quant_type w8a8 --trust_remote_code True
+msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen2.5-7B-Instruct --quant_type w8a8 --trust_remote_code True
 ```
 
 其中：
@@ -101,8 +101,16 @@ python3 example/Qwen/quant_qwen.py [ARGS]
 
 **示例 1：Qwen2.5-7B-Instruct W8A8 量化**
 
+> **注意：** 传统量化方式需要**通过源码安装 msModelSlim**。执行以下命令克隆代码并进入源码目录：
+>
+> ```bash
+> git clone https://gitcode.com/Ascend/msmodelslim.git
+> cd msmodelslim
+> ```
+
+进入源码目录后，执行量化脚本：
+
 ```bash
-cd msmodelslim
 python3 example/Qwen/quant_qwen.py \
     --model_path ${MODEL_PATH} \
     --save_directory ${SAVE_PATH} \
@@ -126,7 +134,9 @@ python3 example/Qwen/quant_qwen.py \
 
 ## 4. 量化结果输出
 
-量化完成后，在保存路径目录下会生成以下文件：
+量化完成后，在保存路径目录下会生成量化权重及相关配置文件。不同量化方式的输出文件略有差异，分别说明如下：
+
+### 4.1 一键量化（V1）输出目录
 
 ```yaml
 ├── config.json                          # 原始模型配置文件
@@ -135,15 +145,31 @@ python3 example/Qwen/quant_qwen.py \
 ├── quant_model_weight_w8a8.safetensors  # 量化权重文件
 ├── tokenizer_config.json                # 原始分词器配置文件
 ├── tokenizer.json                        # 原始分词器词汇表
-├── {model_type}_best_practice.yaml       # 量化配置协议文件
+├── {model_type}_best_practice.yaml      # 量化配置协议文件
 └── vocab.json                            # 原始词汇映射文件（部分模型）
 ```
 
-**文件说明：**
+### 4.2 传统量化（V0）输出目录
+
+```yaml
+├── config.json                          # 原始模型配置文件
+├── generation_config.json               # 原始生成配置文件
+├── quant_model_description.json         # 量化权重描述文件
+├── quant_model_weight_w8a8.safetensors  # 量化权重文件
+├── tokenizer_config.json                # 原始分词器配置文件
+├── tokenizer.json                        # 原始分词器词汇表
+└── vocab.json                            # 原始词汇映射文件（部分模型）
+```
+
+>[!NOTE]
+>
+>传统量化方式不会生成 `best_practice.yaml` 文件，其他文件内容与一键量化基本一致。
+
+### 4.3 文件说明
 
 - `quant_model_description.json`（或 `quant_model_description_{quant_type}.json`）- 包含量化参数和配置信息，描述了每个权重的量化类型（W8A8、FLOAT 等）
 - `quant_model_weight_{quant_type}.safetensors` - 实际的量化模型权重文件
-- `{model_type}_best_practice.yaml` - 记录本次量化所使用的完整配置信息，可用于复现该量化权重
+- `{model_type}_best_practice.yaml`（仅一键量化生成）- 记录本次量化所使用的完整配置信息，可用于复现该量化权重
 - 其他文件为模型推理所需的配置和词汇表文件，来自原始浮点目录
 
 ## 5. 量化后权重的使用
@@ -240,7 +266,7 @@ for output in outputs:
 
 ### 6.1 支持的模型和量化类型
 
-可通过[大模型支持矩阵](../user_guide/model_support/foundation_model_support_matrix.md)查看不同模型的支持情况：
+可通过《[大模型支持矩阵](../user_guide/model_support/foundation_model_support_matrix.md)》查看不同模型的支持情况：
 
 - 标记了`一键量化`的模型支持一键量化方式。
 - 所有在 [`example/`](../../../example/) 目录下有量化脚本的模型都支持传统量化方式。
@@ -249,12 +275,12 @@ for output in outputs:
 
 对于过大的模型（7B 及以上），如果遇到显存不足的问题，可以尝试：
 
-1. **使用逐层量化**：在一键量化中默认生效[逐层量化](../user_guide/feature_guide/quick_quantization_v1/usage.md#51-逐层量化及分布式逐层量化)，传统量化中不支持。
+1. **使用逐层量化**：在一键量化中默认生效《[逐层量化](../user_guide/feature_guide/quick_quantization_v1/usage.md#51-逐层量化及分布式逐层量化)》，传统量化中不支持。
 2. **使用 CPU 量化**：设置 `--device cpu`（一键量化）或 `--device_type cpu`（传统量化），速度较慢但显存占用低。
 
 ### 6.3 支持的量化算法
 
-对于一键量化支持的多种算法，可以参考[一键量化 V1 架构支持的算法](../user_guide/quantization_algorithms/README.md)。
+对于一键量化支持的多种算法，可以参考《[一键量化 V1 架构支持的算法](../user_guide/quantization_algorithms/README.md)》。
 
 ### 6.4 常见问题
 
@@ -271,7 +297,7 @@ A: 可以尝试：
 
 1. 使用更高精度的量化类型（如从 w4a8 改为 w8a8）。
 2. 参考 [`msmodelslim/lab_practice`](../../../lab_practice/) 路径下模型对应的最佳实践配置。
-3. 检查离群值抑制算法、量化策略、校准数据集等是否合适，参考[量化精度调优指南](../case_studies/quantization_precision_tuning_guide.md)。
+3. 检查离群值抑制算法、量化策略、校准数据集等是否合适，参考《[量化精度调优指南](../best_practices/quantization_precision_tuning_guide.md)》。
 
 **Q: 如何验证量化效果？**
 
