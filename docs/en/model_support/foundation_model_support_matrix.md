@@ -634,10 +634,6 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
     </tr>
     <tr>
-    </tr>
-    <tr>
-    </tr>
-    <tr>
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/HunYuan/README.md">HunYuan series</a></strong></td>
       <td>Hunyuan-A52B-Instruct</td>
       <td>transformers>=4.48.2</td>

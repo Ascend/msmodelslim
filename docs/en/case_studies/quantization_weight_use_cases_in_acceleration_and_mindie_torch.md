@@ -16,7 +16,7 @@ Install msModelSlim. For details, see [msModelSlim Installation Guide](../gettin
 
   (1) Prepare the model weight files.
 
-```tex
+```text
 ├── config.json
 ├── model-00001-of-00003.safetensors
 ├── model-00002-of-00003.safetensors
@@ -47,7 +47,7 @@ bash examples/models/llama/generate_quant_weight.sh -src {floating_point_weight_
 
   (3) Directory layout after quantization:
 
-```tex
+```text
 ├─ config.json
 ├─ quant_model_weight_w8a8.safetensors
 ├─ quant_model_description_w8a8.json
@@ -64,7 +64,7 @@ In safetensors, the data is stored as a dictionary with two parts: the quantized
 
 The following is a partial view of `quant_model_weight_w8a8.safetensors` after quantization:
 
-```tex
+```text
 {
   "model.embed_tokens.weight": tensor([...]),
   "model.layers.0.self_attn.q_proj.weight": tensor([...]),
@@ -79,7 +79,7 @@ The following is a partial view of `quant_model_weight_w8a8.safetensors` after q
 
 The following is a partial view of `quant_model_description_w8a8.json` after quantization:
 
-```tex
+```text
 {
   "model_quant_type": "W8A8",                               # The overall quantization type is W8A8.
   "model.embed_tokens.weight": "FLOAT",                     # `embed_tokens` weights from the floating-point model

@@ -150,7 +150,7 @@ After quantization is complete, the following files are generated in the save di
 
 After quantization is complete, you can use the generated quantized weights for inference. The usage method depends on the inference framework:
 
-### 1. 1. Using Quantized Weights in vllm-ascend
+### 1. Using Quantized Weights in vllm-ascend
 
 You can run the Docker container by referring to the vllm-ascend official tutorial for [Qwen3-32B-W4A4](https://docs.vllm.ai/projects/ascend/en/latest/tutorials/models/Qwen3-32B-W4A4.html).
 
@@ -208,7 +208,7 @@ from vllm import LLM, SamplingParams
 
 prompts = [
     "Hello, my name is",
-    "The future of AI is",
+    "The future of AI is"
 ]
 
 sampling_params = SamplingParams(

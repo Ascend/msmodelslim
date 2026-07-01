@@ -7,7 +7,7 @@ Quantization parameter configuration class, which stores the parameters configur
 ## Prototype
 
 ```python
-QuantConfig(w_bit=8, a_bit=8, w_signed=True, a_signed=False, w_sym=True, a_sym=False, input_shape=None, act_quant=True, act_method=0, quant_mode=0, disable_names=None, amp_num=0, squant_mode='squant' , keep_acc=None, sigma=25, is_fp=False, disable_first_layer=True, disable_last_layer=True, is_optimize_graph=True, is_dynamic_shape=False, use_onnx=True, num_input=0, quant_param_ops=None, atc_input_shape=None, graph_optimize_level=0, shut_down_structures=None, device_id=0, om_method='aoe')
+QuantConfig(w_bit=8, a_bit=8, w_signed=True, a_signed=False, w_sym=True, a_sym=False, input_shape=None, act_quant=True, act_method=0, quant_mode=0, disable_names=None, amp_num=0, squant_mode='squant', keep_acc=None, sigma=25, is_fp=False, disable_first_layer=True, disable_last_layer=True, is_optimize_graph=True, is_dynamic_shape=False, use_onnx=True, num_input=0, quant_param_ops=None, atc_input_shape=None, graph_optimize_level=0, shut_down_structures=None, device_id=0, om_method='aoe')
 ```
 
 ## Parameters
@@ -46,13 +46,13 @@ QuantConfig(w_bit=8, a_bit=8, w_signed=True, a_signed=False, w_sym=True, a_sym=F
 ## Sample
 
 ```python
-from msmodelslim.onnx.squant_ptq import QuantConfig 
+from msmodelslim.onnx.squant_ptq import QuantConfig
 config = QuantConfig(disable_names=[],
-                       quant_mode=0,
-                     amp_num=0,
-                     a_sym=True,
-                     keep_acc={'admm': [False, 1000], 'easy_quant': [True, 1000], 'round_opt': False},
-                     disable_first_layer=True,
-                     disable_last_layer=True
+                      quant_mode=0,
+                      amp_num=0,
+                      a_sym=True,
+                      keep_acc={'admm': [False, 1000], 'easy_quant': [True, 1000], 'round_opt': False},
+                      disable_first_layer=True,
+                      disable_last_layer=True
 )
 ```

@@ -33,7 +33,7 @@ You are advised to place it in [`msmodelslim/model/`](https://gitcode.com/Ascend
 
 The model adapter class must inherit from [`BaseModelAdapter`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/base.py).
    
-Based on experience, W8A8 dynamic quantization usually causes only a small accuracy loss, so it does not need an outlier suppression algorithm and rarely requires fallback. Therefore, in the scenario example, we only need to support quantization scheduling. We do not need outlier quantization, sensitive-layer analysis, or other extra functions. If you need to integrate other algorithms, refer to [`Algorithm Overview`](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/quantization_algorithms/)
+Based on experience, W8A8 dynamic quantization usually causes only a small accuracy loss, so it does not need an outlier suppression algorithm and rarely requires fallback. Therefore, in the scenario example, we only need to support quantization scheduling. We do not need outlier quantization, sensitive-layer analysis, or other extra functions. If you need to integrate other algorithms, refer to [`Algorithm Overview`](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/en/quantization_algorithms/README.md)
 
 ```python
 from msmodelslim.model.interface_hub import ModelSlimPipelineInterfaceV1

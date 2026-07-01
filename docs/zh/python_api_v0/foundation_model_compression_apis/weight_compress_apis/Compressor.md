@@ -24,7 +24,7 @@ Compressor(config: CompressConfig, weight_path=None, weight=None, quant_model_de
 - 使用weight_path参数创建Compressor对象。
 
 ```python
-from modeslim.pytorch.weight_compression import CompressConfig, Compressor
+from msmodelslim.pytorch.weight_compression import CompressConfig, Compressor
 compress_config = CompressConfig(do_pseudo_sparse=False, sparse_ratio=1, is_debug=True, compress_disable_layers=None, record_detail_root="./", multiprocess_num=1)
 weight_save_path = './quant_weight.npy'  # 根据实际情况修改待压缩的权重文件路径
 compressor = Compressor(config=compress_config, weight_path=weight_save_path)

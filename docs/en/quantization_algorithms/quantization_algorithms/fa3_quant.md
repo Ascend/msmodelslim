@@ -25,7 +25,7 @@ Install msModelSlim. For details, see [msModelSlim Installation Guide](../../get
 1. Collect activation statistics for each head.
    - Input: activation tensor x, with shape (B, H, S, D),
      where B = batch_size, H = num_heads, S = seq_len, and D = head_dim.
-   - Reshape x to (H, N), where N = B * S * D.
+   - Reshape x to `(H, N)`, where `N = B * S * D`.
    - Collect N data points for each head independently.
 
 2. Identify the minimum quantization range for each head by using the Recall Window algorithm.

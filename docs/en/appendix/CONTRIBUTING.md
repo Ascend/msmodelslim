@@ -27,7 +27,7 @@ Thank you for submitting a PR. To streamline the review process, please follow t
 
 Follow our PR [template and guidelines](https://gitcode.com/Ascend/msmodelslim/blob/master/.gitcode/PULL_REQUEST_TEMPLATE.md).
 
-Refer to the developer documentation [Model Integration Guide](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/developer_guide/integrating_models/).
+Refer to the developer documentation [Model Integration Guide](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/en/developer_guide/integrating_models.md).
 
 For changes that affect user-facing features, update the corresponding user and developer documentation at the same time.
 

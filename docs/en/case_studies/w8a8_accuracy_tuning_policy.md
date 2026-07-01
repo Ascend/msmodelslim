@@ -241,13 +241,10 @@ Add rollback layers. You are advised to adjust this parameter last. You can manu
 
 ### 3. Calibration Set Adjustment
 
-1. When algorithm changes do not improve accuracy, increase the calibration set size to 10 to 50 samples. 
-(Normally, increasing the data volume improves accuracy, but beyond a certain threshold, the accuracy gains become limited. In some cases, reducing the data volume can actually improve accuracy, such as in long-sequence scenarios.) 
-2. Switch to data from practical application scenarios as the calibration set for specific use cases. 
-When selecting data, consider the specific inference scenarios where the model will be deployed. For example, Chinese models require Chinese inputs as the calibration dataset, English models require English inputs, and code-generation models require code-generation tasks. Models supporting both languages should use a mixed Chinese-English calibration set. 
+1. When algorithm changes do not improve accuracy, increase the calibration set size to 10 to 50 samples. <br>(Normally, increasing the data volume improves accuracy, but beyond a certain threshold, the accuracy gains become limited. In some cases, reducing the data volume can actually improve accuracy, such as in long-sequence scenarios.) 
+2. Switch to data from practical application scenarios as the calibration set for specific use cases. <br>When selecting data, consider the specific inference scenarios where the model will be deployed. For example, Chinese models require Chinese inputs as the calibration dataset, English models require English inputs, and code-generation models require code-generation tasks. Models supporting both languages should use a mixed Chinese-English calibration set. 
 3. Eliminate data with significant output differences between the original and quantized models when constructing the calibration dataset. 
-4. Pay attention to the calibration set format. 
-In the following example, `get_calib_dataset` adjusts the calibration set format. Using boolq as the example, the boolq dataset format is `dict={"question":str, "title":str, "answer":bool, "passage":str}`, while the tokenizer expects `"str"` for a single prompt, `"List[str]"` for a batch or a single prompt, or `"List[List[str]]"` for batched prompts.
+4. Pay attention to the calibration set format. <br>In the following example, `get_calib_dataset` adjusts the calibration set format. Using boolq as the example, the boolq dataset format is `dict={"question":str, "title":str, "answer":bool, "passage":str}`, while the tokenizer expects `"str"` for a single prompt, `"List[str]"` for a batch or a single prompt, or `"List[List[str]]"` for batched prompts.
  
 ```python
 def get_calib_dataset(tokenizer, calib_list, device=f"npu:{device_id}"):
@@ -356,7 +353,7 @@ Calling `kv_quant` automatically sets `use_kvcache_quant` in `QuantConfig` to `T
 
 ### 6. FA3 Quantization
 
-[FA quantization usage](../feature_guide/traditional_quantization_v0/foundation_model_quantization_and_calibration.md#fa3-quantization)待确认章节标题 
+[FA quantization](../feature_guide/traditional_quantization_v0/foundation_model_quantization_and_calibration.md#fa3-quantization) 
 
 ### 7. Accuracy Changes after Step-By-Step Tuning for ChatGLM2-6B
 

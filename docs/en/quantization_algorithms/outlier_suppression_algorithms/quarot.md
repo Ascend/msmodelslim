@@ -20,7 +20,7 @@ Install msModelSlim. For details, see [msModelSlim Installation Guide](../../get
 2. **Rotation transformation**
    Apply the transformation to the weight matrix W: `W' = Qᵀ × W`.
    Apply the transformation to the activation value X: `X' = X × Q`.
-   Maintain computational equivalence: `X' × W' = (X × Q) × (QT × W) = X × W`.
+   Maintain computational equivalence: `X' × W' = (X × Q) × (Qᵀ × W) = X × W`.
 3. **Computational invariance**
    The rotation transformation maintains the input-output mapping of each Transformer layer. Even if a layer includes an RMSNorm operation, computational invariance remains valid because `RMSNorm(X) = RMSNorm(X × Qᵀ) × Q`.
     
@@ -137,7 +137,7 @@ The `post_run` phase executes after the `Runner` finishes scheduling. It mainly 
 
 ### Supported Ascend AI Processors
 
-| Product Series                              | Supported|
+| Product Series| Supported|
 |------------------------------------|----|
 | Atlas A3 training products/Atlas A3 inference products   | ✓  |
 | Atlas A2 training products/Atlas 800I A2 inference products| ✓  |
@@ -147,7 +147,7 @@ The `post_run` phase executes after the `Runner` finishes scheduling. It mainly 
 
 Currently, the QuaRot algorithm supports the following model series.
 
-| Model Series                | Specific Model                                                                                                    | Basic Rotation| Online Rotation| Remarks                       |
+| Model Series| Specific Model| Basic Rotation| Online Rotation| Remarks                       |
 |----------------------|----------------------------------------------------------------------------------------------------------|------|------|---------------------------|
 | **Qwen3 Dense series**   | Qwen3-8B<br>Qwen3-14B<br>Qwen3-32B                                                                       | ✓    | ✓    | Supports complete QuaRot functionality, including basic and online rotation.|
 | **Qwen3 MOE series**     | Qwen3-30B<br>Qwen3-235B                                                                                  | ✓    | ✗    | Supports basic rotation functionality.                 |

@@ -2,7 +2,7 @@
 
 ## System Security Hardening
 
-You are advised to enable the **address space layout randomization** (ASLR) (level 2) in the system. Run the following command to enable it:
+You are advised to enable the **Address Space Layout Randomization** (ASLR) (level 2) in the system. Run the following command to enable it:
 
     echo 2 > /proc/sys/kernel/randomize_va_space
 

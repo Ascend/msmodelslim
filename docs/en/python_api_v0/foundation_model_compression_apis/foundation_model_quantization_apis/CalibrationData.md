@@ -63,8 +63,8 @@ CalibrationData.set_shuffle_seed(shuffle_seed=shuffle_seed)
 # Run interface. Required.
 # Output: mixed_dataset of type list, for example, [{"prompt": prompt1, "ans": ans1}, {"prompt": prompt2, "ans": ans2}]
 CalibrationData.process()
-```Run interface. Required.
+```
 
 ## Calling Instructions
 
-Please refer to [Hybrid Calibration Dataset Usage Instructions](../../../feature_guide/traditional_quantization_v0/foundation_model_quantization_and_calibration.md#hybrid-calibration-dataset-usage-instructions)
+Please refer to [Usage of Mixed Calibration Datasets](../../../feature_guide/traditional_quantization_v0/foundation_model_quantization_and_calibration.md#usage-of-mixed-calibration-datasets)

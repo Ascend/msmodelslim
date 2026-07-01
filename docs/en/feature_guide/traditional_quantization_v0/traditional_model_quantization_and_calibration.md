@@ -389,7 +389,7 @@ set_logger_level("info")  # Optional. Set log output level. An info level displa
 # prepare a small calibration dataset, read the dataset, preprocess it, and store the output in calib_data. If left empty, calibration data will be randomly generated.
 def custom_read_data():
     calib_data = []
-    # Read the dataset, preprocesse the data, and save the data to calib_data.
+    # Read the dataset, preprocess the data, and save the data to calib_data.
     return calib_data
 calib_data = custom_read_data()
 
@@ -603,9 +603,9 @@ If you run the following commands as a non-root user, add `--user` to the end of
     model = nvmodels.build_resnet("resnet50", "classic", is_training=False)
     pretrained_dict = safe_torch_load(args.pretrained, map_location='cpu')["state_dict"]
     model.load_state_dict(pretrained_dict, strict=False)
-    #Save the quantized ONNX model.
+    # Save the quantized ONNX model.
     from msmodelslim.pytorch.quant.qat_tools import save_qsin_qat_model
-    #Configure the name of the output model file (in .onnx format), input shape, fake-quantization model weight, and ONNX input name as needed.
+    # Configure the name of the output model file (in .onnx format), input shape, fake-quantization model weight, and ONNX input name as needed.
     save_onnx_name='./resnet50.onnx'
     dummy_input = torch.ones([args.batch_size, 3, 224, 224]).type(torch.float32)
     saved_ckpt = args.quant_ckpt

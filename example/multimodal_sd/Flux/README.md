@@ -4,7 +4,7 @@ FLUX的推理量化依赖于FLUX.1-dev推理工程仓：[MindIE/FLUX.1-dev](http
 
 ## 使用前准备
 
-- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/install_guide/)。
+- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/getting_started/install_guide.md)。
 - 硬件支持：Atlas 800I A2
 - 软件支持：FLUX.1-dev推理工程仓，commit ID `12e09174353b1bd57bf7fcb80386f59b09fbbefe`
 

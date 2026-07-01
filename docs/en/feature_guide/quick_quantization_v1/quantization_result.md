@@ -16,7 +16,7 @@ After executing the quick quantization command, the system generates the followi
 ├── tokenizer_config.json                # Original tokenizer configuration file
 ├── tokenizer.json                       # Original tokenizer vocabulary
 ├── {model_type}_best_practice.yaml       # Quantization configuration protocol file
-└── vocab.json                           # Original vocabulary mapping file (for some models)
+├── vocab.json                           # Original vocabulary mapping file (for some models)
 ├── optional/                            # Optional export directory (generated when certain algorithms are enabled)
 │   └── quarot.safetensors               # QuaRot global rotation matrix (generated when export_extra_info is enabled)
 └── debug_info/                          # Debug information directory (generated only when the --debug option is specified)
@@ -61,7 +61,8 @@ The `quant_model_description.json` file is a quantization weight description fil
 }
 ```
 
-> [!Note]Note
+> [!Note]
+>
 > The `*.weight` field name is determined by the model architecture itself.
 
 ### Field Description

@@ -19,7 +19,7 @@
 ## 使用前准备
 
 - 配套CANN版本请选择8.2.RC1及之后的版本
-- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/install_guide/)。
+- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/getting_started/install_guide.md)。
 - 当前多模态生成模型统一接口依赖于pydantic库
   - pip install pydantic
 - SD3-Medium依赖于diffusers库

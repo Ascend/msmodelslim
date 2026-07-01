@@ -165,7 +165,7 @@ core/                     # Domain layer organizing and managing quantization ca
 │   ├── __init__.py
 │   ├── interface.py              # Definition and protocol for the quantization analysis service
 │   └── pipeline_analysis/        # msModelSlim V1 pipeline-based quantization analysis service
-├── base/                     # Base protocols (to be deprecated; existing implementations will be relocated to respective modules
+├── base/                     # Base protocols (to be deprecated; existing implementations will be relocated to respective modules)
 │   ├── __init__.py
 │   ├── processor.py
 │   └── protocol.py
@@ -185,7 +185,7 @@ core/                     # Domain layer organizing and managing quantization ca
 │   ├── histogram.py              # Histogram statistics
 │   ├── minmax.py                 # Min-max statistics
 │   └── recall_window.py          # Sliding-window statistics
-├── practice/                 # Best practice module (to be optimized; currently only one schema is supporte)
+├── practice/                 # Best practice module (to be optimized; currently only one schema is supported)
 │   ├── __init__.py
 │   └── interface.py              # Best practice definition
 ├── quant_service/            # Quantization service module that converts floating-point models into quantized models and generates quantized weights
@@ -307,7 +307,7 @@ utils/                   # General-purpose utilities module
 ├── security/                 # Security utilities
 ├── validation/               # Type and value validation utilities
 ├── config.py                 # General configuration loader and manager
-├── config_map.py             #Configuration mapping utility
+├── config_map.py             # Configuration mapping utility
 ├── exception.py              # Custom exception types
 ├── exception_decorator.py    # Unified exception decorator
 ├── logging.py                # Log system encapsulation

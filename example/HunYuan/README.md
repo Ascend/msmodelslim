@@ -6,7 +6,7 @@
 
 ## 使用前准备
 
-- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/install_guide/)。
+- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/getting_started/install_guide.md)。
 - transformers版本需要配置>=4.48.2
 
 ## 支持的模型版本与量化策略

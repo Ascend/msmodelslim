@@ -72,7 +72,7 @@ The element order within the dictionary does not affect runtime execution.
     "transformer.encoder.layers.0.mlp.dense_4h_to_h.weight_scale": "W8A16",  
     "transformer.encoder.layers.0.mlp.dense_4h_to_h.weight_offset": "W8A16",
     ...
-    // Remaining layers follow the same pattern
+    Remaining layers follow the same pattern
     ...
     "transformer.encoder.final_layernorm.weight": "FLOAT",
     "transformer.output_layer.weight": "FLOAT"
@@ -135,7 +135,7 @@ For details about code implementation, refer to `MSModelSlimWeightProcessor.weig
 
 ## smooth quant
 
-After Smooth Quan is used in msModelSlim, two parameters are generated for each normalization layer: `module.weight` and `module.bias`. The full weight name combines the normalization layer name with the parameter identifier. For example, in the ChatGLM2-6B quantized weights, `"transformer.encoder.layers.0.input_layernorm.module.weight"` combines the normalization layer name `"transformer.encoder.layers.0.input_layernorm"` with the parameter identifier `"module.weight"`.
+After Smooth Quant is used in msModelSlim, two parameters are generated for each normalization layer: `module.weight` and `module.bias`. The full weight name combines the normalization layer name with the parameter identifier. For example, in the ChatGLM2-6B quantized weights, `"transformer.encoder.layers.0.input_layernorm.module.weight"` combines the normalization layer name `"transformer.encoder.layers.0.input_layernorm"` with the parameter identifier `"module.weight"`.
 
 The Smooth Quant algorithm integrated into msModelSlim applies smooth operations specifically to the linear layer that follows a normalization layer, rather than to all linear layers. The structural advantage of this quantization strategy is that the scaling factor originally applied to the activation values can be mathematically migrated to the weight parameter (`norm.weight`) of the normalization layer within the original floating-point model. This optimization eliminates the performance overhead of executing extra operator layers.
 

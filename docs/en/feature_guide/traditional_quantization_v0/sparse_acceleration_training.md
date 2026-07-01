@@ -1,14 +1,12 @@
 # Sparse Training Acceleration
 
-## Sparse Training Acceleration
-
-### Overview
+## Overview
 
 Deep learning training often involves tens of thousands or millions of iterations, introducing significant computational redundancy. Based on network augmentation principles and combined with parameter inheritance methods, this algorithm provides width-level and depth-level network augmentation capabilities to handle different deployment scenarios.
 
-### Function
+## Function
 
-#### Width-Augmented Model Sparse Training Acceleration
+### Width-Augmented Model Sparse Training Acceleration
 
 #### Basic Workflow
 
@@ -17,7 +15,7 @@ Deep learning training often involves tens of thousands or millions of iteration
   ```py
   from msmodelslim.pytorch.sparse import sparse_model_width
 
-model = sparse_model_width(model, optimizer, steps_per_epoch=100, epochs_each_stage=[10, 20, -1])
+  model = sparse_model_width(model, optimizer, steps_per_epoch=100, epochs_each_stage=[10, 20, -1])
   ```
 
 #### API Description
@@ -81,7 +79,7 @@ for _ in range(steps_per_epoch * sum(epochs_each_stage)):
 
 ***
 
-#### Depth-Augmented Model Sparse Training Acceleration
+### Depth-Augmented Model Sparse Training Acceleration
 
 #### Basic Workflow
 
@@ -90,7 +88,7 @@ for _ in range(steps_per_epoch * sum(epochs_each_stage)):
   ```py
   from msmodelslim.pytorch.sparse import sparse_model_depth
 
-model = sparse_model_depth(model, optimizer, steps_per_epoch=100, epochs_each_stage=[10, 20, -1])
+  model = sparse_model_depth(model, optimizer, steps_per_epoch=100, epochs_each_stage=[10, 20, -1])
   ```
 
 #### API Description
@@ -107,5 +105,3 @@ model = sparse_model_depth(model, optimizer, steps_per_epoch=100, epochs_each_st
 #### Sample
 
   - To execute depth-augmented sparse training, substitute the `sparse_model_width` API call inside the **Width-Augmented Model Code Sample** block with the `sparse_model_depth`.
-
-***

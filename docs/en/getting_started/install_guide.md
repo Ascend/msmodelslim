@@ -1,21 +1,28 @@
 # msModelSlim Installation Guide
 
-## Installation Description
+## 1. Installation Description
 
-This document describes how to install msModelSlim. Currently, three installation methods are supported: installation from `PyPI`, installation through a `.whl` package, and building from source.
+Before installing this tool, you need to install CANN. For details, see [CANN Quick Installation](https://www.hiascend.com/cann/download) to install the Ascend NPU driver and CANN software (including the Toolkit and ops), and configure environment variables.
 
-## Preparations
+This tool supports three installation methods: [Online Installation](#21-online-installation), [Offline Installation](#22-offline-installation), and [Installation from Source](#23-installation-from-source). Choose the method that best fits your environment.
+
+## 2. Installation Methods
+
+### 2.1 Online Installation
+
+If your device has Internet access, you can run a single command to automatically download and install the tool. Visit the [Ascend community](https://www.hiascend.com/developer/software/mindstudio/download), select the target CANN version, and choose "Online Installation". The system will guide you through the subsequent operations.
+
+### 2.2 Offline Installation
+
+For devices that are not connected to the Internet, such as those on an enterprise intranet, download the complete offline installation package on a device that has Internet access and then transfer the package to the target device for installation. Visit the [Ascend community](https://www.hiascend.com/developer/software/mindstudio/download), select the target CANN version, and choose "offline installation". The system will guide you through the subsequent operations.
+
+### 2.3 Installation from Source
+
+#### 2.3.1 Preparing for the Installation
 
 Prepare the Python environment: Python 3.8 or later is required.
 
-## Building from Source
-
-[!NOTE]Note
-
-- When using the `msModelSlim` command line tool, do not run commands in the `msModelSlim` source code directory. Doing so may cause conflicts between the source code path and the installation path when Python imports modules, leading to command execution failures.
-- If you encounter errors when installing `msmodelslim`, see the [FAQ](../appendix/faq.md) for solutions. If the issue persists, submit an [issue](https://gitcode.com/Ascend/msmodelslim/issues) with your operating environment and complete error logs attached. We will troubleshoot the issue for you as soon as possible.
-
-### Installation on Atlas A2 Training and Inference Products and Atlas A3 Training and Inference Products
+#### 2.3.2 Building and Installation from Source
 
 ```shell
 # 1. Clone the msModelSlim repository using git clone.
@@ -24,75 +31,58 @@ git clone https://gitcode.com/Ascend/msmodelslim.git
 # 2. Go to the msModelSlim directory and run the installation script.
 cd msmodelslim
 bash install.sh
-```
+# If the following information is displayed, msModelSlim is successfully installed.
+Successfully installed msmodelslim-{version}
 
-### Installation on Atlas 300I Duo Products
-
-Prerequisites: CANN has been installed and environment variables have been set.
-
-Notes:
-
-1. The Atlas 300I Duo card supports quantization only with a single processor on a single device.
-
-2. To perform sparse quantization and compression, install CANN 8.2.RC1 or later.
-
-Download the [CANN](https://www.hiascend.com/developer/download/community/result?module=cann) package. Select the AArch64 or x86_64 version based on your system architecture. For details about the installation method, see the [CANN Installation Guide](https://www.hiascend.com/document/detail/zh/canncommercial/82RC1/softwareinst/instg/instg_0008.html?Mode=PmIns&InstallType=local&OS=Debian&Software=cannToolKit).
-
-```shell
-# 1. Clone the msModelSlim repository using git clone.
-git clone https://gitcode.com/Ascend/msmodelslim.git
-
-# 2. Go to the msModelSlim directory and run the installation script.
-cd msmodelslim
-bash install.sh
-
-# Note: To perform sparse quantization and compression, proceed with the following operations.
-# 3. Go to the site-packages package management directory under the Python environment, where ${python_envs} specifies the Python environment path.
+# Note: To perform sparse quantization and compression, install CANN 8.2.RC1 or later and proceed with the following operations.
+# 3. Go to the `site_packages` package management directory under the Python environment, where ${python_envs} specifies the Python environment path.
 cd ${python_envs}/site-packages/msmodelslim/pytorch/weight_compression/compress_graph/  
 # In the following example, /usr/local/ is the user directory and the Python version is 3.11.10.
 cd /usr/local/lib/python3.11/site-packages/msmodelslim/pytorch/weight_compression/compress_graph/
 
 # 4. Build the weight_compression component, where ${install_path} specifies the installation directory of the CANN software.
 sudo bash build.sh ${install_path}/ascend-toolkit/latest
+# If the following information is displayed, the build is successful and the build directory is generated.
+build created successfully
 
-# 5. The build operation in the previous step generates the build directory. Grant relevant permissions to the build directory.
+# 5. Grant the required permissions to the generated build directory.
 chmod -R 550 build
 ```
 
-## Installation from `PyPI`
+>[!NOTE]
+>
+> 1. When using the `msModelSlim` command-line tool, do not run commands in the `msModelSlim` source code directory. Doing so may cause conflicts between the source code path and the installation path when Python imports modules, leading to command execution failures.
+> 2. If you encounter errors when installing `msmodelslim`, see the [FAQ](../appendix/faq.md) for solutions. If the issue persists, submit an [issue](https://gitcode.com/Ascend/msmodelslim/issues) with your operating environment and complete error logs attached. We will troubleshoot the issue for you as soon as possible.
 
-```bash
-pip install msmodelslim
-```
+## 3. Uninstallation
 
-## Installation Through a `.whl` Package
+To uninstall the tool, perform the following steps:
 
-Download the msModelSlim `.whl` software package by referring to section "Wheel Package Downloads" in [Release Notes](../appendix/release_notes.md).
+1. Download the script.
 
-After obtaining the .whl package, run the following command to install it:
+   ```bash
+   curl -O https://inst.obs.cn-north-4.myhuaweicloud.com/26.0.0/ms_install.py
+   ```
 
-```bash
-sha256sum {name}.whl # Verify the .whl package. If the checksums match, the .whl package is not damaged during download.
-```
+   > [!NOTE]
+   >
+   > - Internet access is required to download the script. If your target environment is offline or does not allow internet access, download the script on an internet-connected device first, then copy it to the target device.
+   > - If the command does not respond, or you encounter connection failures, SSL certificate errors, or other issues, refer to the [FAQ](https://www.hiascend.com/developer/blog/details/02176213671719317003).
 
-```bash
-pip install ./msmodelslim-{version}-py3-none-any.whl # Install the .whl package.
-```
+2. Uninstall the tool.
 
-## Post-installation Configuration
+   ```bash
+   python ms_install.py uninstall {tools_name}
+   ```
 
-For Ascend NPU devices, perform the following operations.
+   Replace `{tools_name}` with the name of the tool to be uninstalled. You can run the `python ms_install.py help` command to query the tool name, which is displayed under the `Available Tools` field in the command output.
 
-### Installing CANN
+   If the uninstallation is successful, the following information is displayed:
 
-Download the [CANN](https://www.hiascend.com/developer/download/community/result?module=cann) package. Select the AArch64 or x86_64 version based on your system architecture. For details about the installation method, see the [CANN Installation Guide](https://www.hiascend.com/document/detail/zh/canncommercial/82RC1/softwareinst/instg/instg_0008.html?Mode=PmIns&InstallType=local&OS=Debian&Software=cannToolKit).
+   ```ColdFusion
+   Successfully uninstalled 1 tool ({tools_name})
+   ```
 
-### Installing PTA
+## 4. Upgrade
 
-For details about how to install PyTorch, see configuration and installation instructions in [Ascend Extension for PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/710/configandinstg/instg/insg_0004.html).
-
-## Uninstallation
-
-```shell
-pip uninstall msmodelslim -y
-```
+Upgrades follow the "uninstall first, then install" process. Simply run the installation command. The tool will automatically remove the previous version and guide you through the upgrade process.

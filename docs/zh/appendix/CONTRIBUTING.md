@@ -27,7 +27,7 @@
 
 遵循我们的 Pull Request [模板与规范](../../../.gitcode/PULL_REQUEST_TEMPLATE.md)
 
-参考开发者文档 [模型接入指南](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/developer_guide/integrating_models/)
+参考开发者文档 [模型接入指南](../developer_guide/integrating_models.md)
 
 对涉及用户端功能的改动，请同步更新对应的用户和开发者文档
 

@@ -9,7 +9,7 @@ The documents in this directory are organized by model type and task scenario to
 
 ## 2. Foundation Model Quantization and Compression
 
-- [Foundation Model Quantization and Compression](foundation_model_quantization_and_calibration.md)
+- [Compression and Structure Optimization (Mainly for Foundation Models)](foundation_model_compression.md)
   - Includes low-memory quantization, mixed calibration datasets, and FA3 quantization.
 - Compression and Structure Optimization (Mainly for Foundation Models)(foundation_model_compression.md)
   - Includes sparse quantization, weight compression, long-sequence compression, and low-rank decomposition.

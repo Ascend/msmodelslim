@@ -2,7 +2,7 @@
 
 ## Foundation Model Quantization
 
-The foundation model quantization tool converts high-bit floating-point numbers into low-bit fixed-point numbers (for example, from 16 bits to 8 bits) to directly reduce the volume of model weights and generate quantization parameters and weight files. On the premise that no training cost is required, compress a foundation model after training and and maintain its accuracy to the maximum extent.
+The foundation model quantization tool converts high-bit floating-point numbers into low-bit fixed-point numbers (for example, from 16 bits to 8 bits) to directly reduce the volume of model weights and generate quantization parameters and weight files. On the premise that no training cost is required, compress a foundation model after training and maintain its accuracy to the maximum extent.
 
 ### Preparations
 
@@ -124,6 +124,7 @@ The key steps are as follows:
                 "How can I learn Python?",
                 "Please help me write a report on the optimization of foundation model inference:",
                 "List the most worth-seeing tourist attractions in China."
+    ]
     # Define the function for obtaining calibration data.
     def get_calib_dataset(tokenizer, calib_list):
         calib_dataset = []
@@ -174,6 +175,7 @@ The key steps are as follows:
                 "How can I learn Python?",
                 "Please help me write a report on the optimization of foundation model inference:",
                 "List the most worth-seeing tourist attractions in China."
+    ]
     # Define the function for obtaining calibration data.
     def get_calib_dataset(tokenizer, calib_list):
         calib_dataset = []
@@ -394,7 +396,7 @@ This feature is supported only on Atlas training products, Atlas A2 training pro
 
 ### Function
 
-### Pytorch
+#### Pytorch
 
 Table 1 lists verified foundation models that are currently supported for quantization. This list is non-exhaustive.
 
@@ -406,7 +408,7 @@ Table 1 Verified models
 | LLaMA2-7B | PyTorch |  
 | LLaMA-13B | PyTorch |
 
-### The key steps of the foundation model sparse quantization tool are as follows
+#### The key steps of the foundation model sparse quantization tool are as follows
 
 Figure 1 Sparse quantization interface call process
 
@@ -442,13 +444,13 @@ Note
 
 When the weight compression tool loads the input weight file, deserialization attacks may occur. The tool displays a warning prompt on the GUI regarding this risk. The tool starts processing the file only after you confirm that the file is safe to load.
 
-### Sparse Quantization Procedure (Using ChatGLM2-6B as an Example)
+#### Sparse Quantization Procedure (Using ChatGLM2-6B as an Example)
 
 Prepare the model, weight files, and calibration data. This section uses ChatGLM2-6B as an example. Click the link to download the weight files and upload them to a directory (such as `chatglm2`) on the server. Example directory structure:
 
 ```text
 ├── config.json
-├── configuration chatglm.py
+├── configuration_chatglm.py
 ├── modeling_chatglm.py
 ├── pytorch_model-00001-of-00007.bin
 ├── pytorch_model-00002-of-00007.bin
@@ -503,6 +505,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -549,13 +552,13 @@ Note
 
 The tool generates the model weight file `quant_weight.npy`, which is required for step 2 of the compression procedure (using ChatGLM2-6B as an example).
 
-### Compression Procedure (Using ChatGLM2-6B as an Example)
+#### Compression Procedure (Using ChatGLM2-6B as an Example)
 
 Build the compression processor.
 
 Complete the development environment configuration by referring to the prerequisites.
 
-Complete the build procedure for the **sparsification and quantization compression scenario** by referring to [Installation on Atlas 300I Duo Products](../../getting_started/install_guide.md#installation-on-atlas-300i-duo-products) in *msModelSlim Installation Guide*.
+Complete the build procedure for the **sparsification and quantization compression scenario** by referring to [Installation on Atlas 300I Duo Products](../../getting_started/install_guide.md#232-building-and-installation-from-source) in *msModelSlim Installation Guide*.
 
 After the build is complete, the tool generates a `build` directory in the current path. Run the following command to check the build artifact `compress_executor`:
 
@@ -619,7 +622,7 @@ python3 compress.py
 
 ### MindSpore
 
-### Prerequisites
+#### Prerequisites
 
 The sparsification and quantization tools are supported on the following products:
 
@@ -650,7 +653,7 @@ pip3 install rouge_score      # The version must be 0.1.2 or later.
 pip3 install peft             # The version must be 0.5.0 or later.
 ```
 
-### Implementation Process
+#### Implementation Process
 
 To compress a foundation model, perform sparsification, quantization, and weight compression sequentially.
 
@@ -666,7 +669,7 @@ Use `QuantConfig` to generate a sparse quantization configuration.
 
 Call `Calibrator` to build a sparse and quantization calibration object based on the original model, sparse quantization configuration, and calibration data.
 
-Call `run() of the generated sparse and quantization calibration object to perform sparsification and quantization on the original model.
+Call `run()` of the generated sparse and quantization calibration object to perform sparsification and quantization on the original model.
 
 Call `save()` of the generated sparse and quantization calibration object to save the quantized model, including the model sparse quantization weights and related parameters. The model weight file `ckpt` is required for subsequent weight compression.
 
@@ -690,7 +693,7 @@ Note
 
 When the weight compression tool loads the input weight file, deserialization attacks may occur. The tool displays a warning prompt on the GUI regarding this risk. The tool starts processing the file only after you confirm that the file is safe to load.
 
-### Sparse Quantization Procedure
+#### Sparse Quantization Procedure
 
 Description
 
@@ -717,7 +720,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
-
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -757,13 +760,13 @@ Start the foundation model sparsification and quantization task and save the qua
 python3 sparse_quant.py
 ```
 
-### Compression Procedure
+#### Compression Procedure
 
 Build the compression processor.
 
 Complete the development environment configuration by referring to the prerequisites.
 
-Complete the build procedure for the **sparsification and quantization compression scenario** by referring to [Installation on Atlas 300I Duo Products](../../getting_started/install_guide.md#installation-on-atlas-300i-duo-products) in *msModelSlim Installation Guide*.
+Complete the build procedure for the **sparsification and quantization compression scenario** by referring to [Installation on Atlas 300I Duo Products](../../getting_started/install_guide.md#232-building-and-installation-from-source) in *msModelSlim Installation Guide*.
 
 After the build is complete, the tool generates a `build` directory in the current path. Run the following command to check the build artifact `compress_executor`:
 
@@ -888,7 +891,7 @@ Execute the `RACompressor` compression algorithm to start the long-sequence comp
 
 Call `get_alibi_windows` to export the compression windows and obtain the `.pt` file from the specified path. For details about models supported for quantization, see [Models Supported by the Acceleration Library](https://www.hiascend.com/document/detail/zh/mindie/20RC1/modellist/mindie_modellist_0001.html) in the MindIE documentation.
 
-### Compression Procedure (Using baichuan2-13b as an Example)
+#### Compression Procedure (Using baichuan2-13b as an Example)
 
 Prepare the original model.
 

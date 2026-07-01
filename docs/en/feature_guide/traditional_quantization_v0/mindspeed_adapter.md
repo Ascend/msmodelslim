@@ -55,9 +55,9 @@ Currently, the model adapter is verified to support only w8a8 quantization, alon
                     ["Please write a poem:"],
                     ["How can I learn Python?"]]
 
-        from msmodelslim.pytorch.mindspeed_adapter import ModelAdapter, CalibratorAdapter, Linear    # mport the quantization configuration interfaces.
+        from msmodelslim.pytorch.mindspeed_adapter import ModelAdapter, CalibratorAdapter, Linear    # import the quantization configuration interfaces.
         from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import QuantConfig
-        #Convert the model to adapt to MindSpeed-LLM.
+        # Convert the model to adapt to MindSpeed-LLM.
         model = ModelAdapter(model)
         # Configure fallback layers. The following example shows how to perform mlp.dense_4h_to_h fallback configuration.
         disable_names = []
@@ -74,7 +74,7 @@ Currently, the model adapter is verified to support only w8a8 quantization, alon
             dev_type='npu',
             mm_tensor=False
         )  
-        #Use the CalibratorAdapter interface to define calibration by passing the loaded original model, quantization configuration, and calibration data.
+        # Use the CalibratorAdapter interface to define calibration by passing the loaded original model, quantization configuration, and calibration data.
         calibrator = CalibratorAdapter(model, quant_config, calib_data=dataset_calib, disable_level='L0')  
         calibrator.run()     # Use run() to perform quantization.
         calibrator.save('./quant_weight', save_type=[ 'numpy', 'safe_tensor'])      # Save model quantization parameters by using save(). Modify the path as needed.

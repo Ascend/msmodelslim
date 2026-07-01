@@ -23,6 +23,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -76,6 +77,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -133,6 +135,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -187,6 +190,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -239,6 +243,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -294,6 +299,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -349,6 +355,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -415,6 +422,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -471,6 +479,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -546,6 +555,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
@@ -709,6 +719,7 @@ calib_list = ["Where is the capital of China?",
               "How can I learn Python?",
               "Please help me write a report on the optimization of foundation model inference:",
               "List the most worth-seeing tourist attractions in China."
+]
 # Define the function for obtaining calibration data.
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []

@@ -12,7 +12,7 @@
 
 Install msModelSlim. For details, see [msModelSlim Installation Guide](../getting_started/install_guide.md).
 
-## Tuning Process
+## Tuning Procedure
 
 ### Step 1: Confirming That the Accuracy Issue Is Real
 

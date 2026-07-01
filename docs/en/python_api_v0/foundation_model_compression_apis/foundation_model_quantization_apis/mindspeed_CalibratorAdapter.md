@@ -40,4 +40,4 @@ quant_config = QuantConfig(dev_type='npu', pr=0.5, mm_tensor=False)
 calibrator = CalibratorAdapter(model, quant_config, calib_data=dataset_calib, disable_level='L0')
 calibrator.run()  # Same usage as Calibrator.
 calibrator.save(quant_weight_save_path)  # Same usage as Calibrator.
-```Same usage as Calibrator.
+```

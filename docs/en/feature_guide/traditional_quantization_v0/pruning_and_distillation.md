@@ -187,12 +187,12 @@ class TwoLayerNet(torch.nn.Module):
         y_pred = self.linear2(x)
         return y_pred
 
-D_in, H, D_out = 100, 10, 1
-model = TwoLayerNet(100, 10, 1)
-test_dataset = [torch.randn(64, 100)]
-sparse_config = SparseConfig(method='magnitude')
-prune_compressor = Compressor(model, sparse_config)
-prune_compressor.compress(dataset=test_dataset)
+    D_in, H, D_out = 100, 10, 1
+    model = TwoLayerNet(100, 10, 1)
+    test_dataset = [torch.randn(64, 100)]
+    sparse_config = SparseConfig(method='magnitude')
+    prune_compressor = Compressor(model, sparse_config)
+    prune_compressor.compress(dataset=test_dataset)
 ```
 
 ## Model Distillation

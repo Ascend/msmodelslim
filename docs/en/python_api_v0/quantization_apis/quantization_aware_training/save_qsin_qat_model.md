@@ -16,7 +16,7 @@ save_qsin_qat_model(model, save_onnx_name, dummy_input, saved_ckpt, input_names)
 |----------------| ------ | ------ |---------------------------|
 | model | Input | The model instance to be quantized. | Required.<br>Data type: PyTorch model. |
 | save_onnx_name | Input | The name of the .onnx model saved after quantization. | Required.<br>Data type: str. |
-| dummy_input | Input | The input shape of the quantized model. | Required.<br>Data type: torch.Tensor. |
+| dummy_input | Input | The input tensor of the quantized model. | Required.<br>Data type: torch.Tensor. |
 | saved_ckpt | Input | The saved quantization weights. | Required.<br>Data type: str. |
 | input_names | Input | The input names for onnx. | Required.<br>Data type: list[str]. |
 

@@ -166,7 +166,7 @@ class W8A8DynamicQuantConfig(BaseModel):
 
 | Parameter| Input/Return | Description | Constraints |
 | ------ | ------ | ------ | ------ |
-| act_method | Input | Activation Quantization Method | Optional.<br>Data Type: String. Optional Value: ['minmax', 'histogram', 'mix'], which corresponds to MinMax Activation Quantization, Histogram-based Activation Quantization, and Mixed Activation Quantization of MinMax and Histogram, respectively.|
+| act_method | Input | Activation Quantization Method | Optional.<br>Data Type: String. Optional Values: ['minmax', 'histogram', 'mix'], which corresponds to MinMax Activation Quantization, Histogram-based Activation Quantization, and Mixed Activation Quantization of MinMax and Histogram, respectively.|
 
 ### Sample
 
@@ -394,7 +394,7 @@ class M6ProcessorConfig(BaseModel):
 
 | Parameter| Input/Return | Description | Constraints |
 | ------ | ------ | ------ | ------ |
-| cfg | Input | M6 outlier suppression configuration | Required.<br>Data type: M6Config, the M6 outlier suppression configuration class.|
+| cfg | Input | M6 outlier suppression algorithm configuration | Required.<br>Data type: M6Config, the M6 outlier suppression algorithm configuration class.|
 
 ### Sample
 

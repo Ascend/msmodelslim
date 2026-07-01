@@ -6,7 +6,7 @@
 
 ## 使用前准备
 
-- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/getting_started/install_guide/)。
+- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/getting_started/install_guide.md)。
 - 浮点推理环境与依赖请参考[魔乐 Qwen-Image-Edit-2509](https://modelers.cn/models/MindIE/Qwen-Image-Edit-2509) 及 [README](https://modelers.cn/models/MindIE/Qwen-Image-Edit-2509/blob/main/README.md)，确保在量化前可正常完成浮点推理（需从推理工程仓加载 `qwenimage_edit` 等模块）。
 
 ## 支持的模型版本与量化策略
@@ -48,7 +48,7 @@ msmodelslim quant \
 
 ### 一键量化命令参数说明
 
-一键量化参数基本说明可参考：[一键量化参数说明](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/feature_guide/quick_quantization_v1/usage/#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)。
+一键量化参数基本说明可参考：[一键量化参数说明](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/feature_guide/quick_quantization_v1/usage.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)。
 
 针对 Qwen-Image-Edit-2509，补充说明如下：
 
@@ -140,7 +140,7 @@ spec:
   - `img_paths`：输入图像路径（多图可用逗号分隔等约定，以推理仓为准）。
   - `prompt_file`：提示词文件路径。
 
-更细的协议说明见：[一键量化配置协议说明](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/feature_guide/quick_quantization_v1/usage/#%E9%87%8F%E5%8C%96%E9%85%8D%E7%BD%AE%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3)。
+更细的协议说明见：[一键量化配置协议说明](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/feature_guide/quick_quantization_v1/usage.md#%E9%87%8F%E5%8C%96%E9%85%8D%E7%BD%AE%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3)。
 
 ## FAQ
 
@@ -156,5 +156,5 @@ spec:
 
 - [Qwen-Image-Edit-2509（Hugging Face）](https://huggingface.co/Qwen/Qwen-Image-Edit-2509)
 - [Qwen-Image-Edit-2509模型仓库](https://modelers.cn/models/MindIE/Qwen-Image-Edit-2509)
-- [一键量化配置协议说明](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/feature_guide/quick_quantization_v1/usage/#%E9%87%8F%E5%8C%96%E9%85%8D%E7%BD%AE%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3)
-- [逐层量化特性说明](https://msmodelslim.readthedocs.io/zh-cn/latest/zh/feature_guide/quick_quantization_v1/usage/#%E9%80%90%E5%B1%82%E9%87%8F%E5%8C%96%E5%8F%8A%E5%88%86%E5%B8%83%E5%BC%8F%E9%80%90%E5%B1%82%E9%87%8F%E5%8C%96)
+- [一键量化配置协议说明](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/feature_guide/quick_quantization_v1/usage.md#%E9%87%8F%E5%8C%96%E9%85%8D%E7%BD%AE%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3)
+- [逐层量化特性说明](https://gitcode.com/Ascend/msmodelslim/blob/26.0.0/docs/zh/feature_guide/quick_quantization_v1/usage.md#%E9%80%90%E5%B1%82%E9%87%8F%E5%8C%96%E5%8F%8A%E5%88%86%E5%B8%83%E5%BC%8F%E9%80%90%E5%B1%82%E9%87%8F%E5%8C%96)
