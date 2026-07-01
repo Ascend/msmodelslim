@@ -70,7 +70,7 @@
 >[!NOTE]
 >
 > 1. 使用 `msModelSlim` 命令行工具时，请勿在 `msModelSlim` 的源码目录下直接运行命令。这可能会因 Python 在导入模块时出现源码路径和安装路径冲突，导致命令执行失败。
-> 2. 若安装 `msModelSlim` 时遇到报错，请先查阅 [FAQ](../appendix/faq.md) 寻找解决方案。如问题仍未解决，欢迎提交 [Issue](https://gitcode.com/Ascend/msmodelslim/issues)，并附上您的运行环境及完整的错误日志，我们将尽快为您排查。
+> 2. 若安装 `msModelSlim` 时遇到报错，请先查阅《[FAQ](../support/faq.md)》寻找解决方案。如问题仍未解决，欢迎提交 [Issue](https://gitcode.com/Ascend/msmodelslim/issues)，并附上您的运行环境及完整的错误日志，我们将尽快为您排查。
 > 3. 目前仅Atlas 300I Duo系列产品支持在稀疏量化后进行压缩。
 
 ## 3. 验证安装

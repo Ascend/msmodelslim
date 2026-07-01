@@ -10,9 +10,9 @@ msModelSlim 支持多种量化权重落盘格式。格式决定量化结果的**
 
 | 格式 | 目标推理框架 | 支持量化模式（概要） | 分布式导出 | 详细说明 |
 |------|-------------|---------------------|-----------|----------|
-| AscendV1 | MindIE、vLLM Ascend | W8A8 / W8A16 / W4A8 / W4A4 / MXFP / KV Cache / FA 等 20+ | 支持 | [AscendV1 格式说明](ascendv1.md) |
-| MindIE-SD | MindIE（多模态生成） | 多模态生成模型专用 | 支持 | [MindIE 保存器配置](../feature_guide/quick_quantization_v1/usage.md#6341-mindie_format_saver) |
-| compressed-tensors | vLLM | W8A8 Static / W8A8 Dynamic | 不支持 | [compressed-tensors 格式说明](compressed_tensors.md) |
+| AscendV1 | MindIE、vLLM Ascend | W8A8 / W8A16 / W4A8 / W4A4 / MXFP / KV Cache / FA 等 20+ | 支持 | 《[AscendV1 格式说明](ascendv1.md)》 |
+| MindIE-SD | MindIE（多模态生成） | 多模态生成模型专用 | 支持 | 《[MindIE 保存器配置](../feature_guide/quick_quantization_v1/usage.md#6341-mindie_format_saver)》 |
+| compressed-tensors | vLLM | W8A8 Static / W8A8 Dynamic | 不支持 | 《[compressed-tensors 格式说明](compressed_tensors.md)》 |
 
 ## YAML 配置示例
 
@@ -55,4 +55,4 @@ spec:
 
 - 《[一键量化使用指南](../feature_guide/quick_quantization_v1/usage.md)》 — save 配置详解
 - 《[一键量化生成结果](../feature_guide/quick_quantization_v1/quantization_result.md)》 — 输出文件概览（QuaRot、debug 等）
-- 《[权重在加速库/MindIE 中的使用](../../case_studies/quantization_weight_use_cases_in_acceleration_and_mindie_torch.md)》
+- 《[权重在加速库/MindIE 中的使用](../../best_practices/quantization_weight_use_cases_in_acceleration_and_mindie_torch.md)》

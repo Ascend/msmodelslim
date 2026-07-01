@@ -1,7 +1,7 @@
 <h1 align="center"> MindStudio ModelSlim</h1>
 <div align="center">
   <br />
-  <img src="docs/assets/modelslim_slogan.png" alt="ModelSlim Slogan" width="300" />
+  <img src="docs/assets/modelslim_slogan.png" alt="MindStudio ModelSlim Slogan" width="300" />
   <p align="center">
     <em>Simple, fast, and lean—msModelSlim is all you need.</em>
   </p>
@@ -102,7 +102,7 @@
 
 ## 🚀 快速入门
 
-帮助用户快速通过一键量化的方式完成大模型量化功能，请参见 《[msModelSlim 快速入门](./docs/zh/quick_start/quantization_quick_start.md)》。
+帮助用户快速完成大模型量化功能，包含**一键量化**和**传统量化**两种方式，请参见 《[msModelSlim 快速入门](./docs/zh/quick_start/quantization_quick_start.md)》。
 
 ## 📦 安装指南
 
@@ -114,11 +114,11 @@
 
 ## 💡 典型案例
 
-通过典型问题场景帮助用户理解并掌握工具使用，请参见 《[msModelSlim 典型案例](./docs/zh/case_studies/basic_cases.md)》。
+通过典型问题场景帮助用户理解并掌握工具使用，请参见 《[msModelSlim 典型案例](./docs/zh/best_practices/basic_cases.md)》。
 
 ## ❓ FAQ
 
-常见问题及解决方案，请参见 《[FAQ](./docs/zh/appendix/faq.md)》。
+常见问题及解决方案，请参见 《[FAQ](./docs/zh/support/faq.md)》。
 
 ## 🌌 智能检索
 
@@ -134,7 +134,7 @@
 
 🔹 《[版本说明](docs/zh/release_notes/release_notes.md)》<br>
 🔹 《[许可证声明](docs/zh/legal/license_notice.md)》<br>
-🔹 《[安全声明](docs/zh/appendix/security_statement.md)》<br>
+🔹 《[安全声明](docs/zh/legal/SECURITY.md)》<br>
 🔹 《[免责声明](docs/zh/legal/disclaimer.md)》<br>
 
 ## 🤝 建议与交流

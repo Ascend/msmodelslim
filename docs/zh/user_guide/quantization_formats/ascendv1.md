@@ -430,4 +430,4 @@ $$x = x \cdot div.mul\_scale$$
 
 - 《[格式支持矩阵](README.md)》
 - 《[一键量化生成结果](../feature_guide/quick_quantization_v1/quantization_result.md)》
-- 《[权重在加速库/MindIE 中的使用](../../case_studies/quantization_weight_use_cases_in_acceleration_and_mindie_torch.md)》
+- 《[权重在加速库/MindIE 中的使用](../../best_practices/quantization_weight_use_cases_in_acceleration_and_mindie_torch.md)》

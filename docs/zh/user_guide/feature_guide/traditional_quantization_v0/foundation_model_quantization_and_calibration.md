@@ -593,7 +593,7 @@ from transformers.models.qwen2.configuration_qwen2 import Qwen2Config
 | [quant_qwen.py](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen/quant_qwen.py)    | [Qwen2.5-72B 支持Attention量化](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen/README.md#qwen25-72b-支持attention量化) |
 | [quant_llama.py](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Llama/quant_llama.py) | [Llama3.1-70B W8A8量化搭配Attention量化](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Llama/README.md#llama31-70b-w8a8量化搭配attention量化) |
 
-#### 本文仅给出FA3场景下Llama3.1-70B和Qwen2.5-72B的量化推荐配置，可按实际情况进行参数调整，详见[精度调优策略](../../../case_studies/w8a8_accuracy_tuning_policy.md)
+#### 本文仅给出FA3场景下Llama3.1-70B和Qwen2.5-72B的量化推荐配置，可按实际情况进行参数调整，详见《[精度调优策略](../../../best_practices/w8a8_accuracy_tuning_policy.md)》
 
 #### 3.6.2 Llama3.1-70B 量化参数设置
 
