@@ -2,7 +2,7 @@ apiversion: modelslim_v1
 metadata:
   config_id: glm4_moe_lite_w8a8
   score: 90
-  verified_model_types:
+  verified_tags:
     GLM-4.7-Flash:
       - - SGLang
         - Atlas_A2_Inference
