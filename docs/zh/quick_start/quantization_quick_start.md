@@ -136,7 +136,7 @@ python3 example/Qwen/quant_qwen.py \
 
 量化完成后，在保存路径目录下会生成量化权重及相关配置文件。不同量化方式的输出文件略有差异，分别说明如下：
 
-### 4.1 一键量化（V1）输出目录
+### 4.1 一键量化输出目录
 
 ```yaml
 ├── config.json                          # 原始模型配置文件
@@ -144,12 +144,12 @@ python3 example/Qwen/quant_qwen.py \
 ├── quant_model_description.json         # 量化权重描述文件
 ├── quant_model_weight_w8a8.safetensors  # 量化权重文件
 ├── tokenizer_config.json                # 原始分词器配置文件
-├── tokenizer.json                        # 原始分词器词汇表
+├── tokenizer.json                       # 原始分词器词汇表
 ├── {model_type}_best_practice.yaml      # 量化配置协议文件
-└── vocab.json                            # 原始词汇映射文件（部分模型）
+└── vocab.json                           # 原始词汇映射文件（部分模型）
 ```
 
-### 4.2 传统量化（V0）输出目录
+### 4.2 传统量化输出目录
 
 ```yaml
 ├── config.json                          # 原始模型配置文件
@@ -157,8 +157,7 @@ python3 example/Qwen/quant_qwen.py \
 ├── quant_model_description.json         # 量化权重描述文件
 ├── quant_model_weight_w8a8.safetensors  # 量化权重文件
 ├── tokenizer_config.json                # 原始分词器配置文件
-├── tokenizer.json                        # 原始分词器词汇表
-└── vocab.json                            # 原始词汇映射文件（部分模型）
+└── tokenizer.json                       # 原始分词器词汇表
 ```
 
 >[!NOTE]

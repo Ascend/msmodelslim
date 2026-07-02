@@ -86,7 +86,7 @@
 
 ## 📖 简介
 
-**MindStudio ModelSlim（msModelSlim）** 是昇腾生态下的高性能模型压缩工具，支持稠密LLM、MoE及多模态模型的量化与压缩，开发者可通过ModelSlim工具快速调优并导出适配MindIE、vLLM-Ascend等框架的模型，在昇腾AI处理器上实现高效部署。
+**MindStudio ModelSlim（msModelSlim）** 是昇腾生态下的高性能模型压缩工具，支持稠密LLM、MoE及多模态模型的量化与压缩，开发者可通过msModelSlim工具快速调优并导出适配MindIE、vLLM-Ascend等框架的模型，在昇腾AI处理器上实现高效部署。
 
 ## ⚙️ 功能介绍
 
@@ -102,7 +102,7 @@
 
 ## 🚀 快速入门
 
-帮助用户快速完成大模型量化功能，包含**一键量化**和**传统量化**两种方式，请参见 《[msModelSlim 快速入门](./docs/zh/quick_start/quantization_quick_start.md)》。
+帮助用户快速完成大模型量化功能，请参见 《[msModelSlim 快速入门](./docs/zh/quick_start/quantization_quick_start.md)》。
 
 ## 📦 安装指南
 
