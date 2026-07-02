@@ -51,7 +51,7 @@
 | **Wan2.2** | Wan2.2-I2V-A14B | [Wan2.2-I2V-A14B](https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B) | ✅ | | | | | |✅ | | |  [FA3+W8A8动态量化](#wan22-fa3w8a8动态量化)|
 | **Wan2.2** | Wan2.2-TI2V-5B | [Wan2.2-TI2V-5B](https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B) | ✅ | | | | | |✅ | | | [FA3+W8A8动态量化](#wan22-fa3w8a8动态量化)|
 | **Wan2.2** | Wan2.2-T2V-A14B | [Wan2.2-T2V-A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) | | | | ✅ | | | ✅ | | | [FA3+W4A4动态量化](#wan22-fa3w4a4动态量化) |
-| **Qwen-Image-Edit** | Qwen-Image-Edit-2509 | [Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) | ✅ | | | | | |✅ | | | [FA3+W8A8动态量化](#qwen-image-edit-2509-fa3w8a8动态量化)|
+| **Qwen-Image-Edit** | Qwen-Image-Edit-2509 | [Qwen-Image-Edit-2509](https://huggingface.co/Qwen/Qwen-Image-Edit-2509) | ✅ | | | ✅ | | |✅ | | | [W8A8F8动态量化](#qwen-image-edit-2509-w8a8f8动态量化) / [W4A4F4动态量化](#qwen-image-edit-2509-w4a4f4动态量化) |
 
 **说明：**
 
@@ -123,6 +123,10 @@
 
 请参考《[Wan2.2 量化使用说明](./Wan2_2/README.md)》
 
-### <span id="qwen-image-edit-2509-fa3w8a8动态量化">Qwen-Image-Edit-2509 FA3+W8A8动态量化</span>
+### <span id="qwen-image-edit-2509-w8a8f8动态量化">Qwen-Image-Edit-2509 W8A8F8 动态量化</span>
+
+请参考《[Qwen Image Edit 量化使用说明](./QwenImageEdit/README.md)》
+
+### <span id="qwen-image-edit-2509-w4a4f4动态量化">Qwen-Image-Edit-2509 W4A4F4 动态量化</span>
 
 请参考《[Qwen Image Edit 量化使用说明](./QwenImageEdit/README.md)》
