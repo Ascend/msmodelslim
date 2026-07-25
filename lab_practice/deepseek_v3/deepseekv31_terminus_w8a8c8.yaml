@@ -6,6 +6,8 @@ metadata:
   verified_tags:
     DeepSeek-V3.1-Terminus:
       - - vLLM_Ascend
+        - Ascend_950
+      - - vLLM_Ascend
         - Atlas_350
   label:
     w_bit: 8

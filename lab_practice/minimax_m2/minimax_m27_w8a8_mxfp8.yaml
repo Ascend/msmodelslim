@@ -4,7 +4,7 @@ metadata:
   score: 90
   verified_tags:
     MiniMax-M2.7:
-      - [vllm-ascend, Atlas_A5_Interface]
+      - [vllm-ascend, Ascend_950]
   label:
     w_bit: 8
     a_bit: 8

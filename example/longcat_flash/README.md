@@ -11,9 +11,9 @@
 
 ## 支持的模型版本与量化策略
 
-| 模型系列 | 模型版本 | HuggingFace链接 | W4A4 MXFP4 | W8A8 MXFP8 | 稀疏量化 | KV Cache | 量化命令 |
+| 模型系列 | 模型版本 | HuggingFace链接 | W4A4 | W8A8 | 稀疏量化 | KV Cache | 量化命令 |
 |---------|---------|----------------|------------|------------|---------|----------|----------|
-| **LongCat-Flash** | LongCat-Flash-Chat | [LongCat-Flash-Chat](https://huggingface.co/meituan-longcat/LongCat-Flash-Chat) | ✅ |  |  |  | [W4A4 MXFP4](#longcat-flash-chat-w4a4-mxfp4量化) |
+| **LongCat-Flash** | LongCat-Flash-Chat | [LongCat-Flash-Chat](https://huggingface.co/meituan-longcat/LongCat-Flash-Chat) | ✅ |  |  |  | [W4A4](#longcat-flash-chat-w4a4-mxfp4量化) |
 
 >[!NOTE]
 >
@@ -26,7 +26,7 @@
 
 请将`${MODEL_PATH}`替换为用户实际浮点权重路径，`${SAVE_PATH}`替换为量化权重保存路径。
 
-#### <span id="longcat-flash-chat-w4a4-mxfp4量化">LongCat-Flash-Chat W4A4 MXFP4量化</span>
+#### <span id="longcat-flash-chat-w4a4-mxfp4量化">LongCat-Flash-Chat W4A4量化</span>
 
 生成 LongCat-Flash-Chat 模型 W4A4 MXFP4 量化权重：
 
@@ -37,7 +37,7 @@ msmodelslim quant \
   --device npu \
   --model_type LongCat-Flash-Chat \
   --quant_type w4a4 \
-  --tag Atlas_A5_Interface \
+  --tag Ascend_950 \
   --trust_remote_code True
 ```
 

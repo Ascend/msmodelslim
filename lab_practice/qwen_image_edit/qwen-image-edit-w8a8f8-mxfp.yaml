@@ -6,6 +6,8 @@ metadata:
   verified_tags:
     Qwen-Image-Edit-2509:
       - - MindIE-SD
+        - Ascend_950
+      - - MindIE-SD
         - Atlas_350
   label:
     w_bit: 8
@@ -31,7 +33,7 @@ spec:
       qconfig: *default_w8a8_dynamic
       exclude: ['*txt_mlp.net.2*', '*img_mod.1*', '*txt_mod.1*']
     - type: "online_quarot"
-      include: 
+      include:
         - "*"
     - type: "fa3_quant"
       qconfig:

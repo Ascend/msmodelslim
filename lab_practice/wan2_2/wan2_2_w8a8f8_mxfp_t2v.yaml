@@ -6,6 +6,8 @@ metadata:
   verified_tags:
     Wan2.2-T2V-A14B:
       - - MindIE-SD
+        - Ascend_950
+      - - MindIE-SD
         - Atlas_350
   label:
     w_bit: 8

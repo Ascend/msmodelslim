@@ -86,7 +86,7 @@ msmodelslim quant \
 
 - **config_id**：配置标识，与 YAML 文件名对应（如 `qwen-image-edit-w8a8f8-mxfp`、`qwen-image-edit-w4a4f4-mxfp`）。
 - **score**：官方验证评分，数值越高表示该配置在验证场景下表现越稳定。
-- **verified_tags**：已验证的模型类型及对接环境标签；当前 `Qwen-Image-Edit-2509` 对应 MindIE-SD 推理与 Atlas_350 设备。
+- **verified_tags**：已验证的模型类型及对接环境标签；当前 `Qwen-Image-Edit-2509` 对应 MindIE-SD 推理与 Ascend_950 设备。
 - **label**：量化能力标签，便于检索与对照：
   - `w_bit` / `a_bit`：权重与激活位宽（W8A8 为 8，W4A4 为 4）。
   - `is_sparse`：是否稀疏量化（当前为 `False`）。
