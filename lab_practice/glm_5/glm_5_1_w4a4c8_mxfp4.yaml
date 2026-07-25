@@ -5,6 +5,8 @@ metadata:
   verified_tags:
     GLM-5.1:
       - - vLLM_Ascend
+        - Ascend_950
+      - - vLLM_Ascend
         - Atlas_350
   label:
     w_bit: 4

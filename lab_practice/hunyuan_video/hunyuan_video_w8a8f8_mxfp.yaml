@@ -6,6 +6,8 @@ metadata:
   verified_tags:
     HunyuanVideo:
       - - MindIE-SD
+        - Ascend_950
+      - - MindIE-SD
         - Atlas_350
   label:
     w_bit: 8

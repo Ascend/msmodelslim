@@ -5,6 +5,8 @@ metadata:
   verified_tags:
     Qwen2.5-VL-72B-Instruct:
       - - vLLM_Ascend
+        - Ascend_950
+      - - vLLM_Ascend
         - Atlas_350
   label:
     w_bit: 8

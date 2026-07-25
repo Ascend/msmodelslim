@@ -15,7 +15,7 @@
 
 ## 支持的模型版本与量化策略
 
-| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A8C8 | W8A16 | W4A8 | W4A8C8 | W4A16 | W4A4C8(mxfp4)  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
+| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A8C8 | W8A16 | W4A8 | W4A8C8 | W4A16 | W4A4C8  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
 |---------|---------|---------------------------------------------------------------|-----|-----|-----|-----|-----|--------|------|---------|----------|-----------|-----------------------------------------------|
 | **GLM5-MOE** | GLM-5 | <https://huggingface.co/zai-org/GLM-5> | ✅ |  |  | ✅ |  |        |   |  |   |   | [W8A8](#glm-5-w8a8量化) / [W4A8](#glm-5-w4a8量化) |
 | **GLM5-MOE** | GLM-5.1 | <https://huggingface.co/zai-org/GLM-5.1> | ✅ | ✅ |  | ✅ | ✅ |        | ✅ |  |   |   | [W8A8](#glm-51-w8a8量化) / [W4A8](#glm-51-w4a8量化) / [W8A8C8](#glm-51-w8a8c8量化) / [W4A8C8](#glm-51-w4a8c8量化) / [W4A4C8](#glm-51-w4a4c8-mxfp4量化) |
@@ -134,7 +134,7 @@ msmodelslim quant \
   --model_type GLM-5.1 \
   --quant_type w4a4c8 \
   --trust_remote_code True \
-  --tag vLLM_Ascend Atlas_350
+  --tag vLLM_Ascend Ascend_950
 ```
 
 - 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。

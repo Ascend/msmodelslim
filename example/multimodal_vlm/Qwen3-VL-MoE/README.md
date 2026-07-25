@@ -30,8 +30,7 @@ Qwen3-VL-MoE 是阿里云 Qwen 团队推出的大规模多模态视觉语言 Mix
 | 模型 | 原始浮点权重 | 量化方式 | 推理框架支持情况 | 量化命令 |
 |------|-------------|---------|----------------|---------|
 | Qwen3-VL-235B-A22B | [Qwen3-VL-235B-A22B](https://huggingface.co/Qwen/Qwen3-VL-235B-A22B-Instruct/tree/main) | W8A8 混合量化 | MindIE 待支持<br>vLLM Ascend 支持中 | [W8A8 混合量化](#qwen3-vl-moe-w8a8-混合量化) |
-| Qwen3-VL-30B-A3B | [Qwen3-VL-30B-A3B](https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct/tree/main) | W8A8 + MXFP8 混合量化 | MindIE 待支持<br>vLLM Ascend 支持中 | [W8A8 + MXFP8 混合量化](#qwen3-vl-moe-30b-A3b-w8a8-mxfp8) |
-| Qwen3-VL-235B-A22B | [Qwen3-VL-235B-A22B](https://huggingface.co/Qwen/Qwen3-VL-235B-A22B-Instruct/tree/main) | W8A8 + MXFP8 混合量化 | MindIE 待支持<br>vLLM Ascend 支持中 | [W8A8 + MXFP8 混合量化](#qwen3-vl-moe-235b-a22b-w8a8-mxfp8)|
+| Qwen3-VL-30B-A3B | [Qwen3-VL-30B-A3B](https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct/tree/main) | W8A8 混合量化 | MindIE 待支持<br>vLLM Ascend 支持中 | [W8A8 混合量化](#qwen3-vl-moe-30b-A3b-w8a8-mxfp8) |
 
 注：[Qwen3-VL-30B-A3B](https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct/tree/main) 的 W8A8 混合量化尚未验证过量化精度，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
 
@@ -86,22 +85,7 @@ msmodelslim quant \
     --trust_remote_code True
 ```
 
-### <span id="qwen3-vl-moe-30b-A3b-w8a8-mxfp8">Qwen3-VL-30B-A3B W8A8 + MXFP8 混合量化</span>
-
-该量化已经集成至《一键量化》文档中的"[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)"章节内容，具体量化命令参考如下：
-
-```shell
-msmodelslim quant \
-    --model_path /path/to/qwen3_vl_moe_float_weights \
-    --save_path /path/to/qwen3_vl_moe_quantized_weights \
-    --device npu \
-    --model_type Qwen3-VL-30B-A3B \
-    --quant_type w8a8 \
-    --tag vLLM_Ascend Atlas_350 \
-    --trust_remote_code True
-```
-
-### <span id="qwen3-vl-moe-235b-a22b-w8a8-mxfp8">Qwen3-VL-235B-A22B W8A8 + MXFP8 混合量化</span>
+Qwen3-VL-235B-A22B W8A8 MXFP8 混合量化：
 
 该量化已经集成至《一键量化》文档中的"[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)"章节内容，具体量化命令参考如下：
 
@@ -112,7 +96,22 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen3-VL-235B-A22B \
     --quant_type w8a8 \
-    --tag vLLM_Ascend Atlas_350 \
+    --tag vLLM_Ascend Ascend_950 \
+    --trust_remote_code True
+```
+
+### <span id="qwen3-vl-moe-30b-A3b-w8a8-mxfp8">Qwen3-VL-30B-A3B W8A8 混合量化</span>
+
+ 该量化已经集成至《一键量化》文档中的"[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)"章节内容，具体量化命令参考如下：
+
+```shell
+msmodelslim quant \
+    --model_path /path/to/qwen3_vl_moe_float_weights \
+    --save_path /path/to/qwen3_vl_moe_quantized_weights \
+    --device npu \
+    --model_type Qwen3-VL-30B-A3B \
+    --quant_type w8a8 \
+    --tag vLLM_Ascend Ascend_950 \
     --trust_remote_code True
 ```
 

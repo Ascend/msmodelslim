@@ -6,8 +6,12 @@ metadata:
   verified_tags:
     Qwen3-VL-30B-A3B:
       - - vLLM_Ascend
+        - Ascend_950
+      - - vLLM_Ascend
         - Atlas_350
     Qwen3-VL-235B-A22B:
+      - - vLLM_Ascend
+        - Ascend_950
       - - vLLM_Ascend
         - Atlas_350
   label:

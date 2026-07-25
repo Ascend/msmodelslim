@@ -43,6 +43,6 @@ class TestGemma4W8A8Practice:
             "gemma-4-31B-it": [
                 ["vLLM_Ascend", "Atlas_A2_Inference"],
                 ["vLLM_Ascend", "Atlas_A3_Inference"],
-                ["vLLM_Ascend", "Atlas_A5_Interface"],
+                ["vLLM_Ascend", "Ascend_950"],
             ]
         }

@@ -10,7 +10,7 @@ metadata:
       - - vLLM_Ascend
         - Atlas_A3_Inference
       - - vLLM_Ascend
-        - Atlas_A5_Interface
+        - Ascend_950
   label:
     w_bit: 8
     a_bit: 8

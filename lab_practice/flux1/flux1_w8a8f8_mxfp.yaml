@@ -5,6 +5,8 @@ metadata:
   verified_tags:
     FLUX.1-dev:
       - - MindIE-SD
+        - Ascend_950
+      - - MindIE-SD
         - Atlas_350
   label:
     w_bit: 8
