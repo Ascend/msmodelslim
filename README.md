@@ -144,7 +144,7 @@
 
 ## ⚖️ 相关说明
 
-🔹 《[版本说明](docs/zh/release_notes/release_notes.md)》<br>
+🔹 《[版本说明](https://gitcode.com/Ascend/msmodelslim/releases)》<br>
 🔹 《[许可证声明](docs/zh/legal/license_notice.md)》<br>
 🔹 《[安全声明](docs/zh/legal/SECURITY.md)》<br>
 🔹 《[免责声明](docs/zh/legal/disclaimer.md)》<br>
