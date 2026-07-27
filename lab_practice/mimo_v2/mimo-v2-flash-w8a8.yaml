@@ -1,0 +1,33 @@
+apiversion: modelslim_v1
+
+metadata:
+  config_id: mimo-v2-flash-w8a8
+  score: 90
+  verified_model_types:
+    - MiMo-V2-Flash
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: False
+
+spec:
+  process:
+    - type: "linear_quant" # 线性层量化
+      qconfig:
+        act: # 激活值量化
+          scope: "per_token" # 动态量化
+          dtype: "int8" # 8比特整数量化
+          symmetric: True # 对称量化
+          method: "minmax" # 使用minmax算法
+        weight: # 权重量化
+          scope: "per_channel" # per_channel量化
+          dtype: "int8" # 8比特整数量化
+          symmetric: True # 对称量化
+          method: "minmax" # 使用minmax算法
+      include: [ "*" ] # 全局w8a8动态量化
+      # exclude: [ "*" ] # 回退down_proj层
+
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4 # 每个safetensors权重文件最大4G

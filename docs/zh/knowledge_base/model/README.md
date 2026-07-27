@@ -768,6 +768,20 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
+      <td rowspan="1"><strong><a href="../../../../example/MiMo-V2-Flash/README.md">MiMo系列</a></strong></td>
+      <td>MiMo-V2-Flash</td>
+      <td>transformers==4.57.6</td>
+      <td>-</td>
+      <td>√(一键量化)</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
       <td rowspan="1"><strong><a href="../../../../example/longcat_flash/README.md">LongCat-Flash系列</a></strong></td>
       <td>LongCat-Flash-Chat</td>
       <td>transformers==4.55.0</td>
