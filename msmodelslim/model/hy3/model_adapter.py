@@ -22,32 +22,57 @@ See the Mulan PSL v2 for more details.
 import os
 import time
 from collections import defaultdict
-from typing import Any, Generator, List, Optional
+from functools import lru_cache
+from typing import Any, Dict, Generator, List, Optional, Tuple
+from unittest.mock import patch
 
 import torch
+from safetensors import safe_open
 from torch import distributed as dist
 from torch import nn
-from safetensors import safe_open
+from tqdm import tqdm
+from transformers.models.hy_v3.modeling_hy_v3 import HYV3MoE
 
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
+from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.utils.security import json_safe_load, get_valid_read_path, MAX_READ_FILE_SIZE_32G
+from msmodelslim.utils.security.model import SafeGenerator
 from ..common.layer_wise_forward import (
-    transformers_generated_forward_func,
+    generated_decoder_layer_visit_func,
+    TransformersForwardBreak,
 )
 from ..default.model_adapter import DefaultModelAdapter
 from ..interface_hub import (
     ModelInfoInterface,
     ModelSlimPipelineInterfaceV1,
 )
-from transformers.models.hy_v3.modeling_hy_v3 import HYV3MoE
 from .moe_utils import UnstackedHy3MoE, convert_hy3_moe_to_unstacked
 
 
-def _promote_expert_bias_to_parameters(model: nn.Module) -> None:
-    """Promote HF ``e_score_correction_bias`` buffer to Parameter before MoE unstack renames it."""
-    for _, module in model.named_modules():
+def _preserve_expert_bias_fp32(root: nn.Module) -> None:
+    """Cast ``e_score_correction_bias`` to fp32 before ``load_state_dict``.
+
+    Under ``default_dtype(bf16)``, HF creates this buffer as bf16. Loading a fp32
+    checkpoint into that slot via ``copy_`` truncates irreversibly. Cast the
+    destination first (buffer stays buffer) so load upcasts or assign replaces
+    losslessly. Re-apply after load in case ``assign=True`` swapped dtype.
+    """
+    for _, module in root.named_modules():
+        bias = getattr(module, "e_score_correction_bias", None)
+        if isinstance(bias, torch.Tensor) and bias.dtype != torch.float32:
+            # Re-assignment keeps registration kind (buffer/parameter).
+            module.e_score_correction_bias = bias.detach().to(dtype=torch.float32)
+
+
+def _promote_expert_bias_to_parameters(root: nn.Module) -> None:
+    """Promote HF ``e_score_correction_bias`` buffer to Parameter before MoE unstack.
+
+    Dtype is ensured by ``_preserve_expert_bias_fp32`` around load; this only
+    changes registration so the saver / unstack path sees a Parameter.
+    """
+    for _, module in root.named_modules():
         if not hasattr(module, "e_score_correction_bias"):
             continue
         existing = getattr(module, "e_score_correction_bias")
@@ -66,9 +91,7 @@ def _promote_expert_bias_to_parameters(model: nn.Module) -> None:
 _MTP_MODULE_NAMES = ("enorm", "hnorm", "eh_proj", "final_layernorm")
 
 
-def _attach_mtp_modules(model: nn.Module, config) -> None:
-    mtp_layer_idx = config.num_hidden_layers - 1
-    mtp_decoder = model.model.layers[mtp_layer_idx]
+def _attach_mtp_modules_to_decoder(mtp_decoder: nn.Module, config, layer_idx: int) -> None:
     hidden_size = config.hidden_size
     rms_norm_eps = config.rms_norm_eps
 
@@ -79,18 +102,17 @@ def _attach_mtp_modules(model: nn.Module, config) -> None:
 
     get_logger().info(
         "Attached MTP modules (enorm, hnorm, eh_proj, final_layernorm) to layer %d",
-        mtp_layer_idx,
+        layer_idx,
     )
 
 
-def _load_mtp_weights(model: nn.Module, config, model_path: str) -> None:
-    mtp_layer_idx = config.num_hidden_layers - 1
-    mtp_decoder = model.model.layers[mtp_layer_idx]
-    prefix = f"model.layers.{mtp_layer_idx}"
-
-    index_path = os.path.join(model_path, "model.safetensors.index.json")
-    model_index = json_safe_load(index_path)
-    weight_map = model_index.get("weight_map")
+def _load_mtp_weights_to_decoder(
+    mtp_decoder: nn.Module,
+    layer_idx: int,
+    model_path: str,
+    weight_map: Dict[str, str],
+) -> None:
+    prefix = f"model.layers.{layer_idx}"
 
     files_to_keys = defaultdict(list)
     loaded_count = 0
@@ -121,20 +143,8 @@ def _load_mtp_weights(model: nn.Module, config, model_path: str) -> None:
         "Loaded %d MTP modules (%s) for layer %d",
         loaded_count,
         ", ".join(_MTP_MODULE_NAMES),
-        mtp_layer_idx,
+        layer_idx,
     )
-
-
-def _resolve_unstack_device() -> Optional[str]:
-    """Prefer NPU for MoE weight copy; fall back to CPU when NPU is unavailable."""
-    try:
-        import torch_npu  # noqa: F401
-
-        if torch.npu.is_available():
-            return f"npu:{torch.npu.current_device()}"
-    except (ImportError, AttributeError):
-        pass
-    return None
 
 
 @logger_setter()
@@ -146,9 +156,8 @@ class Hy3ModelAdapter(  # pylint: disable=too-many-ancestors
     """
     Hy3 (HF Transformers) 模型适配器。
 
-    与 Qwen3 MoE 适配器对齐的调度能力（逐层 visit、标准 Transformers forward、KV 开关），
-    支持 checkpoint 中 ``model.layers.{num_hidden_layers}`` 的 MTP 模块加载、
-    FA3 激活量化与 AscendV1 保存。
+    支持逐层懒加载（1 层模板 + safetensors 按需物化）、
+    checkpoint 中 MTP 模块加载、MoE unstack、标准 Transformers 链式 forward 与 KV 开关。
     """
 
     def get_model_type(self) -> str:
@@ -160,19 +169,7 @@ class Hy3ModelAdapter(  # pylint: disable=too-many-ancestors
     def get_hidden_dim(self):
         return self.config.hidden_size
 
-    def _has_mtp(self) -> bool:
-        index_path = os.path.join(self.model_path, "model.safetensors.index.json")
-        if not os.path.isfile(index_path):
-            return False
-        weight_map = json_safe_load(index_path).get("weight_map", {})
-        for layer_idx in (self.config.num_hidden_layers - 1, self.config.num_hidden_layers):
-            if f"model.layers.{layer_idx}.enorm.weight" in weight_map:
-                return True
-        return False
-
     def _prepare_mtp_config(self) -> None:
-        if not self._has_mtp():
-            return
         original_layers = self.config.num_hidden_layers
         self.config.num_hidden_layers += 1
         target_len = self.config.num_hidden_layers
@@ -190,47 +187,94 @@ class Hy3ModelAdapter(  # pylint: disable=too-many-ancestors
             original_layers,
         )
 
-    def _ensure_layer_moe_unstacked(self, layer: nn.Module, layer_idx: int) -> None:
-        """Unstack one MoE layer on NPU (if available) right before layer-wise quant."""
+    def _convert_single_moe_layer(self, layer: nn.Module, layer_idx: int) -> None:
+        """Unstack one MoE layer right before layer-wise quant."""
         if isinstance(layer.mlp, UnstackedHy3MoE):
             return
         if not isinstance(layer.mlp, HYV3MoE):
             return
 
-        device = _resolve_unstack_device()
         t0 = time.time()
+        layer.mlp = convert_hy3_moe_to_unstacked(layer.mlp, self.config)
+        # Reload only once, immediately after convert (still nn.Linear). Re-running
+        # after FakeQuantLinear deploy would cast bf16 ckpt into int8 -> all zeros.
+        self._reload_unstacked_moe_from_checkpoint(layer, f"model.layers.{layer_idx}")
         get_logger().info(
-            "MoE unstack layer %d on %s ...",
-            layer_idx,
-            device or "cpu",
-        )
-        mlp = layer.mlp.to(device) if device else layer.mlp
-        layer.mlp = convert_hy3_moe_to_unstacked(mlp, self.config)
-        get_logger().info(
-            "MoE unstack layer %d done in %.1fs on %s",
+            "MoE unstack layer %d done in %.1fs",
             layer_idx,
             time.time() - t0,
-            device or "cpu",
         )
 
-    def load_model_with_mtp(self, device: DeviceType) -> nn.Module:
-        self._prepare_mtp_config()
-        model = self._load_model(device)
+    def _checkpoint_has_unstacked_moe(self, layer_name: str) -> bool:
+        """True when floating checkpoint uses shared_mlp / experts.{i} layout."""
+        weight_map = self.get_weight_map()
+        return f"{layer_name}.mlp.shared_mlp.gate_proj.weight" in weight_map
 
-        _promote_expert_bias_to_parameters(model)
-        if self._has_mtp():
-            _attach_mtp_modules(model, self.config)
-            _load_mtp_weights(model, self.config, str(self.model_path))
+    def _reload_unstacked_moe_from_checkpoint(self, layer: nn.Module, layer_name: str) -> None:
+        """Reload MoE weights after unstack so names match checkpoint (shared_mlp/experts.i).
 
-        unstack_device = _resolve_unstack_device()
+        HF HYV3MoE uses shared_experts/gate_up_proj which do not exist in Hy3 floating
+        checkpoints. Lazy load then leaves zeros under reset_parameters patch; after
+        convert_hy3_moe_to_unstacked the module names match the checkpoint and can be
+        reloaded from safetensors.
+        """
+        if not isinstance(layer.mlp, UnstackedHy3MoE):
+            return
+        # Already quantized: loading bf16 into int8 FakeQuantLinear.weight truncates to 0.
+        if not isinstance(layer.mlp.experts[0].gate_proj, nn.Linear):
+            return
+        if not self._checkpoint_has_unstacked_moe(layer_name):
+            return
+
+        state_dict = self.get_state_dict(layer.mlp, prefix=f"{layer_name}.mlp")
+        if not state_dict:
+            get_logger().warning(
+                "Unstacked MoE checkpoint detected for %s but no tensors were loaded",
+                layer_name,
+            )
+            return
+
+        incompatible = layer.mlp.load_state_dict(state_dict, strict=False)
         get_logger().info(
-            "Model weights loaded; MoE unstack deferred to layer-wise visit on %s",
-            unstack_device or "cpu",
+            "Reloaded %d unstacked MoE tensors for %s (missing=%d, unexpected=%d)",
+            len(state_dict),
+            layer_name,
+            len(incompatible.missing_keys),
+            len(incompatible.unexpected_keys),
         )
-        return model
 
-    def load_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
-        return self.load_model_with_mtp(device)
+    @lru_cache(maxsize=1)
+    def get_weight_map(self) -> Dict[str, str]:
+        model_index_path = os.path.join(self.model_path, "model.safetensors.index.json")
+        model_index = json_safe_load(model_index_path)
+        return model_index["weight_map"]
+
+    def get_state_dict(self, module: nn.Module, prefix: str = "") -> Dict[str, torch.Tensor]:
+        """Load parameters and buffers for ``module`` from safetensors (for expert bias buffers)."""
+        weight_map = self.get_weight_map()
+        names = [name for name, _ in module.named_parameters()]
+        names += [name for name, _ in module.named_buffers()]
+
+        groups = defaultdict(list)
+        for name in names:
+            full_name = f"{prefix}.{name}" if prefix else name
+            if full_name not in weight_map:
+                continue
+            groups[weight_map[full_name]].append(name)
+
+        state_dict = {}
+        for file_name in tqdm(groups, desc=f"Loading {prefix or 'model'}"):
+            file_path = os.path.join(self.model_path, file_name)
+            file_path = get_valid_read_path(
+                file_path,
+                extensions="safetensors",
+                size_max=MAX_READ_FILE_SIZE_32G,
+            )
+            with safe_open(file_path, framework="pt", device="cpu") as f:
+                for name in tqdm(groups[file_name], desc=f"Loading {file_path}", leave=False):
+                    full_name = f"{prefix}.{name}" if prefix else name
+                    state_dict[name] = f.get_tensor(full_name)
+        return state_dict
 
     def handle_dataset(self, dataset: Any, device: DeviceType = DeviceType.NPU) -> List[Any]:
         return self._get_tokenized_data(dataset, device)
@@ -248,23 +292,125 @@ class Hy3ModelAdapter(  # pylint: disable=too-many-ancestors
         )
 
     def init_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
-        return self.load_model_with_mtp(device)
+        torch.set_default_dtype(torch.bfloat16)
+        self._prepare_mtp_config()
+        origin_layers = self.config.num_hidden_layers
+        get_logger().info("Model with %s layers totally", origin_layers)
+
+        self.config.num_hidden_layers = 1
+        model = SafeGenerator.get_model_from_pretrained(
+            model_path=str(self.model_path),
+            config=self.config,
+            trust_remote_code=self.trust_remote_code,
+            device_map="cpu",
+            torch_dtype="auto",
+        )
+        self.config.num_hidden_layers = origin_layers
+
+        _preserve_expert_bias_fp32(model)
+        state_dict = self.get_state_dict(model)
+        model.load_state_dict(state_dict, strict=False, assign=True)
+        _preserve_expert_bias_fp32(model)
+        _promote_expert_bias_to_parameters(model)
+
+        model.eval()
+        return model
 
     def generate_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
-        if dist.is_initialized():
-            dist.barrier()
-
-        for layer_idx, layer in enumerate(model.model.layers):
-            name = f"model.layers.{layer_idx}"
-            self._ensure_layer_moe_unstacked(layer, layer_idx)
-            yield ProcessRequest(name, layer, tuple(), {})
+        return generated_decoder_layer_visit_func(
+            model,
+            transformer_blocks=self.generate_decoder_layer(model),
+        )
 
     def generate_model_forward(
         self,
         model: nn.Module,
         inputs: Any,
     ) -> Generator[ProcessRequest, Any, None]:
-        return transformers_generated_forward_func(model, inputs)
+        first_block_input: Optional[Tuple] = None
+
+        def break_hook(module: nn.Module, hook_args: Tuple[Any, ...], hook_kwargs: Dict[str, Any]):
+            nonlocal first_block_input
+            first_block_input = (hook_args, hook_kwargs)
+            raise TransformersForwardBreak()
+
+        remove_handler = model.model.layers[0].register_forward_pre_hook(break_hook, with_kwargs=True, prepend=True)
+
+        try:
+            if isinstance(inputs, (list, tuple)):
+                model(inputs[0])
+            elif isinstance(inputs, dict):
+                model(**inputs)
+            else:
+                model(inputs)
+        except TransformersForwardBreak:
+            pass
+        except Exception as e:
+            raise e
+        finally:
+            remove_handler.remove()
+
+        if first_block_input is None:
+            raise InvalidModelError("Can't get first block input.", action="Please check the model and input")
+
+        current_inputs = first_block_input
+
+        if dist.is_initialized():
+            dist.barrier()
+
+        for name, block in self.generate_decoder_layer(model):
+            args, kwargs = current_inputs
+            outputs = yield ProcessRequest(name, block, args, kwargs)
+            hidden_states = outputs[0] if isinstance(outputs, tuple) else outputs
+            current_inputs = ((hidden_states,), current_inputs[1])
 
     def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
         return self._enable_kv_cache(model, need_kv_cache)
+
+    def load_decoder_if_not_exist(self, model: nn.Module, name: str, idx: int) -> nn.Module:
+        try:
+            decoder = model.get_submodule(name)
+        except AttributeError:
+            with patch.object(nn.Linear, "reset_parameters", lambda _self: None):
+                get_logger().info("Creating decoder layer %s", idx)
+                module_list: nn.ModuleList = model.model.layers
+                template_module = module_list[0]
+                decoder = template_module.__class__(config=self.config, layer_idx=idx)
+
+                _preserve_expert_bias_fp32(decoder)
+                state_dict = self.get_state_dict(decoder, prefix=name)
+                decoder.load_state_dict(state_dict, strict=False, assign=True)
+                _preserve_expert_bias_fp32(decoder)
+                decoder.eval()
+                module_list.append(decoder)
+                get_logger().info("Create decoder layer %s successfully", idx)
+
+        _promote_expert_bias_to_parameters(decoder)
+        self._convert_single_moe_layer(decoder, idx)
+        return decoder
+
+    def load_mtp_if_not_exist(self, mtp_decoder: nn.Module) -> None:
+        try:
+            mtp_decoder.get_submodule("enorm")
+            return
+        except AttributeError:
+            pass
+
+        layer_idx = self.config.num_hidden_layers - 1
+        get_logger().info("Creating MTP modules on layer %d", layer_idx)
+        _attach_mtp_modules_to_decoder(mtp_decoder, self.config, layer_idx)
+        _load_mtp_weights_to_decoder(
+            mtp_decoder,
+            layer_idx,
+            str(self.model_path),
+            self.get_weight_map(),
+        )
+        get_logger().info("Create MTP successfully")
+
+    def generate_decoder_layer(self, model: nn.Module) -> Generator[Tuple[str, nn.Module], None, None]:
+        for idx in range(self.config.num_hidden_layers):
+            name = f"model.layers.{idx}"
+            decoder = self.load_decoder_if_not_exist(model, name=name, idx=idx)
+            if idx == self.config.num_hidden_layers - 1:
+                self.load_mtp_if_not_exist(decoder)
+            yield name, decoder

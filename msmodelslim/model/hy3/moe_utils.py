@@ -72,11 +72,11 @@ class UnstackedHy3MoE(nn.Module):
         self.router.gate = original_moe.gate
         self.shared_mlp = original_moe.shared_experts
 
+        # Keep fp32 slot for expert_bias (upstream preserve + reload from ckpt).
+        # Unstack renames e_score_correction_bias -> expert_bias; dtype must stay
+        # fp32 so a later load_state_dict / assign does not truncate.
         bias = original_moe.e_score_correction_bias
-        if isinstance(bias, nn.Parameter):
-            self.expert_bias = bias
-        else:
-            self.expert_bias = nn.Parameter(bias.detach().clone(), requires_grad=False)
+        self.expert_bias = nn.Parameter(bias.detach().to(torch.float32), requires_grad=False)
 
         num_experts = config.num_experts
         hidden_dim = config.hidden_size
