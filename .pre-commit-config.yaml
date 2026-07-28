@@ -92,7 +92,7 @@ repos:
     hooks:
       - id: gitleaks-offline-scan
         name: Gitleaks Secret Scan(Local Binary)
-        entry: ./gitleaks
+        entry: bash -c 'if [ -f ./gitleaks.exe ]; then ./gitleaks.exe "$@"; else ./gitleaks "$@"; fi' --
         language: system
         pass_filenames: true
         args:
