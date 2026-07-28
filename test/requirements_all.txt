@@ -1,0 +1,41 @@
+# ============================================================================
+# 全量依赖清单（用于 python build.py test -e FULL_UT=true）
+# ============================================================================
+
+# ---------- 测试框架 ----------
+coverage
+pytest
+pytest-mock
+
+# ---------- 核心 ML 框架 ----------
+torch==2.7.1
+mindspore==2.6.0
+accelerate==1.8.1
+transformers==4.51.0
+tokenizers==0.21.2
+
+# ---------- ONNX ----------
+onnx==1.17.0
+onnxruntime==1.22.0
+
+# ---------- 数值 / 数据处理 ----------
+numpy==1.23.5
+scipy==1.15.3
+pandas==2.3.3
+cloudpickle
+decorator
+absl-py
+tornado
+ml-dtypes
+protobuf==3.20.3
+
+# ---------- 模糊测试 ----------
+atheris==2.3.0
+
+# ---------- 图像 / 多模态 ----------
+imageio
+imageio-ffmpeg
+diffusers==0.34.0
+
+# ---------- 通用工具 ----------
+pydantic

@@ -37,6 +37,8 @@ class BuildManager:
         python build.py local                       本地构建（跳过依赖拉取, Release 编译）
         python build.py test                        单元测试（拉取依赖 + Debug 编译 + 执行测试）
         python build.py test local                  单元测试（跳过依赖拉取, Debug 编译 + 执行测试）
+        python build.py test -e full_ut=true        全量 UT（拉取全量依赖 + 安装 + 执行全部测试用例）
+        python build.py test local -e full_ut=true  全量 UT（跳过依赖拉取, 执行全部测试用例）
         python build.py --version/-v <version>      指定构建版本号（用于 run/exe/dmg 包）
         python build.py --extra/-e KEY=VALUE        指定额外构建选项，可多次使用
 
@@ -44,6 +46,7 @@ class BuildManager:
         - 参数: command    : 构建动作: 为空时为全构建, local 为跳过依赖下载, test 为运行单元测试。
         - 参数: --version  : 构建版本号，不传时默认 1.0.0。
         - 参数: --extra    : 额外构建选项，格式为 KEY=VALUE，可多次指定。
+                             预设选项: full_ut=true 全量单元测试（仅与 test 命令组合使用）。
     """
 
     def __init__(self):
@@ -95,6 +98,21 @@ class BuildManager:
             cwd=self.project_root,
         )
 
+    def _prepare_all_dependencies(self):
+        """安装全量依赖（来源 requirements_all.txt + mindformers --no-deps）。
+
+        mindformers==1.3.2 依赖 tokenizers==0.15.0，但 UT 环境需要 tokenizers==0.21.2，
+        此处先以 --no-deps 安装 mindformers 再安装 requirements_all.txt，避免版本冲突。
+        """
+        self._execute_command(
+            ["pip", "install", "mindformers==1.3.2"],
+            cwd=self.project_root,
+        )
+        self._execute_command(
+            ["pip", "install", "-r", str(self.project_root / "test" / "requirements_all.txt")],
+            cwd=self.project_root,
+        )
+
     def _check_torch_npu_conflict(self):
         """检测环境是否安装了 torch_npu，存在则告警。
 
@@ -115,26 +133,40 @@ class BuildManager:
         is_local = 'local' in self.args.command
         is_test = 'test' in self.args.command
 
+        # 解析 -e 额外构建选项为字典（大小写不敏感）
+        extra_opts = {}
+        for opt in self.args.extra:
+            key, _, val = opt.partition('=')
+            extra_opts[key.upper()] = val
+        is_full_ut = extra_opts.get('FULL_UT', '').lower() == 'true'
+
         # 在非 local 场景下按需更新依赖；在 local 场景下仅使用本地已有代码，不更新依赖。
         if not is_local:
-            if is_test:
+            self._prepare_runtime_dependencies()
+            if is_full_ut:
+                self._prepare_all_dependencies()
+            elif is_test:
                 # 测试：先安装测试专用依赖，再安装运行时依赖，可减少一些重复安装
                 self._prepare_test_dependencies()
-                self._prepare_runtime_dependencies()
             else:
                 # 构建：setup.py bdist_wheel 直接读取 requirements.txt 作为 install_requires，无需预先安装
                 pass
 
         if is_test:
-            # -------------------- 单元测试 --------------------
-            self._check_torch_npu_conflict()
-            self._execute_command(["bash", "run_ut.sh", "--modelslim_v1"], cwd=self.project_root / "test")
+            if is_full_ut:
+                # -------------------- 全量单元测试 --------------------
+                # 运行全部测试用例（pytorch, app, core, ir, mindspore, common, onnx, processor, quant, utils, model, infra, format + smoke）
+                self._check_torch_npu_conflict()
+                self._execute_command(["bash", "run_ut.sh"], cwd=self.project_root / "test")
+            else:
+                # -------------------- 单元测试（精简） --------------------
+                self._check_torch_npu_conflict()
+                self._execute_command(["bash", "run_ut.sh", "--modelslim_v1"], cwd=self.project_root / "test")
         else:
             # -------------------- 产品构建 --------------------
             logging.info("--version: %s", self.args.version)
-            for opt in self.args.extra:
-                key, _, val = opt.partition('=')
-                logging.info("--extra: %s = %s", key, val)
+            for k, v in extra_opts.items():
+                logging.info("--extra: %s = %s", k, v)
 
             build_env = os.environ.copy()
             build_env["BUILD_VERSION"] = self.args.version
