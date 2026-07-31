@@ -1,0 +1,52 @@
+apiversion: modelslim_v1
+metadata:
+  config_id: minimax_m3_w8a8
+  score: 88
+  verified_model_types:
+    - MiniMax-M3
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: False
+
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+
+spec:
+  process:
+    - type: iter_smooth
+      alpha: 0.5
+      scale_min: 1e-5
+      symmetric: True
+      enable_subgraph_type:
+        - 'norm-linear'
+    - type: linear_quant
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*"
+      exclude:
+        - "*norm*"
+        - "*embed_tokens*"
+        - "*lm_head*"
+        - "*vision_tower*"
+        - "*multi_modal_projector*"
+        - "*patch_merge_mlp*"
+        - "*mlp.down_proj*"
+        - "*shared_experts.down_proj*"
+        - "*mlp.gate"
+        - "*indexer*"
+        - "*index_*"
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
+  dataset: "mix_calib.jsonl"
