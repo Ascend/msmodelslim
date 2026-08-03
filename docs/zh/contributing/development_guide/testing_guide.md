@@ -6,71 +6,22 @@
 
 ## 环境要求
 
-### 操作系统
+按照《[msModelSlim 安装指南 — 源码安装](../../install_guide/install_guide.md#231-环境准备)》章节完成编译和测试环境的搭建。
 
-msModelSlim 的单元测试目前仅支持 **Linux** 系统，不支持 Windows 或 macOS。请确保您在 Linux 环境下运行测试。
-
-### Python版本
-
-msModelSlim 推荐使用 Python 3.10 环境进行测试，建议使用 conda 创建独立的虚拟环境：
-
-```bash
-# 创建Python 3.10环境
-conda create -n ut_py310 python=3.10
-conda activate ut_py310
-
-# 确认Python版本
-python --version  # 应显示 Python 3.10.x
-```
-
-### 必须依赖
-
-运行单元测试需要安装以下依赖包：
-
-```bash
-pip install pytest
-pip install pytest-mock
-pip install coverage
-pip install torch==2.1.0
-pip install easydict==1.13
-pip install einops
-pip install "pydantic>=2.10.1"
-pip install wcmatch
-pip install scipy
-pip install pygtrie
-pip install accelerate
-pip install requests
-pip install pyyaml
-pip install numpy==1.26.4
-pip install transformers==4.51.0
-```
-
-> [!NOTE]
->
-> numpy 建议使用 1.26.4 版本以避免与 torch 2.1.0 产生兼容性问题。
+> **说明：** 环境镜像的构建方法及配套软件版本由 MindStudio 统一镜像制作指南维护，本仓库不重复定义。
 
 ## 单元测试执行
 
-### 执行用例
-
-使用项目根目录下的 `test/run_ut.sh` 脚本执行单元测试，测试 modelslim_v1 相关模块（app、core、ir、infra、processor、utils），使用 `--modelslim_v1` 参数：
+执行如下命令执行单元测试，测试 modelslim_v1 相关模块（app、core、ir、infra、processor、utils）：
 
 ```bash
-cd test
-bash run_ut.sh --modelslim_v1
-```
-
-该参数适用于仅涉及核心量化框架的测试场景，可以显著减少测试执行时间。
-
-### 查看帮助信息
-
-```bash
-bash run_ut.sh --help
+cd ~/msmodelslim
+python3 build.py test
 ```
 
 ### 输出典型测试
 
-运行 `bash run_ut.sh --modelslim_v1` 后，每个模块会显示测试进度和最终结果。输出格式示例如下：
+每个模块会显示测试进度和最终结果。输出格式示例如下：
 
 ```text
 Running modelslim_v1 related test cases...

@@ -114,7 +114,7 @@
 
 ## 📦 安装指南
 
-介绍工具的环境依赖与安装方法，请参见《[msModelSlim 工具安装指南](./docs/zh/install_guide/install_guide.md)》。
+介绍工具的环境依赖与安装方法，请参见《[msModelSlim 安装指南](./docs/zh/install_guide/install_guide.md)》。
 
 ## 📘 使用指南
 
