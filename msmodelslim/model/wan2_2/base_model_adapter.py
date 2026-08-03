@@ -23,6 +23,7 @@ See the Mulan PSL v2 for more details.
 # pylint: disable=logging-fstring-interpolation,too-many-ancestors,consider-merging-isinstance,consider-using-from-import,attribute-defined-outside-init,invalid-envvar-default,simplifiable-if-expression,logging-not-lazy,too-many-lines,arguments-differ
 
 import logging
+import gc
 import os
 import sys
 import time
@@ -47,6 +48,11 @@ from msmodelslim.model.common.layer_wise_forward import (
 from msmodelslim.utils.cache import load_cached_data_for_models, to_device
 from msmodelslim.utils.exception import InvalidModelError, SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
+from msmodelslim.utils.memory import (
+    format_memory_size,
+    get_device_allocated_memory,
+    get_device_reserved_memory,
+)
 from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
 from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VlmCalibSample
 from ..interface_hub import (
@@ -291,27 +297,83 @@ class Wan2_2BaseModelAdapter(
         inference_config: Any,
     ) -> Dict[str, Any]:
         if not dump_config.enable_dump:
-            return self._calib_data_when_dump_disabled(models)
-
-        config_dump_data_dir = dump_config.dump_data_dir
-        base_dir = config_dump_data_dir if config_dump_data_dir else save_path
-        pth_file_path_list: Dict[str, str] = {}
-        for expert_name in models:
-            pth_file_path_list[expert_name] = os.path.join(
-                str(base_dir),
-                f"calib_data_{self.model_args.task_config}_{expert_name}.pth",
+            calib_data = self._calib_data_when_dump_disabled(models)
+        else:
+            config_dump_data_dir = dump_config.dump_data_dir
+            base_dir = config_dump_data_dir if config_dump_data_dir else save_path
+            pth_file_path_list: Dict[str, str] = {}
+            for expert_name in models:
+                pth_file_path_list[expert_name] = os.path.join(
+                    str(base_dir),
+                    f"calib_data_{self.model_args.task_config}_{expert_name}.pth",
+                )
+            calib_data = load_cached_data_for_models(
+                pth_file_path_list=pth_file_path_list,
+                generate_func=lambda: self.inference_dump_calib_data(
+                    dataset=dataset,
+                    inference_config=inference_config,
+                ),
+                models=models,
+                dump_config=dump_config,
             )
-        calib_data = load_cached_data_for_models(
-            pth_file_path_list=pth_file_path_list,
-            generate_func=lambda: self.inference_dump_calib_data(
-                dataset=dataset,
-                inference_config=inference_config,
-            ),
-            models=models,
-            dump_config=dump_config,
-        )
-        get_logger().info("prepare calib_data from %s success", base_dir)
+            get_logger().info("prepare calib_data from %s success", base_dir)
+
+        # DiT layer-wise quant no longer needs T5/VAE after calib prepare (dump or skip).
+        self.release_auxiliary_models()
         return calib_data
+
+    def release_auxiliary_models(self) -> None:
+        """Release T5 encoder and VAE after calibration; not needed for layer-wise DiT quant."""
+        pipeline_attrs = ("wan_t2v", "wan_ti2v", "wan_i2v", "pipeline")
+        released: List[str] = []
+        before_alloc = get_device_allocated_memory()
+        before_reserved = get_device_reserved_memory()
+
+        for attr in pipeline_attrs:
+            pipeline = getattr(self, attr, None)
+            if pipeline is None:
+                continue
+
+            text_encoder = getattr(pipeline, "text_encoder", None)
+            if text_encoder is not None:
+                model = getattr(text_encoder, "model", None)
+                if model is not None:
+                    model.cpu()
+                del pipeline.text_encoder
+                pipeline.text_encoder = None
+                released.append(f"{attr}.text_encoder")
+
+            vae = getattr(pipeline, "vae", None)
+            if vae is not None:
+                vae_model = getattr(vae, "model", None)
+                if vae_model is not None:
+                    vae_model.cpu()
+                for tensor_attr in ("mean", "std"):
+                    tensor = getattr(vae, tensor_attr, None)
+                    if isinstance(tensor, torch.Tensor):
+                        setattr(vae, tensor_attr, tensor.cpu())
+                del pipeline.vae
+                pipeline.vae = None
+                released.append(f"{attr}.vae")
+
+        if not released:
+            get_logger().debug("release_auxiliary_models: nothing to release")
+            return
+
+        gc.collect()
+        if hasattr(torch, "npu") and hasattr(torch.npu, "empty_cache"):
+            torch.npu.empty_cache()
+        elif torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        get_logger().info(
+            "Released auxiliary models %s; device memory allocated %s -> %s, reserved %s -> %s",
+            released,
+            format_memory_size(before_alloc),
+            format_memory_size(get_device_allocated_memory()),
+            format_memory_size(before_reserved),
+            format_memory_size(get_device_reserved_memory()),
+        )
 
     def inference_dump_calib_data(self, dataset=None, inference_config: Any = None):
         stream = torch.npu.Stream()

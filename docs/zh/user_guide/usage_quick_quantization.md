@@ -556,6 +556,7 @@ multimodal_sd_modelslim_v1 面向文生视频 / 图生视频等多模态**生成
 **配置特点**:
 
 - `spec.dataset`：校准样本（短名称 / 路径），重构路径下由适配器 `handle_dataset` 加载为 `VlmCalibSample` 列表。
+- `spec.per_expert`（可选）：按专家名整链覆盖 `process`；与 `process` 同级。
 - `multimodal_sd_config.dump_config`：校准 pth 的目录与捕获模式。
 - `multimodal_sd_config.inference_config`：**推荐**；推理参数经 Pydantic 强校验后桥接到原推理仓 CLI。
 - `multimodal_sd_config.model_config`：**即将废弃**（仅 Legacy）；与 `inference_config` 不可同时配置。

@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 import sys
 import traceback
 from importlib.metadata import entry_points
-from typing import Type, Tuple, Dict, Callable, get_args
+from typing import Type, Tuple, Dict, Callable, List, get_args
 
 from pydantic import BaseModel
 
@@ -72,6 +72,11 @@ def _plugin_type_from_config_class(config_class: Type[BaseModel], type_field: st
     raise ToDoError(
         f"Config class {config_class.__name__} field {type_field!r} has no default and no Literal for plugin_type."
     )
+
+
+def list_registered_plugin_types(entry_point_group: str) -> List[str]:
+    """列出已在内存注册表中注册的插件 ``type`` 名称（不含尚未触发的 setuptools entry_point）。"""
+    return sorted(_PLUGIN_REGISTRY.get(entry_point_group, {}).keys())
 
 
 def register_plugin(plugin_getter: Callable[[], Tuple[Type[BaseModel], Type]]) -> Tuple[Type[BaseModel], Type]:

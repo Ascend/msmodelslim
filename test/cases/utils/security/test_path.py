@@ -527,3 +527,60 @@ class TestSetFileStatEdge:
         ):
             set_file_stat(str(f), "640")
         assert os.path.exists(f)
+
+
+class TestSafeWriteUmask:
+    """测试 msmodelslim.utils.security.SafeWriteUmask"""
+
+    def test_context_manager_strips_group_other_write(self, tmp_path):
+        """with 块内创建文件时应按 umask 去掉组/其他写权限"""
+        from msmodelslim.utils.security.path import SafeWriteUmask
+
+        target = tmp_path / "umask_ctx.txt"
+        default_flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        fake_mode = stat.S_IWUSR | stat.S_IRUSR | stat.S_IWGRP | stat.S_IRGRP | stat.S_IWOTH | stat.S_IROTH  # 666
+        with SafeWriteUmask(), os.fdopen(os.open(str(target), default_flags, mode=fake_mode), "w") as write_file:
+            write_file.write("")
+        assert os.stat(target).st_mode & (stat.S_IWGRP | stat.S_IWOTH | stat.S_IROTH | stat.S_IXOTH) == 0
+
+    def test_decorator_strips_group_other_write(self, tmp_path):
+        """装饰器用法应同样生效"""
+        from msmodelslim.utils.security.path import SafeWriteUmask
+
+        target = tmp_path / "umask_dec.txt"
+
+        @SafeWriteUmask
+        def _write():
+            default_flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+            fake_mode = stat.S_IWUSR | stat.S_IRUSR | stat.S_IWGRP | stat.S_IRGRP | stat.S_IWOTH | stat.S_IROTH
+            with os.fdopen(os.open(str(target), default_flags, mode=fake_mode), "w") as f:
+                f.write("")
+
+        _write()
+        assert os.stat(target).st_mode & (stat.S_IWGRP | stat.S_IWOTH | stat.S_IROTH | stat.S_IXOTH) == 0
+
+    def test_umask_restored_after_exception(self):
+        """异常退出后应恢复原 umask（with 与装饰器）"""
+        from msmodelslim.utils.security.path import SafeWriteUmask
+
+        before = os.umask(0)
+        os.umask(before)
+        try:
+            with pytest.raises(RuntimeError):
+                with SafeWriteUmask(umask=0o077):
+                    raise RuntimeError("boom")
+            after = os.umask(0)
+            os.umask(after)
+            assert after == before
+
+            @SafeWriteUmask
+            def _boom():
+                raise RuntimeError("boom")
+
+            with pytest.raises(RuntimeError):
+                _boom()
+            after = os.umask(0)
+            os.umask(after)
+            assert after == before
+        finally:
+            os.umask(before)

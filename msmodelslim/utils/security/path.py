@@ -304,10 +304,10 @@ def safe_delete_path_if_exists(path, logger_level="info"):
         path = get_valid_write_path(path, is_dir=is_dir, warn_exists=False)
         logger_func = LOGGER_FUNC[logger_level]
         if os.path.isfile(path):
-            logger_func(f"File '{path}' exists and will be deleted.")
+            logger_func("File '%s' exists and will be deleted.", path)
             os.remove(path)
         else:
-            logger_func(f"Folder '{path}' exists and will be deleted.")
+            logger_func("Folder '%s' exists and will be deleted.", path)
             shutil.rmtree(path)
 
 
@@ -324,3 +324,38 @@ def set_file_stat(path, stat_mode="640"):
     real_path = get_valid_path(path)
     if os.path.isfile(real_path):
         os.chmod(real_path, int(stat_mode, 8))
+
+
+class SafeWriteUmask:
+    """Write with preset umask
+
+    Usage:
+    As a decorator:
+    >>> @SafeWriteUmask
+    >>> def function():
+    >>>     ...
+
+    In with block:
+    >>> with SafeWriteUmask(), open(..., "w") as ...:
+    >>>     ...
+    """
+
+    def __init__(self, func=None, umask=0o027):
+        self.func = func
+        self.umask = umask
+        self.ori_umask = None
+
+    def __call__(self, *args, **kwargs):
+        self.__enter__()
+        try:
+            out = self.func(*args, **kwargs)
+        finally:
+            self.__exit__()
+        return out
+
+    def __enter__(self):
+        self.ori_umask = os.umask(self.umask)
+        return self
+
+    def __exit__(self, *args):
+        os.umask(self.ori_umask)

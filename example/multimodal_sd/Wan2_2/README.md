@@ -161,6 +161,11 @@ spec:
       exclude:
         - "*blocks.0.self_attn*"
 
+  # 可选：按专家整链覆盖 process（与 process 同级）
+  # per_expert:
+  #   low_noise_model: [...]
+  #   high_noise_model: [...]
+
   dataset: wan2_2_t2v   # I2V: wan2_2_i2v；TI2V: wan2_2_ti2v
 
   save:
@@ -184,6 +189,8 @@ spec:
 
 #### 量化配置 (process)
 
+- **process**：默认 Processor 链。
+- **per_expert**（可选，与 `process` 同级）：按专家名整链覆盖 `process`。
 - **linear_quant**：DiT 线性层 W8A8（MXFP8 per-block）。
 - **online_quarot**：注意力 Q/K 在线旋转；示例中排除首层 `blocks.0`。
 - **fa3_quant**：注意力 FA3 动态 FP8 量化。
@@ -225,7 +232,7 @@ spec:
 ## FAQ
 
 **如何自定义量化配置？**
-修改 YAML 中 `spec.process` 的处理器链与 `include`/`exclude`；场景相关推理参数放在 `multimodal_sd_config.inference_config`。
+修改 YAML 中 `spec.process` 的处理器链与 `include`/`exclude`；场景相关推理参数放在 `multimodal_sd_config.inference_config`。两专家需不同链路时使用 `spec.per_expert`。
 
 **能否只量化 low_noise_model？**
 不能。双专家须全部完成量化，且 `calib_data` 中须包含 `low_noise_model`、`high_noise_model` 两个 key。

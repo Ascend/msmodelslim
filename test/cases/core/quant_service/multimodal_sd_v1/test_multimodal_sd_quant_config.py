@@ -113,3 +113,60 @@ def test_load_specific_config_invalid_content():
     with pytest.raises(SchemaValidateError):
         # 无效配置（缺少必要字段或类型错误）
         load_specific_config({"multimodal_sd_config": {"dump_config": 123}})
+
+
+def test_service_config_per_expert_optional():
+    """per_expert 可选，默认 None"""
+    config = MultimodalSDServiceConfig(
+        multimodal_sd_config={"dump_config": {"capture_mode": "args", "dump_data_dir": ""}}
+    )
+    assert config.per_expert is None
+
+
+def test_service_config_per_expert_loads_and_resolves():
+    """per_expert 解析为 Processor 列表；命中整链替换，未命中回退 process；{} 等同未覆盖"""
+    config = load_specific_config(
+        {
+            "process": [{"type": "load"}],
+            "per_expert": {
+                "low_noise_model": [{"type": "smooth_quant"}],
+                "high_noise_model": [{"type": "smooth_quant"}, {"type": "load"}],
+            },
+            "multimodal_sd_config": {"dump_config": {"capture_mode": "args", "dump_data_dir": ""}},
+        }
+    )
+    assert len(config.per_expert["low_noise_model"]) == 1
+    assert config.per_expert["low_noise_model"][0].type == "smooth_quant"
+    assert len(config.per_expert["high_noise_model"]) == 2
+    assert config.per_expert["high_noise_model"][1].type == "load"
+
+    low = config.resolve_process_for_expert("low_noise_model")
+    high = config.resolve_process_for_expert("high_noise_model")
+    assert low[0].type == "smooth_quant"
+    assert high[0].type == "smooth_quant" and high[1].type == "load"
+
+    empty = load_specific_config(
+        {
+            "process": [{"type": "load"}],
+            "per_expert": {},
+            "multimodal_sd_config": {"dump_config": {"capture_mode": "args", "dump_data_dir": ""}},
+        }
+    )
+    assert empty.resolve_process_for_expert("low_noise_model")[0].type == "load"
+
+
+def test_resolve_process_for_expert_returns_shallow_copy():
+    """返回副本，避免后续 Runner 改动污染默认 process / per_expert 列表"""
+    config = load_specific_config(
+        {
+            "process": [{"type": "load"}],
+            "per_expert": {"low_noise_model": [{"type": "smooth_quant"}]},
+            "multimodal_sd_config": {"dump_config": {"capture_mode": "args", "dump_data_dir": ""}},
+        }
+    )
+    low = config.resolve_process_for_expert("low_noise_model")
+    high = config.resolve_process_for_expert("high_noise_model")
+    low.append(object())
+    high.clear()
+    assert len(config.per_expert["low_noise_model"]) == 1
+    assert len(config.process) == 1

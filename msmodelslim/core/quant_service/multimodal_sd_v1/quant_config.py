@@ -21,9 +21,10 @@ See the Mulan PSL v2 for more details.
 
 # pylint: disable=duplicate-code
 
+import copy
 import logging
 from dataclasses import dataclass
-from typing import Dict, Any, Union, Optional, List
+from typing import Dict, Any, Optional, Union, List
 from pathlib import Path
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
@@ -31,12 +32,12 @@ from typing_extensions import Self, Literal
 from torch import nn
 
 from msmodelslim.core.const import RunnerType
+from msmodelslim.processor.base import AutoProcessorConfigList
 from msmodelslim.core.quant_service.interface import BaseQuantConfig
 from msmodelslim.core.quant_service.modelslim_v1.quant_config import ModelslimV1QuantConfig, PriorStageConfig
 from msmodelslim.core.quant_service.modelslim_v1.save.saver import AutoSaverConfigList
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.exception_decorator import exception_handler
-from msmodelslim.processor.base import AutoProcessorConfigList
 from .legacy_pipeline_interface import LegacyMultimodalPipelineInterface
 from .pipeline_interface import MultimodalPipelineInterface
 
@@ -99,6 +100,10 @@ class MultimodalSDServiceConfig(BaseModel):
     runner: RunnerType = RunnerType.LAYER_WISE
     prior: List[PriorStageConfig] = Field(default_factory=list, description="前置阶段列表，每阶段含 process 与 dataset")
     process: AutoProcessorConfigList = Field(default_factory=list)
+    per_expert: Optional[Dict[str, AutoProcessorConfigList]] = Field(
+        default=None,
+        description="按专家覆盖 process；值为 Processor 列表。某专家在此出现则整链替换，否则回退 process",
+    )
     save: AutoSaverConfigList = Field(default_factory=list)
     dataset: str = Field(default='mix_calib.jsonl')
     # 支持直接传入字典作为配置，或使用 MultimodalSDConfig 实例
@@ -113,6 +118,12 @@ class MultimodalSDServiceConfig(BaseModel):
             # 将字典转换 MultimodalSDConfig 实例（会保留额外字段）
             self.multimodal_sd_config = MultimodalSDConfig(**self.multimodal_sd_config)
         return self
+
+    def resolve_process_for_expert(self, expert_name: str) -> AutoProcessorConfigList:
+        """返回该专家应使用的 Processor 链（整链替换，非字段级 merge）。"""
+        if self.per_expert is not None and expert_name in self.per_expert:
+            return copy.copy(self.per_expert[expert_name])
+        return copy.copy(self.process)
 
 
 class MultimodalSDModelslimV1QuantConfig(ModelslimV1QuantConfig):

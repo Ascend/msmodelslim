@@ -23,9 +23,7 @@ import pytest
 import os
 from unittest.mock import Mock, patch
 
-from msmodelslim.utils.cache.pth import (
-    load_cached_data, InputCapture, DumperManager, to_device
-)
+from msmodelslim.utils.cache.pth import load_cached_data, InputCapture, DumperManager, to_device
 from msmodelslim.utils.exception import SchemaValidateError
 
 
@@ -68,19 +66,15 @@ class TestLoadCachedData:
                     mock_valid_path.return_value = mock_pth_file_path
 
                     # Mock logger
-                    with patch('msmodelslim.utils.cache.pth.get_logger') as mock_logger:
-                        result = load_cached_data(
-                            mock_pth_file_path,
-                            mock_generate_func,
-                            mock_model,
-                            mock_dump_config
-                        )
+                    with patch('msmodelslim.utils.cache.pth.get_logger'):
+                        result = load_cached_data(mock_pth_file_path, mock_generate_func, mock_model, mock_dump_config)
 
                         assert result == mock_data
                         mock_load.assert_called_once_with(mock_pth_file_path)
 
-    def test_load_cached_data_file_not_exists(self, mock_pth_file_path, mock_generate_func, mock_model,
-                                              mock_dump_config):
+    def test_load_cached_data_file_not_exists(
+        self, mock_pth_file_path, mock_generate_func, mock_model, mock_dump_config
+    ):
         """测试缓存文件不存在时的处理"""
         # Mock文件不存在
         with patch('os.path.exists', return_value=False):
@@ -95,13 +89,8 @@ class TestLoadCachedData:
                     mock_load.return_value = mock_data
 
                     # Mock logger
-                    with patch('msmodelslim.utils.cache.pth.get_logger') as mock_logger:
-                        result = load_cached_data(
-                            mock_pth_file_path,
-                            mock_generate_func,
-                            mock_model,
-                            mock_dump_config
-                        )
+                    with patch('msmodelslim.utils.cache.pth.get_logger'):
+                        result = load_cached_data(mock_pth_file_path, mock_generate_func, mock_model, mock_dump_config)
 
                         assert result == mock_data
                         # 验证生成函数被调用
@@ -112,92 +101,78 @@ class TestLoadCachedData:
 
 
 class TestInputCapture:
-    """测试InputCapture类"""
+    """测试InputCapture类（实例级捕获，非全局 ContextVar）"""
 
     def test_input_capture_reset(self):
         """测试InputCapture的reset方法"""
-        # 设置一些测试数据
-        InputCapture.add_record({"test": "data"})
-        assert len(InputCapture.get_all()) > 0
+        capture = InputCapture()
+        capture.add_record({"test": "data"})
+        assert len(capture.get_all()) > 0
 
-        # 重置
-        InputCapture.reset()
-        assert len(InputCapture.get_all()) == 0
+        capture.reset()
+        assert len(capture.get_all()) == 0
 
     def test_input_capture_add_and_get_record(self):
         """测试InputCapture的add_record和get_all方法"""
-        InputCapture.reset()
+        capture = InputCapture()
 
-        # 添加记录
         test_record = {"test_key": "test_value"}
-        InputCapture.add_record(test_record)
+        capture.add_record(test_record)
 
-        # 获取所有记录
-        all_records = InputCapture.get_all()
+        all_records = capture.get_all()
         assert len(all_records) == 1
         assert all_records[0] == test_record
 
+    def test_input_capture_instances_are_isolated(self):
+        """不同 InputCapture 实例互不共享状态"""
+        a = InputCapture()
+        b = InputCapture()
+        a.add_record({"from": "a"})
+        assert len(a.get_all()) == 1
+        assert len(b.get_all()) == 0
+
     def test_input_capture_capture_forward_inputs_args_mode(self):
         """测试InputCapture的capture_forward_inputs方法（args模式）"""
-        InputCapture.reset()
+        capture = InputCapture()
 
-        # 创建测试函数
         def test_function(arg1, arg2, kwarg1="default"):
             return arg1 + arg2
 
-        # 应用装饰器
-        wrapped_func = InputCapture.capture_forward_inputs(test_function, capture_mode="args")
-
-        # 调用函数
+        wrapped_func = capture.capture_forward_inputs(test_function, capture_mode="args")
         result = wrapped_func(10, 20, kwarg1="custom")
 
-        # 验证结果
         assert result == 30
-
-        # 验证捕获的数据
-        captured = InputCapture.get_all()
+        captured = capture.get_all()
         assert len(captured) == 1
-        # 注意：args模式只捕获位置参数，不包含关键字参数
-        # 由于Mock对象的特性，这里只验证捕获了数据，不验证具体内容
-        assert len(captured[0]) >= 2  # 至少应该有两个位置参数
+        assert len(captured[0]) >= 2
 
     def test_input_capture_capture_forward_inputs_method(self):
         """测试InputCapture的capture_forward_inputs方法（方法调用）"""
-        InputCapture.reset()
+        capture = InputCapture()
 
-        # 创建测试类
         class TestClass:
             def test_method(self, arg1, arg2):
                 return arg1 + arg2
 
-        # 应用装饰器
-        wrapped_method = InputCapture.capture_forward_inputs(TestClass.test_method, capture_mode="args")
-
-        # 创建实例并调用方法
+        wrapped_method = capture.capture_forward_inputs(TestClass.test_method, capture_mode="args")
         obj = TestClass()
         result = wrapped_method(obj, 15, 25)
 
-        # 验证结果
         assert result == 40
-
-        # 验证捕获的数据（不包含self）
-        captured = InputCapture.get_all()
+        captured = capture.get_all()
         assert len(captured) == 1
-        # 由于Mock对象的特性，这里只验证捕获了数据，不验证具体内容
-        assert len(captured[0]) >= 2  # 至少应该有两个位置参数
+        assert len(captured[0]) >= 2
 
     def test_input_capture_capture_forward_inputs_invalid_mode(self):
-        """测试InputCapture的capture_forward_inputs方法使用无效模式"""
+        """无效 capture_mode 在调用包装函数时抛出 SchemaValidateError"""
 
         def test_function():
             pass
 
-        # InputCapture.capture_forward_inputs本身不验证capture_mode
-        # 验证是在DumperManager构造函数中进行的
-        # 这里测试装饰器能正常应用，即使使用无效模式
-        wrapped_func = InputCapture.capture_forward_inputs(test_function, capture_mode="invalid_mode")
-        assert wrapped_func is not None
-        assert callable(wrapped_func)
+        capture = InputCapture()
+        wrapped_func = capture.capture_forward_inputs(test_function, capture_mode="invalid_mode")
+        with pytest.raises(SchemaValidateError, match="Invalid capture_mode"):
+            wrapped_func()
 
 
 class TestDumperManager:
@@ -222,6 +197,7 @@ class TestDumperManager:
         assert dumper.module is mock_module
         assert dumper.capture_mode == "args"
         assert dumper.old_forward is not None
+        assert isinstance(dumper.input_capture, InputCapture)
 
     def test_dumper_manager_initialization_invalid_capture_mode(self, mock_module):
         """测试DumperManager使用无效capture_mode时的初始化"""
@@ -231,41 +207,53 @@ class TestDumperManager:
     def test_dumper_manager_save(self, mock_module, mock_dump_config):
         """测试DumperManager的save方法"""
         dumper = DumperManager(mock_module, capture_mode="args")
+        dumper.input_capture.add_record({"test": "data"})
 
-        # 添加一些测试数据
-        InputCapture.add_record({"test": "data"})
+        with (
+            patch('msmodelslim.utils.cache.pth.torch.save') as mock_torch_save,
+            patch('msmodelslim.utils.cache.pth.SafeWriteUmask') as mock_umask,
+        ):
+            mock_umask.return_value.__enter__ = Mock(return_value=None)
+            mock_umask.return_value.__exit__ = Mock(return_value=None)
+            with patch('msmodelslim.utils.cache.pth.get_logger'):
+                dumper.save("/test/output.pth")
 
-        # Mock torch.save
-        with patch('msmodelslim.utils.cache.pth.torch.save') as mock_torch_save:
-            # Mock logger
-            with patch('msmodelslim.utils.cache.pth.get_logger') as mock_logger:
-                result = dumper.save("/test/output.pth")
+            mock_torch_save.assert_called_once()
+            mock_umask.assert_called_once()
+            assert dumper.old_forward is None
 
-                # 验证torch.save被调用
-                mock_torch_save.assert_called_once()
+    def test_dumper_manager_save_restores_forward_on_failure(self, mock_module, mock_dump_config):
+        """torch.save 失败时也应恢复 module.forward"""
+        dumper = DumperManager(mock_module, capture_mode="args")
+        hooked_forward = mock_module.forward
+        original_forward = dumper.old_forward
 
-                # 验证原始forward方法被恢复
-                # 注意：由于Mock对象的特性，这里需要检查是否调用了恢复逻辑
-                # 而不是直接比较对象引用
-                assert dumper.old_forward is None  # 验证old_forward被重置
+        with (
+            patch('msmodelslim.utils.cache.pth.torch.save', side_effect=OSError("disk full")),
+            patch('msmodelslim.utils.cache.pth.SafeWriteUmask') as mock_umask,
+        ):
+            mock_umask.return_value.__enter__ = Mock(return_value=None)
+            mock_umask.return_value.__exit__ = Mock(return_value=None)
+            with pytest.raises(OSError, match="disk full"):
+                dumper.save("/test/output.pth")
+
+        assert mock_module.forward is original_forward
+        assert dumper.old_forward is None
+        assert hooked_forward is not original_forward
 
     def test_dumper_manager_reset(self, mock_module, mock_dump_config):
         """测试DumperManager的reset方法"""
         dumper = DumperManager(mock_module, capture_mode="args")
+        dumper.input_capture.add_record({"test": "data"})
+        assert len(dumper.input_capture.get_all()) > 0
 
-        # 添加一些测试数据
-        InputCapture.add_record({"test": "data"})
-        assert len(InputCapture.get_all()) > 0
-
-        # 重置
         dumper.reset()
-        assert len(InputCapture.get_all()) == 0
+        assert len(dumper.input_capture.get_all()) == 0
 
     def test_dumper_manager_add_hook(self, mock_module, mock_dump_config):
         """测试DumperManager的_add_hook方法"""
         dumper = DumperManager(mock_module, capture_mode="args")
 
-        # 验证hook被添加
         assert mock_module.forward != dumper.old_forward
         assert hasattr(mock_module.forward, '__wrapped__')
 
@@ -287,7 +275,7 @@ class TestToDevice:
         with patch('msmodelslim.utils.cache.pth.to_device') as mock_to_device:
             mock_to_device.return_value = "device_data"
 
-            result = to_device(test_dict, "cpu")
+            to_device(test_dict, "cpu")
 
             # 验证递归调用
             assert mock_to_device.call_count >= 2
@@ -299,7 +287,7 @@ class TestToDevice:
         with patch('msmodelslim.utils.cache.pth.to_device') as mock_to_device:
             mock_to_device.return_value = "device_data"
 
-            result = to_device(test_list, "cpu")
+            to_device(test_list, "cpu")
 
             # 验证递归调用
             assert mock_to_device.call_count >= 2
@@ -311,7 +299,7 @@ class TestToDevice:
         with patch('msmodelslim.utils.cache.pth.to_device') as mock_to_device:
             mock_to_device.return_value = "device_data"
 
-            result = to_device(test_tuple, "cpu")
+            to_device(test_tuple, "cpu")
 
             # 验证递归调用
             assert mock_to_device.call_count >= 2

@@ -35,6 +35,7 @@ from .path import (
     file_safe_write,
     safe_delete_path_if_exists,
     safe_copy_file,
+    SafeWriteUmask,
     set_file_stat,
 )
 from .shell import (
@@ -63,6 +64,7 @@ __all__ = [
     "file_safe_write",
     "safe_delete_path_if_exists",
     "safe_copy_file",
+    "SafeWriteUmask",
     "set_file_stat",
     "validate_safe_identifier",
     "sanitize_extra_args",

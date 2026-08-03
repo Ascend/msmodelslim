@@ -23,12 +23,12 @@ import os
 from typing import Any, List, Dict, Callable
 import functools
 import inspect
-import contextvars
+
 import torch
 from torch import nn
 
 from ascend_utils.common.security.pytorch import safe_torch_load
-from msmodelslim.utils.security import get_valid_read_path, get_write_directory
+from msmodelslim.utils.security import get_valid_read_path, get_write_directory, SafeWriteUmask
 from msmodelslim.utils.exception import SchemaValidateError, SecurityError
 from msmodelslim.utils.exception_decorator import exception_handler
 from msmodelslim.utils.logging import get_logger
@@ -110,28 +110,23 @@ def load_cached_data_for_models(
 class InputCapture:
     """Handles capturing and storing function inputs and outputs."""
 
-    _captured_inputs_var = contextvars.ContextVar("captured_inputs", default=[])
+    def __init__(self):
+        self._captured_inputs: List[Dict[str, Any]] = []
 
-    @classmethod
-    def reset(cls) -> None:
+    def reset(self) -> None:
         """Reset all captured inputs."""
-        cls._captured_inputs_var.set([])
+        self._captured_inputs = []
 
-    @classmethod
-    def get_all(cls) -> List[Dict[str, Any]]:
+    def get_all(self) -> List[Dict[str, Any]]:
         """Get all captured inputs."""
-        return cls._captured_inputs_var.get()
+        return self._captured_inputs
 
-    @classmethod
-    def add_record(cls, record: Dict[str, Any]) -> None:
+    def add_record(self, record: Dict[str, Any]) -> None:
         """Add a new record to the captured inputs."""
-        inputs = cls._captured_inputs_var.get()
-        inputs.append(record)
-        cls._captured_inputs_var.set(inputs)
+        self._captured_inputs.append(record)
 
-    @classmethod
     def capture_forward_inputs(
-        cls,
+        self,
         func: Callable,
         capture_mode: str = 'args',
     ) -> Callable:
@@ -174,7 +169,7 @@ class InputCapture:
 
             # Store record
             record = to_device(record, device='cpu')
-            cls.add_record(record)
+            self.add_record(record)
 
             return result
 
@@ -199,6 +194,7 @@ class DumperManager(nn.Module):
         super().__init__()
         self.module = module
         self.capture_mode = capture_mode
+        self.input_capture = InputCapture()
         self.old_forward = None
 
         if capture_mode not in {'args'}:
@@ -208,25 +204,27 @@ class DumperManager(nn.Module):
 
     def save(self, path: str = '__output.pth') -> List[Dict[str, Any]]:
         """Save captured data and restore original forward method."""
-        data = InputCapture.get_all()
-        torch.save(data, path)
-
-        # Restore original forward method
-        if self.old_forward:
-            self.module.forward = self.old_forward
-            self.old_forward = None
+        data = self.input_capture.get_all()
+        try:
+            with SafeWriteUmask():
+                torch.save(data, path)
+        finally:
+            # Restore original forward even if save fails (disk full, permission, etc.)
+            if self.old_forward:
+                self.module.forward = self.old_forward
+                self.old_forward = None
 
         get_logger().info('Captured data saved to: %r', path)
         return data
 
     def reset(self) -> None:
         """Reset captured inputs."""
-        InputCapture.reset()
+        self.input_capture.reset()
 
     def _add_hook(self, module: nn.Module) -> Callable:
         """Add forward hook to the module."""
         self.old_forward = module.forward
-        wrapper = InputCapture.capture_forward_inputs(
+        wrapper = self.input_capture.capture_forward_inputs(
             self.old_forward,
             capture_mode=self.capture_mode,
         )

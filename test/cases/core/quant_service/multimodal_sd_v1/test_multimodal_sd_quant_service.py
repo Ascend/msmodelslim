@@ -66,6 +66,15 @@ class TestQuantProcessComplete:  # pylint: disable=attribute-defined-outside-ini
         self.mock_quant_spec.process = [Mock(), Mock()]
         self.mock_quant_spec.save = [Mock(), Mock()]
         self.mock_quant_spec.runner = "layer_wise"
+        self.mock_quant_spec.per_expert = None
+
+        def _resolve_process_for_expert(expert_name: str):
+            per_expert = self.mock_quant_spec.per_expert
+            if per_expert is not None and expert_name in per_expert:
+                return list(per_expert[expert_name])
+            return list(self.mock_quant_spec.process)
+
+        self.mock_quant_spec.resolve_process_for_expert.side_effect = _resolve_process_for_expert
 
         # 2. 只保留BaseQuantConfig的spec（推荐，符合实际类型约束）
         self.quant_config = Mock(spec=BaseQuantConfig)
@@ -376,3 +385,76 @@ class TestQuantProcessComplete:  # pylint: disable=attribute-defined-outside-ini
         mock_to_device.assert_called_once()
         call_args = mock_to_device.call_args[0]
         assert call_args[0] == {"": None}
+
+    @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.load_cached_data_for_models")
+    @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.to_device")
+    @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.LayerWiseRunner")
+    @patch("pathlib.Path.mkdir")
+    def test_per_expert_process_override(self, mock_mkdir, mock_runner_cls, mock_to_device, mock_load_cache):
+        """部分专家覆盖：low 用 per_expert，high 回退默认 process"""
+        custom_process = [Mock(name="pe0"), Mock(name="pe1"), Mock(name="pe2")]
+        self.mock_quant_spec.per_expert = {
+            "low_noise_model": custom_process,
+        }
+
+        mock_load_cache.return_value = {
+            "low_noise_model": "raw_data",
+            "high_noise_model": "raw_data",
+        }
+        mock_to_device.side_effect = lambda x, _: x
+        mock_runner = Mock()
+        mock_runner_cls.return_value = mock_runner
+        self.model_adapter.init_model.return_value = {
+            "low_noise_model": self.mock_model1,
+            "high_noise_model": self.mock_model2,
+        }
+
+        self.service.quant_process(self.quant_config, self.model_adapter, self.save_path, self.device)
+
+        add_processor_calls = mock_runner.add_processor.call_args_list
+        for i, cfg in enumerate(custom_process):
+            assert add_processor_calls[i] == call(processor_cfg=cfg)
+
+        offset = len(custom_process) + len(self.mock_quant_spec.save)
+        for i, cfg in enumerate(self.mock_quant_spec.process):
+            assert add_processor_calls[offset + i] == call(processor_cfg=cfg)
+
+        self.mock_quant_spec.resolve_process_for_expert.assert_any_call("low_noise_model")
+        self.mock_quant_spec.resolve_process_for_expert.assert_any_call("high_noise_model")
+
+    @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.load_cached_data_for_models")
+    @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.to_device")
+    @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.LayerWiseRunner")
+    @patch("pathlib.Path.mkdir")
+    def test_per_expert_both_experts_override(self, mock_mkdir, mock_runner_cls, mock_to_device, mock_load_cache):
+        """两个专家均在 per_expert 中时，各自使用独立 Processor 链"""
+        low_process = [Mock(name="low0")]
+        high_process = [Mock(name="high0"), Mock(name="high1")]
+        self.mock_quant_spec.per_expert = {
+            "low_noise_model": low_process,
+            "high_noise_model": high_process,
+        }
+        mock_load_cache.return_value = {
+            "low_noise_model": "raw_data",
+            "high_noise_model": "raw_data",
+        }
+        mock_to_device.side_effect = lambda x, _: x
+        mock_runner = Mock()
+        mock_runner_cls.return_value = mock_runner
+        self.model_adapter.init_model.return_value = {
+            "low_noise_model": self.mock_model1,
+            "high_noise_model": self.mock_model2,
+        }
+
+        self.service.quant_process(self.quant_config, self.model_adapter, self.save_path, self.device)
+
+        add_processor_calls = mock_runner.add_processor.call_args_list
+        save_cfgs = [call(processor_cfg=cfg) for cfg in self.mock_quant_spec.save]
+        expected = (
+            [call(processor_cfg=cfg) for cfg in low_process]
+            + save_cfgs
+            + [call(processor_cfg=cfg) for cfg in high_process]
+            + save_cfgs
+        )
+        assert add_processor_calls == expected
+        assert mock_runner_cls.call_count == 2

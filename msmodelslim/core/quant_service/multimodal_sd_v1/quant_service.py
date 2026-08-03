@@ -21,7 +21,6 @@ See the Mulan PSL v2 for more details.
 
 # pylint: disable=logging-fstring-interpolation
 
-import copy
 import functools
 import os
 from pathlib import Path
@@ -164,7 +163,9 @@ class MultimodalSDModelslimV1QuantService(IQuantService):
             else:
                 expert_save_path = save_path
 
-            final_process_cfg = copy.copy(quant_config.spec.process)
+            if quant_config.spec.per_expert is not None and expert_name in quant_config.spec.per_expert:
+                get_logger().info(f"========== Using per-expert process config for {expert_name} ==========")
+            final_process_cfg = quant_config.spec.resolve_process_for_expert(expert_name)
 
             if expert_save_path is not None:
                 get_logger().warning("========== QUANTIZATION: Prepare Save Path ==========")
@@ -227,7 +228,9 @@ class MultimodalSDModelslimV1QuantService(IQuantService):
             else:
                 expert_save_path = save_path
 
-            final_process_cfg = copy.copy(quant_config.spec.process)
+            if quant_config.spec.per_expert is not None and expert_name in quant_config.spec.per_expert:
+                get_logger().info(f"========== Using per-expert process config for {expert_name} ==========")
+            final_process_cfg = quant_config.spec.resolve_process_for_expert(expert_name)
 
             if expert_save_path is not None:
                 get_logger().warning("========== QUANTIZATION: Prepare Save Path ==========")

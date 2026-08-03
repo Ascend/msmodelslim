@@ -1357,6 +1357,7 @@ spec:
 | :--- | :--- |
 | `apiversion` | 固定为 `multimodal_sd_modelslim_v1`，走多模态生成 QuantService |
 | `process` | 量化处理器链：`linear_quant` / `online_quarot` / `fa3_quant` 等，字段与 modelslim_v1 一致 |
+| `per_expert`（可选） | 按专家名整链覆盖 `process` |
 | `dataset` | 校准集；Wan2.2 各场景使用不同短名称（如 `wan2_2_i2v`、`wan2_2_ti2v`） |
 | `save` | 多模态生成默认 `mindie_format_saver`，输出 MindIE-SD 格式 |
 | `multimodal_sd_config.inference_config` | **推理参数桥接**（Pydantic 校验），字段须与原 Wan2.2 推理仓 CLI 一致；`task` 须与当前 `model_type` 对应（T2V 为 `t2v-A14B`） |
