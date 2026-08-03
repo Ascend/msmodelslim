@@ -111,7 +111,7 @@ FLOAT → W16A16S → W8A16 → W8A8_DYNAMIC → W8A8_MIX → W8A8
 
 #### NPU 算子实现
 
-- [aclnnMatmulCompressDequant](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/850/API/aolapi/context/ops-math/aclnnMatmulCompressDequant.md) — 稀疏/压缩权重解压缩后 MatMul 与反量化。
+- [aclnnMatmulCompressDequant](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-nn/aclnnMatmulCompressDequant.md) — 稀疏/压缩权重解压缩后 MatMul 与反量化。
 
 ---
 
@@ -163,7 +163,7 @@ $$output = (quant\_act \cdot quant\_weight + quant\_bias) \times deq\_scale$$
 
 #### NPU 算子实现
 
-- [aclnnQuantMatmulV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha003/apiref/aolapi/context/aclnnQuantMatmulV2.md) — W8A8 静态量化 MatMul；`deq_scale` 的 UINT64 格式要求见该算子 `deqScale` 入参说明。
+- [aclnnQuantMatmulV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-nn/aclnnQuantMatmulV2.md) — W8A8 静态量化 MatMul；`deq_scale` 的 UINT64 格式要求见该算子 `deqScale` 入参说明。
 
 ---
 
@@ -188,8 +188,8 @@ deq_weight = (weight - weight_offset) * weight_scale
 
 #### NPU 算子实现
 
-- [aclnnDynamicQuantV2](https://www.hiascend.com/document/detail/zh/canncommercial/800/apiref/aolapi/context/aclnnDynamicQuantV2.md) — 激活 per-token 动态量化。
-- [aclnnGroupedMatmulV4](https://www.hiascend.com/document/detail/zh/canncommercial/800/apiref/aolapi/context/aclnnGroupedMatmulV4.md) — 支持 per-token 激活 + per-channel 权重的动态量化 MatMul。
+- [aclnnDynamicQuantV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-nn/aclnnDynamicQuantV2.md) — 激活 per-token 动态量化。
+- [aclnnGroupedMatmulV4](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-transformer/aclnnGroupedMatmulV4.md) — 支持 per-token 激活 + per-channel 权重的动态量化 MatMul。
 
 ---
 
@@ -212,8 +212,8 @@ deq_weight = (weight - weight_offset) * weight_scale
 
 #### NPU 算子实现
 
-- [aclnnQuantMatmulV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha003/apiref/aolapi/context/aclnnQuantMatmulV2.md) — 静态激活分支 MatMul。
-- [aclnnDynamicQuantV2](https://www.hiascend.com/document/detail/zh/canncommercial/800/apiref/aolapi/context/aclnnDynamicQuantV2.md) — 动态激活分支量化。
+- [aclnnQuantMatmulV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-nn/aclnnQuantMatmulV2.md) — 静态激活分支 MatMul。
+- [aclnnDynamicQuantV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-nn/aclnnDynamicQuantV2.md) — 动态激活分支量化。
 
 ---
 
@@ -236,7 +236,7 @@ deq_weight = (weight - weight_offset) * weight_scale
 
 #### NPU 算子实现
 
-- [aclnnGroupedMatmulV4](https://www.hiascend.com/document/detail/zh/canncommercial/800/apiref/aolapi/context/aclnnGroupedMatmulV4.md) — 权重量化 MatMul（激活保持浮点，通过 `antiquantScale` 等对 int8 权重反量化后计算）。
+- [aclnnGroupedMatmulV4](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-transformer/aclnnGroupedMatmulV4.md) — 权重量化 MatMul（激活保持浮点，通过 `antiquantScale` 等对 int8 权重反量化后计算）。
 
 ---
 
@@ -253,7 +253,7 @@ deq_weight = (weight - weight_offset) * weight_scale
 
 #### NPU 算子实现
 
-- [aclnnGroupedMatmulV4](https://www.hiascend.com/document/detail/zh/canncommercial/800/apiref/aolapi/context/aclnnGroupedMatmulV4.md) — 支持 INT4 权重 + per-token 动态激活的 MatMul。
+- [aclnnGroupedMatmulV4](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-transformer/aclnnGroupedMatmulV4.md) — 支持 INT4 权重 + per-token 动态激活的 MatMul。
 
 ---
 
@@ -275,7 +275,7 @@ deq_weight = (weight - weight_offset) * weight_scale + scale_bias
 
 #### NPU 算子实现
 
-- [aclnnGroupedMatmulV4](https://www.hiascend.com/document/detail/zh/canncommercial/800/apiref/aolapi/context/aclnnGroupedMatmulV4.md) — 支持 INT4 权重、`scale_bias` 等反量化参数的 MatMul。
+- [aclnnGroupedMatmulV4](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-transformer/aclnnGroupedMatmulV4.md) — 支持 INT4 权重、`scale_bias` 等反量化参数的 MatMul。
 
 ---
 
@@ -290,7 +290,7 @@ deq_weight = (weight - weight_offset) * weight_scale + scale_bias
 
 #### NPU 算子实现
 
-- [aclnnDynamicMxQuantV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910beta1/API/aolapi/context/ops-nn/aclnnDynamicMxQuantV2.md) — FP8 动态量化 MatMul 系列算子。
+- [aclnnDynamicMxQuantV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-nn/aclnnDynamicMxQuantV2.md) — FP8 动态量化 MatMul 系列算子。
 
 ---
 
@@ -308,7 +308,7 @@ MX（Microscaling）格式使用 FP8/FP4 权重与 block-wise scale。
 
 #### NPU 算子实现
 
-- [aclnnDynamicMxQuantV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910beta1/API/aolapi/context/ops-nn/aclnnDynamicMxQuantV2.md) — MXFP block-wise 量化 MatMul。
+- [aclnnDynamicMxQuantV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-nn/aclnnDynamicMxQuantV2.md) — MXFP block-wise 量化 MatMul。
 
 #### W4A4_MXFP4_DUALSCALE
 
@@ -335,7 +335,7 @@ MX（Microscaling）格式使用 FP8/FP4 权重与 block-wise scale。
 
 #### NPU 算子实现
 
-- [aclnnDequantRopeQuantKvcache](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/850alpha001/API/aolapi/context/aclnnDequantRopeQuantKvcache.md) — KV Cache 量化写入与 RoPE 融合算子。
+- [aclnnDequantRopeQuantKvcache](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-transformer/aclnnDequantRopeQuantKvcache.md) — KV Cache 量化写入与 RoPE 融合算子。
 
 ---
 
@@ -352,7 +352,7 @@ MX（Microscaling）格式使用 FP8/FP4 权重与 block-wise scale。
 
 #### NPU 算子实现
 
-- [aclnnFusedInferAttentionScore](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha003/apiref/aolapi/context/aclnnFusedInferAttentionScore.md) — 全量/增量 Flash Attention 融合算子，支持 `quantScale` / `quantOffset` 等 FA 量化参数。
+- [aclnnFusedInferAttentionScore](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-transformer/aclnnFusedInferAttentionScore.md) — 全量/增量 Flash Attention 融合算子，支持 `quantScale` / `quantOffset` 等 FA 量化参数。
 
 ---
 
@@ -381,8 +381,8 @@ $$x = \mathrm{clamp}\big(x,\ x.\max() \cdot \mathrm{sigmoid}(clip\_ratio),\ x.\m
 
 #### NPU 算子实现
 
-- [aclnnFlatQuant](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910beta1/API/aolapi/context/ops-nn/aclnnFlatQuant.md) — FlatQuant 仿射变换与 LAC 裁剪。
-- 内层 Linear 量化 MatMul 参见对应基础模式（如 W8A8 的 [aclnnQuantMatmulV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha003/apiref/aolapi/context/aclnnQuantMatmulV2.md)）。
+- [aclnnFlatQuant](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-nn/aclnnFlatQuant.md) — FlatQuant 仿射变换与 LAC 裁剪。
+- 内层 Linear 量化 MatMul 参见对应基础模式（如 W8A8 的 [aclnnQuantMatmulV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-nn/aclnnQuantMatmulV2.md)）。
 
 ---
 
@@ -401,7 +401,7 @@ $$x = x \cdot div.mul\_scale$$
 
 #### NPU 算子实现
 
-- `div.mul_scale` 在推理侧对激活做逐元素缩放（见上文公式），无独立融合算子；内层 Linear 按实际量化类型选用对应 MatMul 算子（如 W8A8 参见 [aclnnQuantMatmulV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/800alpha003/apiref/aolapi/context/aclnnQuantMatmulV2.md)）。
+- `div.mul_scale` 在推理侧对激活做逐元素缩放（见上文公式），无独立融合算子；内层 Linear 按实际量化类型选用对应 MatMul 算子（如 W8A8 参见 [aclnnQuantMatmulV2](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/API/aolapi/context/ops-nn/aclnnQuantMatmulV2.md)）。
 
 ---
 
