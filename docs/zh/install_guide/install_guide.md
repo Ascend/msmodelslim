@@ -6,7 +6,7 @@
 
 2. 本工具依赖的 Python 版本不低于3.8，且不高于3.12。
 
-3. 若使用昇腾NPU设备，则需安装TorchNPU及其对应的相关依赖，TorchNPU包的安装请参考《[Ascend for PyTorch 安装](https://gitcode.com/Ascend/pytorch/blob/v2.7.1/README.md)》。
+3. 若使用昇腾NPU设备，则需安装TorchNPU及其对应的相关依赖，TorchNPU包的安装请参考《[Ascend for PyTorch 安装](https://gitcode.com/Ascend/pytorch/blob/master/docs/zh/installation_guide/quick_install.md)》。
 
 ## 2. 安装方式
 
