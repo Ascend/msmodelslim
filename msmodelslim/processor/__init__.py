@@ -24,6 +24,8 @@ __all__ = [
     "AdaptRotationProcessorConfig",
     "AutoProcessorConfig",
     "AutoroundQuantProcessor",
+    "TrainableLinearQuantProcessor",
+    "TrainableLinearQuantProcessorConfig",
     "UnaryAnalysisProcessorConfig",
     "UnaryAnalysisProcessor",
     "BinaryAnalysisProcessorConfig",
@@ -88,6 +90,10 @@ from .container.group import GroupProcessorConfig, GroupProcessor
 from .memory.load import LoadProcessorConfig, LoadProcessor
 from .quant.attention import DynamicCacheProcessorConfig, DynamicCacheQuantProcessor
 from .quant.autoround import AutoroundQuantProcessor
+from .trainable_linear_quant import (
+    TrainableLinearQuantProcessor,
+    TrainableLinearQuantProcessorConfig,
+)
 from .quant.fa3 import FA3QuantProcessorConfig, FA3QuantProcessor
 from .quant.linear import LinearProcessorConfig, LinearQuantProcessor
 from .quarot import QuaRotProcessor, QuaRotProcessorConfig

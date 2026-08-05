@@ -55,6 +55,7 @@ from msmodelslim.processor.anti_outlier.smooth_quant.interface import SmoothQuan
 from msmodelslim.processor.kv_smooth import KVSmoothFusedInterface
 from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
 from msmodelslim.processor.quarot import LAOSOnlineRotationInterface, OnlineQuaRotInterface, QuaRotInterface
+from msmodelslim.processor.trainable_linear_quant.interface import TLQBlockDataInterface
 
 
 class ModelInfoInterface(nami, atmi): ...
@@ -80,6 +81,7 @@ __all__ = [
     'IterSmoothInterface',  # For Iter Smooth, describing the architecture of model.
     'OASQInterface',  # For Outlier-Aware Smoothing Quantization, describing the architecture of model.
     'FlexSmoothQuantInterface',  # For Flex Smooth Quant, describing the architecture of model.
+    'TLQBlockDataInterface',  # For TLQ block I/O (hidden extract/inject/loss mask); optional.
     # remaining interface
     'ModelSlimPipelineInterfaceV0',  # For ModelSlim V0 quant service, describing the pipeline of model inference.
     'LegacyMultimodalPipelineInterface',  # 主仓兼容的多模态生成 pipeline 接口。

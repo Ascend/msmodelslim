@@ -52,6 +52,15 @@ class TestFusionConfig:
         with pytest.raises(ValueError, match="custom_config"):
             FusionConfig(fusion_type="kv", num_attention_heads=8)
 
+    def test_fusion_config_accepts_kv_when_custom_config_non_empty(self):
+        """场景：kv custom_config 非空（字段完整性由 builder 校验）。预期：构造成功。"""
+        cfg = FusionConfig(
+            fusion_type="kv",
+            num_attention_heads=8,
+            custom_config={"v_head_dim": 128},
+        )
+        assert cfg.custom_config["v_head_dim"] == 128
+
     def test_fusion_config_raises_value_error_when_custom_missing_config(self):
         """场景：custom 无 custom_config。预期：ValueError。"""
         with pytest.raises(ValueError, match="custom_config"):
