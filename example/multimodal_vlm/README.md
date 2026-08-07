@@ -26,6 +26,7 @@
 | GLM-4.6V | W8A8混合量化（MoE专家动态量化） | [GLM-4.6V](https://huggingface.co/zai-org/GLM-4.6V) | MindIE 待支持<br>vLLM Ascend 支持中 | 《[GLM-4.6V 量化使用说明](./GLM-4.6V/README.md)》 |
 | Kimi-K2.5 | W4A8混合量化（MoE专家动态量化） | [Kimi-K2.5](https://huggingface.co/moonshotai/Kimi-K2.5) | MindIE 待支持<br>vLLM Ascend 支持中 | 《[Kimi-K2.5 量化使用说明](./Kimi-K2.5/README.md)》 |
 | Kimi-K2.6 | W4A8混合量化（MoE专家动态量化） | [Kimi-K2.6](https://huggingface.co/moonshotai/Kimi-K2.6) | MindIE 待支持<br>vLLM Ascend 支持中 | 《[Kimi-K2.6 量化使用说明](./Kimi-K2.6/README.md)》 |
+| Kimi-K3 | W4A8混合量化（路由专家 W4A8，共享专家/Latent 投影 W8A8 动态） | [Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3) | MindIE 待支持<br>vLLM Ascend 支持中 | 《[Kimi-K3 量化使用说明](./Kimi-K3/README.md)》 |
 | InternVL3.5 | W8A8量化 | [InternVL3_5-38B](https://huggingface.co/OpenGVLab/InternVL3_5-38B) | MindIE 待支持<br>vLLM Ascend | 《[InternVL3.5 量化使用说明](./InternVL3_5/README.md)》 |
 | InternVL3.5-MoE | W8A8混合量化（MoE专家动态量化） | [InternVL3_5-241B-A28B](https://huggingface.co/OpenGVLab/InternVL3_5-241B-A28B) | MindIE 待支持<br>vLLM Ascend | 《[InternVL3.5-MoE 量化使用说明](./InternVL3_5-MoE/README.md)》 |
 | MiniMax-M3 | W8A8量化 | [MiniMax-M3-preview](https://huggingface.co/MiniMaxAI/MiniMax-M3-preview) | vLLM Ascend 支持 | 《[MiniMax-M3 量化使用说明](./MiniMax-M3/README.md)》 |

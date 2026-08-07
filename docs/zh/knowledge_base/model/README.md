@@ -1214,6 +1214,17 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Kimi-K3/README.md">Kimi-K3</a></strong></td>
+      <td>Kimi-K3</td>
+      <td>transformers==4.57.6, compressed-tensors==0.13.0, fla-core</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>√</td>
+      <td>-</td>
+    <td>-</td>
+    </tr>
+    <tr>
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/InternVL3_5/README.md">InternVL3_5系列</a></strong></td>
       <td>InternVL3_5-38B</td>
       <td>transformers==4.57.6</td>

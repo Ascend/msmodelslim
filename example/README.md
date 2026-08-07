@@ -36,6 +36,7 @@ msModelSlim 推荐实践集提供了各种大语言模型、多模态理解模�
   - GLM-4.6V 模型
   - Kimi-K2.5 模型
   - Kimi-K2.6 模型
+  - Kimi-K3 模型
   - InternVL3.5 系列模型
   - InternVL3.5-MoE 系列模型
 

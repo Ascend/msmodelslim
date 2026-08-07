@@ -1,0 +1,65 @@
+apiversion: multimodal_vlm_modelslim_v1
+metadata:
+  config_id: kimi_k3_w4a8
+  score: 90
+  verified_model_types:
+    - Kimi-K3
+  verified_tags:
+    Kimi-K3:
+      - - vLLM_Ascend
+        - Atlas_A3_Inference
+  label:
+    w_bit: 4
+    a_bit: 8
+    is_sparse: False
+    kv_cache: False
+
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+
+default_w4a8_dynamic: &default_w4a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int4"
+    symmetric: True
+    method: "ssz"
+
+spec:
+  runner: auto
+  process:
+    - type: "group"
+      configs:
+        - type: "linear_quant"
+          qconfig: *default_w4a8_dynamic
+          include:
+            - "language_model.model.layers.*.block_sparse_moe.experts.*.w3"
+            - "language_model.model.layers.*.block_sparse_moe.experts.*.w2"
+            - "language_model.model.layers.*.block_sparse_moe.experts.*.w1"
+
+        - type: "linear_quant"
+          qconfig: *default_w8a8_dynamic
+          include:
+            - "language_model.model.layers.*.block_sparse_moe.routed_expert_up_proj"
+            - "language_model.model.layers.*.block_sparse_moe.routed_expert_down_proj"
+            - "language_model.model.layers.*.block_sparse_moe.shared_experts.up_proj"
+            - "language_model.model.layers.*.block_sparse_moe.shared_experts.down_proj"
+            - "language_model.model.layers.*.block_sparse_moe.shared_experts.gate_proj"
+
+  dataset: calibImages
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
