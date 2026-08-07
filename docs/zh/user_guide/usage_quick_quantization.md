@@ -209,14 +209,16 @@ msmodelslim quant --device npu:0,1,2,3 ...
 
 1. **分布式算法支持**：使用 `dp_layer_wise` 时，必须确保所有处理器（如 `linear_quant`）和算法（如 `minmax`, `ssz`, `iter_smooth`）均支持分布式执行。
 2. **加速比说明**：多卡加速效果受校准集大小影响。若校准集过小，通信开销可能导致加速效果不明显。
-3. **多模态限制**：分布式逐层量化暂不支持多模态模型，多模态场景请使用单卡 `layer_wise`。
+3. **多模态理解（VLM）**：`multimodal_vlm_modelslim_v1` 已支持与 LLM 相同的 `auto` / `layer_wise` / `dp_layer_wise`；多卡时默认 `auto` 会启用 DP。适配器无需单独实现 DP 接口；MoE 的 EP 由模型适配侧处理，与 DP 相互独立。详见 [5.4.2 runner - 量化调度器类型](#runner---量化调度器类型-vlm)。
+4. **多模态生成**：`multimodal_sd_modelslim_v1`（文生图 / 文生视频等）**暂不支持**分布式逐层量化，请继续使用单卡 `layer_wise`。
 
 #### 4.1.6 模型适配
 
 逐层量化支持范围参考[大模型支持矩阵](../knowledge_base/model/README.md) 中支持一键量化的模型。
 分布式逐层量化继承自逐层量化，因此支持所有逐层量化适配的大语言模型。
 
-**注意**：DP逐层量化暂不支持多模态模型。多模态模型请使用单卡逐层量化（`layer_wise`）。
+- **多模态理解（VLM）**：通过 `multimodal_vlm_modelslim_v1` 使用与 LLM 相同的 `auto` / `layer_wise` / `dp_layer_wise`，多卡时可启用 DP，详见 [4.1.5 注意事项](#415-注意事项) 与 [5.4.2 runner - 量化调度器类型](#runner---量化调度器类型-vlm)。
+- **多模态生成（SD 等）**：`multimodal_sd_modelslim_v1` 仍仅支持单卡 `layer_wise`，不支持 `dp_layer_wise`，详见 [5.3.2 runner - 量化调度器类型](#runner---量化调度器类型-sd)。
 
 #### 4.1.7 算法适配
 
@@ -561,9 +563,9 @@ multimodal_sd_modelslim_v1 面向文生视频 / 图生视频等多模态**生成
 - `multimodal_sd_config.inference_config`：**推荐**；推理参数经 Pydantic 强校验后桥接到原推理仓 CLI。
 - `multimodal_sd_config.model_config`：**即将废弃**（仅 Legacy）；与 `inference_config` 不可同时配置。
 
-#### 5.3.2 runner - 量化调度器类型
+#### 5.3.2 <span id="runner---量化调度器类型-sd">runner - 量化调度器类型</span>
 
-当前多模态生成模型考虑到显存占用问题，默认且仅支持layer_wise（逐层量化）形式。runner默认无需配置，配置为非'layer_wise'值时，会警告提示并自动转换为layer_wise（逐层量化）形式。
+当前多模态**生成**模型考虑到显存占用问题，默认且**仅支持** `layer_wise`（单卡逐层量化），**不支持** `dp_layer_wise` / 多卡分布式逐层量化。`runner` 默认无需配置；配置为非 `layer_wise` 时，会警告并自动回退为 `layer_wise`。
 
 #### 5.3.3 process - 处理器配置字段
 
@@ -726,11 +728,24 @@ multimodal_vlm_modelslim_v1是专门为多模态视觉语言模型（VLM）设�
 
 - 支持`dataset`字段配置校准数据集，支持三种使用方式：方式一 index.json/index.jsonl（推荐，支持多模态）、方式二 纯图像目录（后续不再演进）、方式三 图像目录+单个 json/jsonl（后续不再演进），详见下方 [dataset - 校准数据路径配置](#dataset---校准数据路径配置)
 - 支持`default_text`字段配置默认文本 prompt（方式二必填；方式一在条目缺 text 字段时使用）
-- 默认使用 layer_wise（逐层量化）模式，针对大规模多模态模型优化
+- 默认 `runner: auto`：单卡走 layer_wise，多卡（如 `--device npu:0,1,...`）自动走 dp_layer_wise，与 modelslim_v1 对齐
 
-#### 5.4.2 runner - 量化调度器类型
+#### 5.4.2 <span id="runner---量化调度器类型-vlm">runner - 量化调度器类型</span>
 
-当前多模态VLM模型考虑到显存占用问题，默认且仅支持layer_wise（逐层量化）形式。runner默认无需配置，配置为非'layer_wise'字段时，会警告提示并自动转换为layer_wise（逐层量化）形式。
+多模态 VLM 量化服务与 modelslim_v1 使用同一套 runner 选择逻辑，支持：
+
+| 配置值 | 行为 |
+|--------|------|
+| `auto`（默认） | 单卡或未指定多 device → `layer_wise`；`--device` 解析出多个 device → `dp_layer_wise` |
+| `layer_wise` | 强制单进程逐层量化 |
+| `dp_layer_wise` | 强制分布式逐层量化（需传入多个 device；仅一卡时 runner 内部会回退单卡） |
+| `model_wise` | **不支持**；打 warning 后回退为 `layer_wise` |
+
+说明：
+
+- DP（`dp_layer_wise`）由量化服务与公共 `DPLayerWiseRunner` 完成，适配器只需实现既有的 layer-wise 流水线接口，无需单独“支持 DP”。
+- 使用 `dp_layer_wise`（含 `auto` 自动升 DP）时，配置中的处理器/算法需支持分布式执行，详见[逐层量化及分布式逐层量化](#41-逐层量化及分布式逐层量化)。
+- MoE 的 Expert Parallelism（EP）属于模型适配侧能力（如分片 expert），与 runner 的 DP 选择相互独立，可叠加使用。
 
 #### 5.4.3 <span id="process---处理器配置字段-vlm">process - 处理器配置字段</span>
 

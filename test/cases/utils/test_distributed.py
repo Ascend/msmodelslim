@@ -17,34 +17,24 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
-"""
 
-
-"""
 msmodelslim.utils.distributed 模块的单元测试
 """
 
 import os
-import socket
 import unittest
 from unittest.mock import patch, MagicMock
 import torch
-import torch.nn as nn
 import torch.distributed as dist
+from torch import nn
 from msmodelslim.utils.distributed import DistHelper
 from msmodelslim.utils.distributed.dist_setup import find_free_port, setup_distributed
-from msmodelslim.utils.distributed.dist_ops import (
-    ReduceOperation, 
-    sync_base_operation, 
-    sync_gather_tensors
-)
+from msmodelslim.utils.distributed.dist_ops import ReduceOperation, sync_base_operation, sync_gather_tensors
 from msmodelslim.utils.exception import SchemaValidateError, EnvError, UnsupportedError
 
 
 class TestDistHelper(unittest.TestCase):
-
     def setUp(self):
-
         class TestModel(nn.Module):
             def __init__(self):
                 super().__init__()
@@ -65,16 +55,13 @@ class TestDistHelper(unittest.TestCase):
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
             gathered_modules[1] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
         helper = DistHelper(self.test_model)
 
         self.assertEqual(helper._model, self.test_model)
-        expected_local_modules = {
-            '', 'linear1', 'relu', 'dropout', 'child_module'
-        }
+        expected_local_modules = {'', 'linear1', 'relu', 'dropout', 'child_module'}
         self.assertEqual(helper._local_modules, expected_local_modules)
         self.assertEqual(helper._shared_modules, expected_local_modules)
         self.assertEqual(helper._all_modules, expected_local_modules)
@@ -89,7 +76,6 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -113,7 +99,6 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -137,7 +122,6 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -161,7 +145,6 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -174,8 +157,9 @@ class TestDistHelper(unittest.TestCase):
     @patch('torch.distributed.get_world_size')
     @patch('torch.distributed.all_gather_object')
     @patch('torch.distributed.get_rank')
-    def test_local_only_modules_generator_with_different_modules(self, mock_get_rank, mock_all_gather_object,
-                                                                 mock_get_world_size):
+    def test_local_only_modules_generator_with_different_modules(
+        self, mock_get_rank, mock_all_gather_object, mock_get_world_size
+    ):
         """测试仅本地模块生成器在不同模块配置下的行为"""
         mock_get_world_size.return_value = 2
         mock_get_rank.return_value = 0
@@ -184,7 +168,6 @@ class TestDistHelper(unittest.TestCase):
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = {'', 'module_a', 'module_b'}
             gathered_modules[1] = {'', 'module_a', 'module_c'}
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -211,7 +194,6 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -231,7 +213,6 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -249,7 +230,6 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -269,7 +249,6 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -292,7 +271,6 @@ class TestDistHelper(unittest.TestCase):
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
             gathered_modules[1] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -303,9 +281,9 @@ class TestDistHelper(unittest.TestCase):
         self.assertEqual(result, expected)
 
         result_with_prefix = helper.get_shared_modules_slice(prefix="model")
-        expected_with_prefix = sorted([
-            f"model.{name}" for name in ['', 'child_module', 'dropout', 'linear1', 'relu']
-        ])[0::2]
+        expected_with_prefix = sorted([f"model.{name}" for name in ['', 'child_module', 'dropout', 'linear1', 'relu']])[
+            0::2
+        ]
         self.assertEqual(result_with_prefix, expected_with_prefix)
 
     @patch('torch.distributed.get_world_size')
@@ -320,7 +298,6 @@ class TestDistHelper(unittest.TestCase):
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
             gathered_modules[1] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -341,7 +318,6 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -360,7 +336,6 @@ class TestDistHelper(unittest.TestCase):
 
         def all_gather_side_effect(tensor_list, tensor):
             tensor_list[:] = [x.clone() for x in [tensor] * len(tensor_list)]
-            return None
 
         mock_all_gather.side_effect = all_gather_side_effect
 
@@ -371,6 +346,18 @@ class TestDistHelper(unittest.TestCase):
             self.assertTrue(torch.equal(tensor, local_tensor))
             self.assertEqual(tensor.dtype, local_tensor.dtype)
             self.assertEqual(tensor.shape, local_tensor.shape)
+            self.assertEqual(tensor.device, local_tensor.device)
+
+        # all_gather 两次：先 shape，再 data；输入与缓冲应同 device
+        self.assertEqual(mock_all_gather.call_count, 2)
+        shape_list, local_shape = mock_all_gather.call_args_list[0][0]
+        self.assertEqual(local_shape.device, local_tensor.device)
+        for buf in shape_list:
+            self.assertEqual(buf.device, local_tensor.device)
+        data_list, gathered_local = mock_all_gather.call_args_list[1][0]
+        self.assertEqual(gathered_local.device, local_tensor.device)
+        for buf in data_list:
+            self.assertEqual(buf.device, local_tensor.device)
 
     @patch('torch.distributed.get_world_size')
     @patch('torch.distributed.all_gather')
@@ -383,7 +370,6 @@ class TestDistHelper(unittest.TestCase):
 
         def all_gather_side_effect(tensor_list, tensor):
             tensor_list[:] = [x.clone() for x in [tensor] * len(tensor_list)]
-            return None
 
         mock_all_gather.side_effect = all_gather_side_effect
 
@@ -394,6 +380,7 @@ class TestDistHelper(unittest.TestCase):
             self.assertTrue(torch.equal(tensor, local_tensor))
             self.assertEqual(tensor.dtype, local_tensor.dtype)
             self.assertEqual(tensor.shape, local_tensor.shape)
+            self.assertEqual(tensor.device, local_tensor.device)
 
     @patch('torch.distributed.get_world_size')
     @patch('torch.distributed.all_gather_object')
@@ -404,7 +391,6 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
@@ -425,25 +411,19 @@ class TestDistHelper(unittest.TestCase):
 
         def side_effect(gathered_modules, local_modules):
             gathered_modules[0] = local_modules
-            return None
 
         mock_all_gather_object.side_effect = side_effect
 
         class NestedModel(nn.Module):
             def __init__(self):
                 super().__init__()
-                self.layer1 = nn.Sequential(
-                    nn.Linear(10, 5),
-                    nn.ReLU()
-                )
+                self.layer1 = nn.Sequential(nn.Linear(10, 5), nn.ReLU())
                 self.layer2 = nn.Linear(5, 1)
 
         nested_model = NestedModel()
         helper = DistHelper(nested_model)
 
-        expected_modules = {
-            '', 'layer1', 'layer1.0', 'layer1.1', 'layer2'
-        }
+        expected_modules = {'', 'layer1', 'layer1.0', 'layer1.1', 'layer2'}
         self.assertEqual(helper._local_modules, expected_modules)
 
 
@@ -460,13 +440,13 @@ class TestFindFreePort(unittest.TestCase):
         mock_socket.bind.side_effect = [
             OSError("Port 29500 in use"),
             OSError("Port 29501 in use"),
-            None  # 成功
+            None,  # 成功
         ]
         mock_socket_class.return_value = mock_socket
 
         port = find_free_port(start_port=29500, max_attempts=10)
         self.assertEqual(port, 29502)
-    
+
     def test_find_free_port_success(self):
         """测试成功找到可用端口"""
         port = find_free_port(start_port=29500, max_attempts=100)
@@ -515,11 +495,12 @@ class TestSetupDistributed(unittest.TestCase):
         # 创建 mock 对象
         mock_npu = MagicMock()
         mock_init_process_group = MagicMock()
-        
+
         # 使用 patch 来 mock torch.npu 和 dist.init_process_group
-        with patch.object(torch, 'npu', mock_npu, create=True), \
-             patch('msmodelslim.utils.distributed.dist_setup.dist.init_process_group', mock_init_process_group):
-            
+        with (
+            patch.object(torch, 'npu', mock_npu, create=True),
+            patch('msmodelslim.utils.distributed.dist_setup.dist.init_process_group', mock_init_process_group),
+        ):
             setup_distributed(rank=0, world_size=4, backend='hccl', master_port=29500, device_index=0)
 
             self.assertEqual(os.environ['MASTER_ADDR'], '127.0.0.1')
@@ -528,20 +509,17 @@ class TestSetupDistributed(unittest.TestCase):
             self.assertEqual(os.environ['WORLD_SIZE'], '4')
 
             mock_npu.set_device.assert_called_once_with("npu:0")
-            mock_init_process_group.assert_called_once_with(
-                backend='hccl',
-                world_size=4,
-                rank=0
-            )
+            mock_init_process_group.assert_called_once_with(backend='hccl', world_size=4, rank=0)
 
     def test_setup_distributed_device_index_none(self):
         """测试 device_index 为 None 时使用 rank 作为设备索引"""
         mock_npu = MagicMock()
         mock_init_process_group = MagicMock()
-        
-        with patch.object(torch, 'npu', mock_npu, create=True), \
-             patch('msmodelslim.utils.distributed.dist_setup.dist.init_process_group', mock_init_process_group):
-            
+
+        with (
+            patch.object(torch, 'npu', mock_npu, create=True),
+            patch('msmodelslim.utils.distributed.dist_setup.dist.init_process_group', mock_init_process_group),
+        ):
             setup_distributed(rank=2, world_size=4, backend='hccl', master_port=29502, device_index=None)
 
             mock_npu.set_device.assert_called_once_with("npu:2")
@@ -551,22 +529,20 @@ class TestSetupDistributed(unittest.TestCase):
         """测试 device_index 与 rank 不同的情况"""
         mock_npu = MagicMock()
         mock_init_process_group = MagicMock()
-        
-        with patch.object(torch, 'npu', mock_npu, create=True), \
-             patch('msmodelslim.utils.distributed.dist_setup.dist.init_process_group', mock_init_process_group):
-            
+
+        with (
+            patch.object(torch, 'npu', mock_npu, create=True),
+            patch('msmodelslim.utils.distributed.dist_setup.dist.init_process_group', mock_init_process_group),
+        ):
             setup_distributed(rank=0, world_size=4, backend='hccl', master_port=29503, device_index=3)
 
             mock_npu.set_device.assert_called_once_with("npu:3")
-            mock_init_process_group.assert_called_once_with(
-                backend='hccl',
-                world_size=4,
-                rank=0
-            )
+            mock_init_process_group.assert_called_once_with(backend='hccl', world_size=4, rank=0)
 
 
 class TestReduceOperation(unittest.TestCase):
     """测试 ReduceOperation 枚举"""
+
     def test_reduce_operation_from_string(self):
         """测试从字符串创建 ReduceOperation"""
         self.assertEqual(ReduceOperation("min"), ReduceOperation.MIN)
@@ -643,12 +619,12 @@ class TestSyncBaseOperation(unittest.TestCase):
     def test_sync_base_operation_case_insensitive(self, mock_all_reduce):
         """测试字符串操作不区分大小写"""
         tensor = torch.tensor([1.0, 2.0, 3.0])
-        
+
         # 测试各种大小写组合
         sync_base_operation(tensor, "MIN")
         sync_base_operation(tensor, "Min")
         sync_base_operation(tensor, "mIn")
-        
+
         self.assertEqual(mock_all_reduce.call_count, 3)
 
 
@@ -668,7 +644,6 @@ class TestSyncGatherTensors(unittest.TestCase):
         def all_gather_side_effect(tensor_list, tensor, group=None):
             for _, t in enumerate(tensor_list):
                 t.copy_(tensor)
-            return None
 
         mock_all_gather.side_effect = all_gather_side_effect
 
@@ -690,7 +665,6 @@ class TestSyncGatherTensors(unittest.TestCase):
         def all_gather_object_side_effect(tensor_list, tensor_cpu, group=None):
             tensor_list[0] = tensor_cpu
             tensor_list[1] = tensor_cpu
-            return None
 
         mock_all_gather_object.side_effect = all_gather_object_side_effect
 
@@ -704,7 +678,8 @@ class TestSyncGatherTensors(unittest.TestCase):
     @patch('msmodelslim.utils.distributed.dist_ops.dist.get_world_size')
     @patch('msmodelslim.utils.distributed.dist_ops.dist.all_gather')
     def test_sync_gather_tensors_variable_shapes(
-        self, mock_all_gather, mock_get_world_size, mock_get_rank, mock_device):
+        self, mock_all_gather, mock_get_world_size, mock_get_rank, mock_device
+    ):
         """测试聚合不同形状的张量（CPU环境）"""
         mock_get_world_size.return_value = 2
         mock_get_rank.return_value = 0
@@ -726,7 +701,6 @@ class TestSyncGatherTensors(unittest.TestCase):
                 # 第二次调用：收集实际数据
                 for t in tensor_list:
                     t.copy_(tensor)
-            return None
 
         mock_all_gather.side_effect = all_gather_side_effect
 
@@ -748,7 +722,6 @@ class TestSyncGatherTensors(unittest.TestCase):
         def all_gather_side_effect(tensor_list, tensor, group=None):
             for t in tensor_list:
                 t.copy_(tensor)
-            return None
 
         mock_all_gather.side_effect = all_gather_side_effect
 

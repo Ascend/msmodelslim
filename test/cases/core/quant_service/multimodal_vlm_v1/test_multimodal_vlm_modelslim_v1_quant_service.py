@@ -136,25 +136,30 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
         )
 
     @pytest.mark.parametrize(
-        "runner_value, expected_type",
+        "runner_value, device_indices, expected_type",
         [
-            (RunnerType.MODEL_WISE, RunnerType.MODEL_WISE),
-            (RunnerType.LAYER_WISE, RunnerType.LAYER_WISE),
-            ("unknown", RunnerType.LAYER_WISE),
+            (RunnerType.LAYER_WISE, None, RunnerType.LAYER_WISE),
+            (RunnerType.LAYER_WISE, [0, 1], RunnerType.LAYER_WISE),
+            (RunnerType.DP_LAYER_WISE, [0, 1], RunnerType.DP_LAYER_WISE),
+            (RunnerType.AUTO, [0, 1, 2], RunnerType.DP_LAYER_WISE),
+            (RunnerType.AUTO, [0], RunnerType.LAYER_WISE),
+            (RunnerType.AUTO, None, RunnerType.LAYER_WISE),
+            (RunnerType.MODEL_WISE, None, RunnerType.LAYER_WISE),
+            ("unknown", None, RunnerType.LAYER_WISE),
         ],
     )
     @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.get_logger")
-    def test_choose_runner_type_with_logging(self, mock_get_logger, runner_value, expected_type):
-        """覆盖 `_choose_runner_type` 的所有分支，同时验证日志打印行为。"""
+    def test_choose_runner_type_with_logging(self, mock_get_logger, runner_value, device_indices, expected_type):
+        """覆盖 `_choose_runner_type` 的 DP / 单卡 / model_wise 回退分支。"""
         quant_cfg = MagicMock()
         quant_cfg.spec.runner = runner_value
 
         adapter = Mock(spec=PipelineInterface)
-        result = self.service._choose_runner_type(quant_cfg, adapter)
+        result = self.service._choose_runner_type(quant_cfg, adapter, device_indices)
 
         assert result == expected_type
-        # 至少会调用一次日志接口，确保路径被真实执行
-        assert mock_get_logger.return_value.info.called
+        mock_logger = mock_get_logger.return_value
+        assert mock_logger.info.called or mock_logger.warning.called
 
     @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.get_logger")
     @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.LayerWiseRunner")
@@ -168,12 +173,12 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
         mock_get_logger,
     ):
         """
-        完整流程测试（带 save_path & NPU 设备）：
+        完整流程测试（带 save_path & NPU 设备，单卡 layer_wise）：
         - 校验随机种子设置
         - 校验 NPU 编译模式配置
         - 校验数据集加载与 default_text 赋值
         - 校验持久化配置与 Processor 注册
-        - 校验最终的 runner.run 调用参数
+        - 校验最终的 runner.run 调用参数（含 device_indices）
         """
         # 准备 quant_config.spec 的各项字段
         process_cfgs: List[Mock] = [Mock(), Mock()]
@@ -184,7 +189,7 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
         spec.default_text = "default prompt"
         spec.process = process_cfgs
         spec.save = save_cfgs
-        spec.runner = "layer_wise"
+        spec.runner = RunnerType.LAYER_WISE
 
         quant_cfg = Mock()
         quant_cfg.spec = spec
@@ -199,7 +204,7 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
             model_adapter=self.model_adapter,
             save_path=self.save_path,
             device=self.device,
-            device_indices=[0, 1],
+            device_indices=[0],
         )
 
         # quant_process 不需要返回值，这里只确认流程顺利结束
@@ -224,15 +229,104 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
         expected_calls = [call(processor_cfg=cfg) for cfg in process_cfgs + save_cfgs]
         runner.add_processor.assert_has_calls(expected_calls, any_order=False)
 
-        # 最终量化执行
-        runner.run.assert_called_once_with(calib_data="mock_dataset", device=self.device)
+        # 最终量化执行（透传 device_indices）
+        runner.run.assert_called_once_with(calib_data="mock_dataset", device=self.device, device_indices=[0])
+        self.context_factory.create.assert_called_once_with(is_distributed=False)
         # 确保结束日志被打印
         assert mock_get_logger.return_value.info.called
 
     @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.get_logger")
+    @patch("msmodelslim.core.runner.dp_layer_wise_runner.DPLayerWiseRunner")
+    @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.torch")
+    @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.seed_all")
+    def test_quant_process_auto_multi_device_uses_dp_runner(
+        self,
+        mock_seed_all,
+        mock_torch,
+        mock_dp_runner_cls,
+        mock_get_logger,
+    ):
+        """runner=auto 且多卡 device_indices 时创建 DPLayerWiseRunner 并开启分布式 context。"""
+        process_cfgs: List[Mock] = [Mock()]
+        save_cfgs: List[Mock] = []
+
+        spec = Mock()
+        spec.dataset = "mock_dataset_path"
+        spec.default_text = "default prompt"
+        spec.process = process_cfgs
+        spec.save = save_cfgs
+        spec.runner = RunnerType.AUTO
+
+        quant_cfg = Mock()
+        quant_cfg.spec = spec
+
+        runner = Mock()
+        mock_dp_runner_cls.return_value = runner
+
+        self.service.quant_process(
+            quant_config=quant_cfg,
+            model_adapter=self.model_adapter,
+            save_path=None,
+            device=self.device,
+            device_indices=[0, 1, 2, 3],
+        )
+
+        mock_dp_runner_cls.assert_called_once_with(adapter=self.model_adapter, offload_device="cpu")
+        runner.run.assert_called_once_with(
+            calib_data="mock_dataset",
+            device=self.device,
+            device_indices=[0, 1, 2, 3],
+        )
+        self.context_factory.create.assert_called_once_with(is_distributed=True)
+
+    @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.get_logger")
+    @patch("msmodelslim.core.runner.dp_layer_wise_runner.DPLayerWiseRunner")
+    @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.torch")
+    @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.seed_all")
+    def test_quant_process_uses_dp_runner_when_dp_layer_wise(
+        self,
+        mock_seed_all,
+        mock_torch,
+        mock_dp_runner_cls,
+        mock_get_logger,
+    ):
+        """runner=dp_layer_wise 时创建 DPLayerWiseRunner，与 modelslim_v1 行为对齐。"""
+        process_cfgs: List[Mock] = [Mock()]
+        save_cfgs: List[Mock] = []
+
+        spec = Mock()
+        spec.dataset = "mock_dataset_path"
+        spec.default_text = "default prompt"
+        spec.process = process_cfgs
+        spec.save = save_cfgs
+        spec.runner = RunnerType.DP_LAYER_WISE
+
+        quant_cfg = Mock()
+        quant_cfg.spec = spec
+
+        runner = Mock()
+        mock_dp_runner_cls.return_value = runner
+
+        self.service.quant_process(
+            quant_config=quant_cfg,
+            model_adapter=self.model_adapter,
+            save_path=None,
+            device=self.device,
+            device_indices=[0, 1],
+        )
+
+        mock_dp_runner_cls.assert_called_once_with(adapter=self.model_adapter, offload_device="cpu")
+        runner.run.assert_called_once_with(
+            calib_data="mock_dataset",
+            device=self.device,
+            device_indices=[0, 1],
+        )
+        self.context_factory.create.assert_called_once_with(is_distributed=True)
+
+    @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.get_logger")
     @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.LayerWiseRunner")
     @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.seed_all")
-    def test_quant_process_without_save_path_and_non_layerwise_runner(
+    def test_quant_process_without_save_path_and_unknown_runner(
         self,
         mock_seed_all,
         mock_runner_cls,
@@ -241,7 +335,7 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
         """
         测试以下组合场景：
         - device 为 CPU（跳过 NPU 特有逻辑）
-        - runner 类型不是 "layer_wise"（触发 warning 日志）
+        - runner 类型未知（回退 layer_wise）
         - save_path 为 None（不注册 save processor）
         """
         process_cfgs: List[Mock] = [Mock()]
@@ -283,11 +377,7 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
             [call(processor_cfg=cfg) for cfg in process_cfgs],
             any_order=False,
         )
-        runner.run.assert_called_once_with(calib_data="mock_dataset", device=cpu_device)
-
-        # 非 layer_wise 的 runner 应触发 warning 日志
-        mock_logger = mock_get_logger.return_value
-        mock_logger.warning.assert_called_once()
+        runner.run.assert_called_once_with(calib_data="mock_dataset", device=cpu_device, device_indices=None)
 
     @staticmethod
     def _make_quant_config_for_offload_case():

@@ -23,7 +23,7 @@ from enum import Enum
 
 import torch
 import torch.distributed as dist
-import torch.nn as nn
+from torch import nn
 
 
 def is_rank_zero() -> bool:
@@ -56,6 +56,7 @@ class Scope(Enum):
     SHARED: 在多个进程间共享的模块
     ALL: 所有模块
     """
+
     LOCAL = 0
     LOCAL_ONLY = 1
     SHARED = 2
@@ -67,6 +68,7 @@ class DistHelper:
     Expert Parallel(专家并行)模型处理类
     用于管理分布式训练中的模型模块，处理本地模块和共享模块的分配
     """
+
     def __init__(self, model: nn.Module, prefix: str = ""):
         """
         初始化EPModelHandle
@@ -75,10 +77,7 @@ class DistHelper:
         """
         self._model = model
         # 获取本地所有非None模块的名称集合
-        self._local_modules = set([
-            name for name, module in self._model.named_modules(prefix=prefix)
-            if module is not None
-        ])
+        self._local_modules = {name for name, module in self._model.named_modules(prefix=prefix) if module is not None}
 
         # 创建用于收集所有进程模块信息的列表
         gathered_modules = [None] * dist.get_world_size()
@@ -95,23 +94,33 @@ class DistHelper:
     @staticmethod
     def gather_variable_shapes(local_tensor: torch.Tensor):
         """
-        支持不同 shape 张量的 all_gather 实现
+        支持不同 shape 张量的 all_gather 实现。
+
+        Explicit ``device=`` on factories: Ascend HCCL requires NPU tensors;
+        relying solely on ``torch.device`` context is fragile across torch_npu builds.
         """
-        with torch.device(local_tensor.device):
-            # 同步张量形状
-            local_shape = torch.tensor(local_tensor.shape, dtype=torch.long)
-            shape_list = [torch.zeros_like(local_shape) for _ in range(dist.get_world_size())]
-            dist.all_gather(shape_list, local_shape)
+        device = local_tensor.device
+        world_size = dist.get_world_size()
+        local_tensor = local_tensor.contiguous()
 
-            # 初始化存储
-            tensor_list = [
-                torch.zeros(*s.tolist(), dtype=local_tensor.dtype)
-                for s in shape_list
-            ]
+        # 同步张量形状
+        local_shape = torch.tensor(local_tensor.shape, dtype=torch.long, device=device)
+        shape_list = [torch.zeros_like(local_shape) for _ in range(world_size)]
+        dist.all_gather(shape_list, local_shape)
 
-            # 收集数据
-            dist.all_gather(tensor_list, local_tensor)
-            return tensor_list
+        # 初始化存储（与 local 同 device / dtype）
+        tensor_list = [
+            torch.zeros(
+                *s.tolist(),
+                dtype=local_tensor.dtype,
+                device=device,
+            )
+            for s in shape_list
+        ]
+
+        # 收集数据
+        dist.all_gather(tensor_list, local_tensor)
+        return tensor_list
 
     def get_rank(self):
         """
@@ -207,6 +216,6 @@ class DistHelper:
         shared_modules_list = sorted([f"{prefix}.{name}" if prefix != "" else name for name in self._shared_modules])
         world_size = dist.get_world_size()
         rank = dist.get_rank()
-        
+
         # 按照world_size的间隔取模块
         return shared_modules_list[rank::world_size]

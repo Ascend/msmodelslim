@@ -37,7 +37,8 @@ from ..interface import BaseQuantConfig
 
 
 class MultimodalVLMServiceConfig(BaseModel):
-    runner: RunnerType = RunnerType.LAYER_WISE
+    # auto: single device → layer_wise; multi-device (--device npu:0,1,...) → dp_layer_wise
+    runner: RunnerType = RunnerType.AUTO
     prior: List[PriorStageConfig] = Field(default_factory=list, description="前置阶段列表，每阶段含 process 与 dataset")
     process: AutoProcessorConfigList = Field(default_factory=list)
     save: AutoSaverConfigList = Field(default_factory=list)
