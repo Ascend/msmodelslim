@@ -2,7 +2,7 @@
 
 > **注释：** 将 config_name 替换为配置名称。所有 {{ placeholder_name }} 占位符必须替换为实际内容；占位符名称只能使用英文小写字母、数字和下划线，多个单词以下划线连接。发布文档前删除所有填写说明，并从保留的可选章节标题中删除 [OPTIONAL] 前缀。
 
-## 配置概述
+## 1. 配置概述
 
 > **注释：** 说明该配置控制的量化阶段、适用模型或场景，以及它在完整量化配置中的位置。
 
@@ -15,7 +15,7 @@
 | 配置类 | `{{ config_class_name }}` |
 | 源码 | [{{ source_file_name }}]({{ source_file_link }}) |
 
-## 参数列表
+## 2. 参数列表
 
 > **注释：** 列出该配置直接定义及通过继承对用户开放的全部字段，字段名称使用从配置根节点开始的完整路径。类型使用 string、int、float、bool、object、list 等明确名称。必选字段的默认值填写“无”；可选字段必须给出实际默认值。取值范围或格式应包含枚举值、数值边界、路径格式和组合约束。对象或列表由其他配置定义时，在“引用配置”列链接到对应文档。
 
@@ -24,13 +24,13 @@
 | `{{ required_field_path }}` | `{{ required_field_type }}` | 必选 | 无 | {{ required_field_constraint }} | {{ required_field_description }} | {{ required_field_reference }} |
 | `{{ optional_field_path }}` | `{{ optional_field_type }}` | 可选 | `{{ optional_field_default }}` | {{ optional_field_constraint }} | {{ optional_field_description }} | {{ optional_field_reference }} |
 
-## 配置约束
+## 3. 配置约束
 
 > **注释：** 逐条说明能由 YAML 解析器、配置模型、校验器或加载逻辑判断的规则，包括字段间互斥、依赖、优先级、继承、覆盖、回退，以及不同 runner、模型、设备或量化阶段下的合法性限制。没有额外约束时填写“无”。性能、精度、资源、数据代表性等运行时实践问题写入“注意事项”。
 
 - {{ config_constraint }}
 
-## 引用的配置
+## 4. 引用的配置
 
 > **注释：** 列出本配置通过 object、list、联合类型或其他嵌套结构引用的配置。链接应指向被引用配置的字段说明或独立配置文档；不得只链接源码。没有引用配置时，用一行“无。”替代表格。
 >
@@ -42,7 +42,7 @@
 |----------|----------|----------|----------|------------|-----------------|----------|
 | `{{ referenced_field_path }}` | `{{ referenced_config_name }}` | {{ reference_relationship }} | {{ union_field_path }} | {{ sub_config_category }} | `{{ sub_config_type }}` | [{{ referenced_document_name }}]({{ referenced_document_link }}) |
 
-## 被引用的配置
+## 5. 被引用的配置
 
 > **注释：** 列出哪些上层配置、命令行场景或其他配置会引用本配置，并标明引用位置。链接应指向引用方的字段说明或配置示例。没有被引用场景时，用一行“无。”替代表格。
 
@@ -50,7 +50,7 @@
 |--------|----------|----------|------------|
 | `{{ parent_config_name }}` | `{{ parent_reference_path }}` | {{ parent_reference_scenario }} | [{{ parent_document_name }}]({{ parent_document_link }}) |
 
-## 完整配置参考
+## 6. 完整配置参考
 
 > **注释：** 提供一份语法正确、可直接复制并仅需替换业务路径即可使用的完整典型 YAML。将 complete_config_yaml 替换为完整 YAML 内容，不保留该占位符。示例必须将当前配置放在实际的完整字段路径中：顶层服务配置应包含 apiversion 和 spec，嵌套或被引用配置应放入 spec.process[]、spec.save[] 等真实引用位置，不得将子配置字段错误地直接放在 spec 下。示例必须包含本配置的必选字段和关键典型可选字段；对于复杂嵌套配置，只展开当前文档负责的配置层级和必要的一层子配置，通过 type 或辨识字段标明子配置类型，并链接到“子配置索引”或对应配置文档。不得使用省略号代替 YAML。示例值必须满足参数约束，且与参数列表、引用关系保持一致。
 
@@ -62,7 +62,7 @@
 
 {{ complete_config_description }}
 
-## [OPTIONAL] 兼容性与迁移
+## 7. [OPTIONAL] 兼容性与迁移
 
 > **注释：** 仅当配置存在版本差异、废弃字段、旧字段映射或迁移期兼容行为时保留本节。说明受影响版本、替代字段、优先级和移除计划。
 
@@ -70,7 +70,7 @@
 |--------------|--------------|------------|----------|
 | `{{ deprecated_field_name }}` | `{{ replacement_field_name }}` | {{ affected_version }} | {{ migration_instruction }} |
 
-## [OPTIONAL] 注意事项
+## 8. [OPTIONAL] 注意事项
 
 > **注释：** 仅当存在无法由 YAML 解析器、配置模型、校验器或加载逻辑直接判断，但会影响性能、精度、显存、设备、数据代表性、安全或运行稳定性的实践问题时保留本节。字段合法性、互斥依赖、默认/覆盖/回退等规则写入“配置约束”。
 
