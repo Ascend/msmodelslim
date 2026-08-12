@@ -47,7 +47,7 @@
 
 | 关联参数 | 配置名称 | 引用关系 | 配置文档 |
 |----------|----------|----------|----------|
-| `--{{ referenced_param_name }}` | `{{ referenced_config_name }}` | {{ reference_relationship }} | [{{ referenced_document_name }}]({{ referenced_document_link }}) |
+| `--{{ referenced_param_name }}` | `{{ referenced_config_name }}` | {{ reference_relationship }} | 《[{{ referenced_document_name }}]({{ referenced_document_link }})》 |
 
 ## 6. [OPTIONAL] 环境变量
 
@@ -59,7 +59,7 @@
 
 ## 7. [OPTIONAL] 使用示例
 
-> **注释：** 仅当需要展示典型场景或参数组合时保留本节。第一条示例应为最小可跑场景，只包含完成核心功能所需的最少参数；后续示例用于展示常见参数组合或高级场景。示例必须可复制，路径、模型名等变量使用大写 shell 变量，并在代码块后解释变量和预期结果。不得包含真实密钥或内部地址。
+> **注释：** 仅当需要展示典型场景或参数组合时保留本节。第一条示例应为最小可运行场景，只包含完成核心功能所需的最少参数；后续示例用于展示常见参数组合或高级场景。示例必须可复制，路径、模型名等变量使用大写 shell 变量，并在代码块后解释变量和预期结果。不得包含真实密钥或内部地址。
 
 ### {{ example_scenario_name }}
 

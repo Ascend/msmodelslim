@@ -7,7 +7,7 @@
 ## 检查范围
 
 - 链接形如 `[text](../xx/yy.md)`、`[text](./zz.md)` 的相对路径链接。
-- 排除：外网 URL（http/https）、锚点链接（`#xxx`）、`{{ }}` 模板占位链接、词条文件顶部 TODO 已登记的待建词条目标（`term_*.md`，视为已规划，对齐词条校验 K02 / L04）。
+- 排除：外网 URL（http/https）、锚点链接（`#xxx`）、`{{ }}` 模板占位链接、词条文件顶部 TODO 已登记的待建词条目标（`term_*.md`，视为已规划，对齐《[术语词条校验清单](../../../docs/zh/contributing/development_guide/docs_standards/01_term_glossary_checklist.md)》 TE-33 / TW-05）。
 
 ## 步骤
 
@@ -25,6 +25,6 @@
 ## 修复建议
 
 - 断链常见原因：目标文档移动 / 删除、文件名大小写不一致、`NN_` 前缀变更。
-- 本检查对应[《公共校验清单》](../../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md) CW-02（渲染与链接）；删除 / 下线文档后须重跑本检查做断链复查（见 SKILL.md 职责 3）。
+- 本检查对应《[公共校验清单](../../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md)》 CW-02（渲染与链接）；删除 / 下线文档后须重跑本检查做断链复查（见 [SKILL.md 职责 3](../SKILL.md#职责-3--删除--下线资料完整流程)）。
 - 修复后重新检查确认。
 - 仅报告与建议，不自动改动文档。

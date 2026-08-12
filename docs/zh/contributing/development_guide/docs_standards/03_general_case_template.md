@@ -8,7 +8,7 @@
 
 > **注释：** 说明本次目标、场景，以及实际覆盖的流程步骤名称。
 
-**关联流程**：[{{related_workflow_title}}]({{related_workflow_link}})
+**关联流程**：《[{{related_workflow_title}}]({{related_workflow_link}})》
 
 > **注释：** 链接至对应流程指南，不在此重复流程规范。
 

@@ -40,7 +40,7 @@
 
 | 字段路径 | 配置名称 | 引用关系 | 适用字段 | 子配置类别 | `type` 或辨识值 | 配置文档 |
 |----------|----------|----------|----------|------------|-----------------|----------|
-| `{{ referenced_field_path }}` | `{{ referenced_config_name }}` | {{ reference_relationship }} | {{ union_field_path }} | {{ sub_config_category }} | `{{ sub_config_type }}` | [{{ referenced_document_name }}]({{ referenced_document_link }}) |
+| `{{ referenced_field_path }}` | `{{ referenced_config_name }}` | {{ reference_relationship }} | {{ union_field_path }} | {{ sub_config_category }} | `{{ sub_config_type }}` | 《[{{ referenced_document_name }}]({{ referenced_document_link }})》 |
 
 ## 5. 被引用的配置
 
@@ -48,7 +48,7 @@
 
 | 引用方 | 引用位置 | 适用场景 | 引用方文档 |
 |--------|----------|----------|------------|
-| `{{ parent_config_name }}` | `{{ parent_reference_path }}` | {{ parent_reference_scenario }} | [{{ parent_document_name }}]({{ parent_document_link }}) |
+| `{{ parent_config_name }}` | `{{ parent_reference_path }}` | {{ parent_reference_scenario }} | 《[{{ parent_document_name }}]({{ parent_document_link }})》 |
 
 ## 6. 完整配置参考
 

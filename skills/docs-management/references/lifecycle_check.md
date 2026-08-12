@@ -8,11 +8,11 @@
 
 | 检查项 | 判定 | 处理建议 |
 | --- | --- | --- |
-| 占位残留 | 文档中含 `{{ }}`、模板注释、`TODO`、`FIXME`、`待补充`、`TBD`（对齐[《公共校验清单》](../../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md) CE-01 / CE-02） | 提示补充实际内容 |
+| 占位残留 | 文档中含 `{{ }}`、模板注释、`TODO`、`FIXME`、`待补充`、`TBD`（对齐《[公共校验清单](../../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md)》 CE-01 / CE-02） | 提示补充实际内容 |
 | 引用已下线特性 | 文档引用已下线模型 / 算法 / 接口 | 与版本说明核对，更新或废弃（对齐职责 3 下线流程） |
 | 版本时效 | `release_notes` 是否覆盖当前版本变更 | 提示补充 |
 | 文档陈旧 | 文档描述的版本 / 能力与当前实现不一致 | 提示更新 |
-| 敏感信息 | 含密钥、令牌、内网地址、个人路径（对齐[《公共校验清单》](../../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md) CE-03） | 立即提示移除 |
+| 敏感信息 | 含密钥、令牌、内网地址、个人路径（对齐《[公共校验清单](../../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md)》 CE-03） | 立即提示移除 |
 
 ## 输出
 
@@ -20,6 +20,8 @@
 
 ```text
 | 文档 | 检查项 | 发现 | 建议 |
+| --- | --- | --- | --- |
+| `01_term_glossary_template.md` | 占位残留 | `## 概述` 含未填充的 `{{ content }}` | 补充实际内容 |
 ```
 
 ## 注意

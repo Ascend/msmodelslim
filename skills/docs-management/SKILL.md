@@ -14,7 +14,7 @@ metadata:
 
 ## 概述
 
-本 skill 以[资料规范](../../docs/zh/contributing/development_guide/docs_standards/README.md)为唯一依据，负责 msModelSlim `docs/` 资料的文件级管理，聚焦四类文件操作：**新增 / 更新 / 删除下线 / 查找**，校验贯穿其中。核心是**场景驱动**：新增资料时查[场景索引](scenarios/README.md)，**有场景文档才代建目录、插模板、执行校验；无场景文档只推荐操作，不擅自动手**。
+本 skill 以《[msModelSlim 资料规范](../../docs/zh/contributing/development_guide/docs_standards/README.md)》为唯一依据，负责 msModelSlim `docs/` 资料的文件级管理，聚焦四类文件操作：**新增**、**更新**、**删除/下线**、**查找**，校验贯穿其中。核心是**场景驱动**：新增资料时查[场景索引](scenarios/README.md)，**有场景文档才代建目录、插模板、执行校验；无场景文档只推荐操作，不擅自动手**。
 
 ## 适用场景
 
@@ -29,9 +29,9 @@ metadata:
 
 ## 核心依据
 
-- **总规范**：[docs_standards/README.md](../../docs/zh/contributing/development_guide/docs_standards/README.md)
+- **总规范**：《[msModelSlim 资料规范](../../docs/zh/contributing/development_guide/docs_standards/README.md)》
 - **模板与校验清单**：`docs/zh/contributing/development_guide/docs_standards/` 下 `00_common_checklist.md`、`NN_*_template.md` 与 `NN_*_checklist.md`
-- **新增场景索引**：[scenarios/README.md](scenarios/README.md)（本 skill 内）
+- **新增场景索引**：《[新增场景索引（机制）](scenarios/README.md)》（本 skill 内）
 
 ## 职责 1 — 新增资料（场景驱动）
 
@@ -44,7 +44,7 @@ metadata:
 
 ### 1.2 按场景配置执行
 
-按场景文档 `steps` 操作：按 `create_subdir` 建目录；将 `templates` 中模板复制为目标文件（`docs_standards/` 下 `NN_*_template.md` → 场景文档指定的文件名），**保留 `{{ }}` 占位符与 `[OPTIONAL]` 标记**，供用户填充。目标目录同名判定按三态：目录不存在 → 按新增；目录在但为空 → 复用继续新增；目录在但只缺部分文档 → 补插缺失文件；仅当**同名文档已存在**才转为"更新"职责，不重复创建。
+按场景文档 `steps` 操作：按 `create_subdir` 建目录；将 `templates` 中模板复制为目标文件（`docs_standards/` 下 `NN_*_template.md` → 场景文档指定的文件名），**保留 `{{ }}` 占位符与 `[OPTIONAL]` 标记**，供用户填充。目标目录同名判定：①目录不存在 → 按新增；②目录在但为空 → 复用继续新增；③目录在但只缺部分文档 → 补插缺失文件；④**同名文档已存在** → 转为"更新"职责，不重复创建。
 
 ### 1.3 用户填充
 
@@ -52,11 +52,11 @@ metadata:
 
 ### 1.4 校验
 
-**分别校验场景特有校验清单与文档类型清单并综合结果**：先按场景文档"场景特有校验清单"（若配置）逐条检查，再按插入模板对应的文档类型清单逐条检查，并叠加[《公共校验清单》](../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md)（CE-01~CE-04、CW-01~CW-02）。全部条目合并为一份报告表（见职责 5），任一 ERROR 未解决即**不通过**。
+**分别校验场景特有校验清单与文档类型清单并综合结果**：先按场景文档"场景特有校验清单"（若配置）逐条检查，再按插入模板对应的文档类型清单逐条检查，并叠加《[公共校验清单](../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md)》（CE-01~CE-04、CW-01~CW-02）。全部条目合并为一份报告表（见职责 5），已按豁免机制声明豁免的条目不计入，其余任一 ERROR 未解决即**不通过**。
 
 ### 1.5 修复至通过
 
-遵循修复优先级（CE → 类型前缀序，如词条 CE → G>S>L>C>P>R>K），直至无 ERROR；WARN 项提示用户是否处理。确有合理原因无法满足的条目，按豁免机制在文档顶部声明 `<!-- waiver: 编号 原因：xxx -->`。
+遵循修复优先级（CE → 类型前缀序，如词条 CE → TE>TW），直至无 ERROR；WARN 项提示用户是否处理。确有合理原因无法满足的条目，按豁免机制在文档顶部声明 `<!-- waiver: 编号 原因：xxx -->`。
 
 ## 职责 2 — 更新资料
 
@@ -79,7 +79,7 @@ metadata:
 
 ## 职责 5 — 校验（横切）
 
-对照场景特有校验清单（若配置）+ 文档类型清单 + [《公共校验清单》](../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md)分别逐条检查，合并输出报告表：
+对照场景特有校验清单（若配置）+ 文档类型清单 + 《[公共校验清单](../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md)》分别逐条检查，合并输出报告表：
 
 ```text
 | 编号 | 级别 | 文档 | 条目 | 失败原因 | 修复建议 |
@@ -87,7 +87,7 @@ metadata:
 
 - **ERROR**：必须修复，任一 ERROR 未解决即校验**不通过**。
 - **WARN**：建议修复，仅 WARN 不满足时结论为**需修订**。
-- **豁免**：文档顶部 `<!-- waiver: 编号 原因：xxx -->`；ERROR 豁免 ≤ 2 项，WARN 不限。
+- **豁免**：文档顶部 `<!-- waiver: 编号 原因：xxx -->`；ERROR 豁免 ≤2项（豁免后视为通过），WARN 不限。
 - **触发时机**：新增填充后全量校验；修改 / 删除后增量校验。
 
 ## 职责 6 — 整体检查
@@ -98,7 +98,7 @@ metadata:
 
 ### 6.2 链接完整性
 
-按[链接检查](references/link_check.md)扫描 docs 内内部相对链接，报告断链与修复建议。
+按[链接检查](references/link_check.md)扫描 docs 内部相对链接，报告断链与修复建议。
 
 ### 6.3 生命周期 / 质量
 
@@ -112,7 +112,7 @@ metadata:
 
 - **无场景文档不代建**：新增诉求未命中场景索引时，只推荐操作，不建目录、不插模板。
 - **不修改用户已填充的内容**：校验阶段只报告与建议，不擅自改动。
-- **模板脚手架残留**：模板自带的教学性/脚手架章节（如 01 词条的「排版规范」）属模板指令、非用户填充内容；校验发现残留时**建议删除，由用户确认后执行**，不擅自删。
+- **模板脚手架残留**：模板自带的教学性/脚手架章节属模板指令、非用户填充内容；校验发现残留时**建议删除，由用户确认后执行**，不擅自删。
 - **不删除模板的 `{{ }}` 占位符与 `[OPTIONAL]` 标记**，除非用户明确要求。
 - **不新增模板规范之外的结构**：模板/校验清单未定义的章节，先更新规范（或场景文档）再使用。
 - **删除前先确认影响**：删除 / 下线资料先处理反向链接，并在版本说明声明。

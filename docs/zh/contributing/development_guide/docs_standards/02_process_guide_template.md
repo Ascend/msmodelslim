@@ -125,7 +125,7 @@ flowchart LR
 
 | 案例 | 简述 | 链接 |
 | --- | --- | --- |
-| {{case_name}} | {{case_summary}} | [{{case_link_text}}]({{case_link}}) |
+| {{case_name}} | {{case_summary}} | 《[{{case_link_text}}]({{case_link}})》 |
 
 > **注释：**  
 > 只做索引表：案例名、一句场景简述、可点击链接。详细步骤写在被链接的文档里，不要在本流程指南里展开长文。
@@ -134,7 +134,7 @@ flowchart LR
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| {{term_name}} | {{term_summary}} | [{{term_link_text}}]({{term_link}}) |
+| {{term_name}} | {{term_summary}} | 《[{{term_link_text}}]({{term_link}})》 |
 
 > **注释：**  
 > 只做索引表：术语名、一句白话简述、指向权威定义或支持矩阵/算法文档的链接。不要在本表写长定义。
@@ -143,7 +143,7 @@ flowchart LR
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| {{interface_name}} | {{interface_summary}} | [{{interface_link_text}}]({{interface_link}}) |
+| {{interface_name}} | {{interface_summary}} | 《[{{interface_link_text}}]({{interface_link}})》 |
 
 > **注释：**  
 > 只做索引表：命令/API/配置协议名、一句用途简述、权威文档链接。参数细节写在被链接文档里。工具类流程建议保留本章节。
