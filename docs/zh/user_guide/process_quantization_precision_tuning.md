@@ -176,7 +176,7 @@
 
 ##### 第一步：敏感层分析
 
-使用msModelSlim提供的敏感层分析工具识别量化敏感层。详细使用方法请参考《[量化敏感层分析使用指南](usage_sensitive_layer_analysis.md)》。
+使用msModelSlim提供的敏感层分析工具识别量化敏感层。按分析范围参见：《[线性层敏感层分析使用指南](usage_sensitive_linear_analysis.md)》、《[层级敏感层分析使用指南](usage_sensitive_layer_wise_analysis.md)》、《[Attention 敏感层分析使用指南](usage_sensitive_attn_analysis.md)》。
 
 **功能说明**：
 

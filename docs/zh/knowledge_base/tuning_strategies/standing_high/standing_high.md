@@ -54,7 +54,7 @@ Standing High 算法的核心思想是“摸高”：算法首先使用配置文
 
 **推理引擎支持**：需要注意推理引擎对任意回退的支持情况。一般情况下，单算子模式下 vLLM-Ascend 支持任意回退，但使用混合算子时可能不支持任意回退。在使用 Standing High 算法时，请确保配置的推理引擎（如 vLLM-Ascend）能够支持量化回退功能。
 
-**模型适配**：策略启动时会**自动运行敏感层分析**以生成回退候选。模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**（即 `core/runner/pipeline_interface.py` 中的 `PipelineInterface`）。分析由 `PipelineAnalysisService` 经 `LayerWiseRunner` 调用适配器的 `init_model`、`handle_dataset` 及 visit/forward pipeline，**不会在策略侧预先调用 `load_model`**。与 《[敏感层分析使用说明](../../../user_guide/usage_sensitive_layer_analysis.md)》 及 CLI `msmodelslim analyze` 要求一致。详见 《[LLM 大模型接入指南](../../model/integrating_models.md#自动调优与敏感层分析)》。
+**模型适配**：策略启动时会**自动运行敏感层分析**以生成回退候选。模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**（即 `core/runner/pipeline_interface.py` 中的 `PipelineInterface`）。分析由 `PipelineAnalysisService` 经 `LayerWiseRunner` 调用适配器的 `init_model`、`handle_dataset` 及 visit/forward pipeline，**不会在策略侧预先调用 `load_model`**。与 CLI `msmodelslim analyze` 要求一致。详见 《[LLM 大模型接入指南](../../model/integrating_models.md#自动调优与敏感层分析)》。
 
 ## 功能介绍
 

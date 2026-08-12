@@ -10,7 +10,7 @@
 
 **覆盖流程**：新模型结构分析 → 设计量化方案 → 完成模型适配器以及量化 yaml 的开发 → 环境准备与工具安装 → 执行一键量化命令 → 量化权重完整性检查 → 推理部署与评测 → 精度测试 → 回退调优（可选）。
 
-**关联流程**：[《一键量化完整指南》](../user_guide/usage_quick_quantization.md)、[《LLM 大模型接入指南》](../knowledge_base/model/integrating_models.md)、[《量化算法总览》](../knowledge_base/quantization_algorithms/README.md)
+**关联流程**：[《权重量化使用指南》](../user_guide/usage_weight_quantization.md)、[《一键量化完整指南》](../user_guide/usage_quick_quantization.md)、[《LLM 大模型接入指南》](../knowledge_base/model/integrating_models.md)、[《量化算法总览》](../knowledge_base/quantization_algorithms/README.md)
 
 ## 2. 模型相关信息
 
@@ -410,7 +410,7 @@ msmodelslim quant \
 
 **操作**：
 
-1. 使用敏感层分析工具定位量化敏感层（详细用法见 [《量化敏感层分析使用指南》](../user_guide/usage_sensitive_layer_analysis.md)）：
+1. 使用敏感层分析工具定位量化敏感层（详细用法见《[线性层敏感层分析使用指南](../user_guide/usage_sensitive_linear_analysis.md)》）：
 
    ```bash
    msmodelslim analyze linear \

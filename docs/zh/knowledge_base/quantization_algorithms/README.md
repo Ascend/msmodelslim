@@ -59,7 +59,7 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 ## 算法选择建议
 
 - **初学者**：建议优先使用《[一键量化 (V1)](../../user_guide/usage_quick_quantization.md)》，它会自动集成合适的算法组合。
-- **敏感层与回退**：在定稿 YAML 前可用《[敏感层分析](../../user_guide/usage_sensitive_layer_analysis.md)》结合上表 metrics 做层/结构排序；`linear`可首选**Kurtosis**，`layer`可优先**mse_layer_wise**。
+- **敏感层与回退**：在定稿 YAML 前可按 scope 选用《[线性层敏感层分析使用指南](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级敏感层分析使用指南](../../user_guide/usage_sensitive_layer_wise_analysis.md)》或《[Attention 敏感层分析使用指南](../../user_guide/usage_sensitive_attn_analysis.md)》，结合上表 metrics 做层/结构排序；`linear`可首选**Kurtosis**，`layer`可优先**mse_layer_wise**。
 - **自动调优**：精度不达标且希望自动搜索配置时，参见《[自动调优策略总览](../tuning_strategies/README.md)》。
 - **追求极致精度**：可以尝试组合使用 **QuaRot** + **AutoRound**。
 - **长序列推理**：推荐开启 **FA3 Quant** 和 **KVCache Quant**。

@@ -916,4 +916,4 @@ modelslim_v0量化服务主要由Calibrator、AntiOutlier等旧版接口组成�
 
 **Q5: 如何做量化精度调优？**
 
-量化精度调优可参考[量化精度调优指导](guide_quantization_precision_tuning.md)
+量化精度调优可参考[量化精度调优指导](process_quantization_precision_tuning.md)

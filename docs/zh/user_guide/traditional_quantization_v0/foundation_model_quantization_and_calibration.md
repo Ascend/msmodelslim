@@ -593,7 +593,7 @@ from transformers.models.qwen2.configuration_qwen2 import Qwen2Config
 | [quant_qwen.py](../../../../example/Qwen/quant_qwen.py)    | [Qwen2.5-72B 支持Attention量化](../../../../example/Qwen/README.md#qwen25-72b-支持attention量化) |
 | [quant_llama.py](../../../../example/Llama/quant_llama.py) | [Llama3.1-70B W8A8量化搭配Attention量化](../../../../example/Llama/README.md#llama31-70b-w8a8量化搭配attention量化) |
 
-#### 本文仅给出FA3场景下Llama3.1-70B和Qwen2.5-72B的量化推荐配置，可按实际情况进行参数调整，详见《[精度调优策略](../guide_quantization_precision_tuning.md)》
+#### 本文仅给出FA3场景下Llama3.1-70B和Qwen2.5-72B的量化推荐配置，可按实际情况进行参数调整，详见《[精度调优策略](../process_quantization_precision_tuning.md)》
 
 #### 3.6.2 Llama3.1-70B 量化参数设置
 

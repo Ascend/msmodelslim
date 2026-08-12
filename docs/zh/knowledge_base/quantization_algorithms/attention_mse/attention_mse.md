@@ -73,7 +73,7 @@ msmodelslim analyze attn \
 | `attn` | 注意力结构敏感度分析 |
 | `--metrics` | 指定分析算法，取值为 `mse` 时使用本算法 |
 
-完整参数见[敏感层分析工具使用指南参数说明](../../../user_guide/usage_sensitive_layer_analysis.md#34-参数说明)。
+完整参数见 [Attention 敏感层分析使用指南 - 命令行预览](../../../user_guide/usage_sensitive_attn_analysis.md#命令行预览)。
 
 ## FAQ
 

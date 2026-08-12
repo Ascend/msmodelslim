@@ -15,4 +15,4 @@ msModelSlim 通过自动化策略搜索最优量化配置。下表总结了目�
 
 - **已有完整量化 YAML**：优先使用 **Standing High** 或 **Binary Fallback**，在固定离群值抑制与量化模板上自动搜索回退层。
 - **仅知量化类型与模型结构**：可使用 **Standing High With Experience**，由专家经验自动生成量化配置。
-- **敏感层排序辅助回退**：可结合《[敏感层分析](../../user_guide/usage_sensitive_layer_analysis.md)》与《[量化算法总览](../quantization_algorithms/README.md#敏感层分析算法)》中的 metrics。
+- **敏感层排序辅助回退**：可结合《[线性层敏感层分析使用指南](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级敏感层分析使用指南](../../user_guide/usage_sensitive_layer_wise_analysis.md)》、《[Attention 敏感层分析使用指南](../../user_guide/usage_sensitive_attn_analysis.md)》与《[量化算法总览](../quantization_algorithms/README.md#敏感层分析算法)》中的 metrics。

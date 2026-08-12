@@ -68,7 +68,9 @@ nav:
           - 调试模式: "zh/user_guide/usage_debug_mode.md"
           - 组合处理器: "zh/api_reference/config/processor_group.md"
       - 敏感层分析:
-          - 使用指南: "zh/user_guide/usage_sensitive_layer_analysis.md"
+          - 线性层敏感层分析: "zh/user_guide/usage_sensitive_linear_analysis.md"
+          - 层级敏感层分析: "zh/user_guide/usage_sensitive_layer_wise_analysis.md"
+          - Attention 敏感层分析: "zh/user_guide/usage_sensitive_attn_analysis.md"
       - 自动调优策略:
           - 使用指南: "zh/user_guide/usage_auto_precision_tuning.md"
           - 配置协议详解: "zh/api_reference/config/auto_precision_tuning.md"
@@ -94,7 +96,7 @@ nav:
       - 项目目录结构: "zh/contributing/development_guide/dir_structure.md"
   - 七、调试案例集:
       - 精度调优案例:
-          - 量化精度调优指南: "zh/user_guide/guide_quantization_precision_tuning.md"
+          - 量化精度调优指南: "zh/user_guide/process_quantization_precision_tuning.md"
           - Qwen3-32B W8A8 调优案例: "zh/best_practices/qwen3_32b_w8a8_precision_tuning_case.md"
           - 基础案例: "zh/best_practices/README.md"
       - 权重转换与使用:

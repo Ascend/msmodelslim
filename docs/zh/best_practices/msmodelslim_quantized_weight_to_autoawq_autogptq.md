@@ -26,7 +26,7 @@ AutoGPTQ：GPU
 
 ### 量化使用说明
 
-量化脚本跟正常的量化脚本一样，可以参考：[w8a8精度调优策略](../user_guide/guide_quantization_precision_tuning.md) 。
+量化脚本跟正常的量化脚本一样，可以参考：[w8a8精度调优策略](../user_guide/process_quantization_precision_tuning.md) 。
 本文以W4A16量化方式示例进行说明。需要注意的地方有三处:
 a.在离群值抑制配置（AntiOutlierConfig）中，a_bit和w_bit应根据量化方式进行设置。当anti_method被设置为"m3"时，代表使用AWQ算法；而对于GPTQ算法，则不需要使用离群值抑制模块，此时可以将相关配置注释掉。
 

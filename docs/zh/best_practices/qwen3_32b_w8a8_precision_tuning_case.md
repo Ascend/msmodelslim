@@ -160,7 +160,7 @@ Format your response as follows: "The correct answer is (insert answer here)"
 
 **1. 敏感层分析**
 
-使用msModelSlim提供的敏感层分析工具识别量化敏感层。详细使用方法请参考《[量化敏感层分析使用指南](../user_guide/usage_sensitive_layer_analysis.md)》。
+使用msModelSlim提供的敏感层分析工具识别量化敏感层。详细使用方法请参考《[线性层敏感层分析使用指南](../user_guide/usage_sensitive_linear_analysis.md)》。
 
 执行分析命令：
 
