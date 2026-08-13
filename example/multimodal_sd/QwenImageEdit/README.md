@@ -1,4 +1,4 @@
-﻿# Qwen Image Edit 量化使用说明
+# Qwen Image Edit 量化使用说明
 
 ## Qwen Image Edit 模型介绍
 
@@ -77,7 +77,7 @@ msmodelslim quant \
 
 与 W8A8 配置的主要差异：
 
-- **linear_quant**：采用 **DualScale** 双尺度量化（`scope: dual_scale`、`method: dualscale`），权重与激活均为 `mxfp4`，`dual_block_size` 为 512；详见 [DualScale 量化方案说明](../../../docs/zh/knowledge_base/quantization_algorithms/dual_scale/dual_scale.md)。
+- **linear_quant**：采用 **DualScale** 双尺度量化（`scope: dual_scale`、`method: dualscale`），权重与激活均为 `mxfp4`，`dual_block_size` 为 512；详见 [DualScale 量化方案说明](../../../docs/zh/knowledge_base/quantization_algorithms/dual_scale/term_dual_scale.md)。
 - **fa3_quant**：FA3 路径同样使用 `mxfp4`（`per_block` + `minmax`），与 W8A8 方案中的 `fp8_e4m3` 不同。
 
 ### 关键配置参数

@@ -76,7 +76,7 @@ msmodelslim analyze attn \
 
 | 可选指标 | 适用说明 | 算法说明 | 推荐 |
 | --- | --- | --- | --- |
-| `mse` | 浮点与量化权重下 attention 输出 MSE，用于 FA 量化回退 | 《[Attention MSE](../knowledge_base/quantization_algorithms/attention_mse/attention_mse.md)》 | **首选**（当前唯一可选） |
+| `mse` | 浮点与量化权重下 attention 输出 MSE，用于 FA 量化回退 | 《[Attention MSE](../knowledge_base/quantization_algorithms/attention_mse/term_attention_mse.md)》 | **首选**（当前唯一可选） |
 
 **输出**：已选定的 `${METRICS}`。
 

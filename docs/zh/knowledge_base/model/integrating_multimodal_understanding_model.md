@@ -646,7 +646,7 @@ class Qwen3VLMoeModelAdapter(VlmBaseModelAdapter,
         return adapter_config
 ```
 
-详见：[Iterative Smooth 适配](../quantization_algorithms/iterative_smooth/iterative_smooth.md#模型适配)
+详见：[Iterative Smooth 适配](../quantization_algorithms/iterative_smooth/term_iterative_smooth.md#4-模型适配接口)
 
 #### 支持QuaRot旋转离群值抑制算法
 
@@ -681,7 +681,7 @@ class Qwen3VLMoeModelAdapter(VlmBaseModelAdapter,
         pass
 ```
 
-详见：[QuaRot 适配](../quantization_algorithms/quarot/quarot.md#模型适配)
+详见：[QuaRot 适配](../quantization_algorithms/quarot/term_quarot.md#4-模型适配接口)
 
 ### 参考资料
 

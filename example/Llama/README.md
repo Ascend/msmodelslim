@@ -1,4 +1,4 @@
-﻿# LLaMA量化说明
+# LLaMA量化说明
 
 ## 模型介绍
 
@@ -171,7 +171,7 @@
 #### <span id="llama31-70b-w8a8量化搭配attention量化">LLaMA3.1-70B W8A8量化搭配Attention量化</span>
 
 - 当前仅支持基于BF16权重生成量化权重
-- 需修改`modeling_llama.py`文件和`config.json`文件，配置方法参考[FA量化使用说明](../../docs/zh/knowledge_base/quantization_algorithms/fa3_quant/fa3_quant.md)。
+- 需修改`modeling_llama.py`文件和`config.json`文件，配置方法参考[FA量化使用说明](../../docs/zh/knowledge_base/quantization_algorithms/fa3_quant/usage_fa3_quant.md)。
 - 相比于W8A8量化，需额外设置`use_fa_quant`参数为True
 
   ```shell

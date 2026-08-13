@@ -323,7 +323,7 @@ modelslim_v1是量化工具推出的新一代量化处理框架，目前正在�
 
 **执行顺序**: 按 `prior` 中阶段顺序依次执行，全部完成后再执行 `spec.process` 主流程。前置阶段与主流程共享同一模型实例，前置阶段可通过上下文（Context）将结果传给主流程中的处理器。
 
-**典型用法**: 使用 [Adapt Rotation](../knowledge_base/quantization_algorithms/adapt_rotation/adapt_rotation.md) 时，将 Stage1 放在 `prior` 的某一阶段的 `process` 中并配置该阶段的 `dataset`，将 Stage2 与后续量化放在 `spec.process` 中。示例见 Adapt Rotation 文档中的 YAML 配置示例。
+**典型用法**: 使用 [Adapt Rotation](../knowledge_base/quantization_algorithms/adapt_rotation/usage_adapt_rotation.md) 时，将 Stage1 放在 `prior` 的某一阶段的 `process` 中并配置该阶段的 `dataset`，将 Stage2 与后续量化放在 `spec.process` 中。示例见 Adapt Rotation 文档中的 YAML 配置示例。
 
 #### 5.2.4 process - 处理器配置字段
 
@@ -341,21 +341,21 @@ modelslim_v1是量化工具推出的新一代量化处理框架，目前正在�
 
 | 处理器 | 处理器类型 | 配置示例 | 配置字段详解 |
 | :--- | :--- | :--- | :--- |
-| SmoothQuant | 离群值抑制 | [SmoothQuant 配置示例](../knowledge_base/quantization_algorithms/smooth_quant/smooth_quant.md#yaml配置示例) | [配置字段详解](../knowledge_base/quantization_algorithms/smooth_quant/smooth_quant.md#yaml配置字段详解) |
-| Iterative Smooth | 离群值抑制 | [Iterative Smooth 配置示例](../knowledge_base/quantization_algorithms/iterative_smooth/iterative_smooth.md#yaml配置示例) | [配置字段详解](../knowledge_base/quantization_algorithms/iterative_smooth/iterative_smooth.md#yaml配置字段详解) |
-| Flex Smooth Quant | 离群值抑制 | [Flex Smooth Quant 配置示例](../knowledge_base/quantization_algorithms/flex_smooth_quant/flex_smooth_quant.md#yaml配置示例) | [配置字段详解](../knowledge_base/quantization_algorithms/flex_smooth_quant/flex_smooth_quant.md#yaml配置字段详解) |
-| Flex AWQ SSZ | 离群值抑制 | [Flex AWQ SSZ 配置示例](../knowledge_base/quantization_algorithms/flex_awq_ssz/flex_awq_ssz.md#yaml配置示例) | [配置字段详解](../knowledge_base/quantization_algorithms/flex_awq_ssz/flex_awq_ssz.md#yaml配置字段详解) |
-| AWQ | 离群值抑制 | [AWQ 配置示例](../knowledge_base/quantization_algorithms/awq_smooth/awq_smooth.md#yaml-配置示例) | [配置字段详解](../knowledge_base/quantization_algorithms/awq_smooth/awq_smooth.md#yaml-配置字段详解) |
-| KV Smooth | 离群值抑制 | [KV Smooth 配置示例](../knowledge_base/quantization_algorithms/kv_smooth/kv_smooth.md#yaml配置示例) | [KV Smooth 配置字段详解](../knowledge_base/quantization_algorithms/kv_smooth/kv_smooth.md#yaml配置字段详解) |
-| QuaRot | 离群值抑制 | [QuaRot 配置示例](../knowledge_base/quantization_algorithms/quarot/quarot.md#yaml配置示例) | [QuaRot 配置字段详解](../knowledge_base/quantization_algorithms/quarot/quarot.md#yaml配置字段详解) |
-| Adapt Rotation | 离群值抑制 | [Adapt Rotation 配置示例](../knowledge_base/quantization_algorithms/adapt_rotation/adapt_rotation.md#yaml-配置示例) | [配置字段详解](../knowledge_base/quantization_algorithms/adapt_rotation/adapt_rotation.md#yaml-配置字段详解) |
-| linear_quant | 量化 | [线性量化配置示例](../knowledge_base/quantization_algorithms/linear_quant/linear_quant.md#yaml配置示例) | [线性量化配置字段详解](../knowledge_base/quantization_algorithms/linear_quant/linear_quant.md#yaml配置字段详解) |
+| SmoothQuant | 离群值抑制 | [SmoothQuant 配置示例](../knowledge_base/quantization_algorithms/smooth_quant/usage_smooth_quant.md#步骤-1编写-yaml-配置文件) | [配置字段详解](../knowledge_base/quantization_algorithms/smooth_quant/usage_smooth_quant.md#步骤-1编写-yaml-配置文件) |
+| Iterative Smooth | 离群值抑制 | [Iterative Smooth 配置示例](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md#步骤-1编写-yaml-配置文件) | [配置字段详解](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md#步骤-1编写-yaml-配置文件) |
+| Flex Smooth Quant | 离群值抑制 | [Flex Smooth Quant 配置示例](../knowledge_base/quantization_algorithms/flex_smooth_quant/usage_flex_smooth_quant.md#步骤-1编写-yaml-配置文件) | [配置字段详解](../knowledge_base/quantization_algorithms/flex_smooth_quant/usage_flex_smooth_quant.md#步骤-1编写-yaml-配置文件) |
+| Flex AWQ SSZ | 离群值抑制 | [Flex AWQ SSZ 配置示例](../knowledge_base/quantization_algorithms/flex_awq_ssz/usage_flex_awq_ssz.md#步骤-1编写-yaml-配置文件) | [配置字段详解](../knowledge_base/quantization_algorithms/flex_awq_ssz/usage_flex_awq_ssz.md#步骤-1编写-yaml-配置文件) |
+| AWQ | 离群值抑制 | [AWQ 配置示例](../knowledge_base/quantization_algorithms/awq_smooth/usage_awq_smooth.md#步骤-1编写-yaml-配置文件) | [配置字段详解](../knowledge_base/quantization_algorithms/awq_smooth/usage_awq_smooth.md#步骤-1编写-yaml-配置文件) |
+| KV Smooth | 离群值抑制 | [KV Smooth 配置示例](../knowledge_base/quantization_algorithms/kv_smooth/usage_kv_smooth.md#步骤-1编写-yaml-配置文件) | [KV Smooth 配置字段详解](../knowledge_base/quantization_algorithms/kv_smooth/usage_kv_smooth.md#步骤-1编写-yaml-配置文件) |
+| QuaRot | 离群值抑制 | [QuaRot 配置示例](../knowledge_base/quantization_algorithms/quarot/usage_quarot.md#步骤-1编写-yaml-配置文件) | [QuaRot 配置字段详解](../knowledge_base/quantization_algorithms/quarot/usage_quarot.md#步骤-1编写-yaml-配置文件) |
+| Adapt Rotation | 离群值抑制 | [Adapt Rotation 配置示例](../knowledge_base/quantization_algorithms/adapt_rotation/usage_adapt_rotation.md#步骤-1确认适配器实现分析接口) | [配置字段详解](../knowledge_base/quantization_algorithms/adapt_rotation/usage_adapt_rotation.md#步骤-1确认适配器实现分析接口) |
+| linear_quant | 量化 | [线性量化配置示例](../knowledge_base/quantization_algorithms/linear_quant/usage_linear_quant.md#步骤-1编写-yaml-配置文件) | [线性量化配置字段详解](../knowledge_base/quantization_algorithms/linear_quant/usage_linear_quant.md#步骤-1编写-yaml-配置文件) |
 | group | 量化 | [group 配置示例](../api_reference/config/processor_group.md#42-yaml配置示例) | [group 配置字段详解](../api_reference/config/processor_group.md#43-yaml配置字段详解) |
-| KVCache Quant | 量化 | [KVCache Quant 配置示例](../knowledge_base/quantization_algorithms/kvcache_quant/kvcache_quant.md#yaml配置示例) | [KVCache Quant 配置字段详解](../knowledge_base/quantization_algorithms/kvcache_quant/kvcache_quant.md#yaml配置字段详解) |
-| FA3 Quant | 量化 | [FA3 Quant 配置示例](../knowledge_base/quantization_algorithms/fa3_quant/fa3_quant.md#yaml配置示例) | [FA3 Quant 配置字段详解](../knowledge_base/quantization_algorithms/fa3_quant/fa3_quant.md#yaml配置字段详解) |
-| Float Sparse | 量化 | [Float Sparse 配置示例](../knowledge_base/quantization_algorithms/float_sparse/float_sparse.md#yaml配置示例) | [Float Sparse 配置字段详解](../knowledge_base/quantization_algorithms/float_sparse/float_sparse.md#yaml配置字段详解) |
-| AutoRound | 量化 | [AutoRound 配置示例](../knowledge_base/quantization_algorithms/autoround/autoround.md#yaml配置示例) | [AutoRound 配置字段详解](../knowledge_base/quantization_algorithms/autoround/autoround.md#yaml配置字段详解) |
-| SVDQuant (W4A4方案) | 综合方案 | [SVDQuant 配置示例](../knowledge_base/quantization_algorithms/svdquant/svdquant.md#yaml配置示例) | [SVDQuant 配置字段详解](../knowledge_base/quantization_algorithms/svdquant/svdquant.md#yaml配置字段详解) |
+| KVCache Quant | 量化 | [KVCache Quant 配置示例](../knowledge_base/quantization_algorithms/kvcache_quant/usage_kvcache_quant.md#步骤-1编写-yaml-配置文件) | [KVCache Quant 配置字段详解](../knowledge_base/quantization_algorithms/kvcache_quant/usage_kvcache_quant.md#步骤-1编写-yaml-配置文件) |
+| FA3 Quant | 量化 | [FA3 Quant 配置示例](../knowledge_base/quantization_algorithms/fa3_quant/usage_fa3_quant.md#步骤-1编写-yaml-配置文件) | [FA3 Quant 配置字段详解](../knowledge_base/quantization_algorithms/fa3_quant/usage_fa3_quant.md#步骤-1编写-yaml-配置文件) |
+| Float Sparse | 量化 | [Float Sparse 配置示例](../knowledge_base/quantization_algorithms/float_sparse/usage_float_sparse.md#步骤-1修改模型并编写-yaml-配置文件) | [Float Sparse 配置字段详解](../knowledge_base/quantization_algorithms/float_sparse/usage_float_sparse.md#步骤-1修改模型并编写-yaml-配置文件) |
+| AutoRound | 量化 | [AutoRound 配置示例](../knowledge_base/quantization_algorithms/autoround/usage_autoround.md#步骤-1编写-yaml-配置文件) | [AutoRound 配置字段详解](../knowledge_base/quantization_algorithms/autoround/usage_autoround.md#步骤-1编写-yaml-配置文件) |
+| SVDQuant (W4A4方案) | 综合方案 | [SVDQuant 配置示例](../knowledge_base/quantization_algorithms/svdquant/usage_svdquant.md#步骤-1编写-yaml-配置文件) | [SVDQuant 配置字段详解](../knowledge_base/quantization_algorithms/svdquant/usage_svdquant.md#步骤-1编写-yaml-配置文件) |
 
 #### 5.2.5 save - 保存器配置字段
 

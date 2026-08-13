@@ -77,9 +77,9 @@ msmodelslim analyze linear \
 
 | 可选指标 | 适用说明 | 算法说明 | 推荐 |
 | --- | --- | --- | --- |
-| `kurtosis` | 关注激活尖峰与尾部，辅助回退或混精 | 《[Kurtosis](../knowledge_base/quantization_algorithms/kurtosis/kurtosis.md)》 | **首选** |
-| `quantile` | 激活离群较多，希望降低离群点主导 | 《[Quantile](../knowledge_base/quantization_algorithms/quantile/quantile.md)》 | 按需配合 |
-| `std` | 关注动态范围与离散度比值，做线性层粗筛 | 《[Std](../knowledge_base/quantization_algorithms/std/std.md)》 | 按需配合 |
+| `kurtosis` | 关注激活尖峰与尾部，辅助回退或混精 | 《[Kurtosis](../knowledge_base/quantization_algorithms/kurtosis/term_kurtosis.md)》
+| `quantile` | 激活离群较多，希望降低离群点主导 | 《[Quantile](../knowledge_base/quantization_algorithms/quantile/term_quantile.md)》 | 按需配合 |
+| `std` | 关注动态范围与离散度比值，做线性层粗筛 | 《[Std](../knowledge_base/quantization_algorithms/std/term_std.md)》 | 按需配合 |
 
 **输出**：已选定的 `${METRICS}`。
 
