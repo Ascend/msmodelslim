@@ -36,7 +36,7 @@
 
 ## 校准数据说明
 
-校准数据支持的方式，详见《[dataset 配置说明](../../../docs/zh/user_guide/usage_quick_quantization.md#dataset---校准数据路径配置)》。
+校准数据支持的方式，详见《[dataset 配置说明](../../../docs/zh/user_guide/usage_quick_quantization.md#526-dataset---校准数据集配置)》。
 
 - **当前 W8A8 动态实践（`gemma4_moe_w8a8.yaml`）**：data-free，可不依赖校准前向。
 - **混合/静态激活量化**：每条样本需同时提供 `image` 与 `text`；缺项样本暂不支持。

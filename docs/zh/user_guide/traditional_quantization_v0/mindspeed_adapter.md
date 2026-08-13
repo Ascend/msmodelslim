@@ -31,7 +31,7 @@ pip3 install tqdm==4.66.1
 
 ## 5. 量化步骤（以llama2-7b legacy为例）
 
-1.获取开源权重，转化为MindSpeed-LLM支持的模型，可以使用MindSpeed-LLM的权重[转化脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/convert_ckpt.py)，[此处有转化脚本使用教程](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/zh/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)
+1.获取开源权重，转化为MindSpeed-LLM支持的模型，可以使用MindSpeed-LLM的权重[转化脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/mindspore/convert_ckpt.py)，[此处有转化脚本使用教程](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/zh/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)
 
 ```bash
 python convert_ckpt.py \

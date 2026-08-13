@@ -2,7 +2,7 @@
 
 ## 模型介绍
 
-- [腾讯混元 Hy3](https://www.tencent.com.cn/zh-cn/articles/2202386.html) 于 2026 年正式发布，是混元团队在 Hy3 preview 之后推出的正式版本。相比 preview，Hy3 在智能水平、稳定性与成本效益上均有显著提升，智能水平强于同尺寸模型，并可比肩参数规模为 2～5 倍的旗舰模型。
+- [腾讯混元 Hy3](https://www.tencent.com/zh-cn/tencent-hunyuan-officially-releases-hy3-advancing-agent-capabilities-and-deeper-product-integration) 于 2026 年正式发布，是混元团队在 Hy3 preview 之后推出的正式版本。相比 preview，Hy3 在智能水平、稳定性与成本效益上均有显著提升，智能水平强于同尺寸模型，并可比肩参数规模为 2～5 倍的旗舰模型。
 
 - Hy3 是一款**快慢思考融合**的大语言模型，采用 **混合专家（MoE）** 架构，总参数量约 295B、激活参数量约 21B，支持 256K 上下文长度。模型在复杂推理、指令遵循、上下文学习、代码生成与 Agent 能力上表现突出，尤其适用于软件开发、办公生产、金融建模、前端设计、游戏制作等生产力场景。
 
