@@ -20,6 +20,8 @@
 <br><br>
 </div>
 
+[简体中文](./README.md) | English
+
 <a id="What's New"></a>
 
 ## 🔥 What's New

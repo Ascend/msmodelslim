@@ -31,7 +31,7 @@ Currently, the model adapter is verified to support only w8a8 quantization, alon
 
 ## Quantization Procedure (Using LLaMA2-7B Legacy as an Example)
 
-1. Obtain the open-source weights and convert them into a model supported by MindSpeed-LLM. You can use the MindSpeed-LLM [weight conversion script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/convert_ckpt.py). A conversion script usage tutorial is available [Weight Conversion](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/docs/en/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md).
+1. Obtain the open-source weights and convert them into a model supported by MindSpeed-LLM. You can use the MindSpeed-LLM [weight conversion script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/convert_ckpt.py). A conversion script usage tutorial is available [Weight Conversion](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/docs/en/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md).
 
     ```bash
     python convert_ckpt.py \

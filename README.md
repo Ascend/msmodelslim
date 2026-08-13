@@ -19,6 +19,8 @@
 <br><br>
 </div>
 
+[English](./README_EN.md) | 简体中文
+
 <a id="最新消息"></a>
 
 ## 🔥 最新消息
