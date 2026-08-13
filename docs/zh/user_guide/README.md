@@ -61,7 +61,7 @@
 一键量化基于 msModelSlim 最佳实践库，自动匹配最优配置，并通过 YAML 自由组合量化流水线。除命令行参数外，还支持：
 
 - **多种量化算法**：离群值抑制、线性量化、KV Cache、FA3 等，算法总览与配置字段详见《[量化算法说明](../knowledge_base/quantization_algorithms/README.md)》。
-- **多种导出格式**：AscendV1、compressed-tensors、MindIE-SD 等，格式选型与兼容性详见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》。
+- **多种导出格式**：AscendV1、compressed-tensors、MindIE-SD 等，格式选型与兼容性详见《[量化格式](../knowledge_base/quantization_format/README.md)》。
 
 详细使用方法请参见《[一键量化使用指南](usage_quick_quantization.md)》。
 

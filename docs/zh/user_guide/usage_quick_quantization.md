@@ -140,7 +140,7 @@ msmodelslim quant \
 
 ### 3.4 输出说明
 
-一键量化生成的结果文件及其说明详见[一键量化生成结果](../knowledge_base/quantization_format/ascendv1/ascendv1.md)。
+一键量化生成的结果文件及其说明详见《[AscendV1](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md)》；配置与执行见《[AscendV1 使用指南](../knowledge_base/quantization_format/ascendv1/ascendv1_usage.md)》。
 
 ## 4. 高级特性
 
@@ -359,7 +359,7 @@ modelslim_v1是量化工具推出的新一代量化处理框架，目前正在�
 
 #### 5.2.5 save - 保存器配置字段
 
-**作用**: 定义量化结果的保存器列表。modelslim_v1 当前支持 `ascendv1_saver`（昇腾推理，默认）、`compressed_tensors`（vLLM 等 HF 生态）两种保存器，格式对比请参见《[格式支持矩阵](../knowledge_base/quantization_format/README.md)》。
+**作用**: 定义量化结果的保存器列表。modelslim_v1 当前支持 `ascendv1_saver`（昇腾推理，默认）、`compressed_tensors`（vLLM 等 HF 生态）、`mindie_format_saver`（多模态生成 MindIE-SD）等保存器，格式对比请参见《[量化格式](../knowledge_base/quantization_format/README.md)》格式地图。
 
 ##### 5.2.5.1 ascendv1_saver
 
@@ -383,7 +383,7 @@ spec:
 
 ##### 5.2.5.2 compressed_tensors
 
-**作用**: 保存为 [compressed-tensors](../knowledge_base/quantization_format/compressed_tensors/compressed_tensors.md) 格式，面向 HuggingFace 生态推理框架（如 vLLM）。量化元数据写入 `config.json` 的 `quantization_config` 字段，权重写入 `model*.safetensors`。
+**作用**: 保存为 [compressed-tensors](../knowledge_base/quantization_format/compressed_tensors/term_compressed_tensors.md) 格式，面向 HuggingFace 生态推理框架（如 vLLM）。量化元数据写入 `config.json` 的 `quantization_config` 字段，权重写入 `model*.safetensors`。配置与执行见《[compressed-tensors 使用指南](../knowledge_base/quantization_format/compressed_tensors/compressed_tensors_usage.md)》。
 
 **适用场景**:
 
@@ -411,7 +411,7 @@ spec:
 - 当前仅支持线性层量化，不支持 KV Cache 量化。
 - 不支持分布式导出。
 
-格式协议与张量命名请参见《[compressed-tensors 格式说明](../knowledge_base/quantization_format/compressed_tensors/compressed_tensors.md)》。
+格式协议与张量命名请参见《[compressed-tensors](../knowledge_base/quantization_format/compressed_tensors/term_compressed_tensors.md)》；使用步骤见《[compressed-tensors 使用指南](../knowledge_base/quantization_format/compressed_tensors/compressed_tensors_usage.md)》。
 
 **完整配置示例**（W8A8 静态量化 + compressed-tensors 保存）:
 
@@ -577,7 +577,7 @@ multimodal_sd_modelslim_v1 面向文生视频 / 图生视频等多模态**生成
 
 ##### 5.3.4.1 mindie_format_saver
 
-**作用**: 保存为MindIE-SD格式，专为多模态生成模型设计。
+**作用**: 保存为MindIE-SD格式，专为多模态生成模型设计。词条与使用指南见《[MindIE-SD](../knowledge_base/quantization_format/mindie_sd/term_mindie_sd.md)》、《[MindIE-SD 使用指南](../knowledge_base/quantization_format/mindie_sd/mindie_sd_usage.md)》。
 
 **配置示例**:
 

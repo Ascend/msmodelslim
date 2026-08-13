@@ -1,50 +1,59 @@
 # 量化格式接入指南
 
-## 简介
+## 1. 适用范围
 
-本文档面向需要将**新量化落盘格式**接入 msModelSlim 的外部开发者。以 `compressed_tensors` 为完整 1-shot 示例，说明如何基于 `IFormat` 协议实现格式导出，并通过 YAML 配置启用。
+本流程面向需要将**新量化落盘格式**接入 msModelSlim 的外部开发者与维护者。以 `compressed_tensors` 为完整 1-shot 示例，说明如何基于 `IFormat` 协议实现格式导出，并通过 YAML 配置启用。
 
-> 格式选型请参见《[格式支持矩阵](README.md)》。AscendV1、MindIE 等旧格式走 Legacy Saver 路径，不在本文档范围内。
+不适用：仅消费已有格式的用户（请先阅读《[量化格式](README.md)》地图并跳转对应使用指南）。
 
-## 导出生命周期
+## 2. 流程关系与前置条件
+
+**上级流程**：开源贡献 / 新格式需求评审通过后。
+
+**前置条件**：
+
+- 已阅读《[量化格式](README.md)》并确认需新增格式（而非扩展既有 handler）
+- 已明确目标推理框架的加载约定（张量命名与元数据 schema）
+
+**后续操作**：合入后更新《[量化格式](README.md)》格式地图词条与使用指南；按《[资料规范](../../contributing/development_guide/docs_standards/README.md)》及 docs-management 场景《[新建量化格式资料](../../../../skills/docs-management/scenarios/add-quantization-format.md)》（`add-quantization-format`）补齐文档。
+
+## 3. 输入和交付件
+
+| 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
+| --- | --- | --- | --- | --- |
+| 输入 | 目标格式规范 | 上游项目或内部 RFC | 张量键名、dtype、元数据字段可核对 | 与推理侧加载文档对照 |
+| 输入 | QIR 模块类型列表 | `msmodelslim/ir` | 需实现 handler 的 FakeQuant 类型 | 列出模块类名 |
+| 交付件 | IFormat 实现与 Config | `msmodelslim/format/<name>/` | 注册进 `QuantFormatFactory` / Union | 单测通过 |
+| 交付件 | YAML 可启用的 `type` | 一键量化 `spec.save` | 与 Config `Literal` 一致 | 配置反序列化成功 |
+| 交付件 | 单元测试 | `test/cases/format/` | 覆盖张量键与元数据 | CI / 本地断言通过 |
+
+## 4. 流程总览
 
 `IFormat` 协议定义了三段式导出流程：
 
 ```mermaid
 flowchart LR
-  prepareExport["prepare_export()"] --> traverse["process_module_tensors()"]
-  traverse --> finalize["finalize_export()"]
+  prepareExport["prepare_export"] --> traverse["process_module_tensors"]
+  traverse --> finalize["finalize_export"]
 ```
 
-## IFormat 协议接口
+## 5. 操作步骤
 
-定义于 [`msmodelslim/format/interface.py`](../../../../msmodelslim/format/interface.py)：
+### 步骤 1：适配协议与基类
+
+**目标**：理解 `IFormat` / `ExportContext` / `QuantFormatBase` 职责边界。
+
+**操作**：阅读 [`msmodelslim/format/interface.py`](../../../../msmodelslim/format/interface.py) 与 [`msmodelslim/format/base.py`](../../../../msmodelslim/format/base.py)。
 
 | 方法 | 是否必须实现 | 职责 |
-|------|-------------|------|
+| --- | --- | --- |
 | `prepare_export()` | 否（默认空实现） | 量化前准备 |
 | `process_module_tensors(prefix, module)` | **是** | 导出模块子树内的量化张量及量化描述信息 |
 | `finalize_export(model)` | **是** | 收尾：关闭 writer、写入全模型元数据 |
 
-### ExportContext
+`ExportContext` 字段：`save_directory`、`source_model_path`、`rank` / `world_size`。
 
-导出运行时环境，由框架在构造 `IFormat` 实例时注入：
-
-| 字段 | 说明 |
-|------|------|
-| `save_directory` | 输出目录 |
-| `source_model_path` | 源模型路径（用于复制 HF 辅助文件） |
-| `rank` / `world_size` | 分布式 rank 信息 |
-
-### QuantFormatBase（推荐基类）
-
-继承 [`QuantFormatBase`](../../../../msmodelslim/format/base.py) 可自动获得：
-
-- 模块树遍历（`named_modules` + `processed_modules` 去重）
-- `WrapperIR` 原子/非原子处理
-- handler 映射分发
-
-子类需实现：
+继承 `QuantFormatBase` 可自动获得模块树遍历、`WrapperIR` 处理与 handler 映射分发。子类需实现：
 
 ```python
 def build_module_handler_map(self) -> Dict[Type[nn.Module], ModuleHandler]:
@@ -56,15 +65,11 @@ def on_float_module(self, prefix: str, module: nn.Module) -> None:
     ...
 ```
 
-未在 handler map 中注册的模块类型，会由基类自动调用 `on_float_module()`。也可在 map 中显式注册 `nn.Module: self.on_float_module` 作为兜底 handler。
+**输出**：选定基类与需支持的 QIR 类型清单。
 
-## 五步接入流程
+### 步骤 2：定义 Config 类
 
-以下以 `compressed_tensors` 为 1-shot 示例。
-
-### 步骤 1：定义 Config 类
-
-继承 `QuantFormatConfig`，设置唯一的 `type` Literal：
+**操作**：继承 `QuantFormatConfig`，设置唯一的 `type` Literal：
 
 ```python
 from typing import Literal
@@ -77,7 +82,11 @@ class MyQuantFormatConfig(QuantFormatConfig):
 
 参考：[`CompressedTensorsQuantFormatConfig`](../../../../msmodelslim/format/compressed_tensors_format/compressed_tensors.py)
 
-### 步骤 2：实现 IFormat 子类
+**输出**：Config 类源文件。
+
+### 步骤 3：实现 IFormat 子类
+
+**操作**：实现 handler 与三段生命周期。最小示意：
 
 ```python
 from typing import Dict, Type
@@ -91,7 +100,6 @@ from msmodelslim.format.base import QuantFormatBase, ModuleHandler
 
 class MyQuantFormat(QuantFormatBase):
     def prepare_export(self) -> None:
-        # 创建 safetensors writer 等
         self.safetensors_writer = ...
 
     def build_module_handler_map(self) -> Dict[Type[nn.Module], ModuleHandler]:
@@ -102,7 +110,6 @@ class MyQuantFormat(QuantFormatBase):
         }
 
     def finalize_export(self, model: nn.Module) -> None:
-        # 写入 config.json、关闭 writer
         try:
             ...
         finally:
@@ -127,9 +134,18 @@ class MyQuantFormat(QuantFormatBase):
 
 参考：[`CompressedTensorsQuantFormat`](../../../../msmodelslim/format/compressed_tensors_format/compressed_tensors.py)
 
-### 步骤 3：注册格式绑定
+**Handler 编写要点**：
 
-在 [`msmodelslim/format/registry.py`](../../../../msmodelslim/format/registry.py) 中注册：
+- 每种 QIR 量化模块类型需对应一个 handler。
+- `WrapperIR`：非原子性先处理被包装模块再处理包装器；原子性只处理包装器。
+- 未注册模块类型默认 `on_float_module()`。
+- 推荐在 `finalize_export()` 中扫描 QIR 反向推导元数据（如 compressed-tensors 的 `quantization_config`）。
+
+**输出**：Format 实现类。
+
+### 步骤 4：注册格式绑定与 YAML 联合类型
+
+**操作**：在 [`msmodelslim/format/registry.py`](../../../../msmodelslim/format/registry.py) 注册，并将 Config 加入 `QuantFormatConfigUnion`：
 
 ```python
 class QuantFormatFactory:
@@ -139,16 +155,12 @@ class QuantFormatFactory:
     )
 ```
 
-或运行时调用：
+或运行时：
 
 ```python
 from msmodelslim.processor.save.registry import register_quant_format
 register_quant_format(MyQuantFormatConfig, MyQuantFormat)
 ```
-
-### 步骤 4：加入 YAML 联合类型
-
-在 [`QuantFormatConfigUnion`](../../../../msmodelslim/format/registry.py) 中加入新 Config 类，使 Pydantic 能按 `type` 字段反序列化：
 
 ```python
 QuantFormatConfigUnion = Annotated[
@@ -162,70 +174,50 @@ QuantFormatConfigUnion = Annotated[
 ]
 ```
 
-`import msmodelslim.format` 时会自动执行 `QuantFormatFactory.install()` 完成注册。
+`import msmodelslim.format` 时会自动执行安装注册。
 
-### 步骤 5：YAML 配置启用
+**输出**：可被 Pydantic 按 `type` 反序列化的配置绑定。
 
-```yaml
-spec:
-  save:
-    - type: "my_format"
-      part_file_size: 4
-```
+### 步骤 5：配置启用、测试与资料同步
 
-## Handler 编写要点
+**操作**：
 
-### QIR 模块映射
+1. YAML 启用：
 
-每种 QIR 量化模块类型需对应一个 handler，负责将模块参数写入目标格式：
+   ```yaml
+   spec:
+     save:
+       - type: "my_format"
+         part_file_size: 4
+   ```
 
-```python
-def build_module_handler_map(self):
-    return {
-        qir.W8A8StaticFakeQuantLinear: self.on_w8a8_static,
-        qir.W8A8DynamicPerChannelFakeQuantLinear: self.on_w8a8_dynamic,
-        nn.Linear: self.on_float_linear,
-        nn.Module: self.on_float_module,
-    }
-```
+2. 参考 [`test/cases/format/compressed_tensors_format/`](../../../../test/cases/format/compressed_tensors_format)：实现 Mock writer、构造最小 QIR 模型、调用三段生命周期并断言键名 / dtype / 元数据。
 
-### WrapperIR 处理
+3. 按资料标准在 `docs/zh/knowledge_base/quantization_format/<format_name>/` 新增词条与使用指南，并在《[量化格式](README.md)》地图登记链接。
 
-`QuantFormatBase` 自动处理 `WrapperIR`：
+**输出**：可运行导出、通过单测、文档地图可导航。
 
-- **非原子性**（`is_atomic() = False`）：先处理被包装模块，再处理包装器
-- **原子性**（`is_atomic() = True`）：只处理包装器，跳过被包装模块
+**通过条件**：配置可解析；单测断言通过；地图存在新格式词条与使用指南链接。
 
-### 未量化层 Fallback
+## 6. 验收条件
 
-未在 handler map 中注册的模块类型，默认调用 `on_float_module()`，遍历 `named_parameters` 直接写入原始参数。
+- 仅外部脚本导出、未注册进 msModelSlim 配置与工厂，不视为接入完成。
+- 缺少对关键 QIR 类型的 handler 或元数据写入失败，不得合入。
+- 文档未登记到格式地图时，资料验收不通过。
 
-### 元数据反向推导
+## 9. 术语
 
-推荐在 `finalize_export()` 中扫描模型 QIR 模块，反向推导格式元数据（如 compressed-tensors 的 `config.json` → `quantization_config`），而非在 handler 中逐层累积。
+| 术语 | 简述 | 链接 |
+| --- | --- | --- |
+| 量化格式 | 落盘与加载协议 | 《[量化格式](README.md)》 |
+| compressed-tensors | 1-shot 参考格式 | 《[compressed-tensors](compressed_tensors/term_compressed_tensors.md)》 |
+| AscendV1 | 昇腾默认格式（对照） | 《[AscendV1](ascendv1/term_ascendv1.md)》 |
 
-## 测试与验证
+## 10. 接口文档列表
 
-参考 [`test/cases/format/compressed_tensors_format/`](../../../../test/cases/format/compressed_tensors_format)：
-
-1. 实现 `MockSafetensorsWriter` 内存 writer
-2. 构造最小 QIR 模型（W8A8 Static / Dynamic）
-3. 调用 `prepare_export()` → `process_module_tensors()` → `finalize_export()`
-4. 断言 safetensors 张量键名、dtype、shape 与 config 元数据
-
-## 完整参考实现
-
-| 组件 | 路径 |
-|------|------|
-| IFormat 协议 | [`msmodelslim/format/interface.py`](../../../../msmodelslim/format/interface.py) |
-| QuantFormatBase | [`msmodelslim/format/base.py`](../../../../msmodelslim/format/base.py) |
-| 注册表 | [`msmodelslim/format/registry.py`](../../../../msmodelslim/format/registry.py) |
-| 保存处理器 | [`msmodelslim/processor/save/processor.py`](../../../../msmodelslim/processor/save/processor.py) |
-| compressed-tensors 实现 | [`msmodelslim/format/compressed_tensors_format/`](../../../../msmodelslim/format/compressed_tensors_format) |
-| 单元测试 | [`test/cases/format/compressed_tensors_format/`](../../../../test/cases/format/compressed_tensors_format) |
-
-## 相关文档
-
-- 《[格式支持矩阵](README.md)》
-- 《[compressed-tensors 格式说明](compressed_tensors/compressed_tensors.md)》 — 1-shot 参考实现的目标格式
-- 《[AscendV1 格式说明](ascendv1/ascendv1.md)》 — Legacy 格式对比参考
+| 接口或能力 | 简述 | 链接 |
+| --- | --- | --- |
+| IFormat | 导出协议 | [`msmodelslim/format/interface.py`](../../../../msmodelslim/format/interface.py) |
+| QuantFormatBase | 推荐基类 | [`msmodelslim/format/base.py`](../../../../msmodelslim/format/base.py) |
+| 注册表 | Config 联合类型与工厂 | [`msmodelslim/format/registry.py`](../../../../msmodelslim/format/registry.py) |
+| 保存处理器 | 调用导出 | [`msmodelslim/processor/save/processor.py`](../../../../msmodelslim/processor/save/processor.py) |

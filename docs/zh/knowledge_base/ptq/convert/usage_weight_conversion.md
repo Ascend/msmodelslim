@@ -174,7 +174,10 @@ msmodelslim quant \
 
 ### 步骤 4：验证转换结果
 
-**目标**：确认转换后权重文件完整且可加载。
+| save.type | 典型目标 IR | 输出特征 |
+|-----------|-------------|----------|
+| `ascend_v1` | `W8A8_MXFP8` | 生成 `quant_model_description.json`、`quant_model_weights*.safetensors` 等 AscendV1 量化权重，详见《[一键量化生成结果](../../quantization_format/ascendv1/term_ascendv1.md)》 |
+| `huggingface` / `compressed_tensors` | `FLOAT` | 生成 HF 风格 `config.json`、`model*.safetensors` 等，权重为 BF16 浮点 |
 
 **操作**：
 
@@ -465,7 +468,9 @@ spec:
 - 转换后权重可被目标推理框架成功加载。
 - 精度评估结果在可接受范围内。
 
-## 8. 异常处置
+- 一键量化总体流程与常规量化配置：《[一键量化完整指南](usage.md)》
+- AscendV1 量化权重文件说明：《[一键量化生成结果](../../quantization_format/ascendv1/term_ascendv1.md)》
+- 格式支持矩阵：《[格式支持矩阵](../../quantization_format/README.md)》
 
 - **配置校验失败**：检查 YAML 中 `apiversion` 是否为 `modelslim_convert`，`spec` 字段是否完整。
 - **转换失败**：检查 `linears.match` 中的模块路径是否与 checkpoint 中的 key 匹配。
