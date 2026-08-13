@@ -7,4 +7,4 @@
 | `tuning_strategies` | 《[调优策略](tuning_strategies/README.md)》 |
 | `quantization_format` | 《[量化格式](quantization_format/README.md)》 |
 | `ptq` | 《[训练后量化](ptq/convert/usage.md)》 |
-| `parallel` | 《[多卡并行](parallel/multi-card_quantization_adaptation.md)》 |
+| `parallel` | 《[多卡并行](parallel/README.md)》|
