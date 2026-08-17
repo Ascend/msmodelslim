@@ -77,7 +77,6 @@ spec:
           include:
             - "*self_attn*"
           exclude:
-            - "model.layers.78.*"
             - "*kv_b_proj"
             - "*wk"
             - "*weights_proj"
@@ -86,7 +85,6 @@ spec:
           include:
             - "*mlp*"
           exclude:
-            - "model.layers.78.*"
             - "*gate"
 
   dataset: mix_calib.jsonl

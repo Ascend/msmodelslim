@@ -109,7 +109,6 @@ spec:
           include:
             - "*self_attn*"
           exclude:
-            - "model.layers.78.*"
             - "*kv_b_proj"
             - "*wk"
             - "*weights_proj"
@@ -118,15 +117,12 @@ spec:
           include:
             - "*mlp*"
           exclude:
-            - "model.layers.78.*"
             - "*gate"
             - "*mlp.experts.*"
         - type: "linear_quant"
           qconfig: *default_w4a8_dynamic
           include:
             - "*mlp.experts.*"
-          exclude:
-            - "model.layers.78.*"
 
   dataset: mix_calib.jsonl
   save:
