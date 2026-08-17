@@ -39,7 +39,7 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 | **Float Sparse** | 稀疏化 | 基于 ADMM 算法实现模型浮点 sparse | 高压缩率需求 | [词条](float_sparse/term_float_sparse.md) | [使用指南](float_sparse/usage_float_sparse.md) |
 | **SVDQuant** | 综合方案 | 离群值迁移 + SVD 低秩残差 + 残差量化 | 扩散模型等低比特量化 | [词条](svdquant/term_svdquant.md) | [使用指南](svdquant/usage_svdquant.md) |
 | **MSE_Round** | 权重量化 | 按 block 在 ceil/floor shared exponent 间按 MSE 择优 | MXFP8 权重量化精度优化 | [词条](mse_round/term_mse_round.md) | [使用指南](mse_round/usage_mse_round.md) |
-| **FouroverSix** | 权重量化 | 自适应选择块缩放（Scale-to-6 / Scale-to-4） | mxFP4 量化误差优化 | [词条](fouroversix/term_fouroversix.md) | [使用指南](fouroversix/usage_fouroversix.md) |
+| **FouroverSix** | 权重量化 | 自适应选择块缩放（Scale-to-6 / Scale-to-4） | MXFP4 量化误差优化 | [词条](fouroversix/term_fouroversix.md) | [使用指南](fouroversix/usage_fouroversix.md) |
 | **Ceil_X** | 权重量化 | ceil + 可配置除数计算 shared exponent | MXFP4 大值截断抑制 | [词条](ceil_x/term_ceil_x.md) | [使用指南](ceil_x/usage_ceil_x.md) |
 | **DualScale** | 权重量化 | 两级粒度递进缩放，缓解异常通道 | W4A4 等低比特场景 | [词条](dual_scale/term_dual_scale.md) | [使用指南](dual_scale/usage_dual_scale.md) |
 
@@ -58,8 +58,25 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 
 ## 算法选择建议
 
-- **初学者**：建议优先使用《[一键量化 (V1)](../../user_guide/usage_quick_quantization.md)》，它会自动集成合适的算法组合。
-- **敏感层与回退**：在定稿 YAML 前可按 scope 选用《[线性层敏感层分析使用指南](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级敏感层分析使用指南](../../user_guide/usage_sensitive_layer_wise_analysis.md)》或《[Attention 敏感层分析使用指南](../../user_guide/usage_sensitive_attn_analysis.md)》，结合上表 metrics 做层/结构排序；`linear`可首选**Kurtosis**，`layer`可优先**mse_layer_wise**。
-- **自动调优**：精度不达标且希望自动搜索配置时，参见《[自动调优策略总览](../tuning_strategies/README.md)》。
-- **追求极致精度**：可以尝试组合使用 **QuaRot** + **AutoRound**。
-- **长序列推理**：推荐开启 **FA3 Quant** 和 **KVCache Quant**。
+初学者可优先使用《[一键量化 (V1)](../../user_guide/usage_quick_quantization.md)》，自动集成已验证的算法组合。需要自动搜索配置时，参见《[自动调优策略总览](../tuning_strategies/README.md)》。实践配置亦可参考 `lab_practice/` 下对应 YAML。
+
+### 量化算法
+
+- **W8A8**：最常用 **MinMax**——统计最大最小值确定量化范围，计算开销低，适合作为默认起步方案。
+- **W4A8**：权重侧用 **SSZ** 迭代搜索缩放因子与偏移，激活 A8 仍用 **MinMax**，二者配合使用。
+- **W4A4 MXFP**：优先 **Ceil_X**，用 ceil + 可配置除数收紧 shared exponent，抑制 floor 缩放带来的大值截断。
+- **W4A4（INT / MXFP）**：可选用基于训练的 **AutoRound** 进一步抬精度，INT 与 MXFP 均支持；但对算力要求更高，量化耗时通常成倍高于其他大多数算法，选用时需权衡资源与时延。
+- **长序列 / C8**：产品上将 **KVCache Quant** 与 **FA3 Quant** 都纳入 C8。前者量化写入缓存的 Key/Value，专攻缩小 KV Cache、缓解推理显存压力；后者量化 Attention 路径上的 Q/K/V 激活以加速 attention 运算（仅支持 MLA）。二者机制不同，实践中一般只开其一，按显存或算力瓶颈选择。
+
+### 离群值抑制算法
+
+- 常用 **Flex Smooth Quant** 与 **QuaRot**：可独立使用，也可串联叠加。前者二阶段网格搜索 alpha / beta，适配面广；后者正交旋转平滑激活离群，精度收益往往更明显，但对模型适配要求更高。
+- **Flex AWQ SSZ** 在 4bit 低精场景下效果较好，但搜索相对较慢，适合精度优先、可接受更长量化时间的场景。
+
+### 敏感层分析
+
+当前敏感层分析支持按不同范围（`linear` / `layer` / `attn`）度量敏感度，并据此做对应粒度的回退或混精调参。使用指南：《[线性层](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级](../../user_guide/usage_sensitive_layer_wise_analysis.md)》、《[Attention](../../user_guide/usage_sensitive_attn_analysis.md)》。
+
+- **linear**（线性层）：首选 **Kurtosis**，用激活峰度刻画尖峰与尾部影响，辅助识别需回退或提位宽的线性层。
+- **layer**（Decoder 块）：首选 **mse_layer_wise**，适合整层 / 整块（如 MLP、attention 段）回退。
+- **attn**（Attention 结构）：首选 **Attention MSE（mse）**，主要用于配合 **FA3 Quant** 识别需回退的 Attention 模块（需适配器接口）。

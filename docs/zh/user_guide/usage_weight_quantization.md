@@ -16,7 +16,7 @@
 
 > [!NOTE] 不适用场景
 >
-> - 支持矩阵中已标记「一键量化」且目标 `quant_type` 已验证的模型：请直接按《[一键量化完整指南](usage_quick_quantization.md)》执行，无需走本指南的适配开发步骤。
+> - 支持矩阵中已标记「一键量化」且目标 `quant_type` 已验证的模型：请直接按《[一键量化使用指南](usage_one_click_quantization.md)》执行，无需走本指南的适配开发步骤。
 
 ## 2. 流程关系与前置条件
 
@@ -219,7 +219,7 @@ msmodelslim quant \
 
    | 导出格式 | 产物说明 |
    | --- | --- |
-   | AscendV1 | 《[AscendV1 格式说明](../knowledge_base/quantization_format/ascendv1/ascendv1.md)》 |
+   | AscendV1 | 《[AscendV1 格式说明](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md)》 |
    | MindIE-SD 等 | 《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》及对应 saver 说明 |
 
 2. 对比浮点模型目录与量化权重目录的体积（如 `du -sh ${MODEL_PATH} ${SAVE_PATH}`），确认量化产物相对浮点权重有合理缩小；具体幅度随位宽与导出格式而异，不作固定压缩比要求。

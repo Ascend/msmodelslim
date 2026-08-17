@@ -76,7 +76,7 @@ msmodelslim analyze layer \
 
 | 可选指标 | 适用说明 | 算法说明 | 推荐 |
 | --- | --- | --- | --- |
-| `mse_layer_wise` | 按 Decoder 块内子模块输出 MSE 做整块回退决策 | 《[层级 MSE](../knowledge_base/quantization_algorithms/mse_layer_wise/term_mse_layer_wise.md)》
+| `mse_layer_wise` | 按 Decoder 块内子模块输出 MSE 做整块回退决策 | 《[层级 MSE](../knowledge_base/quantization_algorithms/mse_layer_wise/term_mse_layer_wise.md)》 | **首选** |
 | `mse_model_wise` | 从模型最终输出视角看层敏感度；显存压力更大 | 《[模型级 MSE](../knowledge_base/quantization_algorithms/mse_model_wise/term_mse_model_wise.md)》 | 按需 |
 
 **输出**：已选定的 `${METRICS}`。
