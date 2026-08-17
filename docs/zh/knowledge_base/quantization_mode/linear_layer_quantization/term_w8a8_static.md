@@ -1,6 +1,6 @@
 # W8A8 静态量化
 
-> **词条类别**：量化数据格式（[线性层量化](../README.md)）
+> **词条类别**：量化数据格式（[线性层量化](README.md)）
 > **英文名称**：W8A8 Static Quantization
 > **应用领域**：大语言模型量化压缩、推理加速
 > **承载 IR 类**：`W8A8StaticFakeQuantLinear`（[`msmodelslim/ir/w8a8_static.py`](../../../../../msmodelslim/ir/w8a8_static.py)）
@@ -60,7 +60,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 #### 2. 使用限制
 
 - **依赖校准数据**：校准集分布偏差过大会导致 scale 失真、精度漂移。
-- **激活离群值敏感**：per-tensor 静态量化在激活存在显著离群值时精度劣化，需先做离群值抑制（如 [SmoothQuant](../../quantization_algorithms/smooth_quant/smooth_quant.md)）或改用[动态量化](term_w8a8_dynamic.md)。
+- **激活离群值敏感**：per-tensor 静态量化在激活存在显著离群值时精度劣化，需先做离群值抑制（如 [SmoothQuant](../../quantization_algorithms/smooth_quant/term_smooth_quant.md)）或改用[动态量化](term_w8a8_dynamic.md)。
 
 ---
 
@@ -77,12 +77,12 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 动态量化](term_w8a8_dynamic.md)：对比模式，激活量化参数在线计算。
 - [W8A16 静态量化](term_w8a16_static.md)：同类模式，激活保持 16bit。
 - [W4A4 动态量化](term_w4a4_dynamic.md)：同类模式，更低比特的权重+激活量化。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》：配套术语，本模式的处理器实现。
-- 《[MinMax：最小最大值量化算法说明](../../quantization_algorithms/minmax/minmax.md)》：配套术语，静态量化常用的量化参数统计方法。
+- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，本模式的处理器实现。
+- 《[MinMax：最小最大值量化算法说明](../../quantization_algorithms/minmax/usage_minmax.md)》：配套术语，静态量化常用的量化参数统计方法。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》
+1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》

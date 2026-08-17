@@ -1,6 +1,6 @@
 # W16A16S 量化
 
-> **词条类别**：量化数据格式（[线性层量化](../README.md)）
+> **词条类别**：量化数据格式（[线性层量化](README.md)）
 > **英文名称**：W16A16S Quantization
 > **应用领域**：大语言模型量化压缩、推理加速
 > **承载 IR 类**：`W16A16sLinear`（[`msmodelslim/ir/w16a16s.py`](../../../../../msmodelslim/ir/w16a16s.py)，`nn.Module` 子类，非 `AutoFakeQuantLinear`）
@@ -71,11 +71,11 @@ W16A16S 严格说不是「量化」模式，而是稀疏量化方案的**精度�
 - [W8A16 静态量化](term_w8a16_static.md)：同类模式，位宽维度的精度基线。
 - [W8A8 静态量化](term_w8a8_static.md)：对比模式，可与其叠加构成稀疏 W8A8。
 - [W4A4 动态量化](term_w4a4_dynamic.md)：对比模式，位宽维度上的极致压缩方案。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》：配套术语，线性层量化的处理器实现。
+- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，线性层量化的处理器实现。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》
+1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》

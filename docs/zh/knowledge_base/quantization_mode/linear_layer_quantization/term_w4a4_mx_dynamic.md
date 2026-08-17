@@ -1,6 +1,6 @@
 # W4A4 MX 动态量化
 
-> **词条类别**：量化数据格式（[线性层量化](../README.md)）
+> **词条类别**：量化数据格式（[线性层量化](README.md)）
 > **英文名称**：W4A4 MX Dynamic Quantization
 > **应用领域**：大语言模型量化压缩、推理加速
 > **承载 IR 类**：`W4A4MXDynamicPerBlockFakeQuantLinear`（[`msmodelslim/ir/w4a4_mx_dynamic.py`](../../../../../msmodelslim/ir/w4a4_mx_dynamic.py)）
@@ -31,7 +31,7 @@ W4A4 MX 动态量化 = 双 4bit 的 MX 超低比特方案：权重与激活都�
 MX 格式按块共享 E8M0 指数，块内每个元素用块级指数缩放后量化为主尾数：
 $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \mathrm{round}_{MX}\left(\frac{x_i}{2^e}\right), \qquad \hat{x}_i = q_i \cdot 2^e$$
 
-其中块大小32元素，$e$ 为块内共享的 E8M0 指数，$q_i$ 为块内第 $i$ 个元素的量化尾数（MXFP8 为 FP8 尾数、MXFP4 为 FP4 尾数），$\hat{x}_i$ 为反量化还原值。每块共享一个 $e$；量化参数在线计算（激活）或量化阶段固化（权重），见「模式规格」表。
+其中块大小32元素，$e$ 为块内共享的 E8M0 指数，$q_i$ 为块内第 $i$ 个元素的 MX 格式量化值（MXFP8 为 FP8 格式值、MXFP4 为 FP4 格式值），$\hat{x}_i$ 为反量化还原值。每块共享一个 $e$；量化参数在线计算（激活）或量化阶段固化（权重），见「模式规格」表。
 
 ### 与其他模式的关系
 
@@ -77,11 +77,11 @@ $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \ma
 - [W4A4 动态量化](term_w4a4_dynamic.md)：对比模式，INT4 整数方案。
 - [W4A4 MX 双 Scale 量化](term_w4a4_mx_dualscale.md)：同类模式，双层缩放的精度增强版。
 - [W4A8 MX 动态量化](term_w4a8_mx_dynamic.md)：同类模式，激活改用 MXFP8 保精度。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》：配套术语，本模式的处理器实现。
+- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，本模式的处理器实现。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》
+1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》

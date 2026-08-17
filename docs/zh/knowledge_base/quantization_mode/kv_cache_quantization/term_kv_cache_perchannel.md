@@ -1,6 +1,6 @@
 # KVCache-PerChannel 量化
 
-> **词条类别**：量化数据格式（[KVCache 量化](../README.md)）
+> **词条类别**：量化数据格式（[KVCache 量化](README.md)）
 > **英文名称**：KV Cache Per-Channel Quantization
 > **应用领域**：KVCache 压缩、长上下文推理加速
 > **承载 IR 类**：`FakeQuantDynamicCache`（[`msmodelslim/ir/attention.py`](../../../../../msmodelslim/ir/attention.py)）
@@ -52,7 +52,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 
 - **长上下文推理**：上下文长度大、KV 显存成为瓶颈的场景，如长文档问答、代码仓库理解。
 - **高并发服务**：压缩每请求缓存显存，提升同显存下的并发 batch。
-- **作为 FA 量化的基础**：K/V 量化后叠加 Q 量化，在省 KV 显存之外进一步使能低精度注意力矩阵运算。
+- **作为 FA 量化的基础**：K/V 量化后叠加 Q 量化，在节省 KV 显存之外进一步使能低精度注意力矩阵运算。
 
 #### 2. 使用限制
 
@@ -73,12 +73,12 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [量化模式](../README.md)：上位概念，本词条属于[KVCache 量化](README.md)类别，是该类别下的一种具体模式。
 - [FA PerHead 量化](../fa_quantization/term_fa_perhead.md)：进阶模式，在 K/V 量化基础上追加 Q 量化。
 - [W8A8 静态量化](../linear_layer_quantization/term_w8a8_static.md)：配套模式，可与本模式叠加使用。
-- 《[KVCache量化：缓存量化算法说明](../../quantization_algorithms/kvcache_quant/kvcache_quant.md)》：配套术语，本模式对应的算法处理器文档。
-- 《[KVSmooth：KVCache量化离群值抑制算法说明](../../quantization_algorithms/kv_smooth/kv_smooth.md)》：前置术语，量化前对 KV 做平滑以降低量化误差。
+- 《[KVCache量化：缓存量化算法说明](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)》：配套术语，本模式对应的算法处理器文档。
+- 《[KVSmooth：KVCache量化离群值抑制算法说明](../../quantization_algorithms/kv_smooth/usage_kv_smooth.md)》：前置术语，量化前对 KV 做平滑以降低量化误差。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[KVCache量化：缓存量化算法说明](../../quantization_algorithms/kvcache_quant/kvcache_quant.md)》
+1. 《[KVCache量化：缓存量化算法说明](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)》
 2. 《[量化模式](../README.md)》

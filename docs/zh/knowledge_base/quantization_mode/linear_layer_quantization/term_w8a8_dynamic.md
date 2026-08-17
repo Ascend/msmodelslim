@@ -1,6 +1,6 @@
 # W8A8 动态量化
 
-> **词条类别**：量化数据格式（[线性层量化](../README.md)）
+> **词条类别**：量化数据格式（[线性层量化](README.md)）
 > **英文名称**：W8A8 Dynamic Quantization
 > **应用领域**：大语言模型量化压缩、推理加速
 > **承载 IR 类**：`W8A8DynamicPerChannelFakeQuantLinear` / `W8A8DynamicPerGroupFakeQuantLinear`（[`msmodelslim/ir/w8a8_dynamic.py`](../../../../../msmodelslim/ir/w8a8_dynamic.py)）
@@ -78,11 +78,11 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 PD-Mix 量化](term_w8a8_pdmix.md)：同类模式，激活策略随 Prefill/Decode 阶段切换。
 - [W4A4 动态量化](term_w4a4_dynamic.md)：同类模式，更低比特的权重+激活量化。
 - [FA PerToken 量化](../fa_quantization/term_fa_pertoken.md)：同类模式，把 per-token 动态量化应用于注意力 Q/K/V 激活。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》：配套术语，本模式的处理器实现。
+- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，本模式的处理器实现。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》
+1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》

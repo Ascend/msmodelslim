@@ -1,6 +1,6 @@
 # W4A4 MX 双 Scale 量化
 
-> **词条类别**：量化数据格式（[线性层量化](../README.md)）
+> **词条类别**：量化数据格式（[线性层量化](README.md)）
 > **英文名称**：W4A4 MX Dual-Scale Quantization
 > **应用领域**：大语言模型量化压缩、推理加速
 > **承载 IR 类**：`W4A4MXDynamicDualScaleFakeQuantLinear`（[`msmodelslim/ir/w4a4_mx_dynamic_dualscale.py`](../../../../../msmodelslim/ir/w4a4_mx_dynamic_dualscale.py)）
@@ -77,11 +77,11 @@ $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \ma
 - [W4A4 MX 动态量化](term_w4a4_mx_dynamic.md)：同类模式，单层缩放的 MXFP4 基础版。
 - [W4A4 动态量化](term_w4a4_dynamic.md)：对比模式，INT4 整数方案。
 - [W4A8 MX 动态量化](term_w4a8_mx_dynamic.md)：同类模式，激活改用 MXFP8 保精度。
-- 《[DualScale：w4a4量化方案说明](../../quantization_algorithms/dual_scale/dual_scale.md)》：配套术语，本模式对应的算法处理器文档。
+- 《[DualScale：w4a4量化方案说明](../../quantization_algorithms/dual_scale/usage_dual_scale.md)》：配套术语，本模式对应的算法处理器文档。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》
+1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》

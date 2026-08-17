@@ -1,6 +1,6 @@
 # FA PerBlock 量化
 
-> **词条类别**：量化数据格式（[FA 量化](../README.md)）
+> **词条类别**：量化数据格式（[FA 量化](README.md)）
 > **英文名称**：FA Per-Block Quantization
 > **应用领域**：长上下文推理加速、低精度注意力计算
 > **承载 IR 类**：`FakeQuantActivationPerBlock`（[`msmodelslim/ir/activation_dynamic.py`](../../../../../msmodelslim/ir/activation_dynamic.py)）
@@ -77,11 +77,11 @@ $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \ma
 - [FA PerHead 量化](term_fa_perhead.md)：同类模式，per-head 静态激活量化。
 - [KVCache 量化](../kv_cache_quantization/README.md)：基础类别，本模式在其基础上追加 Q 量化。
 - [W8A8 MX 动态量化](../linear_layer_quantization/term_w8a8_mx_dynamic.md)：配套模式，MX per-block 思路在线性层上的应用。
-- 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/fa3_quant.md)》：配套术语，本模式对应的算法处理器文档。
+- 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》：配套术语，本模式对应的算法处理器文档。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/fa3_quant.md)》
+1. 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》
 2. 《[量化模式](../README.md)》

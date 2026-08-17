@@ -1,6 +1,6 @@
 # FA PerToken 量化
 
-> **词条类别**：量化数据格式（[FA 量化](../README.md)）
+> **词条类别**：量化数据格式（[FA 量化](README.md)）
 > **英文名称**：FA Per-Token Quantization
 > **应用领域**：长上下文推理加速、低精度注意力计算
 > **承载 IR 类**：`FakeQuantActivationPerToken`（[`msmodelslim/ir/activation_dynamic.py`](../../../../../msmodelslim/ir/activation_dynamic.py)）
@@ -79,11 +79,11 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [FA PerBlock 量化](term_fa_perblock.md)：同类模式，per-block MX 动态激活量化。
 - [KVCache 量化](../kv_cache_quantization/README.md)：基础类别，本模式在其基础上追加 Q 量化。
 - [W8A8 动态量化](../linear_layer_quantization/term_w8a8_dynamic.md)：配套模式，per-token 动态思路在线性层上的应用。
-- 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/fa3_quant.md)》：配套术语，本模式对应的算法处理器文档。
+- 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》：配套术语，本模式对应的算法处理器文档。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/fa3_quant.md)》
+1. 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》
 2. 《[量化模式](../README.md)》

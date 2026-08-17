@@ -1,6 +1,6 @@
 # W4A4 动态量化
 
-> **词条类别**：量化数据格式（[线性层量化](../README.md)）
+> **词条类别**：量化数据格式（[线性层量化](README.md)）
 > **英文名称**：W4A4 Dynamic Quantization
 > **应用领域**：大语言模型量化压缩、推理加速
 > **承载 IR 类**：`W4A4DynamicPerChannelFakeQuantLinear` / `W4A4DynamicPerGroupFakeQuantLinear`（[`msmodelslim/ir/w4a4_dynamic.py`](../../../../../msmodelslim/ir/w4a4_dynamic.py)）
@@ -59,7 +59,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 
 #### 2. 使用限制
 
-- **精度门槛高**：4bit 激活量化精度风险大，通常需要配合离群值抑制（如 [SmoothQuant](../../quantization_algorithms/smooth_quant/smooth_quant.md)）与精度调优方可上线。
+- **精度门槛高**：4bit 激活量化精度风险大，通常需要配合离群值抑制（如 [SmoothQuant](../../quantization_algorithms/smooth_quant/term_smooth_quant.md)）与精度调优方可上线。
 - **硬件算子依赖**：INT4 整数 GEMM 需目标硬件算子库支持，否则无法兑现计算收益。
 
 ---
@@ -78,12 +78,12 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 静态量化](term_w8a8_static.md)：对比模式，INT8 静态方案、精度基线。
 - [W4A4 MX 动态量化](term_w4a4_mx_dynamic.md)：同类模式，改用 MXFP4 浮点格式。
 - [W8A16 静态量化](term_w8a16_static.md)：对比模式，激活保持 16bit 的高精度方案。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》：配套术语，本模式的处理器实现。
-- 《[LAOS：w4a4量化方案说明](../../quantization_algorithms/laos/laos.md)》：配套术语，面向 W4A4 的精度优化算法。
+- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，本模式的处理器实现。
+- 《[LAOS：w4a4量化方案说明](../../quantization_algorithms/laos/usage_laos.md)》：配套术语，面向 W4A4 的精度优化算法。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》
+1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》

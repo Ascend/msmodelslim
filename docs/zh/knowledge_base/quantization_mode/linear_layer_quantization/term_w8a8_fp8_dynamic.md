@@ -1,6 +1,6 @@
 # W8A8 FP8 动态量化
 
-> **词条类别**：量化数据格式（[线性层量化](../README.md)）
+> **词条类别**：量化数据格式（[线性层量化](README.md)）
 > **英文名称**：W8A8 FP8 Dynamic Quantization
 > **应用领域**：大语言模型量化压缩、推理加速
 > **承载 IR 类**：`WFP8AFP8DynamicPerChannelFakeQuantLinear`（[`msmodelslim/ir/w8a8_fp_dynamic.py`](../../../../../msmodelslim/ir/w8a8_fp_dynamic.py)）
@@ -37,7 +37,7 @@ $$q = \mathrm{round}_{FP8}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{
 
 - **与 [W8A8 动态量化](term_w8a8_dynamic.md)（同为 8bit 动态家族，数据类型不同）**
   - 本模式（FP8 E4M3）：优势是浮点格式、4bit 指数保留动态范围，对宽动态范围与离群值比 INT8 均匀分档更耐受；劣势是 FP8 GEMM 的硬件支持面窄于 INT8，算子生态不成熟。
-  - INT8：优势是整数 GEMM 生态成熟、硬件支持广泛；劣势是均匀分档对离群值敏感，宽动态范围激活常需先做 [SmoothQuant](../../quantization_algorithms/smooth_quant/smooth_quant.md) 等抑制。
+  - INT8：优势是整数 GEMM 生态成熟、硬件支持广泛；劣势是均匀分档对离群值敏感，宽动态范围激活常需先做 [SmoothQuant](../../quantization_algorithms/smooth_quant/term_smooth_quant.md) 等抑制。
 
 - **与 [W8A8 MX 动态量化](term_w8a8_mx_dynamic.md)（同为 FP8 家族，格式与粒度不同）**
   - 本模式：优势是 per-channel/per-token 粒度、逐元素 E4M3，粒度更细、无需块对齐；劣势是每个通道/token 都需额外记录 scale。
@@ -76,12 +76,12 @@ $$q = \mathrm{round}_{FP8}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{
 - [W8A8 MX 动态量化](term_w8a8_mx_dynamic.md)：同类模式，块级共享指数的 MXFP8 方案。
 - [W8A16 静态量化](term_w8a16_static.md)：对比模式，激活保持 16bit 的高精度基线。
 - [FA PerHead 量化](../fa_quantization/term_fa_perhead.md)：配套模式，同样使用 FP8 数据类型的注意力激活量化。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》：配套术语，本模式的处理器实现。
+- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，本模式的处理器实现。
 
 ---
 
 ## 5. 参考文档
 
 1. Kuzmin A et al. FP8 Formats for Deep Learning. arXiv:2209.05433. https://arxiv.org/abs/2209.05433
-2. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》
+2. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 3. 《[量化模式](../README.md)》

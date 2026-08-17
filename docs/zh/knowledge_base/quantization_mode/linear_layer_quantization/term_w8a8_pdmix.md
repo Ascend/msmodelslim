@@ -1,6 +1,6 @@
 # W8A8 PD-Mix 量化
 
-> **词条类别**：量化数据格式（[线性层量化](../README.md)）
+> **词条类别**：量化数据格式（[线性层量化](README.md)）
 > **英文名称**：W8A8 PD-Mix Quantization
 > **应用领域**：大语言模型量化压缩、推理加速
 > **承载 IR 类**：`W8A8PDMixFakeQuantLinear`（[`msmodelslim/ir/w8a8_pdmix.py`](../../../../../msmodelslim/ir/w8a8_pdmix.py)）
@@ -78,12 +78,12 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 动态量化](term_w8a8_dynamic.md)：对比模式，全程 per-token 动态。
 - [W8A8 静态量化](term_w8a8_static.md)：对比模式，全程静态。
 - [W4A8 动态量化](term_w4a8_dynamic.md)：对比模式，权重 4bit 的混合位宽方案。
-- 《[PDMIX：激活值阶段间混合量化算法说明](../../quantization_algorithms/pdmix/pdmix.md)》：配套术语，本模式对应的算法处理器文档。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》：配套术语，线性层量化的处理器实现。
+- 《[PDMIX：激活值阶段间混合量化算法说明](../../quantization_algorithms/pdmix/usage_pdmix.md)》：配套术语，本模式对应的算法处理器文档。
+- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，线性层量化的处理器实现。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》
+1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》

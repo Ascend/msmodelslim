@@ -1,6 +1,6 @@
 # FA PerHead 量化
 
-> **词条类别**：量化数据格式（[FA 量化](../README.md)）
+> **词条类别**：量化数据格式（[FA 量化](README.md)）
 > **英文名称**：FA Per-Head Quantization
 > **应用领域**：长上下文推理加速、低精度注意力计算
 > **承载 IR 类**：`FakeQuantActivationPerHead` 及 INT8/FP8 变体（[`msmodelslim/ir/activation_static.py`](../../../../../msmodelslim/ir/activation_static.py)）
@@ -43,7 +43,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
   - PerToken（per-token 动态）：优势是逐 token 在线算 scale、免校准，量化更贴合每个 token 的数值范围；劣势是每次前向多一次按 token 的 min/max 归约，开销与 token 数同量级。
 
 - **与 [FA PerBlock 量化](term_fa_perblock.md)（同为 FA 激活量化，格式与粒度不同）**
-  - 本模式：INT8/FP8 整数格式 + 静态 per-head 粒度，无需特殊硬件格式支持；劣势是粒度最粗（整头共享参数），对 head_dim 内部的分布差异不敏感。
+  - 本模式：INT8/FP8 数据格式 + 静态 per-head 粒度，无需特殊硬件格式支持；劣势是粒度最粗（整头共享参数），对 head_dim 内部的分布差异不敏感。
   - PerBlock：MX 格式块级共享指数（32元素一块），粒度最细、对离群值比整数格式更耐受；劣势是依赖硬件 MX 支持、head_dim 需能被32整除、量化参数在线计算。
 
 - **与 [KVCache-PerChannel 量化](../kv_cache_quantization/term_kv_cache_perchannel.md)（基础关系）**
@@ -79,11 +79,11 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [KVCache 量化](../kv_cache_quantization/README.md)：基础类别，本模式在其基础上追加 Q 量化。
 - [KVCache-PerChannel 量化](../kv_cache_quantization/term_kv_cache_perchannel.md)：前置术语，K/V 量化的具体模式。
 - [W8A8 静态量化](../linear_layer_quantization/term_w8a8_static.md)：配套模式，可与本模式组合使用。
-- 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/fa3_quant.md)》：配套术语，本模式对应的算法处理器文档。
+- 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》：配套术语，本模式对应的算法处理器文档。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/fa3_quant.md)》
+1. 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》
 2. 《[量化模式](../README.md)》
