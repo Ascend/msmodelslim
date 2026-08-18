@@ -64,9 +64,9 @@ flowchart LR
 msmodelslim quant \
   --model_path ${MODEL_PATH} \          # 浮点权重目录
   --save_path ${SAVE_PATH} \            # 量化权重输出目录
-  --device npu \                        # 量化设备，如 npu、npu:0,1,2,3
+  --device npu \                        # 量化设备，如 npu、npu --device_id 0 1 2 3
   --model_type ${MODEL_TYPE} \          # 已注册或支持矩阵中的模型名，大小写敏感
-  --config_path ${CONFIG_PATH} \        # 本指南步骤 3 编写的量化配置 YAML
+  --config ${CONFIG_PATH} \        # 本指南步骤 3 编写的量化配置 YAML
   --trust_remote_code False             # 仅可信模型必要时设为 True
 ```
 
@@ -182,7 +182,7 @@ msmodelslim quant \
 
 **操作**：
 
-新模型接入阶段使用 `--config_path` 显式指定步骤 3 的配置，使用自定义配置时，量化结果由配置与适配自行保证，msModelSlim 不对未经验证的自定义配置效果负责。
+新模型接入阶段使用 `--config` 显式指定步骤 3 的配置，使用自定义配置时，量化结果由配置与适配自行保证，msModelSlim 不对未经验证的自定义配置效果负责。
 
 ```bash
 msmodelslim quant \
@@ -190,7 +190,7 @@ msmodelslim quant \
   --save_path ${SAVE_PATH} \
   --device npu \
   --model_type ${MODEL_TYPE} \
-  --config_path ${CONFIG_PATH} \
+  --config ${CONFIG_PATH} \
   --trust_remote_code False
 ```
 
@@ -200,7 +200,7 @@ msmodelslim quant \
 - `--save_path`：量化产物输出目录。
 - `--device`：量化设备，如 `npu`、`npu:0,1,2,3`。
 - `--model_type`：步骤 2 注册的模型名，或支持矩阵中已有名称；大小写敏感。
-- `--config_path`：步骤 3 编写的 YAML。
+- `--config`：步骤 3 编写的 YAML。
 - `--trust_remote_code`：仅当模型必须执行仓库内自定义代码且来源可信时设为 `True`。
 
 **输出**：量化权重目录。

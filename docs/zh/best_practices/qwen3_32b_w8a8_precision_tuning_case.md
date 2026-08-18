@@ -56,7 +56,7 @@ msmodelslim quant \
     --model_path ${MODEL_PATH} \
     --save_path ${SAVE_PATH} \
     --device npu \
-    --config_path ${CONFIG_PATH} \
+    --config ${CONFIG_PATH} \
     --trust_remote_code True
 ```
 
@@ -88,15 +88,15 @@ msmodelslim quant \
 
 **操作**：
 
-1. **生成配置并量化**：在量化配置 YAML 的 `process` 中依次替换离群值抑制处理器（算法、对称性、`alpha` 参数），得到 5 组实验配置（均搭配相同的 `linear_quant` 静态量化与 `save` 段），逐一执行量化命令（`--config_path` 与 `--save_path` 按算法区分）。各组算法配置要点如下（完整参数见算法文档）：
+1. **生成配置并量化**：在量化配置 YAML 的 `process` 中依次替换离群值抑制处理器（算法、对称性、`alpha` 参数），得到 5 组实验配置（均搭配相同的 `linear_quant` 静态量化与 `save` 段），逐一执行量化命令（`--config` 与 `--save_path` 按算法区分）。各组算法配置要点如下（完整参数见算法文档）：
 
-   a. **Smooth Quant（初始配置）**：alpha 0.5、对称。详见[《Smooth Quant 算法》](../knowledge_base/quantization_algorithms/smooth_quant/smooth_quant.md)。
+   a. **Smooth Quant（初始配置）**：alpha 0.5、对称。详见[《Smooth Quant 算法》](../knowledge_base/quantization_algorithms/smooth_quant/usage_smooth_quant.md)。
 
-   b. **Iterative Smooth（对称）**：对称/alpha:0.5 与 对称/alpha:0.9 两组仅 `alpha` 参数不同，其余配置相同（4 类子图）。详见[《Iterative Smooth 算法》](../knowledge_base/quantization_algorithms/iterative_smooth/iterative_smooth.md)。
+   b. **Iterative Smooth（对称）**：对称/alpha:0.5 与 对称/alpha:0.9 两组仅 `alpha` 参数不同，其余配置相同（4 类子图）。详见[《Iterative Smooth 算法》](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md)。
 
    c. **Iterative Smooth（非对称/alpha:0.5）**：非对称仅支持 `norm-linear` 子图。
 
-   d. **Flex Smooth Quant**：alpha/beta 缺省自动搜索。详见[《Flex Smooth Quant 算法》](../knowledge_base/quantization_algorithms/flex_smooth_quant/flex_smooth_quant.md)。
+   d. **Flex Smooth Quant**：alpha/beta 缺省自动搜索。详见[《Flex Smooth Quant 算法》](../knowledge_base/quantization_algorithms/flex_smooth_quant/usage_flex_smooth_quant.md)。
 
    算法对比见[离群值抑制算法](../knowledge_base/quantization_algorithms/README.md#离群值抑制算法)。
 
@@ -125,7 +125,7 @@ msmodelslim quant \
 
 **操作**：
 
-1. **生成配置并量化**：在量化配置 YAML 的 `linear_quant` 处理器中，分别修改 `qconfig.act.scope`（`per_tensor`/`per_token`）与 `qconfig.weight.method`（`minmax`/`ssz`），组合出 4 组配置并逐一执行量化命令。`linear_quant` 处理器参数详见[《Linear Quant 算法》](../knowledge_base/quantization_algorithms/linear_quant/linear_quant.md)，量化方法参数详见[MinMax](../knowledge_base/quantization_algorithms/minmax/minmax.md)、[SSZ](../knowledge_base/quantization_algorithms/ssz/ssz.md)。
+1. **生成配置并量化**：在量化配置 YAML 的 `linear_quant` 处理器中，分别修改 `qconfig.act.scope`（`per_tensor`/`per_token`）与 `qconfig.weight.method`（`minmax`/`ssz`），组合出 4 组配置并逐一执行量化命令。`linear_quant` 处理器参数详见[《Linear Quant 算法》](../knowledge_base/quantization_algorithms/linear_quant/usage_linear_quant.md)，量化方法参数详见[MinMax](../knowledge_base/quantization_algorithms/minmax/usage_minmax.md)、[SSZ](../knowledge_base/quantization_algorithms/ssz/usage_ssz.md)。
 
 2. **部署测评**：将每组量化产物部署后执行测评命令（AIME25），记录精度与量化耗时。
 3. **汇总对比**：对比精度与量化时间，选择综合最优配置。
@@ -222,7 +222,7 @@ msmodelslim quant \
        --model_type Qwen3-32B \
        --model_path ${MODEL_PATH} \
        --device npu \
-       --topk 20 \
+       --top_k 20 \
        --metrics kurtosis
    ```
 

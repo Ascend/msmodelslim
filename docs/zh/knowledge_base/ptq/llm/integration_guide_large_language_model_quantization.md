@@ -408,7 +408,7 @@ msmodelslim quant \
   --save_path ${SAVE_PATH} \
   --device npu \
   --model_type ${MODEL_TYPE} \
-  --config_path ${CONFIG_PATH} \
+  --config ${CONFIG_PATH} \
   --trust_remote_code False
 ```
 
@@ -442,7 +442,7 @@ msmodelslim quant \
 ## 6. 异常处理
 
 - **模型加载失败**：检查 `config.ini` 中 ModelAdapter 和 ModelAdapterEntryPoints 的 key 是否一致。若不一致，配置不生效。
-- **显存不足（OOM）**：确认 `init_model` 中将 `num_hidden_layers` 临时设置为 1；确认 `generate_decoder_layer` 实现了按需加载而非全量加载。此外，若仍遇到显存不足，请确认 `--device npu:0` 指定的 NPU 未被其他任务占用。
+- **显存不足（OOM）**：确认 `init_model` 中将 `num_hidden_layers` 临时设置为 1；确认 `generate_decoder_layer` 实现了按需加载而非全量加载。此外，若仍遇到显存不足，请确认 `--device npu --device_id 0` 指定的 NPU 未被其他任务占用。
 - **权重加载错误**：若模型使用 FP8 权重，需在加载后调用反量化函数；检查 `get_state_dict` 的 prefix 是否与权重文件中的 key 一致。
 - **校准数据格式错误**：确认 `handle_dataset` 返回的数据格式与模型的 forward 签名匹配。
 

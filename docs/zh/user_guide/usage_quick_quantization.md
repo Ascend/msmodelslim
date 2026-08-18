@@ -27,7 +27,7 @@ toc_depth: 3
 msmodelslim quant [ARGS]
 ```
 
-指定`--quant_type`参数时，系统将根据指定需求，在最佳实践库中匹配到最佳配置从而实施量化；指定`--config_path`参数时，将直接使用用户指定的配置，不会匹配最佳实践库。
+指定`--quant_type`参数时，系统将根据指定需求，在最佳实践库中匹配到最佳配置从而实施量化；指定`--config`参数时，将直接使用用户指定的配置，不会匹配最佳实践库。
 
 **注意事项**：
 
@@ -98,7 +98,7 @@ msmodelslim quant \
   --save_path ${SAVE_PATH} \
   --device npu \
   --model_type ${MODEL_TYPE} \
-  --config_path ${CONFIG_PATH} \
+  --config ${CONFIG_PATH} \
   --trust_remote_code ${TRUST_REMOTE_CODE}
 ```
 
@@ -119,7 +119,7 @@ msmodelslim quant \
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --device npu:0,1,2,3 \
+  --device npu --device_id 0 1 2 3 \
   --model_type ${MODEL_TYPE} \
   --quant_type w8a8 \
   --trust_remote_code True
@@ -129,7 +129,7 @@ msmodelslim quant \
 
 - `${MODEL_PATH}` 为原始浮点权重路径
 - `${SAVE_PATH}` 为用户自定义的量化权重保存路径
-- `--device npu:0,1,2,3` 指定使用4张NPU卡进行分布式量化
+- `--device npu --device_id 0 1 2 3` 指定使用4张NPU卡进行分布式量化
 - `${MODEL_TYPE}` 为模型类型，需与支持矩阵中的名称一致
 - `--quant_type w8a8` 指定量化类型为W8A8
 - `--trust_remote_code True` 信任远程代码
@@ -199,10 +199,10 @@ spec:
 
 ```bash
 # 单卡逐层量化
-msmodelslim quant --device npu:0 ...
+msmodelslim quant --device npu --device_id 0 ...
 
 # 多卡分布式逐层量化（自动启用 DP）
-msmodelslim quant --device npu:0,1,2,3 ...
+msmodelslim quant --device npu --device_id 0 1 2 3 ...
 ```
 
 #### 4.1.5 注意事项
@@ -728,7 +728,7 @@ multimodal_vlm_modelslim_v1是专门为多模态视觉语言模型（VLM）设�
 
 - 支持`dataset`字段配置校准数据集，支持三种使用方式：方式一 index.json/index.jsonl（推荐，支持多模态）、方式二 纯图像目录（后续不再演进）、方式三 图像目录+单个 json/jsonl（后续不再演进），详见下方 [dataset - 校准数据路径配置](#dataset---校准数据路径配置)
 - 支持`default_text`字段配置默认文本 prompt（方式二必填；方式一在条目缺 text 字段时使用）
-- 默认 `runner: auto`：单卡走 layer_wise，多卡（如 `--device npu:0,1,...`）自动走 dp_layer_wise，与 modelslim_v1 对齐
+- 默认 `runner: auto`：单卡走 layer_wise，多卡（如 `--device npu --device_id 0 1 ...`）自动走 dp_layer_wise，与 modelslim_v1 对齐
 
 #### 5.4.2 <span id="runner---量化调度器类型-vlm">runner - 量化调度器类型</span>
 

@@ -117,7 +117,7 @@ python -c "from importlib.metadata import entry_points; print('Hy3' in {e.name f
     --save_path ${save_path} \
     --device npu \
     --model_type Hy3 \
-    --config_path lab_practice/hy3/hy3_w8a8.yaml \
+    --config lab_practice/hy3/hy3_w8a8.yaml \
     --trust_remote_code True
   ```
 
@@ -127,7 +127,7 @@ python -c "from importlib.metadata import entry_points; print('Hy3' in {e.name f
 
 - Q：指定 `--quant_type w8a8` 后未匹配到 `hy3_w8a8.yaml`，使用了 `default-w8a8` 怎么办？
 
-- A：请依次检查：（1）`--model_type` 是否为 **`Hy3`**；（2）是否已执行 `pip install -e .`；（3）`msmodelslim/lab_practice/hy3/hy3_w8a8.yaml` 是否存在。也可通过 `--config_path lab_practice/hy3/hy3_w8a8.yaml` 显式指定配置。
+- A：请依次检查：（1）`--model_type` 是否为 **`Hy3`**；（2）是否已执行 `pip install -e .`；（3）`msmodelslim/lab_practice/hy3/hy3_w8a8.yaml` 是否存在。也可通过 `--config lab_practice/hy3/hy3_w8a8.yaml` 显式指定配置。
 
 - Q：量化时报 transformers 版本不匹配怎么办？
 

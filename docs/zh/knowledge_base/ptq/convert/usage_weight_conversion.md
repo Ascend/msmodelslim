@@ -13,13 +13,13 @@
 - FP8 block 权重直接转换为 W8A8 MXFP8（自动路由串联）
 - INT4 分组量化权重反量化为 BF16
 
-**与常规一键量化的区别**：权重转换不需要校准数据、不需要 `model_type`、不需要 `quant_type`，仅通过 `--config_path` 指定转换配置。
+**与常规一键量化的区别**：权重转换不需要校准数据、不需要 `model_type`、不需要 `quant_type`，仅通过 `--config` 指定转换配置。
 
 | 对比项 | 常规一键量化 | 权重转换（modelslim_convert） |
 |--------|--------------|-------------------------------|
 | 是否需要校准集 | 是（激活值统计等） | **否** |
 | 是否需要 `model_type` | 必选 | **可选**（YAML 中 `apiversion: modelslim_convert` 时可省略） |
-| 是否需要 `quant_type` | 方式 1 需要 | **不需要**（须通过 `config_path` 指定转换配置） |
+| 是否需要 `quant_type` | 方式 1 需要 | **不需要**（须通过 `--config` 指定转换配置） |
 | 典型场景 | 浮点模型 → W8A8 等 | FP8 → BF16、BF16 → MXFP8、FP8 → MXFP8 等 |
 
 当前已注册的 IR 转换边包括：
@@ -54,7 +54,7 @@
 | --- | --- | --- | --- | --- |
 | 输入 | msModelSlim 工具 | 已安装环境 | 可执行 `msmodelslim` 命令 | `msmodelslim --help` 正常输出 |
 | 输入 | 源权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` | 可被读取，含 `model.safetensors.index.json` 或单文件权重 |
-| 输入 | 转换配置 YAML | `--config_path` 指定 | `apiversion: modelslim_convert`，含 `spec.linears`、`spec.save` 等 | 配置校验通过 |
+| 输入 | 转换配置 YAML | `--config` 指定 | `apiversion: modelslim_convert`，含 `spec.linears`、`spec.save` 等 | 配置校验通过 |
 | 交付件 | 转换后权重目录 | `--save_path` 指定路径 | 目标 IR 对应格式（ascend_v1 / huggingface） | 含完整权重文件，可被目标推理框架加载 |
 | 交付件 | 精度评估结果 | 用户记录 | 转换前后精度对比报告 | 精度在可接受范围内 |
 
@@ -109,13 +109,13 @@ msmodelslim --help
 
 **操作**：
 
-权重转换复用一键量化 CLI 入口，通过 **`--config_path`** 指定 `modelslim_convert` 配置：
+权重转换复用一键量化 CLI 入口，通过 **`--config`** 指定 `modelslim_convert` 配置：
 
 ```bash
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --config_path ${CONFIG_PATH}
+  --config ${CONFIG_PATH}
 ```
 
 **参数说明**：
@@ -124,7 +124,7 @@ msmodelslim quant \
 |------|----------|------|
 | `model_path` | 必选 | 源权重目录路径。 |
 | `save_path` | 必选 | 转换后权重保存路径。 |
-| `config_path` | 必选 | YAML 转换配置路径，`apiversion` 须为 `modelslim_convert`。 |
+| `--config` | 必选 | YAML 转换配置路径，`apiversion` 须为 `modelslim_convert`。 |
 | `-h, --help` | 可选 | 命令行帮助信息。 |
 
 **注意事项**：
@@ -141,7 +141,7 @@ msmodelslim quant \
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --config_path ./qwen3_8b_fp8_to_bf16.yaml
+  --config ./qwen3_8b_fp8_to_bf16.yaml
 ```
 
 其中 `${MODEL_PATH}` 为含 FP8 block 权重（`.weight` + `.weight_scale_inv`）的源目录，配置文件见 [qwen3_8b_fp8_to_bf16.yaml](./qwen3_8b_fp8_to_bf16.yaml)。
@@ -152,7 +152,7 @@ msmodelslim quant \
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --config_path ./qwen3_8b_bf16_to_mxfp8.yaml
+  --config ./qwen3_8b_bf16_to_mxfp8.yaml
 ```
 
 配置文件见 [qwen3_8b_bf16_to_mxfp8.yaml](./qwen3_8b_bf16_to_mxfp8.yaml)。
@@ -165,7 +165,7 @@ msmodelslim quant \
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --config_path ./qwen3_8b_fp8_to_mxfp8.yaml
+  --config ./qwen3_8b_fp8_to_mxfp8.yaml
 ```
 
 配置文件见 [qwen3_8b_fp8_to_mxfp8.yaml](./qwen3_8b_fp8_to_mxfp8.yaml)。
@@ -185,7 +185,7 @@ msmodelslim quant \
 
    | save.type | 典型目标 IR | 输出特征 |
    |-----------|-------------|----------|
-   | `ascend_v1` | `W8A8_MXFP8` | 生成 `quant_model_description.json`、`quant_model_weights*.safetensors` 等 AscendV1 量化权重，详见《[一键量化生成结果](../../quantization_format/ascendv1/ascendv1.md)》 |
+   | `ascend_v1` | `W8A8_MXFP8` | 生成 `quant_model_description.json`、`quant_model_weights*.safetensors` 等 AscendV1 量化权重，详见《[一键量化生成结果](../../quantization_format/ascendv1/ascendv1_usage.md)》 |
    | `huggingface` / `compressed_tensors` | `FLOAT` | 生成 HF 风格 `config.json`、`model*.safetensors` 等，权重为 BF16 浮点 |
 
 2. 确认目标 IR 与保存格式匹配（MXFP8 → ascend_v1，FLOAT → huggingface）。
@@ -468,7 +468,7 @@ spec:
 - 转换后权重可被目标推理框架成功加载。
 - 精度评估结果在可接受范围内。
 
-- 一键量化总体流程与常规量化配置：《[一键量化完整指南](usage.md)》
+- 一键量化总体流程与常规量化配置：《[一键量化完整指南](../../../user_guide/usage_quick_quantization.md)》
 - AscendV1 量化权重文件说明：《[一键量化生成结果](../../quantization_format/ascendv1/term_ascendv1.md)》
 - 格式支持矩阵：《[格式支持矩阵](../../quantization_format/README.md)》
 
@@ -529,4 +529,4 @@ route:
 | --- | --- | --- |
 | 权重转换配置协议 | modelslim_convert YAML 配置详解 | [权重转换使用指南 - 配置协议](#6-转换配置协议详解) |
 | 格式支持矩阵 | 量化格式与存储格式说明 | [格式支持矩阵](../../quantization_format/README.md) |
-| AscendV1 量化结果 | 一键量化生成结果说明 | [一键量化生成结果](../../quantization_format/ascendv1/ascendv1.md) |
+| AscendV1 量化结果 | 一键量化生成结果说明 | [一键量化生成结果](../../quantization_format/ascendv1/ascendv1_usage.md) |

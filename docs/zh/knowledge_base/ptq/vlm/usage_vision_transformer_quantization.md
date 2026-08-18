@@ -100,7 +100,7 @@ msmodelslim quant \
   --save_path ${SAVE_PATH} \
   --device npu \
   --model_type ${MODEL_TYPE} \
-  --config_path ${CONFIG_PATH} \
+  --config ${CONFIG_PATH} \
   --trust_remote_code True
 ```
 
@@ -183,7 +183,7 @@ curl -X POST ${INFERENCE_ENDPOINT} \
 - **量化失败**：检查日志中的错误信息，确认模型路径、`model_type` 与参数是否配置正确；若使用了多卡分布式逐层量化，需确认所用处理器（Processor）支持分布式执行——框架在启动时会统一校验并抛出不支持错误。
 - **精度不达标**：检查校准图像质量，尝试调整 `default_text` 使其与校准图像语义匹配，或参考《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》进行调优。
 - **量化速度较慢**：增加 `--device` 指定多卡，框架启用数据并行（DP）逐层量化，借助多卡并行显著提升量化效率。多卡 DP 的开启方式与配置详见[《多卡分布式量化示例》](../../../user_guide/usage_quick_quantization.md#333-示例3多卡分布式量化)。
-- **显存不足**：若模型参数过大，单卡无法放置一层的权重，可在模型适配器中适配自动按卡切分专家（EP）功能，将模型切分后按卡加载，避免单卡显存溢出。EP 相关适配详见[《多卡量化适配指南》](../../parallel/multi-card_quantization_adaptation.md#多卡量化基本概念)。此外，若仍遇到显存不足，请确认 `--device npu:0` 指定的 NPU 未被其他任务占用。
+- **显存不足**：若模型参数过大，单卡无法放置一层的权重，可在模型适配器中适配自动按卡切分专家（EP）功能，将模型切分后按卡加载，避免单卡显存溢出。EP 相关适配详见[《专家并行机制使用指南》](../../parallel/expert_parallelism/expert_parallelism_guide.md)。此外，若仍遇到显存不足，请确认 `--device npu --device_id 0` 指定的 NPU 未被其他任务占用。
 
 ## 8. 术语
 

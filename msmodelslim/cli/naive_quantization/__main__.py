@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import os
 from pathlib import Path
 
@@ -64,6 +65,8 @@ def main(args):
     dataset_loader = FileDatasetLoader(dataset_dir)
     vlm_dataset_loader = VLMDatasetLoader(dataset_dir)
     device_type, device_index = parse_device_string(args.device)
+    if getattr(args, 'device_id', None):
+        device_index = list(args.device_id)
 
     # Create context persistence if debug mode is enabled
     debug_info_persistence = None
@@ -80,7 +83,7 @@ def main(args):
 
     # 创建YAML量化配置导出器
     quant_config_exporter = YamlQuantConfigExporter()
-    
+
     app = NaiveQuantizationApplication(
         practice_manager=practice_manager,
         quant_service=quant_service,
@@ -97,5 +100,5 @@ def main(args):
         quant_type=args.quant_type,
         config_path=args.config_path,
         trust_remote_code=args.trust_remote_code,
-        tag=getattr(args, 'tag', None)
+        tag=getattr(args, 'tag', None),
     )

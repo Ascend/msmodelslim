@@ -52,7 +52,7 @@ msmodelslim quant \
   --device npu \
   --model_type MiniMax-M2.7 \
   --quant_type w8a8 \
-  --tag Ascend_950 \
+  --tags Ascend_950 \
   --trust_remote_code True
 ```
 

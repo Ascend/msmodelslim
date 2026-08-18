@@ -1386,7 +1386,7 @@ msmodelslim quant \
     --save_path ${SAVE_PATH} \
     --device npu \
     --model_type Wan2.2-T2V-A14B \
-    --config_path ${CONFIG_PATH} \
+    --config ${CONFIG_PATH} \
     --trust_remote_code True
 ```
 

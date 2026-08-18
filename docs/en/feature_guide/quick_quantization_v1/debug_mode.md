@@ -47,7 +47,7 @@ Perform distributed quantization by using multiple devices and enable debug mode
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --device npu:0,1,2,3 \
+  --device npu --device_id 0 1 2 3 \
   --model_type Qwen2.5-7B-Instruct \
   --quant_type w8a8 \
   --trust_remote_code True \
@@ -64,7 +64,7 @@ msmodelslim quant \
   --save_path ${SAVE_PATH} \
   --device npu \
   --model_type ${MODEL_TYPE} \
-  --config_path ${CONFIG_PATH} \
+  --config ${CONFIG_PATH} \
   --trust_remote_code True \
   --debug
 ```

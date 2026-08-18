@@ -59,7 +59,7 @@ msmodelslim quant \
     --device npu \
     --model_type MiniMax-M3 \
     --quant_type w8a8 \
-    --config_path lab_practice/minimax_m3/minimax_m3_w8a8.yaml \
+    --config lab_practice/minimax_m3/minimax_m3_w8a8.yaml \
     --trust_remote_code True
 ```
 

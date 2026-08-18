@@ -65,7 +65,7 @@ msmodelslim quant \
     --save_path /path/to/wan2_1_14b_quantized_weights \
     --device npu \
     --model_type Wan2_1 \
-    --config_path /path/to/wan2_1_w8a8_dynamic.yaml \
+    --config /path/to/wan2_1_w8a8_dynamic.yaml \
     --trust_remote_code True
 ```
 
@@ -91,7 +91,7 @@ msmodelslim quant \
     --save_path /path/to/wan2_1_quantized_weights \
     --device npu \
     --model_type Wan2_1 \
-    --config_path /path/to/wan2_1_w8a8_dynamic.yaml \
+    --config /path/to/wan2_1_w8a8_dynamic.yaml \
     --trust_remote_code True
 ```
 

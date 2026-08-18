@@ -146,7 +146,7 @@ msmodelslim quant \
     --save_path ${SAVE_PATH} \
     --model_type DeepSeek-V4-Flash \
     --quant_type w8a8 \
-    --device npu:0 \
+    --device npu --device_id 0 \
     --trust_remote_code True
 ```
 
@@ -355,7 +355,7 @@ msmodelslim quant \
 
 ## 6. 异常处理
 
-- **量化命令执行失败（OOM）**：DeepSeek-V4-Flash W8A8 量化单卡即可完成，一般不会出现 OOM；若遇显存不足，请确认 `--device npu:0` 指定的 NPU 未被其他任务占用。
+- **量化命令执行失败（OOM）**：DeepSeek-V4-Flash W8A8 量化单卡即可完成，一般不会出现 OOM；若遇显存不足，请确认 `--device npu --device_id 0` 指定的 NPU 未被其他任务占用。
 - **Transformers 加载模型报错**：确认是否安装了 `transformers==4.48.2`，且模型权重路径正确。注意使用非 0731 版本的权重。
 - **vLLM 服务启动失败**：本次实际排查动作依次为：检查 CANN 环境变量（`env | grep ASCEND`）、NPU 状态（`npu-smi info`），并确认 `--tensor-parallel-size 8` 与实际卡数一致。
 

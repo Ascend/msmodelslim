@@ -37,7 +37,7 @@ msmodelslim quant \
   --device npu \
   --model_type LongCat-Flash-Chat \
   --quant_type w4a4 \
-  --tag Ascend_950 \
+  --tags Ascend_950 \
   --trust_remote_code True
 ```
 

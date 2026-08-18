@@ -36,7 +36,7 @@
 
 ## 4. 流程总览
 
-本流程端到端分为五个阶段：确认模型支持、下载浮点模型、确定量化方案与场景标签、执行一键量化、校验交付件。其中 `msmodelslim quant` 命令的7个参数在步骤1~6 中逐一确定：步骤1 确定 `--model_type` 与 `--quant_type`，步骤2 确定 `--model_path`，步骤3 确定 `--tag`，步骤4~6 依次添加 `--save_path`、`--device`、`--trust_remote_code` 并执行：
+本流程端到端分为五个阶段：确认模型支持、下载浮点模型、确定量化方案与场景标签、执行一键量化、校验交付件。其中 `msmodelslim quant` 命令的7个参数在步骤1~6 中逐一确定：步骤1 确定 `--model_type` 与 `--quant_type`，步骤2 确定 `--model_path`，步骤3 确定 `--tags`，步骤4~6 依次添加 `--save_path`、`--device`、`--trust_remote_code` 并执行：
 
 ```mermaid
 flowchart LR
@@ -57,10 +57,10 @@ flowchart LR
 msmodelslim quant \
   --model_path ${MODEL_PATH} \          # 浮点权重目录
   --save_path ${SAVE_PATH} \            # 量化权重输出目录
-  --device npu \                        # 量化设备，如 npu、npu:0,1,2,3
+  --device npu \                        # 量化设备，如 npu、npu --device_id 0 1 2 3
   --model_type ${MODEL_TYPE} \          # 已注册或支持矩阵中的模型名，大小写敏感
   --quant_type ${QUANT_TYPE} \          # 量化类型，如 w8a8
-  --tag ${TAG} \                        # 场景标签，如 vLLM-Ascend Atlas_A2_Inference
+  --tags ${TAG} \                        # 场景标签，如 vLLM-Ascend Atlas_A2_Inference
   --trust_remote_code False             # 仅可信模型必要时设为 True
 ```
 
@@ -112,11 +112,11 @@ msmodelslim quant \
 
 ### 步骤3：确定场景标签
 
-**目标**：确定目标推理场景（`--tag`），使工具能匹配到该场景下已验证的最佳实践配置。
+**目标**：确定目标推理场景（`--tags`），使工具能匹配到该场景下已验证的最佳实践配置。
 
 **操作**：
 
-场景标签（`--tag`）用于告诉工具"量化后的模型将运行在什么环境"，支持两类场景标签，每一类别可指定一种场景，多个标签用空格分隔。各取值说明如下：
+场景标签（`--tags`）用于告诉工具"量化后的模型将运行在什么环境"，支持两类场景标签，每一类别可指定一种场景，多个标签用空格分隔。各取值说明如下：
 
 | 标签类别 | 取值 | 说明 |
 | --- | --- | --- |
@@ -139,7 +139,7 @@ msmodelslim quant \
 
 **输出**：确定的 `${TAG}`。
 
-**通过条件**：`--tag` 取值与目标推理环境一致。
+**通过条件**：`--tags` 取值与目标推理环境一致。
 
 ### 步骤4：添加量化权重的输出目录（必选）
 
@@ -173,7 +173,7 @@ msmodelslim quant \
 
 > **可选：多卡分布式量化**
 >
-> 片上内存受限场景中，可指定多张 NPU 卡自动启用分布式逐层量化，将 `--device` 改为多卡即可，如 `--device npu:0,1,2,3`
+> 片上内存受限场景中，可指定多张 NPU 卡自动启用分布式逐层量化，将 `--device` 改为多卡即可，如 `--device npu --device_id 0 1 2 3`
 >
 > 多卡量化与逐层量化说明详见[一键量化完整指南](usage_quick_quantization.md#41-逐层量化及分布式逐层量化)。
 
@@ -211,7 +211,7 @@ msmodelslim quant \
    └── ${MODEL_TYPE}_best_practice.yaml  # 本次量化的完整配置记录（可用于方案复现）
    ```
 
-   输出文件含义详见《[AscendV1 量化权重格式说明](../knowledge_base/quantization_format/ascendv1/ascendv1.md)》。
+   输出文件含义详见《[AscendV1 量化权重格式说明](../knowledge_base/quantization_format/ascendv1/ascendv1_usage.md)》。
 
    > **注意**：不同导出格式的交付文件不同。如 compressed-tensors 格式没有 `quant_model_description.json`，量化元数据写入 `config.json` 的 `quantization_config` 字段，各格式的文件结构详见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》。
 2. **保存配置记录**：留存 `${SAVE_PATH}` 下生成的 `*_best_practice.yaml`，作为本次量化的复现依据与审计记录。
@@ -228,7 +228,7 @@ msmodelslim quant \
 
 ## 7. 异常处置
 
-- **交互询问场景**：`--tag` 或 `--quant_type` 未命中已验证配置时，工具会询问是否采用推荐配置，确认场景与推荐配置匹配后按提示执行；
+- **交互询问场景**：`--tags` 或 `--quant_type` 未命中已验证配置时，工具会询问是否采用推荐配置，确认场景与推荐配置匹配后按提示执行；
 - **量化失败或 OOM**：先排查 NPU 状态（`npu-smi info`）与环境变量 `ASCEND_RT_VISIBLE_DEVICES` 是否指向有效空闲卡；显存不足（OOM）时改用空闲卡，或开启逐层量化、分布式逐层量化；
 - **模型加载报错**：确认 transformers 等依赖库版本与支持矩阵要求一致，必要时补充 `--trust_remote_code True`（仅限可信模型）；
 - **部署测评后精度异常**：量化权重已完成交付，但部署测评出现 badcase 或输出异常时，进入《[量化推理精度异常定位流程指南](process_quantization_accuracy_anomaly_locating.md)》定位异常位点，并按《[量化精度调优指南](process_quantization_precision_tuning.md)》调优后重新量化。

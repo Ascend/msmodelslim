@@ -522,7 +522,7 @@ msmodelslim quant \
   --save_path ${SAVE_PATH} \
   --device npu \
   --model_type ${MODEL_TYPE} \
-  --config_path ${CONFIG_PATH}
+  --config ${CONFIG_PATH}
 ```
 
 **验证要点**：
@@ -558,7 +558,7 @@ msmodelslim quant \
 - **推理管线加载失败**：确认 Wan2.2 官方仓库已安装并加入 PYTHONPATH；确认 `wan`、`mindiesd` 等依赖可正常导入。
 - **浮点推理失败**：检查 `inference_config` 参数是否正确（size、frame_num、sample_steps、task 等）；确认 task 与模型类型匹配。
 - **校准数据缺失**：检查 `enable_dump` 是否为 True，`dump_data_dir` 是否有写入权限；确认多专家模型的每个专家均有对应的 `calib_data` key。
-- **显存不足**：降低分辨率（`size`）或减少推理步数（`sample_steps`）；减少校准样本数量。此外，若仍遇到显存不足，请确认 `--device npu:0` 指定的 NPU 未被其他任务占用。
+- **显存不足**：降低分辨率（`size`）或减少推理步数（`sample_steps`）；减少校准样本数量。此外，若仍遇到显存不足，请确认 `--device npu --device_id 0` 指定的 NPU 未被其他任务占用。
 - **MindIE-SD 加载失败**：确认使用 `mindie_format_saver` 保存权重；确认多专家模型各专家子目录权重完整。
 
 ## 7. 附录

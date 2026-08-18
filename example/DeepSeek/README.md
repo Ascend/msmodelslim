@@ -363,7 +363,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V4-Pro \
    --quant_type w8a8 \
-   --device npu:0,1,2,3,4,5,6,7 \
+   --device npu --device_id 0 1 2 3 4 5 6 7 \
    --trust_remote_code True
   ```
 
@@ -375,7 +375,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V4-Pro \
    --quant_type w4a8 \
-   --device npu:0,1,2,3,4,5,6,7 \
+   --device npu --device_id 0 1 2 3 4 5 6 7 \
    --trust_remote_code True
   ```
 

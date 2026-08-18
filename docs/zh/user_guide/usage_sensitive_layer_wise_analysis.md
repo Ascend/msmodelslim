@@ -60,8 +60,8 @@ msmodelslim analyze layer \
   --model_path ${MODEL_PATH} \          # 浮点权重目录
   --metrics ${METRICS} \                # 分析指标
   --quant_modules "*" \                 # 参与对比的子模块通配，可多个；默认 "*"
-  --calib_dataset ${CALIB_DATASET} \    # 校准集路径或工具内置短名称
-  --topk ${TOPK} \                      # TopK 数量，默认 15
+  --calibration_dataset ${CALIB_DATASET} \    # 校准集路径或工具内置短名称
+  --top_k ${TOPK} \                      # TopK 数量，默认 15
   --device npu \                        # 分析设备：npu / cpu
   --trust_remote_code False             # 默认 False；仅可信模型必要时设为 True
 ```

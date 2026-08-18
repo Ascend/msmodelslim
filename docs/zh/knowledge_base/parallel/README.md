@@ -44,7 +44,7 @@ msmodelslim quant \
   --save_path ${SAVE_PATH} \
   --model_type ${MODEL_TYPE} \
   --quant_type ${QUANT_TYPE} \
-  --device npu:0,1,2,3,4,5,6,7
+  --device npu --device_id 0 1 2 3 4 5 6 7
 ```
 
 **说明**：多卡量化启用后会自动调用已适配支持的 DP、EP、DTS 等并行机制。

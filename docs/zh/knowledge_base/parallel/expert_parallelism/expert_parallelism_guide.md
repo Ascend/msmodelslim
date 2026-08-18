@@ -159,7 +159,7 @@ for expert in range(expert_start, expert_end):
 | `resolve_expert_ep_range` / `_get_expert_range` | 本地专家范围解析：单进程返回全量，多进程按 `world_size` 连续分片，不可整除时报错 | [common/utils.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/common/utils.py) |
 | `DistHelper` | 模块拓扑分类：`is_shared` / `is_local_only` / `get_shared_modules_slice` | [dist_helper.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_helper.py) |
 | `DistributedAscendV1Saver` | 分布式保存：`local_only` 独占写出、共享模块分工、rank 0 合并 | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
-| `--device npu:0,1,...` / `spec.runner` | 多卡量化入口（EP 在分布式初始化后生效） | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
+| `--device npu --device_id 0 1 ...` / `spec.runner` | 多卡量化入口（EP 在分布式初始化后生效） | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
 
 ## 10. 产品形态与资源限制
 

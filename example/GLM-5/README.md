@@ -134,7 +134,7 @@ msmodelslim quant \
   --model_type GLM-5.1 \
   --quant_type w4a4c8 \
   --trust_remote_code True \
-  --tag vLLM_Ascend Ascend_950
+  --tags vLLM_Ascend Ascend_950
 ```
 
 - 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。

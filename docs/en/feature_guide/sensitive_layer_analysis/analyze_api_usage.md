@@ -51,10 +51,10 @@ msmodelslim analyze [parameters]
 | Parameter| Type| Default Value| Description| Example Value|
 |------|------|--------|------|--------|
 | `--device` | `str` | `npu` | Target device used to run the analysis. Options: `npu`, `cpu`.| `npu` |
-| `--pattern` | `List[str]` | `["*"]` | Layer-name patterns to analyze. Wildcards are supported. You can specify multiple patterns separated by spaces. If no value is passed, the default value is used.| `"*linear*"` `"*attention.*"` `"*mlp.*"` |
+| `--patterns` | `List[str]` | `["*"]` | Layer-name patterns to analyze. Wildcards are supported. You can specify multiple patterns separated by spaces. If no value is passed, the default value is used.| `"*linear*"` `"*attention.*"` `"*mlp.*"` |
 | `--metrics` | `str` | `"kurtosis"` | Metric used for analysis. Options: `"std"`, `"quantile"`, `"kurtosis"`, `"attention_mse"`, `"mse_model_wise"`.| `"kurtosis"` |
-| `--calib_dataset` | `str` | `"boolq.jsonl"` | Path to the calibration dataset file. JSON and JSONL formats are supported, and the file must end with `.json` or `.jsonl`. The path can be an absolute or a relative path.|`/path/data.jsonl`|
-| `--topk` | `int` | `15` | Number of sensitive layers to output as Top K. This must be an integer greater than 0. The recommended range is 10 to 20.|  `15` |
+| `--calibration_dataset` | `str` | `"boolq.jsonl"` | Path to the calibration dataset file. JSON and JSONL formats are supported, and the file must end with `.json` or `.jsonl`. The path can be an absolute or a relative path.|`/path/data.jsonl`|
+| `--top_k` | `int` | `15` | Number of sensitive layers to output as Top K. This must be an integer greater than 0. The recommended range is 10 to 20.|  `15` |
 | `--trust_remote_code` | `bool` | `False` | Whether to trust remote code. You must ensure security yourself. Options: `True`, `False`. If model loading depends on files outside the Transformers library, set `--trust_remote_code` to `True`, for example for DeepSeek-V3 series models.| `False` |
 | `-h, --help` | - | - | CLI help information.| - |
 
@@ -217,8 +217,8 @@ msmodelslim analyze \
     --model_type Qwen2.5-7B-Instruct \
     --model_path ${model_path} \
     --metrics quantile \
-    --calib_dataset ${calib_dataset} \
-    --topk 20 \
+    --calibration_dataset ${calib_dataset} \
+    --top_k 20 \
     --device cpu
 ```
 
@@ -229,7 +229,7 @@ msmodelslim analyze \
 msmodelslim analyze \
     --model_type Qwen2.5-7B-Instruct \
     --model_path ${model_path} \
-    --pattern "*attention*" "*mlp*" \
+    --patterns "*attention*" "*mlp*" \
     --metrics std
 ```
 
@@ -240,10 +240,10 @@ msmodelslim analyze \
     --model_type Qwen3-32B \
     --model_path ${model_path} \
     --device npu \
-    --pattern "*.down_proj*" "*.o_proj*"\
+    --patterns "*.down_proj*" "*.o_proj*"\
     --metrics kurtosis \
-    --calib_dataset ${calib_dataset} \
-    --topk 15 \
+    --calibration_dataset ${calib_dataset} \
+    --top_k 15 \
     --trust_remote_code False
 ```
 

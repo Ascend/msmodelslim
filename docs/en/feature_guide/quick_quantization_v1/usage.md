@@ -111,7 +111,7 @@ msmodelslim quant \
   --save_path ${SAVE_PATH} \
   --device npu \
   --model_type ${MODEL_TYPE} \
-  --config_path ${CONFIG_PATH} \
+  --config ${CONFIG_PATH} \
   --trust_remote_code ${TRUST_REMOTE_CODE}
 ```
 
@@ -123,7 +123,7 @@ Use four NPUs for distributed quantization:
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --device npu:0,1,2,3 \
+  --device npu --device_id 0 1 2 3 \
   --model_type ${MODEL_TYPE} \
   --quant_type w8a8 \
   --trust_remote_code True
@@ -192,10 +192,10 @@ spec:
 
 ```bash
 # Single-device layer-wise quantization
-msmodelslim quant --device npu:0 ...
+msmodelslim quant --device npu --device_id 0 ...
 
 # Multi-device DP layer-wise quantization (DP is automatically enabled)
-msmodelslim quant --device npu:0,1,2,3 ...
+msmodelslim quant --device npu --device_id 0 1 2 3 ...
 ```
 
 #### Precautions

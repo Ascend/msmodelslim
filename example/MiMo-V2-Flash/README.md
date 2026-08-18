@@ -71,7 +71,7 @@ msmodelslim quant \
   --model_path ./MiMo-V2-Flash-BF16/ \
   --save_path ./MiMo-V2-Flash-w8a8/ \
   --model_type MiMo-V2-Flash \
-  --config_path lab_practice/mimo_v2/mimo-v2-flash-w8a8.yaml \
+  --config lab_practice/mimo_v2/mimo-v2-flash-w8a8.yaml \
   --trust_remote_code True
 ```
 

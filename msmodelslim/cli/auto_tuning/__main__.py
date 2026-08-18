@@ -18,7 +18,9 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from msmodelslim.app.auto_tuning import AutoTuningApplication
@@ -57,10 +59,7 @@ def main(args):
     practice_dir = get_practice_dir()
     custom_practice_dir = msmodelslim_config.env_vars.custom_practice_repo
     custom_practice_path = Path(custom_practice_dir) if custom_practice_dir else None
-    practice_manager = YamlPracticeManager(
-        official_config_dir=practice_dir,
-        custom_config_dir=custom_practice_path
-    )
+    practice_manager = YamlPracticeManager(official_config_dir=practice_dir, custom_config_dir=custom_practice_path)
     dataset_dir = get_dataset_dir()
     dataset_loader = FileDatasetLoader(dataset_dir)
     vlm_dataset_loader = VLMDatasetLoader(dataset_dir)
@@ -69,7 +68,7 @@ def main(args):
         QuantServiceProxyConfig(apiversion="proxy"),
         dataset_loader,
         vlm_dataset_loader,
-        context_factory=ContextFactory()
+        context_factory=ContextFactory(),
     )
     model_factory = PluginModelFactory()
     tuning_history_manager = YamlTuningHistoryManager()
@@ -89,6 +88,13 @@ def main(args):
     )
 
     device_type, device_indices = parse_device_string(args.device)
+    if getattr(args, 'device_id', None):
+        device_indices = list(args.device_id)
+
+    # --timeout is expressed in seconds; convert to timedelta when given as an int.
+    timeout = args.timeout
+    if isinstance(timeout, int):
+        timeout = timedelta(seconds=timeout)
 
     app.tune(
         model_type=args.model_type,
@@ -97,6 +103,6 @@ def main(args):
         plan_id=args.config,
         device=device_type,
         device_indices=device_indices,
-        timeout=args.timeout,
-        trust_remote_code=args.trust_remote_code
+        timeout=timeout,
+        trust_remote_code=args.trust_remote_code,
     )

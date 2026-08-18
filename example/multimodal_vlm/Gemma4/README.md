@@ -47,7 +47,7 @@ msmodelslim quant \
     --save_path /path/to/gemma4_w8a8_weights \
     --device npu \
     --model_type gemma-4-31B-it \
-    --config_path lab_practice/gemma4/gemma4_w8a8.yaml \
+    --config lab_practice/gemma4/gemma4_w8a8.yaml \
     --trust_remote_code True
 ```
 

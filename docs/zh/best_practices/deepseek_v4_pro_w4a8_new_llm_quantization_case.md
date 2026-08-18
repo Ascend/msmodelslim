@@ -253,7 +253,7 @@ msmodelslim quant \
     --save_path ${SAVE_PATH} \
     --model_type DeepSeek-V4-Pro \
     --quant_type w4a8 \
-    --device npu:0,1,2,3,4,5,6,7 \
+    --device npu --device_id 0 1 2 3 4 5 6 7 \
     --trust_remote_code True
 ```
 
@@ -417,7 +417,7 @@ msmodelslim quant \
        --model_type DeepSeek-V4-Pro \
        --model_path ${MODEL_PATH} \
        --metrics kurtosis \
-       --topk 15
+       --top_k 15
    ```
 
    分析结果按敏感度从高到低输出敏感层列表，日志中会附带可直接粘贴到量化配置的 YAML 片段。
@@ -557,7 +557,7 @@ ais_bench \
 
 4. **量化命令需在 msmodelslim 目录外执行**：`msmodelslim quant` 命令需要在 `msmodelslim` 目录的父目录执行，否则可能因路径解析问题导致执行失败。适用边界：源码安装方式（`git clone` + `bash install.sh`）。
 
-5. **DeepSeek-V4-Pro W4A8 量化需指定多卡**：W4A8 量化算法较为复杂，单卡量化时间较久，推荐通过 `--device npu:0,1,2,3,4,5,6,7` 指定 8 卡进行多卡量化，以缩短量化耗时。适用边界：DeepSeek-V4-Pro 等大参数量模型在 Atlas 800I A3 形态下的 W4A8 量化阶段（vLLM Ascend 0.22.1rc1 镜像）。
+5. **DeepSeek-V4-Pro W4A8 量化需指定多卡**：W4A8 量化算法较为复杂，单卡量化时间较久，推荐通过 `--device npu --device_id 0 1 2 3 4 5 6 7` 指定 8 卡进行多卡量化，以缩短量化耗时。适用边界：DeepSeek-V4-Pro 等大参数量模型在 Atlas 800I A3 形态下的 W4A8 量化阶段（vLLM Ascend 0.22.1rc1 镜像）。
 
 6. **W4A8 混合量化策略**：DeepSeek-V4-Pro 的 W4A8 量化采用混合策略——路由专家使用 W4A8 动态量化（`ssz` 方法），共享专家和注意力层使用 W8A8 动态量化，在保证精度的同时有效降低模型大小和推理显存占用。适用边界：DeepSeek-V4-Pro W4A8 量化方案（Atlas 800I A3 形态）。
 
@@ -569,7 +569,7 @@ ais_bench \
 
 - **适配器未生效（`--model_type` 无法识别）**：确认 `config/config.ini` 已注册 `deepseek_v4 = DeepSeek-V4-Flash, DeepSeek-V4-Pro`，并在修改后重新执行 `bash install.sh`，检查 `msmodelslim.egg-info/entry_points.txt` 中是否已生成 `DeepSeek-V4-Pro = msmodelslim.model.deepseek_v4.loader:DeepseekV4AdapterLoader`。
 - **量化配置未匹配**：确认 `lab_practice/deepseek_v4/` 下 yaml 的 `metadata.verified_model_types` 包含 `DeepSeek-V4-Pro`，且 `metadata.label` 与 `--quant_type w4a8` 对应（`w_bit: 4`、`a_bit: 8`）。
-- **量化命令执行失败（OOM）**：DeepSeek-V4-Pro W4A8 量化单卡即可完成，实际工程场景下会开启多卡量化加速，一般不会出现 OOM；若遇显存不足，请确认 `--device npu:0,1,2,3,4,5,6,7` 指定的 NPU 未被其他任务占用。
+- **量化命令执行失败（OOM）**：DeepSeek-V4-Pro W4A8 量化单卡即可完成，实际工程场景下会开启多卡量化加速，一般不会出现 OOM；若遇显存不足，请确认 `--device npu --device_id 0 1 2 3 4 5 6 7` 指定的 NPU 未被其他任务占用。
 - **Transformers 加载模型报错**：确认是否安装了 `transformers==4.48.2`，且模型权重路径正确。
 - **vLLM 服务启动失败**：本次实际排查动作依次为：检查 CANN 环境变量（`env | grep ASCEND`）、NPU 状态（`npu-smi info`），并确认 `--tensor-parallel-size 16` 与多节点卡数一致；DeepSeek-V4-Pro 模型较大，需使用多节点部署（至少 2 个 A3 节点，16 卡/节点）。
 

@@ -86,7 +86,7 @@ msmodelslim quant \
   --save_path ${SAVE_PATH} \
   --device npu \
   --model_type ${MODEL_TYPE} \
-  --config_path ${CONFIG_PATH}
+  --config ${CONFIG_PATH}
 ```
 
 **参数说明**：
@@ -104,7 +104,7 @@ msmodelslim quant \
 - DiT 量化会首先运行浮点推理管线（可能耗时较长），生成校准数据后自动进入量化阶段。
 - 对于多专家模型（如 Wan2.2），校准数据会按专家名分别 dump 为 pth 文件。
 - 可设置 `dump_config.enable_dump: False` 跳过浮点推理（仅适用于纯动态量化场景）。
-- 不支持 `--quant_type` 方式，必须通过 `--config_path` 指定完整配置。
+- 不支持 `--quant_type` 方式，必须通过 `--config` 指定完整配置。
 
 **参考配置示例**：
 
@@ -171,7 +171,7 @@ curl -X POST ${INFERENCE_ENDPOINT} \
 - **校准数据缺失**：检查 `enable_dump` 是否为 True，`dump_data_dir` 是否有写入权限。
 - **精度不达标**：尝试调整推理配置参数，增加校准样本数量，或参考《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》进行调优。
 - **量化速度较慢**：增加 `--device` 指定多卡，框架启用数据并行（DP）逐层量化，借助多卡并行显著提升量化效率。多卡 DP 的开启方式与配置详见[《多卡分布式量化示例》](../../../user_guide/usage_quick_quantization.md#333-示例3多卡分布式量化)。
-- **显存不足**：若模型参数过大，单卡无法放置一层的权重，可在模型适配器中适配自动按卡切分专家（EP）功能，将模型切分后按卡加载，避免单卡显存溢出。EP 相关适配详见[《多卡量化适配指南》](../../parallel/multi-card_quantization_adaptation.md#多卡量化基本概念)。此外，若仍遇到显存不足，请确认 `--device npu:0` 指定的 NPU 未被其他任务占用。
+- **显存不足**：若模型参数过大，单卡无法放置一层的权重，可在模型适配器中适配自动按卡切分专家（EP）功能，将模型切分后按卡加载，避免单卡显存溢出。EP 相关适配详见[《专家并行机制使用指南》](../../parallel/expert_parallelism/expert_parallelism_guide.md)。此外，若仍遇到显存不足，请确认 `--device npu --device_id 0` 指定的 NPU 未被其他任务占用。
 
 ## 8. 术语
 
@@ -180,7 +180,7 @@ curl -X POST ${INFERENCE_ENDPOINT} \
 | DiT 量化 | Diffusion Transformer 多模态生成模型训练后量化 | [DiT 量化词条](./term_diffusion_transformer_quantization.md) |
 | 多专家量化 | 多专家 DiT 按专家分别校准和量化 | [DiT 量化词条 - 原理](./term_diffusion_transformer_quantization.md#3-原理) |
 | PTQ | 训练后量化 | [PTQ 总览](../README.md) |
-| MindIE-SD 格式 | 昇腾多模态生成模型推理格式 | [一键量化生成结果](../../quantization_format/ascendv1/ascendv1.md) |
+| MindIE-SD 格式 | 昇腾多模态生成模型推理格式 | [一键量化生成结果](../../quantization_format/ascendv1/ascendv1_usage.md) |
 
 ## 9. 接口文档列表
 

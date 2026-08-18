@@ -60,9 +60,9 @@ msmodelslim analyze linear \
   --model_type ${MODEL_TYPE} \          # 已注册或支持矩阵中的模型名，大小写敏感
   --model_path ${MODEL_PATH} \          # 浮点权重目录
   --metrics ${METRICS} \                # 分析指标
-  --pattern "*" \                       # 待分析层名通配，可多个，空格分隔；默认 "*"
-  --calib_dataset ${CALIB_DATASET} \    # 校准集路径或工具内置短名称
-  --topk ${TOPK} \                      # TopK 数量，默认 15；成组模块一并输出时实际条数可能 ≥ topk
+  --patterns "*" \                       # 待分析层名通配，可多个，空格分隔；默认 "*"
+  --calibration_dataset ${CALIB_DATASET} \    # 校准集路径或工具内置短名称
+  --top_k ${TOPK} \                      # TopK 数量，默认 15；成组模块一并输出时实际条数可能 ≥ top_k
   --device npu \                        # 分析设备：npu / cpu
   --trust_remote_code False             # 默认 False；仅可信模型必要时设为 True
 ```

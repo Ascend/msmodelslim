@@ -546,7 +546,7 @@ msmodelslim quant --model_path ${MODEL_PATH} \
                   --save_path ${SAVE_PATH} \
                   --device npu \
                   --model_type ${MODEL_TYPE} \
-                  --config_path ${CONFIG_PATH} \
+                  --config ${CONFIG_PATH} \
                   --trust_remote_code True
 ```
 

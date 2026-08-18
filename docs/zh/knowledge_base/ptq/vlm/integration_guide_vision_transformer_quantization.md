@@ -473,7 +473,7 @@ msmodelslim quant \
   --save_path ${SAVE_PATH} \
   --device npu \
   --model_type ${MODEL_TYPE} \
-  --config_path ${CONFIG_PATH} \
+  --config ${CONFIG_PATH} \
   --trust_remote_code True
 ```
 
@@ -507,7 +507,7 @@ msmodelslim quant \
 
 ## 6. 异常处理
 
-- **视觉编码器显存不足（OOM）**：降低校准图像分辨率，或减少校准图像数量；考虑使用多卡 DP 模式（`--device npu:0,1`）。此外，若仍遇到显存不足，请确认 `--device npu:0` 指定的 NPU 未被其他任务占用。
+- **视觉编码器显存不足（OOM）**：降低校准图像分辨率，或减少校准图像数量；考虑使用多卡 DP 模式（`--device npu --device_id 0 1`）。此外，若仍遇到显存不足，请确认 `--device npu --device_id 0` 指定的 NPU 未被其他任务占用。
 - **Processor 加载失败**：确认模型路径中包含 `preprocessor_config.json` 或类似的配置文件；对于不使用 Processor 的模型（如 InternVL），需使用 tokenizer 手动预处理。
 - **视觉特征融合失败**：检查 `image_token_id` 是否正确；确认 `masked_scatter` 的维度匹配；对于 DeepStack 等特殊结构，需在特定层后注入视觉特征。
 - **MoE 权重转换错误**：确认 3D 权重的 shape 和拆分逻辑与原始模型定义一致；检查 `moe_utils.py` 中的转换实现。

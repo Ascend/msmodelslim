@@ -35,7 +35,7 @@
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --device npu:0 \
+  --device npu --device_id 0 \
   --model_type GLM-4.7-Flash \
   --quant_type w8a8 \
   --trust_remote_code True

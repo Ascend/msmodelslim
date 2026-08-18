@@ -39,7 +39,7 @@ pip install -U fla-core
 msmodelslim quant \
     --model_path ${model_path} \
     --save_path ${save_path} \
-    --device npu:0,1,2,3,4,5,6,7 \
+    --device npu --device_id 0 1 2 3 4 5 6 7 \
     --model_type Kimi-K3 \
     --quant_type w4a8 \
     --trust_remote_code True
@@ -51,8 +51,8 @@ msmodelslim quant \
 msmodelslim quant \
     --model_path ${model_path} \
     --save_path ${save_path} \
-    --device npu:0,1,2,3,4,5,6,7 \
+    --device npu --device_id 0 1 2 3 4 5 6 7 \
     --model_type Kimi-K3 \
-    --config_path lab_practice/kimi_k3/kimi_k3_w4a8.yaml \
+    --config lab_practice/kimi_k3/kimi_k3_w4a8.yaml \
     --trust_remote_code True
 ```

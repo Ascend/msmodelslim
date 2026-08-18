@@ -70,7 +70,7 @@
 | [W4A4 MX 动态量化](linear_layer_quantization/term_w4a4_mx_dynamic.md) | `W4A4MXDynamicPerBlockFakeQuantLinear` | MXFP4 per-block / per-block 动态 |
 | [W4A4 MX 双 Scale 量化](linear_layer_quantization/term_w4a4_mx_dualscale.md) | `W4A4MXDynamicDualScaleFakeQuantLinear` | MXFP4 双 scale / per-block 动态 |
 | [W16A16S 量化](linear_layer_quantization/term_w16a16s.md) | `W16A16sLinear` | 16bit 权重/激活（含稀疏） |
-| [SVDQuant](../quantization_algorithms/svdquant/svdquant.md) | `SVDResidualWrapper`（[`svd_residual.py`](../../../../msmodelslim/ir/svd_residual.py)，配合 linear_quant） | 低秩分解 + 残差低比特量化 |
+| [SVDQuant](../quantization_algorithms/svdquant/usage_svdquant.md) | `SVDResidualWrapper`（[`svd_residual.py`](../../../../msmodelslim/ir/svd_residual.py)，配合 linear_quant） | 低秩分解 + 残差低比特量化 |
 
 > 注：prefill 与 decode 是 LLM 推理的两个阶段——prefill 一次处理整个输入 prompt（计算密集），decode 逐个生成 token（访存密集），详见[线性层量化](linear_layer_quantization/README.md)。
 
@@ -115,9 +115,9 @@ FA 量化**本质上是一个组合量化模式**，实际作用于注意力 **Q
 - [KVCache 量化](kv_cache_quantization/README.md)：下位概念，针对 KVCache 的量化类别。
 - [FA 量化](fa_quantization/README.md)：下位概念，KVCache 量化的进阶类别。
 - [W8A8 静态量化](linear_layer_quantization/term_w8a8_static.md)：下位概念，线性层量化中"权重/激活静态"的典型模式。
-- 《[线性量化算法说明](../quantization_algorithms/linear_quant/linear_quant.md)》：配套术语，描述线性层量化模式的处理器实现。
-- 《[KVCache量化：缓存量化算法说明](../quantization_algorithms/kvcache_quant/kvcache_quant.md)》：配套术语，描述 KVCache 量化算法。
-- 《[FA3量化：Flash Attention 3激活量化算法说明](../quantization_algorithms/fa3_quant/fa3_quant.md)》：配套术语，描述 FA 量化算法。
+- 《[线性量化算法说明](../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，描述线性层量化模式的处理器实现。
+- 《[KVCache量化：缓存量化算法说明](../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)》：配套术语，描述 KVCache 量化算法。
+- 《[FA3量化：Flash Attention 3激活量化算法说明](../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》：配套术语，描述 FA 量化算法。
 
 ---
 
@@ -126,5 +126,5 @@ FA 量化**本质上是一个组合量化模式**，实际作用于注意力 **Q
 1. Jacob B et al. Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference. CVPR 2018. https://arxiv.org/abs/1712.05877
 2. Yao Z et al. ZeroQuant: Efficient and Affordable Post-Training Quantization for Large-Scale Transformers. NeurIPS 2022. https://arxiv.org/abs/2206.01861
 3. Liu Z et al. KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache. ICML 2024. https://arxiv.org/abs/2402.02750
-4. 《[线性量化算法说明](../quantization_algorithms/linear_quant/linear_quant.md)》
-5. 《[AscendV1 格式说明](../quantization_format/ascendv1/ascendv1.md)》
+4. 《[线性量化算法说明](../quantization_algorithms/linear_quant/usage_linear_quant.md)》
+5. 《[AscendV1 格式说明](../quantization_format/ascendv1/ascendv1_usage.md)》

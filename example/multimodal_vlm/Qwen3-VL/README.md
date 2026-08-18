@@ -121,7 +121,7 @@ msmodelslim quant \
     --save_path /path/to/qwen3_vl_4b_quantized_weights \
     --device npu \
     --model_type Qwen3-VL-4B-Instruct \
-    --config_path lab_practice/qwen3_vl/qwen3_vl_4b_w8a8.yaml \
+    --config lab_practice/qwen3_vl/qwen3_vl_4b_w8a8.yaml \
     --trust_remote_code True
 ```
 
