@@ -10,8 +10,6 @@ import traceback
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
-import pygtrie
-import torch
 from torch import distributed as dist
 from torch import nn
 
@@ -23,8 +21,6 @@ from msmodelslim.utils.distributed.task_scheduler.constants import (
     DISTRIBUTED_TASK_QUEUE_GET_TIMEOUT_S,
     DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX,
     DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX,
-    DTS_PERF_LOG_SPEEDUP_RATIO_PREFIX,
-    DTS_PERF_LOG_SPEEDUP_SKIPPED_PREFIX,
     DTS_USER_LOG_PREFIX,
     get_distributed_task_work_queue,
 )
@@ -54,25 +50,27 @@ def _collective_op_guard():
         yield
         return
 
-    _COLLECTIVE_OP_NAMES = frozenset({
-        "broadcast",
-        "all_reduce",
-        "reduce",
-        "all_gather",
-        "all_gather_into_tensor",
-        "gather",
-        "scatter",
-        "all_to_all",
-        "all_to_all_single",
-        "reduce_scatter",
-        "reduce_scatter_tensor",
-        "barrier",
-        "monitored_barrier",
-        "broadcast_object_list",
-        "all_gather_object",
-        "gather_object",
-        "scatter_object",
-    })
+    _COLLECTIVE_OP_NAMES = frozenset(
+        {
+            "broadcast",
+            "all_reduce",
+            "reduce",
+            "all_gather",
+            "all_gather_into_tensor",
+            "gather",
+            "scatter",
+            "all_to_all",
+            "all_to_all_single",
+            "reduce_scatter",
+            "reduce_scatter_tensor",
+            "barrier",
+            "monitored_barrier",
+            "broadcast_object_list",
+            "all_gather_object",
+            "gather_object",
+            "scatter_object",
+        }
+    )
 
     def _make_guard(op_name: str):
         def _guarded(*args, **kwargs):
@@ -83,16 +81,10 @@ def _collective_op_guard():
                 fname = frame.filename.replace("\\", "/")
                 if "_collective_op_guard" in frame.name or "wave.py" in fname:
                     continue
-                caller_lines = (
-                    f"  File \"{frame.filename}\", line {frame.lineno}, in {frame.name}\n"
-                    f"    {frame.line}"
-                )
+                caller_lines = f"  File \"{frame.filename}\", line {frame.lineno}, in {frame.name}\n    {frame.line}"
                 break
 
-            msg = (
-                f"DTS shared task contains illegal cross-rank collective: "
-                f"torch.distributed.{op_name}()."
-            )
+            msg = f"DTS shared task contains illegal cross-rank collective: torch.distributed.{op_name}()."
             tip = (
                 "DTS shared tasks must be independently executable by any single rank; "
                 "they must NOT contain multi-rank synchronization (broadcast, all_gather, etc.). "
@@ -102,10 +94,12 @@ def _collective_op_guard():
             if caller_lines:
                 tip += f"\n\nCall site:\n{caller_lines}"
             raise SchemaValidateError(msg, action=tip)
+
         return _guarded
 
     guards = {name: _make_guard(name) for name in _COLLECTIVE_OP_NAMES if hasattr(dist, name)}
     from unittest.mock import patch
+
     with patch.multiple(dist, **guards):
         yield
 
@@ -117,6 +111,23 @@ def _dp_tasks_executed_on_this_rank(n_tasks: int, rank: int, world_size: int, al
     return sum(1 for i in range(n_tasks) if (i % world_size) == rank)
 
 
+def _has_path_conflict(registered_paths: Set[str], dep: str) -> bool:
+    """判断 ``dep`` 与已登记路径是否存在同路径 / 父子前缀冲突。
+
+    父子关系在两个方向均视为冲突：``dep`` 是某个已登记路径的父路径，
+    或某个已登记路径是 ``dep`` 的父路径。
+    """
+    d = (dep or "").strip().strip(".")
+    if not d:
+        return False
+    if d in registered_paths:
+        return True
+    for registered in registered_paths:
+        if registered.startswith(d + ".") or d.startswith(registered + "."):
+            return True
+    return False
+
+
 class _DtsSingleWaveSchedulerBase(ABC):
     """单波次调度基类（内部）；子类实现并行或本地全量语义。"""
 
@@ -126,7 +137,7 @@ class _DtsSingleWaveSchedulerBase(ABC):
         self._task_id_prefix = str(task_id_prefix or "")
         self._next_task_seq: int = 0
         self._closed = False
-        self._wave_dep_trie: pygtrie.StringTrie = pygtrie.StringTrie(separator=".")
+        self._wave_dep_paths: Set[str] = set()
         self._wave_parallel_key: Optional[bool] = None
 
     def __enter__(self) -> "_DtsSingleWaveSchedulerBase":
@@ -138,14 +149,14 @@ class _DtsSingleWaveSchedulerBase(ABC):
 
     @abstractmethod
     def submit(
-            self,
-            fn: Callable[..., Any],
-            args: Tuple[Any, ...] = (),
-            kwargs: Optional[Dict[str, Any]] = None,
-            dependencies: Optional[List[str]] = None,
-            sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
-            parallel: bool = True,
-            wave_parallel_key: Optional[bool] = None,
+        self,
+        fn: Callable[..., Any],
+        args: Tuple[Any, ...] = (),
+        kwargs: Optional[Dict[str, Any]] = None,
+        dependencies: Optional[List[str]] = None,
+        sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
+        parallel: bool = True,
+        wave_parallel_key: Optional[bool] = None,
     ) -> None:
         """提交任务。"""
 
@@ -159,25 +170,15 @@ class _DtsSingleWaveSchedulerBase(ABC):
 
     def registered_dependency_paths(self) -> Set[str]:
         """本波次已登记的非空依赖路径集合（供分波调度器与测试观测）。"""
-        return set(self._wave_dep_trie.keys())
+        return set(self._wave_dep_paths)
 
     def _has_prefix_conflict_in_wave(self, dep: str) -> bool:
         """判断 ``dep`` 是否与本波次已登记路径冲突（同路径 / 前缀 / 子路径）。"""
-        d = (dep or "").strip().strip(".")
-        if not d:
-            return False
-        trie = self._wave_dep_trie
-        if trie.has_key(d):
-            return True
-        if trie.has_subtrie(d):
-            return True
-        for _ in trie.prefixes(d):
-            return True
-        return False
+        return _has_path_conflict(self._wave_dep_paths, dep)
 
     def dependencies_conflict_with_wave(self, deps: List[str]) -> bool:
         """候选 ``deps`` 是否与本波次已累积依赖冲突（含前缀冲突）；不校验路径是否在模型上存在。"""
-        if not deps or len(self._wave_dep_trie) == 0:
+        if not deps or not self._wave_dep_paths:
             return False
         for d in deps:
             if self._has_prefix_conflict_in_wave(d):
@@ -194,25 +195,24 @@ class _DtsSingleWaveSchedulerBase(ABC):
         for dep in deps:
             d = (dep or "").strip().strip(".")
             if d:
-                self._wave_dep_trie[d] = True
+                self._wave_dep_paths.add(d)
 
     def _submit_common(
-            self,
-            fn: Callable[..., Any],
-            args: Tuple[Any, ...] = (),
-            kwargs: Optional[Dict[str, Any]] = None,
-            dependencies: Optional[List[str]] = None,
-            sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
-            parallel: bool = True,
-            wave_parallel_key: Optional[bool] = None,
+        self,
+        fn: Callable[..., Any],
+        args: Tuple[Any, ...] = (),
+        kwargs: Optional[Dict[str, Any]] = None,
+        dependencies: Optional[List[str]] = None,
+        sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
+        parallel: bool = True,
+        wave_parallel_key: Optional[bool] = None,
     ) -> None:
         if self._closed:
             raise RuntimeError("scheduler is closed")
         if self._has_conflict(parallel):
             expected = self._tasks[0].spec.parallel if self._tasks else parallel
             raise SchemaValidateError(
-                "DTS submit: parallel must match other tasks in this wave "
-                f"(expected {expected!r}, got {parallel!r}).",
+                f"DTS submit: parallel must match other tasks in this wave (expected {expected!r}, got {parallel!r}).",
                 action=(
                     "Split tasks into separate waves by using consistent parallel flags per wave "
                     "or submit via DistributedTaskScheduler which auto-splits conflicting tasks."
@@ -250,7 +250,6 @@ class _DtsSingleWaveSchedulerBase(ABC):
         )
         self._tasks.append(Task(spec=spec, sync_fn=sync_fn))
         self._register_wave_dependencies(deps)
-        return None
 
     def _execute_local_task(self, task: Task, rank: int, world_size: int) -> Tuple[Any, float]:
         t0 = time.perf_counter()
@@ -272,15 +271,15 @@ class _DtsSingleWaveSchedulerBase(ABC):
         return local_results, owner_map, exec_time_map
 
     def _execute_all_rank_tasks(
-            self,
-            task_indices: List[int],
-            queue: Optional[Any],
-            rank: int,
-            world_size: int,
-            local_results: Dict[str, Any],
-            local_exec_rank: Dict[str, int],
-            local_exec_time_s: Dict[str, float],
-            all_ranks_execute_tasks: bool = False,
+        self,
+        task_indices: List[int],
+        queue: Optional[Any],
+        rank: int,
+        world_size: int,
+        local_results: Dict[str, Any],
+        local_exec_rank: Dict[str, int],
+        local_exec_time_s: Dict[str, float],
+        all_ranks_execute_tasks: bool = False,
     ) -> None:
         if not task_indices:
             return
@@ -426,13 +425,13 @@ class _DtsSingleWaveSchedulerBase(ABC):
         return records
 
     def _finalize_local_wave_no_sync(
-            self,
-            owner_map: Dict[str, int],
-            local_results: Dict[str, Any],
-            exec_time_map: Dict[str, float],
-            rank: int,
-            world_size: int,
-            t_run_wall_start: float,
+        self,
+        owner_map: Dict[str, int],
+        local_results: Dict[str, Any],
+        exec_time_map: Dict[str, float],
+        rank: int,
+        world_size: int,
+        t_run_wall_start: float,
     ) -> Tuple[List[TaskExecutionRecord], float, float]:
         records = self._build_records_without_sync(owner_map, local_results, exec_time_map)
         total_exec_s = sum(float(r.exec_time_s or 0.0) for r in records)
@@ -464,14 +463,14 @@ class _DtsMultiRankParallelWaveScheduler(_DtsSingleWaveSchedulerBase):
         return self._tasks[0].spec.parallel != parallel
 
     def submit(
-            self,
-            fn: Callable[..., Any],
-            args: Tuple[Any, ...] = (),
-            kwargs: Optional[Dict[str, Any]] = None,
-            dependencies: Optional[List[str]] = None,
-            sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
-            parallel: bool = True,
-            wave_parallel_key: Optional[bool] = None,
+        self,
+        fn: Callable[..., Any],
+        args: Tuple[Any, ...] = (),
+        kwargs: Optional[Dict[str, Any]] = None,
+        dependencies: Optional[List[str]] = None,
+        sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
+        parallel: bool = True,
+        wave_parallel_key: Optional[bool] = None,
     ) -> None:
         return self._submit_common(
             fn,
@@ -573,25 +572,48 @@ class _DtsMultiRankParallelWaveScheduler(_DtsSingleWaveSchedulerBase):
         my_sync_s = per_rank_sync_time.get(rank, 0.0)
         if total_sync_s > 0:
             ratio = total_exec_s / total_sync_s
-            _log.debug(
+            run_time_summary_fmt = (
                 DTS_USER_LOG_PREFIX
                 + DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX
-                + " rank=%s world_size=%s total_exec_s=%.6f total_sync_s=%.6f exec_over_sync=%.6f",
-                rank, world_size, total_exec_s, total_sync_s, ratio,
+                + " rank=%s world_size=%s total_exec_s=%.6f total_sync_s=%.6f exec_over_sync=%.6f"
+            )
+            _log.debug(
+                run_time_summary_fmt,
+                rank,
+                world_size,
+                total_exec_s,
+                total_sync_s,
+                ratio,
             )
             if ratio <= 1.0:
-                _log.debug(
+                not_suitable_fmt = (
                     DTS_USER_LOG_PREFIX
                     + DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX
-                    + ": exec_over_sync=%.6f (<=1). Sync cost dominates.",
+                    + ": exec_over_sync=%.6f (<=1). Sync cost dominates."
+                )
+                _log.debug(
+                    not_suitable_fmt,
                     ratio,
                 )
         queue_str = "shared" if queue is not None else "static_rr"
         speedup = float(total_exec_s) / t_run_wall_s if t_run_wall_s > 0 and total_exec_s > 0 else 0.0
+        parallel_summary_fmt = (
+            DTS_USER_LOG_PREFIX
+            + "Summary: tasks=%d world_size=%d rank=%d my_tasks=%d exec_s=%.4f my_exec_s=%.4f sync_s=%.4f my_sync_s=%.4f t_run_wall_s=%.4f speedup=%.4f queue=%s"
+        )
         _log.info(
-            DTS_USER_LOG_PREFIX + "Summary: tasks=%d world_size=%d rank=%d my_tasks=%d exec_s=%.4f my_exec_s=%.4f sync_s=%.4f my_sync_s=%.4f t_run_wall_s=%.4f speedup=%.4f queue=%s",
-            n_tasks, world_size, rank, my_tasks,
-            total_exec_s, my_exec_s, total_sync_s, my_sync_s, t_run_wall_s, speedup, queue_str,
+            parallel_summary_fmt,
+            n_tasks,
+            world_size,
+            rank,
+            my_tasks,
+            total_exec_s,
+            my_exec_s,
+            total_sync_s,
+            my_sync_s,
+            t_run_wall_s,
+            speedup,
+            queue_str,
         )
         return records
 
@@ -602,14 +624,14 @@ class _DtsSequentialWaveScheduler(_DtsSingleWaveSchedulerBase):
         return False
 
     def submit(
-            self,
-            fn: Callable[..., Any],
-            args: Tuple[Any, ...] = (),
-            kwargs: Optional[Dict[str, Any]] = None,
-            dependencies: Optional[List[str]] = None,
-            sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
-            parallel: bool = True,
-            wave_parallel_key: Optional[bool] = None,
+        self,
+        fn: Callable[..., Any],
+        args: Tuple[Any, ...] = (),
+        kwargs: Optional[Dict[str, Any]] = None,
+        dependencies: Optional[List[str]] = None,
+        sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
+        parallel: bool = True,
+        wave_parallel_key: Optional[bool] = None,
     ) -> None:
         _ = parallel
         return self._submit_common(
@@ -663,10 +685,22 @@ class _DtsSequentialWaveScheduler(_DtsSingleWaveSchedulerBase):
         t_run_wall_s = time.perf_counter() - t_run_wall_start
         my_tasks = len(records)
         mode = "single-rank" if world_size == 1 else "no-parallel"
+        summary_fmt = (
+            DTS_USER_LOG_PREFIX
+            + "Summary: tasks=%d world_size=%d rank=%d my_tasks=%d exec_s=%.4f my_exec_s=%.4f sync_s=%.4f my_sync_s=%.4f t_run_wall_s=%.4f mode=%s"
+        )
         _log.info(
-            DTS_USER_LOG_PREFIX + "Summary: tasks=%d world_size=%d rank=%d my_tasks=%d exec_s=%.4f my_exec_s=%.4f sync_s=%.4f my_sync_s=%.4f t_run_wall_s=%.4f mode=%s",
-            len(self._tasks), world_size, rank, my_tasks,
-            total_exec_s, total_exec_s, total_sync_s, total_sync_s, t_run_wall_s, mode,
+            summary_fmt,
+            len(self._tasks),
+            world_size,
+            rank,
+            my_tasks,
+            total_exec_s,
+            total_exec_s,
+            total_sync_s,
+            total_sync_s,
+            t_run_wall_s,
+            mode,
         )
         return records
 
@@ -683,16 +717,16 @@ class WaveDTSBackend(DTSBackend):
         self._closed = True
 
     def submit(
-            self,
-            fn: Callable[..., Any],
-            args: Tuple[Any, ...] = (),
-            kwargs: Optional[Dict[str, Any]] = None,
-            dependencies: Optional[List[str]] = None,
-            sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
-            parallel: bool = True,
-            *,
-            scheduler_disable_parallel: bool,
-            global_disable_parallel: bool,
+        self,
+        fn: Callable[..., Any],
+        args: Tuple[Any, ...] = (),
+        kwargs: Optional[Dict[str, Any]] = None,
+        dependencies: Optional[List[str]] = None,
+        sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
+        parallel: bool = True,
+        *,
+        scheduler_disable_parallel: bool,
+        global_disable_parallel: bool,
     ) -> None:
         if self._closed:
             raise RuntimeError("WaveDTSBackend is closed")
@@ -700,9 +734,7 @@ class WaveDTSBackend(DTSBackend):
         deps = list(dependencies or [])
         world_size = dist.get_world_size() if dist.is_initialized() else 1
         single_rank = world_size <= 1
-        effective_local_only = (
-            single_rank or scheduler_disable_parallel or global_disable_parallel or (not parallel)
-        )
+        effective_local_only = single_rank or scheduler_disable_parallel or global_disable_parallel or (not parallel)
         wave_parallel_key = bool(parallel)
         inner_parallel = not effective_local_only
         if self._must_start_new_wave(deps, wave_parallel_key):

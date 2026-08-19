@@ -1,6 +1,4 @@
-import sys
 from types import SimpleNamespace
-from unittest.mock import MagicMock
 
 import pytest
 import torch
@@ -11,8 +9,6 @@ from msmodelslim.core.const import DeviceType
 from msmodelslim.model.minimax_m2 import model_adapter as target
 from msmodelslim.model.minimax_m2.model_adapter import MiniMaxM2ModelAdapter
 from msmodelslim.utils.exception import InvalidModelError
-
-sys.modules.setdefault("pygtrie", MagicMock())
 
 
 def _adapter(**kwargs):
@@ -188,7 +184,7 @@ def test_should_build_quarot_maps_when_public_quarot_apis_called_given_small_con
     assert len(calls) == 2
     assert len(pre_run) == 1
     assert len(rotate_pairs) == 2
-    assert first_map == {}
+    assert not first_map
     assert bake_names == ([], [])
     assert pre_run[0].right_rot["model.embed_tokens"] == "rot-16-8"
     assert rotate_pairs[0].right_rot["lm_head"] == "rot-16-8"

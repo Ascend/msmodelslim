@@ -53,10 +53,6 @@ if 'msmodelslim.utils.security.path' not in sys.modules:
     sys.modules['msmodelslim.utils.security.path'] = MagicMock()
 sys.modules['msmodelslim.utils.security.path'].check_dirpath_before_read = _mock_check_dirpath_before_read
 
-# Mock optional third-party dependency wcmatch to avoid ModuleNotFoundError in tests
-if 'wcmatch' not in sys.modules:
-    sys.modules['wcmatch'] = MagicMock()
-
 
 # ========== Pytest Fixtures ==========
 @pytest.fixture

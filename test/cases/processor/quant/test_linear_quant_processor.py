@@ -42,18 +42,8 @@ class TestLinearQuantProcessor(TestProcessorBase):
 
     def create_basic_qconfig(self, w_bits: int = 8, a_bits: int = 8) -> LinearQConfig:
         """创建基本的量化配置"""
-        weight_config = QConfig(
-            dtype=QDType.INT8,
-            scope=QScope.PER_CHANNEL,
-            symmetric=True,
-            method="minmax"
-        )
-        act_config = QConfig(
-            dtype=QDType.INT8,
-            scope=QScope.PER_TENSOR,
-            symmetric=True,
-            method="minmax"
-        )
+        weight_config = QConfig(dtype=QDType.INT8, scope=QScope.PER_CHANNEL, symmetric=True, method="minmax")
+        act_config = QConfig(dtype=QDType.INT8, scope=QScope.PER_TENSOR, symmetric=True, method="minmax")
         return LinearQConfig(act=act_config, weight=weight_config)
 
     def create_processor_config(self, include: list = None, exclude: list = None) -> LinearProcessorConfig:
@@ -72,7 +62,7 @@ class TestLinearQuantProcessor(TestProcessorBase):
     def test_basic_quantization(self):
         config = self.create_processor_config()
 
-        runner = self.run_processor_with_cfg(config)
+        self.run_processor_with_cfg(config)
 
         inputs = self.create_test_input()
         self.assert_model_runs_without_error(inputs)
@@ -139,7 +129,7 @@ class TestLinearQuantProcessor(TestProcessorBase):
     def test_per_channel_quantization(self):
         qconfig_per_channel = LinearQConfig(
             act=QConfig(dtype=QDType.INT8, scope=QScope.PER_TOKEN, symmetric=True, method="minmax"),
-            weight=QConfig(dtype=QDType.INT8, scope=QScope.PER_CHANNEL, symmetric=True, method="minmax")
+            weight=QConfig(dtype=QDType.INT8, scope=QScope.PER_CHANNEL, symmetric=True, method="minmax"),
         )
         config = LinearProcessorConfig(qconfig=qconfig_per_channel, include=["*"])
 
@@ -151,7 +141,7 @@ class TestLinearQuantProcessor(TestProcessorBase):
     def test_asymmetric_quantization(self):
         qconfig_asymmetric = LinearQConfig(
             act=QConfig(dtype=QDType.INT8, scope=QScope.PER_TENSOR, symmetric=False, method="minmax"),
-            weight=QConfig(dtype=QDType.INT8, scope=QScope.PER_CHANNEL, symmetric=True, method="minmax")
+            weight=QConfig(dtype=QDType.INT8, scope=QScope.PER_CHANNEL, symmetric=True, method="minmax"),
         )
         config = LinearProcessorConfig(qconfig=qconfig_asymmetric, include=["*"])
 
@@ -245,15 +235,13 @@ class TestLinearQuantProcessor(TestProcessorBase):
         test_inputs = [
             self.create_test_input("Short", 5),
             self.create_test_input("Medium length text", 15),
-            self.create_test_input("This is a longer text for testing", 20)
+            self.create_test_input("This is a longer text for testing", 20),
         ]
 
         for inputs in test_inputs:
             self.assert_model_runs_without_error(inputs)
 
     def test_quantization_preserves_model_structure(self):
-        original_modules = list(self.model.named_modules())
-
         config = self.create_processor_config(include=["*"])
         self.run_processor_with_cfg(config)
 
@@ -334,7 +322,7 @@ class TestLinearQuantProcessor(TestProcessorBase):
         existing_layer = self.linear_layer_names[0]
         config = self.create_processor_config(
             include=[existing_layer, "nonexistent_include_1", "nonexistent_include_2"],
-            exclude=["nonexistent_exclude_1", "nonexistent_exclude_2"]
+            exclude=["nonexistent_exclude_1", "nonexistent_exclude_2"],
         )
 
         with self.assertLogs('msmodelslim.processor.linear_quant', level='WARNING') as log_context:
@@ -374,34 +362,88 @@ class TestLinearQuantProcessor(TestProcessorBase):
             layer = self.get_module_by_name(self.model, layer_name)
             self.assertIsInstance(layer, torch.nn.Linear, f"Layer {layer_name} should not be quantized")
 
-
     def test_DTS_calibrate_methods_should_exist(self):
         """验证 DTS calibrate 方法存在"""
         from msmodelslim.processor.quant.linear import LinearQuantProcessor
-        assert hasattr(LinearQuantProcessor, '_calibrate_shared_data_free_with_dts'), \
+
+        assert hasattr(LinearQuantProcessor, '_calibrate_shared_data_free_with_dts'), (
             "LinearQuantProcessor should have _calibrate_shared_data_free_with_dts"
-        assert hasattr(LinearQuantProcessor, '_dts_calibrate_forward'), \
+        )
+        assert hasattr(LinearQuantProcessor, '_dts_calibrate_forward'), (
             "LinearQuantProcessor should have _dts_calibrate_forward"
+        )
 
     def test_preprocess_no_dts_when_not_distributed(self):
         """非分布式下 preprocess 不执行 DTS（不报错）"""
         config = self.create_processor_config(include=["*"])
-        processor = self.run_processor_with_cfg(config)
+        self.run_processor_with_cfg(config)
         inputs = self.create_test_input()
         self.assert_model_runs_without_error(inputs)
 
     def test_calibrate_forward_calls_weight_quantizer_forward(self):
         """验证 _dts_calibrate_forward 触发 weight_quantizer.forward"""
-        from unittest.mock import MagicMock, patch
         from msmodelslim.processor.quant.linear import LinearQuantProcessor
 
-        config = self.create_processor_config(include=["*"])
-        from msmodelslim.core.quantizer.linear import LinearQuantizer
-        from msmodelslim.core.base.protocol import BatchProcessRequest
-
         # 验证方法存在于 LinearQuantProcessor 类上
-        assert hasattr(LinearQuantProcessor, '_dts_calibrate_forward'), \
+        assert hasattr(LinearQuantProcessor, '_dts_calibrate_forward'), (
             "LinearQuantProcessor should have _dts_calibrate_forward"
+        )
+
+    def test_brace_pattern_include_quantizes_only_matching_layers(self):
+        """花括号 include 模式（原 wcmatch BRACE 语义）只量化命中的层。"""
+        config = self.create_processor_config(include=["model.layers.{0,1}.mlp.up_proj"])
+        self.run_processor_with_cfg(config)
+
+        for layer_idx, expect_quantized in ((0, True), (1, True), (2, False)):
+            name = f"model.layers.{layer_idx}.mlp.up_proj"
+            layer = self.get_module_by_name(self.model, name)
+            if expect_quantized:
+                self.assertNotIsInstance(layer, torch.nn.Linear, f"{name} should be quantized")
+            else:
+                self.assertIsInstance(layer, torch.nn.Linear, f"{name} should not be quantized")
+
+    def test_dts_calibrate_shared_data_free_when_distributed(self):
+        """分布式下共享 data-free 权重量化经 DTS 调度完成校准（替换 pygtrie 后的业务级验证）。"""
+        from unittest.mock import MagicMock, patch
+        from msmodelslim.core.quantizer.base import AutoWeightQuantizer
+        from msmodelslim.core.quantizer.linear import LinearQuantizer
+        from msmodelslim.processor.quant import linear as linear_module
+
+        config = self.create_processor_config(include=["*"])
+        processor = linear_module.LinearQuantProcessor(model=self.model, config=config)
+        processor._install_quantizer("", self.model)
+
+        quantizer_names = [
+            name for name, submodule in self.model.named_modules() if isinstance(submodule, LinearQuantizer)
+        ]
+        self.assertGreater(len(quantizer_names), 0)
+
+        processor.dist_helper = MagicMock()
+        processor.dist_helper.is_shared.return_value = True
+
+        scheduled: list = []
+        original = processor._dts_calibrate_forward
+
+        def _spy(module_name: str):
+            scheduled.append(module_name)
+            return original(module_name)
+
+        # 用真实函数遮蔽实例方法（MagicMock 无法通过 DTS 的语义哈希校验）
+        processor._dts_calibrate_forward = _spy
+        with (
+            patch.object(linear_module.dist, "get_rank", return_value=0),
+            patch.object(linear_module.dist, "get_world_size", return_value=2),
+            patch.object(AutoWeightQuantizer, "is_data_free", return_value=True),
+        ):
+            processor._calibrate_shared_data_free_with_dts("", self.model)
+
+        # 所有共享 data-free 权重量化器都应被 DTS 提交并实际执行校准
+        self.assertEqual(sorted(scheduled), sorted(quantizer_names))
+
+        # 校准后每个权重量化器都应已产出量化参数（而非依赖 get_q_param 的惰性触发）
+        for name in quantizer_names:
+            wq = self.get_module_by_name(self.model, name + ".weight_quantizer")
+            self.assertIsNotNone(wq.w_q_param, f"{name} weight quantizer should be calibrated")
 
 
 if __name__ == '__main__':
