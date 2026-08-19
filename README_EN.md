@@ -20,7 +20,7 @@
 <br><br>
 </div>
 
-[简体中文](./README.md) | English
+English | [简体中文](./README.md)
 
 <a id="What's New"></a>
 
