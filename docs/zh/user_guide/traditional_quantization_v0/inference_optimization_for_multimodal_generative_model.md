@@ -9,7 +9,7 @@
 ## 3. 硬件平台
 
 - 仅支持在以下产品中使用。
-    - Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件。
+    - 昇腾A2系列产品（Atlas 800I A2 推理产品/A200I A2 Box 异构组件）。
 
 ## 4. 软件依赖
 
@@ -321,7 +321,7 @@ bash scripts/text_condition/gpu/sample_t2v_sp.sh
 
 获取到模型pipeline对象后，设置采样优化参数，传入生成的校准视频文件夹目录，调用`ReStepAdaptor`类进行 `timestep` 搜索，完整示例脚本： [search_t2v_sp.sh](../../../../example/osp1_2/search_t2v_sp.sh)。
 
-```python3
+```python
 # Load pipeline, for example
 pipeline: OpenSoraPipeline = load_t2v_checkpoint(model_path)
 

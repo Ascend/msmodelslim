@@ -128,7 +128,7 @@ msmodelslim quant \
 | 硬件形态 | `Atlas_A2_Training` | 量化后模型运行于 Atlas A2 系列训练卡 |
 | 硬件形态 | `Atlas_A3_Training` | 量化后模型运行于 Atlas A3 系列训练卡 |
 | 硬件形态 | `Atlas_300I_Duo` | 量化后模型运行于 Atlas 300I Duo 推理卡 |
-| 硬件形态 | `Ascend_950` | 量化后模型运行于 Ascend 950 产品 |
+| 硬件形态 | `Ascend_950` | 量化后模型运行于昇腾950PR&950DT系列产品 |
 
 > 推理引擎各取值对应的官方文档参见：《[MindIE 文档](https://mindie-motor.readthedocs.io/zh-cn/latest/)》《[vLLM-Ascend 文档](https://docs.vllm.ai/projects/ascend/zh-cn/latest/index.html)》《[SGLang 文档](https://docs.sglang.io/)》；硬件形态各取值对应的产品形态说明参见《[昇腾硬件形态描述](https://www.hiascend.com/document/detail/zh/AscendFAQ/ProduTech/productform/hardwaredesc_0001.html)》。
 

@@ -6,7 +6,7 @@
 
 ### 1.1 简介
 
-训练后量化工具需要用户提供PyTorch训练脚本或者pth文件，工具可自动对模型中的卷积和线性层（torch.nn.Linear和torch.nn.Conv2d）进行识别并量化，最终导出量化后的onnx模型，量化后的模型可以在推理服务器上运行，达到提升推理性能的目的。量化过程中用户需自行提供模型与数据集，调用API接口完成模型的量化调优。
+训练后量化工具需要用户提供PyTorch训练脚本或者pth文件，工具可自动对模型中的卷积和线性层（torch.nn.Linear和torch.nn.Conv2d）进行识别并量化，最终导出量化后的ONNX模型，量化后的模型可以在推理服务器上运行，达到提升推理性能的目的。量化过程中用户需自行提供模型与数据集，调用API接口完成模型的量化调优。
 
 ### 1.2 功能介绍
 
@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
     calibrator.run()  # 执行量化算法
 
-    calibrator.export_quant_onnx("resnet50", "./output", ["input.1"])  # 用来导出昇腾可部署的量化onnx模型
+    calibrator.export_quant_onnx("resnet50", "./output", ["input.1"])  # 用来导出昇腾可部署的量化ONNX模型
 
 ```
 
@@ -188,7 +188,7 @@ ONNX模型的量化可以采用不同的模式，包括Label-Free和Data-Free模
 本节将以模型静态shape、动态shape、图优化场景分别介绍量化配置步骤，指导用户调用Python API接口对模型进行Data-Free模式的识别和量化，并将量化后的模型保存为.onnx文件，量化后的模型可以在推理服务器上运行。
 
 功能实现流程
-用户需准备好onnx模型，调用squant_ptq接口生成量化配置脚本，运行脚本输出量化后的onnx模型，并自行转换后进行推理。
+用户需准备好ONNX模型，调用squant_ptq接口生成量化配置脚本，运行脚本输出量化后的ONNX模型，并自行转换后进行推理。
 
 图1 squant_ptq接口功能实现流程
 
@@ -201,9 +201,9 @@ ONNX模型的量化可以采用不同的模式，包括Label-Free和Data-Free模
 静态/动态shape模型量化：用户基于量化要求进行配置，可以根据实际情况配置精度保持策略。动态shape场景下，需要手动开启is_dynamic_shape参数，并配置模型的input_shape。
 
 图优化：针对静态shape模型，量化工具内置了多种图结构优化方法，支持对浮点模型和量化后模型进行图优化。使用graph_optimize_level参数开启并指定图优化级别，并支持通过
-shut_down_structures参数指定需关闭优化的图结构。同时，在图优化过程中需要将onnx模型转换为om模型，用户可以通过om_method参数指定转换工具。
+shut_down_structures参数指定需关闭优化的图结构。同时，在图优化过程中需要将ONNX模型转换为OM模型，用户可以通过om_method参数指定转换工具。
 
-根据onnx模型和调用OnnxCalibrator封装量化算法，可以根据模型量化情况配置精度保持策略。
+根据ONNX模型和调用OnnxCalibrator封装量化算法，可以根据模型量化情况配置精度保持策略。
 
 初始化OnnxCalibrator后通过run()函数执行量化。
 
@@ -211,7 +211,7 @@ shut_down_structures参数指定需关闭优化的图结构。同时，在图优
 
 模型转换。
 
-参考《ATC工具使用指南》或使用其他转换工具，将onnx模型转换为OM模型，并进行推理。
+参考《ATC工具使用指南》或使用其他转换工具，将ONNX模型转换为OM模型，并进行推理。
 
 如下命令如果使用非root用户安装，需要在安装命令后加上--user，例如：pip3 install onnx --user。
 
@@ -327,7 +327,7 @@ pip3 install onnxruntime==1.14.1
 ```
 
 功能实现流程
-用户需准备好onnx模型和数据集，调用post_training_quant接口生成量化配置脚本，运行脚本输出量化后的onnx模型，并自行转换后进行推理。
+用户需准备好ONNX模型和数据集，调用post_training_quant接口生成量化配置脚本，运行脚本输出量化后的ONNX模型，并自行转换后进行推理。
 
 图2 post_training_quant接口功能实现流程
 
@@ -341,7 +341,7 @@ pip3 install onnxruntime==1.14.1
 
 模型转换。
 
-参考《ATC工具使用指南》或使用其他转换工具，将onnx模型转换为OM模型，并进行推理。
+参考《ATC工具使用指南》或使用其他转换工具，将ONNX模型转换为OM模型，并进行推理。
 
 静态shape模型量化步骤（以ResNet50为例）
 
@@ -437,7 +437,7 @@ calib_data = []
 
 目前支持对包括但不限于表1和表2中的模型进行模型训练后量化。
 
-[表格1 已验证模型列表（Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件或Atlas 推理系列产品）](onnx/onnx_verification_table_1.xlsx)
+[表格1 已验证模型列表（昇腾A2系列产品（Atlas 800I A2 推理产品/A200I A2 Box 异构组件）或昇腾310P系列产品）](onnx/onnx_verification_table_1.xlsx)
 
 [表格2 已验证模型列表（Atlas 200/500 A2推理产品）](onnx/onnx_verification_table_2.xlsx)
 
@@ -579,7 +579,7 @@ model = qsin_qat(model, quant_config, quant_logger).to(model.device)     #根据
 bash ./test/train_full_1p.sh --data_path=/datasets/imagenet  #请根据实际情况配置数据集路径
 ```
 
-5.导出量化后的onnx模型。在伪量化模型权重ckpt文件保存后，新建quant_deploy.py文件，添加如下代码，调用“save_qsin_qat_model”函数，请参考save_qsin_qat_model进行配置。
+5.导出量化后的ONNX模型。在伪量化模型权重ckpt文件保存后，新建quant_deploy.py文件，添加如下代码，调用“save_qsin_qat_model”函数，请参考save_qsin_qat_model进行配置。
 
 ```python
 import argparse
@@ -603,7 +603,7 @@ args = parser.parse_args()
 model = nvmodels.build_resnet("resnet50", "classic", is_training=False)
 pretrained_dict = safe_torch_load(args.pretrained, map_location='cpu')["state_dict"]
 model.load_state_dict(pretrained_dict, strict=False)
-#保存量化后的onnx模型
+#保存量化后的ONNX模型
 from msmodelslim.pytorch.quant.qat_tools import save_qsin_qat_model
 #根据实际情况配置导出后模型文件名（文件后缀需为.onnx）、输入的shape、伪量化模型权重和onnx的输入名称
 save_onnx_name='./resnet50.onnx'
@@ -613,7 +613,7 @@ input_names=['input1']
 save_qsin_qat_model(model, save_onnx_name, dummy_input, saved_ckpt, input_names)
 ```
 
-6.执行量化脚本，获取量化后的onnx模型。
+6.执行量化脚本，获取量化后的ONNX模型。
 
 ```bash
 python3 quant_deploy.py

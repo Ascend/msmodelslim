@@ -112,7 +112,7 @@ print('Save quant weight success!')
 ## 3. W8A8_per_token算法量化场景
 
 说明
-W8A8_per_token不支持在Atlas 推理系列产品中对MoE模型权重进行量化。
+W8A8_per_token不支持在昇腾310P系列产品中对MoE模型权重进行量化。
 W8A8_per_token算法量化场景导入的样例代码如下：
 
 ```python

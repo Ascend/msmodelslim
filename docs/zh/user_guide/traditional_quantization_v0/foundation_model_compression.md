@@ -7,9 +7,9 @@
 ### 1.1 使用前准备
 
 - 仅支持在以下产品中使用。
-    - Atlas 推理系列产品（Atlas 300I Duo 推理卡）。
-    - Atlas 训练系列产品。
-    - Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件。
+    - 昇腾310P系列产品（Atlas 300I Duo 推理卡）。
+    - 昇腾910系列产品。
+    - 昇腾A2系列产品（Atlas 800I A2 推理产品/A200I A2 Box 异构组件）。
 
 - 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](../../install_guide/install_guide.md)。
 - 大模型量化工具须执行命令安装如下依赖。
@@ -30,12 +30,12 @@ export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 #配置量化将会执行的设备序�
 ```
 
 说明
-仅Atlas 训练系列产品和Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件支持此功能。
+仅昇腾910系列产品和昇腾A2系列产品（Atlas 800I A2 推理产品/A200I A2 Box 异构组件）支持此功能。
 
 - （可选）如果需要在大模型量化工具中使用NF的权重量化方式，
 说明
-仅Atlas 训练系列产品和Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件支持此功能。
-- （可选）如果需要在大模型量化工具中使用W4A4_FLATQUANT_DYNAMIC量化方式，仅Atlas 训练系列产品和Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件支持此功能。
+仅昇腾910系列产品和昇腾A2系列产品（Atlas 800I A2 推理产品/A200I A2 Box 异构组件）支持此功能。
+- （可选）如果需要在大模型量化工具中使用W4A4_FLATQUANT_DYNAMIC量化方式，仅昇腾910系列产品和昇腾A2系列产品（Atlas 800I A2 推理产品/A200I A2 Box 异构组件）支持此功能。
 
 ### 1.2 功能介绍
 
@@ -290,7 +290,7 @@ python3 quant.py
   "version": "1.0.0",                                        # 标注现有的权重格式保存版本
   "model_quant_type": "W8A8S",                               # 整体量化类型为稀疏量化
   "kv_cache_type": "C8",                                     # 对KVCache的量化
-  "fa_quant_type": "FAQuant",                                # FA3量化类型，其他模型FA3量化都为FAQUant，但是DeepSeek为FAKQuant
+  "fa_quant_type": "FAQuant",                                # FA3量化类型，其他模型FA3量化都为FAQuant，但是DeepSeek为FAKQuant
   "group_size": "256",                                       # per_group量化时的分组数量
   "kv_quant_type": "C8",                                     # 对KV的量化类型
   "reduce_quant_type": "per_channel",                        # 通信量化类型
@@ -350,13 +350,13 @@ python3 quant.py
 
 稀疏和量化工具支持在以下产品中使用：
 
-Atlas 推理系列产品。
+昇腾310P系列产品。
 
-Atlas 训练系列产品。
+昇腾910系列产品。
 
-Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件。
+昇腾A2系列产品（Atlas 800I A2 推理产品/A200I A2 Box 异构组件）。
 
-权重压缩工具仅支持在Atlas 推理系列产品上使用。
+权重压缩工具仅支持在昇腾310P系列产品上使用。
 
 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](../../install_guide/install_guide.md)。
 
@@ -390,11 +390,11 @@ export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 #配置量化将会执行的设备序�
 
 说明
 
-仅Atlas 训练系列产品和Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件支持此功能。
+仅昇腾910系列产品和昇腾A2系列产品（Atlas 800I A2 推理产品/A200I A2 Box 异构组件）支持此功能。
 
 ### 2.3 功能介绍
 
-#### 2.3.1 Pytorch
+#### 2.3.1 PyTorch
 
 目前支持对表1中的大模型进行量化（包括但不限于）。
 
@@ -623,13 +623,13 @@ python3 compress.py
 
 稀疏和量化工具支持在以下产品中使用：
 
-Atlas 推理系列产品。
+昇腾310P系列产品。
 
-Atlas 训练系列产品。
+昇腾910系列产品。
 
-Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件。
+昇腾A2系列产品（Atlas 800I A2 推理产品/A200I A2 Box 异构组件）。
 
-权重压缩工具仅支持在Atlas 推理系列产品上使用。
+权重压缩工具仅支持在昇腾310P系列产品上使用。
 
 已参考[安装指南](../../install_guide/install_guide.md)完成开发环境配置。
 
@@ -854,7 +854,7 @@ KV Cache的管理需考虑batch, seq_len, num_heads和head_size这四个维度�
 
 增量加速：支持只更新和压缩新token对应的KV Cache部分。
 
-目前支持对表1中Alibi编码的大模型进行长序列压缩（包括但不限于）。
+目前支持对下表中Alibi编码的大模型进行长序列压缩（包括但不限于）。
 
 已验证模型列表：
 
@@ -864,7 +864,7 @@ KV Cache的管理需考虑batch, seq_len, num_heads和head_size这四个维度�
 
 ### 3.2 使用前准备
 
-安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](../../install_guide/install_guide.md)。
+安装 msModelSlim 工具，详情请参见《[msModelSlim工具安装指南]》(../../install_guide/install_guide.md)。
 执行命令安装如下依赖。
 以下命令若使用非root用户安装，需要在安装命令后加上--user，例如：pip3 install numpy==1.26.4 --user。
 

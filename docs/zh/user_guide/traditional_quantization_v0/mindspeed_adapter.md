@@ -7,8 +7,8 @@
 ## 2. 使用前准备
 
 - 仅支持在以下产品中使用。
-    - Atlas 训练系列产品。
-    - Atlas A2 训练系列产品/Atlas 800I A2 推理产品/A200I A2 Box 异构组件。
+    - 昇腾910系列产品。
+    - 昇腾A2系列产品（Atlas 800I A2 推理产品/A200I A2 Box 异构组件）。
 
 - 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](../../install_guide/install_guide.md)。
 - 大模型量化工具须执行命令安装如下依赖。
