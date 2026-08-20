@@ -56,30 +56,49 @@ from .interface import FlexSmoothQuantInterface
 
 
 class FlexSmoothBaseProcessorConfig(AutoProcessorConfig):
-    """Base configuration class for Flex processors, defining common fields and validation rules"""
+    """Flex 平滑类处理器的公共基类配置，定义 alpha/beta 平滑强度与子图类型等公共字段。"""
 
     type: Literal["_abstract_flex_smooth_base_"] = "_abstract_flex_smooth_base_"
 
-    alpha: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = None
-    beta: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = None
-    enable_subgraph_type: Annotated[list, AfterValidator(pydtc.is_string_list)] = Field(
-        default_factory=lambda: ["norm-linear", "linear-linear", "ov", "up-down"]
+    alpha: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = Field(
+        default=None, description="激活→权重的平滑迁移强度（0~1），越大迁移越多离群值到权重。"
     )
-    include: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = None
-    exclude: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = None
+    beta: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = Field(
+        default=None, description="额外的平滑调优系数（0~1），配合 alpha 使用。"
+    )
+    enable_subgraph_type: Annotated[list, AfterValidator(pydtc.is_string_list)] = Field(
+        default_factory=lambda: ["norm-linear", "linear-linear", "ov", "up-down"],
+        description="应用平滑的子图类型列表，默认 `norm-linear`、`linear-linear`、`ov`、`up-down`。",
+    )
+    include: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = Field(
+        default=None, description="包含的模块名称模式；不设置表示全部匹配。"
+    )
+    exclude: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = Field(
+        default=None, description="排除的模块名称模式，优先级高于 `include`。"
+    )
 
 
 class FlexSmoothQuantProcessorConfig(FlexSmoothBaseProcessorConfig):
-    """FlexSmoothQuant processor configuration"""
+    """FlexSmoothQuant 平滑量化处理器配置。
 
-    type: Literal["flex_smooth_quant"] = "flex_smooth_quant"
+    位于 `spec.process[]`，由 `type: flex_smooth_quant` 分派；在 SmoothQuant 基础上
+    增加 `beta` 调优，并支持子图级平滑。
+    """
+
+    type: Literal["flex_smooth_quant"] = Field(
+        default="flex_smooth_quant", description="处理器类型，固定为 `flex_smooth_quant`。"
+    )
 
 
 class FlexAWQSSZProcessorConfig(FlexSmoothBaseProcessorConfig):
-    """FlexAWQSSZ processor configuration"""
+    """FlexAWQSSZ 平滑+AWQ 处理器配置。
 
-    qconfig: LinearQConfig = Field(description="量化配置")
-    type: Literal["flex_awq_ssz"] = "flex_awq_ssz"
+    位于 `spec.process[]`，由 `type: flex_awq_ssz` 分派；结合平滑（alpha/beta）与
+    AWQ 风格仅权重量化，`qconfig` 指定激活与权重的量化方式。
+    """
+
+    qconfig: LinearQConfig = Field(description="激活与权重的量化配置，见《LinearQConfig 配置说明》。")
+    type: Literal["flex_awq_ssz"] = Field(default="flex_awq_ssz", description="处理器类型，固定为 `flex_awq_ssz`。")
 
     @model_validator(mode="before")
     @classmethod

@@ -78,13 +78,16 @@ class ConvertRule(BaseModel):
 
 
 class ConvertDefaults(BaseModel):
-    """Global defaults when rules omit fields."""
+    """转换规则未显式声明字段时的全局默认值。"""
 
     model_config = ConfigDict(extra="forbid")
 
-    src_format: str = "auto"
-    dst_format: str = "ascendv1"
-    dst_ir: Optional[IRKind] = None
+    src_format: str = Field(default="auto", description="源权重格式；`auto` 由模型适配器/权重目录自动推断。")
+    dst_format: str = Field(
+        default="ascendv1",
+        description="目标保存格式：`ascendv1`（昇腾，与 `SaveConfig.type` 的 `ascend_v1` 等价）；`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。",
+    )
+    dst_ir: Optional[IRKind] = Field(default=None, description="目标 IR 类型；不设置时由目标格式决定。")
 
 
 class ParallelConfig(BaseModel):

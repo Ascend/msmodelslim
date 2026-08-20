@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 from typing import Annotated, List, Literal, Optional, Dict, Callable
 
 from torch import nn
-from pydantic import field_validator, AfterValidator
+from pydantic import Field, field_validator, AfterValidator
 
 import msmodelslim.ir as qir
 from msmodelslim.ir.qal.qregistry import QABCRegistry
@@ -38,17 +38,27 @@ from ..common.quarot_utils import create_rot, is_power_of_two, rotate_linear
 
 
 class OnlineQuaRotProcessorConfig(AutoProcessorConfig):
-    """简化的在线旋转处理器配置类"""
+    """在线 QuaRot 旋转处理器配置。
 
-    type: Literal["online_quarot"] = "online_quarot"
-    include: Optional[List[Annotated[str, AfterValidator(validate_str_length())]]] = None
-    exclude: Optional[List[Annotated[str, AfterValidator(validate_str_length())]]] = None
-    block_size: int = -1  # 块大小（默认值，可被 RotationConfig 中的 block_size 覆盖）
+    位于 `spec.process[]`，由 `type: online_quarot` 分派；在推理过程中在线应用随机正交旋转，
+    消除激活离群值，可被 RotationConfig 中的 block_size 覆盖。
+    """
+
+    type: Literal["online_quarot"] = Field(default="online_quarot", description="处理器类型，固定为 `online_quarot`。")
+    include: Optional[List[Annotated[str, AfterValidator(validate_str_length())]]] = Field(
+        default=None, description="包含的模块名称模式；不设置表示全部匹配。"
+    )
+    exclude: Optional[List[Annotated[str, AfterValidator(validate_str_length())]]] = Field(
+        default=None, description="排除的模块名称模式，优先级高于 `include`。"
+    )
+    block_size: int = Field(
+        default=-1, description="旋转块大小，-1 表示按 hidden_dim 整块旋转；可被 RotationConfig 覆盖。"
+    )
 
     @field_validator('block_size')
     @classmethod
     def validate_block_size(cls, v):
-        """校验 block_size：取值范围为-1或大于0且为2的幂的整数"""
+        """校验 block_size：取值范围为-1或2的非负整数次幂"""
         if v == -1:
             return v
         if v <= 0 or not is_power_of_two(v):

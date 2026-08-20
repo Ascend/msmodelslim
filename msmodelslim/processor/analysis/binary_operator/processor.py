@@ -36,20 +36,26 @@ from msmodelslim.processor.analysis.binary_operator.metrics.factory import Binar
 
 
 class BinaryAnalysisProcessorConfig(AutoProcessorConfig):
-    """Configuration for binary layer sensitivity analysis (mse)."""
+    """二值（有/无量化）敏感性分析处理器配置。
 
-    type: Literal["binary_analysis"] = "binary_analysis"
+    位于 `spec.process[]`，由 `type: binary_analysis` 分派；对比量化前后输出差异
+    （MSE），评估各层对量化的敏感度。
+    """
+
+    type: Literal["binary_analysis"] = Field(
+        default="binary_analysis", description="处理器类型，固定为 `binary_analysis`。"
+    )
     metrics: str = Field(
         default="mse",
-        description="Analysis method: mse",
+        description="分析指标：`mse`（均方误差）",
     )
     patterns: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=lambda: ["*"],
-        description="Layer name patterns to analyze",
+        description="待分析的层名模式列表，默认 `*` 匹配全部",
     )
     configs: AutoProcessorConfigList = Field(
         default_factory=list,
-        description="List of quant sub-processor configs",
+        description="用于执行量化-反量化路径的量化子处理器配置列表",
     )
 
 

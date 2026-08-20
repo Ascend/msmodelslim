@@ -21,6 +21,7 @@ See the Mulan PSL v2 for more details.
 
 from typing import Optional, Literal
 
+from pydantic import Field
 from torch import nn
 
 from msmodelslim.ir.qal import QABCRegistry
@@ -29,8 +30,16 @@ from msmodelslim.processor.base import AutoSessionProcessor, AutoProcessorConfig
 
 
 class GroupProcessorConfig(AutoProcessorConfig):
-    type: Literal['group']
-    configs: AutoProcessorConfigList
+    """处理器合并器配置。
+
+    位于 `spec.process[]`，由 `type: group` 分派；把多个前向量化处理器合并为一个处理器，
+    减少模型推理/校准的次数。
+    """
+
+    type: Literal['group'] = Field(description="处理器类型，固定为 `group`。")
+    configs: AutoProcessorConfigList = Field(
+        description="被合并的处理器配置列表，按顺序执行；每个元素是 `type` 分派的处理器配置。"
+    )
 
 
 @QABCRegistry.register(dispatch_key=GroupProcessorConfig, abc_class=AutoSessionProcessor)
@@ -40,10 +49,10 @@ class GroupProcessor(AutoSessionProcessor):
     """
 
     def __init__(
-            self,
-            model: nn.Module,
-            config: GroupProcessorConfig,
-            adapter: Optional[object] = None,
+        self,
+        model: nn.Module,
+        config: GroupProcessorConfig,
+        adapter: Optional[object] = None,
     ):
         super().__init__(model)
         self.processors = [AutoSessionProcessor.from_config(model, cfg, adapter) for cfg in config.configs]
@@ -76,6 +85,6 @@ class GroupProcessor(AutoSessionProcessor):
 
     def need_kv_cache(self):
         return any(processor.need_kv_cache() for processor in self.processors)
-    
+
     def support_distributed(self) -> bool:
         return any(processor.support_distributed() for processor in self.processors)

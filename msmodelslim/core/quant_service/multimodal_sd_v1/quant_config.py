@@ -45,16 +45,26 @@ MultimodalSDPipelineAdapter = Union[LegacyMultimodalPipelineInterface, Multimoda
 
 
 class DumpConfig(BaseModel):
-    enable_dump: bool = Field(default=True)
-    capture_mode: Literal["args"] = Field(default="args")
-    dump_data_dir: str = Field(default="")
+    """多模态生成（SD）模型的浮点 dump 配置。"""
+
+    enable_dump: bool = Field(
+        default=True,
+        description="是否在量化前对模型做浮点 dump（导出 pth 校准数据）；`false` 时跳过 pth 加载与浮点 dump。",
+    )
+    capture_mode: Literal["args"] = Field(default="args", description="dump 捕获模式，当前仅支持 `args`。")
+    dump_data_dir: str = Field(default="", description="浮点 dump 数据的输出目录；为空时回退到 save_path。")
 
 
 # 多模态基础配置
 class MultimodalSDConfig(BaseModel):
-    dump_config: DumpConfig
+    """多模态生成（SD）模型的专用配置，含 dump 与推理参数。"""
+
+    dump_config: DumpConfig = Field(description="浮点 dump 配置，必选。")
     # 推理参数
-    inference_config: Optional[Dict[str, Any]] = Field(default=None)
+    inference_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="推理参数字典，经模型适配器的 InferenceConfig 类校验；与迁移期字段 `model_config` 互斥。",
+    )
     # 允许接收未定义的额外参数（迁移期旧字段 model_config 等可落在 model_extra）
     model_config = {"extra": "allow"}
 
@@ -62,6 +72,16 @@ class MultimodalSDConfig(BaseModel):
     @property
     def extra_params(self) -> Dict[str, Any]:
         return self.model_extra or {}
+
+    @model_validator(mode="after")
+    def validate_inference_config_exclusive(self) -> "MultimodalSDConfig":
+        """校验 inference_config 与迁移期字段 model_config 互斥：两者同时提供时报错。"""
+        extra = self.model_extra or {}
+        if self.inference_config is not None and "model_config" in extra:
+            raise SchemaValidateError(
+                "inference_config and model_config are mutually exclusive; please keep only one.",
+            )
+        return self
 
     def resolve_inference_raw(self) -> Dict[str, Any]:
         """
@@ -97,18 +117,38 @@ class MultimodalSDConfig(BaseModel):
 
 
 class MultimodalSDServiceConfig(BaseModel):
-    runner: RunnerType = RunnerType.LAYER_WISE
+    """`multimodal_sd_modelslim_v1` 服务的 spec 结构。
+
+    面向多模态生成（SD）模型：在通用字段之外支持按专家（`per_expert`）覆盖处理器链，
+    并提供多模态专用 `multimodal_sd_config`。
+    """
+
+    runner: RunnerType = Field(
+        default=RunnerType.LAYER_WISE,
+        description="流水线执行方式：`layer_wise` 逐层计算（默认）、`auto` 按设备数量自动选择、"
+        "`model_wise` 整模型计算、`dp_layer_wise` 数据并行逐层计算。",
+    )
     prior: List[PriorStageConfig] = Field(default_factory=list, description="前置阶段列表，每阶段含 process 与 dataset")
-    process: AutoProcessorConfigList = Field(default_factory=list)
+    process: AutoProcessorConfigList = Field(
+        default_factory=list,
+        description="量化处理器链，按顺序执行；每个元素是 `type` 分派的处理器配置。",
+    )
     per_expert: Optional[Dict[str, AutoProcessorConfigList]] = Field(
         default=None,
         description="按专家覆盖 process；值为 Processor 列表。某专家在此出现则整链替换，否则回退 process",
     )
-    save: AutoSaverConfigList = Field(default_factory=list)
-    dataset: str = Field(default='mix_calib.jsonl')
+    save: AutoSaverConfigList = Field(
+        default_factory=list,
+        description="保存格式列表，每个元素是 `type` 分派的保存格式配置。",
+    )
+    dataset: str = Field(
+        default='mix_calib.jsonl',
+        description="校准数据集名称（`lab_calib` 下的文件名）或数据集路径。",
+    )
     # 支持直接传入字典作为配置，或使用 MultimodalSDConfig 实例
     multimodal_sd_config: Union[Dict[str, Any], MultimodalSDConfig] = Field(
-        default_factory=lambda: MultimodalSDConfig().model_dump()
+        default_factory=lambda: MultimodalSDConfig().model_dump(),
+        description="多模态生成模型的专用配置，可为字典或 `MultimodalSDConfig` 实例，含 `dump_config` 与 `inference_config`。",
     )
 
     # 验证并转换配置格式
@@ -127,7 +167,11 @@ class MultimodalSDServiceConfig(BaseModel):
 
 
 class MultimodalSDModelslimV1QuantConfig(ModelslimV1QuantConfig):
-    """支持多模态的量化配置类"""
+    """`multimodal_sd_modelslim_v1` 量化任务配置，位于 YAML 根节点。
+
+    `apiversion` 取值固定为 `multimodal_sd_modelslim_v1`；`spec` 声明多模态生成（SD）模型的
+    量化流水线、按专家覆盖的处理器链与多模态专用配置。
+    """
 
     spec: MultimodalSDServiceConfig  # 使用新的多模态配置
 

@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 from typing import Any, Literal, Annotated, Optional, List
 
 from torch import nn
-from pydantic import AfterValidator
+from pydantic import AfterValidator, Field
 
 from msmodelslim.ir.qal.qregistry import QABCRegistry
 from msmodelslim.core.base.protocol import BatchProcessRequest
@@ -45,11 +45,23 @@ from .interface import SmoothQuantInterface
 
 
 class SmoothQuantProcessorConfig(AutoProcessorConfig):
-    type: Literal["smooth_quant"] = "smooth_quant"
-    alpha: Annotated[float, AfterValidator(validate_normalized_value)] = 0.5
-    symmetric: bool = True
-    include: Optional[List[Annotated[str, AfterValidator(validate_str_length())]]] = None
-    exclude: Optional[List[Annotated[str, AfterValidator(validate_str_length())]]] = None
+    """SmoothQuant 平滑量化处理器配置。
+
+    位于 `spec.process[]`，由 `type: smooth_quant` 分派；把激活的离群值按 `alpha`
+    迁移到权重上，使激活便于量化，通常与线性量化配合使用。
+    """
+
+    type: Literal["smooth_quant"] = Field(default="smooth_quant", description="处理器类型，固定为 `smooth_quant`。")
+    alpha: Annotated[float, AfterValidator(validate_normalized_value)] = Field(
+        default=0.5, description="平滑迁移强度（0~1），越大表示把越多的激活离群值迁移到权重。"
+    )
+    symmetric: bool = Field(default=True, description="是否对称量化；影响平滑后量化的对称性。")
+    include: Optional[List[Annotated[str, AfterValidator(validate_str_length())]]] = Field(
+        default=None, description="包含的模块名称模式；不设置表示全部匹配。"
+    )
+    exclude: Optional[List[Annotated[str, AfterValidator(validate_str_length())]]] = Field(
+        default=None, description="排除的模块名称模式，优先级高于 `include`。"
+    )
 
 
 @QABCRegistry.register(dispatch_key=SmoothQuantProcessorConfig, abc_class=AutoSessionProcessor)

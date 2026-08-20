@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 
 from typing import Any, Dict, Generator, List, Literal, Optional
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from msmodelslim.core.analysis_service import (
     AnalysisConfig,
@@ -49,10 +49,45 @@ from msmodelslim.utils.pydantic_model_path import set_pydantic_model_path, valid
 MODELSLIM_V1_APIVERSION = "modelslim_v1"
 
 
+_FULL_EXAMPLE = {
+    'type': 'binary_fallback',
+    'rollback_path': 'spec.process.1.exclude',
+    'rollback_candidates': [],
+    'template': {
+        'apiversion': 'modelslim_v1',
+        'metadata': {
+            'config_id': 'binary_fallback_tune',
+            'label': {'w_bit': 8, 'a_bit': 8, 'is_sparse': False, 'kv_cache': False},
+        },
+        'spec': {
+            'runner': 'auto',
+            'process': [
+                {'type': 'iter_smooth', 'alpha': 0.5},
+                {
+                    'type': 'linear_quant',
+                    'qconfig': {
+                        'act': {'scope': 'per_tensor', 'dtype': 'int8', 'symmetric': False, 'method': 'minmax'},
+                        'weight': {'scope': 'per_channel', 'dtype': 'int8', 'symmetric': True, 'method': 'minmax'},
+                    },
+                    'include': ['*'],
+                    'exclude': [],
+                },
+            ],
+            'save': [{'type': 'ascendv1_saver', 'part_file_size': 4}],
+            'dataset': 'mix_calib.jsonl',
+        },
+    },
+}
+
+
 class BinaryFallbackStrategyConfig(StrategyConfig):
     """二分回退调优策略配置。"""
 
-    type: Literal["binary_fallback"] = "binary_fallback"
+    model_config = ConfigDict(json_schema_extra={"examples": [_FULL_EXAMPLE]})
+
+    type: Literal["binary_fallback"] = Field(
+        default="binary_fallback", description="策略类型，固定为 `binary_fallback`"
+    )
     template: PracticeConfig = Field(description="完整最佳实践 PracticeConfig，apiversion 须为 modelslim_v1")
     rollback_path: str = Field(description="点分路径，指向 template 内必须为 list 的回退字段")
     rollback_candidates: Optional[List[str]] = Field(

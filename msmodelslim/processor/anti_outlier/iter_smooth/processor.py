@@ -50,15 +50,30 @@ from .interface import IterSmoothInterface
 
 
 class IterSmoothProcessorConfig(AutoProcessorConfig):
-    type: Literal["iter_smooth"] = "iter_smooth"
-    alpha: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = 0.9
-    scale_min: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = 1e-5
-    symmetric: bool = True
-    enable_subgraph_type: Annotated[list, AfterValidator(pydtc.is_string_list)] = Field(
-        default_factory=lambda: ["norm-linear", "linear-linear", "ov", "up-down"]
+    """迭代平滑（IterativeSmooth）处理器配置。
+
+    位于 `spec.process[]`，由 `type: iter_smooth` 分派；通过迭代更新平滑系数
+    把激活离群值迁移到权重，直到满足收敛条件。
+    """
+
+    type: Literal["iter_smooth"] = Field(default="iter_smooth", description="处理器类型，固定为 `iter_smooth`。")
+    alpha: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = Field(
+        default=0.9, description="平滑迁移强度（0~1），越大迁移越多离群值到权重。"
     )
-    include: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = None
-    exclude: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = None
+    scale_min: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = Field(
+        default=1e-5, description="平滑缩放因子的最小值下限，防止数值下溢。"
+    )
+    symmetric: bool = Field(default=True, description="是否对称量化后续的权重/激活。")
+    enable_subgraph_type: Annotated[list, AfterValidator(pydtc.is_string_list)] = Field(
+        default_factory=lambda: ["norm-linear", "linear-linear", "ov", "up-down"],
+        description="应用迭代平滑的子图类型列表，默认 `norm-linear`、`linear-linear`、`ov`、`up-down`。",
+    )
+    include: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = Field(
+        default=None, description="包含的模块名称模式；不设置表示全部匹配。"
+    )
+    exclude: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = Field(
+        default=None, description="排除的模块名称模式，优先级高于 `include`。"
+    )
 
 
 class IterStatsCollector(StatsCollector):

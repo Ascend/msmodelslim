@@ -40,16 +40,35 @@ class PriorStageConfig(BaseModel):
 
 
 class ModelslimV1ServiceConfig(BaseModel):
-    runner: RunnerType = RunnerType.AUTO
+    """`modelslim_v1` 服务的 spec 结构，声明量化流水线、保存格式与校准数据。"""
+
+    runner: RunnerType = Field(
+        default=RunnerType.AUTO,
+        description="流水线执行方式：`auto` 按设备数量自动选择（单设备 `layer_wise`，多设备 `dp_layer_wise`）、"
+        "`model_wise` 整模型计算、`layer_wise` 逐层计算、`dp_layer_wise` 数据并行逐层计算。",
+    )
     prior: List[PriorStageConfig] = Field(default_factory=list, description="前置阶段列表，每阶段含 process 与 dataset")
-    process: AutoProcessorConfigList = Field(default_factory=list)
-    save: QuantFormatConfigList = Field(default_factory=list)
+    process: AutoProcessorConfigList = Field(
+        default_factory=list,
+        description="量化处理器链，按顺序执行；每个元素是 `type` 分派的处理器配置，如 `linear_quant`、`awq`、`smooth_quant` 等。",
+    )
+    save: QuantFormatConfigList = Field(
+        default_factory=list,
+        description="保存格式列表，每个元素是 `type` 分派的保存格式配置，如 `ascendv1_saver`、`compressed_tensors`、`mindie_format_saver`。",
+    )
     dataset: Annotated[str, AfterValidator(validate_str_length(max_len=4096))] = Field(
-        default='mix_calib.jsonl', description="数据集名称"
+        default='mix_calib.jsonl',
+        description="校准数据集名称（`lab_calib` 下的文件名）或数据集路径，用于量化的参数估计与敏感性校准。",
     )
 
 
 class ModelslimV1QuantConfig(BaseQuantConfig):
+    """`modelslim_v1` 量化任务配置，位于 YAML 根节点。
+
+    `apiversion` 取值固定为 `modelslim_v1`；`spec` 声明量化流水线（`process`）、
+    保存格式（`save`）与校准数据（`dataset`），由 `msmodelslim quant --config_path` 加载。
+    """
+
     spec: ModelslimV1ServiceConfig  # quantization config specification
 
     @classmethod

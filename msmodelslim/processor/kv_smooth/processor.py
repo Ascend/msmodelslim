@@ -64,13 +64,21 @@ class KeyStatesMaximumCollector:
 
 
 class KVSmoothProcessorConfig(AutoProcessorConfig):
-    type: Literal["kv_smooth"] = "kv_smooth"
-    smooth_factor: Annotated[float, AfterValidator(greater_than_zero)] = 1.0
+    """KV cache 平滑处理器配置。
+
+    位于 `spec.process[]`，由 `type: kv_smooth` 分派；对注意力层的 KV cache
+    应用平滑以降低量化误差。
+    """
+
+    type: Literal["kv_smooth"] = Field(default="kv_smooth", description="处理器类型，固定为 `kv_smooth`。")
+    smooth_factor: Annotated[float, AfterValidator(greater_than_zero)] = Field(
+        default=1.0, description="KV 平滑因子，必须大于0；越大平滑越强。"
+    )
     include: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
-        default_factory=lambda: ["*"], description="包含的模块名称"
+        default_factory=lambda: ["*"], description="包含的模块名称模式，默认 `*` 匹配全部模块"
     )
     exclude: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
-        default_factory=lambda: [], description="排除的模块名称"
+        default_factory=lambda: [], description="排除的模块名称模式，优先级高于 `include`"
     )
 
 

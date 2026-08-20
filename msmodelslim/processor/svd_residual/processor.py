@@ -40,10 +40,16 @@ SVD_LOWRANK_L2_PARAM_NAME = "svd_lowrank_l2"
 
 
 class SVDResidualProcessorConfig(AutoProcessorConfig):
-    type: Literal["svd_res"] = "svd_res"
-    rank: int = Field(default=32, gt=0, description="低秩分解的秩")
-    include: List[str] = Field(default_factory=lambda: ["*"], description="包含的模块名称")
-    exclude: List[str] = Field(default_factory=lambda: [], description="排除的模块名称")
+    """SVD 残差（低秩补偿）处理器配置。
+
+    位于 `spec.process[]`，由 `type: svd_res` 分派；对匹配模块做低秩分解，以残差
+    补偿低比特量化带来的精度损失。
+    """
+
+    type: Literal["svd_res"] = Field(default="svd_res", description="处理器类型，固定为 `svd_res`。")
+    rank: int = Field(default=32, gt=0, description="低秩分解的秩，必须大于0")
+    include: List[str] = Field(default_factory=lambda: ["*"], description="包含的模块名称模式，默认 `*` 匹配全部模块")
+    exclude: List[str] = Field(default_factory=lambda: [], description="排除的模块名称模式，优先级高于 `include`")
 
     model_config = ConfigDict(extra="forbid")
 

@@ -23,7 +23,7 @@ from typing import Optional
 
 import torch
 import torch.nn.functional as F
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic import validate_call
 from torch import nn
 
@@ -34,8 +34,17 @@ from .base import AutoActQuantizer, AutoWeightQuantizer, QConfig, QScope
 
 
 class LinearQConfig(BaseModel):
-    act: QConfig = QConfig(dtype=QDType.FLOAT, scope=QScope.PER_TENSOR, symmetric=True, method="none")
-    weight: QConfig
+    """线性层（Linear）的量化配置，含激活与权重两路量化。
+
+    `LinearQConfig` 是 `linear_quant` 处理器 `qconfig` 字段的配置类型，
+    分别描述激活（`act`）与权重（`weight`）的量化方式。
+    """
+
+    act: QConfig = Field(
+        default=QConfig(dtype=QDType.FLOAT, scope=QScope.PER_TENSOR, symmetric=True, method="none"),
+        description="激活值的量化配置。默认 `float`（不量化激活），仅对权重做量化。",
+    )
+    weight: QConfig = Field(description="权重的量化配置，必选。")
 
 
 @logger_setter()

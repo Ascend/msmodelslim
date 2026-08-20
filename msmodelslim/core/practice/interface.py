@@ -43,22 +43,36 @@ class ScenarioTagMatch(str, Enum):
 
 
 class Metadata(BaseModel):
-    # ID of the quantization config, e.g., 'Qwen3-32B W8A8'
-    config_id: Annotated[str, AfterValidator(validate_str_length())] = 'Unknown'
-    # score of the quantization config, used to sort the quantization configs
-    score: Annotated[float, AfterValidator(in_range(min_val=0))] = 100.0
-    # label of the quantization config, used to filter the quantization configs.
-    # e.g., # {'w_bit': 8, 'a_bit': 8, 'is_sparse': True, 'kv_cache': True}
-    label: dict = Field(default_factory=dict)
-    # verified model types, e.g., ['LLaMa3.1-70B', 'Qwen2.5-72B']
-    verified_model_types: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(default_factory=list)
-    # verified_tags: Dict[model_type, List[List[tags]]]
-    # key: model_type; value: list of scenarios, each scenario is a list of tags (e.g. ["MindIE","Atlas_A2_Inference"], ["vLLM-Ascend","Atlas_A3_Inference"])
-    verified_tags: Dict[str, List[List[str]]] = Field(default_factory=dict)
+    """量化配置元数据：标识配置的 ID、评分、标签与已验证的模型/场景。"""
+
+    config_id: Annotated[str, AfterValidator(validate_str_length())] = Field(
+        default='Unknown', description="量化配置 ID，例如 'Qwen3-32B W8A8'"
+    )
+    score: Annotated[float, AfterValidator(in_range(min_val=0))] = Field(
+        default=100.0, description="量化配置评分，用于排序，必须 >= 0"
+    )
+    label: dict = Field(
+        default_factory=dict,
+        description="量化配置标签，用于过滤，例如 {'w_bit': 8, 'a_bit': 8, 'is_sparse': True, 'kv_cache': True}",
+    )
+    verified_model_types: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
+        default_factory=list, description="已验证的模型类型列表，例如 ['LLaMa3.1-70B', 'Qwen2.5-72B']"
+    )
+    verified_tags: Dict[str, List[List[str]]] = Field(
+        default_factory=dict,
+        description="已验证场景标签：键为模型类型，值为场景标签列表（每个场景是一组标签，如 ['MindIE','Atlas_A2_Inference']）",
+    )
 
 
 class PracticeConfig(BaseQuantConfig):
-    metadata: Metadata = Field(default_factory=Metadata)  # metadata of the quantization config
+    """完整最佳实践量化任务配置：apiversion + spec + metadata。
+
+    由自动调优策略生成/使用的实践配置，结构等价于量化任务配置，另附 metadata 元信息。
+    """
+
+    metadata: Metadata = Field(
+        default_factory=Metadata, description="量化配置元数据（config_id/score/label/verified_*）"
+    )
 
     def extract_quant_config(self) -> BaseQuantConfig:
         """提取量化任务配置（apiversion + spec，不含 metadata）。"""

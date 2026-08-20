@@ -84,12 +84,14 @@ def _require_hidden_tensor(
 
 
 class BinaryOperatorModelWiseProcessorConfig(AutoProcessorConfig):
-    """模型级敏感层分析配置（对比模型最终输出，支持多种 metrics 如 MSE）"""
+    """模型级敏感性分析配置（对比模型最终输出，使用 MSE 指标）"""
 
-    type: Literal["binary_operator_model_wise"] = "binary_operator_model_wise"
+    type: Literal["binary_operator_model_wise"] = Field(
+        default="binary_operator_model_wise", description="处理器类型，固定为 `binary_operator_model_wise`。"
+    )
     metrics: str = Field(
         default="mse_model_wise",
-        description="分析方法：mse",
+        description="分析指标：`mse_model_wise`（对比模型最终输出）",
     )
     quant_modules: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=lambda: ["*"],
@@ -106,7 +108,7 @@ class BinaryOperatorModelWiseProcessorConfig(AutoProcessorConfig):
 
 @QABCRegistry.register(dispatch_key=BinaryOperatorModelWiseProcessorConfig, abc_class=AutoSessionProcessor)
 class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
-    """模型级敏感层分析"""
+    """模型级敏感性分析"""
 
     def __init__(
         self,

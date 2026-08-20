@@ -75,7 +75,7 @@ docs/zh/
 ├── quick_start/        # 快速入门
 ├── user_guide/         # 使用层：业务流程指南、工具使用指南、V0框架文档等
 ├── knowledge_base/     # 知识层：model、quantization_algorithms、quantization_format、tuning_strategies、ptq、parallel
-├── api_reference/      # 接口层：config（配置）、python_api_v0（Python API）
+├── api_reference/      # 接口层：cli（命令行）、config（配置）、python_api_v0（Python API）
 ├── best_practices/     # 案例与调优指南
 ├── support/            # FAQ
 ├── release_notes/      # 版本说明
@@ -176,3 +176,4 @@ docs/zh/
 | 2026-08-07 | v1.1 | 词条文档类型更名为「术语词条」，模板与校验清单文件更名 term_glossary；正文书名号与失效示例修正。 |
 | 2026-08-12 | v1.2 | 书名号标题引用补链接（《流程指南模板》《术语词条模板》《公共校验清单》），与 CE-05/CW-02 对齐。 |
 | 2026-08-12 | v1.3 | 书名号锚文本统一为《[标题](链接)》形式，CE-05 示例收敛为单一规范形式。 |
+| 2026-08-19 | v1.4 | 量化配置文档模板与校验清单随生成器结构调整：参数列表按配置类分块、嵌套块输出类概述、移除独立“引用的配置/被引用的配置”章节、锚点统一为 HTML。 |

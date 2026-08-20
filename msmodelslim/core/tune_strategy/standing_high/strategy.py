@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 
 from typing import Any, Dict, Generator, List, Optional, Literal, Annotated
 
-from pydantic import Field, model_validator, AfterValidator
+from pydantic import ConfigDict, Field, model_validator, AfterValidator
 
 from msmodelslim.core.analysis_service import AnalysisConfig, AnalysisScope, PipelineAnalysisService
 from msmodelslim.core.const import DeviceType
@@ -75,19 +75,51 @@ def _get_default_metadata():
     )
 
 
+_FULL_EXAMPLE = {
+    'type': 'standing_high',
+    'anti_outlier_strategies': [[{'type': 'iter_smooth', 'alpha': 0.5}], [{'type': 'flex_smooth_quant'}]],
+    'template': {
+        'runner': 'auto',
+        'process': [
+            {
+                'type': 'linear_quant',
+                'qconfig': {
+                    'act': {'scope': 'per_tensor', 'dtype': 'int8', 'symmetric': False, 'method': 'minmax'},
+                    'weight': {'scope': 'per_channel', 'dtype': 'int8', 'symmetric': True, 'method': 'minmax'},
+                },
+                'include': ['*'],
+                'exclude': [],
+            }
+        ],
+        'save': [{'type': 'ascendv1_saver', 'part_file_size': 4}],
+        'dataset': 'mix_calib.jsonl',
+    },
+    'metadata': {
+        'config_id': 'standing_high',
+        'label': {'w_bit': 8, 'a_bit': 8, 'is_sparse': False, 'kv_cache': False},
+    },
+}
+
+
 class StandingHighStrategyConfig(StrategyConfig):
-    """摸高算法策略配置（V1框架）"""
+    """摸高算法策略配置（V1框架）：先跑敏感层分析，再逐步回退不满意的层并尝试不同离群值抑制策略。"""
 
-    type: Literal["standing_high"] = "standing_high"
+    model_config = ConfigDict(json_schema_extra={"examples": [_FULL_EXAMPLE]})
 
-    anti_outlier_strategies: Annotated[List[AutoProcessorConfigList], AfterValidator(at_least_one_element)]
+    type: Literal["standing_high"] = Field(default="standing_high", description="策略类型，固定为 `standing_high`")
+
+    anti_outlier_strategies: Annotated[List[AutoProcessorConfigList], AfterValidator(at_least_one_element)] = Field(
+        description="离群值抑制处理器链列表，至少 1 个；每个元素是一条处理器链，链内每个处理器是 `type` 分派的处理器配置（如 smooth_quant 等）"
+    )
 
     template: ModelslimV1ServiceConfig = Field(
         default_factory=_create_default_template,
         description="完整的PracticeConfig模板，用于提取所有配置（包括线性层量化）。如果未提供，将使用默认的V1模板",
     )
 
-    metadata: Metadata = Field(default_factory=_get_default_metadata)
+    metadata: Metadata = Field(
+        default_factory=_get_default_metadata, description="量化配置元数据（config_id / label 等）"
+    )
 
     @model_validator(mode='after')
     def validate_template_has_linear_quant(self):

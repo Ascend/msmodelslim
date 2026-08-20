@@ -95,12 +95,15 @@ def _validate_linear_qconfig(qconfig: LinearQConfig, prefix: str) -> None:
 
 
 class QuantStrategyConfig(BaseModel):
-    qconfig: LinearQConfig = Field(description="量化配置")
-    include: List[str] = Field(default_factory=lambda: ["*"], description="包含的模块名称")
-    exclude: List[str] = Field(default_factory=list, description="排除的模块名称")
+    """trainable_linear_quant 量化策略：对匹配的线性层应用一组可训练量化配置。"""
+
+    qconfig: LinearQConfig = Field(description="激活与权重的量化配置，见《LinearQConfig 配置说明》。")
+    include: List[str] = Field(default_factory=lambda: ["*"], description="包含的模块名称模式，默认 `*` 匹配全部模块")
+    exclude: List[str] = Field(default_factory=list, description="排除的模块名称模式，优先级高于 `include`")
 
     @model_validator(mode="after")
     def _validate_qconfig(self) -> "QuantStrategyConfig":
+        """校验 qconfig：dtype/method 组合须有对应 TLQ kernel 支持，否则报错。"""
         _validate_linear_qconfig(self.qconfig, prefix="qconfig")
         return self
 
@@ -110,9 +113,16 @@ def _default_tlq_op_configs() -> List[TLQOpConfig]:
 
 
 class TrainableLinearQuantProcessorConfig(AutoProcessorConfig):
+    """可训练线性量化（TLQ）处理器配置。
+
+    位于 `spec.process[]`，由 `type: trainable_linear_quant` 分派；通过块级训练
+    优化线性层的量化参数（学习率、迭代、最优快照等由 `train_config` 控制），
+    支持按策略（`strategies`）与算子管线（`operations`）组合。
+    """
+
     type: Literal["trainable_linear_quant"] = Field(
         default="trainable_linear_quant",
-        description="处理器类型标识",
+        description="处理器类型，固定为 `trainable_linear_quant`。",
     )
     operations: List[SerializeAsAny[TLQOpConfig]] = Field(
         default_factory=_default_tlq_op_configs,
@@ -123,7 +133,7 @@ class TrainableLinearQuantProcessorConfig(AutoProcessorConfig):
     strategies: List[QuantStrategyConfig] = Field(
         default_factory=list,
         min_length=1,
-        description="量化策略配置列表",
+        description="量化策略配置列表；未提供时为空列表，不应用量化策略；若显式提供则至少 1 项。",
     )
     train_with_act_quant: bool = Field(
         default=False,
@@ -151,6 +161,7 @@ class TrainableLinearQuantProcessorConfig(AutoProcessorConfig):
     @field_validator("operations", mode="before")
     @classmethod
     def _operations_before(cls, v: Any) -> Any:
+        """归一化 operations：接受单个 dict 或列表；未提供或格式不合法时回退为默认 minmax_tune + round_tune 管线。"""
         if v is None:
             return _default_tlq_op_configs()
         if isinstance(v, dict) and "type" in v:

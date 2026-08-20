@@ -103,7 +103,7 @@ class FlatQuantProcessorConfig(AutoProcessorConfig):
     @model_validator(mode='after')
     def validate_init_fields(self):
         """
-        校验逻辑：如果字段 init=False，但 YAML 中为其赋值，则直接抛出错误
+        校验逻辑：带 `init=False` 的内部字段不允许在 YAML 中显式赋值；如果赋值则抛出错误。
         """
         errors = []
         for field_name, field_info in self.model_fields.items():

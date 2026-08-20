@@ -25,6 +25,8 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Dict, Literal, Optional, Type
 
+from pydantic import Field
+
 import torch
 from torch import nn
 
@@ -59,8 +61,12 @@ _WRITE_UMASK = 0o377
 
 
 class CompressedTensorsQuantFormatConfig(QuantFormatConfig):
-    type: Literal["compressed_tensors"] = "compressed_tensors"
-    part_file_size: int = 4
+    """compressed_tensors 保存格式配置，导出 safetensors 权重与 config.json。"""
+
+    type: Literal["compressed_tensors"] = Field(
+        default="compressed_tensors", description="保存格式类型，固定为 `compressed_tensors`。"
+    )
+    part_file_size: int = Field(default=4, description="分片文件大小，单位 GB；0 表示不分片。")
 
 
 class CompressedTensorsQuantFormat(QuantFormatBase):

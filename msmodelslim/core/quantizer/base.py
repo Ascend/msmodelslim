@@ -35,11 +35,37 @@ from msmodelslim.ir.qal.qregistry import QABCRegistry
 
 
 class QConfig(BaseModel):
-    dtype: QDType
-    scope: QScope
-    symmetric: bool
-    method: str
-    ext: Dict[str, Any] = Field(default_factory=dict, exclude_if=lambda v: not v)
+    """描述单个张量（权重或激活）的量化方式。
+
+    `QConfig` 是量化配置的公共组成单元，字段直接内联在所属配置下（如
+    `LinearQConfig.qconfig.act` / `qconfig.weight`、AWQ 的 `weight_qconfig`）。
+    它由量化数据类型、量化粒度、是否对称与参数估计算法四要素决定量化行为，
+    其中 `dtype`/`scope`/`symmetric` 组合出一个量化方案（scheme），
+    再由 `method` 选定该方案下的参数估计算法实现。
+    """
+
+    dtype: QDType = Field(
+        description="量化数据类型，如 `int8`、`int4`、`mxfp8`、`mxfp4`、`fp8_e4m3`；`float` 表示该张量不量化。"
+    )
+    scope: QScope = Field(
+        description="量化粒度，即 scale/zero_point 的计算范围：`per_tensor`（整张量一个尺度）、"
+        "`per_channel`（按通道）、`per_group`/`per_block`（按分组或固定块）、`per_token`（按 token）、"
+        "`per_head`（按注意力头）、`dual_scale`（双尺度）等；合法取值组合取决于 `dtype` 与量化器实现。"
+    )
+    symmetric: bool = Field(
+        description="是否对称量化。对称量化只保存 scale；非对称量化额外保存 zero_point，"
+        "可用性取决于 `dtype`/`scope` 组合。"
+    )
+    method: str = Field(
+        description="量化参数估计算法，如 `minmax`、`mse_round`、`histogram`、`ssz`、`none` 等；"
+        "可用取值取决于 `dtype`/`scope`/`symmetric` 组合，`none` 表示不估计参数（配合 `float` 使用）。"
+    )
+    ext: Dict[str, Any] = Field(
+        default_factory=dict,
+        exclude_if=lambda v: not v,
+        description="量化器扩展参数，随 `method` 与量化器实现而定（如 gptq 的 `percdamp`/`group_size`）；"
+        "空对象表示无扩展参数。",
+    )
 
     def to_scheme(self):
         return QScheme(QScope(self.scope), QDType(self.dtype), self.symmetric)

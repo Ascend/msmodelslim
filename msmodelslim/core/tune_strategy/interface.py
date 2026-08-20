@@ -40,6 +40,8 @@ class EvaluateAccuracy(BaseModel):
 
 
 class AccuracyExpectation(BaseModel):
+    """精度期望：要求模型在指定数据集上达到的目标精度（含容差）。"""
+
     dataset: Annotated[str, AfterValidator(pydtc.validate_str_length())] = Field(description="数据集名称")
     target: Annotated[Decimal, AfterValidator(pydtc.greater_than_zero)] = Field(description="目标精度，必须 > 0")
     tolerance: Annotated[Decimal, AfterValidator(pydtc.in_range(min_val=0))] = Field(
@@ -55,6 +57,11 @@ class EvaluateResult(BaseModel):
 
 @TypedConfig.plugin_entry(entry_point_group=TUNING_STRATEGY_PLUGIN_PATH)
 class StrategyConfig(TypedConfig):
+    """调优策略配置基类：按 `type` 字段分派到具体策略（如 standing_high）。
+
+    具体策略配置继承本类并固定各自的 `type` 取值；框架按 `type` 加载对应插件。
+    """
+
     type: TypedConfig.TypeField
 
 

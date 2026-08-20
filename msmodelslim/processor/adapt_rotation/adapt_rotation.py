@@ -18,8 +18,8 @@ See the Mulan PSL v2 for more details.
 
 from typing import Literal, Union, Any
 
-import torch.nn as nn
-from pydantic import model_validator
+from torch import nn
+from pydantic import Field, model_validator
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.ir.qal.qregistry import QABCRegistry
@@ -32,17 +32,25 @@ from .adapt_rotation_stage2 import AdaptRotationStage2Processor, AdaptRotationSt
 
 
 class AdaptRotationProcessorConfig(AutoProcessorConfig):
+    """自适应旋转（adapt_rotation）处理器配置。
+
+    位于 `spec.process[]`，由 `type: adapt_rotation` 分派；通过 `stage`（1 或 2）选择
+    具体的旋转适配阶段，对应字段放在 `stage_config` 嵌套对象中。stage1 做激活分布
+    适配与量化适配，stage2 在 stage1 基础上支持在线旋转。
     """
-    Parent config for adapt_rotation: identified by type="adapt_rotation".
-    The stage field (1 or 2) determines which concrete processor runs.
-    """
-    type: Literal["adapt_rotation"] = "adapt_rotation"
-    stage: Literal[1, 2]
-    stage_config: Union[AdaptRotationStage1ProcessorConfig, AdaptRotationStage2ProcessorConfig]
+
+    type: Literal["adapt_rotation"] = Field(
+        default="adapt_rotation", description="处理器类型，固定为 `adapt_rotation`。"
+    )
+    stage: Literal[1, 2] = Field(description="旋转适配阶段：1 或 2，决定使用哪个阶段配置。")
+    stage_config: Union[AdaptRotationStage1ProcessorConfig, AdaptRotationStage2ProcessorConfig] = Field(
+        description="阶段配置对象（内部自动组装字段，必选但由 before-validator 根据 `stage` 自动生成，用户无需在 YAML 中配置）；YAML 中不要直接配置该字段，请把阶段字段（如 steps、quant_dtype）平铺在处理器下，见《AdaptRotationStage1ProcessorConfig 配置说明》/《AdaptRotationStage2ProcessorConfig 配置说明》。"
+    )
 
     @model_validator(mode='before')
     @classmethod
     def _build_stage_config(cls, data: Any) -> Any:
+        """按 stage 把扁平字段组装为 stage_config：仅允许对应阶段字段，多余字段报错。"""
         if not isinstance(data, dict):
             return data
         stage_val = data.get("stage")
@@ -53,7 +61,9 @@ class AdaptRotationProcessorConfig(AutoProcessorConfig):
         allowed = (s1 | {"type", "stage"}) if stage_val == 1 else (s2 | {"type", "stage"})
         disallowed = set(data) - allowed
         if disallowed:
-            raise SchemaValidateError(f"stage={stage_val} allows only {sorted(allowed)}; got extra: {sorted(disallowed)}")
+            raise SchemaValidateError(
+                f"stage={stage_val} allows only {sorted(allowed)}; got extra: {sorted(disallowed)}"
+            )
         if stage_val == 1:
             stage_config = AdaptRotationStage1ProcessorConfig.model_validate(
                 {"type": "_adapt_rotation_stage1", **{k: data[k] for k in s1 if k in data}}

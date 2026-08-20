@@ -44,27 +44,40 @@ FA3_BRANCHES = ("fa_q", "fa_k", "fa_v")
 
 
 class FA3AttentionDetails(BaseModel):
-    fa_q: QConfig = Field(default=None, description="Query 分支")
-    fa_k: QConfig = Field(default=None, description="Key 分支")
-    fa_v: QConfig = Field(default=None, description="Value 分支")
+    """FA3 注意力分支级量化配置，分别指定 Q/K/V 的量化方式。"""
+
+    fa_q: QConfig = Field(default=None, description="Query 分支的量化配置，见《QConfig 配置说明》")
+    fa_k: QConfig = Field(default=None, description="Key 分支的量化配置，见《QConfig 配置说明》")
+    fa_v: QConfig = Field(default=None, description="Value 分支的量化配置，见《QConfig 配置说明》")
 
     model_config = ConfigDict(extra="forbid")
 
 
 class FA3QuantProcessorConfig(AutoProcessorConfig):
-    type: Literal["fa3_quant"] = "fa3_quant"
-    qconfig: Optional[QConfig] = Field(default=None, description="量化配置，默认使用INT8 per-head symmetric")
+    """FA3（FlashAttention-3）量化处理器配置。
+
+    位于 `spec.process[]`，由 `type: fa3_quant` 分派；对 FA3 注意力模块应用统一量化
+    （`qconfig`）或 Q/K/V 分支级量化（`details`），两者互斥。
+    """
+
+    type: Literal["fa3_quant"] = Field(default="fa3_quant", description="处理器类型，固定为 `fa3_quant`。")
+    qconfig: Optional[QConfig] = Field(
+        default=None, description="统一量化配置；不提供时默认使用 INT8 per-head symmetric，见《QConfig 配置说明》"
+    )
     include: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
-        default_factory=lambda: ["*"], description="包含的模块名称"
+        default_factory=lambda: ["*"], description="包含的模块名称模式，默认 `*` 匹配全部模块"
     )
     exclude: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
-        default_factory=lambda: [], description="排除的模块名称"
+        default_factory=lambda: [], description="排除的模块名称模式，优先级高于 `include`"
     )
-    details: Optional[FA3AttentionDetails] = Field(default=None, description="详细激活量化配置，默认为空")
+    details: Optional[FA3AttentionDetails] = Field(
+        default=None, description="Q/K/V 分支级量化配置（FA3AttentionDetails），见《FA3AttentionDetails 配置说明》"
+    )
     model_config = ConfigDict(extra="forbid")
 
     @model_validator(mode="after")
     def validate_exclusivity(self) -> "FA3QuantProcessorConfig":
+        """校验 qconfig 与 details 互斥：两者都提供时报错；两者都未提供时默认 INT8 per-head symmetric。"""
         # 如果没有提供qconfig，使用默认的INT8 per-head symmetric配置
         if self.qconfig is None and not self.details:
             self.qconfig = QConfig(dtype=QDType.INT8, scope=QScope.PER_HEAD, symmetric=True, method="minmax")

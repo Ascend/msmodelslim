@@ -39,9 +39,13 @@ TRAIN_OPERATION_ENTRY_GROUP = "msmodelslim.train_operation.plugins"
 
 @TypedConfig.plugin_entry(entry_point_group=TRAIN_OPERATION_ENTRY_GROUP)
 class TLQOpConfig(TypedConfig):
-    """可训练 TLQ Op 插件配置。"""
+    """可训练 TLQ 算子（Op）插件配置。
 
-    type: TypedConfig.TypeField
+    位于 `spec.process[].operations[]`，由 `type` 分派具体算子（如 `minmax_tune`、
+    `round_tune`）；`lr` 可单独覆盖该算子的可训练参数学习率。
+    """
+
+    type: TypedConfig.TypeField = Field(description="算子类型，分派具体 TLQ 算子（如 `minmax_tune`、`round_tune`）。")
     lr: Optional[float] = Field(
         default=None,
         gt=0.0,

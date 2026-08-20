@@ -37,18 +37,24 @@ from msmodelslim.utils.validation.pydantic import validate_str_length
 
 
 class LinearProcessorConfig(AutoProcessorConfig):
-    type: Literal["linear_quant"] = "linear_quant"
-    qconfig: LinearQConfig = Field(description="量化配置")
+    """线性层（Linear）量化处理器配置。
+
+    位于 `spec.process[]`，由 `type: linear_quant` 分派；对匹配的线性层应用 `qconfig`
+    中的激活/权重量化方式（w8a8、w4a16 等由 `qconfig` 决定）。
+    """
+
+    type: Literal["linear_quant"] = Field(default="linear_quant", description="处理器类型，固定为 `linear_quant`。")
+    qconfig: LinearQConfig = Field(description="激活与权重的量化配置，见《LinearQConfig 配置说明》。")
     include: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
-        default_factory=lambda: ["*"], description="包含的模块名称"
+        default_factory=lambda: ["*"], description="包含的模块名称模式，默认 `*` 匹配全部模块"
     )
     exclude: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
-        default_factory=lambda: [], description="排除的模块名称"
+        default_factory=lambda: [], description="排除的模块名称模式，优先级高于 `include`"
     )
 
     @model_validator(mode='after')
     def validate_qconfig(self) -> 'LinearProcessorConfig':
-        """校验qconfig字段中的量化配置"""
+        """校验 qconfig：act/weight 的 (dtype, scope, symmetric, method) 组合必须有已注册量化器实现（如 int8_per_channel+minmax），否则报错；再调用所选量化器的 validate_ext_config，当前 GPTQ 要求 ext 中的 percdamp/block_size/group_size 均为正数。"""
         LinearQuantizer(self.qconfig).validate_config()
         return self
 

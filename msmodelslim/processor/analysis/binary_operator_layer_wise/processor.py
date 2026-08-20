@@ -38,24 +38,25 @@ logger = get_logger()
 
 
 class BinaryOperatorLayerWiseProcessorConfig(AutoProcessorConfig):
-    """Model-wise sensitive layer analysis config (keeps legacy package name)."""
+    """逐层敏感度分析处理器配置（对比逐块浮点与量化输出）。"""
 
-    type: Literal["binary_operator_layer_wise"] = "binary_operator_layer_wise"
+    type: Literal["binary_operator_layer_wise"] = Field(
+        default="binary_operator_layer_wise", description="处理器类型，固定为 `binary_operator_layer_wise`。"
+    )
     metrics: str = Field(
         default="mse_layer_wise",
-        description="Analysis method for model-wise sensitivity, e.g. 'layer_model_wise'.",
+        description="分析指标，如 `mse_layer_wise`。",
     )
     quant_modules: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=lambda: ["*"],
         description=(
-            "Align with linear_quant.include and CLI --quant_modules "
-            "(YAML placeholder ${quant_modules}); "
-            "used as a display suffix like 'model.layers.2 (mod1, mod2)'."
+            "与 linear_quant.include、CLI --quant_modules 一致（YAML 占位 ${quant_modules}）；"
+            "用于层敏感结果展示名后缀，如 model.layers.2 (mod1, mod2)。"
         ),
     )
     configs: AutoProcessorConfigList = Field(
         default_factory=list,
-        description="List of quant sub-processor configs used to run quant-dequant path.",
+        description="用于执行量化-反量化路径的量化子处理器配置列表",
     )
 
 

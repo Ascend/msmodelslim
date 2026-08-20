@@ -35,7 +35,11 @@ ModuleHandler = Callable[[str, nn.Module], None]
 
 
 class QuantFormatConfig(BaseModel):
-    """Base config for quantized export formats; subclasses are distinguished by ``type``."""
+    """量化导出格式的配置基类。
+
+    子类通过 ``type`` 字段区分（如 `ascendv1_saver`、`compressed_tensors`、`mindie_format_saver`）。
+    ``save_directory`` 由保存处理器自动注入输出目录，无需在 YAML 中配置。
+    """
 
     type: Literal["_auto_save"] = "_auto_save"
     save_directory: str = Field(default=".", exclude=True)

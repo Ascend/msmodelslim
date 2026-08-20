@@ -40,14 +40,27 @@ from .best_scales_search import AWQBestScalesSearcher
 
 
 class AWQProcessorConfig(AutoProcessorConfig):
-    type: Literal["awq"] = "awq"
-    weight_qconfig: QConfig
+    """AWQ（Activation-aware Weight Quantization）处理器配置。
+
+    位于 `spec.process[]`，由 `type: awq` 分派；基于激活统计感知权重的敏感度，
+    对匹配的线性层做仅权重量化（weight-only），`weight_qconfig` 决定权重数据类型与粒度。
+    """
+
+    type: Literal["awq"] = Field(default="awq", description="处理器类型，固定为 `awq`。")
+    weight_qconfig: QConfig = Field(description="权重的量化配置（QConfig），必选，见《QConfig 配置说明》。")
     enable_subgraph_type: Annotated[list, AfterValidator(pydtc.is_string_list)] = Field(
-        default_factory=lambda: ["norm-linear", "linear-linear", "ov", "up-down"]
+        default_factory=lambda: ["norm-linear", "linear-linear", "ov", "up-down"],
+        description="应用 AWQ 的子图类型列表，默认 `norm-linear`、`linear-linear`、`ov`、`up-down`。",
     )
-    n_grid: Annotated[int, AfterValidator(pydtc.greater_than_zero)] = 20
-    include: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = None
-    exclude: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = None
+    n_grid: Annotated[int, AfterValidator(pydtc.greater_than_zero)] = Field(
+        default=20, description="网格搜索的网格数，用于搜索最优量化尺度/裁剪点，必须大于0。"
+    )
+    include: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = Field(
+        default=None, description="包含的模块名称模式；不设置表示全部匹配。"
+    )
+    exclude: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = Field(
+        default=None, description="排除的模块名称模式，优先级高于 `include`。"
+    )
 
 
 @QABCRegistry.register(dispatch_key=AWQProcessorConfig, abc_class=AutoSessionProcessor)

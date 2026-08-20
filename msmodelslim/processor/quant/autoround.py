@@ -442,12 +442,14 @@ def _create_fake_quantizer(orig_layer: torch.nn.Linear) -> qir.AutoFakeQuantLine
 
 
 class QuantStrategyConfig(BaseModel):
-    qconfig: LinearQConfig = Field(description="量化配置")
+    """autoround 量化策略：对匹配的线性层应用一组量化配置。"""
+
+    qconfig: LinearQConfig = Field(description="激活与权重的量化配置，见《LinearQConfig 配置说明》。")
     include: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
-        default_factory=lambda: ["*"], description="包含的模块名称"
+        default_factory=lambda: ["*"], description="包含的模块名称模式，默认 `*` 匹配全部模块"
     )
     exclude: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
-        default_factory=list, description="排除的模块名称"
+        default_factory=list, description="排除的模块名称模式，优先级高于 `include`"
     )
 
 
@@ -519,15 +521,23 @@ def _validate_qconfig_group_size(qconfig: QConfig, field_path: str) -> None:
 
 
 class AutoroundProcessorConfig(AutoProcessorConfig):
-    type: Literal["autoround_quant"] = Field(default="autoround_quant", description="处理器类型标识")
+    """autoround 量化处理器配置。
+
+    位于 `spec.process[]`，由 `type: autoround_quant` 分派；通过多轮舍入调优
+    （round tuning）优化权重，逐策略对匹配的线性层应用量化。
+    """
+
+    type: Literal["autoround_quant"] = Field(
+        default="autoround_quant", description="处理器类型，固定为 `autoround_quant`。"
+    )
     iters: Annotated[int, AfterValidator(greater_than_zero)] = Field(default=10, description="迭代次数，必须大于0")
     enable_minmax_tuning: bool = Field(default=True, description="是否启用最小最大值调优")
     enable_round_tuning: bool = Field(default=True, description="是否启用舍入调优")
-    strategies: List[QuantStrategyConfig] = Field(default_factory=list, description="量化策略配置列表")
+    strategies: List[QuantStrategyConfig] = Field(default_factory=list, description="量化策略配置列表，至少配置一个")
 
     @model_validator(mode='after')
     def validate_strategies(self) -> 'AutoroundProcessorConfig':
-        """校验strategies字段中的量化配置"""
+        """校验 strategies：非空；每个 strategy 的 qconfig 满足 group_size 规则（scope=per_group 时 ext.group_size 必须为正整数，scope≠per_group 时不得含 group_size）；并通过量化器 layer 配置预检。"""
         _validate_quantization_strategies(self.strategies)
 
         # 调用create_layer_config进行配置与预检

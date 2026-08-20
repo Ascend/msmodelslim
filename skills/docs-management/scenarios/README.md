@@ -33,6 +33,7 @@ skill 新增资料时读取本索引：
 | 场景 | 标题 | 触发关键词（节选） | 文档 |
 | --- | --- | --- | --- |
 | `add-quantization-format` | 新建量化格式资料 | 新增量化格式、新建量化格式资料、量化格式文档 | [add-quantization-format.md](add-quantization-format.md) |
+| `update-interface-docs` | 更新接口文档（量化配置 / CLI） | 更新接口文档、更新配置文档、更新CLI文档、生成配置文档、接口文档生成、配置文档漂移 | [update-interface-docs.md](update-interface-docs.md) |
 
 ## 如何新增场景
 

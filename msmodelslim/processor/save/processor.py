@@ -52,8 +52,17 @@ def _convert_hookir_to_wrapper(module: nn.Module) -> None:
 
 
 class QuantSaveProcessorConfig(AutoProcessorConfig):
-    type: Literal["saver"] = "saver"
-    format: SerializeAsAny[QuantFormatConfig]
+    """统一保存处理器配置。
+
+    位于 `spec.process[]`，由 `type: saver` 分派；将量化结果按 `format` 指定的格式
+    导出到输出目录。`format` 是单对象（非列表），由保存处理器按 `_auto_save` 自动
+    注入对应格式，通常无需在 YAML 中显式配置。
+    """
+
+    type: Literal["saver"] = Field(default="saver", description="处理器类型，固定为 `saver`。")
+    format: SerializeAsAny[QuantFormatConfig] = Field(
+        description="导出格式配置（单对象），见《QuantFormatConfig 配置说明》；由保存处理器自动注入。"
+    )
     save_directory: str = Field(default="", exclude=True)
 
     def set_save_directory(self, save_directory: str):

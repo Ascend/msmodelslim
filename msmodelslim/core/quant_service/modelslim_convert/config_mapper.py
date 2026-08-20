@@ -30,73 +30,109 @@ from msmodelslim.core.convert.types import IRKind
 
 
 class RenamePattern(BaseModel):
+    """权重张量名重命名规则：把匹配 `from` 的权重名改写为 `to`。"""
+
     model_config = ConfigDict(extra="forbid")
 
-    from_: str = Field(alias="from")
-    to: str
+    from_: str = Field(alias="from", description="源权重名模式，支持通配符；匹配到的权重名将被改写。")
+    to: str = Field(description="改写后的目标权重名模式。")
 
 
 class RenamePreprocessConfig(BaseModel):
+    """`modelslim_convert` 预处理步骤之一：批量重命名权重张量。"""
+
     model_config = ConfigDict(extra="forbid")
 
-    type: Literal["rename"] = "rename"
-    patterns: List[RenamePattern] = Field(default_factory=list)
+    type: Literal["rename"] = Field(default="rename", description="预处理类型，固定为 `rename`。")
+    patterns: List[RenamePattern] = Field(default_factory=list, description="重命名规则列表，逐条应用到匹配的权重名。")
 
 
 class ConvertOpConfig(BaseModel):
+    """`convert` 预处理步骤中的权重算子，如拆分/合并 fused 的 gate/up 投影。"""
+
     model_config = ConfigDict(extra="allow")
 
-    type: str
-    dim: Optional[int] = None
-    projections: Optional[List[str]] = None
+    type: str = Field(description="算子类型：`chunk`（拆分 fused gate/up）、`merge`（合并 gate/up）或其他映射算子。")
+    dim: Optional[int] = Field(
+        default=None, description="拆分/合并维度：不指定时按算子类型自动推断，`chunk` 为 1，`merge` 为 0。"
+    )
+    projections: Optional[List[str]] = Field(
+        default=None, description="`chunk` 拆出的投影名列表：不指定时自动推断为 `gate_proj`、`up_proj`。"
+    )
 
 
 class ConvertPreprocessConfig(BaseModel):
+    """`modelslim_convert` 预处理步骤之一：对匹配的线性层做权重变换（拆分/合并等）。"""
+
     model_config = ConfigDict(extra="forbid")
 
-    type: Literal["convert"] = "convert"
-    source: List[str] = Field(default_factory=list)
-    target: List[str] = Field(default_factory=list)
-    ops: List[ConvertOpConfig] = Field(default_factory=list)
+    type: Literal["convert"] = Field(default="convert", description="预处理类型，固定为 `convert`。")
+    source: List[str] = Field(default_factory=list, description="源权重名模式列表（待变换的线性层）。")
+    target: List[str] = Field(default_factory=list, description="目标权重名模式列表（变换结果）。")
+    ops: List[ConvertOpConfig] = Field(default_factory=list, description="权重变换算子列表，如 `chunk`、`merge`。")
 
 
 class LinearConvertConfig(BaseModel):
+    """指定匹配的线性层转换到目标 IR 的规则。"""
+
     model_config = ConfigDict(extra="forbid")
 
-    match: List[str] = Field(default_factory=list)
-    target: IRKind
-    route: Union[List[IRKind], Literal["auto"]] = "auto"
+    match: List[str] = Field(default_factory=list, description="匹配的线性层名称模式列表。")
+    target: IRKind = Field(description="转换目标 IR 类型，如 `W8A8_MXFP8`、`INT4_PACKED` 等。")
+    route: Union[List[IRKind], Literal["auto"]] = Field(
+        default="auto", description="转换路径：显式 IR 列表（首元素为源 IR），或 `auto` 由虚拟树按权重 dtype 推断。"
+    )
 
 
 class SaveConfig(BaseModel):
+    """`modelslim_convert` 的保存格式配置。"""
+
     model_config = ConfigDict(extra="allow")
 
-    type: str = "ascend_v1"
-    part_file_size: int = 4
+    type: str = Field(
+        default="ascend_v1",
+        description="保存格式：`ascend_v1`（昇腾，与 `ConvertDefaults.dst_format` 的 `ascendv1` 等价）；`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。",
+    )
+    part_file_size: int = Field(default=4, description="分片文件大小，单位 GB；0 表示不分片。")
 
 
 class ParallelSpecConfig(BaseModel):
+    """`modelslim_convert` 的并行执行配置。"""
+
     model_config = ConfigDict(extra="forbid")
 
     # workers=1：单进程组内线程（可配 NPU）；workers>1：组间多进程 + 组内线程（CPU，突破 GIL）
-    workers: int = 1
+    workers: int = Field(
+        default=1,
+        description="并行 worker 数：1 表示单进程组内线程（可配 NPU）；大于1 表示组间多进程 + 组内线程（CPU）。",
+    )
     # 单组最大任务数；超过则拆成多个子组分散到不同进程，缓解 MoE 大组拖尾
-    max_group_size: Optional[int] = None
+    max_group_size: Optional[int] = Field(
+        default=None, description="单个依赖组的最大任务数，超过则拆成多个子组分散到不同进程；不设置表示不拆分。"
+    )
     # 仅 workers=1 且 worker_device 指向 NPU 时生效
-    worker_device: str = "cpu"
-    npu_max_workers: int = 1
+    worker_device: str = Field(default="cpu", description="worker 运行设备：`cpu` 或 `npu`。")
+    npu_max_workers: int = Field(
+        default=1, description="仅 `workers=1` 且 `worker_device=npu` 时生效，限制组内并发以防显存溢出。"
+    )
 
 
 class ModelslimConvertServiceConfig(BaseModel):
-    """modelslim_convert quant_service 的 spec 结构。"""
+    """`modelslim_convert` 服务的 spec 结构。
+
+    声明权重名重命名/变换（`preprocess`）、线性层转换规则（`linears`）、
+    保存格式（`save`）、并行执行（`parallel`）与默认值（`defaults`）。
+    """
 
     model_config = ConfigDict(extra="allow")
 
-    preprocess: List[Dict[str, Any]] = Field(default_factory=list)
-    linears: List[LinearConvertConfig] = Field(default_factory=list)
-    save: List[SaveConfig] = Field(default_factory=list)
-    parallel: ParallelSpecConfig = Field(default_factory=ParallelSpecConfig)
-    defaults: ConvertDefaults = Field(default_factory=ConvertDefaults)
+    preprocess: List[Dict[str, Any]] = Field(
+        default_factory=list, description="预处理步骤列表，每项 `type` 为 `rename` 或 `convert`。"
+    )
+    linears: List[LinearConvertConfig] = Field(default_factory=list, description="线性层转换规则列表。")
+    save: List[SaveConfig] = Field(default_factory=list, description="保存格式配置列表，取首个生效。")
+    parallel: ParallelSpecConfig = Field(default_factory=ParallelSpecConfig, description="并行执行配置。")
+    defaults: ConvertDefaults = Field(default_factory=ConvertDefaults, description="字段缺省时的全局默认值。")
 
 
 _SAVE_TYPE_MAP = {

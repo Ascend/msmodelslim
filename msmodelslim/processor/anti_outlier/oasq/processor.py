@@ -23,7 +23,7 @@ from typing import Callable, Any, Literal, Annotated, Optional, List, Dict
 
 import torch.distributed as dist
 from torch import nn
-from pydantic import AfterValidator, Field
+from pydantic import AfterValidator, Field, field_validator
 
 from msmodelslim.ir.qal.qregistry import QABCRegistry
 from msmodelslim.core.base.protocol import BatchProcessRequest
@@ -50,14 +50,33 @@ from .interface import OASQInterface
 
 
 class OASQProcessorConfig(AutoProcessorConfig):
-    type: Literal["oasq"] = "oasq"
-    max_iters: Optional[Annotated[int, AfterValidator(pydtc.int_greater_than_zero)]] = None
-    symmetric: bool = True
-    enable_subgraph_type: Annotated[list, AfterValidator(pydtc.is_string_list)] = Field(
-        default_factory=lambda: ["norm-linear", "linear-linear", "ov", "up-down"]
+    """OASQ（Outlier-Aware Smooth Quantization）处理器配置。
+
+    位于 `spec.process[]`，由 `type: oasq` 分派；通过迭代优化平滑与量化参数，
+    显式处理激活离群值。
+    """
+
+    type: Literal["oasq"] = Field(default="oasq", description="处理器类型，固定为 `oasq`。")
+    max_iters: Optional[Annotated[int, AfterValidator(pydtc.int_greater_than_zero)]] = Field(
+        default=None, description="最大迭代次数；不设置时使用实现默认值，必须大于0。"
     )
-    include: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = None
-    exclude: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = None
+    symmetric: bool = Field(default=True, description="是否对称量化后续的权重/激活。")
+    enable_subgraph_type: Annotated[list, AfterValidator(pydtc.is_string_list)] = Field(
+        default_factory=lambda: ["norm-linear", "linear-linear", "ov", "up-down"],
+        description="应用 OASQ 的子图类型列表，默认 `norm-linear`、`linear-linear`、`ov`、`up-down`。",
+    )
+    include: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = Field(
+        default=None, description="包含的模块名称模式；不设置表示全部匹配。"
+    )
+    exclude: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = Field(
+        default=None, description="排除的模块名称模式，优先级高于 `include`。"
+    )
+
+    @field_validator("max_iters")
+    @classmethod
+    def validate_max_iters(cls, v: Optional[int]) -> Optional[int]:
+        """校验 max_iters：设置时必须大于 0。"""
+        return v
 
 
 class OASQStatsCollector(StatsCollector):

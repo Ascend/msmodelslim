@@ -53,10 +53,20 @@ LAYER_IDX_NAME = "layer_idx" if DYNAMIC_AVAILABLE else None
 
 
 class DynamicCacheProcessorConfig(AutoProcessorConfig):
-    type: Literal['dynamic_cache'] = "dynamic_cache"
-    qconfig: QConfig
-    include: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(default_factory=list)
-    exclude: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(default_factory=list)
+    """KV cache 量化处理器配置。
+
+    位于 `spec.process[]`，由 `type: dynamic_cache` 分派；对注意力层的 KV cache 张量
+    应用 `qconfig` 指定的量化方式。
+    """
+
+    type: Literal['dynamic_cache'] = Field(default="dynamic_cache", description="处理器类型，固定为 `dynamic_cache`。")
+    qconfig: QConfig = Field(description="KV cache 张量的量化配置，见《QConfig 配置说明》。")
+    include: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
+        default_factory=list, description="包含的模块名称模式"
+    )
+    exclude: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
+        default_factory=list, description="排除的模块名称模式，优先级高于 `include`"
+    )
 
 
 def _warning_unmatched_pattern(name: str, config_set: ConfigSet) -> None:

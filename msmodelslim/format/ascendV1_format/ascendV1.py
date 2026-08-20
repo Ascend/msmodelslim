@@ -31,15 +31,21 @@ from msmodelslim.format.base import QuantFormatConfig
 
 
 class AscendV1QuantFormatConfig(QuantFormatConfig):
-    """与 core ``AscendV1Config`` 字段对齐的格式配置。"""
+    """AscendV1 保存格式配置，导出昇腾落盘格式的权重文件。"""
 
     def set_save_directory(self, save_directory: str):
         self.save_directory = str(save_directory)
 
-    type: Literal['ascendv1_saver'] = "ascendv1_saver"
+    type: Literal['ascendv1_saver'] = Field(
+        default="ascendv1_saver", description="保存格式类型，固定为 `ascendv1_saver`。"
+    )
     save_directory: str = Field(default=".", exclude=True)
-    part_file_size: int = 4
-    ext: Dict[str, Any] = Field(default_factory=dict, exclude_if=lambda v: not v)
+    part_file_size: int = Field(default=4, description="分片文件大小，单位 GB；0 表示不分片。")
+    ext: Dict[str, Any] = Field(
+        default_factory=dict,
+        exclude_if=lambda v: not v,
+        description="保存格式扩展参数，随实现而定；空对象表示无扩展参数。",
+    )
 
 
 __all__ = [

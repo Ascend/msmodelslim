@@ -20,9 +20,9 @@ See the Mulan PSL v2 for more details.
 """
 
 from pathlib import Path
-from typing import Literal, List, Annotated
+from typing import List, Annotated
 
-from pydantic import AfterValidator, BaseModel, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 
 from msmodelslim.app.auto_tuning import EvaluateServiceInfra, EvaluateServiceConfig
 from msmodelslim.app.auto_tuning.evaluation_service_infra import EvaluateContext
@@ -36,18 +36,101 @@ from msmodelslim.utils.validation.pydantic import at_least_one_element
 
 
 class EvaluateDemand(BaseModel):
-    expectations: Annotated[List[AccuracyExpectation], AfterValidator(at_least_one_element)]
+    """评估需求：声明需要在哪些数据集上达到哪些精度期望。"""
+
+    expectations: Annotated[List[AccuracyExpectation], AfterValidator(at_least_one_element)] = Field(
+        description="精度期望列表，至少 1 个；每项声明数据集与目标精度（含容差）"
+    )
+
+
+_FULL_EXAMPLE = {
+    'type': 'service_oriented',
+    'demand': {'expectations': [{'dataset': 'gsm8k', 'target': '83', 'tolerance': '2'}]},
+    'evaluation': {
+        'type': 'aisbench',
+        'aisbench': {
+            'binary': 'ais_bench',
+            'mode': 'all',
+            'timeout': 7200,
+            'request_rate': 1.0,
+            'retry': 2,
+            'batch_size': 32,
+            'max_out_len': 512,
+            'trust_remote_code': False,
+            'pred_postprocessor': 'extract_non_reasoning_content',
+            'generation_kwargs': {
+                'temperature': 0.5,
+                'top_k': 10,
+                'top_p': 0.9,
+                'seed': None,
+                'repetition_penalty': 1.03,
+                'chat_template_kwargs': {'thinking': True},
+            },
+            'model_meta': {
+                'base_name': 'vllm_api_general_chat',
+                'subdir': 'vllm_api',
+                'abbr': 'vllm-api-general-chat',
+                'attr': 'service',
+            },
+        },
+        'datasets': {
+            'gsm8k': {'config_name': 'gsm8k_gen_0_shot_cot_str', 'mode': 'all'},
+            'aime25': {'config_name': 'aime2025_gen_0_shot_chat_prompt', 'mode': 'all'},
+            'bfcl-simple': {
+                'config_name': 'BFCL_gen_simple',
+                'mode': 'all',
+                'max_out_len': 1024,
+                'returns_tool_calls': True,
+                'api_chat_type': 'VLLMFunctionCallAPIChat',
+            },
+        },
+        'host': 'localhost',
+        'port': 1234,
+        'served_model_name': 'served_model_name',
+    },
+    'inference_engine': {
+        'type': 'vllm-ascend',
+        'entrypoint': 'vllm.entrypoints.openai.api_server',
+        'env_vars': {'HCCL_BUFFSIZE': 1024, 'ASCEND_RT_VISIBLE_DEVICES': 0},
+        'served_model_name': 'served_model_name',
+        'host': 'localhost',
+        'port': 1234,
+        'health_check_endpoint': '/v1/models',
+        'startup_timeout': 600,
+        'args': {
+            'enforce-eager': True,
+            'served-model-name': 'served_model_name',
+            'trust-remote-code': True,
+            'tensor-parallel-size': 1,
+            'data-parallel-size': 1,
+            'quantization': 'ascend',
+            'enable-prefix-caching': False,
+            'max-model-len': 8192,
+            'max-num-batched-tokens': 8192,
+            'gpu-memory-utilization': 0.9,
+            'enable-auto-tool-choice': True,
+            'tool-call-parser': 'hermes',
+            'additional_config': {'ascend_scheduler_config': {'enable': True}, 'enable_weight_nz_layout': True},
+        },
+    },
+}
 
 
 class ServiceOrientedEvaluateServiceConfig(EvaluateServiceConfig):
-    type: TypedConfig.TypeField = Literal['service_oriented']
-    demand: EvaluateDemand
-    evaluation: AisbenchServerConfig
-    inference_engine: VllmAscendConfig
+    """面向服务的评估服务配置：评估需求 + aisbench 评测 + vLLM-Ascend 推理引擎。"""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_FULL_EXAMPLE]})
+
+    type: TypedConfig.TypeField = Field(
+        default='service_oriented', description="评估服务类型，固定为 `service_oriented`"
+    )
+    demand: EvaluateDemand = Field(description="评估需求（数据集精度期望）")
+    evaluation: AisbenchServerConfig = Field(description="AISBench 评测服务配置")
+    inference_engine: VllmAscendConfig = Field(description="vLLM-Ascend 推理引擎配置")
 
     @model_validator(mode='after')
     def validate_datasets_exist(self):
-        """校验 expectations 中的所有 dataset 都在 evaluation.evaluation.datasets 中配置了"""
+        """校验 expectations 中的所有 dataset 都在 evaluation.datasets 中配置了"""
         if not self.demand.expectations:
             return self
 

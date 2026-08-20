@@ -77,6 +77,12 @@ SelectBestConfig = Annotated[
 
 
 class BlockTrainConfig(BaseModel):
+    """块级训练（block train）超参配置。
+
+    控制 trainable_linear_quant 块级 Trainer 的迭代、梯度累加、学习率、
+    最优快照选择策略与损失函数。
+    """
+
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     iters: int = Field(

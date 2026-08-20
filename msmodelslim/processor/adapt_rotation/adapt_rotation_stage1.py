@@ -41,9 +41,16 @@ LAYER_TYPE_STR_MAX_LEN = 128
 
 
 class AdaptRotationStage1ProcessorConfig(BaseModel):
-    """Internal config for stage1 (BaseModel, not in AutoProcessorConfig registry to avoid union recursion)."""
+    """adapt_rotation 阶段1的配置。
 
-    type: Literal["_adapt_rotation_stage1"] = "_adapt_rotation_stage1"
+    父配置 `stage: 1` 时生效，负责激活适配与量化适配：收集指定层激活、迭代优化旋转与量化参数。
+    YAML 中这些字段平铺在 `spec.process[]` 的 adapt_rotation 处理器下（由 before-validator
+    归一化为 `stage_config` 内部对象）。
+    """
+
+    type: Literal["_adapt_rotation_stage1"] = Field(
+        default="_adapt_rotation_stage1", description="阶段配置类型，内部标识，无需配置。"
+    )
     steps: Annotated[int, AfterValidator(in_range(min_val=1, max_val=1000))] = Field(
         default=20, description="迭代优化步数"
     )
@@ -79,7 +86,7 @@ class AdaptRotationStage1ProcessorConfig(BaseModel):
     @field_validator('block_size')
     @classmethod
     def validate_block_size(cls, v: int) -> int:
-        """校验 block_size：取值范围为-1或大于0且为2的幂的整数"""
+        """校验 block_size：取值范围为-1或2的非负整数次幂"""
         if v == -1:
             return v
         if v <= 0 or not is_power_of_two(v):

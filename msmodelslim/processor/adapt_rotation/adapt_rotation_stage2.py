@@ -36,9 +36,16 @@ from msmodelslim.utils.exception import SchemaValidateError
 
 
 class AdaptRotationStage2ProcessorConfig(BaseModel):
-    """Internal config for stage2 (BaseModel, not in AutoProcessorConfig registry to avoid union recursion)."""
+    """adapt_rotation 阶段2的配置。
 
-    type: Literal["_adapt_rotation_stage2"] = "_adapt_rotation_stage2"
+    父配置 `stage: 2` 时生效，在阶段1基础上支持在线旋转，可指定 down_proj 在线层与最大 TP 并行度。
+    YAML 中这些字段平铺在 `spec.process[]` 的 adapt_rotation 处理器下（由 before-validator
+    归一化为 `stage_config` 内部对象）。
+    """
+
+    type: Literal["_adapt_rotation_stage2"] = Field(
+        default="_adapt_rotation_stage2", description="阶段配置类型，内部标识，无需配置。"
+    )
     online: bool = Field(default=False, description="是否启用在线旋转")
     block_size: int = Field(default=-1, description="块大小，-1 表示 hidden_dim")
     down_proj_online_layers: List[int] = Field(
@@ -71,7 +78,7 @@ class AdaptRotationStage2ProcessorConfig(BaseModel):
     @field_validator('block_size')
     @classmethod
     def validate_block_size(cls, v: int) -> int:
-        """校验 block_size：取值范围为-1或大于0且为2的幂的整数"""
+        """校验 block_size：取值范围为-1或2的非负整数次幂"""
         if v == -1:
             return v
         if v <= 0 or not is_power_of_two(v):

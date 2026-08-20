@@ -31,10 +31,18 @@ from msmodelslim.format.base import QuantFormatConfig
 
 
 class MindIEQuantFormatConfig(QuantFormatConfig):
-    type: Literal['mindie_format_saver'] = "mindie_format_saver"
+    """MindIE 保存格式配置，导出 MindIE 落盘格式的权重文件。"""
+
+    type: Literal['mindie_format_saver'] = Field(
+        default="mindie_format_saver", description="保存格式类型，固定为 `mindie_format_saver`。"
+    )
     save_directory: str = Field(default=".", exclude=True)
-    part_file_size: int = 4
-    ext: Dict[str, Any] = Field(default_factory=dict, exclude_if=lambda v: not v)
+    part_file_size: int = Field(default=4, description="分片文件大小，单位 GB；0 表示不分片。")
+    ext: Dict[str, Any] = Field(
+        default_factory=dict,
+        exclude_if=lambda v: not v,
+        description="保存格式扩展参数，随实现而定；空对象表示无扩展参数。",
+    )
 
     def set_save_directory(self, save_directory: str):
         self.save_directory = str(save_directory)

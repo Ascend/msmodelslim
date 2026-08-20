@@ -36,16 +36,22 @@ from msmodelslim.utils.exception import UnexpectedError
 
 
 class UnaryAnalysisProcessorConfig(AutoProcessorConfig):
-    """Configuration for unary layer sensitivity analysis (std/quantile/kurtosis)."""
+    """一元（无量化）敏感性分析处理器配置。
 
-    type: Literal["unary_analysis"] = "unary_analysis"
+    位于 `spec.process[]`，由 `type: unary_analysis` 分派；基于激活分布统计量
+    （分位数/标准差/峰度）评估各层对量化的敏感度。
+    """
+
+    type: Literal["unary_analysis"] = Field(
+        default="unary_analysis", description="处理器类型，固定为 `unary_analysis`。"
+    )
     metrics: str = Field(
         default="kurtosis",
-        description="Analysis method: quantile | std | kurtosis",
+        description="分析指标：`quantile`（分位数）、`std`（标准差）、`kurtosis`（峰度）",
     )
     patterns: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=lambda: ["*"],
-        description="Layer name patterns to analyze",
+        description="待分析的层名模式列表，默认 `*` 匹配全部",
     )
 
 

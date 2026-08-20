@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional, List
@@ -39,8 +40,13 @@ class QuantServiceConfig(TypedConfig):
 # --- BaseQuantConfig（QuantConfig）：任务级量化配置，用于 quantize(quant_config, ...) ---
 class BaseQuantConfig(BaseModel):
     """量化任务配置：apiversion + spec，用于 quantize() 入参。与 QuantServiceConfig 区分。"""
-    apiversion: str = "Unknown"
-    spec: object = Field(default_factory=dict)
+
+    apiversion: str = Field(
+        default="Unknown",
+        description="API 版本（任务类型），决定 spec 的结构：`modelslim_v1`、`multimodal_vlm_modelslim_v1`、"
+        "`multimodal_sd_modelslim_v1`、`modelslim_convert`；YAML 中必须显式指定，默认值 `Unknown` 仅为代码内部占位，不可直接使用。",
+    )
+    spec: object = Field(default_factory=dict, description="任务规格，结构随 apiversion 而定。")
 
     model_config = ConfigDict(extra="allow")
 
@@ -48,11 +54,10 @@ class BaseQuantConfig(BaseModel):
 class IQuantService(ABC):
     @abstractmethod
     def quantize(
-            self,
-            quant_config: BaseQuantConfig,
-            model_adapter: IModel,
-            save_path: Optional[Path] = None,
-            device: DeviceType = DeviceType.NPU,
-            device_indices: Optional[List[int]] = None
-    ) -> None:
-        ...
+        self,
+        quant_config: BaseQuantConfig,
+        model_adapter: IModel,
+        save_path: Optional[Path] = None,
+        device: DeviceType = DeviceType.NPU,
+        device_indices: Optional[List[int]] = None,
+    ) -> None: ...

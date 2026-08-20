@@ -37,15 +37,34 @@ from ..interface import BaseQuantConfig
 
 
 class MultimodalVLMServiceConfig(BaseModel):
+    """`multimodal_vlm_modelslim_v1` 服务的 spec 结构。
+
+    面向多模态理解（VLM）模型：在 `ModelslimV1ServiceConfig` 基础上增加
+    `default_text` 提示词，用于图像类校准数据缺省文本时的默认输入。
+    """
+
     # auto: single device → layer_wise; multi-device (--device npu:0,1,...) → dp_layer_wise
-    runner: RunnerType = RunnerType.AUTO
+    runner: RunnerType = Field(
+        default=RunnerType.AUTO,
+        description="流水线执行方式：`auto` 按设备数量自动选择（单设备 `layer_wise`，多设备 `dp_layer_wise`）、"
+        "`model_wise` 整模型计算、`layer_wise` 逐层计算、`dp_layer_wise` 数据并行逐层计算。",
+    )
     prior: List[PriorStageConfig] = Field(default_factory=list, description="前置阶段列表，每阶段含 process 与 dataset")
-    process: AutoProcessorConfigList = Field(default_factory=list)
-    save: AutoSaverConfigList = Field(default_factory=list)
-    dataset: str = Field(default='mix_calib.jsonl')
+    process: AutoProcessorConfigList = Field(
+        default_factory=list,
+        description="量化处理器链，按顺序执行；每个元素是 `type` 分派的处理器配置。",
+    )
+    save: AutoSaverConfigList = Field(
+        default_factory=list,
+        description="保存格式列表，每个元素是 `type` 分派的保存格式配置。",
+    )
+    dataset: str = Field(
+        default='mix_calib.jsonl',
+        description="校准数据集名称（`lab_calib` 下的文件名）或数据集路径。",
+    )
     default_text: str = Field(
         default="Describe this image in detail.",
-        description="Default prompt used for image-only calibration data when text is not provided.",
+        description="校准数据缺少文本模态时，图像类样本使用的默认提示词。",
     )
 
     @field_validator("default_text")
@@ -55,10 +74,10 @@ class MultimodalVLMServiceConfig(BaseModel):
 
 
 class MultimodalVLMModelslimV1QuantConfig(ModelslimV1QuantConfig):
-    """
-    Quantization configuration for Multimodal VLM V1 service.
+    """`multimodal_vlm_modelslim_v1` 量化任务配置，位于 YAML 根节点。
 
-    Compatible with NaiveQuantizationApplication and best practice system.
+    `apiversion` 取值固定为 `multimodal_vlm_modelslim_v1`；`spec` 声明多模态理解模型的
+    量化流水线与校准数据，兼容 `NaiveQuantizationApplication` 与最佳实践系统。
     """
 
     spec: MultimodalVLMServiceConfig

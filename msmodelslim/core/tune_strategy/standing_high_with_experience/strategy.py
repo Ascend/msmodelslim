@@ -18,7 +18,7 @@ See the Mulan PSL v2 for more details.
 
 from typing import List, Literal, Optional, Generator
 
-from pydantic import Field, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from msmodelslim.core.const import DeviceType, QuantType
 from msmodelslim.core.practice import PracticeConfig
@@ -42,10 +42,21 @@ from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
 
 
+_FULL_EXAMPLE = {
+    'type': 'standing_high_with_experience',
+    'quant_type': 'w8a8',
+    'structure_configs': [{'type': 'GQA', 'include': ['*self_attn*']}, {'type': 'FFN', 'include': ['*mlp*']}],
+}
+
+
 class StandingHighWithExperienceStrategyConfig(StrategyConfig):
     """基于专家经验的摸高算法策略配置"""
 
-    type: Literal["standing_high_with_experience"] = "standing_high_with_experience"
+    model_config = ConfigDict(json_schema_extra={"examples": [_FULL_EXAMPLE]})
+
+    type: Literal["standing_high_with_experience"] = Field(
+        default="standing_high_with_experience", description="策略类型，固定为 `standing_high_with_experience`"
+    )
 
     structure_configs: List[StructureConfig] = Field(
         description="结构配置列表，每个配置包含结构类型和对应的 include/exclude，例如 [{'type': 'GQA', 'include': ['*self_attn*'], 'exclude': ['*kv_b_proj']}]（必填，无默认配置）"

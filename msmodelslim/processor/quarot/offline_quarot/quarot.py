@@ -19,12 +19,11 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-
 from typing import List, Literal, Dict
 
 import torch
-import torch.nn as nn
-from pydantic import field_validator
+from torch import nn
+from pydantic import field_validator, Field
 
 import msmodelslim.ir as qir
 from msmodelslim.core.base.protocol import BatchProcessRequest
@@ -39,13 +38,23 @@ from ..common.quarot_utils import fuse_ln_linear, rotate_linear, is_power_of_two
 
 
 class QuaRotProcessorConfig(AutoProcessorConfig):
-    type: Literal["quarot"] = "quarot"
-    online: bool = False
-    block_size: int = -1
-    down_proj_online_layers: List[int] = []
-    max_tp_size: int = 4
+    """QuaRot（离线旋转）处理器配置。
+
+    位于 `spec.process[]`，由 `type: quarot` 分派；通过随机正交旋转消除激活离群值
+    的维度结构，降低低比特量化的精度损失。
+    """
+
+    type: Literal["quarot"] = Field(default="quarot", description="处理器类型，固定为 `quarot`。")
+    online: bool = Field(default=False, description="是否在线旋转（默认离线）。")
+    block_size: int = Field(default=-1, description="旋转块大小，-1 表示按 hidden_dim 整块旋转。")
+    down_proj_online_layers: List[int] = Field(
+        default_factory=lambda: [], description="需要在线旋转的 down_proj 层索引列表。"
+    )
+    max_tp_size: int = Field(default=4, description="最大 TP（Tensor Parallelism，张量并行）并行度，必须为2的幂。")
     """为 True 时在 pre_run 中向首个旋转目标模块注入 QuaRotExtraInfoHookIR，用于导出 optional.quarot.global_rotation。"""
-    export_extra_info: bool = True
+    export_extra_info: bool = Field(
+        default=True, description="是否导出 `optional.quarot.global_rotation` 旋转信息，用于下游部署。"
+    )
 
     @field_validator('max_tp_size')
     @classmethod
@@ -58,7 +67,7 @@ class QuaRotProcessorConfig(AutoProcessorConfig):
     @field_validator('block_size')
     @classmethod
     def validate_block_size(cls, v):
-        """校验 block_size：取值范围为-1或大于0且为2的幂的整数"""
+        """校验 block_size：取值范围为-1或2的非负整数次幂"""
         if v == -1:
             return v
         if v <= 0 or not is_power_of_two(v):
@@ -77,9 +86,10 @@ class QuaRotProcessor(AutoSessionProcessor):
         self.bake_names = []
         self.rotate_commands = []
         if not isinstance(adapter, QuaRotInterface):
-            raise UnsupportedError(f'{adapter.__class__.__name__} does not support QuaRot',
-                                   action='Please provide a valid model adapter '
-                                          'which implements QuaRotInterface')
+            raise UnsupportedError(
+                f'{adapter.__class__.__name__} does not support QuaRot',
+                action='Please provide a valid model adapter which implements QuaRotInterface',
+            )
         if self.config.online:
             self.online_processor = LAOSOnlineRotationProcessor(model, config, adapter)
 
@@ -90,10 +100,9 @@ class QuaRotProcessor(AutoSessionProcessor):
         return True
 
     def pre_run(self) -> None:
-
         pre_run_fused_ln, self.fused_map = self.adapter.get_ln_fuse_map()
         pre_run_bake_names, self.bake_names = self.adapter.get_bake_names()
-        pre_run_pairs, self.rotate_pairs = self.adapter.get_rotate_map(block_size=self.config.block_size)
+        pre_run_pairs, self.rotate_pairs = self.adapter.get_rotate_map(block_size=self.config.block_size)  # pylint: disable=attribute-defined-outside-init
 
         self._record_debug_info(pre_run_pairs, self.rotate_pairs)
         pre_run_commands = get_rotate_command(pre_run_pairs)
@@ -126,20 +135,19 @@ class QuaRotProcessor(AutoSessionProcessor):
                 "no global rotation matrix available for export (optional.quarot.global_rotation)."
             )
 
-    def _record_debug_info(self,pre_run_pairs, rotate_pairs):
+    def _record_debug_info(self, pre_run_pairs, rotate_pairs):
         from msmodelslim.core.context import get_current_context
 
         ctx = get_current_context()
 
         if ctx is not None and ctx.is_enable_debug():
-            ns = ctx["quarot_rotate_matrices"]
+            ns = ctx["quarot_rotate_matrices"]  # pylint: disable=unsubscriptable-object
 
             for pre_run in pre_run_pairs:
                 self._record_rotate_pair_mapping(pre_run, ns)
 
             for rotate_pair in rotate_pairs:
                 self._record_rotate_pair_mapping(rotate_pair, ns)
-
 
     def _record_rotate_pair_mapping(self, rotate_pair, ns):
         for side_name, rot_dict in [
@@ -206,16 +214,16 @@ class QuaRotProcessor(AutoSessionProcessor):
 
     def _fuse_norm(self, fused_map: Dict[str, str]):
         for key, value in fused_map.items():
-            get_logger().debug(f"start to fuse layer norm and linear: {key} and {value}")
+            get_logger().debug("start to fuse layer norm and linear: %s and %s", key, value)
             layernorms = []
-            if isinstance(key, list) or isinstance(key, tuple):
+            if isinstance(key, (list, tuple)):
                 for k in key:
                     layernorms.append(self.model.get_submodule(k))
             else:
                 layernorms.append(self.model.get_submodule(key))
             linears = []
 
-            if isinstance(value, list) or isinstance(value, tuple):
+            if isinstance(value, (list, tuple)):
                 for v in value:
                     linears.append(self.model.get_submodule(v))
             else:
@@ -223,34 +231,39 @@ class QuaRotProcessor(AutoSessionProcessor):
             try:
                 fuse_ln_linear(layernorms, linears)
             except UnsupportedError as e:
-                raise UnsupportedError("fuse layer norm and linear error!",
-                                    action=f"Please check the {key} and {value} size!") from e
-            get_logger().debug(f"successfully fuse layer norm and linear: {key} and {value}")
+                raise UnsupportedError(
+                    "fuse layer norm and linear error!", action=f"Please check the {key} and {value} size!"
+                ) from e
+            get_logger().debug("successfully fuse layer norm and linear: %s and %s", key, value)
 
     def _bake_mean(self, bake_names: List[str]):
         for name in bake_names:
-            get_logger().debug(f"start to bake mean into linear: {name}")
+            get_logger().debug("start to bake mean into linear: %s", name)
             mod = self.model.get_submodule(name)
             if isinstance(mod, torch.nn.Linear):
                 bake_mean_into_linear(mod)
-                get_logger().debug(f"successfully bake mean into linear: {name}")
+                get_logger().debug("successfully bake mean into linear: %s", name)
             else:
-                raise UnsupportedError("bake mean into linear error!",
-                                    action=f"Please check the {name} type and model adapter implementation!")
+                raise UnsupportedError(
+                    "bake mean into linear error!",
+                    action=f"Please check the {name} type and model adapter implementation!",
+                )
 
     def _rotate(self, rotate_commands: List[str]):
         for command in rotate_commands:
-            get_logger().debug(f"start to {command.side.value} rotate linear: {command.target}")
+            get_logger().debug("start to %s rotate linear: %s", command.side.value, command.target)
             try:
                 mod = self.model.get_submodule(command.target)
                 rotate_linear(mod, command.rot, command.side == RotSide.RIGHT)
-            except AttributeError as e:
+            except AttributeError:
                 path_list = command.target.split('.')
                 mod = self.model.get_submodule('.'.join(path_list[:-1]))
                 weight = getattr(mod, path_list[-1])
                 rotate_weight(weight, command.rot, command.side == RotSide.RIGHT)
             except UnsupportedError as e:
-                raise UnsupportedError(f"{command.side.value} rotate linear error!",
-                                    action=f"Please check whether the {command.target} size is equal \
-                                    to the rotate matrix size: {command.rot.shape[0]}!") from e
-            get_logger().debug(f"{command.side.value} rotate linear success: {command.target}")
+                raise UnsupportedError(
+                    f"{command.side.value} rotate linear error!",
+                    action=f"Please check whether the {command.target} size is equal \
+                                    to the rotate matrix size: {command.rot.shape[0]}!",
+                ) from e
+            get_logger().debug("%s rotate linear success: %s", command.side.value, command.target)

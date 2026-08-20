@@ -35,17 +35,21 @@ from msmodelslim.ir.w16a16s import W16A16sLinear
 
 
 class FloatSparseProcessorConfig(AutoProcessorConfig):
-    """浮点稀疏处理器配置类：继承自自动处理器配置基类"""
+    """浮点稀疏处理器配置。
 
-    type: Literal["float_sparse"] = "float_sparse"
+    位于 `spec.process[]`，由 `type: float_sparse` 分派；按 `sparse_ratio` 对匹配模块
+    的权重做浮点稀疏（置零），不改变数据类型。
+    """
+
+    type: Literal["float_sparse"] = Field(default="float_sparse", description="处理器类型，固定为 `float_sparse`。")
     sparse_ratio: Annotated[float, AfterValidator(in_range(min_val=0.0, max_val=1.0))] = Field(
-        default=0.3, description="Sparse ratio"
+        default=0.3, description="稀疏比例（0~1），置零权重占比，越大稀疏越多。"
     )
     include: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
-        default_factory=list, description="Included module names"
+        default_factory=list, description="包含的模块名称模式"
     )
     exclude: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
-        default_factory=list, description="Excluded module names"
+        default_factory=list, description="排除的模块名称模式，优先级高于 `include`"
     )
 
 
