@@ -1,4 +1,4 @@
-# 欢迎来到 msModelSlim 
+# 欢迎来到 msModelSlim
 
 <p align="center">
   <img src="assets/modelslim_slogan.png" alt="ModelSlim Slogan" width="340" />
@@ -10,9 +10,10 @@ MindStudio ModelSlim（昇腾模型压缩工具，msModelSlim），一个以加�
 
 ## :star: 核心优势
 
-* **高效压缩** :package: —— 支持多种量化算法，显著降低显存占用。
-* **昇腾亲和** :gear: —— 深度适配昇腾硬件，确保最佳推理性能。
-* **简单易用** :magic_wand: —— 丰富的模型最佳实践库，快速实现模型优化。
+- 🚀 **推理加速**：量化后显著降低显存占用，提升推理吞吐与部署成本效率（例如 DeepSeek-V3.2 单卡 64GB 显存、100GB 内存即可完成 W8A8 量化）。
+- 🎯 **开箱即用**：集成主流大模型量化最佳实践，`msmodelslim quant` 一条命令完成量化。
+- 🔧 **精度可控**：提供敏感层分析、自动调优与精度反馈闭环，量化精度可量化、可调优。
+- 🧩 **生态友好**：导出的量化权重无缝接入 vLLM-Ascend 等主流推理框架。
 
 ## :loudspeaker: 最新消息
 

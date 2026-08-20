@@ -25,8 +25,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 
 ## 大语言模型支持列表
 
-!!! info "提示"
-    下表内容较多，若显示不全，您可以**按住鼠标滚轮**或使用**底部滚动条**左右拖动查看。
+> **提示**：下表内容较多，若显示不全，您可以**按住鼠标滚轮**或使用**底部滚动条**左右拖动查看。
 
 <div class="custom-table">
 
