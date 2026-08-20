@@ -34,12 +34,20 @@ from transformers import AutoProcessor
 from transformers.masking_utils import create_causal_mask
 
 from transformers import Qwen3_5MoeForConditionalGeneration, Qwen3_5ForConditionalGeneration
+from transformers.models.qwen3.modeling_qwen3 import Qwen3RMSNorm
+from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5RMSNorm
+from transformers.models.qwen3_5_moe.modeling_qwen3_5_moe import Qwen3_5MoeRMSNorm
 from msmodelslim.core.const import DeviceType
 from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInterface
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.graph import AdapterConfig, MappingConfig
 from msmodelslim.model.common.layer_wise_forward import generated_decoder_layer_visit_func
-from msmodelslim.model.interface_hub import IterSmoothInterface, FlexSmoothQuantInterface, ModelSlimPipelineInterfaceV1
+from msmodelslim.model.interface_hub import (
+    IterSmoothInterface,
+    FlexSmoothQuantInterface,
+    ModelSlimPipelineInterfaceV1,
+    AscendV1SaveInterface,
+)
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
 from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VlmCalibSample
 from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
@@ -78,7 +86,12 @@ def default_dtype(dtype):
 
 @logger_setter()
 class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
-    VLMBaseModelAdapter, ModelInfoInterface, ModelSlimPipelineInterfaceV1, IterSmoothInterface, FlexSmoothQuantInterface
+    VLMBaseModelAdapter,
+    ModelInfoInterface,
+    ModelSlimPipelineInterfaceV1,
+    IterSmoothInterface,
+    FlexSmoothQuantInterface,
+    AscendV1SaveInterface,
 ):
     """
     V1 Framework adapter for Qwen3-VL-MoE models.
@@ -99,6 +112,18 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
         self._processor = None
         self._tokenizer = None
         super().__init__(model_type, model_path, trust_remote_code)
+
+    @staticmethod
+    def _convert_qwen3_5_norm_to_standard(model: nn.Module) -> None:
+        """Convert Qwen3.5 RMSNorm(1+weight) to standard RMSNorm(weight) for exact LN fusion."""
+        for name, module in list(model.named_modules()):
+            if module.__class__.__name__ in {"Qwen3_5RMSNorm", "Qwen3_5MoeRMSNorm"}:
+                eps = getattr(module, "eps", None)
+                if eps is None:
+                    continue
+                new_module = Qwen3RMSNorm(module.weight.shape[0], eps)
+                new_module.weight.data = module.weight.data + 1
+                model.set_submodule(name, new_module)
 
     def _create_model_instance(self, model_cls) -> nn.Module:
         """创建模型实例的基础方法，子类可重写以修改参数（如torch_dtype）"""
@@ -258,6 +283,9 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
         if hasattr(model.config.text_config, 'num_key_value_heads'):
             model.config.num_key_value_heads = model.config.text_config.num_key_value_heads
             get_logger().info("Set model.config.num_key_value_heads = %d", model.config.num_key_value_heads)
+
+        # Qwen3.5 RMSNorm uses (1 + weight); convert to standard RMSNorm to keep LN fusion mathematically correct.
+        self._convert_qwen3_5_norm_to_standard(model)
 
         get_logger().info("Model initialized with %d layers (1 loaded, others will be loaded on-demand)", origin_layers)
 
@@ -573,6 +601,7 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
                 and not isinstance(decoder.mlp, Qwen3_5MoeSparseMoeBlockWithMLP)
             ):
                 decoder.mlp = convert_experts_to_mlp(decoder.mlp, self.config.text_config)
+            self._convert_qwen3_5_norm_to_standard(decoder)
             # Add layer to model's layer list
             module_list: nn.ModuleList = model.model.language_model.layers
             if len(module_list) <= idx:
@@ -694,8 +723,30 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
             )
 
         predictor.eval()
+        self._convert_qwen3_5_norm_to_standard(predictor)
         get_logger().info("MTP predictor loaded with %d parameters", len(loaded))
         return predictor
+
+    def ascendv1_save_module_preprocess(
+        self, prefix: str, module: nn.Module, model: nn.Module
+    ) -> Tuple[str, nn.Module]:
+        """
+        Restore standard RMSNorm back to Qwen3.5 RMSNorm format before saving.
+        """
+        if module.__class__.__name__ != "Qwen3RMSNorm":
+            return prefix, module
+
+        use_moe_norm = self.config.architectures[0] == "Qwen3_5MoeForConditionalGeneration"
+        if prefix.startswith("mtp."):
+            restored = Qwen3_5RMSNorm(module.weight.shape[0], module.variance_epsilon)
+        elif use_moe_norm:
+            restored = Qwen3_5MoeRMSNorm(module.weight.shape[0], module.variance_epsilon)
+        else:
+            restored = Qwen3_5RMSNorm(module.weight.shape[0], module.variance_epsilon)
+
+        restored.weight.data = module.weight.data - 1
+        model.set_submodule(prefix, restored)
+        return prefix, restored
 
     def _load_mtp_if_not_loaded(self, model: nn.Module) -> nn.Module:
         """

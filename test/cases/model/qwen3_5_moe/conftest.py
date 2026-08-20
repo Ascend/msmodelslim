@@ -29,6 +29,17 @@ _created_modules = {}
 _original_modules = {}
 
 
+def _make_modeling_qwen3():
+    """Create mock transformers.models.qwen3.modeling_qwen3 module."""
+    m = types.ModuleType("transformers.models.qwen3.modeling_qwen3")
+
+    class MockQwen3RMSNorm:
+        pass
+
+    m.Qwen3RMSNorm = MockQwen3RMSNorm
+    return m
+
+
 def _make_modeling_qwen3_5():
     """Create mock transformers.models.qwen3_5.modeling_qwen3_5 module."""
     m = types.ModuleType("transformers.models.qwen3_5.modeling_qwen3_5")
@@ -49,6 +60,17 @@ def _make_modeling_qwen3_5():
     m.Qwen3_5MLP = MockQwen3_5MLP
     m.Qwen3_5RMSNorm = MockQwen3_5RMSNorm
     m.Qwen3_5TextRotaryEmbedding = MockQwen3_5TextRotaryEmbedding
+    return m
+
+
+def _make_modeling_qwen3_5_moe():
+    """Create mock transformers.models.qwen3_5_moe.modeling_qwen3_5_moe module."""
+    m = types.ModuleType("transformers.models.qwen3_5_moe.modeling_qwen3_5_moe")
+
+    class MockQwen3_5MoeRMSNorm:
+        pass
+
+    m.Qwen3_5MoeRMSNorm = MockQwen3_5MoeRMSNorm
     return m
 
 
@@ -84,6 +106,29 @@ def _setup_mock_modules():
     _original_modules["transformers.models"] = sys.modules["transformers.models"]
     models_module = sys.modules["transformers.models"]
 
+    if "transformers.models.qwen3" not in sys.modules:
+        _original_modules["transformers.models.qwen3"] = None
+        qwen3_module = types.ModuleType("transformers.models.qwen3")
+        sys.modules["transformers.models.qwen3"] = qwen3_module
+        setattr(models_module, "qwen3", qwen3_module)
+        _created_modules["transformers.models.qwen3"] = qwen3_module
+    else:
+        _original_modules["transformers.models.qwen3"] = sys.modules["transformers.models.qwen3"]
+        qwen3_module = sys.modules["transformers.models.qwen3"]
+
+    modeling_qwen3_key = "transformers.models.qwen3.modeling_qwen3"
+    if modeling_qwen3_key not in sys.modules:
+        _original_modules[modeling_qwen3_key] = sys.modules.get(modeling_qwen3_key)
+        mock_modeling_qwen3 = _make_modeling_qwen3()
+        sys.modules[modeling_qwen3_key] = mock_modeling_qwen3
+        setattr(qwen3_module, "modeling_qwen3", mock_modeling_qwen3)
+        _created_modules[modeling_qwen3_key] = mock_modeling_qwen3
+    else:
+        _original_modules[modeling_qwen3_key] = sys.modules[modeling_qwen3_key]
+        mock_modeling_qwen3 = sys.modules[modeling_qwen3_key]
+        if not hasattr(mock_modeling_qwen3, "Qwen3RMSNorm"):
+            setattr(mock_modeling_qwen3, "Qwen3RMSNorm", type("MockQwen3RMSNorm", (), {}))
+
     if "transformers.models.qwen3_5" not in sys.modules:
         _original_modules["transformers.models.qwen3_5"] = None
         qwen3_5_module = types.ModuleType("transformers.models.qwen3_5")
@@ -112,6 +157,29 @@ def _setup_mock_modules():
         ):
             if not hasattr(mock_modeling, attr_name):
                 setattr(mock_modeling, attr_name, cls)
+
+    if "transformers.models.qwen3_5_moe" not in sys.modules:
+        _original_modules["transformers.models.qwen3_5_moe"] = None
+        qwen3_5_moe_module = types.ModuleType("transformers.models.qwen3_5_moe")
+        sys.modules["transformers.models.qwen3_5_moe"] = qwen3_5_moe_module
+        setattr(models_module, "qwen3_5_moe", qwen3_5_moe_module)
+        _created_modules["transformers.models.qwen3_5_moe"] = qwen3_5_moe_module
+    else:
+        _original_modules["transformers.models.qwen3_5_moe"] = sys.modules["transformers.models.qwen3_5_moe"]
+        qwen3_5_moe_module = sys.modules["transformers.models.qwen3_5_moe"]
+
+    modeling_moe_key = "transformers.models.qwen3_5_moe.modeling_qwen3_5_moe"
+    if modeling_moe_key not in sys.modules:
+        _original_modules[modeling_moe_key] = sys.modules.get(modeling_moe_key)
+        mock_modeling_moe = _make_modeling_qwen3_5_moe()
+        sys.modules[modeling_moe_key] = mock_modeling_moe
+        setattr(qwen3_5_moe_module, "modeling_qwen3_5_moe", mock_modeling_moe)
+        _created_modules[modeling_moe_key] = mock_modeling_moe
+    else:
+        _original_modules[modeling_moe_key] = sys.modules[modeling_moe_key]
+        mock_modeling_moe = sys.modules[modeling_moe_key]
+        if not hasattr(mock_modeling_moe, "Qwen3_5MoeRMSNorm"):
+            setattr(mock_modeling_moe, "Qwen3_5MoeRMSNorm", type("MockQwen3_5MoeRMSNorm", (), {}))
 
 
 _setup_mock_modules()
