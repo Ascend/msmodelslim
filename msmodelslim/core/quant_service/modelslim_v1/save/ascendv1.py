@@ -149,6 +149,7 @@ DTYPE_PREFIX_MAP = {
     QDType.FP8_E4M3: "FP8",
     QDType.INT8: "INT8",
     QDType.MXFP4: "MXFP4",
+    QDType.MXFP8: "MXFP8",
 }
 
 
