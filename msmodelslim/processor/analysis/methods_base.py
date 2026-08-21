@@ -18,11 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-import fnmatch
-from abc import ABC, abstractmethod
-from typing import Callable, Dict, Generic, List, TypeVar
 
-import torch.nn as nn
+import fnmatch
+import inspect
+from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, Generic, List, TypeVar
+
+from torch import nn
 
 from msmodelslim.utils.exception import UnsupportedError
 
@@ -54,21 +56,30 @@ class AnalysisTargetMatcher(ABC):
     @abstractmethod
     def _matches(self, module: nn.Module) -> bool:
         """当前 module 是否算作目标层。"""
-        ...
+        raise NotImplementedError
 
 
 class LayerAnalysisMethod(ABC):
-
     @property
     @abstractmethod
     def name(self) -> str:
         """Name of the analysis method"""
-        ...
+        raise NotImplementedError
 
     @abstractmethod
     def get_hook(self) -> Callable:
         """Get the hook function to collect data during model inference."""
-        ...
+        raise NotImplementedError
+
+    def enrich_layer_scores(self, layer_scores: List[Dict[str, Any]]) -> None:
+        """可选的后处理钩子，在 layer_scores 写入 context 之前对其进行 enrich。
+
+        默认实现为 no-op；具体方法可覆盖此方法以添加方法特定的元数据
+        （如 ra_compress 会添加 induction_heads / echo_heads 信息）。
+
+        Args:
+            layer_scores: 层分数字典列表，就地修改。
+        """
 
 
 TMethod = TypeVar("TMethod", bound=LayerAnalysisMethod)
@@ -91,9 +102,21 @@ class BaseMethodFactory(Generic[TMethod]):
         methods = self._get_methods()
         if method_name not in methods:
             supported = list(methods.keys())
-            raise UnsupportedError(f"Selected analysis method '{method_name}' is not supported.",
-                                      action=f"Please use a supported analysis method. Supported methods: {supported}")
-        return methods[method_name](**kwargs)
+            raise UnsupportedError(
+                f"Selected analysis method '{method_name}' is not supported.",
+                action=f"Please use a supported analysis method. Supported methods: {supported}",
+            )
+        method_cls = methods[method_name]
+        # 按方法 __init__ 签名过滤 kwargs：只透传方法实际接受的参数。
+        # 例如 RaCompressAnalysisMethod 接受 adapter，而 Kurtosis/Quantile/Std 不接受，
+        # 这样调用方统一传 adapter=adapter 也不会误传给不支持的方法。
+        sig = inspect.signature(method_cls)
+        has_var_keyword = any(p.kind == p.VAR_KEYWORD for p in sig.parameters.values())
+        if has_var_keyword:
+            filtered_kwargs = kwargs
+        else:
+            filtered_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+        return method_cls(**filtered_kwargs)
 
     def register_method(self, method_name: str, method_class: type[TMethod]) -> None:
         if not issubclass(method_class, LayerAnalysisMethod):
@@ -102,4 +125,3 @@ class BaseMethodFactory(Generic[TMethod]):
 
     def get_supported_methods(self) -> List[str]:
         return list(self._get_methods().keys())
-     

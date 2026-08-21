@@ -43,7 +43,7 @@ repos:
             "--skip",
             "*.py,*.cpp,*.hpp,*.c,*.h,pre-commit/typos.toml",
           ]
-        exclude: ^pre-commit/|typos.toml
+        exclude: ^pre-commit/|typos.toml|^lab_calib/calib_dummy\.jsonl$
 
   # pylint：指定 pre-commit/pyproject.toml
   - repo: https://gitcode.com/gh_mirrors/pyl/pylint

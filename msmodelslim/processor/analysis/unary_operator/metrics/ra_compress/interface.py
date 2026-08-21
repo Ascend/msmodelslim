@@ -20,18 +20,27 @@ See the Mulan PSL v2 for more details.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
-
-from msmodelslim.core.analysis_service.interface import AnalysisResult, AnalysisScope
+from typing import Dict
 
 
-class AnalysisResultDisplayerInfra(ABC):
+class RaCompressAnalysisInterface(ABC):
+    """RA Compress 分析需要在模型适配器中实现的接口。
+
+    提供 Q、K、QKV 投影层的名称模式，用于定位目标层。
+    """
+
     @abstractmethod
-    def display_result(
-        self,
-        result: AnalysisResult,
-        topk: int,
-        scope: Optional[AnalysisScope] = None,
-        save_path: Optional[str] = None,
-        model_type: Optional[str] = None,
-    ) -> None: ...
+    def get_ra_compress_proj_patterns(self) -> Dict[str, str]:
+        """返回 Q/K/QKV 投影层名称模式字典。
+
+        返回值格式::
+
+            {
+                "q": "q_proj",    # Q 投影层名称模式
+                "k": "k_proj",    # K 投影层名称模式
+                "qkv": "qkv_proj",  # QKV 融合投影层名称模式
+            }
+
+        未使用的模式可以留空字符串（如无 QKV 融合时 qkv=""）。
+        """
+        raise NotImplementedError

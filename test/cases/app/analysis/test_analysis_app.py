@@ -254,6 +254,8 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
             mock_result,
             15,
             AnalysisScope.LINEAR,
+            save_path=None,
+            model_type="Qwen2.5-7B-Instruct",
         )
 
     @patch('msmodelslim.app.analysis.application.get_logger')
