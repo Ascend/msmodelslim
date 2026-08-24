@@ -1,4 +1,0 @@
-process:
-  - type: unary_analysis
-    metrics: ra_compress
-    patterns: ${patterns}

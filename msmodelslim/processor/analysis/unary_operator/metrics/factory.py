@@ -25,10 +25,8 @@ from .base import UnaryAnalysisMethod
 from .quantile import QuantileAnalysisMethod
 from .std import StdAnalysisMethod
 from .kurtosis import KurtosisAnalysisMethod
-from .ra_compress import RaCompressAnalysisMethod
 
 UnaryAnalysisMethodFactory = BaseMethodFactory[UnaryAnalysisMethod]()
 UnaryAnalysisMethodFactory.register_method("quantile", QuantileAnalysisMethod)
 UnaryAnalysisMethodFactory.register_method("std", StdAnalysisMethod)
 UnaryAnalysisMethodFactory.register_method("kurtosis", KurtosisAnalysisMethod)
-UnaryAnalysisMethodFactory.register_method("ra_compress", RaCompressAnalysisMethod)

@@ -18,11 +18,10 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Union
 
 from msmodelslim.core.analysis_service import IAnalysisService, AnalysisConfig, AnalysisScope
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
@@ -31,21 +30,21 @@ from msmodelslim.model import IModelFactory
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.exception_decorator import exception_catcher
 from msmodelslim.utils.logging import logger_setter, get_logger
-from msmodelslim.utils.validation.conversion import convert_to_readable_dir
+from msmodelslim.utils.validation.conversion import (
+    convert_to_readable_dir
+)
 from msmodelslim.utils.validation.value import validate_str_length
 from .result_displayer_infra import AnalysisResultDisplayerInfra
 
 
 class AnalysisMetrics(str, Enum):
     """Enumeration of valid analysis metrics"""
-
     STD = 'std'
     QUANTILE = 'quantile'
     KURTOSIS = 'kurtosis'
     ATTENTION_MSE = 'mse'
     MSE_LAYER_WISE = 'mse_layer_wise'
     MSE_MODEL_WISE = 'mse_model_wise'
-    RA_COMPRESS = 'ra_compress'
 
 
 @dataclass
@@ -60,17 +59,12 @@ class AttnArgs:
 
 
 @dataclass
-class AttnHeadArgs:
-    metrics: AnalysisMetrics = AnalysisMetrics.RA_COMPRESS
-
-
-@dataclass
 class LayerArgs:
     quant_modules: List[str] = field(default_factory=lambda: ['*'])
     metrics: AnalysisMetrics = AnalysisMetrics.MSE_LAYER_WISE
 
 
-ScopeAnalysisArgs = Union[LinearArgs, AttnArgs, AttnHeadArgs, LayerArgs]
+ScopeAnalysisArgs = Union[LinearArgs, AttnArgs, LayerArgs]
 
 
 def _analysis_config_from_scope_args(scope_args: ScopeAnalysisArgs, calib_dataset: str) -> AnalysisConfig:
@@ -84,12 +78,6 @@ def _analysis_config_from_scope_args(scope_args: ScopeAnalysisArgs, calib_datase
             metrics=scope_args.metrics.value,
             calib_dataset=calib_dataset,
             linear_pattern=list(pat),
-        )
-    if isinstance(scope_args, AttnHeadArgs):
-        return AnalysisConfig(
-            scope=AnalysisScope.ATTN_HEAD,
-            metrics=scope_args.metrics.value,
-            calib_dataset=calib_dataset,
         )
     if isinstance(scope_args, AttnArgs):
         return AnalysisConfig(
@@ -108,7 +96,7 @@ def _analysis_config_from_scope_args(scope_args: ScopeAnalysisArgs, calib_datase
             quant_modules=list(qm),
         )
     raise SchemaValidateError(
-        f'scope_args must be LinearArgs, AttnArgs, AttnHeadArgs, or LayerArgs, got {type(scope_args)!r}',
+        f'scope_args must be LinearArgs, AttnArgs, or LayerArgs, got {type(scope_args)!r}',
     )
 
 
@@ -117,27 +105,24 @@ class LayerAnalysisApplication:
     """Application for analyzing model layer sensitivity"""
 
     def __init__(
-        self,
-        analysis_service: IAnalysisService,
-        model_factory: IModelFactory,
-        result_manager: AnalysisResultDisplayerInfra,
+            self,
+            analysis_service: IAnalysisService,
+            model_factory: IModelFactory,
+            result_manager: AnalysisResultDisplayerInfra,
     ):
         self.analysis_service = analysis_service
         self.model_factory = model_factory
         self.result_manager = result_manager
 
     @exception_catcher
-    def analyze(
-        self,
-        model_type: str,
-        model_path: str,
-        scope_args: ScopeAnalysisArgs,
-        device: DeviceType = DeviceType.NPU,
-        calib_dataset: str = 'mix_calib.jsonl',
-        topk: int = 15,
-        trust_remote_code: bool = False,
-        save_path: Optional[str] = None,
-    ):
+    def analyze(self,
+                model_type: str,
+                model_path: str,
+                scope_args: ScopeAnalysisArgs,
+                device: DeviceType = DeviceType.NPU,
+                calib_dataset: str = 'mix_calib.jsonl',
+                topk: int = 15,
+                trust_remote_code: bool = False):
         """
         Run layer analysis on a model
 
@@ -152,7 +137,11 @@ class LayerAnalysisApplication:
             trust_remote_code: Whether to trust remote code
         """
         # Validate string inputs with length checks
-        str_params = [("model_type", model_type), ("model_path", model_path), ("calib_dataset", calib_dataset)]
+        str_params = [
+            ("model_type", model_type),
+            ("model_path", model_path),
+            ("calib_dataset", calib_dataset)
+        ]
         for param_name, value in str_params:
             if not isinstance(value, str):
                 raise SchemaValidateError(f"{param_name} must be a string, but got {type(value)}")
@@ -163,19 +152,20 @@ class LayerAnalysisApplication:
         if not isinstance(model_path, Path):
             raise SchemaValidateError(f"model_path must be a Path, but got {type(model_path)}")
         if not isinstance(device, DeviceType):
-            raise SchemaValidateError("device must be a DeviceType")
+            raise SchemaValidateError(f"device must be a DeviceType")
         if not isinstance(calib_dataset, str):
             raise SchemaValidateError(f"calib_dataset must be a string, but got {type(calib_dataset)}")
         # Validate file format - only support .json and .jsonl
         if not (calib_dataset.endswith('.json') or calib_dataset.endswith('.jsonl')):
             raise SchemaValidateError(
-                f'Unsupported file format: {calib_dataset}. Only .json and .jsonl formats are supported',
-                action='Please provide a file with .json or .jsonl extension',
+                f'Unsupported file format: {calib_dataset}. '
+                'Only .json and .jsonl formats are supported',
+                action='Please provide a file with .json or .jsonl extension'
             )
         if not isinstance(topk, int) or topk <= 0:
             raise SchemaValidateError(f"topk must be a integer greater than 0, but got {topk}")
         if not isinstance(trust_remote_code, bool):
-            raise SchemaValidateError("trust_remote_code must be a bool")
+            raise SchemaValidateError(f"trust_remote_code must be a bool")
 
         log = get_logger()
         log.info('Layer analysis with following parameters:')
@@ -186,8 +176,6 @@ class LayerAnalysisApplication:
             log.info('linear_pattern: %s', analysis_config.linear_pattern)
         elif analysis_config.scope == AnalysisScope.LAYER:
             log.info('quant_modules: %s', analysis_config.quant_modules)
-        elif analysis_config.scope == AnalysisScope.ATTN_HEAD:
-            log.info('attn_head: attention head analysis (ra_compress)')
         else:
             log.info('attn: all attention modules')
         log.info('metrics: %s', analysis_config.metrics)
@@ -196,30 +184,29 @@ class LayerAnalysisApplication:
         log.info('topk: %s', topk)
         log.info('trust_remote_code: %s', trust_remote_code)
 
-        return self._analyze(model_type, model_path, analysis_config, device, topk, trust_remote_code, save_path)
+        return self._analyze(
+            model_type, model_path, analysis_config, device, topk, trust_remote_code
+        )
 
-    def _analyze(
-        self,
-        model_type: str,
-        model_path: Path,
-        analysis_config: AnalysisConfig,
-        device: DeviceType,
-        topk: int,
-        trust_remote_code: bool,
-        save_path: Optional[str] = None,
-    ):
+    def _analyze(self,
+                 model_type: str,
+                 model_path: Path,
+                 analysis_config: AnalysisConfig,
+                 device: DeviceType,
+                 topk: int,
+                 trust_remote_code: bool):
         """Internal analysis implementation"""
         # Run analysis
-        get_logger().info("===========RUN ANALYSIS===========")
+        get_logger().info(f"===========RUN ANALYSIS===========")
 
-        get_logger().info("===========ANALYSE MODEL===========")
-        model_adapter = self.model_factory.create(model_type, model_path, trust_remote_code)
+        get_logger().info(f"===========ANALYSE MODEL===========")
+        model_adapter = self.model_factory.create(
+            model_type, model_path, trust_remote_code
+        )
         if not isinstance(model_adapter, PipelineInterface):
-            raise UnsupportedError(
-                'Model adapter %s does NOT support analyze' % model_adapter.__class__.__name__,
-                action='Please implement PipelineInterface for model analyzing',
-            )
-        get_logger().info("Using model adapter %s.", model_adapter.__class__.__name__)
+            raise UnsupportedError(f'Model adapter {model_adapter.__class__.__name__} does NOT support analyze',
+                                   action='Please implement PipelineInterface for model analyzing')
+        get_logger().info(f"Using model adapter {model_adapter.__class__.__name__}.")
 
         result = self.analysis_service.analyze(
             device=device,
@@ -229,13 +216,7 @@ class LayerAnalysisApplication:
 
         # display results using service-specific formatter (only when result is not None)
         if result is not None:
-            self.result_manager.display_result(
-                result,
-                topk,
-                analysis_config.scope,
-                save_path=save_path,
-                model_type=model_type,
-            )
+            self.result_manager.display_result(result, topk, analysis_config.scope)
 
-        get_logger().info("===========ANALYSIS COMPLETE===========")
+        get_logger().info(f"===========ANALYSIS COMPLETE===========")
         return result

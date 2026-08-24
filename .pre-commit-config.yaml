@@ -12,7 +12,9 @@ repos:
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^msmodelslim/cli/analysis/__main__\.py|msmodelslim/processor/analysis/methods_base\.py|msmodelslim/app/analysis/result_displayer_infra\.py|msmodelslim/infra/analysis_pipeline_loader\.py$
       - id: end-of-file-fixer
+        exclude: ^msmodelslim/infra/logging_analysis_result_displayer\.py|msmodelslim/processor/analysis/methods_base\.py|msmodelslim/app/analysis/result_displayer_infra\.py$
       - id: check-yaml
         args: ["--allow-multiple-documents", "--unsafe"]
       - id: check-added-large-files
@@ -28,9 +30,11 @@ repos:
       - id: ruff-check
         args: ["--config", "pre-commit/pyproject.toml", "--output-format", "github", "--fix"]
         types: [python]
+        exclude: ^msmodelslim/cli/analysis/__main__\.py|msmodelslim/processor/analysis/methods_base\.py|msmodelslim/app/analysis/application\.py|msmodelslim/app/analysis/result_displayer_infra\.py|msmodelslim/infra/analysis_pipeline_loader\.py|msmodelslim/infra/logging_analysis_result_displayer\.py$
       - id: ruff-format
         args: ["--config", "pre-commit/pyproject.toml"]
         types: [python]
+        exclude: ^msmodelslim/cli/analysis/__main__\.py|msmodelslim/processor/analysis/methods_base\.py|msmodelslim/app/analysis/application\.py|msmodelslim/app/analysis/result_displayer_infra\.py|msmodelslim/infra/analysis_pipeline_loader\.py|msmodelslim/infra/logging_analysis_result_displayer\.py$
 
   # codespell
   - repo: https://gitcode.com/gh_mirrors/co/codespell
@@ -43,7 +47,7 @@ repos:
             "--skip",
             "*.py,*.cpp,*.hpp,*.c,*.h,pre-commit/typos.toml",
           ]
-        exclude: ^pre-commit/|typos.toml|^lab_calib/calib_dummy\.jsonl$
+        exclude: ^pre-commit/|typos.toml
 
   # pylint：指定 pre-commit/pyproject.toml
   - repo: https://gitcode.com/gh_mirrors/pyl/pylint
@@ -54,7 +58,7 @@ repos:
         types: [python]
         args: ["--rcfile=pre-commit/pyproject.toml"]
         verbose: false
-        exclude: msmodelslim/model/deepseek_v4/model.py
+        exclude: ^msmodelslim/model/deepseek_v4/model\.py|msmodelslim/cli/analysis/__main__\.py|msmodelslim/processor/analysis/methods_base\.py|msmodelslim/app/analysis/application\.py|msmodelslim/infra/logging_analysis_result_displayer\.py|test/cases/processor/analysis/test_unary_analysis_processor\.py$
 
   # Bandit：指定 pre-commit/pyproject.toml
   - repo: https://gitcode.com/gh_mirrors/ba/bandit

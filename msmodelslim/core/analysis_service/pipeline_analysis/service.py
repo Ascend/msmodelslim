@@ -68,8 +68,6 @@ class PipelineAnalysisService(IAnalysisService):
             get_logger().info("linear_pattern: %s", analysis_config.linear_pattern)
         elif analysis_config.scope == AnalysisScope.LAYER:
             get_logger().info("quant_modules: %s", analysis_config.quant_modules)
-        elif analysis_config.scope == AnalysisScope.ATTN_HEAD:
-            get_logger().info("attn_head: attention head analysis (ra_compress)")
         else:
             get_logger().info("attn: all attention modules")
 
@@ -103,10 +101,7 @@ class PipelineAnalysisService(IAnalysisService):
         else:
             result_patterns = analysis_config.template_substitute_list()
 
-        result = AnalysisResult(
-            layer_scores=layer_scores,
-            method=method,
-            patterns=result_patterns,
-        )
+        # Create result
+        result = AnalysisResult(layer_scores=layer_scores, method=method, patterns=result_patterns)
 
         return result

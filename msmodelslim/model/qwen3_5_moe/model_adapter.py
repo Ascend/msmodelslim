@@ -407,10 +407,7 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
         # num_layers = self.config.text_config.num_hidden_layers
         has_mtp = self._has_mtp()
         hidden_states = inputs_embeds
-        # 确保与模型权重的 dtype 一致（量化器 fake_quant 可能把激活值提升为 float32）
-        model_dtype = next(model.parameters(), torch.empty(0)).dtype
         for name, layer in self.generate_decoder_layer(model):
-            hidden_states = hidden_states.to(model_dtype)
             is_mtp_layer = has_mtp and name.startswith("mtp")
 
             if is_mtp_layer:

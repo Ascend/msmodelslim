@@ -35,7 +35,6 @@ class AnalysisScope(str, Enum):
 
     LINEAR = "linear"
     ATTN = "attn"
-    ATTN_HEAD = "attn_head"
     LAYER = "layer"
 
 
@@ -83,17 +82,13 @@ class AnalysisConfig(BaseModel):
 
 
 class AnalysisResult(BaseModel):
-    """分析结果数据：层分数列表及方法、patterns 等元数据。
-
-    layer_scores 中每个条目至少包含 {'name': str, 'score': float}；
-    ra_compress 方法会额外附带 induction_heads / echo_heads 字段。
-    """
+    """分析结果数据：层分数列表及方法、patterns 等元数据。"""
 
     layer_scores: List[Dict[str, Any]] = Field(
         default_factory=list,
-        description="List of {'name': str, 'score': float, induction_heads?: List[int], echo_heads?: List[int]}",
+        description="List of {'name': str, 'score': float}",
     )
-    method: str = Field(..., description="分析方法名，如 std / kurtosis / ra_compress")
+    method: str = Field(..., description="分析方法名，如 std / kurtosis")
     patterns: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=list, description="层匹配模式"
     )

@@ -71,7 +71,7 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
     ):
         super().__init__(model)
         self.config = config
-        self._analysis_method = UnaryAnalysisMethodFactory.create_method(config.metrics, adapter=adapter)
+        self._analysis_method = UnaryAnalysisMethodFactory.create_method(config.metrics)
         self._target_layers: List[str] = []
         self._layer_stats: Dict[str, Any] = {}
         self._layer_scores: List[Dict[str, Any]] = []
@@ -135,10 +135,6 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
         if ctx is None:
             return
         layer_analysis = ctx["layer_analysis"]  # pylint: disable=unsubscriptable-object
-
-        # 让分析方法 enrich layer_scores（如 ra_compress 会添加 induction_heads/echo_heads）
-        self._analysis_method.enrich_layer_scores(self._layer_scores)
-
         layer_analysis.debug["layer_scores"] = self._layer_scores
         layer_analysis.debug["method"] = self._analysis_method.name
         layer_analysis.debug["patterns"] = self.config.patterns

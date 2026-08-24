@@ -18,7 +18,6 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -32,6 +31,6 @@ class AnalysisResultDisplayerInfra(ABC):
         result: AnalysisResult,
         topk: int,
         scope: Optional[AnalysisScope] = None,
-        save_path: Optional[str] = None,
-        model_type: Optional[str] = None,
-    ) -> None: ...
+    ) -> None:
+        ...
+        

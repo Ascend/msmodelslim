@@ -18,7 +18,6 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
 from pathlib import Path
 from string import Template
 from typing import Any, Dict, List
@@ -42,9 +41,7 @@ METRIC_TO_YAML: Dict[str, str] = {
     "mse": "attention_mse.yaml",
     "mse_layer_wise": "mse_layer_wise.yaml",
     "mse_model_wise": "mse_model_wise.yaml",
-    "ra_compress": "ra_compress.yaml",
 }
-
 
 def _get_analysis_pipeline_dir() -> Path:
     cur_dir = Path(__file__).resolve().parent
@@ -58,7 +55,7 @@ class YamlAnalysisPipelineLoader(AnalysisPipelineLoaderInfra):
 
     def get_pipeline_builder(self, metrics: str) -> PipelineBuilderInfra:
         return TemplatePipelineBuilder(metrics)
-
+        
 
 class TemplatePipelineBuilder(PipelineBuilderInfra):
     """模板渲染建造者：链式设置占位符后 create() 得到配置列表。"""
@@ -106,7 +103,7 @@ class TemplatePipelineBuilder(PipelineBuilderInfra):
         if self._metrics not in METRIC_TO_YAML:
             raise UnsupportedError(
                 f"Unsupported analysis metric: {self._metrics!r}. Supported: {list(METRIC_TO_YAML.keys())}"
-            )
+                )
         template_path = self._template_dir / METRIC_TO_YAML[self._metrics]
         resolved = get_valid_read_path(str(template_path))
         return resolved

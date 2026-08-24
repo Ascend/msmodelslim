@@ -652,13 +652,6 @@ def main():
         'Supports .json and .jsonl formats [default: mix_calib.jsonl]',
     )
     analyze_common_parser.add_argument(
-        '--save_path',
-        type=str,
-        default=None,
-        help='Path to save result file (YAML for linear/layer/attn). '
-        'If not specified, results are printed to console only.',
-    )
-    analyze_common_parser.add_argument(
         '--top_k',
         '--topk',
         dest='topk',
@@ -758,21 +751,6 @@ def main():
         default='mse',
         help='Analysis metrics [default: mse]',
     )
-
-    analysis_attn_head_parser = analysis_subparsers.add_parser(
-        'attn_head',
-        parents=[analyze_common_parser],
-        help='Analyze attention heads with ra_compress metric (induction/echo head selection)',
-    )
-    analysis_attn_head_parser.add_argument(
-        '--metrics',
-        type=str,
-        choices=['ra_compress'],
-        default='ra_compress',
-        help='Analysis metrics: ra_compress (default: ra_compress)',
-    )
-    # ra_compress 需要特定长度的合成数据，默认使用 calib_dummy.jsonl
-    analysis_attn_head_parser.set_defaults(calib_dataset='calib_dummy.jsonl')
 
     # ------------------------------------------------------------------
     # auto tuning command

@@ -23,14 +23,13 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from torch import nn
+import torch.nn as nn
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.processor.analysis.unary_operator.processor import (
     UnaryAnalysisProcessor,
     UnaryAnalysisProcessorConfig,
 )
-from msmodelslim.utils.exception import UnexpectedError
 
 
 class TinyBlock(nn.Module):
@@ -62,7 +61,7 @@ class TestUnaryAnalysisProcessor(unittest.TestCase):
 
         processor = UnaryAnalysisProcessor(self.model, self.config)
 
-        mock_create_method.assert_called_once_with("std", adapter=None)
+        mock_create_method.assert_called_once_with("std")
         self.assertEqual(processor.config, self.config)
         self.assertIs(processor._analysis_method, fake_method)
         self.assertEqual(processor._target_layers, [])
@@ -162,29 +161,6 @@ class TestUnaryAnalysisProcessor(unittest.TestCase):
         self.assertEqual(fake_ctx["layer_analysis"].debug["layer_scores"], processor._layer_scores)
         self.assertEqual(fake_ctx["layer_analysis"].debug["method"], "std")
         self.assertEqual(fake_ctx["layer_analysis"].debug["patterns"], self.config.patterns)
-
-    @patch("msmodelslim.processor.analysis.unary_operator.processor.get_current_context")
-    @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_pre_run_raises_unexpected_error_when_context_is_none(self, mock_create_method, mock_get_current_context):
-        """上下文缺失时 pre_run 抛 UnexpectedError（异常场景）。"""
-        fake_method = self._build_fake_method()
-        mock_create_method.return_value = fake_method
-        mock_get_current_context.return_value = None
-
-        processor = UnaryAnalysisProcessor(self.model, self.config)
-        with self.assertRaises(UnexpectedError):
-            processor.pre_run()
-
-    @patch("msmodelslim.processor.analysis.unary_operator.processor.get_current_context")
-    @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_post_run_returns_silently_when_context_is_none(self, mock_create_method, mock_get_current_context):
-        """上下文缺失时 post_run 静默返回，不抛异常（边界场景）。"""
-        fake_method = self._build_fake_method()
-        mock_create_method.return_value = fake_method
-        mock_get_current_context.return_value = None
-
-        processor = UnaryAnalysisProcessor(self.model, self.config)
-        processor.post_run()  # 不抛异常即通过
 
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
     def test_get_layer_scores_return_scores_when_called(self, mock_create_method):

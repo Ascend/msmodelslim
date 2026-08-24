@@ -18,7 +18,6 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
 import os
 from pathlib import Path
 
@@ -26,7 +25,6 @@ from msmodelslim.app.analysis import LayerAnalysisApplication
 from msmodelslim.app.analysis.application import (
     AnalysisMetrics,
     AttnArgs,
-    AttnHeadArgs,
     LayerArgs,
     LinearArgs,
 )
@@ -34,7 +32,7 @@ from msmodelslim.core.analysis_service import PipelineAnalysisService
 from msmodelslim.core.context import ContextFactory
 from msmodelslim.infra.file_dataset_loader import FileDatasetLoader
 from msmodelslim.infra.analysis_pipeline_loader import YamlAnalysisPipelineLoader
-from msmodelslim.infra.logging_analysis_result_displayer import AnalysisResultDisplayerFactory
+from msmodelslim.infra.logging_analysis_result_displayer import LoggingAnalysisResultDisplayer
 from msmodelslim.model import PluginModelFactory
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.security.path import get_valid_read_path
@@ -45,7 +43,6 @@ def get_dataset_dir():
     lab_calib_dir = os.path.abspath(os.path.join(cur_dir, '../../lab_calib'))
     lab_calib_dir = get_valid_read_path(lab_calib_dir, is_dir=True)
     return Path(lab_calib_dir)
-
 
 def main(args):
     """Main function for layer analysis CLI"""
@@ -60,27 +57,15 @@ def main(args):
 
         # Create analysis service
         analysis_service = PipelineAnalysisService(
-            dataset_loader, context_factory=ContextFactory(enable_debug=True), pipeline_loader=pipeline_loader
+            dataset_loader,
+            context_factory=ContextFactory(enable_debug=True),
+            pipeline_loader=pipeline_loader
         )
         # Create model factory
         model_factory = PluginModelFactory()
 
-        metrics = AnalysisMetrics(str(args.metrics).strip().lower())
-        save_path = args.save_path
-
-        if args.scope == 'linear':
-            scope_args = LinearArgs(pattern=list(args.pattern), metrics=metrics)
-        elif args.scope == 'layer':
-            scope_args = LayerArgs(quant_modules=list(args.quant_modules), metrics=metrics)
-        elif args.scope == 'attn':
-            scope_args = AttnArgs(metrics=metrics)
-        elif args.scope == 'attn_head':
-            scope_args = AttnHeadArgs(metrics=metrics)
-        else:
-            raise ValueError(f"Unsupported analyze scope: {args.scope}")
-
-        # Create result manager (按 metrics 选择对应展示器)
-        result_manager = AnalysisResultDisplayerFactory.create(metrics.value)
+        # Create result manager
+        result_manager = LoggingAnalysisResultDisplayer()
 
         # Create analysis app
         analysis_app = LayerAnalysisApplication(
@@ -89,8 +74,19 @@ def main(args):
             result_manager=result_manager,
         )
 
-        # topk 仅对 linear/layer/attn 子命令可用，attn_head 无此参数
-        topk = getattr(args, 'topk', 15)
+        metrics = AnalysisMetrics(str(args.metrics).strip().lower())
+
+        if args.scope == 'linear':
+            metrics = AnalysisMetrics(str(args.metrics).strip().lower())
+            scope_args = LinearArgs(pattern=list(args.pattern), metrics=metrics)
+        elif args.scope == 'layer':
+            metrics = AnalysisMetrics(str(args.metrics).strip().lower())
+            scope_args = LayerArgs(quant_modules=list(args.quant_modules), metrics=metrics)
+        elif args.scope == 'attn':
+            
+            scope_args = AttnArgs(metrics=metrics)
+        else:
+            raise ValueError(f"Unsupported analyze scope: {args.scope}")
 
         # Run analysis
         result = analysis_app.analyze(
@@ -99,12 +95,11 @@ def main(args):
             scope_args=scope_args,
             device=args.device,
             calib_dataset=args.calib_dataset,
-            topk=topk,
-            trust_remote_code=args.trust_remote_code,
-            save_path=save_path,
+            topk=args.topk,
+            trust_remote_code=args.trust_remote_code
         )
         return result
 
     except Exception as e:
-        get_logger().error("Layer analysis failed: %s", str(e))
+        get_logger().error(f"Layer analysis failed: {str(e)}")
         raise

@@ -56,37 +56,37 @@ class TestAnalysisMain:
         return Namespace(**defaults)
 
     @patch("msmodelslim.cli.analysis.__main__.LayerAnalysisApplication")
-    @patch("msmodelslim.cli.analysis.__main__.AnalysisResultDisplayerFactory")
+    @patch("msmodelslim.cli.analysis.__main__.LoggingAnalysisResultDisplayer")
     @patch("msmodelslim.cli.analysis.__main__.YamlAnalysisPipelineLoader")
-    def test_main_dispatches_to_linear_scope_when_scope_is_linear(self, mock_pl_cls, mock_factory, mock_app_cls):
+    def test_main_dispatches_to_linear_scope_when_scope_is_linear(self, mock_pl_cls, mock_disp_cls, mock_app_cls):
         """主路径：scope=linear 时应构造 LinearArgs 并调用 analyze。"""
         from unittest.mock import MagicMock
 
         mock_pl_instance = MagicMock()
         mock_pl_cls.return_value = mock_pl_instance
-        mock_displayer = MagicMock()
-        mock_factory.create.return_value = mock_displayer
+        mock_disp_instance = MagicMock()
+        mock_disp_cls.return_value = mock_disp_instance
         mock_app_instance = MagicMock()
         mock_app_cls.return_value = mock_app_instance
 
         args = self._make_args(scope="linear", metrics="kurtosis")
         main(args)
 
-        mock_factory.create.assert_called_once_with("kurtosis")
+        # analyze 应被调用
         mock_app_instance.analyze.assert_called_once()
         call_kwargs = mock_app_instance.analyze.call_args.kwargs
         assert call_kwargs["model_type"] == "qwen3"
         assert call_kwargs["topk"] == 15
 
     @patch("msmodelslim.cli.analysis.__main__.LayerAnalysisApplication")
-    @patch("msmodelslim.cli.analysis.__main__.AnalysisResultDisplayerFactory")
+    @patch("msmodelslim.cli.analysis.__main__.LoggingAnalysisResultDisplayer")
     @patch("msmodelslim.cli.analysis.__main__.YamlAnalysisPipelineLoader")
-    def test_main_dispatches_to_layer_scope_when_scope_is_layer(self, mock_pl_cls, mock_factory, mock_app_cls):
+    def test_main_dispatches_to_layer_scope_when_scope_is_layer(self, mock_pl_cls, mock_disp_cls, mock_app_cls):
         """主路径：scope=layer 时应构造 LayerArgs。"""
         from unittest.mock import MagicMock
 
         mock_pl_cls.return_value = MagicMock()
-        mock_factory.create.return_value = MagicMock()
+        mock_disp_cls.return_value = MagicMock()
         mock_app_instance = MagicMock()
         mock_app_cls.return_value = mock_app_instance
 
@@ -96,14 +96,14 @@ class TestAnalysisMain:
         mock_app_instance.analyze.assert_called_once()
 
     @patch("msmodelslim.cli.analysis.__main__.LayerAnalysisApplication")
-    @patch("msmodelslim.cli.analysis.__main__.AnalysisResultDisplayerFactory")
+    @patch("msmodelslim.cli.analysis.__main__.LoggingAnalysisResultDisplayer")
     @patch("msmodelslim.cli.analysis.__main__.YamlAnalysisPipelineLoader")
-    def test_main_dispatches_to_attn_scope_when_scope_is_attn(self, mock_pl_cls, mock_factory, mock_app_cls):
+    def test_main_dispatches_to_attn_scope_when_scope_is_attn(self, mock_pl_cls, mock_disp_cls, mock_app_cls):
         """主路径：scope=attn 时应构造 AttnArgs。"""
         from unittest.mock import MagicMock
 
         mock_pl_cls.return_value = MagicMock()
-        mock_factory.create.return_value = MagicMock()
+        mock_disp_cls.return_value = MagicMock()
         mock_app_instance = MagicMock()
         mock_app_cls.return_value = mock_app_instance
 
