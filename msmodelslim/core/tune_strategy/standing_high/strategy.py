@@ -109,7 +109,7 @@ class StandingHighStrategyConfig(StrategyConfig):
     type: Literal["standing_high"] = Field(default="standing_high", description="策略类型，固定为 `standing_high`")
 
     anti_outlier_strategies: Annotated[List[AutoProcessorConfigList], AfterValidator(at_least_one_element)] = Field(
-        description="离群值抑制处理器链列表，至少 1 个；每个元素是一条处理器链，链内每个处理器是 `type` 分派的处理器配置（如 smooth_quant 等）"
+        description="离群值抑制处理器链列表，至少1个；每个元素是一条处理器链，链内每个处理器是 `type` 分派的处理器配置（如 smooth_quant 等）"
     )
 
     template: ModelslimV1ServiceConfig = Field(

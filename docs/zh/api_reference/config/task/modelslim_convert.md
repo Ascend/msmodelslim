@@ -151,7 +151,7 @@
 |----------|------|-----------|--------|----------------|------|----------|
 | `src_format` | `string` | 可选 | `auto` | — | 源权重格式；`auto` 由模型适配器/权重目录自动推断。 | 无 |
 | `dst_format` | `string` | 可选 | `ascendv1` | — | 目标保存格式：`ascendv1`（昇腾，与 `SaveConfig.type` 的 `ascend_v1` 等价）；`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。 | 无 |
-| `dst_ir` | `string / null` | 可选 | `null` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN` | 目标 IR 类型；不设置时由目标格式决定。 | 无 |
+| `dst_ir` | `string / null` | 可选 | `null` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN`；或 null | 目标 IR 类型；不设置时由目标格式决定。 | 无 |
 
 **配置约束**
 

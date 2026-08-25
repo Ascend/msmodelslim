@@ -39,7 +39,7 @@ class EvaluateDemand(BaseModel):
     """评估需求：声明需要在哪些数据集上达到哪些精度期望。"""
 
     expectations: Annotated[List[AccuracyExpectation], AfterValidator(at_least_one_element)] = Field(
-        description="精度期望列表，至少 1 个；每项声明数据集与目标精度（含容差）"
+        description="精度期望列表，至少1个；每项声明数据集与目标精度（含容差）"
     )
 
 
@@ -64,7 +64,6 @@ _FULL_EXAMPLE = {
                 'top_p': 0.9,
                 'seed': None,
                 'repetition_penalty': 1.03,
-                'chat_template_kwargs': {'thinking': True},
             },
             'model_meta': {
                 'base_name': 'vllm_api_general_chat',
@@ -75,7 +74,11 @@ _FULL_EXAMPLE = {
         },
         'datasets': {
             'gsm8k': {'config_name': 'gsm8k_gen_0_shot_cot_str', 'mode': 'all'},
-            'aime25': {'config_name': 'aime2025_gen_0_shot_chat_prompt', 'mode': 'all'},
+            'aime25': {
+                'config_name': 'aime2025_gen_0_shot_chat_prompt',
+                'mode': 'all',
+                'chat_template_kwargs': {'thinking': True},
+            },
             'bfcl-simple': {
                 'config_name': 'BFCL_gen_simple',
                 'mode': 'all',

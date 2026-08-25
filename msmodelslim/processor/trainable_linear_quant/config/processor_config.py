@@ -133,7 +133,7 @@ class TrainableLinearQuantProcessorConfig(AutoProcessorConfig):
     strategies: List[QuantStrategyConfig] = Field(
         default_factory=list,
         min_length=1,
-        description="量化策略配置列表；未提供时为空列表，不应用量化策略；若显式提供则至少 1 项。",
+        description="量化策略配置列表；未提供时为空列表，不应用量化策略；若显式提供则至少1项。",
     )
     train_with_act_quant: bool = Field(
         default=False,

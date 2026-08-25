@@ -18,7 +18,7 @@
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `trainable_linear_quant` | `trainable_linear_quant` | 处理器类型，固定为 `trainable_linear_quant`。 | 无 |
 | `operations` | `list[object]` | 可选 | `[MinmaxTuneOpConfig(type='minmax_tune', lr=None), RoundTuneOpConfig(type='round_tune', lr=None)]` | 最少1项 | 可训练量化管线 OP 配置列表；每项含 type，其余字段由各插件定义 | 本页 <a href="#2-2-tlq-op-config">§2.2</a> |
-| `strategies` | `list[object]` | 可选 | `[]` | 最少1项 | 量化策略配置列表；未提供时为空列表，不应用量化策略；若显式提供则至少 1 项。 | 本页 <a href="#2-6-tlq-quant-strategy-config">§2.6</a> |
+| `strategies` | `list[object]` | 可选 | `[]` | 0项或≥1项 | 量化策略配置列表；未提供时为空列表，不应用量化策略；若显式提供则至少1项。 | 本页 <a href="#2-6-tlq-quant-strategy-config">§2.6</a> |
 | `train_with_act_quant` | `bool` | 可选 | `false` | — | 块级训练前向是否对激活做伪量化（经 x_kernel）；false 与 autoround 的 train_with_act_quant=False 一致；导出 IR 仍由 qconfig.act 决定，不受此项影响 | 无 |
 | `enable_quanted_input` | `bool` | 可选 | `false` | — | 是否将本层量化前向结果作为下一层训练/量化传播的旁路输入（q_input）；不影响浮点 teacher：Runner 层间 datas 始终传递 teacher 输出 | 无 |
 | `train_config` | `object` | 可选 | 见嵌套配置默认值 | — | 块级 Trainer 超参：iters、gradient_accumulate_steps、select_best、lr（或 learning_rate）、loss_type；各 OP 可单独配置 lr 覆盖全局值 | 本页 <a href="#2-9-block-train-config">§2.9</a> |
@@ -32,7 +32,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 必选 | 无 | — | 算子类型，分派具体 TLQ 算子（如 `minmax_tune`、`round_tune`）。 | 无 |
-| `lr` | `float / null` | 可选 | `null` | >0.0 | 该 Op 可训练参数学习率；未指定时使用 train_config.lr | 无 |
+| `lr` | `float / null` | 可选 | `null` | >0.0；或 null | 该 Op 可训练参数学习率；未指定时使用 train_config.lr | 无 |
 
 **配置约束**
 
@@ -49,7 +49,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `minmax_tune` | `minmax_tune` | 插件类型：minmax_tune | 无 |
-| `lr` | `float / null` | 可选 | `null` | >0.0 | — | 无 |
+| `lr` | `float / null` | 可选 | `null` | >0.0；或 null | — | 无 |
 
 **配置约束**
 
@@ -60,7 +60,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `round_tune` | `round_tune` | 插件类型：round_tune | 无 |
-| `lr` | `float / null` | 可选 | `null` | >0.0 | — | 无 |
+| `lr` | `float / null` | 可选 | `null` | >0.0；或 null | — | 无 |
 
 **配置约束**
 
@@ -71,7 +71,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `trainable_smooth` | `trainable_smooth` | 插件类型：trainable_smooth | 无 |
-| `lr` | `float / null` | 可选 | `null` | >0.0 | — | 无 |
+| `lr` | `float / null` | 可选 | `null` | >0.0；或 null | — | 无 |
 | `enable_subgraph_type` | `list[string]` | 可选 | `['norm-linear', 'linear-linear', 'ov', 'up-down', 'non-fusion']` | — | 启用的 Smooth 子图类型，须为 SMOOTH_SUPPORTED_SUBGRAPH_TYPES 子集 | 无 |
 | `include` | `list[string] / null` | 可选 | `null` | — | 子图入口 include 通配 | 无 |
 | `exclude` | `list[string] / null` | 可选 | `null` | — | 子图入口 exclude 通配 | 无 |
@@ -131,7 +131,7 @@ trainable_linear_quant 量化策略：对匹配的线性层应用一组可训练
 |----------|------|-----------|--------|----------------|------|----------|
 | `iters` | `int` | 可选 | `50` | ≥0 | 块级训练迭代次数；为 0 时 Trainer 跳过优化 | 无 |
 | `gradient_accumulate_steps` | `int` | 可选 | `8` | ≥1 | 梯度累加步数，用于在有限显存下调节等效 batch | 无 |
-| `lr` | `float` | 可选 | `0.01` | >0.0 | 全局基础学习率 | 无 |
+| `lr` | `float` | 可选 | `0.01` | >0.0 | 全局基础学习率（别名 `learning_rate`） | 无 |
 | `select_best` | `object` | 可选 | 见嵌套配置默认值 | — | 最优 iter 快照策略（按 mode 区分字段：ema / min_loss / last） | 本页 <a href="#2-10-selectbestconfig">§2.10</a> |
 | `loss_type` | `string` | 可选 | `l1` | `l1`、`custom_outlier` | 块级训练损失：l1（L1Loss reduction=none）、custom_outlier（0.3*全量 L1 + 0.7*3σ 内区域 L1） | 无 |
 | `train_seed` | `int` | 可选 | `42` | — | 块级训练随机种子（用于 sample 打乱与确定性算子） | 无 |

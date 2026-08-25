@@ -3,7 +3,7 @@
 
 ## 1. 配置概述
 
-二值（有/无量化）敏感性分析处理器配置。
+二值（有/无量化）敏感度分析处理器配置。
 
 | 项目 | 内容 |
 |------|------|
@@ -32,9 +32,9 @@
 - `AdaptRotationProcessorConfig`（`type: adapt_rotation`） — 自适应旋转（adapt_rotation）处理器配置。 《[adapt_rotation 配置说明](adapt_rotation.md)》
 - `AutoroundProcessorConfig`（`type: autoround_quant`） — autoround 量化处理器配置。 《[autoround_quant 配置说明](autoround_quant.md)》
 - `AWQProcessorConfig`（`type: awq`） — AWQ（Activation-aware Weight Quantization）处理器配置。 《[awq 配置说明](awq.md)》
-- `BinaryAnalysisProcessorConfig`（`type: binary_analysis`） — 二值（有/无量化）敏感性分析处理器配置。 本页 <a href="#2-1-binary-analysis">§2.1</a>
+- `BinaryAnalysisProcessorConfig`（`type: binary_analysis`） — 二值（有/无量化）敏感度分析处理器配置。 本页 <a href="#2-1-binary-analysis">§2.1</a>
 - `BinaryOperatorLayerWiseProcessorConfig`（`type: binary_operator_layer_wise`） — 逐层敏感度分析处理器配置（对比逐块浮点与量化输出）。 《[binary_operator_layer_wise 配置说明](binary_operator_layer_wise.md)》
-- `BinaryOperatorModelWiseProcessorConfig`（`type: binary_operator_model_wise`） — 模型级敏感性分析配置（对比模型最终输出，使用 MSE 指标） 《[binary_operator_model_wise 配置说明](binary_operator_model_wise.md)》
+- `BinaryOperatorModelWiseProcessorConfig`（`type: binary_operator_model_wise`） — 模型级敏感度分析配置（对比模型最终输出，使用 MSE 指标） 《[binary_operator_model_wise 配置说明](binary_operator_model_wise.md)》
 - `DynamicCacheProcessorConfig`（`type: dynamic_cache`） — KV cache 量化处理器配置。 《[dynamic_cache 配置说明](dynamic_cache.md)》
 - `FA3QuantProcessorConfig`（`type: fa3_quant`） — FA3（FlashAttention-3）量化处理器配置。 《[fa3_quant 配置说明](fa3_quant.md)》
 - `FlatQuantProcessorConfig`（`type: flatquant`） — FlatQuant处理器配置：定义量化训练参数、策略、混合精度等 《[flatquant 配置说明](flatquant.md)》
@@ -53,7 +53,7 @@
 - `SmoothQuantProcessorConfig`（`type: smooth_quant`） — SmoothQuant 平滑量化处理器配置。 《[smooth_quant 配置说明](smooth_quant.md)》
 - `SVDResidualProcessorConfig`（`type: svd_res`） — SVD 残差（低秩补偿）处理器配置。 《[svd_res 配置说明](svd_res.md)》
 - `TrainableLinearQuantProcessorConfig`（`type: trainable_linear_quant`） — 可训练线性量化（TLQ）处理器配置。 《[trainable_linear_quant 配置说明](trainable_linear_quant.md)》
-- `UnaryAnalysisProcessorConfig`（`type: unary_analysis`） — 一元（无量化）敏感性分析处理器配置。 《[unary_analysis 配置说明](unary_analysis.md)》
+- `UnaryAnalysisProcessorConfig`（`type: unary_analysis`） — 一元（无量化）敏感度分析处理器配置。 《[unary_analysis 配置说明](unary_analysis.md)》
 
 ## 3. 完整配置参考
 

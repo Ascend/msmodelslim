@@ -36,7 +36,7 @@ from msmodelslim.utils.exception import UnexpectedError
 
 
 class UnaryAnalysisProcessorConfig(AutoProcessorConfig):
-    """一元（无量化）敏感性分析处理器配置。
+    """一元（无量化）敏感度分析处理器配置。
 
     位于 `spec.process[]`，由 `type: unary_analysis` 分派；基于激活分布统计量
     （分位数/标准差/峰度）评估各层对量化的敏感度。

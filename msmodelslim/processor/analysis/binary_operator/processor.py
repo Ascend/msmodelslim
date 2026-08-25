@@ -36,7 +36,7 @@ from msmodelslim.processor.analysis.binary_operator.metrics.factory import Binar
 
 
 class BinaryAnalysisProcessorConfig(AutoProcessorConfig):
-    """二值（有/无量化）敏感性分析处理器配置。
+    """二值（有/无量化）敏感度分析处理器配置。
 
     位于 `spec.process[]`，由 `type: binary_analysis` 分派；对比量化前后输出差异
     （MSE），评估各层对量化的敏感度。

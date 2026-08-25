@@ -99,7 +99,7 @@ class BlockTrainConfig(BaseModel):
         default=0.01,
         gt=0.0,
         validation_alias=AliasChoices("lr", "learning_rate"),
-        description="全局基础学习率",
+        description="全局基础学习率（别名 `learning_rate`）",
     )
     select_best: SelectBestConfig = Field(
         default_factory=EmaSelectBest,

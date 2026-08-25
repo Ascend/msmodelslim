@@ -32,7 +32,7 @@
 | `runner` | `string` | 可选 | `layer_wise` | `auto`、`model_wise`、`layer_wise`、`dp_layer_wise` | 流水线执行方式：`layer_wise` 逐层计算（默认）、`auto` 按设备数量自动选择、`model_wise` 整模型计算、`dp_layer_wise` 数据并行逐层计算。 | 无 |
 | `prior` | `list[object]` | 可选 | `[]` | — | 前置阶段列表，每阶段含 process 与 dataset | 本页 <a href="#2-3-prior-stage-config">§2.3</a> |
 | `process` | `list[object]` | 可选 | `[]` | — | 量化处理器链，按顺序执行；每个元素是 `type` 分派的处理器配置。 | 本页 <a href="#2-4-autoprocessorconfig">§2.4</a> |
-| `per_expert` | `object / null` | 可选 | `null` | — | 按专家覆盖 process；值为 Processor 列表。某专家在此出现则整链替换，否则回退 process | 本页 <a href="#2-4-autoprocessorconfig">§2.4</a> |
+| `per_expert` | `object / null` | 可选 | `null` | — | 按专家覆盖 process 的字典；值为该专家的 Processor 列表。某专家在此出现则整链替换，否则回退 process | 本页 <a href="#2-4-autoprocessorconfig">§2.4</a> |
 | `save` | `list[object]` | 可选 | `[]` | — | 保存格式列表，每个元素是 `type` 分派的保存格式配置。 | 本页 <a href="#2-5-quantformatconfig">§2.5</a> |
 | `dataset` | `string` | 可选 | `mix_calib.jsonl` | — | 校准数据集名称（`lab_calib` 下的文件名）或数据集路径。 | 无 |
 | `multimodal_sd_config` | `object` | 可选 | 由工厂函数生成 | — | 多模态生成模型的专用配置，可为字典或 `MultimodalSDConfig` 实例，含 `dump_config` 与 `inference_config`。 | 本页 <a href="#2-6-multimodal-sd-config">§2.6</a> |
@@ -61,9 +61,9 @@
 - `AdaptRotationProcessorConfig`（`type: adapt_rotation`） — 自适应旋转（adapt_rotation）处理器配置。 《[adapt_rotation 配置说明](../processor/adapt_rotation.md)》
 - `AutoroundProcessorConfig`（`type: autoround_quant`） — autoround 量化处理器配置。 《[autoround_quant 配置说明](../processor/autoround_quant.md)》
 - `AWQProcessorConfig`（`type: awq`） — AWQ（Activation-aware Weight Quantization）处理器配置。 《[awq 配置说明](../processor/awq.md)》
-- `BinaryAnalysisProcessorConfig`（`type: binary_analysis`） — 二值（有/无量化）敏感性分析处理器配置。 《[binary_analysis 配置说明](../processor/binary_analysis.md)》
+- `BinaryAnalysisProcessorConfig`（`type: binary_analysis`） — 二值（有/无量化）敏感度分析处理器配置。 《[binary_analysis 配置说明](../processor/binary_analysis.md)》
 - `BinaryOperatorLayerWiseProcessorConfig`（`type: binary_operator_layer_wise`） — 逐层敏感度分析处理器配置（对比逐块浮点与量化输出）。 《[binary_operator_layer_wise 配置说明](../processor/binary_operator_layer_wise.md)》
-- `BinaryOperatorModelWiseProcessorConfig`（`type: binary_operator_model_wise`） — 模型级敏感性分析配置（对比模型最终输出，使用 MSE 指标） 《[binary_operator_model_wise 配置说明](../processor/binary_operator_model_wise.md)》
+- `BinaryOperatorModelWiseProcessorConfig`（`type: binary_operator_model_wise`） — 模型级敏感度分析配置（对比模型最终输出，使用 MSE 指标） 《[binary_operator_model_wise 配置说明](../processor/binary_operator_model_wise.md)》
 - `DynamicCacheProcessorConfig`（`type: dynamic_cache`） — KV cache 量化处理器配置。 《[dynamic_cache 配置说明](../processor/dynamic_cache.md)》
 - `FA3QuantProcessorConfig`（`type: fa3_quant`） — FA3（FlashAttention-3）量化处理器配置。 《[fa3_quant 配置说明](../processor/fa3_quant.md)》
 - `FlatQuantProcessorConfig`（`type: flatquant`） — FlatQuant处理器配置：定义量化训练参数、策略、混合精度等 《[flatquant 配置说明](../processor/flatquant.md)》
@@ -82,7 +82,7 @@
 - `SmoothQuantProcessorConfig`（`type: smooth_quant`） — SmoothQuant 平滑量化处理器配置。 《[smooth_quant 配置说明](../processor/smooth_quant.md)》
 - `SVDResidualProcessorConfig`（`type: svd_res`） — SVD 残差（低秩补偿）处理器配置。 《[svd_res 配置说明](../processor/svd_res.md)》
 - `TrainableLinearQuantProcessorConfig`（`type: trainable_linear_quant`） — 可训练线性量化（TLQ）处理器配置。 《[trainable_linear_quant 配置说明](../processor/trainable_linear_quant.md)》
-- `UnaryAnalysisProcessorConfig`（`type: unary_analysis`） — 一元（无量化）敏感性分析处理器配置。 《[unary_analysis 配置说明](../processor/unary_analysis.md)》
+- `UnaryAnalysisProcessorConfig`（`type: unary_analysis`） — 一元（无量化）敏感度分析处理器配置。 《[unary_analysis 配置说明](../processor/unary_analysis.md)》
 
 <h3 id="2-5-quantformatconfig">2.5 QuantFormatConfig</h3>
 

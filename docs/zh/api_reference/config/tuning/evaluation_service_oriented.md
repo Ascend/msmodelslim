@@ -31,7 +31,7 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `expectations` | `list[object]` | 必选 | 无 | — | 精度期望列表，至少 1 个；每项声明数据集与目标精度（含容差） | 本页 <a href="#2-3-accuracy-expectation">§2.3</a> |
+| `expectations` | `list[object]` | 必选 | 无 | — | 精度期望列表，至少1个；每项声明数据集与目标精度（含容差） | 本页 <a href="#2-3-accuracy-expectation">§2.3</a> |
 
 **配置约束**
 
@@ -227,8 +227,6 @@ evaluation:
         top_p: 0.9
         seed: null
         repetition_penalty: 1.03
-        chat_template_kwargs:
-          thinking: true
       model_meta:
         base_name: vllm_api_general_chat
         subdir: vllm_api
@@ -241,6 +239,8 @@ evaluation:
       aime25:
         config_name: aime2025_gen_0_shot_chat_prompt
         mode: all
+        chat_template_kwargs:
+          thinking: true
       bfcl-simple:
         config_name: BFCL_gen_simple
         mode: all

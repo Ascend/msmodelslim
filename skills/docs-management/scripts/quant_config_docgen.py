@@ -841,6 +841,22 @@ def extract_fields(model_cls: type, name_of: Any = None) -> List[FieldRecord]:
             record.nested_models = [name_of(nested) for nested in model_nested]
         if record.default == "无" and not record.required:
             record.default = _default_text(info)
+        # 取值范围列补足默认值语义：默认 null 的可空字段补充「或 null」；
+        # 默认空列表且非必填的 list 字段把 minItems 表达为「0项或≥N项」。
+        if record.constraint and record.constraint != "—":
+            if record.default == "`null`" and "null" not in record.constraint:
+                record.constraint = f"{record.constraint}；或 null"
+            if not record.required and "最少" in record.constraint:
+                try:
+                    default_value = (
+                        info.default_factory()
+                        if info.default_factory is not None
+                        else (info.default if info.default is not PydanticUndefined else None)
+                    )
+                except Exception:
+                    default_value = None
+                if default_value in ([], {}, ""):
+                    record.constraint = re.sub(r"最少(\d+)项", r"0项或≥\1项", record.constraint)
         if record.description == "—" and info.description:
             record.description = info.description.strip() or "—"
         kept.append(record)

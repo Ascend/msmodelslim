@@ -100,8 +100,6 @@ evaluation:
         top_p: 0.9
         seed: null
         repetition_penalty: 1.03
-        chat_template_kwargs:
-          thinking: true
       model_meta:
         base_name: vllm_api_general_chat
         subdir: vllm_api
@@ -114,6 +112,8 @@ evaluation:
       aime25:
         config_name: aime2025_gen_0_shot_chat_prompt
         mode: all
+        chat_template_kwargs:
+          thinking: true
       bfcl-simple:
         config_name: BFCL_gen_simple
         mode: all

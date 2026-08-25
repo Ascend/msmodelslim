@@ -135,7 +135,7 @@ class MultimodalSDServiceConfig(BaseModel):
     )
     per_expert: Optional[Dict[str, AutoProcessorConfigList]] = Field(
         default=None,
-        description="按专家覆盖 process；值为 Processor 列表。某专家在此出现则整链替换，否则回退 process",
+        description="按专家覆盖 process 的字典；值为该专家的 Processor 列表。某专家在此出现则整链替换，否则回退 process",
     )
     save: AutoSaverConfigList = Field(
         default_factory=list,
