@@ -25,62 +25,19 @@ from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.core.context import get_current_context
 from msmodelslim.ir.qal.qregistry import QABCRegistry
 from msmodelslim.processor.base import AutoProcessorConfig, AutoProcessorConfigList, AutoSessionProcessor
+from msmodelslim.processor.analysis.distributed_utils import (
+    check_distributed_analysis_supported,
+    maybe_barrier_before_linear_quant,
+    publish_layer_analysis_result,
+)
+from msmodelslim.processor.analysis.binary_operator_model_wise.metrics.mse_model_wise.block_data import (
+    resolve_mse_model_wise_block_data,
+)
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.exception import UnexpectedError, UnsupportedError
 from msmodelslim.utils.validation.pydantic import validate_str_length
 
 from .metrics.factory import ModelWiseMethodFactory
-
-
-def _extract_forward_args(obj: Any) -> Tuple[Any, ...]:
-    """Extract layer forward positional args from common layer output shapes.
-
-    - Qwen/Transformers decoder layers often return a tuple whose first item is hidden_states.
-      For these, we return ``(hidden_states,)``.
-    - DeepSeekV3.2 decoder layers in this project return ``(hidden_states, residual)``.
-      For these, we return both tensors to preserve the required call signature.
-    """
-    if isinstance(obj, torch.Tensor):
-        return (obj,)
-
-    if isinstance(obj, tuple) and obj:
-        # DeepSeek style: (hidden_states, residual)
-        if len(obj) == 2 and isinstance(obj[0], torch.Tensor) and isinstance(obj[1], torch.Tensor):
-            return (obj[0], obj[1])
-
-        head = obj[0]
-        if isinstance(head, torch.Tensor):
-            # Transformers style: (hidden_states, *rest)
-            return (head,)
-
-    raise UnexpectedError("Failed to extract forward args from layer output.")
-
-
-def _require_hidden_tensor(
-    obj: Any,
-) -> torch.Tensor:
-    """Extract the first hidden tensor from common layer-wise I/O shapes."""
-    t: Optional[torch.Tensor] = None
-
-    if isinstance(obj, torch.Tensor):
-        t = obj
-    elif isinstance(obj, tuple) and obj:
-        head, *rest = obj
-        if isinstance(head, torch.Tensor):
-            t = head
-        # (args, kwargs) row
-        elif (
-            rest
-            and isinstance(rest[0], dict)
-            and isinstance(head, tuple)
-            and head
-            and isinstance(head[0], torch.Tensor)
-        ):
-            t = head[0]
-
-    if t is None:
-        raise UnexpectedError("Failed to extract hidden_states tensor.")
-    return t
 
 
 class BinaryOperatorModelWiseProcessorConfig(AutoProcessorConfig):
@@ -121,6 +78,7 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
         self.adapter = adapter
         self.quant_processors = [AutoSessionProcessor.from_config(model, cfg, adapter) for cfg in config.configs]
         self._analysis_method = ModelWiseMethodFactory.create_method(config.metrics, adapter=adapter)
+        self._block_data = resolve_mse_model_wise_block_data(adapter)
         self._base_data_count: int = 0
         self._block_names: List[str] = []
         self._float_outputs: List[Any] = []
@@ -130,10 +88,17 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
         self._skip_remaining_blocks: bool = False
         self._skipped_request_names: List[str] = []
 
+    def support_distributed(self) -> bool:
+        return all(processor.support_distributed() for processor in self.quant_processors)
+
     def pre_run(self) -> None:
         ctx = get_current_context()
         if ctx is None:
             raise UnexpectedError("No context is working.")
+        check_distributed_analysis_supported(
+            self._analysis_method.supports_distributed,
+            self._analysis_method.name,
+        )
         for processor in self.quant_processors:
             processor.pre_run()
 
@@ -181,6 +146,7 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
     def process(self, request: BatchProcessRequest) -> None:
         if self._skip_remaining_blocks:
             return
+        maybe_barrier_before_linear_quant()
         request.datas = self._quant_inputs
         for qp in self.quant_processors:
             qp.preprocess(request)
@@ -202,8 +168,11 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
 
         self._validate_merged_outputs()
         layer_scores = self._compute_layer_scores()
-
-        self._write_layer_analysis_debug(layer_scores)
+        layer_scores = publish_layer_analysis_result(
+            layer_scores,
+            self._analysis_method.name,
+            quant_modules=self.config.quant_modules,
+        )
 
         if self._skipped_request_names:
             get_logger().warning(
@@ -248,15 +217,6 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
             )
         return layer_scores
 
-    def _write_layer_analysis_debug(self, layer_scores: List[Dict[str, Any]]) -> None:
-        ctx = get_current_context()
-        if ctx is None:
-            return
-        layer_analysis = ctx["layer_analysis"]  # pylint: disable=unsubscriptable-object
-        layer_analysis.debug["layer_scores"] = layer_scores
-        layer_analysis.debug["method"] = self._analysis_method.name
-        layer_analysis.debug["quant_modules"] = list(self.config.quant_modules)
-
     def _replace_request_datas_with_merged_outputs_if_need(
         self, datas: Optional[List[Tuple[tuple, dict]]]
     ) -> Optional[List[Tuple[tuple, dict]]]:
@@ -279,27 +239,41 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
 
             base_rows = old_rows[:base_data_count]
             tail_outputs = merged_outputs[-base_data_count:]
-            for idx, (row, out) in enumerate(zip(base_rows, tail_outputs)):
-                req_hidden = _require_hidden_tensor(row)
-                merged_hidden = _require_hidden_tensor(out)
+            for row, out in zip(base_rows, tail_outputs):
+                try:
+                    req_hidden = self._block_data.extract_hidden_states(row)
+                    merged_hidden = self._block_data.extract_hidden_states(out)
+                except UnsupportedError:
+                    get_logger().debug(
+                        "BinaryOperatorModelWiseProcessor: skip output chaining; use generator datas.",
+                    )
+                    return datas
 
                 merged_hidden = merged_hidden.to(
                     device=req_hidden.device,
                     dtype=req_hidden.dtype,
                 )
-                if req_hidden.shape != merged_hidden.shape or not torch.allclose(req_hidden, merged_hidden):
+                if req_hidden.shape != merged_hidden.shape:
+                    get_logger().debug(
+                        "BinaryOperatorModelWiseProcessor: skip output chaining due to shape mismatch.",
+                    )
+                    return datas
+                if not torch.allclose(req_hidden, merged_hidden):
                     raise UnsupportedError(
                         "Model-wise chaining broken: current layer input hidden_states != previous layer output."
                     )
 
         new_rows: List[Tuple[tuple, dict]] = []
         for idx, out in enumerate(merged_outputs):
-            # Preserve model-specific forward signature
-            state_args = _extract_forward_args(out)
-
-            # 与 layer_wise_forward 的约定一致：args[0] 为 hidden_states。
+            try:
+                hidden = self._block_data.extract_hidden_states(out)
+            except UnsupportedError:
+                get_logger().debug(
+                    "BinaryOperatorModelWiseProcessor: skip output chaining; use generator datas.",
+                )
+                return datas
             _, template_kwargs = old_rows[idx % len(old_rows)]
-            new_rows.append((state_args, template_kwargs))
+            new_rows.append(((hidden,), template_kwargs))
 
         return new_rows
 

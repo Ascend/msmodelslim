@@ -129,7 +129,8 @@ class StandardAnalysisResultDisplayer(AnalysisResultDisplayerInfra):
             get_logger().info("=== YAML Format for quantization ===")
             get_logger().info("")
             with clean_output():
-                get_logger().info(yaml_content)
+                for line in yaml_lines:
+                    get_logger().info("%s", line)
             get_logger().info("")
             get_logger().info("=== End of YAML Format ===")
 

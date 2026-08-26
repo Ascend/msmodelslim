@@ -392,10 +392,10 @@ def _normalize_device_argv(argv: List[str]) -> List[str]:
     Legacy scripts that pass indices inline
     (e.g. `--device npu:0,1`) are translated to the canonical form with a
     one-time deprecation warning. An explicit `--device_id` option is left
-    untouched (it takes precedence), and `analyze` is not affected because it
-    never supported the colon format.
+    untouched (it takes precedence). Also applies to `analyze` so legacy
+    `--device npu:0,1` enables multi-device DP via `--device_id`.
     """
-    if not argv or argv[0] not in ('quant', 'tune'):
+    if not argv or argv[0] not in ('quant', 'tune', 'analyze'):
         return argv
     if not any(arg == '--device' or arg.startswith('--device=') for arg in argv):
         return argv
@@ -639,7 +639,17 @@ def main():
         type=DeviceType,
         default=DeviceType.NPU,
         choices=DeviceType,
-        help='Target device type for Analysis [default: npu]',
+        help='Target device type for Analysis [default: npu]. '
+        'For multi-device DP use --device_id 0 1 2 3 (legacy --device npu:0,1 still works).',
+    )
+    analyze_common_parser.add_argument(
+        '--device_id',
+        dest='device_id',
+        nargs='*',
+        type=int,
+        metavar='<ID>',
+        default=None,
+        help='Device indices for analysis; length > 1 enables DPLayerWiseRunner, e.g. 0 1 2 3',
     )
     analyze_common_parser.add_argument(
         '--calibration_dataset',
@@ -649,7 +659,8 @@ def main():
         type=str,
         default='mix_calib.jsonl',
         help='Calibration dataset file path or filename in lab_calib directory. '
-        'Supports .json and .jsonl formats [default: mix_calib.jsonl]',
+        'LLM: .json/.jsonl text file [default: mix_calib.jsonl]. '
+        'VLM: multimodal directory such as calibImages (image+text).',
     )
     analyze_common_parser.add_argument(
         '--save_path',

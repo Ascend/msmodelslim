@@ -40,6 +40,9 @@ class TinyBlock(nn.Module):
         self.linear2 = nn.Linear(4, 4)
         self.relu = nn.ReLU()
 
+    def forward(self, x):
+        return self.relu(self.linear2(self.linear1(x)))
+
 
 class TestUnaryAnalysisProcessor(unittest.TestCase):
     """测试 UnaryAnalysisProcessor。"""
@@ -144,7 +147,7 @@ class TestUnaryAnalysisProcessor(unittest.TestCase):
         self.assertNotIn("block.linear1", processor._hook_handles)
         self.assertIn("other.linear", processor._hook_handles)
 
-    @patch("msmodelslim.processor.analysis.unary_operator.processor.get_current_context")
+    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
     def test_post_run_set_context_state_when_scores_ready(self, mock_create_method, mock_get_current_context):
         fake_method = self._build_fake_method()

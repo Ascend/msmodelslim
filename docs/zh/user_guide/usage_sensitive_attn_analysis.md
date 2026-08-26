@@ -6,12 +6,14 @@
 
 **适用场景**：
 
+- **LLM 模型**：使用文本校准集（`.json` / `.jsonl`）。
+- **VLM 模型**（多模态理解，如 Kimi-K3）：须使用图文校准集（如 `calibImages`），且适配器实现 `PipelineInterface` 与多模态 `handle_dataset`。
 - FA 量化方案设计：配合 Flash Attention 3 等注意力激活量化，识别需回退的 attention 模块。
 - 精度不达标时，结合 Attention 敏感度排序迭代 FA 相关配置。
 
 **不适用场景**：
 
-- 多模态理解 / 多模态生成模型：当前敏感层分析仅支持大语言模型。
+- **多模态生成模型**（文生图 / 文生视频等）：当前敏感层分析不支持。
 - 需要按单层线性层回退或提位宽：请使用《[线性层敏感层分析使用指南](usage_sensitive_linear_analysis.md)》。
 - 需要按 Decoder 块或整块 Attention / MLP / MoE 回退：请使用《[层级敏感层分析使用指南](usage_sensitive_layer_wise_analysis.md)》。
 
@@ -22,8 +24,8 @@
 **前置条件**：
 
 - 已安装 msModelSlim（详见《[安装指南](../install_guide/install_guide.md)》）。
-- 目标模型为 LLM，且已确定可用的 `--model_type`（与支持矩阵 / 适配器注册名一致，大小写敏感；通常已在上级流程或权重量化流程中完成适配）。
-- 已具备可用的昇腾 NPU（或仅做小规模调试时使用 `--device cpu`）。
+- 目标模型为 LLM 或已接入的 VLM，且已确定可用的 `--model_type`（与支持矩阵 / 适配器注册名一致，大小写敏感；通常已在上级流程或权重量化流程中完成适配）。
+- 已具备可用的昇腾 NPU（单卡 `--device npu`，或多卡 `--device npu:0,1,...` 走 `DPLayerWiseRunner`；仅做小规模调试时使用 `--device cpu`）。
 - 若所选指标要求额外分析接口，目标适配器已具备或计划补齐对应能力（见步骤 3）。
 
 **后续操作**：
@@ -35,7 +37,7 @@
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
 | 输入 | 浮点模型目录 | 用户本地路径；一般自 ModelScope / Hugging Face 获取 | 含模型配置、权重分片及 tokenizer 等 | 路径有效，可被目标 `model_type` 加载 |
-| 输入 | 校准集 | 用户本地路径，或工具 [`lab_calib`](../../../lab_calib/) 示例短名称 | `.json` / `.jsonl` | 可被 `msmodelslim analyze` 解析且格式符合要求 |
+| 输入 | 校准集 | 用户本地路径，或工具 [`lab_calib`](../../../lab_calib/) 示例短名称 | LLM：`.json` / `.jsonl`；VLM：图文目录名（如 `calibImages`） | 可被 `msmodelslim analyze` 解析且格式符合要求 |
 | 交付件 | 敏感层分析结果 | 标准输出（排序列表 + 可粘贴配置片段） | Score 从高到低；含 topK attention 模块名列表 | 能识别预期模块名范围，并可粘贴进量化配置 |
 
 ## 4. 流程总览
@@ -60,9 +62,9 @@ msmodelslim analyze attn \
   --model_type ${MODEL_TYPE} \          # 已注册或支持矩阵中的模型名，大小写敏感
   --model_path ${MODEL_PATH} \          # 浮点权重目录
   --metrics ${METRICS} \                # 分析指标
-  --calibration_dataset ${CALIB_DATASET} \    # 校准集路径或工具内置短名称
+  --calibration_dataset ${CALIB_DATASET} \    # LLM：.json/.jsonl；VLM：图文目录如 calibImages
   --top_k ${TOPK} \                      # TopK 数量，默认 15
-  --device npu \                        # 分析设备：npu / cpu
+  --device npu \                        # 分析设备：npu / cpu，或多卡 npu:0,1,2,3
   --trust_remote_code False             # 默认 False；仅可信模型必要时设为 True
 ```
 
@@ -90,7 +92,7 @@ msmodelslim analyze attn \
 
 1. 从 [ModelScope](https://www.modelscope.cn/)、[Hugging Face](https://huggingface.co/) 或团队内部模型存放位置获取完整权重到本地目录；具体下载方式以对应社区或仓库文档为准。
 2. 核对目录含配置、权重分片及 tokenizer 等附属文件。若官方页面提供文件校验值（如 MD5/SHA256）或明确的版本号/提交号，与本地下载结果比对一致即可。
-3. 准备校准集：敏感层分析所用校准集通常与后续量化保持一致。须为 `.json` / `.jsonl`：JSON 为字符串列表（每项一条校准文本），JSONL 为每行一个 JSON 对象。可使用自有文件，或工具提供的 [`lab_calib`](../../../lab_calib/) 示例。相对路径解析顺序：优先在命令启动目录查找；未找到再在 `lab_calib` 示例目录按同名匹配；均未找到则报错。
+3. 准备校准集：敏感层分析所用校准集通常与后续量化保持一致。LLM 须为 `.json` / `.jsonl`：JSON 为字符串列表（每项一条校准文本），JSONL 为每行一个 JSON 对象。VLM 须使用图文校准集（如 `lab_calib/calibImages`），不要使用纯文本 `mix_calib.jsonl`。可使用自有文件，或工具提供的 [`lab_calib`](../../../lab_calib/) 示例。相对路径解析顺序：优先在命令启动目录查找；未找到再在 `lab_calib` 示例目录按同名匹配；均未找到则报错。
 
 **输出**：浮点模型目录与校准集路径（或工具内置校准集短名称）。
 

@@ -99,3 +99,22 @@ class TestMsMinMaxBlockObserver:
         observer.update(x, sync=False)
         min_val, max_val = observer.get_min_max()
         assert torch.allclose(min_val, torch.tensor([2.0, 3.0]))
+
+    def test_block_observer_default_sync_is_false(self):
+        """场景：未传 sync（IR deploy forward 路径）。预期：默认不 cross-rank sync。"""
+        from unittest.mock import patch
+
+        observer = MsMinMaxBlockObserver(MinMaxBlockObserverConfig(method="max"))
+        with (
+            patch("msmodelslim.core.observer.minmax.dist.is_initialized", return_value=True),
+            patch("msmodelslim.core.observer.minmax.sync_base_operation") as mock_sync,
+        ):
+            observer.update(torch.tensor([1.0, 2.0]))
+            mock_sync.assert_not_called()
+
+        with (
+            patch("msmodelslim.core.observer.minmax.dist.is_initialized", return_value=True),
+            patch("msmodelslim.core.observer.minmax.sync_base_operation") as mock_sync,
+        ):
+            observer.update(torch.tensor([1.0, 2.0]), sync=True)
+            assert mock_sync.call_count == 2

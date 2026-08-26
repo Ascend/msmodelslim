@@ -53,9 +53,10 @@ $$
 
 ### 3.3 关键性质
 
+- **仅支持 LLM**：不支持多模态理解（VLM）与多模态生成（文生图 / 文生视频等）模型；请仅对大语言模型使用 `analyze attn_head --metrics ra_compress`。
+- **必须使用 `calib_dummy.jsonl`**：须通过 `--calib_dataset calib_dummy.jsonl` 显式指定内置合成校准集（`attn_head` 不再设置默认值）；该文件经 tokenizer 后严格对齐到 2500×4 段边界。使用其他校准集不保证筛选效果。
 - **attn_head 粒度**：输出 KV head 粒度的入选列表（每层若干 head 索引），而非层粒度排序。
-- **数据依赖强**：要求校准集 tokenize 后总长度 ≥ 10000 tokens，否则段位置偏移无意义、得分被置空。
-- **合成段数据优先**：优先使用工具内置的 `calib_dummy.jsonl`，该文件经 tokenizer 后严格对齐到 2500×N 段边界（须在命令行通过 `--calib_dataset calib_dummy.jsonl` 显式指定，`attn_head` 子命令不再为此场景设置默认值）。
+- **数据依赖强**：内置 `calib_dummy.jsonl` 满足 tokenize 后总长度 ≥ 10000 tokens；长度不足时段位置偏移无意义、得分被置空。
 - **适配器接口可选依赖**：默认匹配 `q_proj` / `k_proj` / `qkv_proj` 命名，若模型命名不同，需在适配器实现 `RaCompressAnalysisInterface`。
 - **结果用于压缩而非回退**：输出为 `head.pt`（dict 序列化的 `.pt` 文件），供 RA Compress KV cache 压缩流程读取，而非用于量化 YAML 的 exclude / include 配置。
 
@@ -172,13 +173,14 @@ class XxxAdapter(RaCompressAnalysisInterface):
 
 - 需要为 KV cache 压缩（RA Compress）方案生成 `head.pt` 的场景。
 - 长序列推理场景下，需要了解模型中哪些 KV head 承担了跨段信息传递（归纳 / 复制头）。
-- 使用重复段合成校准数据的注意力头能力分析。
+- 使用内置合成校准集 `calib_dummy.jsonl` 的注意力头能力分析。
 
 ### 6.2 使用限制
 
-- 校准集 tokenize 后总长度必须 ≥ `DUMMY_INPUT_LENGTH * REPET_TIMES`（2500 × 4 = 10000 tokens），不足时得分被置空并告警。
+- **必须**通过 `--calib_dataset calib_dummy.jsonl` 显式指定内置合成校准集；使用其他校准集不保证筛选效果。
 - 目前仅分析 Transformer 自注意力的 Q / K 投影层（或 QKV 融合层）；其他结构不在范围内。
 - 结果不输出敏感度 Score 排序，只输出入选的 head 索引；ratio 目前使用默认常量（14% / 1%），不通过 YAML 配置。
+- 仅支持 LLM；不支持多模态理解与多模态生成模型。
 - `model_type` 支持范围参见《[大模型支持矩阵](../../model/README.md)》及适配器对 `RaCompressAnalysisInterface` 的实现情况。
 
 ---

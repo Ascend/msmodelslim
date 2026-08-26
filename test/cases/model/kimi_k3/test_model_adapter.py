@@ -12,7 +12,11 @@ from torch import nn
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.model.common.utils import _get_expert_range
-from msmodelslim.model.interface_hub import FA3QuantAdapterInterface, FA3QuantPlaceHolder
+from msmodelslim.model.interface_hub import (
+    AttentionAnalysisInterface,
+    FA3QuantAdapterInterface,
+    FA3QuantPlaceHolder,
+)
 from msmodelslim.model.kimi_k3 import model_adapter as target
 from msmodelslim.model.kimi_k3.model_adapter import KimiK3ModelAdapter, default_dtype
 from msmodelslim.processor.quant.fa3.processor import FA3QuantProcessor, FA3QuantProcessorConfig
@@ -793,6 +797,20 @@ class _DecoderLayer(nn.Module):
 
 def test_adapter_implements_fa3_interface():
     assert issubclass(KimiK3ModelAdapter, FA3QuantAdapterInterface)
+
+
+def test_adapter_implements_attention_analysis_interface():
+    assert issubclass(KimiK3ModelAdapter, AttentionAnalysisInterface)
+
+
+def test_attention_mse_interface_methods():
+    adapter = _adapter()
+    assert adapter.get_attention_module_cls() == "KimiMLAAttention"
+    extractor = adapter.get_attention_output_extractor()
+    tensor = torch.randn(2, 4)
+    assert torch.equal(extractor(tensor), tensor)
+    wrapped = (tensor, None)
+    assert torch.equal(extractor(wrapped), tensor)
 
 
 def test_inject_fa3_on_mla_skips_kda():

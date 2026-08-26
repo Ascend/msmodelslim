@@ -14,15 +14,16 @@ You may obtain a copy of Mulan PSL v2 at:
 
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import torch
 from torch import nn
+import torch.distributed as dist
 import torch.nn.functional as F
 
 from msmodelslim.processor.analysis.methods_base import AnalysisTargetMatcher
@@ -449,12 +450,13 @@ class RaCompressAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
 
         return total_sum / num_rows if num_rows > 0 else 0.0
 
-    def enrich_layer_scores(self, layer_scores: List[Dict[str, Any]]) -> None:
-        """将 head 选择信息合并进 layer_scores 条目。
+    @property
+    def supports_distributed(self) -> bool:
+        return True
 
-        遍历 get_compress_heads() 的结果，将 induction_heads / echo_heads
-        按层名写入对应的 layer_scores 条目。
-        """
+    def enrich_layer_scores(self, layer_scores: List[Dict[str, Any]]) -> None:
+        """将 head 选择信息合并进 layer_scores。"""
+        self._sync_head_scores_across_ranks()
         head_dict = self.get_compress_heads()
         prefix_map = head_dict.get('prefix_matching', {})
         copying_map = head_dict.get('copying', {})
@@ -472,6 +474,69 @@ class RaCompressAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
             name = entry['name']
             entry['induction_heads'] = name_to_induction.get(name, [])
             entry['echo_heads'] = name_to_echo.get(name, [])
+
+    def _export_head_scores_by_name(self) -> Dict[str, Tuple[List[float], List[float]]]:
+        """Export local prefix/copying scores keyed by layer name."""
+        exported: Dict[str, Tuple[List[float], List[float]]] = {}
+        for name, idx in self._layer_name_to_idx.items():
+            prefix = self._prefix_scores.get(idx)
+            copying = self._copying_scores.get(idx)
+            if prefix is None or copying is None:
+                continue
+            exported[name] = (list(prefix), list(copying))
+        return exported
+
+    def _sync_head_scores_across_ranks(self) -> None:
+        """Average per-head scores across DP ranks, then rebuild local maps by name."""
+        if not dist.is_initialized() or dist.get_world_size() <= 1:
+            return
+
+        payload = self._export_head_scores_by_name()
+        gathered: List[Optional[Dict[str, Tuple[List[float], List[float]]]]] = [None] * dist.get_world_size()
+        dist.all_gather_object(gathered, payload)
+
+        sums: Dict[str, Tuple[List[float], List[float]]] = {}
+        counts: Dict[str, int] = {}
+        for rank_payload in gathered:
+            if not rank_payload:
+                continue
+            for name, (prefix, copying) in rank_payload.items():
+                if name not in sums:
+                    sums[name] = (list(prefix), list(copying))
+                    counts[name] = 1
+                    continue
+                if len(prefix) != len(sums[name][0]) or len(copying) != len(sums[name][1]):
+                    logger.warning(
+                        "RA compress DP: skip inconsistent head dims for layer %s",
+                        name,
+                    )
+                    continue
+                sums[name] = (
+                    [a + b for a, b in zip(sums[name][0], prefix)],
+                    [a + b for a, b in zip(sums[name][1], copying)],
+                )
+                counts[name] += 1
+
+        self._prefix_scores = {}
+        self._copying_scores = {}
+        self._layer_name_to_idx = {}
+        self._layer_idx_to_name = {}
+        self._next_layer_idx = 0
+        for name in sorted(sums.keys()):
+            cnt = counts[name]
+            prefix_sum, copying_sum = sums[name]
+            idx = self._next_layer_idx
+            self._next_layer_idx += 1
+            self._layer_name_to_idx[name] = idx
+            self._layer_idx_to_name[idx] = name
+            self._prefix_scores[idx] = [v / cnt for v in prefix_sum]
+            self._copying_scores[idx] = [v / cnt for v in copying_sum]
+
+        logger.info(
+            "RA compress: merged head scores across %d ranks for %d layers",
+            dist.get_world_size(),
+            len(self._prefix_scores),
+        )
 
     # ========== Head 选择逻辑（与 ra_rope_tools.py 对齐）==========
 

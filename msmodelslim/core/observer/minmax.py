@@ -165,7 +165,7 @@ class MsMinMaxBlockObserver(nn.Module):
     def update(
         self,
         x: torch.Tensor,
-        sync: bool = True,
+        sync: bool = False,
         group: Optional[dist.ProcessGroup] = None,
         shared_exp_axes=None,  # 用于指定需要共享指数（或缩放因子）的维度
     ):

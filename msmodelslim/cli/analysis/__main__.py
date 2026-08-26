@@ -32,6 +32,7 @@ from msmodelslim.app.analysis.application import (
 )
 from msmodelslim.core.analysis_service import PipelineAnalysisService
 from msmodelslim.core.context import ContextFactory
+from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VLMDatasetLoader
 from msmodelslim.infra.file_dataset_loader import FileDatasetLoader
 from msmodelslim.infra.analysis_pipeline_loader import YamlAnalysisPipelineLoader
 from msmodelslim.infra.logging_analysis_result_displayer import AnalysisResultDisplayerFactory
@@ -52,15 +53,19 @@ def main(args):
     try:
         # Get dataset directory
         dataset_dir = get_dataset_dir()
-        # Create dataset loader
+        # LLM text loader + VLM multimodal loader (selected by PipelineAnalysisService)
         dataset_loader = FileDatasetLoader(dataset_dir)
+        vlm_dataset_loader = VLMDatasetLoader(dataset_dir)
 
         # Create pipeline loader
         pipeline_loader = YamlAnalysisPipelineLoader()
 
         # Create analysis service
         analysis_service = PipelineAnalysisService(
-            dataset_loader, context_factory=ContextFactory(enable_debug=True), pipeline_loader=pipeline_loader
+            dataset_loader,
+            context_factory=ContextFactory(enable_debug=True),
+            pipeline_loader=pipeline_loader,
+            vlm_dataset_loader=vlm_dataset_loader,
         )
         # Create model factory
         model_factory = PluginModelFactory()
@@ -92,6 +97,9 @@ def main(args):
         # topk 仅对 linear/layer/attn 子命令可用，attn_head 无此参数
         topk = getattr(args, 'topk', 15)
 
+        # Canonical: --device_id; legacy npu:0,1 normalized in cli/__main__._normalize_device_argv
+        device_indices = getattr(args, 'device_id', None)
+
         # Run analysis
         result = analysis_app.analyze(
             model_type=args.model_type,
@@ -102,6 +110,7 @@ def main(args):
             topk=topk,
             trust_remote_code=args.trust_remote_code,
             save_path=save_path,
+            device_indices=device_indices,
         )
         return result
 

@@ -21,6 +21,7 @@ See the Mulan PSL v2 for more details.
 
 import unittest
 from typing import Dict
+from unittest.mock import patch
 
 import torch
 
@@ -305,6 +306,34 @@ class TestRaCompressEnrichLayerScores(unittest.TestCase):
         layer_scores = []
         self.method.enrich_layer_scores(layer_scores)
         self.assertEqual(layer_scores, [])
+
+    @patch("msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.impl.dist")
+    def test_enrich_layer_scores_syncs_head_scores_under_dp(self, mock_dist):
+        """DP 下 enrich_layer_scores 先 gather 原始 head 分并平均。"""
+        mock_dist.is_initialized.return_value = True
+        mock_dist.get_world_size.return_value = 2
+
+        self.method._layer_name_to_idx = {"layer.q": 0}
+        self.method._layer_idx_to_name = {0: "layer.q"}
+        self.method._prefix_scores = {0: [1.0, 0.0]}
+        self.method._copying_scores = {0: [0.0, 1.0]}
+        self.method._next_layer_idx = 1
+
+        def _all_gather_object(out_list, obj):
+            out_list[0] = {"layer.q": ([1.0, 0.0], [0.0, 1.0])}
+            out_list[1] = {"layer.q": ([3.0, 2.0], [2.0, 3.0])}
+
+        mock_dist.all_gather_object.side_effect = _all_gather_object
+        layer_scores = [{"name": "layer.q", "score": 1.0}]
+        self.method.enrich_layer_scores(layer_scores)
+
+        self.assertEqual(self.method._prefix_scores[0], [2.0, 1.0])
+        self.assertEqual(self.method._copying_scores[0], [1.0, 2.0])
+
+        layer_scores = [{"name": "layer.q", "score": 0.0}]
+        self.method.enrich_layer_scores(layer_scores)
+        self.assertIn("induction_heads", layer_scores[0])
+        self.assertIn("echo_heads", layer_scores[0])
 
 
 class TestRaCompressFlattenTo2D(unittest.TestCase):

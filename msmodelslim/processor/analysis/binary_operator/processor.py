@@ -33,6 +33,11 @@ from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.exception import UnexpectedError
 from msmodelslim.utils.validation.pydantic import validate_str_length
 from msmodelslim.processor.analysis.binary_operator.metrics.factory import BinaryAnalysisMethodFactory
+from msmodelslim.processor.analysis.distributed_utils import (
+    check_distributed_analysis_supported,
+    maybe_barrier_before_linear_quant,
+    publish_layer_analysis_result,
+)
 
 
 class BinaryAnalysisProcessorConfig(AutoProcessorConfig):
@@ -84,12 +89,17 @@ class BinaryAnalysisProcessor(AutoSessionProcessor):
         self._layer_scores: List[Dict[str, Any]] = []
         self._hook_handles: Dict[str, Any] = {}
 
+    def support_distributed(self) -> bool:
+        return all(processor.support_distributed() for processor in self.quant_processors)
+
     def pre_run(self) -> None:
-        # 校验上下文机制
         ctx = get_current_context()
         if ctx is None:
             raise UnexpectedError("No context is working.")
-
+        check_distributed_analysis_supported(
+            self._analysis_method.supports_distributed,
+            self._analysis_method.name,
+        )
         for processor in self.quant_processors:
             processor.pre_run()
 
@@ -124,6 +134,7 @@ class BinaryAnalysisProcessor(AutoSessionProcessor):
                 handle.remove()
 
     def process(self, request: BatchProcessRequest) -> None:
+        maybe_barrier_before_linear_quant()
         for processor in self.quant_processors:
             processor.preprocess(request)
             processor.process(request)
@@ -154,13 +165,11 @@ class BinaryAnalysisProcessor(AutoSessionProcessor):
         for processor in self.quant_processors:
             processor.post_run()
 
-        ctx = get_current_context()
-        if ctx is None:
-            return
-        layer_analysis = ctx["layer_analysis"]  # pylint: disable=unsubscriptable-object
-        layer_analysis.debug["layer_scores"] = self._layer_scores
-        layer_analysis.debug["method"] = self._analysis_method.name
-        layer_analysis.debug["patterns"] = self.config.patterns
+        self._layer_scores = publish_layer_analysis_result(
+            self._layer_scores,
+            self._analysis_method.name,
+            patterns=self.config.patterns,
+        )
 
         get_logger().info(
             "BinaryAnalysisProcessor post_run: %d layer scores computed (%s)",
@@ -168,7 +177,7 @@ class BinaryAnalysisProcessor(AutoSessionProcessor):
             self._analysis_method.name,
         )
 
-        if not layer_analysis.debug["layer_scores"] or len(layer_analysis.debug["layer_scores"]) == 0:
+        if not self._layer_scores:
             get_logger().warning(
                 "No statistics collected. This may be caused by empty calibration data "
                 "or incompatible patterns with the model structure."

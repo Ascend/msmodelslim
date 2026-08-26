@@ -6,12 +6,14 @@
 
 **适用场景**：
 
+- **LLM 模型**：当前 `attn_head` 分析仅支持大语言模型。
 - RA Compress 压缩方案设计：识别具有 prefix matching（归纳头）和 copying matching（回声头）能力的 KV cache 头，用于后续 KV cache 压缩配置。
 - 精度不达标时，结合 head 筛选结果迭代 RA Compress 相关配置。
 
 **不适用场景**：
 
-- 多模态理解 / 多模态生成模型：当前分析仅支持大语言模型。
+- **多模态理解模型（VLM）**：不支持。
+- **多模态生成模型**（文生图 / 文生视频等）：不支持。
 - 需要按单层线性层回退或提位宽：请参见《[线性层敏感层分析使用指南](usage_sensitive_linear_analysis.md)》。
 - 需要按 Decoder 块或整块 Attention / MLP / MoE 回退：请参见《[层级敏感层分析使用指南](usage_sensitive_layer_wise_analysis.md)》。
 - 配合 FA 量化识别需回退的 attention 模块：请参见《[Attention 敏感层分析使用指南](usage_sensitive_attn_analysis.md)》。

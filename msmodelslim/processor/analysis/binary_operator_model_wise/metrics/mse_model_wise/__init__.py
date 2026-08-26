@@ -1,10 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
 Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
-You may use this software according to the terms and conditions of the Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
 You may obtain a copy of Mulan PSL v2 at:
 
          http://license.coscl.org.cn/MulanPSL2
@@ -16,10 +19,10 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from msmodelslim.processor.analysis.methods_base import BaseMethodFactory
+__all__ = [
+    "MSEModelWiseAnalysisMethod",
+    "MSEModelWiseAnalysisInterface",
+]
 
-from .base import ModelWiseAnalysisMethod
-from .mse_model_wise import MSEModelWiseAnalysisMethod
-
-ModelWiseMethodFactory = BaseMethodFactory[ModelWiseAnalysisMethod]()
-ModelWiseMethodFactory.register_method("mse_model_wise", MSEModelWiseAnalysisMethod)
+from .impl import MSEModelWiseAnalysisMethod
+from .interface import MSEModelWiseAnalysisInterface

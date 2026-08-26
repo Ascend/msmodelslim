@@ -24,7 +24,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, call, patch
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.processor.analysis.binary_operator_layer_wise.processor import BinaryOperatorLayerWiseProcessor
@@ -91,9 +91,11 @@ class TestLayerAnalysisProcessor(unittest.TestCase):
         self.assertEqual(processor.config, self.config)
         self.assertIs(processor.adapter, self.adapter)
         self.assertEqual(processor.quant_processors, [qp])
-        mock_from_config.assert_has_calls([
-            call(self.model, self.config.configs[0], self.adapter),
-        ])
+        mock_from_config.assert_has_calls(
+            [
+                call(self.model, self.config.configs[0], self.adapter),
+            ]
+        )
         mock_create_method.assert_called_once_with("mse_layer_wise", adapter=self.adapter)
         self.assertIs(processor._analysis_method, fake_method)
         self.assertEqual(processor._layer_scores, [])
@@ -144,6 +146,7 @@ class TestLayerAnalysisProcessor(unittest.TestCase):
 
         processor = BinaryOperatorLayerWiseProcessor(self.model, self.config, adapter=self.adapter)
         with patch.object(processor, "_run_forward_if_need") as mock_run_forward:
+
             def _fake_forward(req):
                 req.outputs = [torch.randn(1, 4)]
 
@@ -156,9 +159,7 @@ class TestLayerAnalysisProcessor(unittest.TestCase):
 
     @patch("msmodelslim.processor.analysis.binary_operator_layer_wise.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator_layer_wise.processor.LayerWiseMethodFactory.create_method")
-    def test_process_compute_score_and_append_layer_score(
-        self, mock_create_method, mock_from_config
-    ):
+    def test_process_compute_score_and_append_layer_score(self, mock_create_method, mock_from_config):
         fake_method = self._build_fake_method()
         fake_method.compute_score.return_value = 0.5
 
@@ -175,6 +176,7 @@ class TestLayerAnalysisProcessor(unittest.TestCase):
             patch.object(processor, "_run_forward_if_need") as mock_run_forward,
             patch.object(self.request.module, "load_state_dict", autospec=True) as mock_load_state,
         ):
+
             def _fake_forward(req):
                 # process() does: quant forward first, then float forward.
                 if not hasattr(_fake_forward, "called"):
@@ -195,7 +197,29 @@ class TestLayerAnalysisProcessor(unittest.TestCase):
         fake_method.compute_score.assert_called_once_with([float_out], [quant_out])
         self.assertEqual(processor._layer_scores, [{"name": "layers.0", "score": 0.5}])
 
-    @patch("msmodelslim.processor.analysis.binary_operator_layer_wise.processor.get_current_context")
+    @patch("msmodelslim.processor.analysis.binary_operator_layer_wise.processor.maybe_barrier_before_linear_quant")
+    @patch("msmodelslim.processor.analysis.binary_operator_layer_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_layer_wise.processor.LayerWiseMethodFactory.create_method")
+    def test_process_barriers_before_quant_when_distributed(self, mock_create_method, mock_from_config, mock_barrier):
+        fake_method = self._build_fake_method()
+        fake_method.compute_score.return_value = 0.0
+        mock_create_method.return_value = fake_method
+        qp = MagicMock()
+        mock_from_config.return_value = qp
+
+        processor = BinaryOperatorLayerWiseProcessor(self.model, self.config, adapter=self.adapter)
+        with patch.object(processor, "_run_forward_if_need") as mock_run_forward:
+
+            def _fake_forward(req):
+                req.outputs = [torch.randn(1, 4)]
+
+            mock_run_forward.side_effect = _fake_forward
+            processor.process(self.request)
+
+        mock_barrier.assert_called_once()
+        qp.preprocess.assert_called_once_with(self.request)
+
+    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
     @patch("msmodelslim.processor.analysis.binary_operator_layer_wise.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator_layer_wise.processor.LayerWiseMethodFactory.create_method")
     def test_post_run_call_quant_processors_and_set_context_when_scores_ready(
@@ -222,4 +246,3 @@ class TestLayerAnalysisProcessor(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -21,9 +21,8 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import torch
-import torch.nn as nn
+from torch import nn
 
-from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.utils.exception import UnexpectedError, UnsupportedError
 
 
@@ -50,12 +49,8 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         fake_method.compute_score.return_value = 0.1
         return fake_method
 
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config"
-    )
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method"
-    )
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
     def test_processor_init_shouldSetEmptyState_whenConfigValid(self, mock_create_method, mock_from_config):
         """测试 Processor 初始化：config 合法时状态清空，并按 metrics 创建分析方法。"""
         from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
@@ -78,12 +73,8 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         self.assertEqual(p._merged_outputs, [])
 
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.get_current_context")
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config"
-    )
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method"
-    )
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
     def test_processor_preRun_shouldRaiseUnexpectedError_whenContextMissing(
         self, mock_create_method, mock_from_config, mock_get_current_context
     ):
@@ -101,12 +92,8 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
             p.pre_run()
 
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.get_current_context")
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config"
-    )
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method"
-    )
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
     def test_processor_postRun_shouldRaiseUnexpectedError_whenMergedOutputsLengthInvalid(
         self, mock_create_method, mock_from_config, mock_get_current_context
     ):
@@ -127,12 +114,8 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         with self.assertRaises(UnexpectedError):
             p.post_run()
 
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config"
-    )
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method"
-    )
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
     def test_processor_replaceDatas_shouldRaiseUnsupportedError_whenHiddenStatesMismatch(
         self, mock_create_method, mock_from_config
     ):
@@ -154,12 +137,31 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         with self.assertRaises(UnsupportedError):
             p._replace_request_datas_with_merged_outputs_if_need(datas)
 
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config"
-    )
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method"
-    )
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
+    def test_processor_replaceDatas_shouldKeepOriginalRows_whenBoundaryNotChainable(
+        self, mock_create_method, mock_from_config
+    ):
+        """visual 等非链式边界：无法从上一 block 输出注入 hidden 时保留 generator datas。"""
+        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
+            BinaryOperatorModelWiseProcessor,
+        )
+
+        mock_create_method.return_value = self._build_fake_method()
+        mock_from_config.return_value = MagicMock()
+
+        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
+        p._base_data_count = 1
+
+        hidden = torch.zeros(2, 3)
+        datas = [((hidden,), {"attention_mask": torch.ones(2, 8)})]
+        p._merged_outputs = [{"pooler_output": torch.ones(4, 5)}]
+
+        new_rows = p._replace_request_datas_with_merged_outputs_if_need(datas)
+        self.assertIs(new_rows, datas)
+
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
     def test_processor_replaceDatas_shouldReturnRebuiltRows_whenHiddenStatesMatch(
         self, mock_create_method, mock_from_config
     ):
@@ -184,13 +186,9 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         self.assertTrue(torch.allclose(args[0], x))
         self.assertEqual(kwargs, {"foo": "bar"})
 
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.get_current_context")
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config"
-    )
-    @patch(
-        "msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method"
-    )
+    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
     def test_processor_postRun_shouldWriteContextAndAnnotateNames_whenScoresReady(
         self, mock_create_method, mock_from_config, mock_get_current_context
     ):
@@ -223,7 +221,28 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         self.assertEqual(row["name"], "model.layers.0")
         self.assertEqual(row["score"], 0.1)
 
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.maybe_barrier_before_linear_quant")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
+    def test_process_barriers_before_quant_when_distributed(self, mock_create_method, mock_from_config, mock_barrier):
+        from msmodelslim.core.base.protocol import BatchProcessRequest
+        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
+            BinaryOperatorModelWiseProcessor,
+        )
+
+        mock_create_method.return_value = self._build_fake_method()
+        qp = MagicMock()
+        mock_from_config.return_value = qp
+
+        processor = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
+        processor._quant_inputs = [((torch.zeros(1),), {})]
+        request = BatchProcessRequest(name="block", module=self.model, datas=[])
+
+        processor.process(request)
+
+        mock_barrier.assert_called_once()
+        qp.preprocess.assert_called_once_with(request)
+
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -71,14 +71,15 @@ class LayerAnalysisMethod(ABC):
         """Get the hook function to collect data during model inference."""
         raise NotImplementedError
 
+    @property
+    def supports_distributed(self) -> bool:
+        """是否支持多卡（DP）分析；新指标须显式 override 为 True。"""
+        return False
+
     def enrich_layer_scores(self, layer_scores: List[Dict[str, Any]]) -> None:
-        """可选的后处理钩子，在 layer_scores 写入 context 之前对其进行 enrich。
+        """可选后处理：在 score 已 publish/merge 之后，就地补充方法特定字段。
 
-        默认实现为 no-op；具体方法可覆盖此方法以添加方法特定的元数据
-        （如 ra_compress 会添加 induction_heads / echo_heads 信息）。
-
-        Args:
-            layer_scores: 层分数字典列表，就地修改。
+        默认 no-op；ra_compress 会添加 induction_heads / echo_heads。
         """
 
 

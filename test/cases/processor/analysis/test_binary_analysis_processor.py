@@ -23,7 +23,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, call, patch
 
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.processor.analysis.binary_operator.processor import BinaryAnalysisProcessor
@@ -40,6 +40,9 @@ class TinySubBlock(nn.Module):
         super().__init__()
         self.attn2 = TinyAttention()
 
+    def forward(self, x):
+        return self.attn2(x)
+
 
 class TinyBlock(nn.Module):
     def __init__(self):
@@ -48,6 +51,9 @@ class TinyBlock(nn.Module):
         self.linear = nn.Linear(4, 4)
         self.relu = nn.ReLU()
         self.sub = TinySubBlock()
+
+    def forward(self, x):
+        return self.relu(self.linear(self.attn(x)))
 
 
 class TestBinaryAnalysisProcessor(unittest.TestCase):
@@ -83,10 +89,12 @@ class TestBinaryAnalysisProcessor(unittest.TestCase):
         self.assertEqual(processor.config, self.config)
         self.assertIs(processor.adapter, self.adapter)
         self.assertEqual(processor.quant_processors, [qp1, qp2])
-        mock_from_config.assert_has_calls([
-            call(self.model, self.config.configs[0], self.adapter),
-            call(self.model, self.config.configs[1], self.adapter),
-        ])
+        mock_from_config.assert_has_calls(
+            [
+                call(self.model, self.config.configs[0], self.adapter),
+                call(self.model, self.config.configs[1], self.adapter),
+            ]
+        )
         mock_create_method.assert_called_once_with("attention_mse", adapter=self.adapter)
         self.assertEqual(processor._target_layers, [])
         self.assertEqual(processor._float_layer_stats, {})
@@ -97,7 +105,9 @@ class TestBinaryAnalysisProcessor(unittest.TestCase):
     @patch("msmodelslim.processor.analysis.binary_operator.processor.get_current_context")
     @patch("msmodelslim.processor.analysis.binary_operator.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator.processor.BinaryAnalysisMethodFactory.create_method")
-    def test_pre_run_call_quant_processors_when_context_exists(self, mock_create_method, mock_from_config, mock_get_current_context):
+    def test_pre_run_call_quant_processors_when_context_exists(
+        self, mock_create_method, mock_from_config, mock_get_current_context
+    ):
         fake_method = self._build_fake_method()
         qp1 = MagicMock()
         qp2 = MagicMock()
@@ -114,7 +124,9 @@ class TestBinaryAnalysisProcessor(unittest.TestCase):
     @patch("msmodelslim.processor.analysis.binary_operator.processor.get_current_context")
     @patch("msmodelslim.processor.analysis.binary_operator.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator.processor.BinaryAnalysisMethodFactory.create_method")
-    def test_pre_run_raise_unexpected_error_when_context_missing(self, mock_create_method, mock_from_config, mock_get_current_context):
+    def test_pre_run_raise_unexpected_error_when_context_missing(
+        self, mock_create_method, mock_from_config, mock_get_current_context
+    ):
         fake_method = self._build_fake_method()
         mock_create_method.return_value = fake_method
         mock_from_config.side_effect = [MagicMock(), MagicMock()]
@@ -172,7 +184,9 @@ class TestBinaryAnalysisProcessor(unittest.TestCase):
 
     @patch("msmodelslim.processor.analysis.binary_operator.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator.processor.BinaryAnalysisMethodFactory.create_method")
-    def test_process_call_quant_processors_in_order_when_quant_processors_exist(self, mock_create_method, mock_from_config):
+    def test_process_call_quant_processors_in_order_when_quant_processors_exist(
+        self, mock_create_method, mock_from_config
+    ):
         fake_method = self._build_fake_method()
         qp1 = MagicMock()
         qp2 = MagicMock()
@@ -254,7 +268,22 @@ class TestBinaryAnalysisProcessor(unittest.TestCase):
         self.assertNotIn("block.sub.attn2", processor._hook_handles)
         self.assertIn("other.attn", processor._hook_handles)
 
-    @patch("msmodelslim.processor.analysis.binary_operator.processor.get_current_context")
+    @patch("msmodelslim.processor.analysis.binary_operator.processor.maybe_barrier_before_linear_quant")
+    @patch("msmodelslim.processor.analysis.binary_operator.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator.processor.BinaryAnalysisMethodFactory.create_method")
+    def test_process_barriers_before_quant_when_distributed(self, mock_create_method, mock_from_config, mock_barrier):
+        fake_method = self._build_fake_method()
+        qp1 = MagicMock()
+        mock_create_method.return_value = fake_method
+        mock_from_config.side_effect = [qp1, MagicMock()]
+
+        processor = BinaryAnalysisProcessor(self.model, self.config, adapter=self.adapter)
+        processor.process(self.request)
+
+        mock_barrier.assert_called_once()
+        qp1.preprocess.assert_called_once_with(self.request)
+
+    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
     @patch("msmodelslim.processor.analysis.binary_operator.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator.processor.BinaryAnalysisMethodFactory.create_method")
     def test_post_run_call_quant_processors_and_set_context_when_scores_ready(

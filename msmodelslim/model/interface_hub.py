@@ -48,6 +48,9 @@ from msmodelslim.processor.adapt_rotation import AdaptRotationInterface
 from msmodelslim.processor.analysis.binary_operator.metrics.attention_mse.interface import (
     AttentionMSEAnalysisInterface as amseai,
 )
+from msmodelslim.processor.analysis.binary_operator_model_wise.metrics.mse_model_wise.interface import (
+    MSEModelWiseAnalysisInterface as mmseai,
+)
 from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.interface import (
     RaCompressAnalysisInterface as rcai,
 )
@@ -67,6 +70,9 @@ class ModelInfoInterface(nami, atmi): ...
 class AttentionAnalysisInterface(amseai): ...
 
 
+class MSEModelWiseAnalysisInterface(mmseai): ...
+
+
 class RACompressAnalysisInterface(rcai): ...
 
 
@@ -80,7 +86,8 @@ __all__ = [
     # app interface
     'ModelInfoInterface',  # For Naive Quantization, get model info from model.
     # analysis_method interface
-    'AttentionAnalysisInterface',  # For Attention Analysis, describing the attention structure of model.
+    'AttentionAnalysisInterface',  # For Attention Analysis (attn_mse); required when using attn_mse metric.
+    'MSEModelWiseAnalysisInterface',  # For mse_model_wise sensitive layer analysis block I/O; optional.
     'RACompressAnalysisInterface',  # For RA Compress Analysis, describing Q/K/QKV projection names.
     # algorithm interface
     'KVSmoothFusedInterface',  # For KV Smooth, describing the architecture of model.

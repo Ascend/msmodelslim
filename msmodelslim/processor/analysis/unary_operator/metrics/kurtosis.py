@@ -18,10 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from typing import Dict, Any, Callable
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.processor.analysis.methods_base import AnalysisTargetMatcher
 from .base import UnaryAnalysisMethod
@@ -36,6 +37,10 @@ class KurtosisAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
     @property
     def name(self) -> str:
         return "kurtosis"
+
+    @property
+    def supports_distributed(self) -> bool:
+        return True
 
     def compute_score(self, layer_data: Dict[str, Any]) -> float:
         """Compute kurtosis score for the layer"""
@@ -56,7 +61,7 @@ class KurtosisAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
             if sorted_tensor.numel() < self.sample_step:
                 sampled = sorted_tensor
             else:
-                sampled = sorted_tensor[self.sample_step // 2::self.sample_step].view(-1, 1)
+                sampled = sorted_tensor[self.sample_step // 2 :: self.sample_step].view(-1, 1)
 
             # Store data
             if layer_name not in stats_dict:
@@ -72,6 +77,7 @@ class KurtosisAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
             (nn.Linear, nn.modules.linear.NonDynamicallyQuantizableLinear, nn.Conv2d),
         )
 
+
 def kurtosis(x: torch.Tensor, dim=None, keepdim=False) -> float:
     """
     Compute the kurtosis of a tensor along a given dimension.
@@ -83,6 +89,6 @@ def kurtosis(x: torch.Tensor, dim=None, keepdim=False) -> float:
         mean = x.mean()
         std = x.std(unbiased=False)
     z = (x - mean) / (std + 1e-10)
-    kurt = (z.pow(4).mean(dim=dim, keepdim=keepdim) - 3)
+    kurt = z.pow(4).mean(dim=dim, keepdim=keepdim) - 3
 
     return kurt

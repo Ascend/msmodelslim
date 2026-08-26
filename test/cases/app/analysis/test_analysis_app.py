@@ -161,6 +161,51 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
                 trust_remote_code=False,
             )
 
+    def test_analyze_parameter_validation_calib_dataset_vlm_directory(self):
+        """VLM 目录名（无后缀）应通过 calib_dataset 格式校验"""
+        from msmodelslim.app.analysis.application import (
+            AnalysisMetrics,
+            LayerAnalysisApplication,
+            LinearArgs,
+        )
+        from msmodelslim.core.runner.pipeline_interface import PipelineInterface
+
+        mock_service = MagicMock()
+        mock_service.analyze.return_value = None
+        mock_factory = MagicMock()
+        mock_adapter = MagicMock(spec=PipelineInterface)
+        mock_factory.create.return_value = mock_adapter
+        app = LayerAnalysisApplication(mock_service, mock_factory, MagicMock())
+
+        # Should not raise on directory-style name; analyze may return None from service
+        app.analyze(
+            model_type="Kimi-K3",
+            model_path=str(self.model_path),
+            scope_args=LinearArgs(pattern=["*"], metrics=AnalysisMetrics.STD),
+            device=DeviceType.NPU,
+            calib_dataset="calibImages",
+            topk=15,
+            trust_remote_code=False,
+        )
+        mock_service.analyze.assert_called_once()
+
+    def test_validate_calib_dataset_name_accepts_existing_directory(self):
+        from msmodelslim.app.analysis.application import _validate_calib_dataset_name
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _validate_calib_dataset_name(tmpdir)
+
+    def test_validate_calib_dataset_name_rejects_existing_file_without_json_suffix(self):
+        from msmodelslim.app.analysis.application import _validate_calib_dataset_name
+
+        with tempfile.NamedTemporaryFile(suffix="", delete=False) as f:
+            path = f.name
+        try:
+            with self.assertRaises(SchemaValidateError):
+                _validate_calib_dataset_name(path)
+        finally:
+            os.unlink(path)
+
     def test_analyze_parameter_validation_topk(self):
         """测试analyze方法topk参数验证"""
         from msmodelslim.app.analysis.application import (

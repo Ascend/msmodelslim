@@ -18,10 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from typing import Any, Callable, Dict
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.processor.analysis.methods_base import AnalysisTargetMatcher
 from .base import UnaryAnalysisMethod
@@ -33,6 +34,10 @@ class StdAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
     @property
     def name(self) -> str:
         return "std"
+
+    @property
+    def supports_distributed(self) -> bool:
+        return True
 
     def compute_score(self, layer_data: Dict[str, Any]) -> float:
         """Compute std-based score for the layer"""

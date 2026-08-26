@@ -18,10 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from typing import Dict, Any, Callable
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.processor.analysis.methods_base import AnalysisTargetMatcher
 from msmodelslim.utils.logging import get_logger
@@ -34,12 +35,13 @@ logger = get_logger()
 
 class AttentionMSEAnalysisMethod(BinaryAnalysisMethod, AnalysisTargetMatcher):
     """AttentionMSE 分析方法，需要模型适配器实现 AttentionMSEAnalysisInterface"""
+
     def __init__(self, adapter: object):
         if not isinstance(adapter, AttentionMSEAnalysisInterface):
             raise UnsupportedError(
                 f'{adapter.__class__.__name__} does not implement AttentionMSEAnalysisInterface',
                 action=f'Please ensure {adapter.__class__.__name__} inherits from AttentionMSEAnalysisInterface '
-                       f'and implements the methods defined by the interface'
+                f'and implements the methods defined by the interface',
             )
         self.adapter = adapter
         self.attention_module_cls = adapter.get_attention_module_cls()
@@ -47,6 +49,10 @@ class AttentionMSEAnalysisMethod(BinaryAnalysisMethod, AnalysisTargetMatcher):
     @property
     def name(self) -> str:
         return "mse"
+
+    @property
+    def supports_distributed(self) -> bool:
+        return True
 
     def compute_score(self, layer_data_before: Dict[str, Any], layer_data_after: Dict[str, Any]) -> float:
         # 使用 phase 区分：attn_output["float"] 与 attn_output["quant"] 为等长列表，对应元素同形状 2D tensor，逐对 MSE 取平均
@@ -60,6 +66,7 @@ class AttentionMSEAnalysisMethod(BinaryAnalysisMethod, AnalysisTargetMatcher):
 
     def get_hook(self) -> Callable:
         attention_output_extractor = self.adapter.get_attention_output_extractor()
+
         def activation_hook(module, input_tensor, output_tensor, layer_name, stats_dict):
             attention_output = attention_output_extractor(output_tensor)
 

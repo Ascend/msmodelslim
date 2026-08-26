@@ -30,6 +30,11 @@ from msmodelslim.core.context import get_current_context
 from msmodelslim.ir.qal.qregistry import QABCRegistry
 from msmodelslim.processor.base import AutoProcessorConfig, AutoSessionProcessor
 from msmodelslim.utils.validation.pydantic import validate_str_length
+from msmodelslim.processor.analysis.distributed_utils import (
+    check_distributed_analysis_supported,
+    publish_layer_analysis_result,
+    write_layer_analysis_result,
+)
 from msmodelslim.processor.analysis.unary_operator.metrics.factory import UnaryAnalysisMethodFactory
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.exception import UnexpectedError
@@ -77,11 +82,17 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
         self._layer_scores: List[Dict[str, Any]] = []
         self._hook_handles: Dict[str, Any] = {}
 
+    def support_distributed(self) -> bool:
+        return True
+
     def pre_run(self) -> None:
-        # 校验上下文机制
         ctx = get_current_context()
         if ctx is None:
             raise UnexpectedError("No context is working.")
+        check_distributed_analysis_supported(
+            self._analysis_method.supports_distributed,
+            self._analysis_method.name,
+        )
 
     def preprocess(self, request: BatchProcessRequest) -> None:
         all_layers = self._analysis_method.get_target_layers(request.module, request.name)
@@ -131,17 +142,17 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
                 del self._layer_stats[k]
 
     def post_run(self) -> None:
-        ctx = get_current_context()
-        if ctx is None:
-            return
-        layer_analysis = ctx["layer_analysis"]  # pylint: disable=unsubscriptable-object
-
-        # 让分析方法 enrich layer_scores（如 ra_compress 会添加 induction_heads/echo_heads）
+        self._layer_scores = publish_layer_analysis_result(
+            self._layer_scores,
+            self._analysis_method.name,
+            patterns=self.config.patterns,
+        )
         self._analysis_method.enrich_layer_scores(self._layer_scores)
-
-        layer_analysis.debug["layer_scores"] = self._layer_scores
-        layer_analysis.debug["method"] = self._analysis_method.name
-        layer_analysis.debug["patterns"] = self.config.patterns
+        self._layer_scores = write_layer_analysis_result(
+            self._layer_scores,
+            self._analysis_method.name,
+            patterns=self.config.patterns,
+        )
 
         get_logger().info(
             "UnaryAnalysisProcessor post_run: %d layer scores computed (%s)",
@@ -149,7 +160,7 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
             self._analysis_method.name,
         )
 
-        if not layer_analysis.debug["layer_scores"] or len(layer_analysis.debug["layer_scores"]) == 0:
+        if not self._layer_scores:
             get_logger().warning(
                 "No statistics collected. This may be caused by empty calibration data "
                 "or incompatible patterns with the model structure."

@@ -15,8 +15,9 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, List
 
 from msmodelslim.processor.analysis.methods_base import LayerAnalysisMethod
 
@@ -34,15 +35,12 @@ class ModelWiseAnalysisMethod(LayerAnalysisMethod):
     @abstractmethod
     def compute_score(
         self,
-        final_outputs: List[Any],
-        block_names: List[str],
-        base_data_count: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
-        """根据最后一层合并列表计算各层敏感分数。
+        ref_outputs: List[Any],
+        cand_outputs: List[Any],
+    ) -> float:
+        """根据参考输出与候选输出计算单层敏感分数。
 
-        典型布局：``len(final_outputs) == base_count * (len(block_names) + 1)``，
-        前 ``base_count`` 条为各样本纯浮点参考，之后每层连续 ``base_count`` 条为该层各样本输出。
-        ``base_data_count`` 由 Processor 传入以便校验，可为 ``None`` 则仅按长度推断。
+        Processor 对每一层分别传入 ``base_count`` 条纯浮点参考与等量量化候选输出。
         """
 
     def get_hook(self) -> Any:

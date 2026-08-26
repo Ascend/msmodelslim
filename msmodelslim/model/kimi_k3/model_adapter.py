@@ -22,7 +22,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from importlib import import_module
 from pathlib import Path
-from typing import List, Any, Generator, Tuple, Dict, Optional, Callable
+from typing import List, Any, Generator, Tuple, Dict, Optional, Callable, Union
 from unittest.mock import patch
 
 import torch
@@ -48,6 +48,7 @@ from msmodelslim.model.interface_hub import (
     QuaRotInterface,
     FA3QuantAdapterInterface,
     FA3QuantPlaceHolder,
+    AttentionAnalysisInterface,
 )
 from msmodelslim.utils.exception import UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
@@ -100,6 +101,7 @@ class KimiK3ModelAdapter(  # pylint: disable=too-many-ancestors
     FlexSmoothQuantInterface,
     QuaRotInterface,
     FA3QuantAdapterInterface,
+    AttentionAnalysisInterface,
 ):
     """Kimi-K3 VLM MoE adapter with EP monkey-patch + offline QuaRot.
 
@@ -107,6 +109,7 @@ class KimiK3ModelAdapter(  # pylint: disable=too-many-ancestors
     QuaRot maps (incl. ``rot_latent`` + ``_get_expert_range``) come from the
     verified msmodelslim rotation path; mm_projector gets Identity ``rot_proj``.
     FA3 injects absorb-MLA placeholders on ``KimiMLAAttention`` only (not KDA).
+    Attention MSE hooks the same MLA modules for float vs FA3 sensitivity analysis.
     """
 
     # Per-matrix switches for get_rotate_map (disable to skip that RotatePair).
@@ -725,6 +728,23 @@ class KimiK3ModelAdapter(  # pylint: disable=too-many-ancestors
             root_module.set_submodule(f"{name}.fa_v", FA3QuantPlaceHolder(ratio=1.0))
             _wrap_mla_forward(module)
             get_logger().info("Injected FA3 placeholders for %s", full_name)
+
+    # ===== AttentionAnalysisInterface (attn --metrics mse) =====
+    def get_attention_module_cls(self) -> str:
+        """Hook ``KimiMLAAttention`` only; KDA ``KimiDeltaAttention`` has no FA3 path."""
+        return "KimiMLAAttention"
+
+    def get_attention_output_extractor(
+        self,
+    ) -> Callable[[Union[tuple, torch.Tensor]], torch.Tensor]:
+        """MLA forward returns ``o_proj`` output tensor; tolerate tuple returns."""
+
+        def _extract(attention_forward_output: Union[tuple, torch.Tensor]) -> torch.Tensor:
+            if isinstance(attention_forward_output, tuple):
+                return attention_forward_output[0]
+            return attention_forward_output
+
+        return _extract
 
     def ascendv1_save_module_preprocess(
         self, prefix: str, module: nn.Module, model: nn.Module

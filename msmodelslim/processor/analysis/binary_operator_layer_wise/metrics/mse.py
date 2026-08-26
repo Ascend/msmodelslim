@@ -36,6 +36,10 @@ class MSELayerWiseAnalysisMethod(LayerWiseAnalysisMethod):
     def name(self) -> str:
         return "mse_layer_wise"
 
+    @property
+    def supports_distributed(self) -> bool:
+        return True
+
     @staticmethod
     def _to_tensor(item: Any) -> Optional[torch.Tensor]:
         t = item

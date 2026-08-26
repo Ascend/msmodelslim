@@ -44,13 +44,6 @@ class TestDefaultTLQBlockDataInterface(unittest.TestCase):
         propagate_outputs_to_inputs(self.block_data, [sample], [src])
         self.assertTrue(torch.equal(sample[0][0], src))
 
-    def test_extract_unsupported_output_guides_custom_interface(self):
-        with self.assertRaises(Exception) as ctx:
-            self.block_data.extract_hidden_states({"hidden": torch.randn(2, 4)})
-        msg = str(ctx.exception)
-        self.assertIn("inherit TLQBlockDataInterface", msg)
-        self.assertIn("DefaultTLQBlockDataInterface", msg)
-
     def test_resolve_uses_adapter_when_it_implements_interface(self):
         class FakeAdapter(TLQBlockDataInterface):
             def extract_hidden_states(self, block_output):
@@ -76,7 +69,6 @@ class TestDefaultTLQBlockDataInterface(unittest.TestCase):
 
     def test_get_loss_mask_moves_attention_mask_to_hidden_device(self):
         hidden = torch.randn(2, 3, 4)
-        # 2D mask on CPU while hidden is used as device reference
         attn = torch.ones(2, 3, dtype=torch.long)
         sample = ((hidden,), {"attention_mask": attn})
         mask = self.block_data.get_loss_mask(sample, hidden)

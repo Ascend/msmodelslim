@@ -18,10 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from typing import Any, Callable, Dict
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.processor.analysis.methods_base import AnalysisTargetMatcher
 from .base import UnaryAnalysisMethod
@@ -36,6 +37,10 @@ class QuantileAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
     @property
     def name(self) -> str:
         return "quantile"
+
+    @property
+    def supports_distributed(self) -> bool:
+        return True
 
     @staticmethod
     def get_quantile_score(act: torch.Tensor, device: torch.device):
@@ -59,6 +64,7 @@ class QuantileAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
 
     def get_hook(self) -> Callable:
         """Get hook function for collecting activation data."""
+
         def activation_hook(module, input_tensor, output_tensor, layer_name, stats_dict):
             if isinstance(input_tensor, tuple):
                 input_tensor = input_tensor[0]
@@ -71,7 +77,7 @@ class QuantileAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
             if sorted_tensor.numel() < self.sample_step:
                 sampled = sorted_tensor
             else:
-                sampled = sorted_tensor[self.sample_step // 2::self.sample_step].view(-1, 1)
+                sampled = sorted_tensor[self.sample_step // 2 :: self.sample_step].view(-1, 1)
 
             # Store data
             if layer_name not in stats_dict:

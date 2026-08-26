@@ -27,4 +27,4 @@ __all__ = [
 
 from .base import ModelWiseAnalysisMethod
 from .factory import ModelWiseMethodFactory
-from .mse import MSEModelWiseAnalysisMethod
+from .mse_model_wise import MSEModelWiseAnalysisMethod

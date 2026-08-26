@@ -108,6 +108,7 @@ class IAnalysisService(ABC):
         model_adapter: PipelineInterface,
         analysis_config: AnalysisConfig,
         device: DeviceType = DeviceType.NPU,
+        device_indices: Optional[List[int]] = None,
     ) -> AnalysisResult:
         """
         Analyze model layers based on given configuration.
@@ -116,5 +117,6 @@ class IAnalysisService(ABC):
             model_adapter: The model to analyze
             analysis_config: 分析配置（scope / metrics / calib_dataset / linear_pattern | quant_modules）
             device: 运行设备
+            device_indices: 多卡设备索引列表；长度 > 1 时走 DPLayerWiseRunner
         """
         raise NotImplementedError

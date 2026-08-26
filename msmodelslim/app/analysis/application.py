@@ -27,6 +27,10 @@ from typing import List, Optional, Union
 from msmodelslim.core.analysis_service import IAnalysisService, AnalysisConfig, AnalysisScope
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
 from msmodelslim.core.const import DeviceType
+from msmodelslim.core.quant_service.multimodal_sd_v1.legacy_pipeline_interface import (
+    LegacyMultimodalPipelineInterface,
+)
+from msmodelslim.core.quant_service.multimodal_sd_v1.pipeline_interface import MultimodalPipelineInterface
 from msmodelslim.model import IModelFactory
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.exception_decorator import exception_catcher
@@ -34,6 +38,23 @@ from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.validation.conversion import convert_to_readable_dir
 from msmodelslim.utils.validation.value import validate_str_length
 from .result_displayer_infra import AnalysisResultDisplayerInfra
+
+
+def _validate_device_indices(device_indices: Optional[List[int]], device: DeviceType) -> Optional[List[int]]:
+    """Normalize/validate multi-device indices for analysis (same rules as quant)."""
+    if device_indices is None:
+        return None
+    if not isinstance(device_indices, list):
+        raise SchemaValidateError(f"device_indices must be a list, but got {type(device_indices)}")
+    if any(not isinstance(idx, int) for idx in device_indices):
+        raise SchemaValidateError("device_indices must contain integers only")
+    if any(idx < 0 for idx in device_indices):
+        raise SchemaValidateError(f"Device indices must be non-negative integers, but got: {device_indices}")
+    if len(device_indices) != len(set(device_indices)):
+        raise SchemaValidateError(f"Device indices must be unique, but got: {device_indices}")
+    if device == DeviceType.CPU and len(device_indices) > 1:
+        raise SchemaValidateError("CPU does not support multi-device analysis. Use NPU with --device npu:0,1,...")
+    return device_indices
 
 
 class AnalysisMetrics(str, Enum):
@@ -71,6 +92,31 @@ class LayerArgs:
 
 
 ScopeAnalysisArgs = Union[LinearArgs, AttnArgs, AttnHeadArgs, LayerArgs]
+
+
+def _reject_multimodal_generation_adapter(model_adapter: PipelineInterface) -> None:
+    """敏感层分析不支持多模态生成模型（SD/DiT 等）；VLM 理解模型不在此接口体系内。"""
+    if isinstance(model_adapter, (MultimodalPipelineInterface, LegacyMultimodalPipelineInterface)):
+        raise UnsupportedError(
+            f'Model adapter {model_adapter.__class__.__name__} is a multimodal generation model; '
+            'sensitive layer analysis is not supported.',
+        )
+
+
+def _validate_calib_dataset_name(calib_dataset: str) -> None:
+    """Accept LLM json/jsonl files and VLM directory-style dataset names (e.g. calibImages)."""
+    path = Path(calib_dataset)
+    suffix = path.suffix.lower()
+    if suffix in {'.json', '.jsonl'}:
+        return
+    if path.is_dir() or (path.suffix == '' and not path.is_file()):
+        return
+    raise SchemaValidateError(
+        f'Unsupported calib_dataset format: {calib_dataset}. '
+        'Use .json/.jsonl for LLM text calib, or a directory name/path '
+        '(e.g. calibImages under lab_calib) for VLM multimodal calib.',
+        action='Please provide a .json/.jsonl file or a VLM calib directory name',
+    )
 
 
 def _analysis_config_from_scope_args(scope_args: ScopeAnalysisArgs, calib_dataset: str) -> AnalysisConfig:
@@ -137,6 +183,7 @@ class LayerAnalysisApplication:
         topk: int = 15,
         trust_remote_code: bool = False,
         save_path: Optional[str] = None,
+        device_indices: Optional[List[int]] = None,
     ):
         """
         Run layer analysis on a model
@@ -150,6 +197,7 @@ class LayerAnalysisApplication:
             calib_dataset: Dataset path for calibration
             topk: Number of top layers to output for disable_names
             trust_remote_code: Whether to trust remote code
+            device_indices: Optional NPU indices; length > 1 enables DP multi-device analysis
         """
         # Validate string inputs with length checks
         str_params = [("model_type", model_type), ("model_path", model_path), ("calib_dataset", calib_dataset)]
@@ -166,12 +214,9 @@ class LayerAnalysisApplication:
             raise SchemaValidateError("device must be a DeviceType")
         if not isinstance(calib_dataset, str):
             raise SchemaValidateError(f"calib_dataset must be a string, but got {type(calib_dataset)}")
-        # Validate file format - only support .json and .jsonl
-        if not (calib_dataset.endswith('.json') or calib_dataset.endswith('.jsonl')):
-            raise SchemaValidateError(
-                f'Unsupported file format: {calib_dataset}. Only .json and .jsonl formats are supported',
-                action='Please provide a file with .json or .jsonl extension',
-            )
+        # LLM: .json/.jsonl text files; VLM: directory short names (e.g. calibImages) or paths without suffix
+        _validate_calib_dataset_name(calib_dataset)
+        device_indices = _validate_device_indices(device_indices, device)
         if not isinstance(topk, int) or topk <= 0:
             raise SchemaValidateError(f"topk must be a integer greater than 0, but got {topk}")
         if not isinstance(trust_remote_code, bool):
@@ -192,11 +237,21 @@ class LayerAnalysisApplication:
             log.info('attn: all attention modules')
         log.info('metrics: %s', analysis_config.metrics)
         log.info('device: %s', device)
+        log.info('device_indices: %s', device_indices)
         log.info('calib_dataset: %s', calib_dataset)
         log.info('topk: %s', topk)
         log.info('trust_remote_code: %s', trust_remote_code)
 
-        return self._analyze(model_type, model_path, analysis_config, device, topk, trust_remote_code, save_path)
+        return self._analyze(
+            model_type,
+            model_path,
+            analysis_config,
+            device,
+            topk,
+            trust_remote_code,
+            save_path=save_path,
+            device_indices=device_indices,
+        )
 
     def _analyze(
         self,
@@ -207,6 +262,7 @@ class LayerAnalysisApplication:
         topk: int,
         trust_remote_code: bool,
         save_path: Optional[str] = None,
+        device_indices: Optional[List[int]] = None,
     ):
         """Internal analysis implementation"""
         # Run analysis
@@ -216,15 +272,17 @@ class LayerAnalysisApplication:
         model_adapter = self.model_factory.create(model_type, model_path, trust_remote_code)
         if not isinstance(model_adapter, PipelineInterface):
             raise UnsupportedError(
-                'Model adapter %s does NOT support analyze' % model_adapter.__class__.__name__,
+                f'Model adapter {model_adapter.__class__.__name__} does NOT support analyze',
                 action='Please implement PipelineInterface for model analyzing',
             )
+        _reject_multimodal_generation_adapter(model_adapter)
         get_logger().info("Using model adapter %s.", model_adapter.__class__.__name__)
 
         result = self.analysis_service.analyze(
             device=device,
             model_adapter=model_adapter,
             analysis_config=analysis_config,
+            device_indices=device_indices,
         )
 
         # display results using service-specific formatter (only when result is not None)
