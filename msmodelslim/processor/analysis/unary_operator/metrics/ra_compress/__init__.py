@@ -19,19 +19,12 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from abc import ABC, abstractmethod
-from typing import Optional
+__all__ = [
+    "DUMMY_INPUT_LENGTH",
+    "REPET_TIMES",
+    "RaCompressAnalysisInterface",
+    "RaCompressAnalysisMethod",
+]
 
-from msmodelslim.core.analysis_service.interface import AnalysisResult, AnalysisScope
-
-
-class AnalysisResultDisplayerInfra(ABC):
-    @abstractmethod
-    def display_result(
-        self,
-        result: AnalysisResult,
-        topk: int,
-        scope: Optional[AnalysisScope] = None,
-        save_path: Optional[str] = None,
-        model_type: Optional[str] = None,
-    ) -> None: ...
+from .impl import DUMMY_INPUT_LENGTH, REPET_TIMES, RaCompressAnalysisMethod
+from .interface import RaCompressAnalysisInterface

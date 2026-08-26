@@ -1,6 +1,6 @@
  [files]
  	 # these files may be written in non english words
- 	 extend-exclude = []
+ 	 extend-exclude = ["lab_calib/calib_dummy.jsonl"]
  	 ignore-hidden = true
  	 ignore-files = true
  	 ignore-dot = true

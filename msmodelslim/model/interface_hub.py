@@ -48,6 +48,9 @@ from msmodelslim.processor.adapt_rotation import AdaptRotationInterface
 from msmodelslim.processor.analysis.binary_operator.metrics.attention_mse.interface import (
     AttentionMSEAnalysisInterface as amseai,
 )
+from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.interface import (
+    RaCompressAnalysisInterface as rcai,
+)
 from msmodelslim.processor.anti_outlier.flex_smooth.interface import FlexSmoothQuantInterface
 from msmodelslim.processor.anti_outlier.iter_smooth.interface import IterSmoothInterface
 from msmodelslim.processor.anti_outlier.oasq.interface import OASQInterface
@@ -64,6 +67,9 @@ class ModelInfoInterface(nami, atmi): ...
 class AttentionAnalysisInterface(amseai): ...
 
 
+class RACompressAnalysisInterface(rcai): ...
+
+
 # 迁移期兼容
 MultimodalSDPipelineInterface = LegacyMultimodalPipelineInterface
 
@@ -75,6 +81,7 @@ __all__ = [
     'ModelInfoInterface',  # For Naive Quantization, get model info from model.
     # analysis_method interface
     'AttentionAnalysisInterface',  # For Attention Analysis, describing the attention structure of model.
+    'RACompressAnalysisInterface',  # For RA Compress Analysis, describing Q/K/QKV projection names.
     # algorithm interface
     'KVSmoothFusedInterface',  # For KV Smooth, describing the architecture of model.
     'SmoothQuantInterface',  # For Smooth Quant, describing the architecture of model.

@@ -342,7 +342,7 @@ def _normalize_analyze_argv(argv: List[str]) -> List[str]:
         return argv
 
     # If user already provided a scope, do nothing.
-    if tail and tail[0] in ['linear', 'layer', 'attn']:
+    if tail and tail[0] in ['linear', 'layer', 'attn', 'attn_head']:
         return argv
 
     if not tail or tail[0].startswith('-'):
@@ -652,6 +652,13 @@ def main():
         'Supports .json and .jsonl formats [default: mix_calib.jsonl]',
     )
     analyze_common_parser.add_argument(
+        '--save_path',
+        type=str,
+        default=None,
+        help='Path to save result file (YAML for linear/layer/attn). '
+        'If not specified, results are printed to console only.',
+    )
+    analyze_common_parser.add_argument(
         '--top_k',
         '--topk',
         dest='topk',
@@ -750,6 +757,19 @@ def main():
         choices=['mse'],
         default='mse',
         help='Analysis metrics [default: mse]',
+    )
+
+    analysis_attn_head_parser = analysis_subparsers.add_parser(
+        'attn_head',
+        parents=[analyze_common_parser],
+        help='Analyze attention heads with ra_compress metric (induction/echo head selection)',
+    )
+    analysis_attn_head_parser.add_argument(
+        '--metrics',
+        type=str,
+        choices=['ra_compress'],
+        default='ra_compress',
+        help='Analysis metrics: ra_compress (default: ra_compress)',
     )
 
     # ------------------------------------------------------------------
