@@ -12,17 +12,17 @@
 
 以下情况**不适用**本指南，请改用其他路径：
 
-- 模型未收录支持矩阵或未验证：请先参考《[新模型权重量化流程](process_new_model_quantization_tuning.md)》，完成模型适配后，再执行本指南；
+- 模型未收录支持矩阵或未验证：请参考《[新模型权重量化流程](process_new_model_quantization_tuning.md)》；
 - 需要深度定制量化算法组合、校准集等策略：请参考《[新模型量化调优流程](process_new_model_quantization_tuning.md)》制定方案。
 
 ## 2. 流程关系与前置条件
 
-**上级流程**：部署指南——用户按《[主流模型量化部署流程指南](process_mainstream_model_deployment.md)》执行部署时，需先完成权重量化，从部署指南的"获取量化权重"环节进入本指南。
+**上级流程**：用户按《[主流模型量化部署流程指南](process_mainstream_model_deployment.md)》执行部署时，需先完成权重量化，从部署指南的"获取量化权重"环节进入本指南。
 
 **前置条件**：
 
 - 已安装 msModelSlim 且版本兼容，参见《[msModelSlim 工具安装指南](../install_guide/install_guide.md)》；
-- 目标环境具备可用的昇腾 NPU（执行 `npu-smi info` 确认卡状态正常）或 CPU 环境，且磁盘空间充足；
+- 推荐使用昇腾 NPU 环境（执行 `npu-smi info` 确认卡状态正常），或使用 CPU 环境（执行效率较低，不推荐），磁盘空间充足；
 - 已获取或可下载目标模型的浮点权重目录（tokenizer 等配套文件随权重目录一并提供）。
 
 **后续操作**：量化权重交付部署，进入[主流模型量化部署流程指南](process_mainstream_model_deployment.md#步骤2部署推理服务)的"部署推理服务"章节；若部署测评发现精度异常，进入《[量化推理精度异常定位流程指南](process_quantization_accuracy_anomaly_locating.md)》。
@@ -31,12 +31,12 @@
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 浮点模型权重目录 `${MODEL_PATH}` | ModelScope/HuggingFace 下载或自有权重 | 含模型配置、权重分片及类别所需附属文件（如 tokenizer、config 等） | 文件齐全；若官方提供校验值或版本号，与本地一致 |
+| 输入 | 浮点模型权重目录 `${MODEL_PATH}` | ModelScope/HuggingFace 下载或自有权重 | 含模型配置、权重分片及类别所需附属文件（如 tokenizer、config 等） | 文件齐全；若官方提供了校验值或版本号，则本地的对应值须与官方一致。 |
 | 交付件 | 量化权重目录 `${SAVE_PATH}` | 用户指定保存路径 | 含所选导出格式约定的描述文件与权重分片（如 AscendV1 的 `quant_model_description.json`） | 日志输出 SUCCESS；文件齐全；符合所选导出格式约定 |
 
 ## 4. 流程总览
 
-本流程端到端分为五个阶段：确认模型支持、下载浮点模型、确定量化方案与场景标签、执行一键量化、校验交付件。其中 `msmodelslim quant` 命令的7个参数在步骤1~6 中逐一确定：步骤1 确定 `--model_type` 与 `--quant_type`，步骤2 确定 `--model_path`，步骤3 确定 `--tags`，步骤4~6 依次添加 `--save_path`、`--device`、`--trust_remote_code` 并执行：
+本流程端到端分为七个阶段：确认模型支持、下载浮点模型、确定量化方案与场景标签、执行一键量化、校验交付件。
 
 ```mermaid
 flowchart LR
@@ -97,14 +97,8 @@ msmodelslim quant \
 
 **操作**：
 
-1. **下载权重**：浮点权重即未量化的原始模型权重，可从 ModelScope 下载：
-
-   ```bash
-   modelscope download --model <模型ID> --local_dir ${MODEL_PATH}
-   ```
-
-   其中 `<模型ID>` 替换为目标模型 ID，`${MODEL_PATH}` 替换为本地保存目录；也可使用 HuggingFace 等其他可信来源，或使用自有权重。
-2. **校验目录完整性**：浮点权重目录应包含 `config.json`（模型结构配置）、`tokenizer_config.json`、`tokenizer.json`（分词器文件）及权重分片文件，缺一不可。
+1. 从 [ModelScope](https://www.modelscope.cn/)、[Hugging Face](https://huggingface.co/) 或团队内部模型存放位置获取完整权重到本地目录；具体下载方式以对应社区或仓库文档为准。
+2. 核对目录含配置、权重分片及 tokenizer 等附属文件。若官方页面提供文件校验值（如 MD5/SHA256）或明确的版本号/提交号，与本地下载结果比对一致即可。
 
 **输出**：浮点权重目录 `${MODEL_PATH}`（即 `--model_path` 参数的取值）。
 
@@ -141,7 +135,7 @@ msmodelslim quant \
 
 **通过条件**：`--tags` 取值与目标推理环境一致。
 
-### 步骤4：添加量化权重的输出目录（必选）
+### 步骤4：添加量化权重的输出目录
 
 **目标**：指定量化权重的输出目录。
 
@@ -156,7 +150,7 @@ msmodelslim quant \
 
 **通过条件**：`--save_path` 取值已确认，指向量化权重输出目录。
 
-### 步骤5：添加运行设备（可选，默认 `npu`）
+### 步骤5：添加运行设备
 
 **目标**：指定量化运行在哪个设备上。
 
@@ -177,20 +171,22 @@ msmodelslim quant \
 >
 > 多卡量化与逐层量化说明详见[一键量化完整指南](usage_quick_quantization.md#41-逐层量化及分布式逐层量化)。
 
-### 步骤6：添加信任远程代码参数并执行命令（可选）
+### 步骤6：执行量化命令
 
-**目标**：补齐最后一个参数，执行完整命令完成量化。
+**目标**：执行量化命令完成量化。
 
-**执行前检查**：目标 NPU 卡空闲可用；量化前不与其他训练/推理任务共享计算资源。
+**执行前检查**：
+
+- 目标 NPU 卡空闲可用；量化前不与其他训练/推理任务共享计算资源。
+- `trust_remote_code` 默认 `False`；仅当模型必须执行仓库内自定义代码且来源可信时设为 `True`。
 
 **操作**：
 
-1. **添加 `--trust_remote_code` 参数**：模型仓库可能附带自定义代码，置为 `True` 时允许执行这些代码；存在安全风险，仅对可信来源的模型开启。
-2. **执行完整命令**：此时命令已补齐全部参数，执行。
+按[命令行预览](#命令行预览)将变量替换为实际值后执行。
 
 > **可选：最佳实践匹配逻辑（了解即可）**
 >
-> 指定 `--quant_type` 后，工具在最佳实践库中优先匹配"模型指定量化方式 + 场景标签"均命中的配置；若该模型在目标场景下没有已验证配置（最佳实践库仅收录已验证场景的组合），工具会依次询问是否采用忽略场景标签的配置、模型推荐量化方式（W8A8）的配置，按提示输入 `y` 即可继续。
+> 指定 `--quant_type` 后，工具在最佳实践库中优先匹配"模型指定量化方式 + 场景标签"均命中的配置；若该模型在目标场景下没有已验证配置（最佳实践库仅收录已验证场景的组合），工具会依次询问是否采用忽略场景标签的配置、模型推荐量化方式的配置，按提示输入 `y` 即可继续。
 
 **输出**：日志输出 `===========SUCCESS===========`，生成量化权重目录 `${SAVE_PATH}`。
 
@@ -202,7 +198,7 @@ msmodelslim quant \
 
 **操作**：
 
-1. **核对新增文件**：量化后 `${SAVE_PATH}` 目录新增以下量化文件（交付件清单，以 AscendV1 格式为例）：
+1. **核对新增文件**：量化后 `${SAVE_PATH}` 目录除从浮点模型复制的配置文件（如 `config.json`、`tokenizer_config.json` 等）外，新增以下量化文件（交付件清单，以 AscendV1 格式为例）：
 
    ```text
    ${SAVE_PATH}/
@@ -243,7 +239,7 @@ msmodelslim quant \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 模型适配矩阵 | 官方验证过的"模型 × 量化模式"支持清单，含依赖库要求 | 《[大模型支持矩阵](../knowledge_base/model/README.md)》 |
+| 大模型支持矩阵 | 官方验证过的"模型 × 量化模式"支持清单，含依赖库要求 | 《[大模型支持矩阵](../knowledge_base/model/README.md)》 |
 | 量化模式 | `W{权重位数}A{激活位数}[C{KV Cache位数}][S]` 命名规范，如 W8A8 表示权重与激活均量化为8bit | 《[大模型支持矩阵](../knowledge_base/model/README.md#量化模式命名规范)》 |
 | 量化格式 | 量化权重的导出格式，如 AscendV1、compressed-tensors 等 | 《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》 |
 
@@ -255,5 +251,5 @@ msmodelslim quant \
 
 ## 11. 安全说明
 
-trust_remote_code 默认保持 False；仅可信模型必要时开启。
-测评日志、校准数据、量化产物与 ModelScope 发布内容按业务权限管控。
+- trust_remote_code 默认保持 False，仅可信模型必要时开启。
+- 测评日志、校准数据、量化产物与 ModelScope 发布内容按业务权限管控。

@@ -9,9 +9,17 @@
 - 量化模型输出与浮点模型无法对齐，需确认偏差来源（量化、推理框架、算子或编译优化）；
 - 需要将偏差定位到具体层/算子，作为针对性优化或专项排障的输入。
 
-**问题来源可能包括**：量化（INT8/INT4 精度损失导致 logits 分布偏移）、推理框架（版本差异、参数配置、调度策略）、算子（自定义算子实现、Ascend C 算子精度）、编译优化（图融合、CUDAGraph/ACLGraph 捕获错误路径）。
+**问题来源可能包括**：
 
-**定位难点**：精度问题可能是多因素叠加；浮点正常、量化异常不一定是量化的问题（量化可能触发框架/算子走不同执行路径）；同一输入多次输出不一致可能存在非确定性。
+- 量化（INT8/INT4 精度损失导致 logits 分布偏移）；
+- 推理框架（版本差异、参数配置、调度策略）；
+- 算子（自定义算子实现、Ascend C 算子精度）。
+
+**定位难点**：
+
+- 精度问题可能是多因素叠加；
+- 浮点正常、量化异常不一定是量化的问题（量化可能触发框架/算子走不同执行路径）；
+- 同一输入多次输出不一致可能存在非确定性。
 
 以下情况**不适用**本流程：
 
@@ -104,20 +112,22 @@ flowchart TD
 
 1. **发起带 logprobs 的请求**，以 Chat API 为例：
 
-   ```json
-   {
+   ```bash
+   curl http://localhost:8000/v1/chat/completions \
+     -H "Content-Type: application/json" \
+     -d '{
        "model": "模型名",
        "messages": [{"role": "user", "content": "问题"}],
        "temperature": 0,
        "max_tokens": 1024,
        "logprobs": true,
        "top_logprobs": 5
-   }
+     }'
    ```
 
    API 差异：`/v1/chat/completions` 的 `logprobs` 为布尔值、`top_logprobs` 为候选数；`/v1/completions` 的 `logprobs` 为整数（返回候选数，等效 `top_logprobs`）。
-2. **分析候选分布**：`logprobs.content` 包含所有生成 token（含 reasoning 部分），定位到异常位置（通常为末尾几个 token），对比该位置 top-5 候选的 logprob。logprob 为自然对数概率（`logprob = ln(probability)`），差值 2.4 即概率相差 `exp(2.4) ≈ 11` 倍。
-3. **对比两组环境**：同一请求下，观察异常位置候选分布是否变化（如浮点模型正确答案 token 概率最高，量化模型 EOS 反超）。
+2. **分析候选分布**：得到的结果中，`logprobs.content` 包含所有生成 token（含 reasoning 部分），定位到异常位置（通常为末尾几个 token），对比该位置 top-5 候选的 logprob。logprob 为自然对数概率（`logprob = ln(probability)`），差值 2.4 即概率相差 `exp(2.4) ≈ 11` 倍。
+3. **对比两组环境**：同一请求下，观察异常位置候选分布是否变化（如浮点模型正确答案 token 概率最高，量化模型 eos 标记概率反超）。
 
 **输出**：异常位置候选 token 分布对比结论。
 
@@ -169,7 +179,7 @@ flowchart TD
 
 **输出**：首个生成 token 分布对比与 logits 偏差确认。
 
-**通过条件**：明确输出偏差形态（如量化模型 EOS 的 logprob 异常抬高、答案 token 概率被压低）。
+**通过条件**：明确输出偏差形态（如量化模型 eos 标记的 logprob 异常抬高、答案 token 概率被压低）。
 
 > **提示**：prompt 停在目标边界后配合 `max_tokens=1`，dump 数据量仅为1个 step，相比完整生成（数百 step）可缩减 **99% 以上**，对反复迭代对比尤为重要。
 
@@ -179,8 +189,8 @@ flowchart TD
 
 **操作**：
 
-1. **安装并检查 msprobe**：安装 msprobe（昇腾算子/张量 dump 与比对分析工具，详见《[msprobe 文档](https://www.hiascend.com/)》），安装完成后执行 `msprobe --help` 确认命令可用。
-2. **配置 dump**（以 msprobe 为例，`probe.json`）：
+1. **安装并检查 msprobe**：安装 msprobe（昇腾算子/张量 dump 与比对分析工具，详见《[msprobe安装文档](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/install_guide/msprobe_install_guide.md)》），安装完成后执行 `msprobe --help` 确认命令可用。
+2. **配置 dump**：
 
    ```json
    {
@@ -200,7 +210,7 @@ flowchart TD
    }
    ```
 
-   关键参数：`level`（L0 算子级最细粒度数据量最大，L1 API 级；）、`data_mode`（input/output/all）、`dump_path`（**两组环境必须不同路径**，替换为实际输出路径），关键参数的详细说明参见《[vLLM-Ascend msprobe 指南](https://docs.vllm.ai/projects/ascend/zh-cn/v0.18.0/developer_guide/performance_and_debug/msprobe_guide.html)》。
+   关键参数：`level`（采集精度级别）、`data_mode`（input/output/all）、`dump_path`（**两组环境必须不同路径**，替换为实际输出路径），关键参数的详细说明参见《[vLLM-Ascend msprobe 指南](https://docs.vllm.ai/projects/ascend/zh-cn/v0.18.0/developer_guide/performance_and_debug/msprobe_guide.html)》。
 3. **分别在两组环境采集**：启动带 dump 的服务（vLLM-Ascend 示例），发送相同请求，dump 完成后停止服务：
 
    ```bash
@@ -244,7 +254,7 @@ flowchart TD
 
 1. **映射模型结构**：将步骤4 定位的异常层对应到具体模块——Self-Attention 的 Q/K/V 投影、MLP 的 Gate/Up/Down 投影、RMS Norm 等。
 2. **针对性优化与迭代验证**：按「定位偏差层 → 分析该层实现方式 → 调整量化方式或配置（如该层回退、更换量化算法/位宽）→ 重新量化部署 → 重新验证」的循环迭代，直至确认改善。
-3. **非量化因素排查**：若偏差不符合量化影响特征，对照排查框架版本/参数配置、算子实现、编译优化（图融合、CUDAGraph/ACLGraph 捕获）等非量化因素。
+3. **非量化因素排查**：若偏差不符合量化影响特征，对照排查框架版本/参数配置、算子实现等非量化因素。
 4. **控制变量**：全程对比实验遵循——prompt 两组一致、logprobs 两边同开或同关、temperature 统一为 0、max_tokens 统一、prompt 构造用同一段代码、dump 配置仅 `dump_path` 不同、请求尽量在相近时间发送避让 warmup。
 
 **输出**：异常层结论、处置建议与复测结果。

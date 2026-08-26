@@ -21,7 +21,7 @@
 
 **前置条件**：
 
-- 已准备目标推理框架环境（vLLM / SGLang / MindIE-Motor），NPU 卡可用（`npu-smi info` 状态正常）；
+- 已准备目标推理框架环境（vLLM / SGLang / MindIE-Motor），NPU 卡可用（`npu-smi info` 状态正常且空闲）；
 
 **后续操作**：测评发现精度异常时，进入《[量化推理精度异常定位流程指南](process_quantization_accuracy_anomaly_locating.md)》定位异常位点；精度不达标时，进入《[量化精度调优指南](process_quantization_precision_tuning.md)》调优后重新量化并再次部署。
 
@@ -29,7 +29,7 @@
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 量化权重目录 | 《[一键量化使用指南](usage_one_click_quantization.md)》产物 或 Eco-Tech 发布权重 | 含模型配置、权重分片及类别所需附属文件（如 tokenizer、config 等） | 文件齐全；若官方提供校验值或版本号，与本地一致 |
+| 输入 | 量化权重目录 | 《[一键量化使用指南](usage_one_click_quantization.md)》产物 或 Eco-Tech 发布权重 | 含模型配置、权重分片及类别所需附属文件（如 tokenizer、config 等） | 文件齐全；若官方提供了校验值或版本号，则本地的对应值须与官方一致。 |
 | 输入 | 测评数据集 | AISBench 数据集或业务评测集 | 与浮点基线测评时一致的数据集与采样配置 | 浮点模型可复现基线精度 |
 | 交付件 | 在线推理服务 | 部署环境 | 服务地址（host:port）与模型名对外可用，可响应推理请求 | 健康检查与推理请求返回正常 |
 | 交付件 | 测评报告 | 测评产物保存目录 | 含精度指标（对比浮点基线） | 精度达标阈值达成，报告可归档 |
@@ -61,7 +61,7 @@ flowchart LR
 1. **获取权重**，二选一：
    - **自行量化**：按《[一键量化使用指南](usage_one_click_quantization.md)》量化浮点模型（直接使用其 `${SAVE_PATH}`）；
    - **获取已发布权重**：在 [Eco-Tech 组织](https://www.modelscope.cn/organization/Eco-Tech) 上获取官方发布的量化权重。
-2. **校验权重**：确认文件齐全（含所选导出格式约定的描述文件与全部权重分片，如 AscendV1 的 `quant_model_description.json`、compressed-tensors 的 `config.json`（含 `quantization_config` 字段））；若官方提供校验值或版本号，与本地一致。关键文件缺失时不得部署。
+2. **校验权重**：确认文件齐全（含所选导出格式约定的描述文件与全部权重分片，如 AscendV1 的 `quant_model_description.json`、compressed-tensors 的 `config.json`（含 `quantization_config` 字段））；若官方页面提供文件校验值（如 MD5/SHA256）或明确的版本号/提交号，与本地下载结果比对一致即可。关键文件缺失时不得部署。
 3. **确认版本兼容**：核实量化权重（含所选导出格式的元数据记录的格式版本）与目标推理引擎版本兼容，格式说明见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》。
 
 **输出**：通过校验的量化权重目录。
@@ -112,12 +112,7 @@ flowchart LR
 
 **操作**：
 
-1. **在线监控与性能采集**：使用《[msServiceProfiler](https://gitcode.com/Ascend/msserviceprofiler)》（MindStudio Service Profiler，昇腾 AI 服务化调优工具）对服务进行在线监测与性能分析，主要能力包括：
-   - **在线监测**：结合 Prometheus 对 vLLM-Ascend 服务做在线监控（如吞吐、时延等服务指标）；
-   - **性能采集**：针对 vLLM、SGLang 等框架的无侵入式服务化性能采集；
-   - **数据监测**：服务请求链路 Trace 数据监测，对接 OpenTelemetry/Jaeger 等 OTLP 生态；
-   - **性能分析**：性能数据比对、多维度解析与拆解分析，支持服务化自动寻优。
-
+1. **在线监控与性能采集**：使用《[msServiceProfiler](https://gitcode.com/Ascend/msserviceprofiler)》（MindStudio Service Profiler，昇腾 AI 服务化调优工具）对服务进行在线监测与性能分析。
 **输出**：在线监控与性能采集记录。
 
 **通过条件**：在线监控与性能采集可正常执行。
