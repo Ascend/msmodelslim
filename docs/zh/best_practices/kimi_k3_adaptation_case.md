@@ -12,7 +12,7 @@
 
 | 项 | 版本或配置 |
 | --- | --- |
-| 产品形态 | Atlas_A3_Inference（限定，本案例基于 Atlas 800I A3 环境验证） |
+| 产品形态 | 昇腾 A3 系列产品（限定，本案例基于昇腾 A3 系列产品完成验证） |
 | vLLM Ascend | [vllm-ascend:v0.23.0rc1-a3](https://quay.io/repository/ascend/vllm-ascend?tab=tags&tag=v0.23.0rc1-a3) |
 | CANN | 9.0.1（随镜像预置） |
 | PyTorch | 2.10.0（随镜像预置） |
@@ -22,7 +22,7 @@
 | fla-core | 0.5.1 |
 | 评测工具 | [AISBench](https://github.com/AISBench/benchmark) |
 
-**本次前置事实**：
+**本案例前置条件**：
 
 - 已完成[Kimi-K3 权重](https://huggingface.co/moonshotai/Kimi-K3)下载。
 - 已参考[使用 Docker](https://docs.vllm.ai/projects/ascend/zh-cn/v0.23.0/installation.html#set-up-using-docker)启动 vLLM Ascend 官方镜像容器并挂载 NPU 设备与模型权重目录。
@@ -34,7 +34,7 @@
 | --- | --- | --- | --- | --- |
 | 输入 | 浮点权重 | [Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3) | 权重文件完整 | 下载完成且哈希值匹配 |
 | 交付件 | 模型适配器代码 | [`msmodelslim/model/kimi_k3/`](../../../msmodelslim/model/kimi_k3/) | 适配器需实现量化流水线所需接口 | 命令行指定 `--model_type Kimi-K3` 可命中适配器 |
-| 交付件 | 量化最佳实践 | [`lab_practice/kimi_k3/kimi_k3_w4a8.yaml`](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | 遵循[量化配置协议](../user_guide/usage_quick_quantization.md#5-量化配置协议详解) | 命令行指定 `--quant_type w4a8` 可匹配到该配置 |
+| 交付件 | 量化最佳实践 | [`lab_practice/kimi_k3/kimi_k3_w4a8.yaml`](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | 遵循[量化配置协议](../user_guide/usage_quick_quantization.md#5-量化配置协议详解) | 命令行参数 `--config_path` 指定量化配置文件 |
 | 交付件 | 量化权重目录 | 命令行参数 `--save_path` 指定保存位置 | 遵循[AscendV1 格式](../knowledge_base/quantization_format/ascendv1/ascendv1_usage.md) | 量化权重精度测试达标 |
 
 ## 4. 操作步骤
@@ -61,7 +61,7 @@
    | `format` | `mxfp4-pack-quantized` | 原生权重中包含 MXFP4 量化权重，需要离线或在线完成权重反量化 |
    | `mm_projector_type` | `patchmergerv2` | 视觉特征的融合模块类，影响旋转量化算法适配 |
 
-2. 按照《[多模态理解模型接入指南](../knowledge_base/model/integrating_multimodal_understanding_model.md)》开发模型适配器（[`msmodelslim/model/kimi_k3/model_adapter.py`](../../../msmodelslim/model/kimi_k3/model_adapter.py)）。由于 Kimi-K3 即使逐层加载权重也会溢出单卡 64GB 显存，参考《[专家并行机制使用指南](../knowledge_base/parallel/expert_parallelism/expert_parallelism_guide.md)》完成专家并行的适配（[`ep_patches.py`](../../../msmodelslim/model/kimi_k3/ep_patches.py)）。
+2. 按照《[多模态理解模型接入指南](../knowledge_base/model/integrating_multimodal_understanding_model.md)》开发模型适配器（[`msmodelslim/model/kimi_k3/model_adapter.py`](../../../msmodelslim/model/kimi_k3/model_adapter.py)）。对于 Kimi-K3，即使采用逐层加载方式，单卡 64GB 显存仍会溢出，需参考《[专家并行机制使用指南](../knowledge_base/parallel/expert_parallelism/expert_parallelism_guide.md)》完成专家并行的适配（[`ep_patches.py`](../../../msmodelslim/model/kimi_k3/ep_patches.py)）。
 
 3. 注册模型适配器（[`config/config.ini`](../../../config/config.ini)）：
 
@@ -123,11 +123,11 @@
    ```bash
    cd ..  # 返回上级目录，msmodelslim 命令需在源码目录外执行
    msmodelslim quant \
-       --model_path ${MODEL_PATH} \
-       --save_path ${SAVE_PATH} \
+       --model_path ${MODEL_PATH} \  # ${MODEL_PATH} 替换为模型路径
+       --save_path ${SAVE_PATH} \  # ${SAVE_PATH} 替换为量化权重保存路径
        --device npu --device_id 0 1 2 3 4 5 6 7 \
        --model_type Kimi-K3 \
-       --config ${YAML_PATH} \
+       --config ${YAML_PATH} \  # ${YAML_PATH} 替换为量化配置文件路径
        --trust_remote_code True
    ```
 
@@ -156,6 +156,7 @@
 3. 服务启动后，使用 curl 验证量化模型对话正常
 
    ```bash
+   # 分别替换 <NODE0_LOCAL_IP> 和 <SERVICE_PORT> 为设备 IP 和服务化端口
    curl http://<NODE0_LOCAL_IP>:<SERVICE_PORT>/v1/chat/completions \
     -H "Content-Type: application/json" \
     -d '{
@@ -173,7 +174,7 @@
     }'
    ```
 
-4. 参考[AISBench教程](https://ais-bench-benchmark.readthedocs.io/zh-cn/latest/)进行数据集精度测评。
+4. 参考《[AISBench教程](https://github.com/AISBench/benchmark/blob/master/README.md)》进行数据集精度测评。
 
    - 精度结果：
 
@@ -184,7 +185,7 @@
 
    > [!NOTE]
    >
-   > 评测数据可能存在波动，若单次测评结果不符合预期，建议以多次测评的平均结果为准。
+   > 评测数据可能存在波动，若单次测评结果不达标，建议以多次测评的平均结果为准。若多次测评结果仍不达标，可参考《[量化精度调优指南](../user_guide/process_quantization_precision_tuning.md)》进行精度调优。
 
 **输出**：
 
@@ -197,9 +198,9 @@
 | 步骤 | 关键操作 | 指标 | 变化 | 备注 |
 | --- | --- | --- | --- | --- |
 | 步骤 1 | 开发并注册模型适配器 | `--model_type Kimi-K3` 可命中适配器 | 新增模型适配器 | 开发完成后需重新安装以使代码生效 |
-| 步骤 2 | 设计混合量化方案 | `kimi_k3_w4a8.yaml` | 新增量化实践配置 | 量化实践配置遵循[量化配置协议](../user_guide/usage_quick_quantization.md#5-量化配置协议详解) |
+| 步骤 2 | 设计混合量化方案 | [kimi_k3_w4a8.yaml](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | 新增量化实践配置 | 量化实践配置遵循[量化配置协议](../user_guide/usage_quick_quantization.md#5-量化配置协议详解) |
 | 步骤 3 | 执行量化命令 | W4A8 量化权重 | 导出量化权重 | 导出件遵循[AscendV1 格式](../knowledge_base/quantization_format/ascendv1/ascendv1_usage.md) |
-| 步骤 4 | vLLM Ascend 部署 + AISBench 精度测评 | GPQA / OCRBench | 完成精度验证 | 精度达标 |
+| 步骤 4 | vLLM Ascend 部署 + AISBench 精度测评 | [GPQA](https://github.com/AISBench/benchmark/blob/master/ais_bench/benchmark/configs/datasets/gpqa/README.md) / [OCRBench](https://github.com/AISBench/benchmark/blob/master/ais_bench/benchmark/configs/datasets/ocrbench_v2/README.md) | 完成精度验证 | 精度达标 |
 
 ### 5.2 经验总结
 
