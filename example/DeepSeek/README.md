@@ -518,3 +518,5 @@ python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_pat
 - ![img_1.png](img_1.png)
 - Q: 量化后保存的 description 文件中多出了 61 层的信息，且量化类型为 float
 - A: 61层为MTP层，默认不量化。目前可通过配置参数quant_mtp为mix，量化MTP。
+- Q: 多卡量化时报错 ModuleNotFoundError: No module named 'transformers_modules.DeepSeek-V3'
+- A: 由于模型目录 `model_path` 中的自定义代码被缓存为 `transformers_modules.<目录名>` ，子进程对 `-`/ `.` 等特殊字符反序列化失败。将模型目录名中的 `-`/ `.` 去除即可，例如，将 `DeepSeek-V3.1` 改为 `DeepSeek_V31`。
