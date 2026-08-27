@@ -192,6 +192,17 @@ class TestQwen3_5ModelAdapterGetModelPedigree(unittest.TestCase):
             self.assertEqual(result, 'qwen3_5_moe')
 
 
+class TestQwen3_5ModelAdapterGetLayerWiseOffloadDevice(unittest.TestCase):
+    """测试Qwen3_5ModelAdapter的get_layer_wise_offload_device方法"""
+
+    def test_returns_qwen3_5_moe_when_called(self):
+        """测试get_layer_wise_offload_device方法：应返回'meta'"""
+        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+            adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
+            result = adapter.get_layer_wise_offload_device()
+            self.assertEqual(result, 'meta')
+
+
 class TestQwen3_5ModelAdapterGetModelType(unittest.TestCase):
     """测试Qwen3_5ModelAdapter的get_model_type方法"""
 

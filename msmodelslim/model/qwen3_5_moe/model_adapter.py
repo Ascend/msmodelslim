@@ -46,6 +46,7 @@ from msmodelslim.model.interface_hub import (
     IterSmoothInterface,
     FlexSmoothQuantInterface,
     ModelSlimPipelineInterfaceV1,
+    LayerWiseOffloadOptionalInterface,
     AscendV1SaveInterface,
 )
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
@@ -91,6 +92,7 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
     ModelSlimPipelineInterfaceV1,
     IterSmoothInterface,
     FlexSmoothQuantInterface,
+    LayerWiseOffloadOptionalInterface,
     AscendV1SaveInterface,
 ):
     """
@@ -144,6 +146,10 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
     def get_model_type(self) -> str:
         """Return model type"""
         return self.model_type
+
+    def get_layer_wise_offload_device(self):
+        """Return preferred offload device for layer-wise runner."""
+        return "meta"
 
     def handle_dataset(self, dataset: Any, device: DeviceType = DeviceType.NPU) -> List[Any]:
         """
