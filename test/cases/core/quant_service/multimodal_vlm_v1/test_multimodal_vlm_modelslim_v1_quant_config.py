@@ -17,9 +17,7 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
-"""
 
-"""
 Unit tests for `multimodal_vlm_v1.quant_config`.
 
 These tests focus on:
@@ -92,7 +90,7 @@ def test_multimodal_vlm_modelslim_v1_quant_config_from_base():
     """验证 `from_base` 能够正确地从 BaseQuantConfig 构造具体配置。"""
     # 构造一个最小化的 BaseQuantConfig mock，仅包含 `apiversion` 和 `spec` 字段
     base_cfg = Mock(spec=BaseQuantConfig)
-    base_cfg.apiversion = "v1"
+    base_cfg.apiversion = "multimodal_vlm_modelslim_v1"
     base_cfg.spec = {
         "default_text": "prompt from base",
     }
@@ -100,7 +98,7 @@ def test_multimodal_vlm_modelslim_v1_quant_config_from_base():
     quant_cfg = MultimodalVLMModelslimV1QuantConfig.from_base(base_cfg)
 
     assert isinstance(quant_cfg, MultimodalVLMModelslimV1QuantConfig)
-    assert quant_cfg.apiversion == "v1"
+    assert quant_cfg.apiversion == "multimodal_vlm_modelslim_v1"
     # spec 应当被转换为 MultimodalVLMServiceConfig
     assert isinstance(quant_cfg.spec, MultimodalVLMServiceConfig)
     assert quant_cfg.spec.default_text == "prompt from base"

@@ -173,14 +173,22 @@ class MultimodalSDModelslimV1QuantConfig(ModelslimV1QuantConfig):
     量化流水线、按专家覆盖的处理器链与多模态专用配置。
     """
 
+    apiversion: Literal["multimodal_sd_modelslim_v1"] = "multimodal_sd_modelslim_v1"
     spec: MultimodalSDServiceConfig  # 使用新的多模态配置
 
     @classmethod
     def from_base(cls, quant_config: BaseQuantConfig) -> Self:
-        return cls(
-            apiversion=quant_config.apiversion,
-            spec=load_specific_config(quant_config.spec),
-        )
+        return cls.model_validate({'apiversion': quant_config.apiversion, 'spec': quant_config.spec})
+
+
+def get_plugin():
+    """获取 multimodal_sd_modelslim_v1 量化任务配置插件（由框架完成注册）。
+
+    Returns:
+        (MultimodalSDModelslimV1QuantConfig, MultimodalSDModelslimV1QuantConfig) 元组
+        ——组件槽暂与配置槽同体，预留给后续演进。
+    """
+    return MultimodalSDModelslimV1QuantConfig, MultimodalSDModelslimV1QuantConfig
 
 
 @exception_handler(

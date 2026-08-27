@@ -21,7 +21,8 @@ See the Mulan PSL v2 for more details.
 
 from typing import Any, List, Type, ClassVar, Union, Set, Literal, get_origin, get_args
 
-from pydantic import BaseModel, BeforeValidator, TypeAdapter, Field, model_validator, SerializeAsAny
+from pydantic import BaseModel, TypeAdapter, Field, model_validator, SerializeAsAny
+from pydantic_core import PydanticCustomError
 from torch import nn
 from typing_extensions import Annotated
 from typing_extensions import Self
@@ -30,7 +31,6 @@ from msmodelslim.ir.qal.qregistry import QABCRegistry
 from msmodelslim.core.base.processor import BaseProcessor
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.utils.logging import get_logger
-from msmodelslim.utils.validation.validation_state import add_validation_error, set_validation_context
 
 
 class AutoProcessorConfig(BaseModel):
@@ -61,34 +61,21 @@ class AutoProcessorConfig(BaseModel):
                 literal_args = get_args(type_annotation)
                 is_literal_with_underscore = any(isinstance(arg, str) and arg.startswith('_') for arg in literal_args)
         if is_literal_with_underscore or cls not in cls._registry:
+            # 非 dict / 非已构造实例的列表项（如 YAML 缩进错误导致的裸字符串）：
+            # 抛自定义错误保留诊断提示，loc 由外层 pydantic 自动拼完整路径（spec.process.N）
+            if not isinstance(value, dict) and not isinstance(value, AutoProcessorConfig):
+                raise PydanticCustomError(
+                    'invalid_processor_item',
+                    "Invalid config item: expected dict with 'type' field, got {got}. "
+                    "Check YAML indentation - item may be incorrectly nested under another field.",
+                    {'got': f"{type(value).__name__}={value!r}"},
+                )
             # 排除 type 字段以 _ 开头的配置
             return union_type.validate_python(value)
         return handler(value)
 
 
-def validate_auto_processor_config_list(v: Any) -> List['AutoProcessorConfig']:
-    if isinstance(v, list):
-        # spec 是所有架构的统一前缀，在 BeforeValidator 中设置
-        set_validation_context(path_prefix="spec.")
-        validated_configs = []
-        for i, item in enumerate(v):
-            if isinstance(item, AutoProcessorConfig):
-                validated_configs.append(item)
-            elif isinstance(item, dict):
-                validated_configs.append(item)
-            else:
-                add_validation_error(
-                    f"process.{i}: Invalid config item: expected dict with 'type' field, "
-                    f"got {type(item).__name__}={item!r}. "
-                    f"Check YAML indentation - item may be incorrectly nested under another field."
-                )
-        return validated_configs
-    raise ValueError("Expected a list of AutoProcessorConfig or dict")
-
-
-AutoProcessorConfigList = Annotated[
-    List[SerializeAsAny[AutoProcessorConfig]], BeforeValidator(validate_auto_processor_config_list)
-]
+AutoProcessorConfigList = List[SerializeAsAny[AutoProcessorConfig]]
 
 
 @QABCRegistry.register_abc(dispatch_key=Type[AutoProcessorConfig])

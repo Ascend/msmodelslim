@@ -22,13 +22,13 @@ See the Mulan PSL v2 for more details.
 import re
 from enum import Enum
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import torch
 
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.const import QuantType
-from msmodelslim.core.practice.interface import PracticeConfig, ScenarioTagMatch
+from msmodelslim.core.practice.interface import Metadata, PracticeConfig, ScenarioTagMatch
 from msmodelslim.core.quant_service import IQuantService
 from msmodelslim.model import IModelFactory, IModel
 from msmodelslim.utils.exception import SchemaValidateError, ToDoError, UnsupportedError
@@ -172,13 +172,13 @@ class NaiveQuantizationApplication:
 
     @staticmethod
     def check_config(
-        config: PracticeConfig,
+        metadata: Metadata,
         model_type: str,
         quant_type: QuantType,
         scenario_tags: Optional[List[str]] = None,
         is_default=False,
     ) -> ScenarioTagMatch:
-        label = config.metadata.label
+        label = metadata.label
         # Parse quant_type parameters
         match_result = re.match(r'^w(\d+)a(\d+)((?:c8|f[48])?)(s?)$', quant_type.value)
         if not match_result:
@@ -208,13 +208,13 @@ class NaiveQuantizationApplication:
         if is_default:
             return ScenarioTagMatch.MATCH
 
-        verified_model_types = getattr(config.metadata, 'verified_model_types', None)
+        verified_model_types = getattr(metadata, 'verified_model_types', None)
         if verified_model_types:
             if model_type in verified_model_types:
                 return ScenarioTagMatch.MATCH
             return ScenarioTagMatch.NO_MATCH
 
-        return config.matches_scenario_tags(model_type, scenario_tags)
+        return metadata.matches_scenario_tags(model_type, scenario_tags)
 
     def get_best_practice(
         self,
@@ -225,16 +225,15 @@ class NaiveQuantizationApplication:
     ) -> PracticeConfig:
         """
         获取最佳实践匹配规则如下：
-        场景1：指定config_path配置文件，直接采用，忽略quant_type配置
+        场景1：指定config_path配置文件，直接采用（含全量前校验：metadata + spec 一次报全），忽略quant_type配置
         场景2：未指定config_path和quant_type，将quant_type置为默认quant_type，然后按照场景3处理
         场景3：指定quant_type，查找最佳实践规则如下（优先级从高到低）：
         当前pedigree + 指定quant_type > 默认pedigree + 指定quant_type
         > 当前pedigree + 默认quant_type > 默认pedigree + 默认quant_type
         """
-        # Handle explicit config path
+        # Handle explicit config path — 全量前校验（metadata + spec 一次报全）
         if config_path is not None:
-            config_dict = yaml_safe_load(str(config_path))
-            config = PracticeConfig.model_validate(config_dict)
+            config = PracticeConfig.model_validate(yaml_safe_load(str(config_path)))
             get_logger().info("Naive Quant apply config_path: %s", config_path)
             return config
 
@@ -255,7 +254,7 @@ class NaiveQuantizationApplication:
                 f"or add {model_pedigree} in lab_practice.",
             )
 
-        config, tips = self.get_config(model_pedigree, model_type, quant_type, tag)
+        (metadata, raw_dict), tips = self.get_config(model_pedigree, model_type, quant_type, tag)
 
         if tips != "":
             user_input = input(tips + "(Enter y to continue, otherwise it will exit): ").strip().lower()[:3]
@@ -264,6 +263,8 @@ class NaiveQuantizationApplication:
                     f"No best practice found for model_type={model_type} and quant_type={quant_type}",
                     action="You can specify the quantization configuration through config_path or change quant_type.",
                 )
+        # 自动匹配场景：选中后立即做全量强校验（metadata + spec 一次报全，先于权重加载）
+        config = PracticeConfig.model_validate(raw_dict)
         return config
 
     def get_config(
@@ -272,80 +273,82 @@ class NaiveQuantizationApplication:
         model_type: str,
         quant_type: Optional[QuantType] = None,
         tag: Optional[List[str]] = None,
-    ):
+    ) -> Tuple[Tuple[Metadata, dict], str]:
         has_quant_type = quant_type is not None
         use_quant_type = quant_type if quant_type is not None else DEFAULT_QUANT_TYPE
-        standby_configs: List[PracticeConfig] = []
+        standby_configs: List[Tuple[Metadata, dict]] = []
         is_default = model_pedigree == DEFAULT_PEDIGREE
 
         def _check(
-            config: PracticeConfig, model_type: str, qt: QuantType, tag: Optional[List[str]] = None, is_default=False
+            metadata: Metadata, model_type: str, qt: QuantType, tag: Optional[List[str]] = None, is_default=False
         ):
-            return self.check_config(config, model_type, qt, tag, is_default)
+            return self.check_config(metadata, model_type, qt, tag, is_default)
 
-        def _build_return(config: PracticeConfig, tips_type: TipsType, qt: QuantType):
-            tips = _build_quant_tips(tips_type, model_type, quant_type, config.metadata.config_id)
-            return config, tips
+        def _build_return(metadata: Metadata, raw_dict: dict, tips_type: TipsType, qt: QuantType):
+            tips = _build_quant_tips(tips_type, model_type, quant_type, metadata.config_id)
+            return (metadata, raw_dict), tips
 
         # 场景1：【指定量化方式】在模型适配器的最佳实践目录搜索指定量化类型的最佳实践
-        for config in self.practice_manager.iter_config(model_pedigree):
-            result = _check(config, model_type, use_quant_type, tag, is_default)
+        for metadata, raw_dict in self.practice_manager.iter_config(model_pedigree):
+            result = _check(metadata, model_type, use_quant_type, tag, is_default)
             if result == ScenarioTagMatch.NO_MATCH:
                 continue
             if result == ScenarioTagMatch.STANDBY:
-                standby_configs.append(config)
+                standby_configs.append((metadata, raw_dict))
                 continue
             # 默认模型适配器（未知模型）
             if has_quant_type:
                 tips_type = TipsType.Q1C0B0 if model_pedigree == DEFAULT_PEDIGREE else TipsType.Q1C0B1
             else:
                 tips_type = TipsType.Q0C0B0 if model_pedigree == DEFAULT_PEDIGREE else TipsType.Q0C0B1
-            return _build_return(config, tips_type, use_quant_type)
+            return _build_return(metadata, raw_dict, tips_type, use_quant_type)
 
         if standby_configs:
+            metadata, raw_dict = standby_configs[0]
             tips = (
                 f"No config verified for tags {tag}, including device_type and inference_engine. "
-                f"Using standby config: {standby_configs[0].metadata.config_id}. "
+                f"Using standby config: {metadata.config_id}. "
             )
-            return standby_configs[0], tips
+            return (metadata, raw_dict), tips
 
         # 场景2：【指定量化方式】在最佳实践的default目录搜索指定量化类型的最佳实践
         if model_pedigree != DEFAULT_PEDIGREE:
-            for config in self.practice_manager.iter_config(DEFAULT_PEDIGREE):
-                result = _check(config, model_type, use_quant_type, tag, is_default=True)
+            for metadata, raw_dict in self.practice_manager.iter_config(DEFAULT_PEDIGREE):
+                result = _check(metadata, model_type, use_quant_type, tag, is_default=True)
                 if result == ScenarioTagMatch.NO_MATCH:
                     continue
                 tips_type = TipsType.Q1C0B0 if has_quant_type else TipsType.Q0C0B0
-                return _build_return(config, tips_type, use_quant_type)
+                return _build_return(metadata, raw_dict, tips_type, use_quant_type)
 
         if use_quant_type == DEFAULT_QUANT_TYPE or not has_quant_type:
             raise UnsupportedError("Get best practice error", action="Please use the correct msmodelslim version.")
 
         # 场景3：【默认量化方式】在模型适配器的最佳实践目录搜索默认量化类型的最佳实践
-        for config in self.practice_manager.iter_config(model_pedigree):
-            result = _check(config, model_type, DEFAULT_QUANT_TYPE, tag, is_default)
+        for metadata, raw_dict in self.practice_manager.iter_config(model_pedigree):
+            result = _check(metadata, model_type, DEFAULT_QUANT_TYPE, tag, is_default)
             if result == ScenarioTagMatch.NO_MATCH:
                 continue
             if result == ScenarioTagMatch.STANDBY:
-                standby_configs.append(config)
+                standby_configs.append((metadata, raw_dict))
                 continue
             tips_type = TipsType.Q1C1B0 if model_pedigree == DEFAULT_PEDIGREE else TipsType.Q1C1B1
-            return _build_return(config, tips_type, DEFAULT_QUANT_TYPE)
+            return _build_return(metadata, raw_dict, tips_type, DEFAULT_QUANT_TYPE)
 
         if standby_configs:
+            metadata, raw_dict = standby_configs[0]
             tips = (
                 f"No config verified for tags {tag}, including device_type and inference_engine. "
-                f"Using standby config: {standby_configs[0].metadata.config_id}. "
+                f"Using standby config: {metadata.config_id}. "
             )
-            return standby_configs[0], tips
+            return (metadata, raw_dict), tips
 
         # 场景4：【默认量化方式】在最佳实践的default目录搜索默认量化类型的最佳实践
         if model_pedigree != DEFAULT_PEDIGREE:
-            for config in self.practice_manager.iter_config(DEFAULT_PEDIGREE):
-                result = _check(config, model_type, DEFAULT_QUANT_TYPE, tag, is_default=True)
+            for metadata, raw_dict in self.practice_manager.iter_config(DEFAULT_PEDIGREE):
+                result = _check(metadata, model_type, DEFAULT_QUANT_TYPE, tag, is_default=True)
                 if result == ScenarioTagMatch.NO_MATCH:
                     continue
-                return _build_return(config, TipsType.Q1C1B0, DEFAULT_QUANT_TYPE)
+                return _build_return(metadata, raw_dict, TipsType.Q1C1B0, DEFAULT_QUANT_TYPE)
 
         raise UnsupportedError("Get best practice error", action="Please use the correct msmodelslim version.")
 
@@ -489,7 +492,10 @@ class NaiveQuantizationApplication:
 
         get_logger().info("===========GET BEST PRACTICE===========")
         practice_config = self.get_best_practice(
-            model_adapter=model_adapter, quant_type=quant_type, config_path=config_path, tag=tag
+            model_adapter=model_adapter,
+            quant_type=quant_type,
+            config_path=config_path,
+            tag=tag,
         )
         # 使用量化配置导出基础设施导出配置
         export_model_type = model_type or "convert"

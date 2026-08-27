@@ -18,12 +18,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Generator, Optional, Tuple
 
-from msmodelslim.core.practice import PracticeConfig
-from msmodelslim.core.quant_service.interface import BaseQuantConfig
+from msmodelslim.core.practice import Metadata, PracticeConfig
 
 
 class PracticeManagerInfra(ABC):
@@ -42,32 +42,27 @@ class PracticeManagerInfra(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def iter_config(self, model_pedigree) -> Generator[PracticeConfig, None, None]:
+    def iter_config(self, model_pedigree) -> Generator[Tuple[Metadata, dict], None, None]:
         """Iterate configurations by priority"""
         raise NotImplementedError
 
 
 class QuantConfigExportInfra(ABC):
     """量化配置导出基础设施抽象基类"""
-    
+
     @abstractmethod
-    def export_quant_config(
-        self,
-        quant_config: BaseQuantConfig,
-        model_type: str,
-        save_path: Path
-    ) -> None:
+    def export_quant_config(self, quant_config: PracticeConfig, model_type: str, save_path: Path) -> None:
         """
         导出量化配置到文件
-        
+
         Args:
             quant_config: 量化配置对象，包含量化任务的配置信息
             model_type: 模型类型，用于生成输出文件名
             save_path: 保存路径，配置文件的输出目录
-        
+
         Returns:
             None
-            
+
         Raises:
             NotImplementedError: 子类必须实现此方法
             IOError: 文件写入失败时可能抛出

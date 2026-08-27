@@ -30,13 +30,13 @@ class TestBaseQuantConfig:
 
     def test_defaults_when_minimal_constructed(self):
         """场景：最小构造 BaseQuantConfig。预期：apiversion 与空 spec。"""
-        cfg = BaseQuantConfig(apiversion="test_v1")
+        cfg = BaseQuantConfig.model_construct(apiversion="test_v1")
         assert cfg.apiversion == "test_v1"
         assert cfg.spec == {}
 
     def test_allows_extra_fields_when_provided(self):
         """场景：传入额外字段。预期：extra allow 保留字段。"""
-        cfg = BaseQuantConfig(apiversion="v1", custom_field=42)
+        cfg = BaseQuantConfig.model_construct(apiversion="v1", custom_field=42)
         assert cfg.custom_field == 42
 
 

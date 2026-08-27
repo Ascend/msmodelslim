@@ -35,13 +35,15 @@ class TestModelslimV0QuantConfig:
 
     def test_from_base_parses_spec_when_dict_provided(self):
         """场景：BaseQuantConfig.spec 为 dict。预期：from_base 填充 QuantSpec 字段。"""
-        base = BaseQuantConfig(
-            apiversion="modelslim_v0",
-            spec={
-                "batch_size": 8,
-                "calib_dataset": "my_calib.jsonl",
-                "anti_dataset": "anti.jsonl",
-            },
+        base = BaseQuantConfig.model_validate(
+            {
+                "apiversion": "modelslim_v0",
+                "spec": {
+                    "batch_size": 8,
+                    "calib_dataset": "my_calib.jsonl",
+                    "anti_dataset": "anti.jsonl",
+                },
+            }
         )
         cfg = ModelslimV0QuantConfig.from_base(base)
         assert cfg.spec.batch_size == 8

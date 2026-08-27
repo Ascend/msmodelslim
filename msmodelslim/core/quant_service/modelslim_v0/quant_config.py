@@ -19,7 +19,9 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, Field
 from typing_extensions import Self
 
 from msmodelslim.core.quant_service.interface import BaseQuantConfig
@@ -28,13 +30,13 @@ from msmodelslim.utils.exception import SchemaValidateError
 
 class QuantSpec(BaseModel):
     # anti
-    anti_cfg: dict = None  # anti-outlier config
-    anti_params: dict = None  # anti-outlier params
+    anti_cfg: dict = Field(default_factory=dict)  # anti-outlier config
+    anti_params: dict = Field(default_factory=dict)  # anti-outlier params
 
     # calib
-    calib_cfg: dict = None  # calib config
-    calib_params: dict = None  # calib params
-    calib_save_params: dict = None  # calib save params
+    calib_cfg: dict = Field(default_factory=dict)  # calib config
+    calib_params: dict = Field(default_factory=dict)  # calib params
+    calib_save_params: dict = Field(default_factory=dict)  # calib save params
 
     # quantization parameters
     batch_size: int = 4  # batch size
@@ -43,6 +45,7 @@ class QuantSpec(BaseModel):
 
 
 class ModelslimV0QuantConfig(BaseQuantConfig):
+    apiversion: Literal["modelslim_v0"] = "modelslim_v0"  # 注册表推导 plugin_type 的依据
     spec: QuantSpec  # quantization config specification
 
     @classmethod
@@ -51,6 +54,11 @@ class ModelslimV0QuantConfig(BaseQuantConfig):
             apiversion=quant_config.apiversion,
             spec=load_specific_config(quant_config.spec),
         )
+
+
+def get_plugin():
+    """获取 modelslim_v0 量化任务配置插件（返回配置类与组件类，由框架完成注册）。"""
+    return ModelslimV0QuantConfig, ModelslimV0QuantConfig
 
 
 def load_specific_config(yaml_spec: object) -> QuantSpec:

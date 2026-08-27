@@ -39,9 +39,11 @@ class TestModelslimConvertQuantService:
         service = ModelslimConvertQuantService(ModelslimConvertQuantServiceConfig())
         model_adapter = MagicMock()
         model_adapter.model_path = Path("/tmp/model")
-        quant_config = BaseQuantConfig(
-            apiversion="modelslim_convert",
-            spec={"linears": [], "save": [{"type": "ascend_v1"}]},
+        quant_config = BaseQuantConfig.model_validate(
+            {
+                "apiversion": "modelslim_convert",
+                "spec": {"linears": [], "save": [{"type": "ascend_v1"}]},
+            }
         )
         with pytest.raises(ValueError, match="requires save_path"):
             service.quantize(quant_config, model_adapter, save_path=None)
@@ -54,19 +56,21 @@ class TestModelslimConvertQuantService:
         model_adapter = MagicMock()
         model_adapter.model_path = Path("/data/model")
         model_adapter.model_type = "qwen3_5_moe"
-        quant_config = BaseQuantConfig(
-            apiversion="modelslim_convert",
-            spec={
-                "preprocess": [],
-                "linears": [
-                    {
-                        "match": ["layers.*.q_proj"],
-                        "target": "FLOAT",
-                        "route": "auto",
-                    },
-                ],
-                "save": [{"type": "ascend_v1"}],
-            },
+        quant_config = BaseQuantConfig.model_validate(
+            {
+                "apiversion": "modelslim_convert",
+                "spec": {
+                    "preprocess": [],
+                    "linears": [
+                        {
+                            "match": ["layers.*.q_proj"],
+                            "target": "FLOAT",
+                            "route": "auto",
+                        },
+                    ],
+                    "save": [{"type": "ascend_v1"}],
+                },
+            }
         )
         service.quantize(
             quant_config,

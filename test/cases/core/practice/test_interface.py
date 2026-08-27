@@ -29,16 +29,29 @@ from msmodelslim.core.practice.interface import (
 from msmodelslim.utils.exception import SchemaValidateError
 
 
+def _make_metadata(verified_tags=None, verified_model_types=None):
+    return Metadata(
+        config_id="test_config",
+        score=90,
+        label={"w_bit": 8, "a_bit": 8},
+        verified_model_types=verified_model_types or [],
+        verified_tags=verified_tags or {},
+    )
+
+
 def _make_practice_config(verified_tags=None, verified_model_types=None):
-    return PracticeConfig(
-        apiversion="modelslim_v1",
-        metadata=Metadata(
-            config_id="test_config",
-            score=90,
-            label={"w_bit": 8, "a_bit": 8},
-            verified_model_types=verified_model_types or [],
-            verified_tags=verified_tags or {},
-        ),
+    return PracticeConfig.model_validate(
+        {
+            "apiversion": "modelslim_v1",
+            "metadata": {
+                "config_id": "test_config",
+                "score": 90,
+                "label": {"w_bit": 8, "a_bit": 8},
+                "verified_model_types": verified_model_types or [],
+                "verified_tags": verified_tags or {},
+            },
+            "spec": {},
+        }
     )
 
 
@@ -65,6 +78,35 @@ class TestMetadata:
         with pytest.raises(SchemaValidateError):
             Metadata(config_id="cfg1", score=-1.0)
 
+    def test_matches_scenario_tags_returns_no_match_when_no_verified_scenarios(self):
+        """场景：model_type 无 verified_tags。预期：NO_MATCH。"""
+        meta = _make_metadata()
+        assert meta.matches_scenario_tags("Qwen2.5-7B", ["mindie"]) == ScenarioTagMatch.NO_MATCH
+
+    def test_matches_scenario_tags_returns_match_when_tags_subset_of_scenario(self):
+        """场景：scenario_tags 为 verified 场景子集。预期：MATCH。"""
+        meta = _make_metadata(verified_tags={"Qwen2.5-7B": [["mindie", "npu"], ["vllm", "cpu"]]})
+        result = meta.matches_scenario_tags("Qwen2.5-7B", ["mindie", "npu"])
+        assert result == ScenarioTagMatch.MATCH
+
+    def test_matches_scenario_tags_returns_standby_when_tags_not_in_any_scenario(self):
+        """场景：有 verified 场景但 tags 不匹配。预期：STANDBY。"""
+        meta = _make_metadata(verified_tags={"Qwen2.5-7B": [["mindie", "npu"]]})
+        result = meta.matches_scenario_tags("Qwen2.5-7B", ["vllm"])
+        assert result == ScenarioTagMatch.STANDBY
+
+    def test_matches_scenario_tags_returns_match_when_scenario_tags_none(self):
+        """场景：无 scenario_tags。预期：MATCH（存在 verified 场景即可）。"""
+        meta = _make_metadata(verified_tags={"Qwen2.5-7B": [["mindie", "npu"]]})
+        result = meta.matches_scenario_tags("Qwen2.5-7B", None)
+        assert result == ScenarioTagMatch.MATCH
+
+    def test_matches_scenario_tags_is_case_insensitive_when_comparing_tags(self):
+        """场景：大小写不同的 tag。预期：仍 MATCH。"""
+        meta = _make_metadata(verified_tags={"Qwen2.5-7B": [["MindIE", "NPU"]]})
+        result = meta.matches_scenario_tags("Qwen2.5-7B", ["mindie", "npu"])
+        assert result == ScenarioTagMatch.MATCH
+
 
 class TestPracticeConfig:
     """Tests for PracticeConfig."""
@@ -75,32 +117,3 @@ class TestPracticeConfig:
         extracted = config.extract_quant_config()
         assert extracted.apiversion == "modelslim_v1"
         assert not hasattr(extracted, "metadata") or "metadata" not in extracted.model_dump()
-
-    def test_matches_scenario_tags_returns_no_match_when_no_verified_scenarios(self):
-        """场景：model_type 无 verified_tags。预期：NO_MATCH。"""
-        config = _make_practice_config()
-        assert config.matches_scenario_tags("Qwen2.5-7B", ["mindie"]) == ScenarioTagMatch.NO_MATCH
-
-    def test_matches_scenario_tags_returns_match_when_tags_subset_of_scenario(self):
-        """场景：scenario_tags 为 verified 场景子集。预期：MATCH。"""
-        config = _make_practice_config(verified_tags={"Qwen2.5-7B": [["mindie", "npu"], ["vllm", "cpu"]]})
-        result = config.matches_scenario_tags("Qwen2.5-7B", ["mindie", "npu"])
-        assert result == ScenarioTagMatch.MATCH
-
-    def test_matches_scenario_tags_returns_standby_when_tags_not_in_any_scenario(self):
-        """场景：有 verified 场景但 tags 不匹配。预期：STANDBY。"""
-        config = _make_practice_config(verified_tags={"Qwen2.5-7B": [["mindie", "npu"]]})
-        result = config.matches_scenario_tags("Qwen2.5-7B", ["vllm"])
-        assert result == ScenarioTagMatch.STANDBY
-
-    def test_matches_scenario_tags_returns_match_when_scenario_tags_none(self):
-        """场景：无 scenario_tags。预期：MATCH（存在 verified 场景即可）。"""
-        config = _make_practice_config(verified_tags={"Qwen2.5-7B": [["mindie", "npu"]]})
-        result = config.matches_scenario_tags("Qwen2.5-7B", None)
-        assert result == ScenarioTagMatch.MATCH
-
-    def test_matches_scenario_tags_is_case_insensitive_when_comparing_tags(self):
-        """场景：大小写不同的 tag。预期：仍 MATCH。"""
-        config = _make_practice_config(verified_tags={"Qwen2.5-7B": [["MindIE", "NPU"]]})
-        result = config.matches_scenario_tags("Qwen2.5-7B", ["mindie", "npu"])
-        assert result == ScenarioTagMatch.MATCH

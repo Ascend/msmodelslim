@@ -19,7 +19,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from typing import List, Optional, Annotated
+from typing import List, Literal, Optional, Annotated
 from pydantic import BaseModel, Field, AfterValidator
 from typing_extensions import Self
 
@@ -69,14 +69,22 @@ class ModelslimV1QuantConfig(BaseQuantConfig):
     保存格式（`save`）与校准数据（`dataset`），由 `msmodelslim quant --config_path` 加载。
     """
 
+    apiversion: Literal["modelslim_v1"] = "modelslim_v1"  # 注册表推导 plugin_type 的依据
     spec: ModelslimV1ServiceConfig  # quantization config specification
 
     @classmethod
     def from_base(cls, quant_config: BaseQuantConfig) -> Self:
-        return cls(
-            apiversion=quant_config.apiversion,
-            spec=load_specific_config(quant_config.spec),
-        )
+        return cls.model_validate({'apiversion': quant_config.apiversion, 'spec': quant_config.spec})
+
+
+def get_plugin():
+    """获取 modelslim_v1 量化任务配置插件（返回配置类与组件类，由框架完成注册）。
+
+    Returns:
+        (ModelslimV1QuantConfig, ModelslimV1QuantConfig) 元组——组件槽暂与配置槽同体，
+        预留给后续演进（后端任务组件）。
+    """
+    return ModelslimV1QuantConfig, ModelslimV1QuantConfig
 
 
 def load_specific_config(yaml_spec: object) -> ModelslimV1ServiceConfig:

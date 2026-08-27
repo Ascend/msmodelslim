@@ -72,7 +72,7 @@ class TestModelslimV0QuantService:
         """场景：quantize 传入 device_indices。预期：warning 后委托 quant_process。"""
         mock_logger = MagicMock()
         mock_get_logger.return_value = mock_logger
-        quant_config = BaseQuantConfig(apiversion="modelslim_v0", spec={})
+        quant_config = BaseQuantConfig.model_validate({"apiversion": "modelslim_v0", "spec": {}})
         adapter = MagicMock(spec=PipelineInterface)
 
         service.quantize(
@@ -99,9 +99,11 @@ class TestModelslimV0QuantService:
         model_adapter.handle_dataset.return_value = []
 
         quant_config = ModelslimV0QuantConfig.from_base(
-            BaseQuantConfig(
-                apiversion="modelslim_v0",
-                spec={"calib_cfg": {}, "calib_dataset": "calib.jsonl"},
+            BaseQuantConfig.model_validate(
+                {
+                    "apiversion": "modelslim_v0",
+                    "spec": {"calib_cfg": {}, "calib_dataset": "calib.jsonl"},
+                }
             )
         )
 

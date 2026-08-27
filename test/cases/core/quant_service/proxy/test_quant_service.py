@@ -49,7 +49,7 @@ class TestQuantServiceProxy:
             quant_service_config=QuantServiceProxyConfig(),
             dataset_loader=dataset_loader,
         )
-        quant_config = BaseQuantConfig(apiversion="modelslim_v1", spec={})
+        quant_config = BaseQuantConfig.model_validate({"apiversion": "modelslim_v1", "spec": {}})
         model_adapter = MagicMock()
         save_path = Path("/tmp/out")
 
@@ -83,7 +83,7 @@ class TestQuantServiceProxy:
             quant_service_config=QuantServiceProxyConfig(),
             dataset_loader=MagicMock(),
         )
-        quant_config = BaseQuantConfig(apiversion="modelslim_v0", spec={})
+        quant_config = BaseQuantConfig.model_validate({"apiversion": "modelslim_v0", "spec": {}})
 
         proxy.quantize(quant_config=quant_config, model_adapter=MagicMock())
         proxy.quantize(quant_config=quant_config, model_adapter=MagicMock())

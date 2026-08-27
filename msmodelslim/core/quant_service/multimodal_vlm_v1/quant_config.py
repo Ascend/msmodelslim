@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 
 # pylint: disable=duplicate-code
 
-from typing import List
+from typing import List, Literal
 
 from pydantic import BaseModel, Field, field_validator
 from typing_extensions import Self
@@ -80,15 +80,23 @@ class MultimodalVLMModelslimV1QuantConfig(ModelslimV1QuantConfig):
     量化流水线与校准数据，兼容 `NaiveQuantizationApplication` 与最佳实践系统。
     """
 
+    apiversion: Literal["multimodal_vlm_modelslim_v1"] = "multimodal_vlm_modelslim_v1"
     spec: MultimodalVLMServiceConfig
 
     @classmethod
     def from_base(cls, quant_config: BaseQuantConfig) -> Self:
         """Convert from base config"""
-        return cls(
-            apiversion=quant_config.apiversion,
-            spec=load_specific_config(quant_config.spec),
-        )
+        return cls.model_validate({'apiversion': quant_config.apiversion, 'spec': quant_config.spec})
+
+
+def get_plugin():
+    """获取 multimodal_vlm_modelslim_v1 量化任务配置插件（由框架完成注册）。
+
+    Returns:
+        (MultimodalVLMModelslimV1QuantConfig, MultimodalVLMModelslimV1QuantConfig) 元组
+        ——组件槽暂与配置槽同体，预留给后续演进。
+    """
+    return MultimodalVLMModelslimV1QuantConfig, MultimodalVLMModelslimV1QuantConfig
 
 
 @exception_handler(

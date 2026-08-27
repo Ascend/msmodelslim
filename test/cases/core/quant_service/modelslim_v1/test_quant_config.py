@@ -35,9 +35,11 @@ class TestModelslimV1QuantConfig:
 
     def test_from_base_converts_dict_spec_when_base_provided(self):
         """场景：BaseQuantConfig.spec 为 dict。预期：from_base 得到 ModelslimV1ServiceConfig。"""
-        base = BaseQuantConfig(
-            apiversion="modelslim_v1",
-            spec={"runner": RunnerType.LAYER_WISE, "dataset": "custom.jsonl"},
+        base = BaseQuantConfig.model_validate(
+            {
+                "apiversion": "modelslim_v1",
+                "spec": {"runner": RunnerType.LAYER_WISE, "dataset": "custom.jsonl"},
+            }
         )
         cfg = ModelslimV1QuantConfig.from_base(base)
         assert isinstance(cfg, ModelslimV1QuantConfig)

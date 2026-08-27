@@ -30,11 +30,13 @@ class TestModelslimConvertQuantConfig:
     """测试 ModelslimConvertQuantConfig 类"""
 
     def test_from_base_return_typed_config_when_base_given(self):
-        base = BaseQuantConfig(
-            apiversion="modelslim_convert/v1",
-            spec={"model_path": "/m", "save_path": "/o", "linears": []},
+        base = BaseQuantConfig.model_validate(
+            {
+                "apiversion": "modelslim_convert",
+                "spec": {"model_path": "/m", "save_path": "/o", "linears": []},
+            }
         )
         cfg = ModelslimConvertQuantConfig.from_base(base)
-        assert cfg.apiversion == "modelslim_convert/v1"  # 校验 apiversion 保留
+        assert cfg.apiversion == "modelslim_convert"  # 校验 apiversion 保留
         assert isinstance(cfg.spec, ModelslimConvertServiceConfig)  # 校验 spec 类型化
         assert cfg.spec.model_path == "/m"

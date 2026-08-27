@@ -7,10 +7,12 @@ modelslim_convert 量化任务配置（apiversion + spec）。
 
 from __future__ import annotations
 
+from typing import Literal
+
 from typing_extensions import Self
 
 from msmodelslim.core.quant_service.interface import BaseQuantConfig
-from .config_mapper import ModelslimConvertServiceConfig, load_specific_config
+from .config_mapper import ModelslimConvertServiceConfig
 
 
 class ModelslimConvertQuantConfig(BaseQuantConfig):
@@ -21,11 +23,19 @@ class ModelslimConvertQuantConfig(BaseQuantConfig):
     由 `msmodelslim quant --config_path` 加载执行纯权重转换。
     """
 
+    apiversion: Literal["modelslim_convert"] = "modelslim_convert"
     spec: ModelslimConvertServiceConfig
 
     @classmethod
     def from_base(cls, quant_config: BaseQuantConfig) -> Self:
-        return cls(
-            apiversion=quant_config.apiversion,
-            spec=load_specific_config(quant_config.spec),
-        )
+        return cls.model_validate({'apiversion': quant_config.apiversion, 'spec': quant_config.spec})
+
+
+def get_plugin():
+    """获取 modelslim_convert 量化任务配置插件（由框架完成注册）。
+
+    Returns:
+        (ModelslimConvertQuantConfig, ModelslimConvertQuantConfig) 元组
+        ——组件槽暂与配置槽同体，预留给后续演进。
+    """
+    return ModelslimConvertQuantConfig, ModelslimConvertQuantConfig

@@ -17,9 +17,7 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
-"""
 
-"""
 Pytest config for infra tests.
 
 复用全局 mock 工具，避免在导入 msmodelslim 期间真正初始化配置文件和安全路径检查。
@@ -31,3 +29,16 @@ from testing_utils.mock import mock_kia_library, mock_security_library, mock_ini
 mock_init_config()
 mock_kia_library()
 mock_security_library()
+
+
+def pytest_configure(config):
+    """注册量化任务插件，使 PracticeConfig 全量校验（dispatch）可用。"""
+    from msmodelslim.utils.plugin.plugin_utils import register_plugin
+    from msmodelslim.core.quant_service.modelslim_v0.quant_config import get_plugin as v0_gp
+    from msmodelslim.core.quant_service.modelslim_v1.quant_config import get_plugin as v1_gp
+    from msmodelslim.core.quant_service.modelslim_convert.quant_config import get_plugin as cvt_gp
+    from msmodelslim.core.quant_service.multimodal_sd_v1.quant_config import get_plugin as sd_gp
+    from msmodelslim.core.quant_service.multimodal_vlm_v1.quant_config import get_plugin as vlm_gp
+
+    for getter in (v0_gp, v1_gp, cvt_gp, sd_gp, vlm_gp):
+        register_plugin(getter)

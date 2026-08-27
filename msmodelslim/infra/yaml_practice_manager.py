@@ -18,12 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from pathlib import Path
-from typing import Dict, Generator, List, Optional
+from typing import Dict, Generator, List, Optional, Tuple
 
 from msmodelslim.app.auto_tuning import PracticeManagerInfra as atpm
 from msmodelslim.app.naive_quantization import PracticeManagerInfra as nqpm
-from msmodelslim.core.practice import PracticeConfig
+from msmodelslim.core.practice import Metadata, PracticeConfig
 from msmodelslim.utils.exception import SecurityError, UnsupportedError, SpecError
 from msmodelslim.utils.security import get_valid_read_path, get_write_directory
 from msmodelslim.utils.yaml_database import YamlDatabase
@@ -52,27 +53,27 @@ class YamlPracticeManager(
             if model_type_dir.is_dir()
         }
 
-        self.custom_databases: Dict[str, YamlDatabase] = {
-            model_type_dir.name: YamlDatabase(model_type_dir, read_only=False)
-            for model_type_dir in self.custom_config_dir.iterdir()
-            if model_type_dir.is_dir()
-        } if self.custom_config_dir else {}
+        self.custom_databases: Dict[str, YamlDatabase] = (
+            {
+                model_type_dir.name: YamlDatabase(model_type_dir, read_only=False)
+                for model_type_dir in self.custom_config_dir.iterdir()
+                if model_type_dir.is_dir()
+            }
+            if self.custom_config_dir
+            else {}
+        )
 
         # One dict per third-party root: pedigree -> YamlDatabase (read-only)
         self._plugin_database_maps: List[Dict[str, YamlDatabase]] = []
-        for plugin_root in (third_party_config_dirs or []):
+        for plugin_root in third_party_config_dirs or []:
             if not plugin_root.exists() or not plugin_root.is_dir():
                 continue
             try:
                 get_valid_read_path(str(plugin_root), is_dir=True)
-                db_map = {
-                    d.name: YamlDatabase(d, read_only=True)
-                    for d in plugin_root.iterdir()
-                    if d.is_dir()
-                }
+                db_map = {d.name: YamlDatabase(d, read_only=True) for d in plugin_root.iterdir() if d.is_dir()}
                 if db_map:
                     self._plugin_database_maps.append(db_map)
-            except Exception:  # noqa: S110
+            except Exception:  # noqa: S110  # nosec B112
                 continue
 
     def __contains__(self, model_pedigree: str) -> bool:
@@ -94,14 +95,18 @@ class YamlPracticeManager(
                     value = db_map[model_pedigree][config_id]
                     break
             if value is None:
-                raise UnsupportedError(f"Practice {config_id} of ModelType {model_pedigree} not found",
-                                       action='Please check the practice id and model type')
+                raise UnsupportedError(
+                    f"Practice {config_id} of ModelType {model_pedigree} not found",
+                    action='Please check the practice id and model type',
+                )
 
         quant_config = PracticeConfig.model_validate(value)
 
         if config_id != quant_config.metadata.config_id:
-            raise SecurityError(f"name {config_id} not match config_id {quant_config.metadata.config_id}",
-                                action='Please make sure the practice is not tampered')
+            raise SecurityError(
+                f"name {config_id} not match config_id {quant_config.metadata.config_id}",
+                action='Please make sure the practice is not tampered',
+            )
         return quant_config
 
     def get_config_url(self, model_pedigree: str, config_id: str) -> Optional[str]:
@@ -121,39 +126,39 @@ class YamlPracticeManager(
                 return db_map[model_pedigree].config_dir / f"{config_id}.yaml"
         return None
 
-    def iter_config(self, model_pedigree) -> Generator[PracticeConfig, None, None]:
+    def iter_config(self, model_pedigree) -> Generator[Tuple[Metadata, dict], None, None]:
         tasks = []
         if model_pedigree in self.custom_databases:
             for value in self.custom_databases[model_pedigree].values():
-                tasks.append(PracticeConfig.model_validate(value))
+                tasks.append((Metadata.model_validate(value.get('metadata', {})), value))
         for db_map in self._plugin_database_maps:
             if model_pedigree in db_map:
                 for value in db_map[model_pedigree].values():
-                    tasks.append(PracticeConfig.model_validate(value))
+                    tasks.append((Metadata.model_validate(value.get('metadata', {})), value))
         if model_pedigree in self.official_databases:
             for value in self.official_databases[model_pedigree].values():
-                tasks.append(PracticeConfig.model_validate(value))
+                tasks.append((Metadata.model_validate(value.get('metadata', {})), value))
 
         if not tasks:
-            raise UnsupportedError(f"Model type {model_pedigree} not found in practice repository",
-                                   action='Please check the model type')
+            raise UnsupportedError(
+                f"Model type {model_pedigree} not found in practice repository", action='Please check the model type'
+            )
 
-        tasks.sort(key=lambda x: (-x.metadata.score, x.metadata.config_id))
-        for task in tasks:
-            yield task
+        tasks.sort(key=lambda x: (-x[0].score, x[0].config_id))
+        yield from tasks
 
     def is_saving_supported(self) -> bool:
         return self.custom_config_dir is not None
 
     def save_practice(self, model_pedigree: str, practice: PracticeConfig) -> None:
         if not self.is_saving_supported():
-            raise UnsupportedError("Can NOT save practice without custom practice directory",
-                                   action="Please set custom practice directory")
+            raise UnsupportedError(
+                "Can NOT save practice without custom practice directory", action="Please set custom practice directory"
+            )
 
         if model_pedigree not in self.custom_databases:
             self.custom_databases[model_pedigree] = YamlDatabase(
-                config_dir=self.custom_config_dir / model_pedigree,
-                read_only=False
+                config_dir=self.custom_config_dir / model_pedigree, read_only=False
             )
 
         if practice.metadata.config_id in self.custom_databases[model_pedigree]:

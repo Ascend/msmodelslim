@@ -22,7 +22,8 @@ See the Mulan PSL v2 for more details.
 from enum import Enum
 from typing import Annotated, Dict, List, Optional
 
-from pydantic import Field, BaseModel, AfterValidator
+from pydantic import Field, BaseModel, AfterValidator, model_validator, model_serializer, ValidationError
+from pydantic_core import PydanticCustomError
 
 from msmodelslim.core.quant_service.interface import BaseQuantConfig
 from msmodelslim.utils.validation.pydantic import validate_str_length, in_range
@@ -63,21 +64,6 @@ class Metadata(BaseModel):
         description="已验证场景标签：键为模型类型，值为场景标签列表（每个场景是一组标签，如 ['MindIE','Atlas_A2_Inference']）",
     )
 
-
-class PracticeConfig(BaseQuantConfig):
-    """完整最佳实践量化任务配置：apiversion + spec + metadata。
-
-    由自动调优策略生成/使用的实践配置，结构等价于量化任务配置，另附 metadata 元信息。
-    """
-
-    metadata: Metadata = Field(
-        default_factory=Metadata, description="量化配置元数据（config_id/score/label/verified_*）"
-    )
-
-    def extract_quant_config(self) -> BaseQuantConfig:
-        """提取量化任务配置（apiversion + spec，不含 metadata）。"""
-        return BaseQuantConfig(apiversion=self.apiversion, spec=self.spec)
-
     def matches_scenario_tags(self, model_type: str, scenario_tags: Optional[List[str]]) -> ScenarioTagMatch:
         """
         Match scenario tags against verified tags for a model.
@@ -87,8 +73,7 @@ class PracticeConfig(BaseQuantConfig):
             - ScenarioTagMatch.MATCH: at least one verified scenario contains all requested scenario_tags.
             - ScenarioTagMatch.STANDBY: verified scenarios exist, but none match requested tags.
         """
-        model_scenario = getattr(self.metadata, 'verified_tags', None) or {}
-        scenarios = model_scenario.get(model_type, [])
+        scenarios = self.verified_tags.get(model_type, [])
         if not scenarios:
             return ScenarioTagMatch.NO_MATCH
         if not scenario_tags:
@@ -100,3 +85,76 @@ class PracticeConfig(BaseQuantConfig):
             if all(ut in scenario_lower for ut in user_lower):
                 return ScenarioTagMatch.MATCH
         return ScenarioTagMatch.STANDBY
+
+
+class PracticeConfig(BaseModel):
+    """完整最佳实践量化任务配置：metadata + task（task ≡ apiversion + spec）。
+
+    由自动调优策略生成/使用的实践配置。
+    概念上 practice = metadata + task，实现上 task 为 BaseQuantConfig（插件判别基类）。
+    """
+
+    metadata: Metadata = Field(
+        default_factory=Metadata, description="量化配置元数据（config_id/score/label/verified_*）"
+    )
+    task: BaseQuantConfig = Field(default_factory=BaseQuantConfig, description="量化任务描述（apiversion + spec）")
+
+    @model_validator(mode='before')
+    @classmethod
+    def _normalize(cls, value):
+        """预处理：旧格式 {apiversion, metadata, spec, ...} → {metadata, task:{apiversion, spec, ...}}。"""
+        if isinstance(value, dict) and 'task' not in value:
+            task = {k: v for k, v in value.items() if k != 'metadata'}
+            task.setdefault('apiversion', 'Unknown')
+            value = {'metadata': value.get('metadata', {}), 'task': task}
+        return value
+
+    @model_validator(mode='wrap')
+    @classmethod
+    def _strip_task_prefix(cls, value, handler):
+        """剥除聚合后 task. 前缀，使错误路径与 yaml 的 spec. 一致。"""
+        try:
+            return handler(value)
+        except ValidationError as e:
+            errors = e.errors()
+            line_errors = []
+            for err in errors:
+                loc = list(err['loc'])
+                if loc and loc[0] == 'task':
+                    err['loc'] = tuple(loc[1:])
+                # from_exception_data 重建仅接受内置错误类型；自定义类型（如
+                # invalid_processor_item）需用 PydanticCustomError 包装以保留消息
+                line_errors.append(
+                    {
+                        'loc': err['loc'],
+                        'type': PydanticCustomError(err['type'], err['msg'], err.get('ctx')),
+                    }
+                )
+            raise ValidationError.from_exception_data(title=e.title, line_errors=line_errors)
+
+    @model_serializer(mode='wrap')
+    def _flatten(self, handler, info):
+        """序列化时展平：{metadata, task} → {metadata, apiversion, spec, ...}，保持导出兼容。"""
+        data = handler(self)
+        task = data.pop('task', {})
+        data.update(task)
+        return data
+
+    def extract_quant_config(self) -> BaseQuantConfig:
+        """提取量化任务配置（apiversion + spec，不含 metadata）。"""
+        return self.task
+
+    @property
+    def apiversion(self) -> str:
+        """兼容旧访问：delegate 到 task.apiversion。"""
+        return self.task.apiversion
+
+    @property
+    def spec(self) -> object:
+        """兼容旧访问：delegate 到 task.spec。"""
+        return self.task.spec
+
+    @spec.setter
+    def spec(self, value: object) -> None:
+        """兼容旧写入：delegate 到 task.spec。"""
+        self.task.spec = value

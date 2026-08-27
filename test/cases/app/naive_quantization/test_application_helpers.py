@@ -24,6 +24,7 @@ from msmodelslim.app.naive_quantization.application import (
     validate_device_index,
 )
 from msmodelslim.core.const import DeviceType, QuantType
+from msmodelslim.core.practice.interface import Metadata
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 
 
@@ -78,7 +79,7 @@ class TestBuildQuantTips:
 class TestGetConfig:
     """Test suite for NaiveQuantizationApplication.get_config — 多场景 config 匹配。"""
 
-    def _make_app(self, iter_configs, practice_config_factory=None):
+    def _make_app(self, iter_configs):
         """构造 NaiveQuantizationApplication，mock 依赖以测试 get_config 各分支。"""
         from msmodelslim.app.naive_quantization.application import NaiveQuantizationApplication
         from msmodelslim.core.quant_service import IQuantService
@@ -92,31 +93,32 @@ class TestGetConfig:
             model_factory=MagicMock(spec=IModelFactory),
         )
 
-    def _make_practice_config(self, config_id="cid", tag_list=None, label=None):
-        """构造 mock PracticeConfig 实例。"""
-        cfg = MagicMock()
-        cfg.metadata.config_id = config_id
-        cfg.metadata.label = label or {"w_bit": 8, "a_bit": 8, "kv_cache": False, "fa_quant": False, "is_sparse": False}
-        cfg.metadata.scenario_tags = tag_list or []
-        cfg.tag = tag_list or []
-        return cfg
+    def _make_metadata_and_dict(self, config_id="cid", label=None):
+        """构造 (Metadata, raw_dict) 对，模拟 iter_config 产出。"""
+        meta = Metadata(
+            config_id=config_id,
+            label=label or {"w_bit": 8, "a_bit": 8, "kv_cache": False, "fa_quant": False, "is_sparse": False},
+        )
+        raw_dict = {"apiversion": "modelslim_v1", "metadata": meta.model_dump()}
+        return meta, raw_dict
 
     def test_get_config_returns_config_when_first_iteration_matches(self):
         """场景 1：iter_config 第一个 config 就匹配时应返回。"""
         from msmodelslim.core.practice.interface import ScenarioTagMatch
         from msmodelslim.app.naive_quantization import application as app_module
 
-        cfg = self._make_practice_config()
+        meta, raw_dict = self._make_metadata_and_dict()
 
         def iter_factory(_):
-            return iter([cfg])  # 每次返回新 iter
+            return iter([(meta, raw_dict)])
 
         app = self._make_app(iter_configs=iter_factory)
 
         with patch.object(app_module.NaiveQuantizationApplication, "check_config", return_value=ScenarioTagMatch.MATCH):
-            result, tips = app.get_config("qwen3", "Qwen3-32B", quant_type=QuantType.W8A8)
+            (result_meta, result_raw), tips = app.get_config("qwen3", "Qwen3-32B", quant_type=QuantType.W8A8)
 
-        assert result is cfg
+        assert result_meta is meta
+        assert result_raw is raw_dict
         assert isinstance(tips, str)
 
     def test_get_config_uses_default_pedigree_fallback_when_model_pedigree_unknown(self):
@@ -124,21 +126,20 @@ class TestGetConfig:
         from msmodelslim.core.practice.interface import ScenarioTagMatch
         from msmodelslim.app.naive_quantization import application as app_module
 
-        cfg_default = self._make_practice_config()
+        cfg_default_meta, cfg_default_raw = self._make_metadata_and_dict()
 
         def iter_factory(pedigree):
             if pedigree == "qwen3":
                 return iter([])
             else:
-                return iter([cfg_default])
+                return iter([(cfg_default_meta, cfg_default_raw)])
 
         app = self._make_app(iter_configs=iter_factory)
 
-        # scenario 1 iter 为空 → 0 次 check；scenario 2 只有 1 次 check（应返回 MATCH）
         with patch.object(app_module.NaiveQuantizationApplication, "check_config", return_value=ScenarioTagMatch.MATCH):
-            result, tips = app.get_config("qwen3", "Qwen3-32B", quant_type=QuantType.W8A8)
+            (result_meta, result_raw), tips = app.get_config("qwen3", "Qwen3-32B", quant_type=QuantType.W8A8)
 
-        assert result is cfg_default
+        assert result_meta is cfg_default_meta
         assert "No best practice" in tips
 
     def test_get_config_falls_back_to_default_quant_type_when_specified_missing(self):
@@ -146,10 +147,10 @@ class TestGetConfig:
         from msmodelslim.core.practice.interface import ScenarioTagMatch
         from msmodelslim.app.naive_quantization import application as app_module
 
-        cfg_default = self._make_practice_config()
+        cfg_default_meta, cfg_default_raw = self._make_metadata_and_dict()
 
         def iter_factory(_):
-            return iter([cfg_default])
+            return iter([(cfg_default_meta, cfg_default_raw)])
 
         app = self._make_app(iter_configs=iter_factory)
 
@@ -158,9 +159,9 @@ class TestGetConfig:
             "check_config",
             side_effect=[ScenarioTagMatch.NO_MATCH, ScenarioTagMatch.MATCH],
         ):
-            result, tips = app.get_config("qwen3", "Qwen3-32B", quant_type=QuantType.W4A8)
+            (result_meta, result_raw), tips = app.get_config("qwen3", "Qwen3-32B", quant_type=QuantType.W4A8)
 
-        assert result is cfg_default
+        assert result_meta is cfg_default_meta
         assert "No best practice" in tips
 
     def test_get_config_raises_unsupported_when_nothing_found(self):
@@ -184,19 +185,19 @@ class TestGetConfig:
         from msmodelslim.core.practice.interface import ScenarioTagMatch
         from msmodelslim.app.naive_quantization import application as app_module
 
-        cfg1 = self._make_practice_config(config_id="standby1")
+        meta1, raw_dict1 = self._make_metadata_and_dict(config_id="standby1")
 
         def iter_factory(_):
-            return iter([cfg1])
+            return iter([(meta1, raw_dict1)])
 
         app = self._make_app(iter_configs=iter_factory)
 
         with patch.object(
             app_module.NaiveQuantizationApplication, "check_config", return_value=ScenarioTagMatch.STANDBY
         ):
-            result, tips = app.get_config("qwen3", "Qwen3-32B")
+            (result_meta, result_raw), tips = app.get_config("qwen3", "Qwen3-32B")
 
-        assert result is cfg1
+        assert result_meta is meta1
         assert "standby" in tips.lower() or "standby1" in tips
 
 

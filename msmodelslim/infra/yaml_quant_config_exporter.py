@@ -18,38 +18,30 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from pathlib import Path
 
 from msmodelslim.app.naive_quantization.practice_manager_infra import QuantConfigExportInfra
-from msmodelslim.core.quant_service.interface import BaseQuantConfig
+from msmodelslim.core.practice.interface import PracticeConfig
 
 
 class YamlQuantConfigExporter(QuantConfigExportInfra):
     """YAML格式的量化配置导出器"""
-    
-    def export_quant_config(
-        self,
-        quant_config: BaseQuantConfig,
-        model_type: str,
-        save_path: Path
-    ) -> None:
+
+    def export_quant_config(self, quant_config: PracticeConfig, model_type: str, save_path: Path) -> None:
         """
         导出量化配置到YAML文件
-        
+
         Args:
             quant_config: 量化配置对象
             model_type: 模型类型
             save_path: 保存路径
         """
         from msmodelslim.utils.security import yaml_safe_dump
-        
+
         # 构建文件名
         filename = f"{model_type}_best_practice.yaml"
         file_path = save_path / filename
-        
+
         # 导出配置
-        yaml_safe_dump(
-            quant_config.model_dump(mode='json'),
-            str(file_path),
-            check_user_stat=False
-        )
+        yaml_safe_dump(quant_config.model_dump(mode='json'), str(file_path), check_user_stat=False)
