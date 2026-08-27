@@ -1,0 +1,126 @@
+### Here is an template of an auto-tuning config
+### With strategy standing_high, inference engine vllm-ascend and evaluator aisbench
+### Before running the config, please make sure you have replaced necessary fields with your own values
+
+strategy:
+  type: standing_high # first fix anti method and search rollback layers, then change anti method and reduce rollback layers
+  anti_outlier_strategies:
+    - - type: "iter_smooth"
+        alpha: 0.5
+    - - type: "flex_smooth_quant"
+  template:
+    runner: auto
+    process: # only support one and only one linear_quant processor
+      - type: linear_quant
+        qconfig:
+          act:
+            scope: per_tensor
+            dtype: int8
+            symmetric: false
+            method: minmax
+          weight:
+            scope: per_channel
+            dtype: int8
+            symmetric: true
+            method: minmax
+        include: [ "*" ]
+        exclude: [ ]
+    save:
+      - type: ascendv1_saver
+        part_file_size: 4
+    dataset: mix_calib.jsonl
+  metadata:
+    config_id: standing_high
+    label:
+      w_bit: 8
+      a_bit: 8
+      is_sparse: false
+      kv_cache: false
+
+evaluation:
+  type: service_oriented
+  demand:
+    expectations:
+      - dataset: gsm8k # replace with your own dataset, equal to datasets in evaluation.aisbench.datasets
+        target: "83" # replace with your own target (quoted string, matches Decimal JSON encoding)
+        tolerance: "2" # replace with your own tolerance (quoted string, matches Decimal JSON encoding)
+  evaluation:
+    type: aisbench
+    precheck: # optional, pre-validation configuration before formal evaluation
+      - type: expected_answer # rule type identifier
+        test_cases: # English only, must be non-empty strings
+          - "What is 2+2?": ["4", "four"] # check if response contains "4" or "four"
+          - "What is the capital of China?": "Beijing" # check if response contains "Beijing"
+        max_tokens: 256 # optional, default 512
+        timeout: 60.0 # optional, default 60.0 seconds
+    aisbench:
+      binary: ais_bench
+      mode: all
+      timeout: 7200
+      request_rate: 1.0
+      retry: 2
+      batch_size: 32 # replace with your own batch size, according to your dataset
+      max_out_len: 512 # replace with your own max output length, according to your dataset
+      trust_remote_code: false
+      pred_postprocessor: extract_non_reasoning_content
+      generation_kwargs:
+        temperature: 0.5
+        top_k: 10
+        top_p: 0.9
+        seed: null
+        repetition_penalty: 1.03
+        chat_template_kwargs:
+          thinking: true
+      model_meta:
+        base_name: vllm_api_general_chat
+        subdir: vllm_api
+        abbr: vllm-api-general-chat
+        attr: service
+    datasets:
+      gsm8k:
+        config_name: "gsm8k_gen_0_shot_cot_str"
+        mode: all
+        # max_out_len not specified, will use global max_out_len (512) from aisbench section
+      aime25:
+        config_name: "aime2025_gen_0_shot_chat_prompt"
+        mode: all
+      bfcl-simple:
+        config_name: "BFCL_gen_simple"
+        mode: all
+        max_out_len: 1024  # dataset-specific max output length, will override global max_out_len
+        returns_tool_calls: true
+        api_chat_type: VLLMFunctionCallAPIChat
+      # add other datasets aisbench supports here
+      # Note: max_out_len is optional for each dataset. If not specified, the global max_out_len from aisbench section will be used
+    host: localhost
+    port: 1234 # replace with your own port, equal to port in inference_engine.port
+    served_model_name: served_model_name
+  inference_engine:
+    type: vllm-ascend
+    entrypoint: vllm.entrypoints.openai.api_server
+    env_vars:
+      HCCL_BUFFSIZE: 1024
+      ASCEND_RT_VISIBLE_DEVICES: 0 # replace with your own visible devices, e.g. 0,1,2,3 for 4 cards
+
+    served_model_name: served_model_name
+    host: localhost
+    port: 1234 # replace with your own port, equal to port in evaluation.aisbench.host
+    health_check_endpoint: /v1/models # to check if the inference engine is running
+    startup_timeout: 600 # replace with your own startup timeout, e.g. deepseek-v3 needs 1800 seconds
+    args:
+      enforce-eager: true # use single operator mode
+      served-model-name: served_model_name
+      trust-remote-code: true
+      tensor-parallel-size: 1 # replace with your own tensor parallel size, according to your model and device
+      data-parallel-size: 1 # replace with your own data parallel size, according to your model and device
+      quantization: ascend
+      enable-prefix-caching: false
+      max-model-len: 8192 # replace with your own max model length, according to your dataset
+      max-num-batched-tokens: 8192 # replace with your own max number of batched tokens, according to your dataset
+      gpu-memory-utilization: 0.9
+      enable-auto-tool-choice: true
+      tool-call-parser: hermes
+      additional_config:
+        ascend_scheduler_config:
+          enable: true
+        enable_weight_nz_layout: true

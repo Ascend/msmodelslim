@@ -16,6 +16,8 @@
 
 </div>
 
+简体中文 | [English](./README_EN.md)
+
 ## ✨ 最新消息
 
 <span style="font-size:14px;">
@@ -57,7 +59,7 @@
 - msModelSlim 支持自主量化多模态理解模型，支持多模态理解模型的量化接入
 - msModelSlim 一键量化支持多卡量化，支持分布式逐层量化，提升大模型量化效率
 - msModelSlim 支持 DeepSeek-V3.2 W8A8 量化，单卡 64GB 显存、100GB 内存即可执行
-- msModelSlim 支持 DeepSeek-V3.2-Exp W4A8 量化，单卡64G显存、100G内存即可执行
+- msModelSlim 支持 DeepSeek-V3.2-Exp W4A8 量化，单卡64GB显存、100GB内存即可执行
 - msModelSlim 支持 Qwen3-VL-235B-A22B W8A8 量化
 
 **2025年11月**
