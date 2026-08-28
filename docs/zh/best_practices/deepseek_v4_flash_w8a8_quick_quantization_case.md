@@ -4,23 +4,25 @@
 
 **目标**：对 DeepSeek-V4-Flash 模型进行 W8A8 一键量化，并部署到 vLLM Ascend 推理引擎进行数据集评测精度验证，完成从量化到部署的全流程闭环。
 
-**覆盖流程**：环境准备与工具安装 → 确认模型与量化方案 → 执行一键量化命令 → 量化权重完整性检查 → 推理部署与评测。
+**覆盖流程**：环境准备与工具安装 → 确认模型与量化方案 → 执行一键量化命令 → 量化权重验收 → 推理部署与评测。
 
-**关联流程**：[《一键量化完整指南》](../user_guide/usage_quick_quantization.md)
+**精度验收口径**：以选定的精度基线（本案例采用论文或模型卡片公开基线）作为对比基准，使用 AISBench 获得量化结果分数。当量化结果分数不低于选定的精度基线分数时直接通过；当量化结果分数低于选定的精度基线分数时，要求相对下降比例不超过 1%，否则不通过。
+
+**关联流程**：[《一键量化完整指南》](../user_guide/usage_quick_quantization.md)、[《权重量化使用指南》](../user_guide/usage_weight_quantization.md)、[《msModelSlim 安装指南》](../install_guide/install_guide.md)
 
 ## 2. 环境与版本
 
 | 项 | 版本或配置 |
 | --- | --- |
-| 产品形态 | Atlas 800I A3（限定，本案例基于 Atlas 800I A3 单节点 16 卡环境验证） |
-| 环境镜像 | `m.daocloud.io/quay.io/ascend/vllm-ascend:v0.22.1rc1-a3` |
+| 产品形态 | Atlas 800I A3 推理服务器（限定，本案例基于该服务器单节点 16 卡环境验证） |
+| 环境镜像 | [quay.io/ascend/vllm-ascend:v0.22.1rc1-a3](https://quay.io/repository/ascend/vllm-ascend?tab=tags&tag=v0.22.1rc1-a3) |
 | CANN | CANN-9.0.0（随镜像预置） |
 | PyTorch | 2.10.0（随镜像预置） |
 | TorchNPU | 2.10.0（随镜像预置） |
 | vLLM Ascend | 0.22.1rc1（随镜像预置） |
-| 其他依赖 | `transformers==4.48.2`（量化时需要降级，默认 5.5.4） |
+| 其他依赖 | `transformers==4.48.2`（量化时需要降级，镜像内默认 5.5.4） |
 
-**本次前置事实**：
+**本案例前置条件**：
 
 - 已获取 DeepSeek-V4-Flash 浮点权重（下载地址：[ModelScope](https://www.modelscope.cn/models/deepseek-ai/DeepSeek-V4-Flash)）。
 - 已确认目标模型在支持矩阵中，`--model_type DeepSeek-V4-Flash`、`--quant_type w8a8` 已验证通过。
@@ -35,9 +37,9 @@
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
 | 输入 | 浮点模型目录 | `${MODEL_PATH}`（用户下载） | 含 `config.json`、`tokenizer.json`、模型权重文件（safetensors）；可被 Transformers 4.48.2 加载 | 使用 `transformers.AutoModel.from_pretrained` 加载无报错 |
-| 输入 | 校准数据集 | 内置（`msmodelslim/lab_calib/mix_calib.jsonl`） | JSONL 格式，每行含 `inputs_pretokenized` 字段 | 校准集可以在量化流程被正常读取 |
-| 交付件 | 量化权重目录 | `${SAVE_PATH}`（量化流程输出目录） | 含 `quant_model_description.json`、权重文件（safetensors 格式）、`config.json` 等 | 量化权重可被 vLLM Ascend `--quantization ascend` 拉起服务化，对话正常 |
-| 交付件 | 精度测试结果 | AISBench 输出目录（`${WORK_DIR}`） | 含量化权重 GPQA 分数与基线对比 | 使用 AISBench 基于 GPQA 数据集评测，量化误差 < 1% |
+| 输入 | 校准数据集 | [混合校准数据集（mix_calib.jsonl）](../../../lab_calib/mix_calib.jsonl) | JSONL 格式，每行含 `inputs_pretokenized` 字段 | 校准集可以在量化流程被正常读取 |
+| 交付件 | 量化权重目录 | `${SAVE_PATH}`（量化流程输出目录） | 含 `quant_model_description.json`、权重文件（safetensors 格式）、index、`config.json` 等 | 检查文件清单、safetensors 结构及模型结构与浮点模型一致，并可被 vLLM Ascend `--quantization ascend` 加载 |
+| 交付件 | 精度测试结果 | AISBench 输出目录（`${EVAL_WORK_DIR}`）及 `${CASE_ROOT}` 归档目录 | 含评测配置、服务日志、curl 响应、选定的精度基线分数、量化结果分数与验收计算记录 | 量化结果不低于选定的精度基线时直接通过；低于选定的精度基线时相对下降不超过 1% |
 
 ## 4. 操作步骤
 
@@ -140,14 +142,13 @@
 **操作**：
 
 ```bash
-cd ..  # 退出 msmodelslim 目录，msmodelslim 命令需在源码目录外执行
 msmodelslim quant \
     --model_path ${MODEL_PATH} \
     --save_path ${SAVE_PATH} \
     --model_type DeepSeek-V4-Flash \
     --quant_type w8a8 \
     --device npu --device_id 0 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 参数说明：
@@ -156,7 +157,7 @@ msmodelslim quant \
 - `--save_path`：量化权重保存目录路径。
 - `--model_type`：模型类型，固定为 `DeepSeek-V4-Flash`。
 - `--quant_type`：量化策略类型，`w8a8` 表示权重和激活均为 INT8。
-- `--device`：指定量化使用的 NPU 设备。
+- `--device npu --device_id 0`：`--device` 指定设备类型为 NPU，`--device_id` 指定设备编号。
 - `--trust_remote_code`：信任自定义模型代码（请确保代码来源可靠）。
 
 **输出**：
@@ -194,7 +195,7 @@ msmodelslim quant \
 
 - 已验证的量化权重目录 `${SAVE_PATH}`。
 
-**通过条件**：目录包含 `quant_model_description.json` 且日志输出无 ERROR。
+**通过条件**：量化产物目录符合 AscendV1 导出格式约定（`quant_model_description.json` + 权重 safetensors），详见 [AscendV1 导出产物](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md#export-artifacts)；且量化日志中无 `ERROR`。
 
 **记录**：量化权重目录结构及 `quant_model_description.json` 摘要。
 
@@ -216,7 +217,7 @@ msmodelslim quant \
    pip install transformers==5.5.4
    ```
 
-2. 配置环境变量并拉起 vLLM Ascend 推理服务（参考 [《vLLM Ascend 官方文档》](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Flash.html)）：
+2. 配置环境变量并拉起 vLLM Ascend 推理服务（参考[《vLLM Ascend 官方文档》](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Flash.html)）：
 
    ```bash
    export OMP_PROC_BIND=false
@@ -272,8 +273,9 @@ msmodelslim quant \
        }'
    ```
 
-4. 使用 [AISBench](https://github.com/AISBench/benchmark) 基于 GPQA 数据集进行冒烟测试，验证量化精度。
-   其中，AISBench 的安装指南请参考 [《AISBench 官方文档》](https://ais-bench-benchmark.readthedocs.io/zh-cn/latest/)。
+4. 使用 [AISBench](https://github.com/AISBench/benchmark) 基于 GPQA 数据集进行评测。安装和使用方法请参考 [AISBench 代码仓 README](https://github.com/AISBench/benchmark/blob/master/README.md)。
+
+   评测量化模型时，应使用与论文或模型卡片基线一致的 AISBench 数据集、服务参数、生成参数和后处理流程，记录选定的精度基线分数，并使用 `${SAVE_PATH}` 量化模型获得量化结果分数。本案例不要求额外测试浮点模型。
 
    创建模型配置文件 `vllm_api_general_chat.py`：
 
@@ -315,23 +317,24 @@ msmodelslim quant \
    ais_bench \
        --models vllm_api_general_chat \
        --datasets gpqa_gen \
-       --work-dir ${WORK_DIR} \
+       --work-dir "${EVAL_WORK_DIR}" \
        --dump-eval-details
    ```
 
-   `${WORK_DIR}` 为评测结果输出目录，请替换为实际路径，例如 `/path/to/eval_results`。
+   `${EVAL_WORK_DIR}` 为本次评测结果输出目录；同时保存实际使用的 `vllm_api_general_chat.py`、AISBench 版本或 commit、数据集配置和生成参数。
 
-   DeepSeek-V4-Flash 的 GPQA 论文基线分数为 **87.4**（参考 [《ModelScope 模型卡片》](https://www.modelscope.cn/models/deepseek-ai/DeepSeek-V4-Flash/summary)）。
-   本案例实测 GPQA 分数为 **87.88**，量化误差 < 1%，**满足精度验收标准**。
+   DeepSeek-V4-Flash 的 GPQA 公开基线分数为 **87.4**（参考[《ModelScope 模型卡片》](https://www.modelscope.cn/models/deepseek-ai/DeepSeek-V4-Flash/summary)），作为选定的精度基线。
 
-   > **声明**：评测数据可能存在波动，若单次测评结果不符合预期，建议以多次测评的平均结果为准。
+   **精度结论**：量化权重 GPQA 实测分数为 **87.88**，与选定的精度基线对比后，满足精度验收要求。评测配置和验收计算记录以 `${EVAL_WORK_DIR}` 中的结果文件为准。
+
+   **注意**：评测数据可能存在波动，若单次测评结果不符合预期，应记录多次测评结果及平均值。
 
 **输出**：
 
 - vLLM Ascend 推理服务正常运行，curl 请求返回正常响应。
-- AISBench GPQA 评测结果。
+- AISBench 公开基线分数与量化结果分数的 GPQA 对比记录。
 
-**记录**：curl 请求的响应结果；AISBench 评测结果（输出至 `${WORK_DIR}`）。
+**记录**：curl 请求的响应结果 `${CURL_RESULT}`；vLLM 服务日志 `${VLLM_LOG}`；AISBench 评测配置和结果目录 `${EVAL_WORK_DIR}`；选定的精度基线、量化结果及验收计算记录。
 
 **下一步**：结束。
 
@@ -341,17 +344,19 @@ msmodelslim quant \
 
 | 步骤 | 关键操作 | 指标 | 变化 | 备注 |
 | --- | --- | --- | --- | --- |
-| 步骤 3 | 执行 `msmodelslim quant` W8A8 量化 | 量化权重生成 | 浮点 -> W8A8 量化 | 量化策略：QuaRot + Flex Smooth Quant + W8A8 动态量化 |
-| 步骤 4 | 检查量化产物 | 产物完整性 | - | 包含 `quant_model_description.json`、safetensors 权重文件 |
-| 步骤 5 | vLLM Ascend 拉起推理服务 + AISBench GPQA 评测 | GPQA：论文基线 87.4 / 实测 87.88 | 量化误差 < 1% | 精度验收标准通过 |
+| 步骤 3：执行一键量化命令 | 执行 `msmodelslim quant` W8A8 量化 | 量化权重生成 | 浮点 -> W8A8 量化 | 量化日志 `${QUANT_LOG}`，量化策略：QuaRot + Flex Smooth Quant + W8A8 动态量化 |
+| 步骤 4：量化权重验收 | 检查量化产物 | 量化产物结构完整性 | - | 检查描述文件、配置文件、全部权重分片、结构对比及推理加载结果 |
+| 步骤 5：推理部署与评测 | vLLM Ascend 拉起推理服务 + AISBench GPQA 评测 | 公开基线分数：87.4；量化实测分数：87.88 | 量化结果高于公开基线 | 实测分数不低于选定的精度基线，满足精度验收要求 |
 
 ### 5.2 经验总结
 
-1. **量化命令需在 msmodelslim 目录外执行**：`msmodelslim quant` 命令需要在 `msmodelslim` 目录的父目录执行，否则可能因路径解析问题导致执行失败。适用边界：源码安装方式（`git clone` + `bash install.sh`）。
+1. **量化命令需在已完成安装验证的环境中执行**：执行量化前确认 `msmodelslim --help` 可正常调用，并使用明确的模型路径和保存路径。适用边界：源码安装方式（`git clone` + `bash install.sh`）。
 
 2. **Transformers 版本需与模型适配**：DeepSeek-V4-Flash 建议使用 `transformers==4.48.2`，版本不匹配可能导致模型加载失败。msModelSlim 不强求特定版本，但建议量化时安装模型适配的版本。适用边界：该版本建议仅用于 DeepSeek-V4-Flash 量化阶段（vLLM Ascend 0.22.1rc1 镜像）。
 
-3. **量化权重可直接用于 vLLM Ascend 推理**：一键量化输出的权重格式与 vLLM Ascend 原生兼容，部署时指定 `--quantization ascend` 即可加载量化权重，无需额外转换。适用边界：vLLM Ascend 0.22.1rc1 及 Atlas 800I A3 形态。
+3. **量化权重需同时通过格式和加载验收**：按 [AscendV1 导出格式](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md#export-artifacts) 核对 `quant_model_description.json`、配置文件、全部权重分片及 index、必要辅助文件，并通过 vLLM Ascend 完成加载和冒烟请求后，再进入正式精度评测。适用边界：vLLM Ascend 0.22.1rc1 及 Atlas 800I A3 推理服务器。
+
+4. **精度验收以选定的精度基线为准**：使用与论文或模型卡片一致的评测配置获得量化结果分数，并与选定的精度基线分数对比；量化结果分数不低于选定的精度基线分数时直接通过，低于选定的精度基线分数时相对下降不超过 1% 才通过。本案例不要求额外测试浮点模型。适用边界：本案例 GPQA 评测。
 
 ## 6. 异常处理
 
@@ -361,7 +366,8 @@ msmodelslim quant \
 
 ## 7. 附录
 
-- 量化配置文件：`lab_practice/deepseek_v4/deepseek_v4_flash_w8a8.yaml`
+- 量化配置文件：[lab_practice/deepseek_v4/deepseek_v4_flash_w8a8.yaml](../../../lab_practice/deepseek_v4/deepseek_v4_flash_w8a8.yaml)
+- GPQA 精度参考：论文或模型卡片公开分数 **87.4** 作为公开基线分数（参考[《ModelScope 模型卡片》](https://www.modelscope.cn/models/deepseek-ai/DeepSeek-V4-Flash/summary)），本案例量化实测分数为 **87.88**。
 - vLLM Ascend 官方部署文档：[《DeepSeek-V4-Flash 教程》](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Flash.html)
-- AISBench 评测工具：[GitHub](https://github.com/AISBench/benchmark) | [《文档》](https://ais-bench-benchmark.readthedocs.io/zh-cn/latest/)
-- GPQA 精度：论文基线 87.4，本案例实测 87.88（参考 [《ModelScope 模型卡片》](https://www.modelscope.cn/models/deepseek-ai/DeepSeek-V4-Flash/summary)）
+- vLLM Ascend 官方镜像：[quay.io/ascend/vllm-ascend:v0.22.1rc1-a3](https://quay.io/repository/ascend/vllm-ascend?tab=tags&tag=v0.22.1rc1-a3)
+- AISBench 评测工具及安装指南：[代码仓 README](https://github.com/AISBench/benchmark/blob/master/README.md)
