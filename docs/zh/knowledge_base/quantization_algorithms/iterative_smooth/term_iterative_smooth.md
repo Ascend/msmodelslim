@@ -1,15 +1,14 @@
-# Iterative Smooth 迭代平滑算法词条
+﻿# Iterative Smooth 迭代平滑算法 量化术语百科词条
 
-> **词条类别**：离群值抑制算法
-> **英文名称**：Iterative Smooth
-> **应用领域**：大语言模型量化压缩、推理加速
-> **msModelSlim 实现**：`msmodelslim/processor/anti_outlier/iter_smooth/`
+> **词条类别**：[离群值抑制算法](../README.md#1-离群值抑制算法)<br>
+> **英文名称**：iterative_smooth<br>
+> **应用领域**：大语言模型量化压缩、推理加速<br>
 
 ---
 
 ## 1. 概述
 
-Iterative Smooth（迭代平滑）是一种用于大语言模型量化过程中抑制激活离群值的算法。它在 [SmoothQuant](../smooth_quant/term_smooth_quant.md) 的基础上扩展，通过相邻层之间重新分配量化误差、动态调整权重与激活的缩放因子，使激活分布更加均匀。其核心特征是：支持 `norm-linear`、`linear-linear`、`ov`、`up-down` 四种子图类型，并可对无前置融合层的独立线性层做非融合平滑。
+Iterative Smooth（迭代平滑）是一种用于量化前分布整形的离群值抑制算法。它在相邻可等价变换的算子之间反复调整缩放关系，使激活与权重的动态范围逐步趋于更适合量化的平衡；核心特征是迭代缩放、多类子图适配和对局部结构的连续修正，可视为 [SmoothQuant](../smooth_quant/term_smooth_quant.md) 思路的迭代扩展。
 
 ---
 
@@ -17,127 +16,87 @@ Iterative Smooth（迭代平滑）是一种用于大语言模型量化过程中�
 
 SmoothQuant 仅支持 `norm-linear` 子图，难以覆盖注意力内部的 `ov` 结构、MLP 门控的 `up-down` 结构以及连续线性层等场景。Iterative Smooth 针对这些结构提供统一的缩放框架，并通过按优先级处理子图、在相邻层之间重分配量化误差，进一步提升离群值抑制效果。
 
----
+从量化流程中的定位看，该算法更接近量化前的分布整形步骤：先降低离群值对量化尺度的支配，再由后续量化算法完成真正的离散化。这种思路的价值在于不必简单扩大位宽，而是通过重分配、旋转或平滑数值幅度，提高有限量化区间对主体数据分布的利用率。
 
-## 3. 原理
+### 2.1 核心思想
 
-### 1. 核心思想
+Iterative Smooth 的核心思想是把 SmoothQuant 类“激活除以尺度、相邻权重吸收尺度”的等价重参数化扩展到更多计算子图，并针对不同连接关系选择能够同时保持多条分支计算等价的逐通道尺度。它并不是简单地对单个 Linear 独立压缩激活，而是把缩放视为可以沿计算图传播并被相邻权重吸收的变换。
 
-Iterative Smooth 的核心思想是“按子图类型分别对相邻两层做协同缩放”：对前置层做反向缩放（除以缩放因子）、对后续层做正向缩放（乘以缩放因子），从而把前置层输出的离群值迁移到后续层权重中。与 SmoothQuant 相比，它支持更多子图结构，并可在 `source` 为 `None` 时对若干独立线性层做非融合平滑。
+对于一个源节点同时被多个下游线性层消费的情况，尺度不能只让某一个权重分支容易量化，否则可能把难度转移到其他分支。因此需要综合共享输入激活与多个目标权重的通道统计，寻找折中尺度；对于某些非对称分布，还可以同时引入平移，使激活先居中再缩放，并由后续权重/偏置做等价补偿。
 
-### 2. 数学描述
+它的收益来自把局部极值问题转化为图上的等价尺度分配问题。
 
-缩放因子计算公式：
+### 2.2 工作机制
+
+对一个典型相邻线性变换，可选正尺度 $s$ 并做 $X'=X/s$、$W'=W\cdot s$；若尺度被吸收到上游归一化参数或下游多个权重中，浮点图可以保持等价。Iterative Smooth 的关键是根据子图拓扑决定尺度应由哪些激活统计和哪些权重统计共同计算，而不是只看一个孤立层。
+
+当同一源激活流向多个投影时，所有消费者必须共享兼容的尺度，因此权重统计需要合并；在 GQA/注意力投影等结构中，还要遵守 head 共享关系。对于非对称激活，平移项可以先把分布中心移动到更利于量化的位置，再由后继线性层的 bias 做相反补偿。这样，缩放和平移都成为图上的重参数化，而不是直接修改模型函数。
+
+### 2.3 数学描述
+
+设某个激活 $X$ 同时被一组线性变换 $W^{(1)},\ldots,W^{(k)}$ 使用。选择逐通道正尺度 $s$ 后，可统一写成：
 
 $$
-s = \left( \frac{A_{\text{scale}}^{\alpha}}{W_{\text{scale}}^{1-\alpha}} \right) \cdot \operatorname{clamp}(\min=\text{scale\_min})
+X' = X\operatorname{diag}(s)^{-1}, \qquad
+W'^{(j)} = W^{(j)}\operatorname{diag}(s), \quad j=1,\ldots,k
 $$
 
-- $s$：逐通道缩放因子
-- $A_{\text{scale}}$：激活值的每通道缩放统计量
-- $W_{\text{scale}}$：权重的每列最大值
-- $\alpha$：平衡参数，控制激活与权重的相对重要性（默认 $0.9$）
-- $\text{scale\_min}$：缩放因子最小值（默认 $10^{-5}$）
+于是每个分支都保持：
 
-对于 `linear-linear`、`ov`、`up-down` 子图，以目标层（`linear2`/`o_proj`/`down_proj`）的权重计算缩放因子，对其做正向缩放，对前置层（`linear1`/`v_proj`/`up_proj`）做反向缩放。
+$$
+X'W'^{(j)T}=XW^{(j)T}
+$$
 
-### 3. 关键性质
+常见尺度仍可由激活统计 $A$ 与聚合后的权重统计 $W_s$ 构造：
+
+$$
+s=\operatorname{clamp}\left(\frac{A^{\alpha}}{W_s^{1-\alpha}},\;\min=s_{min}\right)
+$$
+
+- $A$：逐通道激活幅值统计。
+- $W_s$：与该激活共享尺度的一个或多个目标权重的聚合幅值统计。
+- $\alpha$：控制幅度从激活侧迁移到权重侧的强度。
+- $s_{min}$：避免尺度退化为 0 的数值下界。
+
+若引入平移向量 $z$ 处理明显非对称分布，还需要同时在相邻仿射变换的 bias 中加入补偿，使浮点函数保持一致。
+
+若同一激活 $X$ 被多个线性分支 $W^{(1)},\ldots,W^{(m)}$ 消费，引入 $D=\operatorname{diag}(s)$ 后必须同时满足：
+
+$$
+XW^{(j)T}=(XD^{-1})(W^{(j)}D)^T,\qquad j=1,\ldots,m.
+$$
+
+因此一个尺度向量会联动多个消费者。若还包含可吸收缩放的归一化参数或偏置，需要对它们做相应的代数补偿，使整个子图而非单条边保持等价。这也是图级平滑与简单单层 SmoothQuant 的主要差别。
+
+### 2.4 关键性质
 
 - **等价变换**：对相邻两层的协同缩放保持整体计算等价，不改变模型输出。
-- **子图类型多样**：支持 `norm-linear`、`linear-linear`、`ov`、`up-down` 四种子图。
-- **非融合能力**：`source=None` 时对独立线性层做输入侧 pre-hook 缩放，不依赖前置层。
-- **优先级处理**：按 `up-down` → `ov` → `norm-linear` → `linear-linear` 的优先级顺序处理子图。
+- **共享尺度建模**：同一源激活的多个消费者可以共同参与权重统计，使一个尺度同时兼容多分支。
+- **独立层平滑**：除可融合的相邻子图外，也可对缺少前置融合源的独立线性层做输入侧缩放。
 - **分布式友好**：支持分布式训练环境下的统计信息聚合。
+- **图级尺度一致性**：共享同一激活源的多个消费者需要共同兼容的尺度，而不是逐层独立优化。
 
----
+从误差与适用边界看，误差风险主要出现在等价条件不完整或迁移过度时。重参数化在浮点域可等价，但后续量化是非线性的，尺度过激会把问题从激活侧转移成权重侧问题；平移还会影响 bias 数值范围。
 
-## 4. 流程示意
-
-> 以下为本算法在 msModelSlim 中的简化流程概览。
-
-```mermaid
-flowchart LR
-    A[校准数据] --> B[子图发现]
-    B --> C[统计激活]
-    C --> D[按优先级平滑]
-    D --> E[融合缩放]
-    E --> F[交付量化]
-```
-
----
-
-## 5. 在 msModelSlim 中的实现
-
-### 1. 实现位置
-
-算法在 `msmodelslim/processor/anti_outlier/iter_smooth/processor.py` 中实现，通过 `type: "iter_smooth"` 处理器使用。
-
-### 2. 处理流程
-
-- **预处理阶段**：通过 `SubgraphProcessor` 获取四种类型的子图，按 `include/exclude` 过滤，为线性模块安装前向钩子收集激活统计信息。
-- **后处理阶段**：按优先级顺序处理各子图，对每种子图应用相应的平滑方法；非融合子图（`source=None`）对权重做缩放并在每层注册输入侧 pre-hook；最后清理钩子并恢复模型。
-
-### 3. 配置示例
-
-> 以下为最小可用的 YAML 配置片段。各字段的详细含义如下表所示。
-
-```yaml
-spec:
-  process:
-    - type: "iter_smooth"
-      alpha: 0.9
-      scale_min: 1e-5
-      symmetric: True
-      enable_subgraph_type:
-        - 'norm-linear'
-        - 'linear-linear'
-        - 'ov'
-        - 'up-down'
-      include: ["*"]
-      exclude: ["*self_attn*"]
-```
-
-**字段说明**：
-
-| 字段名 | 作用 | 说明 |
-| --- | --- | --- |
-| type | 处理器类型标识 | 固定为 `"iter_smooth"`。 |
-| alpha | 平衡参数 | 大于 0 的浮点数，控制激活和权重的相对重要性，默认 `0.9`。 |
-| scale_min | 缩放因子最小值 | 大于 0 的浮点数，防止数值不稳定，默认 `1e-5`。 |
-| symmetric | 是否对称量化 | 布尔值，`True` 为对称，`False` 为非对称，默认 `True`。 |
-| enable_subgraph_type | 开启的子图类型 | 支持 `norm-linear`、`linear-linear`、`ov`、`up-down`。 |
-| include | 包含的层 | 字符串列表，支持通配符匹配。 |
-| exclude | 排除的层 | 字符串列表，支持通配符匹配。 |
-
-### 4. 模型适配接口
-
-模型适配需实现 `IterSmoothInterface` 接口的 `get_adapter_config_for_subgraph()` 方法，返回 `List[AdapterConfig]`（含 `norm-linear`、`linear-linear`、`ov`、`up-down` 等子图映射，`source` 可为 `None` 表示非融合子图）。参考实现：`msmodelslim/model/qwen3/model_adapter.py`。
-
----
-
-## 6. 适用场景与限制
-
-### 1. 适用场景
+### 2.5 适用场景
 
 - 需要同时对注意力 `ov`、MLP `up-down`、连续线性层等多种结构做离群值抑制的场景。
 - 作为 W8A8、W4A8 等量化方案的前置离群值抑制步骤，为 [MinMax](../minmax/term_minmax.md) 等激活量化器创造更均匀的数值分布。
 
-### 2. 使用限制
+更具体地说，这类算法适合“量化误差主要由少数大幅值通道或 token 拉高尺度”的情况。若问题来源并不是离群值，而是模型本身对低比特表示普遍敏感，则单独增加平滑或旋转强度通常收益有限，应结合更高精度量化或敏感层回退。
 
-- 模型必须实现 `IterSmoothInterface` 接口并正确配置子图映射。
-- 目标模块必须存在且具备可写的 `weight`（及可选 `bias`），模块名须与 `named_modules()` 返回的完整路径一致。
-- 非融合子图不支持 `shift`（偏置平移），若配置了 shift 会被忽略并打日志提示。
+### 2.6 使用限制
 
----
+- 目标结构需要满足相邻算子间可做等价协同缩放的条件。
+- 对无法与前置算子融合的独立线性层，只适合做乘性缩放，不适合同时做偏置平移。
 
-## 7. 关联流程
-
-- 《[一键量化 (V1)](../../../user_guide/usage_quick_quantization.md)》：默认集成本算法作为离群值抑制前置步骤。
-- 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：精度不达标时可考虑启用本算法。
+这些限制反映了算法对模型结构和等价变换条件的依赖。若目标模型不满足相应结构假设，强行套用可能破坏原有计算关系；因此遇到不兼容结构时应优先缩小作用范围或使用模型已验证的配方，而不是盲目增大平滑强度。
 
 ---
 
-## 8. 关联词条
+## 3. 关联词条
+
+可以从“同类方法、前后处理关系和应用对象”三个方向理解本词条与其他算法的关系。下面的关联项既用于横向比较不同技术路线，也用于帮助定位该算法在完整量化方案中的位置。
 
 - [SmoothQuant](../smooth_quant/term_smooth_quant.md)：上位概念，本算法是 SmoothQuant 的迭代扩展。
 - [Flex Smooth Quant](../flex_smooth_quant/term_flex_smooth_quant.md)：同类算法，通过二阶段网格搜索自动寻找最优 `alpha`/`beta`。
@@ -147,7 +106,9 @@ spec:
 
 ---
 
-## 9. 参考资料
+## 4. 参考文档
+
+参考文档优先列出算法原始论文或权威出处，并补充仓库内对应使用指南。需要进一步理解参数选择时，可先阅读使用指南，再回到原论文核对算法假设和推导。
 
 1. Xiao G et al. SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models. ICML 2023. https://arxiv.org/abs/2211.10438
-2. 《Iterative Smooth 使用指南》([./usage_iterative_smooth.md](./usage_iterative_smooth.md))
+2. 《[Iterative Smooth 参数配置流程指南](./usage_iterative_smooth.md)》

@@ -1,16 +1,14 @@
-# PDMIX 阶段间混合量化算法词条
+﻿# PDMIX 阶段间混合量化算法 量化术语百科词条
 
-> **词条类别**：量化算法
-> **英文名称**：PDMIX
-> **英文缩写**：PDMIX
-> **应用领域**：大语言模型量化压缩、推理加速
-> **msModelSlim 实现**：`msmodelslim/core/quantizer/impl/minmax.py`、`msmodelslim/ir/w8a8_pdmix.py`
+> **词条类别**：[量化算法](../README.md#2-量化算法)<br>
+> **英文名称**：pdmix<br>
+> **应用领域**：大语言模型量化压缩、推理加速<br>
 
 ---
 
 ## 1. 概述
 
-PDMIX（Prefill-Decode Mix）是一种激活值阶段间混合量化算法。它在 Prefilling 阶段使用 W8A8 动态量化（`per_token`）减少输入上下文的量化信息损失，在 Decoding 阶段使用 W8A8 静态量化（`per_tensor`）获取输出时的量化性能收益。其核心特征是：阶段自适应切换量化粒度、回退少量层即可控制精度损失、仅需存储一份量化权重，是 [线性量化](../linear_quant/term_linear_quant.md) 中激活值量化的一种方法。
+PDMIX（Prefill-Decode Mix）是一种根据推理阶段切换激活量化粒度的混合量化方法。它在 Prefill 阶段采用更能适应 token 动态范围的量化策略，在 Decode 阶段采用更利于运行效率的静态策略，以平衡精度和性能；核心特征是阶段自适应、共享量化权重和对 Prefill/Decode 数值分布差异的显式利用。
 
 ---
 
@@ -18,15 +16,21 @@ PDMIX（Prefill-Decode Mix）是一种激活值阶段间混合量化算法。它
 
 传统 W8A8 静态量化采用静态的激活量化参数，在长上下文或分布漂移场景中易产生较大量化误差，需要回退大量层才能控制精度损失，却因此损失性能收益。PDMIX 观察到，Prefilling 阶段对精度敏感、Decoding 阶段对性能敏感，因此按阶段分别采用动态与静态量化，用少量回退即可平衡精度与性能。
 
----
+从量化流程中的定位看，该算法解决的是“如何把连续浮点值映射到受限数值集合，同时尽量保留模型输出”的问题。与只按极值直接计算尺度的基础方法相比，它通常会利用更细的统计信息、优化目标或结构约束来控制误差，因此更适合对精度有明确要求的量化场景。
 
-## 3. 原理
+### 2.1 核心思想
 
-### 1. 核心思想
+PDMIX 的核心思想是“阶段自适应激活量化”：权重量化保持不变，激活量化在 Prefilling 阶段采用 per-token 动态量化（token 级颗粒度在线计算量化参数），在 Decoding 阶段采用 per-tensor 静态量化（离线计算量化参数、降低推理时延）。由于阶段间权重量化方式保持一致，只需存储一份量化权重。
 
-PDMIX 的核心思想是“阶段自适应激活量化”：权重量化保持不变，激活量化在 Prefilling 阶段采用 `per_token` 动态量化（token 级颗粒度在线计算量化参数），在 Decoding 阶段采用 `per_tensor` 静态量化（离线计算量化参数、降低推理时延）。由于阶段间权重量化方式保持一致，只需存储一份量化权重。
+PDMIX 的核心收益是把“精度优先”和“解码延迟优先”放到最合适的阶段。
 
-### 2. 数学描述
+### 2.2 工作机制
+
+大模型推理的 Prefilling 与 Decoding 具有明显不同的工作负载。Prefilling 一次处理较多 token，激活分布跨 token 差异较大，同时额外的 per-token 统计成本容易被大矩阵计算摊薄；因此动态 per-token 尺度能以较小相对成本获得更好的范围适配。Decoding 每步只有少量 token，延迟和小算子开销更敏感，如果每步都做动态归约求尺度，量化本身可能成为可见开销。
+
+PDMIX 因而让两个阶段共享同一套低比特权重表示，但激活采用不同策略：Prefill 使用动态、细粒度量化以优先保证精度；Decode 使用离线获得的静态、较粗粒度尺度以减少运行时统计。它不是“不同阶段换不同位宽”，而是针对阶段特征切换量化参数生成方式与共享粒度。
+
+### 2.3 数学描述
 
 设激活值为 $X$，Prefilling 阶段采用 per-token 动态量化：
 
@@ -47,102 +51,40 @@ $$
 - $Z_{\text{tensor}}$：per-tensor 静态零点
 - $Q_{\min}$、$Q_{\max}$：量化数值范围（INT8 的 $[-128, 127]$）
 
-整体上，PDMIX 等价于一种“Prefilling 动态、Decoding 静态”的分段量化方案，权重量化与 `per_channel` 结合。
+整体上，PDMIX 等价于一种“Prefilling 动态、Decoding 静态”的分段量化方案，权重量化与 per-channel 结合。
 
-### 3. 关键性质
+若动态尺度计算成本记为 $C_s$、主矩阵乘成本为 $C_g$，则额外相对开销可粗略看作 $C_s/C_g$。Prefill 随 token 数增加时 $C_g$ 很大，该比值通常较小；Decode 每步的 $C_g$ 下降，该比值可能显著增大。PDMIX 不改变 $q=\operatorname{round}(x/S)+Z$ 的基本形式，而是改变 $S,Z$ 在何时、以多细粒度估计。
 
-- **阶段自适应**：Prefilling 用 `per_token`、Decoding 用 `per_tensor`，兼顾精度与性能。
+### 2.4 关键性质
+
+- **阶段自适应**：Prefilling 用 per-token、Decoding 用 per-tensor，兼顾精度与性能。
 - **单份权重**：阶段间权重量化方式一致，仅需存储一份量化权重。
 - **回退代价低**：相比静态量化，回退少量层即可控制精度损失。
 - **推理加速**：Decoding 阶段静态量化减少量化参数计算操作，提高吞吐量。
+- **阶段策略而非混合位宽**：核心差异在激活尺度生成与共享粒度，不要求 Prefill/Decode 使用不同位宽。
 
----
+风险主要来自静态 Decode 尺度的分布外输入：如果校准数据没有覆盖某些解码 token 的大幅值，静态 per-tensor 范围可能出现饱和。
 
-## 4. 流程示意
-
-> 以下为本算法在 msModelSlim 中的简化流程概览。
-
-```mermaid
-flowchart LR
-    A[校准数据] --> B[静态量化参数]
-    B --> C{Prefilling?}
-    C -- 是 --> D[per_token 动态量化]
-    C -- 否 --> E[per_tensor 静态量化]
-    D --> F[输出]
-    E --> F
-```
-
----
-
-## 5. 在 msModelSlim 中的实现
-
-### 1. 实现位置
-
-量化校准在 `msmodelslim/core/quantizer/impl/minmax.py` 的 `ActPDMixMinmax` 中实现，量化模式 IR 在 `msmodelslim/ir/w8a8_pdmix.py` 的 `W8A8PDMixFakeQuantLinear` 中实现，相关常量在 `msmodelslim/ir/const.py` 中定义（`int8_pd_mix_asym`）。
-
-### 2. 处理流程
-
-PDMIX 作为 `linear_quant` 处理器的激活值量化方法使用，通过 `qconfig.act.scope: "pd_mix"` 启用。Prefilling 阶段由 `ActPDMixMinmax` 使用 per-token 动态量化参数，Decoding 阶段切换为 per-tensor 静态量化参数，由 `W8A8PDMixFakeQuantLinear` IR 承载。
-
-### 3. 配置示例
-
-> 以下为最小可用的 YAML 配置片段。各字段的详细含义如下表所示。
-
-```yaml
-spec:
-  process:
-    - type: "linear_quant"
-      qconfig:
-        act:
-          scope: "pd_mix"
-          dtype: "int8"
-          symmetric: false
-          method: "minmax"
-        weight:
-          scope: "per_channel"
-          dtype: "int8"
-          symmetric: true
-          method: "minmax"
-```
-
-**字段说明**：
-
-| 字段名 | 作用 | 说明 |
-| --- | --- | --- |
-| qconfig.act.scope | 激活量化范围 | 固定为 `"pd_mix"`（prefilling 用 `per_token`，decoding 用 `per_tensor`）。 |
-| qconfig.act.dtype | 激活量化数据类型 | 仅支持 `"int8"`。 |
-| qconfig.act.symmetric | 激活是否对称量化 | `false`（PDMIX 量化总体为非对称）。 |
-| qconfig.act.method | 激活量化方法 | 仅支持 `"minmax"`。 |
-| qconfig.weight.scope | 权重量化范围 | 仅支持 `"per_channel"`。 |
-| qconfig.weight.dtype | 权重量化数据类型 | 仅支持 `"int8"`。 |
-| qconfig.weight.symmetric | 权重是否对称量化 | 仅支持 `true`。 |
-| qconfig.weight.method | 权重量化方法 | `"minmax"`。 |
-
----
-
-## 6. 适用场景与限制
-
-### 1. 适用场景
+### 2.5 适用场景
 
 - 长上下文或分布漂移场景下，静态量化精度损失大、需要回退大量层的场景。
 - 生成式模型推理加速场景，希望在控制精度损失的同时获取静态量化的性能收益。
 
-### 2. 使用限制
+更具体地说，是否适用主要取决于目标位宽、模型结构和部署后端三点。若目标部署链已经明确支持该算法对应的量化格式，并且校准数据能够覆盖主要业务分布，通常可以优先从该算法的推荐配置建立基线，再根据精度结果决定是否增加更复杂的优化。
+
+### 2.6 使用限制
 
 - 当前仅支持 MindIE 推理部署。
 - 仅支持 W8A8 PDMIX 一种量化模式（激活 INT8 动态/静态混合，权重 per_channel INT8）。
-- 除了 `qconfig.weight.method` 可调整外，其他配置组合均未有对应实现。
+- PDMIX 的核心在于 Prefill 与 Decode 使用不同的激活量化粒度；若改变两阶段的粒度或对称性组合，就需要重新评估是否仍满足预期的精度与解码开销折中。
+
+这些限制应在调参前确认，而不是等精度异常后再排查。尤其是数据类型、张量维度、分组大小和后端算子支持等硬约束，一旦不满足，继续调整算法参数通常无法解决问题；应先回到受支持的配置组合。
 
 ---
 
-## 7. 关联流程
+## 3. 关联词条
 
-- 《[一键量化 (V1)](../../../user_guide/usage_quick_quantization.md)》：可集成 PDMIX 作为激活值混合量化步骤。
-- 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：静态量化精度损失大时可尝试替换为 PDMIX。
-
----
-
-## 8. 关联词条
+可以从“同类方法、前后处理关系和应用对象”三个方向理解本词条与其他算法的关系。下面的关联项既用于横向比较不同技术路线，也用于帮助定位该算法在完整量化方案中的位置。
 
 - [线性量化](../linear_quant/term_linear_quant.md)：上位概念，PDMIX 是线性量化中激活值量化的一种方法。
 - [MinMax](../minmax/term_minmax.md)：应用对象，PDMIX 的量化参数基于 MinMax 算法计算。
@@ -150,6 +92,8 @@ spec:
 
 ---
 
-## 9. 参考资料
+## 4. 参考文档
 
-1. 《PDMIX 使用指南》([./usage_pdmix.md](./usage_pdmix.md))
+参考文档优先列出算法原始论文或权威出处，并补充仓库内对应使用指南。需要进一步理解参数选择时，可先阅读使用指南，再回到原论文核对算法假设和推导。
+
+1. 《[PDMIX 参数配置流程指南](./usage_pdmix.md)》

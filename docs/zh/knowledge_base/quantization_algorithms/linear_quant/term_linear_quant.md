@@ -1,16 +1,14 @@
-# 线性量化算法词条
+﻿# 线性量化算法 量化术语百科词条
 
-> **词条类别**：量化算法
-> **英文名称**：Linear Quant
-> **英文缩写**：LQ
-> **应用领域**：深度学习模型压缩、大语言模型量化
-> **msModelSlim 实现**：`msmodelslim/processor/quant/linear.py`
+> **词条类别**：[量化算法](../README.md#2-量化算法)<br>
+> **英文名称**：linear_quant<br>
+> **应用领域**：深度学习模型压缩、大语言模型量化<br>
 
 ---
 
 ## 1. 概述
 
-线性量化（Linear Quantization）是深度学习模型压缩中最基础且广泛应用的算法类别。它将连续的浮点数值范围映射到离散的数值集合中，通过缩放因子（Scale）与零点（Zero-point）实现浮点与整数的相互转换。在 msModelSlim 中，线性量化通过 `linear_quant` 处理器实现，支持对线性层的权重和激活进行灵活配置，并可按 `method` 接入 [MinMax](../minmax/term_minmax.md)、[Histogram](../histogram_activation_quantization/term_histogram_activation_quantization.md)、[SSZ](../ssz/term_ssz.md)、[GPTQ](../gptq/term_gptq.md) 等量化算法。
+线性量化（Linear Quantization）是一类用缩放因子和可选零点把连续浮点值映射到有限离散集合的基础量化方法，可用于线性层权重和激活。它通过位宽、量化粒度、对称性和参数估计方法共同控制误差与压缩收益；[MinMax](../minmax/term_minmax.md)、[Histogram](../histogram_activation_quantization/term_histogram_activation_quantization.md) 等都是常见实现方式。
 
 ---
 
@@ -18,134 +16,93 @@
 
 模型推理与部署对显存、带宽与算力有极高要求，浮点权重的存储与计算开销成为瓶颈。线性量化通过将浮点数值映射到低比特整数，显著降低模型体积与计算成本。按量化参数统计与计算时机，可分为静态量化、动态量化以及混合量化（如 [PDMIX](../pdmix/term_pdmix.md)），适配不同的精度与性能需求。
 
----
+从量化流程中的定位看，该算法解决的是“如何把连续浮点值映射到受限数值集合，同时尽量保留模型输出”的问题。与只按极值直接计算尺度的基础方法相比，它通常会利用更细的统计信息、优化目标或结构约束来控制误差，因此更适合对精度有明确要求的量化场景。
 
-## 3. 原理
+### 2.1 核心思想
 
-### 1. 核心思想
+线性量化的核心思想是把连续实数映射到一个有限、等间隔的整数格点集合。量化尺度 $S$ 决定相邻整数码在实数域中的间距，零点 $Z$ 决定实数零对应的整数位置；量化时先除以 $S$、加上 $Z$、舍入并截断，反量化时再执行 $S(Q-Z)$。因此，线性量化本质上是对实数轴上的均匀格点进行投影。
 
-线性量化的核心思想是“以线性映射逼近浮点分布”：用缩放因子 $S$ 与零点 $Z$ 将浮点值 $V$ 映射到量化区间 $[Q_{\min}, Q_{\max}]$，量化后的整数再乘以 $S$ 加 $Z$ 即可反量化回浮点。通过合理选择 $S$ 与 $Z$（如 MinMax 统计、直方图截断、迭代搜索等），可以控制量化误差。
+算法效果主要由三件事共同决定：量化区间覆盖多大范围、多少元素共享同一组 $S/Z$、以及量化参数是由离线统计还是运行时数据得到。区间过大时格点变稀，区间过小时会产生饱和截断；粒度越细通常越能贴合局部分布，但尺度元数据与计算复杂度也越高。
 
-### 2. 数学描述
+线性量化的总误差可粗分为三类：范围外元素产生 clipping error；范围内元素投影到最近格点产生 rounding error；非对称量化还会受到 zero-point 取整和有限整数端点不完全对称的影响。
 
-量化公式：
+### 2.2 工作机制
+
+首先确定实数范围 $[r_{min},r_{max}]$ 与整数范围 $[Q_{min},Q_{max}]$。非对称量化通常取 $S=(r_{max}-r_{min})/(Q_{max}-Q_{min})$，再选择使实数 0 尽量精确映射的 $Z$；对称量化则令范围围绕 0 对称，常用 $S=\max|x|/Q_{max}$ 且 $Z=0$（具体整数端点随格式约定变化）。之后每个元素都投影到最近的可用整数格点，并在超出范围时截断。
+
+粒度决定 $r_{min}/r_{max}$ 与 $S/Z$ 的共享范围。per-tensor 参数最少但容易被局部离群值支配；per-channel 能隔离不同输出/输入通道的尺度差异；per-group 在精度和元数据之间折中；per-token 动态量化则让每个 token 适应自身幅值。observer 负责估计范围或统计量，quantizer 负责根据这些参数执行离散映射，两者共同决定最终误差。
+
+### 2.3 数学描述
+
+设实数 $x$ 的量化尺度为 $S>0$、零点为整数 $Z$，目标整数范围为 $[Q_{\min},Q_{\max}]$。仿射线性量化可写为：
 
 $$
-Q = \operatorname{clamp}\left(\operatorname{round}\left(\frac{V}{S}\right) + Z, \; Q_{\min}, Q_{\max}\right)
+q = \operatorname{clip}\left(\operatorname{round}\left(\frac{x}{S}\right)+Z,\;Q_{\min},Q_{\max}\right)
 $$
 
-反量化公式：
+反量化为：
 
 $$
-V \approx S \times (Q - Z)
+\hat{x}=S(q-Z)
 $$
 
-- $V$：原始浮点值
-- $S$：缩放因子，决定量化步长
-- $Z$：零点偏移，用于处理非对称分布
-- $Q$：量化后的整数
-- $Q_{\min}$、$Q_{\max}$：量化数值范围（如 INT8 的 $[-128, 127]$）
+对非对称量化，一个常见的范围映射为：
 
-对称量化时 $Z = 0$；非对称量化时 $Z$ 可调整。按统计粒度可分为 `per_tensor`（整个张量共用参数）、`per_channel`（每通道独立参数）、`per_group`（每分组独立参数）等。
+$$
+S=\frac{r_{\max}-r_{\min}}{Q_{\max}-Q_{\min}}, \qquad
+Z=\operatorname{clip}\left(\operatorname{round}\left(Q_{\min}-\frac{r_{\min}}{S}\right),Q_{\min},Q_{\max}\right)
+$$
 
-### 3. 关键性质
+对称量化通常令 $Z=0$（或采用格式规定的中心码），并使用：
+
+$$
+S=\frac{\max(|r_{\min}|,|r_{\max}|)}{Q_{\max}^{+}}
+$$
+
+其中 $Q_{\max}^{+}$ 表示对称格式采用的正侧最大整数码。
+
+- $S$：一个整数码步长对应的实数间隔。
+- $Z$：实数零在整数域中的映射位置。
+- $r_{\min},r_{\max}$：observer 或动态统计得到的实数范围。
+- $q$、$\hat x$：整数表示与其反量化近似。
+
+对不发生 clipping 的值，若舍入到最近格点，则误差 $e=x-\hat x$ 满足近似 $|e|\le S/2$。在“格点内误差近似均匀且与信号独立”的经典高分辨率假设下：
+
+$$
+\mathbb E[e]\approx0,\qquad \mathbb E[e^2]\approx\frac{S^2}{12}.
+$$
+
+这给出了一个重要直觉：范围扩大一倍会使 $S$ 近似扩大一倍，而区间内量化噪声方差约扩大四倍。另一方面，若缩小范围，超出边界的值会产生可能远大于 $S/2$ 的 clipping error。因此量化范围选择本质上是这两类误差的权衡。
+
+### 2.4 关键性质
 
 - **基础通用**：适用于权重与激活的量化，是大多数量化方案的基础。
-- **粒度可调**：支持 `per_tensor`、`per_channel`、`per_group` 等量化粒度。
+- **粒度可调**：可采用逐张量（per-tensor）、逐通道（per-channel）、逐组（per-group）等量化粒度。
 - **静态与动态**：支持静态量化（离线固定参数）与动态量化（在线计算参数）。
-- **算法可扩展**：通过 `method` 字段可接入 MinMax、Histogram、SSZ、GPTQ 等量化算法。
-- **层过滤**：通过 `include`/`exclude` 通配符灵活控制量化层范围。
+- **算法可扩展**：量化参数估计可采用 MinMax、Histogram、SSZ、GPTQ 等不同方法，以适配不同数据分布与精度目标。
+- **统一表示框架**：MinMax、Histogram、动态量化等方法主要差异在于如何估计 $S/Z$，最终都可落到同一仿射量化形式。
+
+从误差与适用边界看，细粒度尺度能让每组数据拥有更小的局部范围，因此通常更精确，但会增加参数量、内存访问和算子约束。动态量化能适应输入变化，却引入在线统计成本。
+
+### 2.5 适用场景
+
+- 基础量化场景，需要对线性变换的权重与激活进行整数或低精度表示。
+- 可作为 PDMIX、Histogram、SSZ、GPTQ 等量化思想的基础载体。
+
+更具体地说，是否适用主要取决于目标位宽、模型结构和部署后端三点。若目标部署链已经明确支持该算法对应的量化格式，并且校准数据能够覆盖主要业务分布，通常可以优先从该算法的推荐配置建立基线，再根据精度结果决定是否增加更复杂的优化。
+
+### 2.6 使用限制
+
+- 本词条讨论的线性量化主要针对二维线性变换；卷积、归一化等其他算子需要使用与其张量布局相匹配的量化定义。
+- 数据格式、量化粒度、对称性与参数估计方法之间存在兼容关系，实际方案应选择部署后端支持的有效组合。
+
+这些限制应在调参前确认，而不是等精度异常后再排查。尤其是数据类型、张量维度、分组大小和后端算子支持等硬约束，一旦不满足，继续调整算法参数通常无法解决问题；应先回到受支持的配置组合。
 
 ---
 
-## 4. 流程示意
+## 3. 关联词条
 
-> 以下为本算法在 msModelSlim 中的简化流程概览。
-
-```mermaid
-flowchart LR
-    A[校准数据] --> B[统计分布]
-    B --> C[计算量化参数]
-    C --> D[量化-反量化]
-    D --> E[部署量化权重]
-```
-
----
-
-## 5. 在 msModelSlim 中的实现
-
-### 1. 实现位置
-
-算法在 `msmodelslim/processor/quant/linear.py` 中实现，通过 `type: "linear_quant"` 处理器使用，量化器实现位于 `msmodelslim/core/quantizer/`。
-
-### 2. 处理流程
-
-`linear_quant` 处理器对模型中的 `nn.Linear` 模块进行量化：根据 `qconfig` 配置权重与激活的量化方式（`scope`、`dtype`、`symmetric`、`method`），按 `include`/`exclude` 过滤层范围，对目标层执行量化-反量化并生成量化 IR。`qconfig.act.scope` 为 `per_tensor`/`per_token`/`pd_mix` 时分别对应静态/动态/PDMIX 混合量化。
-
-### 3. 配置示例
-
-> 以下为最小可用的 YAML 配置片段。各字段的详细含义如下表所示。
-
-```yaml
-spec:
-  process:
-    - type: "linear_quant"
-      qconfig:
-        act:
-          scope: "per_token"
-          dtype: "int8"
-          symmetric: false
-          method: "minmax"
-        weight:
-          scope: "per_channel"
-          dtype: "int8"
-          symmetric: true
-          method: "minmax"
-      include: ["*"]
-      exclude: ["*down_proj*"]
-```
-
-**字段说明**：
-
-| 字段名 | 作用 | 说明 |
-| --- | --- | --- |
-| type | 处理器类型标识 | 固定为 `"linear_quant"`。 |
-| qconfig.act.scope | 激活量化范围 | `"per_tensor"`（静态）、`"per_token"`（动态）、`"pd_mix"`（PDMIX 混合）。 |
-| qconfig.act.dtype | 激活量化数据类型 | `"int8"`、`"int4"`、`"float"`（16位浮点激活）。 |
-| qconfig.act.symmetric | 激活是否对称量化 | `true` 为对称，`false` 为非对称。 |
-| qconfig.act.method | 激活量化方法 | `"minmax"` 或 `"histogram"`。 |
-| qconfig.weight.scope | 权重量化范围 | `"per_tensor"`、`"per_channel"`、`"per_group"`。 |
-| qconfig.weight.dtype | 权重量化数据类型 | `"int8"` 或 `"int4"`。 |
-| qconfig.weight.symmetric | 权重是否对称量化 | `true` 为对称，`false` 为非对称。 |
-| qconfig.weight.method | 权重量化方法 | `"minmax"`、`"ssz"`、`"gptq"`。 |
-| include | 包含的层 | 字符串列表，支持通配符匹配。 |
-| exclude | 排除的层 | 字符串列表，支持通配符匹配，优先级高于 `include`。 |
-
----
-
-## 6. 适用场景与限制
-
-### 1. 适用场景
-
-- 基础量化场景，需要对线性层权重与激活进行量化的模型部署。
-- 作为 PDMIX、Histogram、SSZ、GPTQ 等量化算法的宿主处理器。
-
-### 2. 使用限制
-
-- 仅处理 `nn.Linear` 模块，其他自定义模块暂不支持。
-- 并非所有配置组合都是有效组合，无效组合会抛出 `UnsupportedError` 异常。
-- `include`/`exclude` 未匹配到任何层时工具会告警，需关注匹配结果。
-
----
-
-## 7. 关联流程
-
-- 《[一键量化 (V1)](../../../user_guide/usage_quick_quantization.md)》：默认集成线性量化作为基础量化步骤。
-- 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：精度不达标时可调整线性量化配置。
-
----
-
-## 8. 关联词条
+可以从“同类方法、前后处理关系和应用对象”三个方向理解本词条与其他算法的关系。下面的关联项既用于横向比较不同技术路线，也用于帮助定位该算法在完整量化方案中的位置。
 
 - [MinMax](../minmax/term_minmax.md)：应用对象，线性量化最基础的量化方法。
 - [Histogram](../histogram_activation_quantization/term_histogram_activation_quantization.md)：应用对象，线性量化的激活值量化方法。
@@ -155,7 +112,9 @@ spec:
 
 ---
 
-## 9. 参考资料
+## 4. 参考文档
+
+参考文档优先列出算法原始论文或权威出处，并补充仓库内对应使用指南。需要进一步理解参数选择时，可先阅读使用指南，再回到原论文核对算法假设和推导。
 
 1. Jacob B et al. Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference. CVPR 2018. https://arxiv.org/abs/1712.05877
-2. 《线性量化 使用指南》([./usage_linear_quant.md](./usage_linear_quant.md))
+2. 《[线性量化参数配置流程指南](./usage_linear_quant.md)》

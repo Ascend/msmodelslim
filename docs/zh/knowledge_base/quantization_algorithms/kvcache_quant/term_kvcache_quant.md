@@ -1,16 +1,14 @@
-# KVCache Quant 缓存量化算法词条
+﻿# KVCache Quant 缓存量化算法 量化术语百科词条
 
-> **词条类别**：量化算法
-> **英文名称**：KVCache Quant
-> **英文缩写**：KV Quant
-> **应用领域**：KV Cache 压缩、长序列推理加速
-> **msModelSlim 实现**：`msmodelslim/processor/quant/attention.py`
+> **词条类别**：[量化算法](../README.md#2-量化算法)<br>
+> **英文名称**：kvcache_quant<br>
+> **应用领域**：KV Cache 压缩、长序列推理加速<br>
 
 ---
 
 ## 1. 概述
 
-KVCache Quant 是一种针对 KV Cache 的量化算法。它对写入 KV Cache 的 `key_states` 和 `value_states` 进行 INT8 量化，在保持生成质量的前提下显著降低缓存内存占用（FP16→INT8 理论可减少约 50% 的 cache 内存）。其核心特征是：在 `DynamicCache.update()` 调用时拦截 Key/Value 状态、按隐藏层维度 per_channel 计算量化参数、与 Transformers 标准缓存机制兼容，通常配合 [线性量化](../linear_quant/term_linear_quant.md) 实现全量化方案。
+KVCache Quant 是一种针对推理 KV Cache 的低比特量化算法。它对需要长期缓存的 Key/Value 状态建立量化表示，以减少长序列生成过程中随上下文长度增长的缓存占用；核心特征是面向缓存张量而非模型权重、通常采用按通道或其他局部粒度计算量化参数，并需要兼顾 Key 与 Value 误差对注意力计算的不同影响。
 
 ---
 
@@ -18,135 +16,93 @@ KVCache Quant 是一种针对 KV Cache 的量化算法。它对写入 KV Cache �
 
 在大模型推理中，KV Cache 存储的 Key/Value 状态占用大量显存，并随序列长度线性增长，成为长序列推理的瓶颈。对写入 KV Cache 的状态进行量化，可以在保持生成质量的前提下显著降低缓存内存占用，提升长序列推理效率。
 
----
+从量化流程中的定位看，该算法解决的是“如何把连续浮点值映射到受限数值集合，同时尽量保留模型输出”的问题。与只按极值直接计算尺度的基础方法相比，它通常会利用更细的统计信息、优化目标或结构约束来控制误差，因此更适合对精度有明确要求的量化场景。
 
-## 3. 原理
+### 2.1 核心思想
 
-### 1. 核心思想
+KVCache Quant 的核心思想是把自回归注意力中需要跨 token 长期保存的 Key/Value 状态由高精度表示压缩为低比特表示，并在后续注意力计算需要这些历史状态时按对应尺度恢复或直接由低比特算子消费。因为 KV Cache 的容量随层数、序列长度、KV head 数和 head 维度近似线性增长，降低单元素位宽能够直接降低长上下文推理的缓存开销。
 
-KVCache Quant 的核心思想是“在缓存写入路径上插入量化”：在注意力模块调用 `DynamicCache.update()` 写入 Key/Value 状态时，拦截并应用量化校准。量化按隐藏层维度（per_channel）计算量化参数，平衡精度与效率，量化后的缓存状态以伪量化 IR 部署。
+与普通权重量化不同，KV Cache 是随解码过程不断追加的动态状态，其分布会随层、head、通道和 token 位置变化。因此算法不仅要决定位宽，还要决定尺度共享粒度和尺度更新方式：共享范围过大容易被局部离群值支配，过细则增加尺度元数据、统计与访存开销。
 
-### 2. 数学描述
+缓存量化的主要收益几乎与缓存位宽成正比，因此长上下文越长，显存收益越显著。
 
-对缓存状态 $X$（shape 为 $(B, H, S, D)$），先转置并重塑为量化器输入格式，应用伪量化：
+### 2.2 工作机制
+
+以标准注意力为例，历史 Key/Value 被不断追加为 $K_{1:t},V_{1:t}$，当前 Query 通过 $\operatorname{softmax}(Q_tK_{1:t}^T/\sqrt d)V_{1:t}$ 读取它们。量化可写成 $K_q=Q(K;S_K,Z_K)$、$V_q=Q(V;S_V,Z_V)$，随后用反量化值或支持低比特输入的算子完成注意力。若从 FP16/BF16 压缩到 INT8，忽略尺度元数据时理论元素存储约减半；更低位宽则进一步降低。
+
+尺度粒度决定哪些 token/head/channel 共用量化区间。per-channel/per-head 可以减少不同通道之间的离群值串扰；动态尺度能随当前数据适配，但需要在线统计与额外元数据，静态尺度开销更小却依赖校准分布。K 和 V 的误差传播也不同：K 误差先改变 logits，经过 softmax 后可能产生非线性放大；V 误差主要在线性加权求和中传播。因此两者即使使用相同位宽，也可能表现出不同敏感性。
+
+### 2.3 数学描述
+
+对任意待缓存张量 $X\in\{K,V\}$，线性低比特量化可以写为：
 
 $$
-X_{\text{transposed}} = X^{\top}_{(B,H,S,D) \rightarrow (B,S,H,D)}
+q_X=\operatorname{clip}\left(\operatorname{round}\left(\frac{X}{S_X}\right)+Z_X,\;Q_{min},Q_{max}\right)
+$$
+
+反量化近似为：
+
+$$
+\hat X=S_X(q_X-Z_X)
+$$
+
+其中 $S_X,Z_X$ 可以按 tensor、head、channel 或更细粒度共享。标准注意力在使用量化缓存时近似为：
+
+$$
+\hat Y_t=\operatorname{softmax}\left(\frac{Q_t\hat K_{1:t}^{T}}{\sqrt d}\right)\hat V_{1:t}
+$$
+
+若原缓存元素位宽为 $b_{fp}$，量化后数据位宽为 $b_q$，忽略尺度、零点及对齐开销时，数据区的理论存储比例约为：
+
+$$
+\frac{M_q}{M_{fp}}\approx\frac{b_q}{b_{fp}}
+$$
+
+实际节省还取决于尺度粒度、元数据和后端存储格式。
+
+设量化后缓存为 $\hat K=K+E_K$、$\hat V=V+E_V$，注意力输出为 $O=PV$，其中 $P=\operatorname{softmax}(QK^T/\sqrt d)$。一阶近似下：
+
+$$
+\Delta L=\frac{QE_K^T}{\sqrt d},\qquad\Delta P\approx J_{\mathrm{sm}}\Delta L,
 $$
 
 $$
-X_{\text{reshaped}} = \operatorname{reshape}(X_{\text{transposed}}, (-1, H \times D))
+\Delta O\approx \Delta P\,V+P E_V.
 $$
 
-$$
-X_{q\_dq} = \operatorname{fake\_quantize}(X_{\text{reshaped}}, q\_param)
-$$
+第一项体现 K 误差经 softmax 的非线性传播，第二项体现 V 误差的概率加权传播。若原缓存使用 $b_{fp}$ 位、量化缓存使用 $b_q$ 位且忽略尺度元数据，则理想存储比约为 $b_q/b_{fp}$；实际比例还要加上 scale/zero-point 等元数据。
 
-- $B$：batch 大小
-- $H$：注意力头数量
-- $S$：序列长度
-- $D$：head 维度
-- $q\_param$：per_channel 量化参数（scale/offset）
+### 2.4 关键性质
 
-### 3. 关键性质
-
-- **缓存路径量化**：在 `DynamicCache.update()` 时拦截 Key/Value 状态，不影响查询与注意力权重。
+- **状态量化**：量化对象是会跨解码步保存并重复读取的 Key/Value 历史状态。
 - **per_channel 量化**：按隐藏层维度计算量化参数，平衡精度与效率。
 - **内存压缩**：FP16→INT8 理论可减少约 50% 的 cache 内存占用。
-- **兼容性好**：与 Transformers 标准 `DynamicCache` 兼容，无需修改上层推理逻辑。
 - **增量校准**：支持动态序列长度变化的增量式校准。
+- **误差具有时间复用性**：历史 K/V 的量化误差会在后续多个解码步中被反复读取。
 
----
+从误差与适用边界看，尺度太粗会被 head/channel 离群值支配，尺度太细又会增加存储和计算开销；动态尺度适配强但可能给解码路径增加归约延迟。低位宽还会让极少数重要历史 token 的表示失真，因此实际算法常与 KV Smooth、head 选择或混合精度策略配合。
 
-## 4. 流程示意
-
-> 以下为本算法在 msModelSlim 中的简化流程概览。
-
-```mermaid
-flowchart LR
-    A[检测注意力层] --> B[安装量化器]
-    B --> C[拦截缓存写入]
-    C --> D[校准统计]
-    D --> E[部署伪量化 IR]
-```
-
----
-
-## 5. 在 msModelSlim 中的实现
-
-### 1. 实现位置
-
-算法在 `msmodelslim/processor/quant/attention.py` 中实现，核心组件包括 `DynamicCacheQuantizer`（校准阶段量化器）与 `FakeQuantDynamicCache`（部署阶段伪量化 IR），通过 `type: "dynamic_cache"` 处理器使用。
-
-### 2. 处理流程
-
-- **检测阶段**（`pre_run`）：自动检测模型中的注意力层（基于模块类名称模式匹配 `*self_attn*`），为每个注意力层创建 `DynamicCacheQuantizer` 并安装触发钩子。
-- **校准阶段**（`run`）：通过钩子机制在 `DynamicCache.update()` 调用时拦截 Key/Value 状态，进行伪量化并收集统计信息。
-- **伪量化部署阶段**（`postprocess`）：将量化器转换为推理优化的 `FakeQuantDynamicCache` IR。
-
-### 3. 配置示例
-
-> 以下为最小可用的 YAML 配置片段。各字段的详细含义如下表所示。
-
-```yaml
-spec:
-  process:
-    - type: "dynamic_cache"
-      qconfig:
-        scope: "per_channel"
-        dtype: "int8"
-        symmetric: True
-        method: "minmax"
-      include: ["*"]
-      exclude: ["model.layers.0.self_attn"]
-```
-
-**字段说明**：
-
-| 字段名 | 作用 | 说明 |
-| --- | --- | --- |
-| type | 处理器类型标识 | 固定为 `"dynamic_cache"`。 |
-| qconfig | 缓存量化配置 | 包含 `scope`、`dtype`、`symmetric`、`method` 等字段。 |
-| scope | 量化粒度 | 仅支持 `"per_channel"`，按隐藏层维度计算量化参数。 |
-| dtype | 量化数据类型 | 仅支持 `"int8"`。 |
-| symmetric | 对称量化开关 | 布尔值，默认 `true`。 |
-| method | 量化方法 | 仅支持 `"minmax"`。 |
-| include | 包含的注意力层 | 字符串列表，支持通配符匹配。 |
-| exclude | 排除的注意力层 | 字符串列表，支持通配符匹配，优先级高于 `include`。 |
-
-### 4. 模型适配接口
-
-模型适配要求：
-
-- 注意力模块 `forward` 接受 `DynamicCache` 对象并调用 `cache.update()`（需正确传递 `layer_idx`）。
-- 自定义缓存需实现 `update(key_states, value_states, layer_idx)` 接口。
-
----
-
-## 6. 适用场景与限制
-
-### 1. 适用场景
+### 2.5 适用场景
 
 - 长序列推理场景下需要降低 KV Cache 显存占用的场景。
 - 与 [线性量化](../linear_quant/term_linear_quant.md) 配合实现全量化方案，提升长序列推理效率。
 
-### 2. 使用限制
+更具体地说，是否适用主要取决于目标位宽、模型结构和部署后端三点。若目标部署链已经明确支持该算法对应的量化格式，并且校准数据能够覆盖主要业务分布，通常可以优先从该算法的推荐配置建立基线，再根据精度结果决定是否增加更复杂的优化。
+
+### 2.6 使用限制
 
 - 注意力模块 `forward` 函数必须接受一个 `DynamicCache` 对象并调用 `cache.update()`。
 - 当前仅支持 INT8 量化，仅对 KV Cache 状态量化。
 - 伪量化阶段仍需原精度内存，真实内存节省需要底层算子支持。
 - 基于模块类名称模式匹配（`*self_attn*`），自定义命名需要适配。
 
----
-
-## 7. 关联流程
-
-- 《[一键量化 (V1)](../../../user_guide/usage_quick_quantization.md)》：可集成 KVCache Quant 作为缓存量化步骤。
-- 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：精度不达标时可调整缓存量化配置。
+这些限制应在调参前确认，而不是等精度异常后再排查。尤其是数据类型、张量维度、分组大小和后端算子支持等硬约束，一旦不满足，继续调整算法参数通常无法解决问题；应先回到受支持的配置组合。
 
 ---
 
-## 8. 关联词条
+## 3. 关联词条
+
+可以从“同类方法、前后处理关系和应用对象”三个方向理解本词条与其他算法的关系。下面的关联项既用于横向比较不同技术路线，也用于帮助定位该算法在完整量化方案中的位置。
 
 - [线性量化](../linear_quant/term_linear_quant.md)：配套术语，KVCache Quant 通常与线性量化配合实现全量化方案。
 - [KV Smooth](../kv_smooth/term_kv_smooth.md)：配套术语，本算法可配合 KV Smooth 抑制 Key 离群值。
@@ -155,6 +111,8 @@ spec:
 
 ---
 
-## 9. 参考资料
+## 4. 参考文档
 
-1. 《KVCache Quant 使用指南》([./usage_kvcache_quant.md](./usage_kvcache_quant.md))
+参考文档优先列出算法原始论文或权威出处，并补充仓库内对应使用指南。需要进一步理解参数选择时，可先阅读使用指南，再回到原论文核对算法假设和推导。
+
+1. 《[KVCache Quant 参数配置流程指南](./usage_kvcache_quant.md)》

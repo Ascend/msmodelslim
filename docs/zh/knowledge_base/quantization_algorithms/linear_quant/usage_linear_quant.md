@@ -1,175 +1,132 @@
-# 线性量化使用指南
+# 线性量化参数配置流程指南
 
 ## 1. 适用范围
 
-本流程适用于在 msModelSlim 中配置和使用线性量化算法。线性量化通过 `linear_quant` 处理器对模型的线性层（`nn.Linear`）权重与激活进行量化，是大多数量化方案的基础。
+线性量化算法。线性量化通过 `linear_quant` 处理器对模型的线性层（`nn.Linear`）权重与激活进行量化，是大多数量化方案的基础。
 
-适用角色：算法工程师、模型部署工程师
+本指南面向首次配置线性量化的用户，重点不是展开完整执行命令，而是说明推荐配置为什么适合作为起点、哪些参数真正需要调，以及出现精度或资源问题时应优先改哪一项。这类算法通常直接影响量化尺度、舍入方式、量化粒度或低比特表示，因此参数选择会同时影响精度、压缩率以及部署兼容性。第一次使用时建议先固定目标位宽、校准集和评测方式，只采用本指南给出的推荐起点；确认基线稳定后，再围绕真正影响算法行为的参数逐项调整。
 
-适用场景：
+如果目标模型已经有完整且已验证的量化配方，应优先复用该配方；若当前算法与目标模型结构、数值格式或部署后端不兼容，不应通过增大搜索强度或扩大作用范围来绕过支持约束。
 
-- 基础量化场景，需要对线性层权重与激活进行量化。
-- 作为 MinMax、Histogram、SSZ、GPTQ、PDMIX 等量化算法的宿主处理器。
-
-不适用场景：
-
-- 非 `nn.Linear` 模块的量化目标。
-- 需要动态计算量化参数以外特殊量化策略的场景（应选择对应的算法）。
-
-## 2. 流程关系与前置条件
-
-**上级流程**：模型适配与验证通过后，确定量化方案阶段。
-
-**前置条件**：
-
-- 已安装兼容版本的 msModelSlim 工具（详见《[msModelSlim 工具安装指南](../../../install_guide/install_guide.md)》）。
-- 已确认目标模型包含可量化的 `nn.Linear` 模块。
-- 静态量化需准备好校准数据集；动态量化可直接在线计算量化参数。
-
-**后续操作**：量化流程执行 → 精度验证 → 部署上线或进入调优。
-
-## 3. 输入和交付件
+## 2. 输入和交付件
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 浮点模型权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` | 可被目标 Transformers 版本加载 |
-| 输入 | 校准数据集 | 工具默认或用户指定（静态量化必选） | JSONL 格式，每条含文本 prompt | 可被工具加载并完成前向推理 |
-| 输入 | 量化 YAML 配置文件 | 用户编写 | 符合 msModelSlim YAML 规范，含 `linear_quant` 处理器配置 | 可通过工具 `--config_path` 参数加载 |
-| 交付件 | 量化权重目录 | `--save_path` 指定路径 | 含 `quant_model_description.json` 及 `*.safetensors`，已应用线性量化 | 推理冒烟通过 |
+| 输入 | 目标模型与量化目标 | 待量化模型及部署/评测方案 | 明确目标数值格式或位宽、作用模块、精度/性能目标以及部署约束 | 能说明为什么选择本算法以及它在整体量化方案中的位置 |
+| 输入 | 配置约束与实践基线 | 本算法配置说明、目标模型已有 `lab_practice` 配方（如有） | 字段名、支持组合、作用范围和模型适配与当前版本一致 | 推荐起点能够追溯到当前配置定义或已验证实践 |
+| 输入 | 校准数据（算法需要时） | 任务 `dataset`、校准集或模型实践配方 | 数据应能代表真实输入分布；多阶段算法尽量保持各阶段数据分布一致 | 能被当前量化流程正常读取，并覆盖主要输入形态 |
+| 交付件 | 线性量化参数配置方案 | 用户量化 YAML 或任务配置 | 参数取值合法、作用范围明确；关键参数说明选择依据 | 可作为后续量化流程的算法配置输入，并可复现本指南中的基线选择 |
 
-## 4. 流程总览
+## 3. 流程总览
+
+入门时建议先用一组稳定配置建立基线，再围绕影响最大的参数做单变量调整。下面的流程强调“先选参数、再看效果”，不展开量化命令本身。
 
 ```mermaid
 flowchart LR
-    A[编写 YAML 配置] --> B[执行量化命令]
-    B --> C[统计量化参数]
-    C --> D[量化并部署]
-    D --> E[验证量化结果]
+    A[确定 W/A 位宽] --> B[选择激活与权重量化粒度]
+    B[选择激活与权重量化粒度] --> C[选择参数估计算法]
+    C[选择参数估计算法] --> D[圈定处理层]
+    D[圈定处理层] --> E[比较精度/性能]
 ```
 
-## 5. 操作步骤
+实际使用时建议把流程理解为“建立基线—观察结果—单变量调整—再次验证”的闭环。流程图中的前几个节点用于固定量化对象、统计信息或初始参数，后几个节点用于应用算法并检查结果；如果效果不理想，应优先回到最近一次修改的参数，而不是同时更换位宽、粒度、作用范围和算法强度。这样可以明确每次变化的因果关系，也便于把有效配置沉淀为后续模型配方。
 
-### 步骤 1：编写 YAML 配置文件
+## 4. 操作步骤
 
-**目标**：编写包含 `linear_quant` 处理器配置的 YAML 文件。
+### 步骤 1：确认目标与约束
+
+**操作**：先固定目标模型、最终量化格式/位宽、作用对象和评测基线，再确认当前版本支持的参数组合。目标模型已有 `lab_practice` 配方时，优先把该配方作为实践基线；没有模型专用配方时，再使用本指南给出的通用推荐起点。若算法依赖校准统计或优化数据，还应在调参前固定代表性数据，避免把数据分布变化误判为参数收益。
+
+**输出**：一份明确的配置目标：目标位宽/格式、处理范围、校准条件、评测基线和部署约束。
+
+### 步骤 2：建立推荐基线
 
 **操作**：
 
-1. 在 `spec.process` 下配置 `linear_quant` 处理器，指定 `type: "linear_quant"`。
-2. 配置 `qconfig.act`（激活值量化配置）与 `qconfig.weight`（权重量化配置），指定 `scope`、`dtype`、`symmetric`、`method`。
-3. 按需配置 `include`/`exclude` 通配符控制量化层范围。
-
-YAML 配置示例（W8A8 动态量化）：
+下面配置用于建立**第一版可比较基线**。如果目标模型已有 `lab_practice` 配方，优先使用已验证配方，再参考本节理解每个参数为什么这样选。
 
 ```yaml
 spec:
   process:
-    - type: "linear_quant"         # 处理器类型：线性层量化
+    - type: "linear_quant"
       qconfig:
-        act:                       # 激活值量化配置
-          scope: "per_token"       # 动态量化标识：每个 token 独立量化参数
-          dtype: "int8"            # 数据类型：int8
-          symmetric: false         # 是否对称量化：false
-          method: "minmax"         # 量化方法：minmax
-        weight:                    # 权重量化配置
-          scope: "per_channel"     # 权重量化粒度：逐通道量化
-          dtype: "int8"            # 数据类型：int8
-          symmetric: true          # 对称量化：true
-          method: "minmax"         # 量化方法：minmax
-      include: ["*"]               # 包含的层。默认：["*"]
-      exclude: ["*down_proj*"]     # 排除的层。默认：[]
+        act:
+          scope: "per_token"
+          dtype: "int8"
+          symmetric: true
+          method: "minmax"
+        weight:
+          scope: "per_channel"
+          dtype: "int8"
+          symmetric: true
+          method: "minmax"
+      include: ["*"]
+      exclude: []
 ```
 
-YAML 配置字段详解如下：
+上面的推荐值用于建立第一版可复现基线，其中最值得关注的配置包括 `type`, `qconfig.act.scope`, `qconfig.act.dtype`, `qconfig.act.symmetric`。推荐值并不表示所有模型都只能使用该组合，而是优先选择仓库默认值、已验证实践或较稳健的中间取值，以降低第一次使用时同时遇到精度和兼容性问题的概率。如果目标模型已经有 `lab_practice` 配方，应优先复用该配方；只有在基线精度、显存或吞吐不满足目标时，再按照下一节的参数说明逐项调整。
 
-| 字段名 | 作用 | 说明 |
-| --- | --- | --- |
-| type | 处理器类型标识 | 固定为 `"linear_quant"`。 |
-| qconfig.act.scope | 激活量化范围 | `"per_tensor"`（静态）、`"per_token"`（动态）、`"pd_mix"`（PDMIX 混合）。 |
-| qconfig.act.dtype | 激活量化数据类型 | `"int8"`、`"int4"`、`"float"`（16位浮点激活）。 |
-| qconfig.act.symmetric | 激活是否对称量化 | `true` 为对称，`false` 为非对称。 |
-| qconfig.act.method | 激活量化方法 | `"minmax"` 或 `"histogram"`。 |
-| qconfig.weight.scope | 权重量化范围 | `"per_tensor"`、`"per_channel"`、`"per_group"`。 |
-| qconfig.weight.dtype | 权重量化数据类型 | `"int8"` 或 `"int4"`。 |
-| qconfig.weight.symmetric | 权重是否对称量化 | `true` 为对称，`false` 为非对称。 |
-| qconfig.weight.method | 权重量化方法 | `"minmax"`、`"ssz"`、`"gptq"`。 |
-| include | 包含的层 | 字符串列表，支持通配符匹配。 |
-| exclude | 排除的层 | 字符串列表，支持通配符匹配，优先级高于 `include`。 |
+**输出**：一份可复现的推荐基线配置，后续所有参数调整均以此为比较对象。
 
-**输出**：YAML 配置文件 `${CONFIG_PATH}`。
-
-### 步骤 2：执行量化命令
-
-**目标**：使用上一步编写的 YAML 配置文件启动量化流程。
+### 步骤 3：选择并调整参数
 
 **操作**：
 
-```bash
-msmodelslim quant \
-  --model_path ${MODEL_PATH} \
-  --save_path ${SAVE_PATH} \
-  --device npu \
-  --model_type ${MODEL_TYPE} \
-  --config_path ${CONFIG_PATH} \
-  --trust_remote_code True
-```
+ModelSlim 实现入口：
+[查看对应实现目录](../../../../../msmodelslim/processor/quant/linear.py)
 
-参数说明：
+参数选择建议按三个层次理解：首先确认 `dtype/scope/method` 等**算法支持约束**，这类字段不是任意可调；其次确定 `include/exclude`、子图类型等**作用范围**；最后再调整会改变误差与开销的数值参数。下面的推荐值区分了代码默认值、仓库 `lab_practice` 中已验证的实践值和适合首次使用的推荐起点。如果目标模型已有实践配置，优先沿用实践配置，再根据本节说明做单变量调整。
 
-| 参数 | 必选 | 说明 |
-| --- | --- | --- |
-| `model_path` | 是 | 浮点模型权重路径 |
-| `save_path` | 是 | 量化权重保存路径 |
-| `device` | 否 | 量化设备，默认 `npu` |
-| `model_type` | 是 | 模型名称，与支持矩阵一致 |
-| `config_path` | 是 | 步骤 1 编写的 YAML 配置路径 |
-| `trust_remote_code` | 否 | 是否信任远程代码，默认 `False` |
+| 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
+| --- | --- | --- | --- |
+| `type` | 处理器标识，固定 `linear_quant`。 | 固定。 | 不调。 |
+| `qconfig.act.dtype` | 激活数值格式。`float` 表示不量化激活；当前通用 QConfig 还支持 INT8/INT4/MXFP8/MXFP4/FP8 E4M3，但能否用于 Linear 取决于实际注册组合。 | 通用 LLM W8A8 从 `int8` 开始；只做 W8A16 则用 `float`；MX/FP8 只按已验证模型/后端配方选择。 | dtype 由产品和后端目标决定，不作为小幅调参。位宽降低会直接增大量化噪声，应重新选择 scope/method 并完整评测。 |
+| `qconfig.act.scope` | 激活尺度粒度。仓库最常见 W8A8 配方是 `per_token`；也存在 INT8 per-tensor 非对称、PDMIX、MX per-block、DualScale 等专用组合。粒度越局部越能适应动态范围变化，但运行时尺度计算/元数据通常更多。 | 普通 INT8 LLM 首选 `per_token`；有模型实践时按其 per-tensor/PDMIX/per-block 等组合。 | 不要从 QConfig 枚举里任意挑 scope，必须与 dtype/symmetric/method 有已注册量化器。若 per-token 精度已满足，不必为了“更细”切到更复杂的专用 scope。 |
+| `qconfig.act.symmetric` | 决定激活是否使用 zero-point。对称量化围绕 0，计算简单；非对称可以适应明显偏移分布。 | INT8 per-token 基线用 `true`；仓库也有 per-tensor 非对称和 PDMIX `false` 实践。 | 以量化器支持和后端为前提。激活分布有明显偏移且 per-tensor 对称损失高时可考虑非对称；per-token 对称已经能局部适应时通常先保持简单方案。 |
+| `qconfig.act.method` | 激活尺度/裁剪估计方法。MinMax 是仓库最常用基线；Histogram 目前专用于 INT8 per-tensor 激活，通过直方图搜索 clipping。某些特殊格式的 method 由专用量化器定义。 | 先 `minmax`；只有明确存在长尾 clipping 问题且组合受支持时再考虑 `histogram` 或专用方法。 | 方法改变会改变校准需求和量化误差定义。MinMax 已满足精度时没必要增加复杂算法；长尾明显时再引入 Histogram。 |
+| `qconfig.weight.dtype` | 权重数值格式。仓库常见 INT8 per-channel；W4A8 实践使用 INT4 per-channel SSZ；MX 模型使用 MXFP4/8 per-block。 | 普通 W8A8 用 `int8`；低比特目标按模型实践选 `int4` 或 MXFP4。 | 权重位宽是压缩收益的重要来源，也是精度风险来源。INT8 基线正常后再尝试 INT4，便于判断退化来自位宽还是其他处理。 |
+| `qconfig.weight.scope` | 权重尺度粒度。INT 权重常用 per-channel，GPTQ 还支持 per-group；MX 格式常用 per-block，DualScale 使用专用 scope。 | INT8/INT4 权重的通用起点为 `per_channel`。 | 需要更细 group-wise GPTQ 或 MX block 时按对应算法指南配置。粒度越细一般更能适应通道内差异，但尺度元数据与后端要求更高。 |
+| `qconfig.weight.symmetric` | 权重是否对称。Transformer Linear 权重通常围绕 0，仓库主流 INT/MX 实践均使用对称量化。 | 优先 `true`。 | 只有目标量化器明确注册非对称组合（如 GPTQ）且后端支持时才比较 false；普通 MinMax INT4/INT8 权重当前主要注册对称 per-channel。 |
+| `qconfig.weight.method` | 权重量化算法。`minmax` 计算简单；`ssz` 对低比特 per-channel 权重迭代优化 scale；`gptq` 用校准激活 Hessian 做二阶误差补偿；`mse_round/ceil_x/fouroversix/dualscale` 属于特定 MX 格式。 | W8A8 从 `minmax`；W4A8 仓库已有 `ssz` 实践；需要二阶低比特优化时按 GPTQ 指南；MX 格式按其专用 method。 | 先让 method 与 dtype/scope 匹配，再考虑复杂度。不要因为某算法“更高级”就替换已满足精度的 MinMax；高级算法通常增加校准/搜索成本。 |
+| `qconfig.*.ext` | 量化器专用扩展参数，不同 method 含义完全不同，例如 GPTQ 的 `percdamp/block_size/group_size`、SSZ 的 `step`、MX 方法的 `axes`/搜索参数。 | 普通 MinMax 无特殊需求时保持空；只有选用对应 method 才按其指南填写。 | 不要跨算法复用 ext 字段。修改 method 后应清理不属于新量化器的 ext，以免得到无效或误导配置。 |
+| `include` | 作用范围白名单，使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
+| `exclude` | 作用范围黑名单，命中后从 `include` 的候选中排除，优先级高于 `include`。适合保护敏感层、首尾层或模型专用不兼容结构。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。每次增加排除项后应确认通配符没有误伤相邻模块。 |
 
-执行流程说明：
+### 常用组合怎么选
 
-1. 工具加载 YAML 配置，解析 `linear_quant` 处理器与 `qconfig`。
-2. 静态量化收集激活统计并固定量化参数；动态量化在推理时在线计算。
-3. 对命中 `include`/`exclude` 规则的层执行量化并生成量化 IR。
-4. 保存量化权重。
+| 目标 | 激活建议 | 权重建议 | 说明 |
+| --- | --- | --- | --- |
+| 通用 W8A8 基线 | `int8 / per_token / symmetric / minmax` | `int8 / per_channel / symmetric / minmax` | 仓库 `lab_practice` 中出现最频繁，适合先建立稳定基线。 |
+| W8A16 | `float` | `int8 / per_channel / symmetric / minmax` | 不量化激活，适合先验证权重量化风险。 |
+| W4A8 | `int8 / per_token / symmetric / minmax` | `int4 / per_channel / symmetric / ssz` | 仓库已有 DeepSeek/GLM 类实践；SSZ 细节见对应指南。 |
+| MXFP8 | `mxfp8 / per_block / symmetric / minmax` | `mxfp8 / per_block / symmetric / minmax` 或 `mse_round` | 只有目标后端支持 MX 格式时使用。 |
 
-**输出**：量化权重目录 `${SAVE_PATH}`，包含量化描述文件与权重分片。
+选择时先确定“最终部署格式”，再确定“量化粒度”，最后选择“参数估计算法”。`include/exclude` 用于局部回退，不建议通过随意混搭未注册的 QConfig 组合来试错。
 
-### 步骤 3：验证量化结果
+**输出**：一份完成单变量调整的算法参数方案，关键字段均有明确的选择依据和调整方向。
 
-**目标**：确认量化权重文件完整且可加载。
+### 步骤 4：根据结果收敛参数方案
 
 **操作**：
 
-1. 检查输出目录是否包含 `quant_model_description.json` 文件。
-2. 检查日志确认无层匹配告警或无效配置组合告警。
-3. 使用推理框架加载量化权重进行冒烟测试。
+调参时建议先记录一份完整基线，包括使用的数据集、量化范围、关键参数和端到端指标。每轮只改变一个变量，并把变化结果与基线直接比较；如果某项调整带来收益，再继续小步搜索其邻近取值。对于只有少数层或模块异常的情况，优先采用局部排除、局部回退或混合精度，而不是直接提高全模型精度配置，这通常更容易保留压缩和性能收益。
 
-**输出**：量化权重验证通过。
+- 选择顺序建议是：先定目标位宽 → 再定粒度 → 再选 `method` → 最后用敏感层回退。不要一开始就堆叠多个高级算法。
+- **先跑推荐基线，再调单变量。** 不要同时修改位宽、粒度、算法参数和层范围，否则很难判断精度变化来自哪一项。
+- **优先回退局部，而不是整体提高精度。** 如果只有少数层敏感，优先通过 `exclude` 或混合策略保留高精度，通常比整体升位宽更划算。
+- **最终以模型实践配置和部署能力为准。** 入门推荐用于建立稳定起点；目标模型已有 `lab_practice` 配方时，应优先复用已验证组合。
 
-## 6. 验收条件
+**输出**：一份可进入后续量化流程的最终参数方案，并保留相对于推荐基线的调整记录。
 
-- 量化权重目录包含 `quant_model_description.json` 及所有必需的 `*.safetensors` 分片文件。
-- 日志无 `patterns are not matched any module` 层匹配告警。
-- 量化后模型推理精度符合业务要求。
-
-## 7. 异常处置
-
-- **量化组合无效**：检测到无效的量化配置组合时抛出 `UnsupportedError`，根据异常信息调整配置参数。
-- **层匹配告警**：`include`/`exclude` 未匹配到任何层时工具告警，检查层名、路径层级、大小写与拼写。
-- **精度下降**：动态量化（`per_token`）精度通常优于静态量化（`per_tensor`），可按需调整；或配合离群值抑制算法使用。
-
-## 8. 术语
+## 5. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 线性量化 | 将浮点数值映射到离散整数的量化方法 | [线性量化词条](./term_linear_quant.md) |
-| 静态量化 | 推理前固定量化参数的量化方式 | [线性量化词条](./term_linear_quant.md) |
-| 动态量化 | 推理时在线计算量化参数的量化方式 | [线性量化词条](./term_linear_quant.md) |
+| 线性量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[线性量化算法 量化术语百科词条](./term_linear_quant.md)》 |
 
-## 9. 接口文档列表
+## 6. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `linear_quant` 处理器 | 用于执行线性层量化的 Processor 配置 | [线性量化词条](./term_linear_quant.md) |
-| 层过滤机制 | include/exclude 通配符匹配规则 | [线性量化词条](./term_linear_quant.md) |
-| 量化方法 | MinMax、Histogram、SSZ、GPTQ 等 `method` 取值 | [线性量化词条](./term_linear_quant.md) |
+| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/task/modelslim_v1.md)》 |

@@ -1,16 +1,14 @@
-# LAOS 低比特量化方案词条
+﻿# LAOS 低比特量化方案 量化术语百科词条
 
-> **词条类别**：量化算法
-> **英文名称**：LAOS
-> **英文缩写**：LAOS
-> **应用领域**：大语言模型量化压缩、低比特量化精度优化
-> **msModelSlim 实现**：通过 `adapt_rotation` 与 `autoround_quant` 处理器组合实现
+> **词条类别**：[量化算法](../README.md#2-量化算法)<br>
+> **英文名称**：laos<br>
+> **应用领域**：大语言模型量化压缩、低比特量化精度优化<br>
 
 ---
 
 ## 1. 概述
 
-LAOS 是一种面向 W4A4 超低比特量化场景的量化方案，核心思想是“旋转矩阵优化 + 基于舍入偏移参数训练的低比特量化”。它先通过 [Adapt Rotation](../adapt_rotation/term_adapt_rotation.md) 在模型上进行旋转矩阵优化（分阶段执行）实现有效的离群值抑制，再通过 [AutoRound](../autoround/term_autoround.md) 进行低比特量化与舍入偏移参数优化，从而提升 W4A4 场景下的精度与稳定性。
+LAOS 是一种面向 W4A4 超低比特场景的组合量化方案。它先利用 [Adapt Rotation](../adapt_rotation/term_adapt_rotation.md) 重分布离群信息，再通过 [AutoRound](../autoround/term_autoround.md) 优化低比特权重舍入，并用混合精度保护敏感模块；核心特征是旋转与舍入优化串联、数据驱动和面向极低比特精度恢复。
 
 ---
 
@@ -18,15 +16,21 @@ LAOS 是一种面向 W4A4 超低比特量化场景的量化方案，核心思想
 
 在低比特量化（如 W4A4）场景下，模型精度损失尤为显著，核心难点在于权重和激活值中的极端离群值会显著扭曲量化区间，导致数值表示精度急剧下降，传统方法难以解决。LAOS 将离群值抑制与低比特量化训练相结合，先用数据驱动的方式优化旋转矩阵抑制离群值，再用可学习舍入优化量化参数，从而在 W4A4 下获得更高的精度与稳定性。
 
----
+从量化流程中的定位看，该算法解决的是“如何把连续浮点值映射到受限数值集合，同时尽量保留模型输出”的问题。与只按极值直接计算尺度的基础方法相比，它通常会利用更细的统计信息、优化目标或结构约束来控制误差，因此更适合对精度有明确要求的量化场景。
 
-## 3. 原理
-
-### 1. 核心思想
+### 2.1 核心思想
 
 LAOS 的核心思想是“先抑制离群值、再训练量化参数”的两段式方案：Stage1 使用 [Adapt Rotation](../adapt_rotation/term_adapt_rotation.md) 基于校准数据迭代优化 Hadamard 旋转矩阵，使变换后的激活值更利于量化；Stage2 使用 [AutoRound](../autoround/term_autoround.md) 引入可学习的舍入偏移参数，通过 SignSGD 优化器自适应调整各权重的舍入方向，最小化量化重构误差。
 
-### 2. 数学描述
+两阶段方案有效的原因是先改善问题几何，再做离散优化。
+
+### 2.2 工作机制
+
+LAOS 将低比特量化中的两个主要困难分开处理。第一阶段先通过自适应正交旋转重新组织激活/权重的坐标分布，尽量削弱离群通道和极端值对低比特范围的支配；第二阶段在已经更友好的分布上，通过 AutoRound 一类优化方法学习舍入和尺度相关决策，进一步减少离散化带来的局部重构误差。
+
+这两类操作具有互补性：旋转主要解决“同样的能量如何分布到坐标轴上”的条件数/动态范围问题，却不能消除有限码点本身造成的舍入误差；可学习舍入可以在固定低比特网格上优化整数码选择，却很难单独应对严重离群值导致的尺度浪费。先整形分布、再优化离散决策，通常比把所有压力交给单一量化步骤更稳健。对于仍然不可接受的少量敏感层，还可以用更高位宽形成混合精度边界。
+
+### 2.3 数学描述
 
 LAOS 方案由两个阶段构成。第一阶段基于旋转优化：
 
@@ -50,111 +54,44 @@ $$
 - $V$：控制舍入方向的可学习偏移
 - $n$、$m$：量化后的上下界
 
-### 3. 关键性质
+把第一阶段得到的正交变换记为 $Q^*$，第二阶段的最终量化权重记为 $\hat W(Q^*,V)$，则整体目标可以概念性写成：
+
+$$
+Q^*=\arg\min_{Q^TQ=I}\mathcal L_{\mathrm{quant}}(Q),\qquad V^*=\arg\min_V\|Y_{fp}-Y_q(Q^*,V)\|^2.
+$$
+
+这是一种分阶段近似，而非同时对 $Q,V$ 做全局联合优化。其优势是把高维困难问题拆解；代价是第一阶段的最优旋转未必是考虑第二阶段学习式舍入后的全局最优旋转。
+
+### 2.4 关键性质
 
 - **两段式组合**：旋转优化（Adapt Rotation）与舍入训练（AutoRound）协同提升 W4A4 精度。
 - **数据驱动旋转**：旋转矩阵基于校准数据迭代优化，比固定 Hadamard 更适配模型分布。
 - **可学习舍入**：舍入方向由可学习偏移决定，降低量化重构误差。
 - **混合量化支持**：支持对敏感层使用 W8A8、其余层使用 W4A4 的混合策略。
+- **误差源分治**：旋转主要处理动态范围/离群值，学习式舍入主要处理有限码点的离散误差。
 
----
+从误差与适用边界看，误差仍可能来自旋转校准偏差、激活低比特敏感层以及局部重构目标与最终任务不一致。尤其 W4A4 同时压缩权重和激活，误差来源比单纯 W4 更复杂，因此少量结构性敏感层可能仍需要 W8A8 等回退。
 
-## 4. 流程示意
-
-> 以下为本算法在 msModelSlim 中的简化流程概览。
-
-```mermaid
-flowchart LR
-    A[校准数据] --> B[Stage1 旋转优化]
-    B --> C[Stage2 应用旋转]
-    C --> D[AutoRound 量化]
-    D --> E[混合量化部署]
-```
-
----
-
-## 5. 在 msModelSlim 中的实现
-
-### 1. 实现位置
-
-LAOS 方案通过 `adapt_rotation`（Stage1 + Stage2）与 `autoround_quant` 两个处理器组合实现，配置中需在 `spec.prior` 中配置 Stage1、在 `spec.process` 中配置 Stage2 与 `autoround_quant`。
-
-### 2. 处理流程
-
-- **prior 阶段**：配置 `adapt_rotation` Stage1，收集指定层（如 `up_proj`）的激活并优化旋转矩阵，写入 Context。
-- **主阶段**：配置 `adapt_rotation` Stage2 应用优化后的旋转矩阵；随后配置 `autoround_quant` 执行低比特量化与舍入优化；最后配置 `ascendv1_saver` 保存量化权重。
-
-### 3. 配置示例
-
-> 以下为最小可用的 YAML 配置片段。各字段的详细含义如下表所示。
-
-```yaml
-spec:
-  prior:
-    - process:
-        - type: "adapt_rotation"
-          stage: 1
-          steps: 20
-          layer_type: ["up_proj"]
-  process:
-    - type: "adapt_rotation"
-      stage: 2
-      online: false
-      block_size: -1
-      max_tp_size: 1
-    - type: "autoround_quant"
-      iters: 400
-      enable_round_tuning: true
-      strategies:
-        - qconfig: *default_w8a8_dynamic
-          include: ["*self_attn*", "*.down_proj"]
-        - qconfig: *default_w4a4_dynamic
-          include: ["*.up_proj", "*.gate_proj"]
-  save:
-    - type: "ascendv1_saver"
-      part_file_size: 4
-  dataset: laos_calib.jsonl
-```
-
-**字段说明**：
-
-| 字段名 | 作用 | 说明 |
-| --- | --- | --- |
-| adapt_rotation（Stage1） | 旋转矩阵优化 | `type: "adapt_rotation"`、`stage: 1`，配置 `steps`（默认 `20`）与 `layer_type`（如 `["up_proj"]`）。 |
-| adapt_rotation（Stage2） | 应用优化旋转 | `type: "adapt_rotation"`、`stage: 2`，配置 `online`（默认 `false`）、`block_size`（默认 `-1`）、`max_tp_size`（默认 `1`）。 |
-| autoround_quant | 低比特量化 | 配置 `iters`（默认 `400`）、`enable_round_tuning`（默认 `true`）及 `strategies` 混合量化策略。 |
-| save | 权重保存 | `type: "ascendv1_saver"`，可配置 `part_file_size`。 |
-| dataset | 校准数据集 | 指定校准数据集名称，如 `laos_calib.jsonl`。 |
-
-### 4. 模型适配接口
-
-模型适配要求模型支持 `AdaptRotationInterface`（继承 `QuaRotInterface` 并实现 `get_hidden_dim()`），且线性层为可量化的 `nn.Linear`；当前主要面向 Qwen3 稠密系列。
-
----
-
-## 6. 适用场景与限制
-
-### 1. 适用场景
+### 2.5 适用场景
 
 - W4A4 等超低比特量化场景，需要保持较高模型精度的场景。
 - 激活值存在显著离群值、需要数据驱动旋转抑制的场景。
 
-### 2. 使用限制
+更具体地说，是否适用主要取决于目标位宽、模型结构和部署后端三点。若目标部署链已经明确支持该算法对应的量化格式，并且校准数据能够覆盖主要业务分布，通常可以优先从该算法的推荐配置建立基线，再根据精度结果决定是否增加更复杂的优化。
+
+### 2.6 使用限制
 
 - 需要足够的校准数据或训练迭代次数来优化参数，量化时长相对较久。
 - 当前主要面向 Qwen3 稠密系列模型（如 Qwen3-8B/14B/32B），不保证可泛化到其他系列模型。
 - 算法实现包含训练过程，对 NPU 显存有一定要求，仅支持 NPU 显存 ≥64G 的设备。
 
----
-
-## 7. 关联流程
-
-- 《[一键量化 (V1)](../../../user_guide/usage_quick_quantization.md)》：可集成 LAOS 作为 W4A4 低比特量化方案。
-- 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：精度不达标时可调整 LAOS 组合配置。
+这些限制应在调参前确认，而不是等精度异常后再排查。尤其是数据类型、张量维度、分组大小和后端算子支持等硬约束，一旦不满足，继续调整算法参数通常无法解决问题；应先回到受支持的配置组合。
 
 ---
 
-## 8. 关联词条
+## 3. 关联词条
+
+可以从“同类方法、前后处理关系和应用对象”三个方向理解本词条与其他算法的关系。下面的关联项既用于横向比较不同技术路线，也用于帮助定位该算法在完整量化方案中的位置。
 
 - [Adapt Rotation](../adapt_rotation/term_adapt_rotation.md)：前置术语，LAOS 使用其旋转优化作为离群值抑制步骤。
 - [AutoRound](../autoround/term_autoround.md)：配套术语，LAOS 使用其舍入训练完成低比特量化。
@@ -163,6 +100,8 @@ spec:
 
 ---
 
-## 9. 参考资料
+## 4. 参考文档
 
-1. 《LAOS 使用指南》([./usage_laos.md](./usage_laos.md))
+参考文档优先列出算法原始论文或权威出处，并补充仓库内对应使用指南。需要进一步理解参数选择时，可先阅读使用指南，再回到原论文核对算法假设和推导。
+
+1. 《[LAOS 参数配置流程指南](./usage_laos.md)》

@@ -4,7 +4,7 @@
 > **英文名称**：RazorAttention Compress
 > **英文缩写**：ra_compress
 > **应用领域**：长序列推理、KV cache 压缩、注意力头筛选
-> **msModelSlim 实现**：`msmodelslim/processor/analysis/unary_operator/metrics/ra_compress/`
+> **msModelSlim 实现**：[`msmodelslim/processor/analysis/unary_operator/metrics/ra_compress/`](../../../../../msmodelslim/processor/analysis/unary_operator/metrics/ra_compress/)
 
 ---
 
@@ -84,7 +84,7 @@ flowchart LR
 
 ### 5.1 实现位置
 
-RA Compress 作为 `msmodelslim analyze` 命令的 `attn_head` 范围分析指标实现，位于 `msmodelslim/processor/analysis/unary_operator/metrics/ra_compress/`。
+RA Compress 作为 `msmodelslim analyze` 命令的 `attn_head` 范围分析指标实现，位于 [`msmodelslim/processor/analysis/unary_operator/metrics/ra_compress/`](../../../../../msmodelslim/processor/analysis/unary_operator/metrics/ra_compress/)。
 
 模块结构：
 

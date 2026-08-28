@@ -1,15 +1,14 @@
-# Flex Smooth Quant 灵活平滑量化算法词条
+﻿# Flex Smooth Quant 灵活平滑量化算法 量化术语百科词条
 
-> **词条类别**：离群值抑制算法
-> **英文名称**：Flex Smooth Quant
-> **应用领域**：大语言模型量化压缩、推理加速
-> **msModelSlim 实现**：`msmodelslim/processor/anti_outlier/flex_smooth/`
+> **词条类别**：[离群值抑制算法](../README.md#1-离群值抑制算法)<br>
+> **英文名称**：flex_smooth_quant<br>
+> **应用领域**：大语言模型量化压缩、推理加速<br>
 
 ---
 
 ## 1. 概述
 
-Flex Smooth Quant（灵活平滑量化）是一种用于大语言模型量化过程中抑制激活离群值的算法。它通过二阶段网格搜索自动寻找最优的 `alpha` 与 `beta` 参数，在激活与权重之间实现更精细的缩放平衡，从而适配不同模型架构与量化需求。其核心特征是：参数可自动搜索、支持 `norm-linear`、`linear-linear`、`ov`、`up-down` 多子图类型，并支持对独立线性层做非融合平滑，是 [SmoothQuant](../smooth_quant/term_smooth_quant.md) 的灵活扩展。
+Flex Smooth Quant 是 [SmoothQuant](../smooth_quant/term_smooth_quant.md) 的可搜索扩展，用于在激活与权重之间自动寻找更合适的缩放平衡。它通过分阶段搜索 `alpha`、`beta` 等参数，适配不同子图结构和数据分布，以降低平滑后量化误差；核心特征是多子图支持、参数自动搜索和可配置的融合/非融合平滑。
 
 ---
 
@@ -17,15 +16,21 @@ Flex Smooth Quant（灵活平滑量化）是一种用于大语言模型量化过
 
 传统 [SmoothQuant](../smooth_quant/term_smooth_quant.md) 使用固定的 `alpha` 且仅支持 `norm-linear` 子图，对复杂结构适配不足。Flex Smooth Quant 将缩放公式推广为激活与权重分别使用 `alpha` 与 `beta` 两个指数，并通过网格搜索自动寻找最优参数，避免了人工调参，同时扩展了对多子图类型的支持。
 
----
+从量化流程中的定位看，该算法更接近量化前的分布整形步骤：先降低离群值对量化尺度的支配，再由后续量化算法完成真正的离散化。这种思路的价值在于不必简单扩大位宽，而是通过重分配、旋转或平滑数值幅度，提高有限量化区间对主体数据分布的利用率。
 
-## 3. 原理
+### 2.1 核心思想
 
-### 1. 核心思想
+Flex Smooth Quant 的核心思想是把平滑缩放从受约束的单指数关系扩展为 $\alpha$ 与 $\beta$ 两个相对独立的指数，使激活峰值和权重峰值对最终尺度的影响可以分别调节。算法通过两阶段候选搜索寻找联合量化输出误差较小的组合，从而适应不同层、不同计算子图中不一致的激活/权重离群程度。
 
-Flex Smooth Quant 的核心思想是把平滑缩放公式从“单一 `alpha`”扩展为“`alpha` + `beta` 双指数”：当用户不指定参数时，通过二阶段网格搜索在激活与权重之间寻找最优的缩放平衡，使不同子图结构都能获得接近最优的离群值抑制效果。
+双指数自由度能处理“激活离群程度”和“权重离群程度”并不满足固定互补关系的层。
 
-### 2. 数学描述
+### 2.2 工作机制
+
+Flex Smooth Quant 将标准 SmoothQuant 中相互绑定的指数关系拆开。尺度可写成 $s_j=A_j^{\alpha}W_j^{-\beta}$：$\alpha$ 控制激活峰值对尺度的推动程度，$\beta$ 控制权重峰值对尺度的抑制程度。这样可以在更大的二维区域内寻找“激活更好量化、权重也不过度恶化”的平衡，而不是限定在 $\beta=1-\alpha$ 的单条曲线上。
+
+自动搜索通常先沿 $\beta=1-\alpha$ 的受约束路径寻找一个稳定起点，再固定较优 $\alpha$ 搜索 $\beta$。每个候选都会先执行等价缩放，再分别对缩放后的激活和权重做模拟量化，最后比较线性输出的归一化误差。两阶段搜索减少了直接二维穷举的成本，也让第二阶段能够在已找到合理激活迁移强度的基础上放松权重侧约束。
+
+### 2.3 数学描述
 
 缩放因子计算公式：
 
@@ -40,103 +45,52 @@ $$
 - $\beta$：权重缩放系数，控制权重对缩放因子的影响程度（$0$~$1$）
 - $10^{-5}$：缩放因子的最小值，防止数值不稳定
 
-当 `alpha`/`beta` 未配置时，算法在参数空间内以网格搜索方式评估候选组合，选择量化误差最小的参数。
+算法可在 $\alpha$、$\beta$ 候选空间中比较联合量化后的输出误差，以数据驱动方式确定平滑强度。
 
-### 3. 关键性质
+设逐通道激活峰值为 $A_j$、权重峰值为 $W_j$，一般化尺度可写为：
 
-- **双指数缩放**：激活与权重分别使用 `alpha` 与 `beta`，缩放更精细。
-- **自动搜索**：未配置参数时自动搜索最优 `alpha`/`beta`，减少人工调参。
-- **子图类型多样**：支持 `norm-linear`、`linear-linear`、`ov`、`up-down` 四种子图。
-- **非融合能力**：`source=None` 时对独立线性层做输入侧 pre-hook 缩放。
+$$
+s_j=\frac{A_j^{\alpha}}{W_j^{\beta}},\qquad X'_j=X_j/s_j,\qquad W'_{:,j}=W_{:,j}s_j.
+$$
+
+浮点域仍满足 $X'W'^T=XW^T$。若激活和权重都量化，则输出误差近似包含：
+
+$$
+\Delta Y\approx E_XW'^T+X'E_W^T+E_XE_W^T,
+$$
+
+其中 $E_X=\mathcal Q(X')-X'$、$E_W=\mathcal Q(W')-W'$。这说明两侧误差不仅各自存在，还会出现交叉项，因此联合搜索比单看某一侧张量误差更有意义。
+
+### 2.4 关键性质
+
+- **双指数缩放**：激活与权重统计分别由 $\alpha$ 与 $\beta$ 控制，尺度自由度更高。
+- **两阶段搜索**：先沿受约束关系搜索稳定起点，再放松另一个指数以扩大可选解空间。
+- **图结构可扩展**：只要缩放能在相邻算子之间被等价吸收，就可以把同一平滑思想应用到不同线性子图。
+- **独立层平滑**：除可融合的相邻子图外，也可对缺少前置融合源的独立线性层做输入侧缩放。
 - **计算等价性**：协同缩放保持整体计算等价，不改变模型输出。
+- **双指数自由度**：允许激活侧与权重侧的尺度影响独立调节，不受 $\beta=1-\alpha$ 的固定关系限制。
 
----
+但自由度增加也意味着搜索更依赖数据。过大的 $\alpha$ 会使激活更平滑却放大权重，过大的 $\beta$ 则可能把尺度压得过小、反向增加激活幅度。
 
-## 4. 流程示意
-
-> 以下为本算法在 msModelSlim 中的简化流程概览。
-
-```mermaid
-flowchart LR
-    A[校准数据] --> B[子图发现]
-    B --> C[统计激活与权重]
-    C --> D[搜索 alpha/beta]
-    D --> E[融合缩放]
-    E --> F[交付量化]
-```
-
----
-
-## 5. 在 msModelSlim 中的实现
-
-### 1. 实现位置
-
-算法在 `msmodelslim/processor/anti_outlier/flex_smooth/processor.py` 中实现，通过 `type: "flex_smooth_quant"` 处理器使用。
-
-### 2. 处理流程
-
-- **预处理阶段**：通过 `SubgraphProcessor` 获取子图信息，按 `include/exclude` 过滤，为线性模块安装前向钩子收集激活张量与每通道绝对最大值。
-- **后处理阶段**：按优先级顺序处理各子图；对非融合子图做 `alpha`/`beta` 搜索（或使用配置值）后对权重做缩放并注册输入侧 pre-hook；最后清理钩子并恢复模型。
-
-### 3. 配置示例
-
-> 以下为最小可用的 YAML 配置片段。各字段的详细含义如下表所示。
-
-```yaml
-spec:
-  process:
-    - type: "flex_smooth_quant"
-      alpha: 0.8
-      beta: 0.7
-      enable_subgraph_type:
-        - 'norm-linear'
-        - 'linear-linear'
-        - 'ov'
-        - 'up-down'
-      include: ["*"]
-      exclude: ["*self_attn*"]
-```
-
-**字段说明**：
-
-| 字段名 | 作用 | 说明 |
-| --- | --- | --- |
-| type | 处理器类型标识 | 固定为 `"flex_smooth_quant"`。 |
-| alpha | 激活缩放权重系数 | 0~1 之间的浮点数，控制激活对缩放因子的影响程度，默认 `None`（自动搜索）。 |
-| beta | 权重缩放权重系数 | 0~1 之间的浮点数，控制权重对缩放因子的影响程度，默认 `None`（自动搜索）。 |
-| enable_subgraph_type | 开启的子图类型 | 支持 `norm-linear`、`linear-linear`、`ov`、`up-down`。 |
-| include | 包含的层 | 字符串列表，支持通配符匹配。 |
-| exclude | 排除的层 | 字符串列表，支持通配符匹配。 |
-
-### 4. 模型适配接口
-
-模型适配需实现 `FlexSmoothQuantInterface` 接口的 `get_adapter_config_for_subgraph()` 方法，返回 `List[AdapterConfig]`（含 `norm-linear`、`linear-linear`、`ov`、`up-down` 等子图映射）。参考实现：`msmodelslim/model/qwen3/model_adapter.py`。
-
----
-
-## 6. 适用场景与限制
-
-### 1. 适用场景
+### 2.5 适用场景
 
 - 需要自动搜索最优平滑参数、减少人工调参的量化场景。
 - 需要同时对注意力 `ov`、MLP `up-down`、连续线性层等多种结构做离群值抑制的场景。
 
-### 2. 使用限制
+更具体地说，这类算法适合“量化误差主要由少数大幅值通道或 token 拉高尺度”的情况。若问题来源并不是离群值，而是模型本身对低比特表示普遍敏感，则单独增加平滑或旋转强度通常收益有限，应结合更高精度量化或敏感层回退。
 
-- 模型必须实现 `FlexSmoothQuantInterface` 接口并正确配置子图映射。
-- 目标模块必须存在且具备可写的 `weight`，模块名须与 `named_modules()` 返回的完整路径一致。
-- 非融合子图不支持 `shift`（偏置平移）。
+### 2.6 使用限制
 
----
+- 目标结构需要能够识别为 `norm-linear`、`linear-linear`、`ov`、`up-down` 等可保持计算等价的子图。
+- 对无法与前置算子融合的独立线性层，只适合做乘性缩放，不适合同时做偏置平移。
 
-## 7. 关联流程
-
-- 《[一键量化 (V1)](../../../user_guide/usage_quick_quantization.md)》：默认集成本算法作为离群值抑制前置步骤。
-- 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：精度不达标时可考虑启用本算法。
+这些限制反映了算法对模型结构和等价变换条件的依赖。若目标模型不满足相应结构假设，强行套用可能破坏原有计算关系；因此遇到不兼容结构时应优先缩小作用范围或使用模型已验证的配方，而不是盲目增大平滑强度。
 
 ---
 
-## 8. 关联词条
+## 3. 关联词条
+
+可以从“同类方法、前后处理关系和应用对象”三个方向理解本词条与其他算法的关系。下面的关联项既用于横向比较不同技术路线，也用于帮助定位该算法在完整量化方案中的位置。
 
 - [SmoothQuant](../smooth_quant/term_smooth_quant.md)：上位概念，本算法是 SmoothQuant 的灵活扩展。
 - [Iterative Smooth](../iterative_smooth/term_iterative_smooth.md)：同类算法，同样支持多子图类型的平滑。
@@ -146,7 +100,9 @@ spec:
 
 ---
 
-## 9. 参考资料
+## 4. 参考文档
+
+参考文档优先列出算法原始论文或权威出处，并补充仓库内对应使用指南。需要进一步理解参数选择时，可先阅读使用指南，再回到原论文核对算法假设和推导。
 
 1. Xiao G et al. SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models. ICML 2023. https://arxiv.org/abs/2211.10438
-2. 《Flex Smooth Quant 使用指南》([./usage_flex_smooth_quant.md](./usage_flex_smooth_quant.md))
+2. 《[Flex Smooth Quant 参数配置流程指南](./usage_flex_smooth_quant.md)》
