@@ -51,10 +51,10 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 | **Std** | linear（线性层） | 用激活动态范围与标准差的比值刻画敏感度 | 量化前线性层粗筛、默认策略之一 | [Std 词条](std/term_std.md) | [Std 使用指南](std/usage_std.md) |
 | **Quantile** | linear（线性层） | 基于分位数与 IQR 构造 score，对离群点相对稳健 | 激活尾部重、希望降低离群主导 | [Quantile 词条](quantile/term_quantile.md) | [Quantile 使用指南](quantile/usage_quantile.md) |
 | **Kurtosis** | linear（线性层） | 估计激活峰度，识别尖峰与极端值影响 | 关注尖峰分布、配合回退或混精 | [Kurtosis 词条](kurtosis/term_kurtosis.md) | [Kurtosis 使用指南](kurtosis/usage_kurtosis.md) |
-| **Attention MSE（mse）** | attn（attention 结构） | 浮点与量化权重下 attention 输出的 MSE | Attention 权重量化敏感度（需适配器接口） | [Attention MSE 词条](attention_mse/term_attention_mse.md) | [Attention MSE 使用指南](attention_mse/usage_attention_mse.md) |
-| **层级 MSE（mse_layer_wise）** | layer（Decoder 块） | 块内选中子模块输出上 MSE 的块内均值 | 整层或整块（如 MLP / attention 段）回退 | [层级 MSE 词条](mse_layer_wise/term_mse_layer_wise.md) | [层级 MSE 使用指南](mse_layer_wise/usage_mse_layer_wise.md) |
+| **Attention MSE（mse）** | attn（Attention 结构） | 浮点与量化权重下 Attention 输出的 MSE | Attention 权重量化敏感度（需适配器接口） | [Attention MSE 词条](attention_mse/term_attention_mse.md) | [Attention MSE 使用指南](attention_mse/usage_attention_mse.md) |
+| **层级 MSE（mse_layer_wise）** | layer（Decoder 块） | 块内选中子模块输出上 MSE 的块内均值 | 整层或整块（如 MLP / Attention 段）回退 | [层级 MSE 词条](mse_layer_wise/term_mse_layer_wise.md) | [层级 MSE 使用指南](mse_layer_wise/usage_mse_layer_wise.md) |
 | **模型级 MSE（mse_model_wise）** | layer（链式前向） | 逐层量化扰动对**模型最终输出**的 MSE | 从最终隐藏状态视角看层敏感度 | [模型级 MSE 词条](mse_model_wise/term_mse_model_wise.md) | [模型级 MSE 使用指南](mse_model_wise/usage_mse_model_wise.md) |
-| **RA Compress** | attn_head（注意力头） | 基于重复段结构度量归纳头/回声头的跨段注意力强度，筛选关键 KV head | 长序列 KV cache 压缩前筛选需保留的 KV head | [RA Compress 词条](ra_compress/term_ra_compress.md) | [RA Compress 使用指南](ra_compress/usage_ra_compress.md) |
+| **RA Compress** | attn_head（注意力头） | 基于重复段结构度量归纳头/回声头的跨段注意力强度，筛选关键 KV head | 长序列 KV Cache 压缩前筛选需保留的 KV head | [RA Compress 词条](ra_compress/term_ra_compress.md) | [RA Compress 使用指南](ra_compress/usage_ra_compress.md) |
 
 ## 4. 算法选择建议
 
@@ -66,7 +66,7 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 - **W4A8**：权重侧用 **SSZ** 迭代搜索缩放因子与偏移，激活 A8 仍用 **MinMax**，二者配合使用。
 - **W4A4 MXFP**：优先 **Ceil_X**，用 ceil + 可配置除数收紧 shared exponent，抑制 floor 缩放带来的大值截断。
 - **W4A4（INT / MXFP）**：可选用基于训练的 **AutoRound** 进一步抬精度，INT 与 MXFP 均支持；但对算力要求更高，量化耗时通常成倍高于其他大多数算法，选用时需权衡资源与时延。
-- **长序列 / C8**：产品上将 **KVCache Quant** 与 **FA3 Quant** 都纳入 C8。前者量化写入缓存的 Key/Value，专攻缩小 KV Cache、缓解推理显存压力；后者量化 Attention 路径上的 Q/K/V 激活以加速 attention 运算（仅支持 MLA）。二者机制不同，实践中一般只开其一，按显存或算力瓶颈选择。
+- **长序列 / C8**：产品上将 **KVCache Quant** 与 **FA3 Quant** 都纳入 C8。前者量化写入缓存的 Key/Value，专攻缩小 KV Cache、缓解推理显存压力；后者量化 Attention 路径上的 Q/K/V 激活以加速 Attention 运算（仅支持 MLA）。二者机制不同，实践中一般只开其一，按显存或算力瓶颈选择。
 
 ### 4.2 离群值抑制算法
 
@@ -75,9 +75,9 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 
 ### 4.3 敏感层分析
 
-当前敏感层分析支持按不同范围（`linear` / `layer` / `attn` / `attn_head`）度量敏感度，并据此做对应粒度的回退、混精调参或 KV cache 压缩配置。使用指南：《[线性层](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级](../../user_guide/usage_sensitive_layer_wise_analysis.md)》、《[Attention](../../user_guide/usage_sensitive_attn_analysis.md)》、《[Attention Head](../../user_guide/usage_sensitive_attn_head_analysis.md)》。
+当前敏感层分析支持按不同范围（`linear` / `layer` / `attn` / `attn_head`）度量敏感度，并据此做对应粒度的回退、混精调参或 KV Cache 压缩配置。使用指南：《[线性层](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级](../../user_guide/usage_sensitive_layer_analysis.md)》、《[Attention](../../user_guide/usage_sensitive_attn_analysis.md)》、《[Attention Head](../../user_guide/usage_sensitive_attn_head_analysis.md)》。
 
 - **linear**（线性层）：首选 **Kurtosis**，用激活峰度刻画尖峰与尾部影响，辅助识别需回退或提位宽的线性层。
-- **layer**（Decoder 块）：首选 **mse_layer_wise**，适合整层 / 整块（如 MLP、attention 段）回退。
+- **layer**（Decoder 块）：首选 **mse_layer_wise**，适合整层 / 整块（如 MLP、Attention 段）回退。
 - **attn**（Attention 结构）：首选 **Attention MSE（mse）**，主要用于配合 **FA3 Quant** 识别需回退的 Attention 模块（需适配器接口）。
-- **attn_head**（注意力头）：首选 **RA Compress**，基于重复段结构筛选归纳头 / 回声头，用于长序列 KV cache 压缩配置（仅支持 LLM，须使用 `calib_dummy.jsonl`）。
+- **attn_head**（注意力头）：首选 **RA Compress**，基于重复段结构筛选归纳头 / 回声头，用于长序列 KV Cache 压缩配置（仅支持 LLM，须使用 `calib_dummy.jsonl`）。

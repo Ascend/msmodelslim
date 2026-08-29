@@ -53,7 +53,7 @@
 
 **解决思路**：使用离群值抑制算法，将激活的量化难度“转移”到权重上。
 
-[离群值抑制算法对比](../knowledge_base/quantization_algorithms/README.md#离群值抑制算法)
+[离群值抑制算法对比](../knowledge_base/quantization_algorithms/README.md#1-离群值抑制算法)
 
 #### 总结建议
 
@@ -66,7 +66,7 @@
 
 根据量化对象（权重/激活）和比特数选择合适算法。量化算法选择包括权重量化方法选择和激活量化方法选择两部分。
 
-[量化算法对比](../knowledge_base/quantization_algorithms/README.md#量化算法)
+[量化算法对比](../knowledge_base/quantization_algorithms/README.md#2-量化算法)
 
 #### 权重量化
 
@@ -176,7 +176,7 @@
 
 ##### 第一步：敏感层分析
 
-使用msModelSlim提供的敏感层分析工具识别量化敏感层。按分析范围参见：《[线性层敏感层分析使用指南](usage_sensitive_linear_analysis.md)》、《[层级敏感层分析使用指南](usage_sensitive_layer_wise_analysis.md)》、《[Attention 敏感层分析使用指南](usage_sensitive_attn_analysis.md)》。
+使用msModelSlim提供的敏感层分析工具识别量化敏感层。按分析范围参见：《[线性层敏感层分析使用指南](usage_sensitive_linear_analysis.md)》、《[层级敏感层分析使用指南](usage_sensitive_layer_analysis.md)》、《[Attention 敏感层分析使用指南](usage_sensitive_attn_analysis.md)》。
 
 **功能说明**：
 

@@ -2,20 +2,20 @@
 
 ## 1. 适用范围
 
-本指南面向需要通过 `msmodelslim analyze attn`，按 **Attention 模块**粒度识别量化敏感层，并据此调整量化 YAML（配合 `fa3_quant` 等做回退）的开发者与算法工程师。
+本指南面向需要通过 `msmodelslim analyze attn` 命令行，按 **Attention 模块**粒度识别量化敏感层，并据此调整量化 YAML 的开发者与算法工程师。分析按 Attention 模块输出敏感度排序；当前典型落地场景是配合 FA（Flash Attention）类注意力量化（如 `fa3_quant`）识别需回退的模块，而非按单层线性层做回退。
 
 **适用场景**：
 
-- **LLM 模型**：使用文本校准集（`.json` / `.jsonl`）。
+- **LLM 模型**：使用文本校准集（`.json` 或 `.jsonl`）。
 - **VLM 模型**（多模态理解，如 Kimi-K3）：须使用图文校准集（如 `calibImages`），且适配器实现 `PipelineInterface` 与多模态 `handle_dataset`。
-- FA 量化方案设计：配合 Flash Attention 3 等注意力激活量化，识别需回退的 attention 模块。
+- FA 量化方案设计：配合 Flash Attention 3 等注意力量化，识别需回退的 Attention 模块。
 - 精度不达标时，结合 Attention 敏感度排序迭代 FA 相关配置。
 
 **不适用场景**：
 
-- **多模态生成模型**（文生图 / 文生视频等）：当前敏感层分析不支持。
+- **多模态生成模型**（文生图或文生视频等）：当前敏感层分析不支持。
 - 需要按单层线性层回退或提位宽：请使用《[线性层敏感层分析使用指南](usage_sensitive_linear_analysis.md)》。
-- 需要按 Decoder 块或整块 Attention / MLP / MoE 回退：请使用《[层级敏感层分析使用指南](usage_sensitive_layer_wise_analysis.md)》。
+- 需要按 Decoder 块或整块 Attention、MLP、MoE 回退：请使用《[层级敏感层分析使用指南](usage_sensitive_layer_analysis.md)》。
 
 ## 2. 流程关系与前置条件
 
@@ -30,7 +30,7 @@
 
 **后续操作**：
 
-- 将分析结果中的模块名写入量化配置（如 `fa3_quant` 相关回退配置），再执行 `msmodelslim quant`。
+- 将分析结果中的模块名写入量化配置（如 `fa3_quant` 相关回退配置），再通过 `msmodelslim quant` 命令行执行模型量化。
 
 ## 3. 输入和交付件
 
@@ -46,9 +46,9 @@
 
 ```mermaid
 flowchart LR
-  scene[确认指标] --> weight[获取浮点权重]
-  weight --> adapt[完成模型适配]
-  weight -->|已接入且接口齐全可跳过| run[执行分析命令]
+  scene[确认指标] --> prepare[获取浮点权重与校准集]
+  prepare --> adapt[完成模型适配]
+  prepare -->|已接入且接口齐全可跳过| run[执行分析命令]
   adapt --> run
   run --> result[解读分析结果]
 ```
@@ -78,7 +78,7 @@ msmodelslim analyze attn \
 
 | 可选指标 | 适用说明 | 算法说明 | 推荐 |
 | --- | --- | --- | --- |
-| `mse` | 浮点与量化权重下 attention 输出 MSE，用于 FA 量化回退 | 《[Attention MSE](../knowledge_base/quantization_algorithms/attention_mse/term_attention_mse.md)》 | **首选**（当前唯一可选） |
+| `mse` | 浮点与量化权重下 attention 输出 MSE，用于 FA 量化回退 | 《[Attention MSE](../knowledge_base/quantization_algorithms/attention_mse/term_attention_mse.md)》 | 当前唯一可选指标，直接选用 |
 
 **输出**：已选定的 `${METRICS}`。
 
@@ -92,7 +92,7 @@ msmodelslim analyze attn \
 
 1. 从 [ModelScope](https://www.modelscope.cn/)、[Hugging Face](https://huggingface.co/) 或团队内部模型存放位置获取完整权重到本地目录；具体下载方式以对应社区或仓库文档为准。
 2. 核对目录含配置、权重分片及 tokenizer 等附属文件。若官方页面提供文件校验值（如 MD5/SHA256）或明确的版本号/提交号，与本地下载结果比对一致即可。
-3. 准备校准集：敏感层分析所用校准集通常与后续量化保持一致。LLM 须为 `.json` / `.jsonl`：JSON 为字符串列表（每项一条校准文本），JSONL 为每行一个 JSON 对象。VLM 须使用图文校准集（如 `lab_calib/calibImages`），不要使用纯文本 `mix_calib.jsonl`。可使用自有文件，或工具提供的 [`lab_calib`](../../../lab_calib/) 示例。相对路径解析顺序：优先在命令启动目录查找；未找到再在 `lab_calib` 示例目录按同名匹配；均未找到则报错。
+3. 准备校准集：敏感层分析所用校准集通常与后续量化所用的校准集保持一致。LLM 须为 `.json` 或 `.jsonl`：JSON 为字符串列表（每项一条校准文本），JSONL 为每行一个 JSON 对象。VLM 须使用图文校准集（如 `lab_calib/calibImages`），不要使用纯文本 `mix_calib.jsonl`。可使用自有文件，或工具提供的 [`lab_calib`](../../../lab_calib/) 示例。相对路径解析顺序：优先在命令启动目录查找；未找到再在 `lab_calib` 示例目录按同名匹配；均未找到则报错。
 
 **输出**：浮点模型目录与校准集路径（或工具内置校准集短名称）。
 
@@ -106,7 +106,7 @@ msmodelslim analyze attn \
 
 - **尚未接入的模型**：须先完成适配器开发与注册，再进入步骤 4。通用适配要求见《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》。
 - **支持矩阵中已接入的模型**：可跳过通用适配，确认所用 `--model_type` 名称即可。
-- **算法侧额外接口**：若所选指标要求额外分析接口，一并按算法文档补齐（入口见《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#敏感层分析算法)》）。
+- **算法侧额外接口**：若所选指标要求额外分析接口，一并按算法文档补齐（入口见《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#3-敏感层分析算法)》）。
 
 完成或修改适配器后，在仓库根目录重新执行 `bash install.sh`，使注册生效。
 
@@ -131,7 +131,7 @@ msmodelslim analyze attn \
 
 **通过条件**：命令正常结束；输出含 Score 排序及 `=== YAML Format for quantization ===` 片段。
 
-**审计记录**：实际命令行、`model_type` / `${METRICS}`、校准集路径、标准输出结果摘要（或保存的日志路径）。
+**审计记录**：实际命令行、`${MODEL_TYPE}`、`${METRICS}`、校准集路径、标准输出结果摘要（或保存的日志路径）。
 
 ### 步骤 5：解读分析结果并用于配置
 
@@ -166,43 +166,43 @@ msmodelslim analyze attn \
    ```
 
 2. 检查 YAML 片段中的 attention 模块名是否覆盖预期范围。
-3. 将 YAML 片段中的模块名复制到量化配置（通常写入 `fa3_quant` 或对应 processor 的回退 / 排除配置）。
-4. 用更新后的 YAML 执行量化，再按业务口径测评；未达标则扩大回退或更换策略后重跑本流程。
+3. 将 YAML 片段中的模块名复制到量化配置（通常写入 `fa3_quant` 或对应 processor 的回退，排除配置）。
+4. 用更新后的 YAML 通过 `msmodelslim quant` 命令行执行模型量化，再按业务口径测评；未达标则扩大回退或更换策略后重跑本流程。
 
-**输出**：已根据敏感层结果更新的量化配置（及后续量化所用 YAML 路径）。
+**输出**：已根据敏感层结果更新的量化配置及文件所在路径。
 
 **通过条件**：YAML 中回退模块名与分析结果一致且可被量化配置加载。
 
-## 6. 全局验收条件
+## 6. 验收条件
 
 - 已选用 `attn` scope 与推荐分析指标。
 - 若所选指标需额外分析接口，适配器已满足要求（或使用已支持列表中的 `model_type`）。
 - 分析命令成功产出排序与可粘贴 YAML 片段，模块名经人工核对。
 
-## 7. 全局异常处置
+## 7. 异常处置
 
 | 现象 | 处理方向 |
 | --- | --- |
-| 校准集格式错误或无法读取 | 核对 `.json`/`.jsonl` 格式、路径与权限；路径解析与示例集见步骤 2 |
-| `model_type` 未命中或告警走默认模型 | 尚未完成模型适配与 `--model_type` 注册；先按步骤 3 补齐并重新 `bash install.sh` |
-| 分析报缺少接口 / 不支持 | 回到步骤 3，按算法文档补齐所选指标要求的分析接口，或改用已支持该指标的 `model_type` |
-| 显存不足或运行失败 | 缩小校准集，或换更大显存设备 |
-| 回退后仍无法部署或精度异常 | 核对回退模块名是否正确；核对引擎对回退层数的限制 |
+| 校准集格式错误或无法读取 | 按步骤 2 核对 `.json` 或 `.jsonl` 格式、路径与权限及解析规则后，再执行分析命令 |
+| `model_type` 未命中或告警走默认模型 | 按步骤 3 完成模型适配与 `--model_type` 注册，重新执行 `bash install.sh` 使注册生效后，再执行分析命令 |
+| 分析报缺少接口或不支持 | 按步骤 3 与算法文档补齐所选指标要求的分析接口，或改用已支持该指标的 `model_type` 后，再执行分析命令 |
+| 显存不足或运行失败 | 缩小校准集，或换更大显存设备后，再执行分析命令 |
+| 回退后仍无法部署或精度异常 | 核对回退模块名是否正确，以及推理引擎对回退层数的限制；修正配置后重新量化并测评 |
 
 ## 8. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
 | 模型适配 | 新模型接入与注册 | 《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》 |
-| 敏感层分析算法 | 用于 `msmodelslim analyze` 的各类敏感度指标（如 Attention MSE 等） | 《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#敏感层分析算法)》 |
+| 敏感层分析算法 | 用于 `msmodelslim analyze` 的各类敏感度指标（如 Attention MSE 等） | 《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#3-敏感层分析算法)》 |
 
 ## 9. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `msmodelslim analyze attn` | Attention 敏感层分析命令行入口 | 本指南 [命令行预览](#命令行预览) |
+| `msmodelslim analyze attn` | Attention 敏感层分析命令行入口 | 《[msmodelslim analyze 命令行 API](../api_reference/cli/msmodelslim_analyze.md)》；本指南 [命令行预览](#命令行预览) |
 
 ## 10. 安全说明
 
-- `trust_remote_code` 默认保持 `False`；仅当浮点仓库必须执行自定义代码且来源可信、可审计时开启。
+- `trust_remote_code` 默认保持 `False`；仅当浮点模型必须执行自定义代码且来源可信、可审计时开启。
 - 浮点权重与校准数据应按业务权限管控；勿将含业务数据的校准集或分析日志提交到公开渠道。

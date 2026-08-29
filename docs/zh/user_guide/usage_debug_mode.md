@@ -318,5 +318,5 @@ A: 不影响。调试模式仅在量化完成后保存上下文信息，不会�
 - 《[权重转换使用指南](../knowledge_base/ptq/convert/usage_weight_conversion.md)》
 - 《[量化精度调优指南](process_quantization_precision_tuning.md)》
 - 《[线性层敏感层分析使用指南](usage_sensitive_linear_analysis.md)》
-- 《[层级敏感层分析使用指南](usage_sensitive_layer_wise_analysis.md)》
+- 《[层级敏感层分析使用指南](usage_sensitive_layer_analysis.md)》
 - 《[Attention 敏感层分析使用指南](usage_sensitive_attn_analysis.md)》

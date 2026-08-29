@@ -97,4 +97,4 @@ Model-wise MSE 的价值是把后续层的误差传播也纳入评价。若资�
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | 《[敏感层分析使用指南](../../../user_guide/usage_sensitive_layer_wise_analysis.md)》 |
+| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | 《[敏感层分析使用指南](../../../user_guide/usage_sensitive_layer_analysis.md)》 |

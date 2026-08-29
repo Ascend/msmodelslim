@@ -59,7 +59,7 @@
 >
 > 示例：
 > - [《一键量化 V1》](../../../user_guide/usage_quick_quantization.md)：默认集成本算法作为离群值抑制前置步骤。
-> - [《敏感层分析使用指南》](../../../user_guide/usage_sensitive_layer_wise_analysis.md)：分析结果可用于回退使用本算法的层。
+> - [《敏感层分析使用指南》](../../../user_guide/usage_sensitive_layer_analysis.md)：分析结果可用于回退使用本算法的层。
 
 ## 4. [OPTIONAL] 关联词条
 

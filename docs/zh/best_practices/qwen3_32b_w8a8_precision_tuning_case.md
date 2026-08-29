@@ -98,7 +98,7 @@ msmodelslim quant \
 
    d. **Flex Smooth Quant（备选）**：alpha/beta 缺省自动搜索。详见《[Flex Smooth Quant 算法](../knowledge_base/quantization_algorithms/flex_smooth_quant/usage_flex_smooth_quant.md)》。——仅在 Iterative Smooth 所有方案均不达标时使用。
 
-   算法对比见[离群值抑制算法](../knowledge_base/quantization_algorithms/README.md#离群值抑制算法)。
+   算法对比见[离群值抑制算法](../knowledge_base/quantization_algorithms/README.md#1-离群值抑制算法)。
 
 2. **部署测评**：将每组量化产物部署到目标推理引擎，执行测评命令（AIME25数据集），记录精度与量化耗时。
 3. **汇总对比**：汇总各算法的精度与量化时间，选择综合最优方案。

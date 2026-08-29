@@ -4,11 +4,11 @@
 
 本指南面向需要将**尚未收录于支持矩阵、或虽已收录但目标量化模式未验证**的模型接入 msModelSlim，并产出可部署量化权重的开发者与算法工程师。覆盖以下模型类别：
 
-- **大语言模型（LLM）**：稠密 / MoE 文本模型等
+- **大语言模型（LLM）**：稠密、MoE 文本模型等
 - **多模态理解模型**：视觉-语言理解（VLM）等
-- **多模态生成模型**：文生视频 / 图生视频等
+- **多模态生成模型**：文生视频、图生视频等
 
-本指南描述三类模型共用的业务路径：下载浮点模型 → 完成模型适配 → 编写配置 → 执行量化 → 校验交付件。
+本指南描述三类模型共用的业务路径：下载浮点模型 → 完成模型适配 → 编写量化配置 → 执行量化 → 校验交付件。
 
 **适用场景**：
 
@@ -25,26 +25,27 @@
 **前置条件**：
 
 - 已核对《[大模型支持矩阵](../knowledge_base/model/README.md)》，确认目标模型未收录，或目标量化模式（`quant_type`）尚未验证。
-- 已确认目标模型所属类别（LLM / 多模态理解 / 多模态生成）。
-- 已按模型发布页与对应接入指南准备运行依赖：不同模型常要求特定 `transformers` 等版本；多模态生成还须具备原推理仓及桥接所需依赖。具体版本以模型卡片 / 接入指南为准，本文不枚举。
-- 已完成 msModelSlim **源码安装**（新模型适配需改代码与注册 entry point，详见《[安装指南](../install_guide/install_guide.md)》）。量化设备方面：常规路径需可用的昇腾 NPU；`msmodelslim quant` 也支持 `--device cpu`，可用于小规模调试，大参数或复杂流水线仍以 NPU 为准。
+- 已确认目标模型所属类别（大语言模型、多模态理解或多模态生成）。
+- 已按模型发布页与对应接入指南准备运行依赖：不同模型常要求特定 `transformers` 等版本；多模态生成还须具备原推理仓及桥接所需依赖。具体版本以模型卡片与接入指南为准，本文不枚举。
+- 已完成 msModelSlim **源码安装**（新模型适配需改代码与注册 entry point，详见《[安装指南](../install_guide/install_guide.md)》）。
+- 已确认量化设备：支持昇腾 NPU 与 CPU；常规量化建议使用 NPU，CPU 仅适合小规模调试。
 - 已确定目标推理框架，并选定 msModelSlim 支持的导出格式（见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》，如 AscendV1、MindIE-SD）。
 
 **后续操作**：
 
-- 交付件校验通过后，回到《[新模型量化调优流程](process_new_model_quantization_tuning.md)》继续算子开发与组图、精度/性能测评等步骤。
+- 交付件校验通过后，回到《[新模型量化调优流程](process_new_model_quantization_tuning.md)》继续算子开发与组图、精度与性能测评等步骤。
 
 ## 3. 输入和交付件
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 浮点模型目录 | 用户本地路径；一般自 ModelScope / Hugging Face 获取 | 含模型配置、权重分片及类别所需附属文件（如 tokenizer、config 等） | 文件齐全；若官方提供校验值或版本号，与本地一致 |
-| 输入 | 量化配置 YAML | 本指南步骤中编写的配置文件路径 | 符合对应配置协议（`modelslim_v1` / `multimodal_vlm_modelslim_v1` / `multimodal_sd_modelslim_v1`） | 新模型接入阶段以显式指定配置文件路径可加载为准 |
-| 交付件 | 量化权重目录 | 用户指定的量化输出目录 | 含所选导出格式约定的描述文件与权重分片（如 AscendV1 的 `quant_model_description.json`） | 文件齐全；符合所选导出格式约定 |
+| 输入 | 浮点模型目录 | 用户本地路径；一般从 [ModelScope](https://www.modelscope.cn/)、[Hugging Face](https://huggingface.co/) 或团队内部模型存放位置获取 | 含模型配置、权重分片及类别所需附属文件（如 tokenizer、config 等） | 文件齐全；若官方提供校验值或版本号，与本地一致 |
+| 输入 | 量化配置 YAML | 本指南步骤中编写的配置文件路径 | 符合对应配置协议（`modelslim_v1`、`multimodal_vlm_modelslim_v1`、`multimodal_sd_modelslim_v1`） | 新模型接入阶段以显式指定配置文件路径可加载为准 |
+| 交付件 | 量化权重目录 | 用户指定的量化输出目录 `${SAVE_PATH}` | 含所选导出格式约定的描述文件与权重分片（如 AscendV1 的 `quant_model_description.json`） | 文件齐全；符合所选导出格式约定 |
 
 ## 4. 流程总览
 
-本流程负责权重量化并交付权重；推理 / 生成由目标引擎承担（如 MindIE、vLLM Ascend、MindIE-SD）。先完成环境与资源预检，再下载浮点模型；**尚未接入**时完成模型适配，**已接入**可跳过适配；随后编写量化配置、执行量化，最后校验量化权重交付件是否完整可用。各阶段顺序如下：
+本流程负责权重量化并交付权重；推理由目标引擎承担（如 MindIE、vLLM Ascend、MindIE-SD）。先完成环境与资源预检，再下载浮点模型；**模型尚未接入**时完成模型适配，**已接入**可跳过适配；随后编写量化配置、执行量化，最后校验量化权重交付件是否完整可用。各阶段顺序如下：
 
 ```mermaid
 flowchart LR
@@ -89,7 +90,7 @@ msmodelslim quant \
 **操作**：
 
 1. 从 [ModelScope](https://www.modelscope.cn/)、[Hugging Face](https://huggingface.co/) 或团队内部模型存放位置获取完整权重到本地目录；具体下载方式以对应社区或仓库文档为准。
-2. 核对目录含配置、权重分片及类别所需附属文件。若官方页面提供文件校验值（如 MD5/SHA256）或明确的版本号/提交号，与本地下载结果比对一致即可。下载完成后记录最后修改时间，供量化前预检比对。
+2. 核对目录含配置、权重分片及类别所需附属文件。若官方页面提供文件校验值（如 MD5、SHA256）或明确的版本号、提交号，与本地下载结果比对一致即可。下载完成后记录最后修改时间，供量化前预检比对。
 
 **输出**：浮点模型目录 `${MODEL_PATH}`。
 
@@ -97,12 +98,12 @@ msmodelslim quant \
 
 ### 步骤 2：完成模型适配
 
-**目标**：确保存在可被 `msmodelslim quant --model_type <模型名>` 命中的模型适配器。
+**目标**：确保存在可被 `msmodelslim quant --model_type ${MODEL_TYPE}` 命中的模型适配器。
 
 **操作**：
 
 - **尚未接入的模型**：须先完成适配器开发与注册，再进入步骤 3。
-- **支持矩阵中已接入的模型**：可跳过本步骤，直接进入步骤 3 编写配置；确认所用 `--model_type` 名称即可。
+- **支持矩阵中已接入的模型**：可跳过本步骤，直接进入步骤 3 编写量化配置；确认所用 `--model_type`（即 `${MODEL_TYPE}`）名称即可。
 
 尚未接入时按下列操作执行：
 
@@ -114,20 +115,20 @@ msmodelslim quant \
    | 多模态理解 | 《[多模态理解模型接入指南](../knowledge_base/model/integrating_multimodal_understanding_model.md)》 |
    | 多模态生成 | 《[多模态生成模型接入指南](../knowledge_base/model/integrating_multimodal_generation_model.md)》 |
 
-2. 完成适配器开发与注册后，在仓库根目录重新执行 `bash install.sh`，使注册生效。
+2. 完成适配器开发与注册后，在仓库根目录重新执行 `bash install.sh`，将适配器 entry point 安装进当前环境，使 CLI 能按 `${MODEL_TYPE}` 命中该模型适配器。
 
-**输出**：已注册且可被 CLI 命中的模型适配器（对应 `--model_type` 名称）；已接入并跳过本步骤时，输出即为既有 `--model_type`。
+**输出**：已注册且可被 CLI 命中的模型适配器（对应 `--model_type` / `${MODEL_TYPE}`）；模型已接入并跳过本步骤时，输出为既有 `${MODEL_TYPE}`。
 
-**通过条件**：使用该 `--model_type` 启动量化时，日志显示已命中预期模型适配器，且不再报未知模型/未命中适配器。
+**通过条件**：使用 `--model_type ${MODEL_TYPE}` 启动量化时，日志显示已命中预期模型适配器，且无未知模型或未命中适配器相关报错。
 
 ### 步骤 3：编写量化配置
 
-**目标**：按上级流程「量化方案设计」已确定的方案，写出量化配置 YAML。首次推荐方案见《[新模型量化调优流程](process_new_model_quantization_tuning.md)》步骤 1。
+**目标**：按上级流程[步骤 1：量化方案设计](process_new_model_quantization_tuning.md#步骤-1量化方案设计)已确定的方案，写出量化配置 YAML。
 
 **操作**：
 
 1. 确认本轮量化模式、算法与量化范围（来自上级流程的方案结论）。
-2. **编写量化配置**并保存为本地文件。下列为 **LLM / 多模态理解** 可用的首版骨架（`w8a8` 动态 + 仅 `linear_quant`）；按模型类别修改 `apiversion`、`dataset`、`include`/`exclude`。**多模态生成勿直接套用本骨架**：`save` 常使用 `mindie_format_saver`，并补充 `multimodal_sd_config`（如 `dump_config`、`inference_config`），字段见下方协议链接。
+2. **编写量化配置**并保存为本地文件 `${CONFIG_PATH}`。下列为 **大语言模型、多模态理解** 可用的首版骨架（`w8a8` 动态与仅 `linear_quant`）；按模型类别修改 `apiversion`、`dataset`、`include`、`exclude`。**多模态生成勿直接套用本骨架**：`save` 常使用 `mindie_format_saver`，并补充 `multimodal_sd_config`（如 `dump_config`、`inference_config`），字段见下方协议链接。
 
    ```yaml
    apiversion: modelslim_v1
@@ -162,11 +163,11 @@ msmodelslim quant \
 
    | 模型类别 | 配置协议 | 权威说明 |
    | --- | --- | --- |
-   | 大语言模型 | `modelslim_v1` | [一键量化完整指南 - modelslim_v1 配置详解](usage_quick_quantization.md#52-modelslim_v1-配置详解) |
-   | 多模态理解 | `multimodal_vlm_modelslim_v1` | [一键量化完整指南 - multimodal_vlm_modelslim_v1 配置详解](usage_quick_quantization.md#54-multimodal_vlm_modelslim_v1-配置详解) |
-   | 多模态生成 | `multimodal_sd_modelslim_v1` | [一键量化完整指南 - multimodal_sd_modelslim_v1 配置详解](usage_quick_quantization.md#53-multimodal_sd_modelslim_v1-配置详解) |
+   | 大语言模型 | `modelslim_v1` | 《[modelslim_v1 配置说明](../api_reference/config/task/modelslim_v1.md)》 |
+   | 多模态理解 | `multimodal_vlm_modelslim_v1` | 《[multimodal_vlm_modelslim_v1 配置说明](../api_reference/config/task/multimodal_vlm_modelslim_v1.md)》 |
+   | 多模态生成 | `multimodal_sd_modelslim_v1` | 《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/task/multimodal_sd_modelslim_v1.md)》 |
 
-**输出**：量化配置 YAML 文件。
+**输出**：量化配置 YAML 文件 `${CONFIG_PATH}`。
 
 **通过条件**：配置字段符合所选模型类别的完整配置协议要求。
 
@@ -177,12 +178,13 @@ msmodelslim quant \
 **执行前检查**：
 
 - 再次完成[执行前预检](#执行前预检)。
-- 确认当前环境依赖仍满足量化加载需要：`transformers` 等版本与模型发布页一致；多模态生成还需原推理仓及相关依赖可正常 import / 调用。
-- 在源码目录外执行命令；输出目录可写，且不与浮点模型目录混用。
+- 确认当前环境依赖仍满足量化加载需要：`transformers` 等版本与模型发布页一致；多模态生成还需原推理仓及相关依赖可正常 import 或调用。
+- 在源码目录外执行量化命令。
+- 确认 `${SAVE_PATH}` 可写，且不与浮点模型目录 `${MODEL_PATH}` 混用。
 
 **操作**：
 
-新模型接入阶段使用 `--config` 显式指定步骤 3 的配置，使用自定义配置时，量化结果由配置与适配自行保证，msModelSlim 不对未经验证的自定义配置效果负责。
+新模型接入阶段使用 `--config` 显式指定步骤 3 的配置；使用自定义配置时，量化结果由配置与适配自行保证，msModelSlim 不对未经验证的自定义配置效果负责。
 
 ```bash
 msmodelslim quant \
@@ -196,18 +198,18 @@ msmodelslim quant \
 
 参数说明：
 
-- `--model_path`：浮点权重目录。
-- `--save_path`：量化产物输出目录。
-- `--device`：量化设备，如 `npu`、`npu:0,1,2,3`。
-- `--model_type`：步骤 2 注册的模型名，或支持矩阵中已有名称；大小写敏感。
-- `--config`：步骤 3 编写的 YAML。
+- `--model_path`：浮点权重目录 `${MODEL_PATH}`。
+- `--save_path`：量化产物输出目录 `${SAVE_PATH}`。
+- `--device`：量化设备，如 `npu`、`cpu`，或多卡场景下的 `npu:0,1,2,3`。
+- `--model_type`：步骤 2 注册的模型名 `${MODEL_TYPE}`，或支持矩阵中已有名称；大小写敏感。
+- `--config`：步骤 3 编写的 YAML `${CONFIG_PATH}`。
 - `--trust_remote_code`：仅当模型必须执行仓库内自定义代码且来源可信时设为 `True`。
 
-**输出**：量化权重目录。
+**输出**：量化权重目录 `${SAVE_PATH}`。
 
-**通过条件**：命令正常结束，且输出目录已写出量化权重相关文件。
+**通过条件**：命令正常结束，且 `${SAVE_PATH}` 已写出量化权重相关文件。
 
-**审计记录**：实际执行的命令行、所用配置文件路径、量化日志路径（若启用调试模式则含 `debug_info` 目录）。
+**审计记录**：实际执行的命令行、所用配置文件路径、量化日志路径。
 
 ### 步骤 5：校验交付件
 
@@ -215,51 +217,59 @@ msmodelslim quant \
 
 **操作**：
 
-1. 按所选导出格式核对产物结构与关键文件。常见格式说明：
+1. 按所选导出格式核对产物结构与关键文件。各格式交付件约定见下表；格式选型与对比见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》。
 
-   | 导出格式 | 产物说明 |
+   | 导出格式 | 说明 |
    | --- | --- |
-   | AscendV1 | 《[AscendV1 格式说明](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md)》 |
-   | MindIE-SD 等 | 《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》及对应 saver 说明 |
+   | AscendV1 | 《[AscendV1](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md)》 |
+   | MindIE-SD | 《[MindIE-SD](../knowledge_base/quantization_format/mindie_sd/term_mindie_sd.md)》 |
+   | compressed-tensors | 《[compressed-tensors](../knowledge_base/quantization_format/compressed_tensors/term_compressed_tensors.md)》 |
 
 2. 对比浮点模型目录与量化权重目录的体积（如 `du -sh ${MODEL_PATH} ${SAVE_PATH}`），确认量化产物相对浮点权重有合理缩小；具体幅度随位宽与导出格式而异，不作固定压缩比要求。
 
-**输出**：通过校验的量化权重目录。
+**输出**：通过校验的量化权重目录 `${SAVE_PATH}`。
 
 **通过条件**：产物符合所选导出格式约定；量化目录体积相对浮点目录合理缩小。
 
-**审计记录**：量化权重目录路径；浮点与量化目录体积对比结果；运行环境信息（如 NPU / 驱动 / CANN）；msModelSlim 与相关依赖版本。
+**审计记录**：量化权重目录路径；浮点与量化目录体积对比结果；运行环境信息（如 NPU、驱动、CANN）；msModelSlim 与相关依赖版本。
 
-## 6. 全局验收条件
+## 6. 验收条件
 
-- 浮点模型目录完整可追溯；适配器可被 `--model_type` 命中；量化配置符合所选协议。
-- 量化权重目录齐全，符合所选导出格式约定；相对浮点目录体积合理缩小。
+- 浮点模型目录完整可追溯。
+- 适配器可被 `--model_type ${MODEL_TYPE}` 命中。
+- 量化配置符合所选协议。
+- 量化权重目录齐全，符合所选导出格式约定。
+- 量化目录体积相对浮点目录合理缩小。
 
-## 7. 全局异常处置
+## 7. 异常处置
 
-本表仅覆盖本指南步骤内（预检 → 校验交付件）的常见阻塞；精度/性能不达标及多次迭代仍无法达标，见《[量化精度调优指南](process_quantization_precision_tuning.md)》及后续部署测评。
+本表仅覆盖本指南步骤内的常见阻塞；精度与性能不达标及多次迭代仍无法达标，见《[量化精度调优指南](process_quantization_precision_tuning.md)》及后续部署测评。
 
 | 现象 | 处理方向 |
 | --- | --- |
 | 预检未通过 | 按[执行前预检](#执行前预检)处理：恢复或重下权重、扩容或换盘、释放或改选空闲 NPU 后再继续 |
-| 模型加载 / `trust_remote_code` / 依赖版本失败 | 核对模型发布页与前置条件中的依赖；必要时仅对可信模型开启远程代码 |
-| `--model_type` 未命中 | 检查 `config.ini` 注册与 `install.sh` 是否重跑 |
-| 配置解析失败或协议字段缺失 | 回到步骤 3，对照对应配置协议补齐/修正 YAML 后重跑步骤 4 |
+| 模型加载、`trust_remote_code` 或依赖版本失败 | 核对模型发布页与前置条件中的依赖；必要时仅对可信模型开启远程代码 |
+| `--model_type` 未命中 | 确认适配器已在 `config.ini` 注册，并重新执行 `bash install.sh` 使 `${MODEL_TYPE}` 生效 |
+| 配置解析失败或协议字段缺失 | 回到步骤 3，对照对应配置协议补齐或修正 YAML 后重跑步骤 4 |
 | 量化中接口、子图、校准 dump 或专家编排错误 | 回到步骤 2，按模型类别对照对应接入指南与同系列适配器补齐实现 |
-| 产物不全或描述文件不符合预期 | 核对 saver / 导出格式与《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》；确认描述文件后重跑步骤 4，再执行步骤 5 |
-| 量化过程 OOM / 显存不足 | 改用多卡量化、缩小校准规模，或换更大显存设备后重跑 |
+| 产物不全或描述文件不符合预期 | 核对保存器类型与导出格式，并对照《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》及对应格式词条；确认描述文件后重跑步骤 4，再执行步骤 5 |
+| 量化过程显存不足 | 改用多卡量化、缩小校准规模，或换更大显存设备后重跑 |
 
 ## 8. 案例列表
 
 | 案例 | 简述 | 链接 |
 | --- | --- | --- |
-| DeepSeek-V4-Pro W4A8 新接入 | LLM 新模型适配 + W4A8 配置 + 一键量化 + 部署评测闭环 | 《[DeepSeek-V4-Pro W4A8 新模型量化案例](../best_practices/deepseek_v4_pro_w4a8_new_llm_quantization_case.md)》 |
+| DeepSeek-V4-Pro W4A8 新接入 | 大语言模型新接入：适配、W4A8 配置、一键量化与部署评测 | 《[DeepSeek-V4-Pro W4A8 新模型量化案例](../best_practices/deepseek_v4_pro_w4a8_new_llm_quantization_case.md)》 |
+| Kimi-K3 W4A8 新接入 | 多模态理解新接入：适配、W4A8 量化与精度测评 | 《[Kimi-K3 新模型 W4A8 量化案例](../best_practices/kimi_k3_adaptation_case.md)》 |
+| Wan2.2 W4A4F4 验证 | 多模态生成新接入：适配、逐层量化、权重导出与精度评测 | 《[Wan2.2 W4A4F4 验证案例](../best_practices/wan2_2_w4a4f4_verification_case.md)》 |
 
 ## 9. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 模型适配 | 为特定模型实现并注册适配器，使 CLI 可通过 `--model_type` 命中加载与量化能力 | 《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》 |
+| 模型适配（大语言模型） | 为特定模型实现并注册适配器，使 CLI 可通过 `--model_type` 命中加载与量化能力 | 《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》 |
+| 模型适配（多模态理解） | 为特定模型实现并注册适配器，使 CLI 可通过 `--model_type` 命中加载与量化能力 | 《[多模态理解模型接入指南](../knowledge_base/model/integrating_multimodal_understanding_model.md)》 |
+| 模型适配（多模态生成） | 为特定模型实现并注册适配器，使 CLI 可通过 `--model_type` 命中加载与量化能力 | 《[多模态生成模型接入指南](../knowledge_base/model/integrating_multimodal_generation_model.md)》 |
 | 量化算法 | 离群值抑制、线性量化、敏感层分析等算法说明 | 《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》 |
 | 量化模式 | 如 w8a8、w4a8 等比特组合策略的命名与约定 | 《[量化模式命名规范](../knowledge_base/model/README.md#量化模式命名规范)》 |
 | 量化格式 | 量化权重导出格式及其与推理框架的对应关系 | 《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》 |
@@ -268,11 +278,13 @@ msmodelslim quant \
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `msmodelslim quant` | 权重量化统一命令行入口 | 本指南 [命令行预览](#命令行预览) |
-| 量化配置协议 | `modelslim_v1` / `multimodal_vlm_modelslim_v1` / `multimodal_sd_modelslim_v1` 等 YAML 约定 | [一键量化完整指南 - 量化配置协议详解](usage_quick_quantization.md#5-量化配置协议详解) |
+| `msmodelslim quant` | 权重量化统一命令行入口 | 《[msmodelslim quant 命令行 API](../api_reference/cli/msmodelslim_quant.md)》 |
+| 量化配置协议（大语言模型） | `modelslim_v1` YAML 约定 | 《[modelslim_v1 配置说明](../api_reference/config/task/modelslim_v1.md)》 |
+| 量化配置协议（多模态理解） | `multimodal_vlm_modelslim_v1` YAML 约定 | 《[multimodal_vlm_modelslim_v1 配置说明](../api_reference/config/task/multimodal_vlm_modelslim_v1.md)》 |
+| 量化配置协议（多模态生成） | `multimodal_sd_modelslim_v1` YAML 约定 | 《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/task/multimodal_sd_modelslim_v1.md)》 |
 
 ## 11. 安全说明
 
-- `trust_remote_code` 默认保持 `False`；仅当浮点仓库必须执行自定义代码且来源可信、可审计时开启。
-- 浮点权重、校准数据（含图像/视频路径所指向内容）与量化产物应按业务权限管控；勿将含业务数据的校准集或日志提交到公开渠道。
-- 调试模式可能落盘中间张量与统计信息，使用后按需清理 `save_path/debug_info`。
+- `trust_remote_code` 默认保持 `False`；仅当浮点模型必须执行自定义代码且来源可信、可审计时开启。
+- 浮点权重、校准数据（含图像、视频路径所指向内容）与量化产物应按业务权限管控；勿将含业务数据的校准集或日志提交到公开渠道。
+- 调试模式可能落盘中间张量与统计信息，使用后按需清理 `${SAVE_PATH}/debug_info`。

@@ -15,7 +15,7 @@
 - **多模态理解模型（VLM）**：不支持。
 - **多模态生成模型**（文生图 / 文生视频等）：不支持。
 - 需要按单层线性层回退或提位宽：请参见《[线性层敏感层分析使用指南](usage_sensitive_linear_analysis.md)》。
-- 需要按 Decoder 块或整块 Attention / MLP / MoE 回退：请参见《[层级敏感层分析使用指南](usage_sensitive_layer_wise_analysis.md)》。
+- 需要按 Decoder 块或整块 Attention / MLP / MoE 回退：请参见《[层级敏感层分析使用指南](usage_sensitive_layer_analysis.md)》。
 - 配合 FA 量化识别需回退的 attention 模块：请参见《[Attention 敏感层分析使用指南](usage_sensitive_attn_analysis.md)》。
 
 ## 2. 流程关系与前置条件
@@ -65,7 +65,7 @@ msmodelslim analyze attn_head \
   --metrics ra_compress \               # 分析指标，固定为 ra_compress
   --calib_dataset calib_dummy.jsonl \   # 须显式指定为 calib_dummy.jsonl（合成重复段校准集，tokenize 后总长度 ≥ 10000）
   --device npu \                        # 分析设备：npu / cpu
-  --trust_remote_code False             # 默认 False；仅可信模型必要时设为 True
+  --trust_remote_code False \           # 默认 False；仅可信模型必要时设为 True
   --save_path ${SAVE_PATH}              # 可选；指定则保存 head.pt，不指定仅打印到控制台
 ```
 

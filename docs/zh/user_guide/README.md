@@ -78,7 +78,7 @@
 按 scope 的操作过程请参见：
 
 - [线性层敏感层分析使用指南](usage_sensitive_linear_analysis.md)（`scope=linear`）
-- [层级敏感层分析使用指南](usage_sensitive_layer_wise_analysis.md)（`scope=layer`）
+- [层级敏感层分析使用指南](usage_sensitive_layer_analysis.md)（`scope=layer`）
 - [Attention 敏感层分析使用指南](usage_sensitive_attn_analysis.md)（`scope=attn`）
 
 ### 3.4 自动调优

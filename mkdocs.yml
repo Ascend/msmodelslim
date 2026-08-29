@@ -69,7 +69,7 @@ nav:
           - 组合处理器: "zh/api_reference/config/processor_group.md"
       - 敏感层分析:
           - 线性层敏感层分析: "zh/user_guide/usage_sensitive_linear_analysis.md"
-          - 层级敏感层分析: "zh/user_guide/usage_sensitive_layer_wise_analysis.md"
+          - 层级敏感层分析: "zh/user_guide/usage_sensitive_layer_analysis.md"
           - Attention 敏感层分析: "zh/user_guide/usage_sensitive_attn_analysis.md"
       - 自动调优策略:
           - 使用指南: "zh/user_guide/usage_auto_precision_tuning.md"

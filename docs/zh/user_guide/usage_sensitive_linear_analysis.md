@@ -2,19 +2,19 @@
 
 ## 1. 适用范围
 
-本指南面向需要通过 `msmodelslim analyze linear`，按**单层线性层**粒度识别量化敏感层，并据此调整量化 YAML（回退 / 提位宽）的开发者与算法工程师。
+本指南面向需要通过 `msmodelslim analyze linear` 命令行，按**单层线性层**粒度识别量化敏感层，并据此调整量化 YAML（回退或提位宽）的开发者与算法工程师。
 
 **适用场景**：
 
-- **LLM 模型**：使用文本校准集（`.json` / `.jsonl`）。
+- **LLM 模型**：使用文本校准集（`.json` 或 `.jsonl`）。
 - **VLM 模型**（多模态理解，如 Kimi-K3）：须使用图文校准集（如 `calibImages`），且适配器实现 `PipelineInterface` 与多模态 `handle_dataset`。
-- 线性层量化方案设计：决定哪些线性层回退浮点或局部提位宽；结果写入 `linear_quant` 的 `exclude` / `include`。
+- 线性层量化方案设计：决定哪些线性层回退浮点或局部提位宽；结果写入 `linear_quant` 的 `exclude` 或 `include`。
 - 精度不达标时，结合线性层敏感度排序迭代量化配置。
 
 **不适用场景**：
 
-- **多模态生成模型**（文生图 / 文生视频等）：当前敏感层分析不支持。
-- 需要按 Decoder 块或整块 Attention / MLP / MoE 回退：请使用《[层级敏感层分析使用指南](usage_sensitive_layer_wise_analysis.md)》。
+- **多模态生成模型**（文生图或文生视频等）：当前敏感层分析不支持。
+- 需要按 Decoder 块或整块 Attention、MLP、MoE 回退：请使用《[层级敏感层分析使用指南](usage_sensitive_layer_analysis.md)》。
 - 配合 FA 量化识别需回退的 attention 模块：请使用《[Attention 敏感层分析使用指南](usage_sensitive_attn_analysis.md)》。
 - **MoE 结构分析**：专家侧线性层数量大且并非全部参与激活，一般不建议用本指南分析专家；需要回退时优先走层级分析。
 
@@ -30,7 +30,7 @@
 
 **后续操作**：
 
-- 将分析结果中的层名写入量化配置的 `include` / `exclude`（或局部提位宽配置），再执行 `msmodelslim quant`。
+- 将分析结果中的层名写入量化配置的 `include` 或 `exclude`（或局部提位宽配置），再通过 `msmodelslim quant` 命令行执行模型量化。
 
 ## 3. 输入和交付件
 
@@ -46,9 +46,9 @@
 
 ```mermaid
 flowchart LR
-  scene[确认指标] --> weight[获取浮点权重]
-  weight --> adapt[完成模型适配]
-  weight -->|已接入可跳过| run[执行分析命令]
+  scene[确认指标] --> prepare[获取浮点权重与校准集]
+  prepare --> adapt[完成模型适配]
+  prepare -->|已接入可跳过| run[执行分析命令]
   adapt --> run
   run --> result[解读分析结果]
 ```
@@ -79,9 +79,9 @@ msmodelslim analyze linear \
 
 | 可选指标 | 适用说明 | 算法说明 | 推荐 |
 | --- | --- | --- | --- |
-| `kurtosis` | 关注激活尖峰与尾部，辅助回退或混精 | 《[Kurtosis](../knowledge_base/quantization_algorithms/kurtosis/term_kurtosis.md)》 | **首选** |
-| `quantile` | 激活离群较多，希望降低离群点主导 | 《[Quantile](../knowledge_base/quantization_algorithms/quantile/term_quantile.md)》 | 按需配合 |
-| `std` | 关注动态范围与离散度比值，做线性层粗筛 | 《[Std](../knowledge_base/quantization_algorithms/std/term_std.md)》 | 按需配合 |
+| `kurtosis` | 关注激活尖峰与尾部，辅助回退或混精 | 《[Kurtosis](../knowledge_base/quantization_algorithms/kurtosis/term_kurtosis.md)》 | 默认首选：不确定激活形态时先用本指标 |
+| `quantile` | 激活离群较多，希望降低离群点主导 | 《[Quantile](../knowledge_base/quantization_algorithms/quantile/term_quantile.md)》 | 激活离群点较多时改用或与 `kurtosis` 对照 |
+| `std` | 关注动态范围与离散度比值，做线性层粗筛 | 《[Std](../knowledge_base/quantization_algorithms/std/term_std.md)》 | 需按动态范围粗筛时改用或与 `kurtosis` 对照 |
 
 **输出**：已选定的 `${METRICS}`。
 
@@ -95,7 +95,7 @@ msmodelslim analyze linear \
 
 1. 从 [ModelScope](https://www.modelscope.cn/)、[Hugging Face](https://huggingface.co/) 或团队内部模型存放位置获取完整权重到本地目录；具体下载方式以对应社区或仓库文档为准。
 2. 核对目录含配置、权重分片及 tokenizer 等附属文件。若官方页面提供文件校验值（如 MD5/SHA256）或明确的版本号/提交号，与本地下载结果比对一致即可。
-3. 准备校准集：敏感层分析所用校准集通常与后续量化保持一致。LLM 须为 `.json` / `.jsonl`：JSON 为字符串列表（每项一条校准文本），JSONL 为每行一个 JSON 对象。VLM 须使用图文校准集（如 `lab_calib/calibImages`），不要使用纯文本 `mix_calib.jsonl`。可使用自有文件，或工具提供的 [`lab_calib`](../../../lab_calib/) 示例。相对路径解析顺序：优先在命令启动目录查找；未找到再在 `lab_calib` 示例目录按同名匹配；均未找到则报错。
+3. 准备校准集：敏感层分析所用校准集通常与后续量化所用的校准集保持一致。LLM 须为 `.json` 或 `.jsonl`：JSON 为字符串列表（每项一条校准文本），JSONL 为每行一个 JSON 对象。VLM 须使用图文校准集（如 `lab_calib/calibImages`），不要使用纯文本 `mix_calib.jsonl`。可使用自有文件，或工具提供的 [`lab_calib`](../../../lab_calib/) 示例。相对路径解析顺序：优先在命令启动目录查找；未找到再在 `lab_calib` 示例目录按同名匹配；均未找到则报错。
 
 **输出**：浮点模型目录与校准集路径（或工具内置校准集短名称）。
 
@@ -109,7 +109,7 @@ msmodelslim analyze linear \
 
 - **尚未接入的模型**：须先完成适配器开发与注册，再进入步骤 4。通用适配要求见《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》。
 - **支持矩阵中已接入的模型**：可跳过通用适配，确认所用 `--model_type` 名称即可。
-- **算法侧额外接口**：若所选指标要求额外分析接口，一并按算法文档补齐（入口见《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#敏感层分析算法)》）。
+- **算法侧额外接口**：若所选指标要求额外分析接口，一并按算法文档补齐（入口见《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#3-敏感层分析算法)》）。
 
 完成或修改适配器后，在仓库根目录重新执行 `bash install.sh`，使注册生效。
 
@@ -134,7 +134,7 @@ msmodelslim analyze linear \
 
 **通过条件**：命令正常结束；输出含 Score 排序及 `=== YAML Format for quantization ===` 片段。
 
-**审计记录**：实际命令行、`model_type` / `${METRICS}`、校准集路径、标准输出结果摘要（或保存的日志路径）。
+**审计记录**：实际命令行、`${MODEL_TYPE}`、`${METRICS}`、校准集路径、标准输出结果摘要（或保存的日志路径）。
 
 ### 步骤 5：解读分析结果并用于配置
 
@@ -169,42 +169,42 @@ msmodelslim analyze linear \
    ```
 
 2. 检查 YAML 片段中的层名是否覆盖预期范围，并注意成组模块须同进同退：
-   - **QKV**：`q_proj`、`k_proj`、`v_proj` 等同组成组模块通常分数相同、会一并列出，配置回退或提位宽时应对整组采用一致策略。
-   - **`up_proj` / `gate_proj`**：MLP 中二者必须同时排除（或同时保留）；只处理其中一个可能导致模型无法部署或服务化启动失败。
+   - **QKV**：`q_proj`、`k_proj`、`v_proj` 为同组投影层，敏感度分数通常接近并会一并出现在结果中；回退或提位宽时须对三者采用相同策略，勿只处理其中一层。
+   - **`up_proj` 与 `gate_proj`**：MLP 中二者必须同时排除或同时保留；只处理其中一个可能导致模型无法部署或服务化启动失败。
    - 其他成组或成对结构可参考上述规则，按推理引擎与模型结构要求整组一致处理。
 3. 将 YAML 片段中的层名复制到量化配置（通常写入 `linear_quant` 的 `exclude`，或收窄 `include`）；低比特方案下也可仅对高敏感层单独提位宽。
-4. 用更新后的 YAML 执行量化，再按业务口径测评；未达标则扩大回退或更换 `${METRICS}` 后重跑本流程。
+4. 用更新后的 YAML 通过 `msmodelslim quant` 命令行执行模型量化，再按业务口径测评；未达标则扩大回退或更换 `${METRICS}` 后重跑本流程。
 
-**输出**：已根据敏感层结果更新的量化配置（及后续量化所用 YAML 路径）。
+**输出**：已根据敏感层结果更新的量化配置及文件所在路径。
 
-**通过条件**：YAML 中回退 / 提位宽层名与分析结果一致且可被量化配置加载；成组模块策略一致。
+**通过条件**：YAML 中回退或提位宽层名与分析结果一致且可被量化配置加载；成组模块策略一致。
 
-## 6. 全局验收条件
+## 6. 验收条件
 
 - 已选用 `linear` scope 与推荐分析指标。
 - 分析命令成功产出排序与可粘贴 YAML 片段，层名通配符经人工核对；成组模块策略一致。
 
-## 7. 全局异常处置
+## 7. 异常处置
 
 | 现象 | 处理方向 |
 | --- | --- |
-| 校准集格式错误或无法读取 | 核对 `.json`/`.jsonl` 格式、路径与权限；路径解析与示例集见步骤 2 |
-| `model_type` 未命中或告警走默认模型 | 尚未完成模型适配与 `--model_type` 注册；先按步骤 3 补齐并重新 `bash install.sh` |
-| 显存不足或运行失败 | 缩小校准集，或换更大显存设备 |
-| 回退后仍无法部署或精度异常 | 检查成组模块是否只回退了一半；核对引擎对回退层数的限制 |
+| 校准集格式错误或无法读取 | 按步骤 2 核对 `.json` 或 `.jsonl` 格式、路径与权限及解析规则后，再执行分析命令 |
+| `model_type` 未命中或告警走默认模型 | 按步骤 3 完成模型适配与 `--model_type` 注册，重新执行 `bash install.sh` 使注册生效后，再执行分析命令 |
+| 显存不足或运行失败 | 缩小校准集，或换更大显存设备后，再执行分析命令 |
+| 回退后仍无法部署或精度异常 | 检查成组模块是否只回退了一半，以及引擎对回退层数的限制；修正配置后重新量化并测评 |
 
 ## 8. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
 | 模型适配 | 新模型接入与注册 | 《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》 |
-| 敏感层分析算法 | 用于 `msmodelslim analyze` 的各类敏感度指标（如 Kurtosis 等） | 《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#敏感层分析算法)》 |
+| 敏感层分析算法 | 用于 `msmodelslim analyze` 的各类敏感度指标（如 Kurtosis 等） | 《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#3-敏感层分析算法)》 |
 
 ## 9. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `msmodelslim analyze linear` | 线性层敏感层分析命令行入口 | 本指南 [命令行预览](#命令行预览) |
+| `msmodelslim analyze linear` | 线性层敏感层分析命令行入口 | 《[msmodelslim analyze 命令行 API](../api_reference/cli/msmodelslim_analyze.md)》；本指南 [命令行预览](#命令行预览) |
 
 ## 10. 安全说明
 

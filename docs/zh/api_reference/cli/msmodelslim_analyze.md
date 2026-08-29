@@ -4,7 +4,7 @@
 
 `msmodelslim analyze` 在量化前对模型做敏感层分析，输出建议回退或重点关注的层名列表，供后续写入量化配置的 `exclude` 等字段。按分析粒度分为四个 scope：`linear`（逐个线性层）、`layer`（按层/块分组）、`attn`（Attention 模块）、`attn_head`（Attention Head / `ra_compress`）。分析使用校准数据集在目标设备上计算敏感度指标，并按 `--top_k` 输出敏感度最高的层名（`disable_names`；`attn_head` 输出 `head.pt`）。
 
-命令边界：本命令只做分析与结果输出，不执行量化，且需要模型适配器实现分析接口。支持单卡与多卡（DP）分析：多卡时使用 `--device npu --device_id 0 1 ...`（或兼容写法 `--device npu:0,1,...`），由 `DPLayerWiseRunner` 执行。操作步骤见《[线性层敏感层分析使用指南](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级敏感层分析使用指南](../../user_guide/usage_sensitive_layer_wise_analysis.md)》、《[Attention 敏感层分析使用指南](../../user_guide/usage_sensitive_attn_analysis.md)》、《[Attention Head 筛选分析使用指南](../../user_guide/usage_sensitive_attn_head_analysis.md)》。
+命令边界：本命令只做分析与结果输出，不执行量化，且需要模型适配器实现分析接口。支持单卡与多卡（DP）分析：多卡时使用 `--device npu --device_id 0 1 ...`（或兼容写法 `--device npu:0,1,...`），由 `DPLayerWiseRunner` 执行。操作步骤见《[线性层敏感层分析使用指南](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级敏感层分析使用指南](../../user_guide/usage_sensitive_layer_analysis.md)》、《[Attention 敏感层分析使用指南](../../user_guide/usage_sensitive_attn_analysis.md)》、《[Attention Head 筛选分析使用指南](../../user_guide/usage_sensitive_attn_head_analysis.md)》。
 
 ## 2. 命令格式
 
