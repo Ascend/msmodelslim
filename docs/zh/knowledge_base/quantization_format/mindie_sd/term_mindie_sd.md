@@ -16,7 +16,7 @@
 
 MindIE-SD 是 msModelSlim 面向 **多模态生成** 场景、供 MindIE-SD 消费的[量化格式](../README.md)。一键量化通过保存器类型 `mindie_format_saver` 启用。它解决扩散 / DiT 等多模态生成模型量化权重与 MindIE-SD 加载约定对齐的问题；核心特征是与 `multimodal_sd_modelslim_v1` 配置协议配合，并以 `quant_model_description.json` + `quant_model_weight.safetensors` 落盘。
 
-配置、执行与部署步骤见《[MindIE-SD 使用指南](mindie_sd_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/term_quantization_mode.md)》及下文支持表中的词条链接。
+配置、执行与部署步骤见《[MindIE-SD 使用指南](mindie_sd_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/README.md)》及下文支持表中的词条链接。
 
 ## 2. 词条介绍
 
@@ -120,11 +120,11 @@ MindIE-SD **均可落盘**下表中的格式枚举；下表描述的是产物能
 
 ### 2.4 <span id="mode-support">量化模式支持情况</span>
 
-> **交付件说明**：「交付件：量化描述 JSON」→ `quant_model_description*.json`；「交付件：量化 safetensors」→ `quant_model_weight*.safetensors`。模式原理见《[量化模式](../../quantization_mode/term_quantization_mode.md)》词条。具体模型与 `quant_type` 组合以《[大模型支持矩阵](../../model/README.md)》及 lab_practice / example 为准。
+> **交付件说明**：「交付件：量化描述 JSON」→ `quant_model_description*.json`；「交付件：量化 safetensors」→ `quant_model_weight*.safetensors`。模式原理见《[量化模式](../../quantization_mode/README.md)》词条。具体模型与 `quant_type` 组合以《[大模型支持矩阵](../../model/README.md)》及 lab_practice / example 为准。
 
 | 格式枚举值                  | MindIE-SD 是否支持落盘 | 量化模式词条 | 交付件：量化描述 JSON                                    | 交付件：量化 safetensors                              |
 | ---------------------- | ---------------- | ------ | ------------------------------------------------ | ----------------------------------------------- |
-| `FLOAT`                | 支持               | [量化模式总览](../../quantization_mode/term_quantization_mode.md) | [FLOAT 描述键](#desc-float)                         | [FLOAT 权重张量](#st-float)                         |
+| `FLOAT`                | 支持               | [量化模式总览](../../quantization_mode/README.md) | [FLOAT 描述键](#desc-float)                         | [FLOAT 权重张量](#st-float)                         |
 | `W8A8`                 | 支持               | [W8A8 静态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_static.md) | [W8A8 描述键](#desc-w8a8)                           | [W8A8 权重张量](#st-w8a8)                           |
 | `W8A8_DYNAMIC`         | 支持               | [W8A8 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_dynamic.md) | [W8A8_DYNAMIC 描述键](#desc-w8a8-dynamic)           | [W8A8_DYNAMIC 权重张量](#st-w8a8-dynamic)           |
 | `W8A8_MXFP8`           | 支持               | [W8A8 MX 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_mx_dynamic.md) | [W8A8_MXFP8 描述键](#desc-w8a8-mxfp8)               | [W8A8_MXFP8 权重张量](#st-w8a8-mxfp8)               |
@@ -283,7 +283,7 @@ MindIE-SD **均可落盘**下表中的格式枚举；下表描述的是产物能
 
 - 不替代 AscendV1 作为通用 LLM 默认导出格式；未实现 handler 的模式会提示改用 AscendV1。
 - 产物文件命名与字段随模型适配器演进，部署前须按目标 MindIE 版本核对。
-- 本词条不展开量化模式原理、反量化公式与 NPU 算子说明（见《[量化模式](../../quantization_mode/term_quantization_mode.md)》）。
+- 本词条不展开量化模式原理、反量化公式与 NPU 算子说明（见《[量化模式](../../quantization_mode/README.md)》）。
 
 ## 3. 关联流程
 
@@ -299,4 +299,4 @@ MindIE-SD **均可落盘**下表中的格式枚举；下表描述的是产物能
 - [量化格式](../README.md)：上位概念，本词条所属目录。
 - [AscendV1](../ascendv1/term_ascendv1.md)：其他，同属量化格式的并列落盘协议；未实现 handler 的模式可改用 AscendV1。
 - [compressed-tensors](../compressed_tensors/term_compressed_tensors.md)：其他，同属量化格式的并列落盘协议。
-- [量化模式](../../quantization_mode/term_quantization_mode.md)：配套术语，本格式交付件枚举对应各量化模式；详见本页「[量化模式支持情况](#mode-support)」。
+- [量化模式](../../quantization_mode/README.md)：配套术语，本格式交付件枚举对应各量化模式；详见本页「[量化模式支持情况](#mode-support)」。

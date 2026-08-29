@@ -16,7 +16,7 @@
 
 FA（Flash Attention，一种高效的注意力计算实现）量化是对**送入 Flash Attention 的 Q/K/V 激活张量**进行量化的一类量化模式，属于[量化模式](../README.md)中的类别之一，是 [KVCache 量化](../kv_cache_quantization/README.md)的**进阶**。它在量化 K/V（压缩缓存显存）的基础上，进一步量化 Q。
 
-K/V 量化主要解决"存储"问题——缓存显存减半、支持更长上下文；Q 加入量化后，注意力得分计算（Q 与 K 的点乘）与加权求和（softmax 后与 V 点乘）的参与张量均为低比特，可直接调用整数/低精度矩阵乘算子，从而在继承 KVCache 显存收益的同时使能低精度的矩阵运算。它是长序列解码场景在"省显存"基础上进一步使能低精度注意力矩阵运算的手段。典型如 [FA PerHead 量化](term_fa_perhead.md)——对 Q 张量按注意力头（per-head）静态量化，INT8 或 FP8。
+K/V 量化主要解决"内存"问题——缓存显存减半、支持更长上下文；Q 加入量化后，注意力得分计算（Q 与 K 的点乘）与加权求和（softmax 后与 V 点乘）的参与张量均为低比特，可直接调用整数/低精度矩阵乘算子，从而在继承 KVCache 显存收益的同时使能低精度的矩阵运算。它是长序列解码场景在"省显存"基础上进一步使能低精度注意力矩阵运算的手段。典型如 [FA PerHead 量化](term_fa_perhead.md)——对 Q 张量按注意力头（per-head）静态量化，INT8 或 FP8。
 
 FA 量化**本质上是一个组合量化模式**：Q/K/V 三分支各自独立选择量化模式（粒度 × 数据类型）。当前最佳实践均通过 `fa3_quant.qconfig` 统一配置三分支，见[分支组合](#branch-combination)。
 
@@ -66,7 +66,7 @@ FA 量化作用于 Q/K/V 三个分支（`fa_q` / `fa_k` / `fa_v`），三分支�
 - **是什么**：Q/K/V 三分支均沿 head_dim 按32元素分块，每块共享一个 E8M0 指数做 MXFP4 动态量化。粒度比 per-token 更细（捕捉 head_dim 内分布差异），块级共享指数保留浮点动态范围、对离群值更耐受。
 - **配置**：`fa3_quant.qconfig`：`dtype: mxfp4, scope: per_block, symmetric: True, method: minmax`（QwenImageEdit 示例）。
 - **效果**：三分支均为 4bit（MXFP4），带宽/计算位宽收益最大，是极端压缩场景的选择。
-- **规格与限制**：块级指数前向在线统计（免校准）；MXFP4 尾数仅 2bit（emax=2、max 6），精度敏感场景需权衡。详见 [FA PerBlock 量化](term_fa_perblock.md)。
+- **规格与限制**：块级指数前向在线统计（免校准）；MXFP4 尾数仅 1bit（emax=2、max 6），精度敏感场景需权衡。详见 [FA PerBlock 量化](term_fa_perblock.md)。
 
 ---
 
@@ -99,12 +99,12 @@ FA 量化作用于 Q/K/V 三个分支（`fa_q` / `fa_k` / `fa_v`），三分支�
 - [KVCache 量化](../kv_cache_quantization/README.md)：上位概念（基础），本类在其基础上追加 Q 量化。
 - [线性层量化](../linear_layer_quantization/README.md)：同位概念，作用于权重与激活的量化类别，可与本类叠加。
 - [FA PerHead 量化](term_fa_perhead.md)：下位概念，本类别下 per-head 静态激活量化。
-- 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/fa3_quant.md)》：配套术语，描述 FA 量化算法。
+- 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)》：配套术语，描述 FA 量化算法。
 
 ---
 
 ## 参考资料
 
 1. Dao T et al. FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. NeurIPS 2022. https://arxiv.org/abs/2205.14135
-2. 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/fa3_quant.md)》
+2. 《[FA3量化：Flash Attention 3激活量化算法说明](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)》
 3. 《[量化模式](../README.md)》

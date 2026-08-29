@@ -78,6 +78,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 静态量化](term_w8a8_static.md)：对比模式，INT8 静态方案、精度基线。
 - [W4A4 MX 动态量化](term_w4a4_mx_dynamic.md)：同类模式，改用 MXFP4 浮点格式。
 - [W8A16 静态量化](term_w8a16_static.md)：对比模式，激活保持 16bit 的高精度方案。
+- [SVDQuant 量化](term_svdquant.md)：对比模式，以低秩分解吸收离群值、仅量化残差分量，降低 4bit 精度风险。
 - 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，本模式的处理器实现。
 - 《[LAOS：w4a4量化方案说明](../../quantization_algorithms/laos/usage_laos.md)》：配套术语，面向 W4A4 的精度优化算法。
 

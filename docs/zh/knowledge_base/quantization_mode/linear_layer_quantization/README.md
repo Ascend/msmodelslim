@@ -92,7 +92,7 @@ $$Y = X \cdot W + b$$
 | [W4A4 MX 动态量化](term_w4a4_mx_dynamic.md) | 权重与激活均 MXFP4 per-block 动态 |
 | [W4A4 MX 双 Scale 量化](term_w4a4_mx_dualscale.md) | MXFP4 双 scale、per-block 动态 |
 | [W16A16S 量化](term_w16a16s.md) | 16bit 权重/激活（含稀疏） |
-| [SVDQuant](../../quantization_algorithms/svdquant/svdquant.md) | 低秩分解 + 残差低比特量化，配合线性层量化使用 |
+| [SVDQuant 量化](term_svdquant.md) | 低秩分解 + 残差低比特量化，配合线性层量化使用 |
 
 ---
 
@@ -111,11 +111,11 @@ $$Y = X \cdot W + b$$
 - [KVCache 量化](../kv_cache_quantization/README.md)：同位概念，作用于注意力 K/V 缓存的量化类别，可与本类叠加。
 - [FA 量化](../fa_quantization/README.md)：同位概念，KVCache 量化的进阶。
 - [W8A8 静态量化](term_w8a8_static.md)：下位概念，本类别下最基础的静态模式。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》：配套术语，描述线性层量化模式的处理器实现。
+- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/term_linear_quant.md)》：配套术语，描述线性层量化模式的处理器实现。
 
 ---
 
 ## 参考资料
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/linear_quant.md)》
+1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/term_linear_quant.md)》
 2. 《[量化模式](../README.md)》

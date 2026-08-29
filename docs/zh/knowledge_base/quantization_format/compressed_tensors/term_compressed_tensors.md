@@ -12,7 +12,7 @@
 
 compressed-tensors 是与 HuggingFace / vLLM 生态兼容的[量化格式](../README.md)，字段约定遵循 [vllm-project/compressed-tensors](https://github.com/vllm-project/compressed-tensors) 规范。msModelSlim **导出时内置**该规范的结构定义，量化过程**无需**安装 `compressed-tensors` 包。核心特征是将方案写入 `config.json` → `quantization_config`，权重写入 HF 风格 safetensors。
 
-配置、执行与部署步骤见《[compressed-tensors 使用指南](compressed_tensors_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/term_quantization_mode.md)》及下文支持表中的词条链接。
+配置、执行与部署步骤见《[compressed-tensors 使用指南](compressed_tensors_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/README.md)》及下文支持表中的词条链接。
 
 ## 2. 词条介绍
 
@@ -136,7 +136,7 @@ compressed-tensors **均可导出**下表中的 Preset；下表描述的是产�
 
 ### 2.4 <span id="mode-support">量化模式支持情况</span>
 
-> **交付件说明**：「交付件：quantization_config」→ `config.json` 内 scheme；「交付件：safetensors」→ `model*.safetensors`。模式原理见《[量化模式](../../quantization_mode/term_quantization_mode.md)》词条。
+> **交付件说明**：「交付件：quantization_config」→ `config.json` 内 scheme；「交付件：safetensors」→ `model*.safetensors`。模式原理见《[量化模式](../../quantization_mode/README.md)》词条。
 
 | 格式 Preset    | compressed-tensors 是否支持导出 | 量化模式词条 | 交付件：quantization_config                   | 交付件：safetensors                       |
 | ------------ | ------------------------- | ---------------- | ----------------------------------------- | ------------------------------------- |
@@ -207,7 +207,7 @@ compressed-tensors **均可导出**下表中的 Preset；下表描述的是产�
 - 不支持分布式导出（`support_distributed() = False`）。
 - KV Cache 量化暂不支持（`kv_cache_scheme = null`）。
 - 仅 W8A8 Static / W8A8 Dynamic 两种 QIR 有 handler。
-- 本词条交付件分两列说明：`quantization_config` 与 `model*.safetensors`；不展开量化模式原理与算子说明（见《[量化模式](../../quantization_mode/term_quantization_mode.md)》）。
+- 本词条交付件分两列说明：`quantization_config` 与 `model*.safetensors`；不展开量化模式原理与算子说明（见《[量化模式](../../quantization_mode/README.md)》）。
 
 ## 3. 关联流程
 
@@ -222,4 +222,4 @@ compressed-tensors **均可导出**下表中的 Preset；下表描述的是产�
 - [量化格式](../README.md)：上位概念，本词条所属目录。
 - [AscendV1](../ascendv1/term_ascendv1.md)：其他，同属量化格式的并列落盘协议。
 - [MindIE-SD](../mindie_sd/term_mindie_sd.md)：其他，同属量化格式的并列落盘协议。
-- [量化模式](../../quantization_mode/term_quantization_mode.md)：配套术语，本格式 Preset 与交付件字段对应各量化模式；详见本页「[量化模式支持情况](#mode-support)」。
+- [量化模式](../../quantization_mode/README.md)：配套术语，本格式 Preset 与交付件字段对应各量化模式；详见本页「[量化模式支持情况](#mode-support)」。

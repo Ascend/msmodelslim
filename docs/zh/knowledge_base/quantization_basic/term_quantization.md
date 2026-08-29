@@ -36,7 +36,7 @@ $$x \approx (q - zero\_point) \times scale$$
 
 ### 为什么要量化
 
-- **减小存储与访存带宽**：权重从 [FP16/BF16](term_fp16_bf16.md)（2字节/元素）降为 [INT8](term_int8.md)（1字节/元素），权重占用与读取带宽减半；KVCache 同理。
+- **减小内存与访存带宽**：权重从 [FP16/BF16](term_fp16_bf16.md)（2字节/元素）降为 [INT8](term_int8.md)（1字节/元素），权重占用与读取带宽减半；KVCache 同理。
 - **使能低精度矩阵运算**：权重与激活都量化成整数后，矩阵乘可走整数/低精度算子（见 [GEMM](../quantization_mode/term_gemm.md)），在专用硬件上有计算收益。
 - **压缩 KVCache 显存**：量化缓存的历史 K/V，显著降低长上下文推理的显存占用。
 
@@ -60,7 +60,7 @@ $$x \approx (q - zero\_point) \times scale$$
 
 - **per-tensor**：整个张量共享一份 scale。
 - **per-channel**：按输出通道（如权重 W 的 out_dim 列）各一份参数，常用于权重。
-- **per-group**：按固定大小分组（如 128个元素）各一份参数，如 [GPTQ](../quantization_algorithms/gptq/gptq.md)/[LAOS](../quantization_algorithms/laos/laos.md) 的分组量化。
+- **per-group**：按固定大小分组（如 128个元素）各一份参数，如 [GPTQ](../quantization_algorithms/gptq/term_gptq.md)/[LAOS](../quantization_algorithms/laos/term_laos.md) 的分组量化。
 - **per-token**：按输入行（每个 token）各一份参数，常用于激活的动态量化。
 - **per-head**：按注意力头各一份参数，用于注意力相关张量。
 - **per-block**：按固定大小分块（如 [MXFP8/MXFP4](term_mxfp.md) 的 32元素）共享一个块级指数，是 MX 格式的专用粒度；与 per-group 逐组记 scale 不同，per-block 共享的是指数。

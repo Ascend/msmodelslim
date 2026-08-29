@@ -70,7 +70,7 @@
 | [W4A4 MX 动态量化](linear_layer_quantization/term_w4a4_mx_dynamic.md) | `W4A4MXDynamicPerBlockFakeQuantLinear` | MXFP4 per-block / per-block 动态 |
 | [W4A4 MX 双 Scale 量化](linear_layer_quantization/term_w4a4_mx_dualscale.md) | `W4A4MXDynamicDualScaleFakeQuantLinear` | MXFP4 双 scale / per-block 动态 |
 | [W16A16S 量化](linear_layer_quantization/term_w16a16s.md) | `W16A16sLinear` | 16bit 权重/激活（含稀疏） |
-| [SVDQuant](../quantization_algorithms/svdquant/usage_svdquant.md) | `SVDResidualWrapper`（[`svd_residual.py`](../../../../msmodelslim/ir/svd_residual.py)，配合 linear_quant） | 低秩分解 + 残差低比特量化 |
+| [SVDQuant 量化](linear_layer_quantization/term_svdquant.md) | `SVDResidualWrapper`（[`svd_residual.py`](../../../../msmodelslim/ir/svd_residual.py)，配合 linear_quant） | 低秩分解 + 残差低比特量化 |
 
 > 注：prefill 与 decode 是 LLM 推理的两个阶段——prefill 一次处理整个输入 prompt（计算密集），decode 逐个生成 token（访存密集），详见[线性层量化](linear_layer_quantization/README.md)。
 

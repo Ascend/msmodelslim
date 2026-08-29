@@ -54,5 +54,5 @@
 - [compressed-tensors](compressed_tensors/term_compressed_tensors.md)：下位概念，HuggingFace / vLLM 生态兼容的量化落盘格式。
 - [MindIE-SD](mindie_sd/term_mindie_sd.md)：下位概念，多模态生成场景的 MindIE 落盘格式。
 - [量化算法](../quantization_algorithms/README.md)：其他，量化计算与校准侧算法族，产出由本格式落盘。
-- [量化模式](../quantization_mode/term_quantization_mode.md)：配套术语，格式枚举与交付件字段对应各量化模式。
+- [量化模式](../quantization_mode/README.md)：配套术语，格式枚举与交付件字段对应各量化模式。
 - [大模型支持矩阵](../model/README.md)：其他，模型 × 模式 × 推理栈的选型与验证口径。

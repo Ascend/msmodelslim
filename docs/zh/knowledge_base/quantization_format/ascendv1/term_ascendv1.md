@@ -14,7 +14,7 @@
 
 AscendV1 是 msModelSlim 面向昇腾 NPU 推理的[量化格式](../README.md)。推理框架（vLLM Ascend、SGLang、MindIE）通过 `quant_model_description.json` 识别各张量的量化类型，并从 `quant_model_weights.safetensors` 加载对应参数。它解决昇腾侧量化权重的统一落盘与加载问题；核心特征是覆盖多种量化模式枚举，并与 vLLM Ascend、SGLang、MindIE 加载路径对齐。
 
-配置、执行与部署步骤见《[AscendV1 使用指南](ascendv1_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/term_quantization_mode.md)》及下文支持表中的词条链接。
+配置、执行与部署步骤见《[AscendV1 使用指南](ascendv1_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/README.md)》及下文支持表中的词条链接。
 
 ## 2. 词条介绍
 
@@ -160,11 +160,11 @@ AscendV1 **均可落盘**下表中的格式枚举；下表描述的是产物能�
 
 ### 2.4 <span id="mode-support">量化模式支持情况</span>
 
-> **交付件说明**：「交付件：量化描述 JSON」→ `quant_model_description.json`；「交付件：量化 safetensors」→ `quant_model_weights*.safetensors`。模式原理见《[量化模式](../../quantization_mode/term_quantization_mode.md)》词条，本表不展开反量化公式与 NPU 算子。
+> **交付件说明**：「交付件：量化描述 JSON」→ `quant_model_description.json`；「交付件：量化 safetensors」→ `quant_model_weights*.safetensors`。模式原理见《[量化模式](../../quantization_mode/README.md)》词条，本表不展开反量化公式与 NPU 算子。
 
 | 格式枚举值 | AscendV1 是否支持落盘 | 量化模式词条 | 交付件：量化描述 JSON | 交付件：量化 safetensors |
 | --- | --- | --- | --- | --- |
-| `FLOAT` | 支持 | [量化模式总览](../../quantization_mode/term_quantization_mode.md) | [FLOAT 描述键](#desc-float) | [FLOAT 权重张量](#st-float) |
+| `FLOAT` | 支持 | [量化模式总览](../../quantization_mode/README.md) | [FLOAT 描述键](#desc-float) | [FLOAT 权重张量](#st-float) |
 | `W16A16S` | 支持 | [W16A16S](../../quantization_mode/linear_layer_quantization/term_w16a16s.md) | [W16A16S 描述键](#desc-w16a16s) | [W16A16S 权重张量](#st-w16a16s) |
 | `W8A8` | 支持 | [W8A8 静态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_static.md) | [W8A8 描述键](#desc-w8a8) | [W8A8 权重张量](#st-w8a8) |
 | `W8A8_DYNAMIC` | 支持 | [W8A8 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_dynamic.md) | [W8A8_DYNAMIC 描述键](#desc-w8a8-dynamic) | [W8A8_DYNAMIC 权重张量](#st-w8a8-dynamic) |
@@ -493,4 +493,4 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 - [量化格式](../README.md)：上位概念，本词条所属目录。
 - [compressed-tensors](../compressed_tensors/term_compressed_tensors.md)：其他，同属量化格式的并列落盘协议。
 - [MindIE-SD](../mindie_sd/term_mindie_sd.md)：其他，同属量化格式的并列落盘协议。
-- [量化模式](../../quantization_mode/term_quantization_mode.md)：配套术语，本格式交付件枚举对应各量化模式。
+- [量化模式](../../quantization_mode/README.md)：配套术语，本格式交付件枚举对应各量化模式。

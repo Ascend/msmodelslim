@@ -21,7 +21,7 @@ INT4 占 4位，可表示 $-8\sim7$ 共 16个整数档位。按[量化公式](te
 ### 使用场景
 
 - **权重**：如 [W4A8 动态量化](../quantization_mode/linear_layer_quantization/term_w4a8_dynamic.md) 的 INT4 权重、[W4A4 动态量化](../quantization_mode/linear_layer_quantization/term_w4a4_dynamic.md)。
-- **配合重构算法**：INT4 精度风险高，常配合分组量化与权重重构（如 [GPTQ](../quantization_algorithms/gptq/gptq.md)、[LAOS](../quantization_algorithms/laos/laos.md)）降低损失。
+- **配合重构算法**：INT4 精度风险高，常配合分组量化与权重重构（如 [GPTQ](../quantization_algorithms/gptq/term_gptq.md)、[LAOS](../quantization_algorithms/laos/term_laos.md)）降低损失。
 
 ### 与相关类型对比
 

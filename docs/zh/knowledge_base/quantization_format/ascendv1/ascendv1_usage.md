@@ -63,7 +63,7 @@ flowchart LR
 
 **操作**：
 
-1. 让模型适配器继承 [`AscendV1SaveInterface`](../../../../msmodelslim/core/quant_service/modelslim_v1/save/interface.py)，按需实现：
+1. 让模型适配器继承 `AscendV1SaveInterface`，按需实现：
    - `ascendv1_save_module_preprocess(prefix, module, model)`：保存模块前返回新的 `(prefix, module)`
    - `ascendv1_save_postprocess(model, save_directory)`：全部导出件写完后的目录后处理
 2. 保存器仅在 `isinstance(adapter, AscendV1SaveInterface)` 时调用上述钩子；未实现则走默认落盘路径。
@@ -144,7 +144,7 @@ spec:
 3. 核对 `${SAVE_PATH}` 中至少存在：
    - `quant_model_description.json`（含 `model_quant_type` 与各张量类型）
    - `quant_model_weights.safetensors` 或分片权重 + index
-   - 自源模型复制的 `config.json` / tokenizer 等辅助文件  
+   - 自源模型复制的 `config.json` / tokenizer 等辅助文件
    目录树与字段细则见《[AscendV1](term_ascendv1.md#export-artifacts)》导出产物及「各量化模式交付件格式」。
 4. 使用目标推理框架加载该目录，完成 ≥1 条 generate 或 API 请求冒烟。
 
