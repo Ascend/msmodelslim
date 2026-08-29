@@ -656,7 +656,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="3"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/GLM-5/README.md">GLM5-MOE系列</a></strong></td>
+      <td rowspan="4"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/GLM-5/README.md">GLM5-MOE系列</a></strong></td>
       <td>GLM-5</td>
       <td>transformers==5.4.0</td>
       <td>-</td>
@@ -690,6 +690,19 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>√(一键量化)</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>GLM-5.3-Flash</td>
+      <td>transformers&gt;=5.16.0</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>

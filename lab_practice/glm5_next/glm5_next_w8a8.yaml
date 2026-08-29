@@ -1,0 +1,56 @@
+# GLM-5.3-Flash (model_type=glm5_next) W8A8_DYNAMIC.
+#
+# Only the FFN projections are quantized: routed experts, shared experts and the dense FFN of
+# the first_k_dense_replace layers. The KDA linear-attention projections, the sparse-MLA
+# projections, the indexer, the MHC hyper-connection modules, the router, the norms, the vision
+# tower and the MTP draft layer keep their BF16 weights, see
+# msmodelslim/model/glm5_next/w8a8_dynamic.py for the rationale.
+#
+# No quarot / flex_smooth_quant stage is used, because no norm-linear or ov subgraph is
+# validated for this pedigree. The scheme itself (per-channel symmetric INT8 weights plus
+# per-token dynamic activations) is verified on Atlas A2 with vLLM-Ascend; the calibration
+# pipeline of the glm5_next adapter is not available yet, so this configuration is a reference
+# for the follow-up calibration support. Use
+# msmodelslim.model.glm5_next.w8a8_dynamic.convert_to_w8a8_dynamic for the calibration-free
+# conversion.
+apiversion: modelslim_v1
+metadata:
+  config_id: glm5_next_w8a8
+  score: 90
+  verified_tags:
+    GLM-5.3-Flash:
+      - - vLLM_Ascend
+        - Atlas_A2_Inference
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: False
+
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+
+spec:
+  process:
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*mlp.experts*"
+        - "*mlp.shared_experts*"
+        - "*mlp.gate_proj*"
+        - "*mlp.up_proj*"
+        - "*mlp.down_proj*"
+      exclude:
+        - "*layers.45.*"  # MTP draft layer of GLM-5.3-Flash (num_hidden_layers == 45)
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
