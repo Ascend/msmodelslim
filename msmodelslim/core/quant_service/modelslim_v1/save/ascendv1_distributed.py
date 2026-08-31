@@ -373,10 +373,15 @@ class DistributedAscendV1Saver(AscendV1Saver):
         if json_files:
             # 合并json文件
             merged_meta = {}
+            merged_optional = {}
             for json_file in json_files:
                 with open(json_file, "r", encoding="utf-8") as f:
                     meta = json.load(f)
-                    merged_meta.update(meta)
+                # `optional` 是各 rank 独立导出的 aux 产物集合（如 quarot.global_rotation），
+                # 顶层 update 会让最后一个 rank 的空 optional 覆盖其他 rank 的内容，这里按 scope 取并集。
+                merged_optional.update(meta.get("optional", {}) or {})
+                merged_meta.update(meta)
+            merged_meta["optional"] = merged_optional
 
             # 对键进行排序
             sorted_meta = dict(sorted(merged_meta.items()))

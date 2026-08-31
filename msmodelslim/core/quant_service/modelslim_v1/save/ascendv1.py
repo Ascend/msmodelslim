@@ -674,7 +674,9 @@ class AscendV1Saver(AutoSaverProcessor):
         scope = "quarot"
         scope_tensor_file_name = f"{scope}.safetensors"
         scope_tensor_file_path = os.path.join(self.optional_save_directory, scope_tensor_file_name)
-        relative_file_path = os.path.relpath(scope_tensor_file_path, self.save_directory)
+        # 分布式模式下 self.save_directory 是 rank_i 目录，写出的相对路径会变成
+        # ../optional/quarot.safetensors，与合并后的顶层 JSON 错位；统一相对最终保存目录。
+        relative_file_path = os.path.relpath(scope_tensor_file_path, self.config.save_directory)
         writer = SafetensorsWriter(logger=logger, file_path=scope_tensor_file_path)
         writer.write("global_rotation", offline_info.global_rotation)
         writer.close()

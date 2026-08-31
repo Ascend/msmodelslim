@@ -406,6 +406,30 @@ class TestDistributedAscendV1Saver:
         assert "layer_1.weight" in merged_data
 
     @staticmethod
+    def test_merge_json_files_keeps_optional_union_when_partial_ranks_empty(temp_dir, mock_model, mock_adapter):
+        """场景：仅部分 rank 的 description json 含 optional，其余为空。
+        预期：合并后 optional 保留非空 rank 的 scope 并集，不被最后 rank 的空值覆盖。
+        """
+        rank_optional = {"quarot": {"rotation_map": {"global_rotation": "optional/quarot.safetensors"}}}
+        rank_payloads = [{"optional": rank_optional}, {"optional": {}}]
+        for rank, payload in enumerate(rank_payloads):
+            rank_dir = os.path.join(temp_dir, f"rank_{rank}")
+            os.makedirs(rank_dir, exist_ok=True)
+            with open(os.path.join(rank_dir, "quant_model_description.json"), "w", encoding="utf-8") as f:
+                json.dump(payload, f)
+
+        saver = TestDistributedAscendV1Saver.create_saver_with_rank_dir(temp_dir, mock_model, mock_adapter)
+        saver.json_writer = MagicMock()
+        saver.json_writer.file_name = "quant_model_description.json"
+
+        saver._merge_json_files()
+
+        merged_json_path = os.path.join(temp_dir, "quant_model_description.json")
+        with open(merged_json_path, "r", encoding="utf-8") as f:
+            merged_data = json.load(f)
+        assert merged_data["optional"] == rank_optional
+
+    @staticmethod
     def test_merge_ranks_calls_barrier_when_on_rank0(setup_rank_directories, mock_model, mock_adapter):
         """场景：rank0 调用 merge_ranks。预期：barrier 被调用。"""
         temp_dir = setup_rank_directories
