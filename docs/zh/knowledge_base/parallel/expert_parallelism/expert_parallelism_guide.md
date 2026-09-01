@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-适用于 MoE 模型的多卡量化适配，特别是当单卡显存不足以支撑加载全部专家的场景，接入专家并行机制可有效降低显存需求。
+适用于 MoE 模型的多卡量化适配，特别是当单卡显存不足以支撑加载全部专家的场景，接入专家并行机制可有效降低显存需求。路由专家数必须可被卡数整除
 
 ## 2. 流程关系与前置条件
 
@@ -10,7 +10,7 @@
 
 **前置条件**：
 
-- 模型 / 算法已支持 DP；EP 分片后非本地专家会自动落入 DistHelper 的 `local_only`，同步边界与 DTS 局部任务约束见 DP / [分布式任务调度器](../distributed_task_scheduler/distributed_task_scheduler_guide.md)指南，本流程不再重复；
+- 量化方案中涉及的算法已支持 DP。
 - 分布式保存由 `DPLayerWiseRunner` 自动将 `ascendv1_saver` 转为 `ascendv1_saver_distributed`，适配侧无需改 YAML。
 
 **后续操作**：量化精度验证。
@@ -41,7 +41,7 @@ flowchart LR
 
 **操作**：
 
-1. 确认模型为 MoE 结构且路由专家数可被 `world_size` 整除。框架统一的分片工具 [`resolve_expert_ep_range`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/common/utils.py)（`msmodelslim/model/common/utils.py`）行为如下：
+1. 确认模型为 MoE 结构且路由专家数可被 `world_size` 整除。框架统一的分片工具 [`utils.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/common/utils.py)行为如下：
 
    - `world_size ≤ 1`（未初始化分布式 / 单进程）：返回全量范围 `[0, num_experts)`，EP 不生效；
    - `world_size > 1`：按 `n_local = num_experts // world_size` 连续分片，rank `r` 的范围为 `[r * n_local, (r+1) * n_local)`；
@@ -124,12 +124,12 @@ for expert in range(expert_start, expert_end):
 
 参考实现：
 
-- DeepSeek-V4：`get_adapter_config_for_subgraph` / `get_ln_fuse_map` / `get_rotate_map` 全部经 `_get_local_expert_range()` 生成（如 `ffn_norm` 的 targets 仅含本地专家的 `w1`/`w3`，`rot` 的 left/right 仅含本地专家的 `w1`/`w2`/`w3`）；
-- Kimi-K3：`quarot.py` 中 `rot_latent` 旋转对仅映射 `_get_expert_range(text_cfg)` 范围内的专家（EP 耦合：非本地专家槽位为 `None`，映射到不存在的模块会直接失败）。
+- [DeepSeek-V4](../../../../../msmodelslim/model/deepseek_v4/model_adapter.py)：`get_adapter_config_for_subgraph` / `get_ln_fuse_map` / `get_rotate_map` 全部经 `_get_local_expert_range()` 生成（如 `ffn_norm` 的 targets 仅含本地专家的 `w1`/`w3`，`rot` 的 left/right 仅含本地专家的 `w1`/`w2`/`w3`）；
+- [Kimi-K3](../../../../../msmodelslim/model/kimi_k3/quarot.py)：`rot_latent` 旋转对仅映射 `_get_expert_range(text_cfg)` 范围内的专家（非本地专家槽位为 `None`，映射到不存在的模块会直接失败）。
 
 **输出**：仅含本地专家的量化映射。
 
-**通过条件**：多卡量化跑通，无「无法解析模块路径」类报错；各 rank 对同一层专家映射的数量等于本地专家数。
+**通过条件**：多卡量化跑通，无报错；各 rank 对同一层专家映射的数量等于本地专家数。
 
 **异常处置**：报模块不存在 / 子模块无法获取时，检查映射是否仍枚举了全量专家（按 `range(num_experts)` 而非本地范围）。
 
@@ -159,9 +159,8 @@ for expert in range(expert_start, expert_end):
 | `resolve_expert_ep_range` / `_get_expert_range` | 本地专家范围解析：单进程返回全量，多进程按 `world_size` 连续分片，不可整除时报错 | [common/utils.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/common/utils.py) |
 | `DistHelper` | 模块拓扑分类：`is_shared` / `is_local_only` / `get_shared_modules_slice` | [dist_helper.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_helper.py) |
 | `DistributedAscendV1Saver` | 分布式保存：`local_only` 独占写出、共享模块分工、rank 0 合并 | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
-| `--device npu --device_id 0 1 ...` / `spec.runner` | 多卡量化入口（EP 在分布式初始化后生效） | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
+| `--device_id 0 1 ...` | 多卡量化入口（EP 在分布式初始化后生效） | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
 
 ## 10. 产品形态与资源限制
 
-- **约束**：路由专家数必须可被 `world_size` 整除；仅 MoE 模型适用。
 - **资源**：EP 的收益是单卡显存随本地专家数近似线性下降；其代价是 MoE 前向引入 token 收集与 `all_reduce` 通信。

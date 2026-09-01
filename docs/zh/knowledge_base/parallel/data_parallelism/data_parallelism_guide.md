@@ -10,7 +10,7 @@
 
 **前置条件**：
 
-- 具备单机多卡环境；
+- 具备单机多卡环境。
 
 **后续操作**：多卡量化的模型权重进入部署与精度验证。
 
@@ -49,7 +49,7 @@ flowchart LR
        return True
    ```
 
-2. 对照[并行机制支持列表](../README.md#并行机制支持列表)确认覆盖范围，对于尚未实现多卡支持的 Processor 需参考后续步骤实现多卡支持。
+2. 对照[并行机制支持列表](../README.md#3-并行机制支持列表)中的 Processor 表确认 DP 覆盖范围，尚未支持 DP 的 Processor 需按后续步骤完成适配。
 
 **输出**：`support_distributed()` 返回 `True` 的 Processor 实现。
 
@@ -67,7 +67,7 @@ flowchart LR
 
 **操作**：
 
-1. 在 `preprocess` 中、**所有结构变更完成之后**初始化并注入统计组件`DistHelper`（以 FA3 为例，见 `msmodelslim/processor/quant/fa3/processor.py`）：
+1. 在 `preprocess` 中、**所有结构变更完成之后**初始化并注入统计组件`DistHelper`（以 FA3 为例，见 [`processor.py`](../../../../../msmodelslim/processor/quant/fa3/processor.py)）：
 
    ```python
    if dist.is_initialized():
@@ -123,7 +123,7 @@ flowchart LR
 | `sync_gather_tensor_lists` | `tensor_list`；`on_cpu`；`group` | 收集各 rank 的张量列表并展平为一条大列表。适用于校准阶段按 batch 缓存的激活张量在 `postprocess` 一次性合并 |
 
 - **形态 A：Observer 内同步**（统计量累计在 Observer 中）。
-  以 [_FA3PerHeadObserver](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/fa3/processor.py)为例, Observer 前向时按共享模块判定传入同步开关 `sync`：
+  以 [FA3PerHeadObserver](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/fa3/processor.py)为例, Observer 前向时按共享模块判定传入同步开关 `sync`：
 
   ```python
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -133,7 +133,7 @@ flowchart LR
         return x
   ```
 
-  [RecallWindowObserver](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/observer/recall_window.py)）内部更新激活统计量时按同步开关调用 `sync_base_operation` 归约：
+  [RecallWindowObserver](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/observer/recall_window.py)内部更新激活统计量时按同步开关调用 `sync_base_operation` 归约：
 
   ```python
     if sync and dist.is_initialized():
@@ -172,7 +172,7 @@ flowchart LR
 
 **目标**：确认量化将以多卡 DP 方式运行，明确触发条件与生效范围。
 
-**输入**：量化 YAML（`lab_practice/` 下对应模型配置）、目标设备列表。
+**输入**：量化 YAML、目标设备列表。
 
 **操作**：
 
@@ -188,14 +188,15 @@ flowchart LR
 
    ```shell
    msmodelslim quant \
-     --model_path ${model_path} \
-     --save_path ${save_path} \
+     --model_path ${MODEL_PATH} \
+     --save_path ${SAVE_PATH} \
      --model_type ${MODEL_TYPE} \
      --quant_type ${QUANT_TYPE} \
-     --device npu --device_id 0 1 2 3 4 5 6 7
+     --device npu \
+     --device_id 0 1 2 3 4 5 6 7
    ```
 
-   `--device npu --device_id 0 1 ...` 指定参与量化的设备索引列表。
+   `--device_id 0 1 2 3 4 5 6 7` 指定参与量化的设备索引列表。
 
 3. 确认 runner 实际选择。`modelslim_v1` 的 `_choose_runner_type` 按以下规则决定执行管线（对应 [`quant_service.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/quant_service.py)）：
 
@@ -213,7 +214,7 @@ flowchart LR
 
 **通过条件**：日志出现 `Starting distributed execution with N devices`（N ≥ 2），各 rank 打印 `Rank i/N initialized on device ...`。
 
-**异常处置**：若日志显示回退单卡（`Number of devices <= 1, falling back to single-device execution`），检查 `--device` 是否传了多个索引、格式是否为 `npu:0,1,...`；多模态 VLM 服务不支持多卡（见适用范围），请确认目标服务为 `modelslim_v1`。
+**异常处置**：若日志显示回退单卡（`Number of devices <= 1, falling back to single-device execution`），检查是否用 `--device_id` 传入了多个索引（如 `--device_id 0 1 2 3 4 5 6 7`）。
 
 ## 6. 验收条件
 
@@ -240,7 +241,7 @@ flowchart LR
 | `sync_base_operation` 等 | 跨 rank 统计量归约工具函数 | [dist_ops.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_ops.py) |
 | `support_distributed()` | Processor 分布式支持声明（基类默认 `False`） | [processor/base.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/base.py) |
 | `ascendv1_saver_distributed` | 分布式保存器（由 `ascendv1_saver` 自动转换） | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
-| `--device npu --device_id 0 1 ...` | 多卡量化入口配置 | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
+| `--device_id 0 1 ...` | 多卡量化入口配置 | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
 
 ## 10. 产品形态与资源限制
 

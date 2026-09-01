@@ -1,4 +1,4 @@
-# 分布式任务调度器
+# 分布式任务调度器 量化术语百科词条
 
 > **词条类别**：其他
 >
@@ -49,7 +49,6 @@
 
 $$
 T_{\mathrm{serial}} = \sum_{i=1}^{k} t(T_i)
-\tag{1}
 $$
 
 其中：
@@ -64,7 +63,6 @@ $$
 
 $$
 T_{\mathrm{DTS}} \approx \max_{0 \le r < W} \sum_{T \in \mathcal{T}_r} t(T) + T_{\mathrm{sync}}
-\tag{2}
 $$
 
 其中：
@@ -79,7 +77,6 @@ $$
 
 $$
 S_r^{\mathrm{final}} = F_{T_k} \circ \cdots \circ F_{T_1}(S_0)
-\tag{3}
 $$
 
 即与按串行顺序执行完整任务链的结果一致。

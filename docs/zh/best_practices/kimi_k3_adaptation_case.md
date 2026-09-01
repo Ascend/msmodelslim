@@ -121,13 +121,15 @@
 2. 执行一键量化：
 
    ```bash
-   cd ..  # 返回上级目录，msmodelslim 命令需在源码目录外执行
+   # 返回上级目录，msmodelslim 命令需在源码目录外执行
+   cd ..
+   # ${MODEL_PATH} 替换为模型路径; ${SAVE_PATH} 替换为量化权重保存路径; ${YAML_PATH} 替换为量化配置文件路径
    msmodelslim quant \
-       --model_path ${MODEL_PATH} \  # ${MODEL_PATH} 替换为模型路径
-       --save_path ${SAVE_PATH} \  # ${SAVE_PATH} 替换为量化权重保存路径
+       --model_path ${MODEL_PATH} \
+       --save_path ${SAVE_PATH} \
        --device npu --device_id 0 1 2 3 4 5 6 7 \
        --model_type Kimi-K3 \
-       --config ${YAML_PATH} \  # ${YAML_PATH} 替换为量化配置文件路径
+       --config ${YAML_PATH} \
        --trust_remote_code True
    ```
 
@@ -212,6 +214,6 @@
 
 - **适配器未生效（`--model_type` 无法识别）**：确认 [`config/config.ini`](../../../config/config.ini) 已参照[步骤 1](#步骤-1模型适配)注册 `ModelAdapterEntryPoints`，并在源代码目录重新执行 `bash install.sh` 使修改生效。
 
-## 7. [OPTIONAL] 附录
+## 7. 附录
 
 - 相关 PR：[[feature] support kimi_k3 model adapter](https://gitcode.com/Ascend/msmodelslim/pull/789)
