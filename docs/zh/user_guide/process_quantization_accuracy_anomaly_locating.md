@@ -190,7 +190,7 @@ flowchart TD
 **操作**：
 
 1. **安装并检查 msprobe**：安装 msprobe（昇腾算子/张量 dump 与比对分析工具，详见《[msprobe安装文档](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/install_guide/msprobe_install_guide.md)》），安装完成后执行 `msprobe --help` 确认命令可用。
-2. **配置 dump**：
+2. **创建 msprobe dump 配置文件**：
 
    ```json
    {
@@ -253,7 +253,7 @@ flowchart TD
 **操作**：
 
 1. **映射模型结构**：将步骤4 定位的异常层对应到具体模块——Self-Attention 的 Q/K/V 投影、MLP 的 Gate/Up/Down 投影、RMS Norm 等。
-2. **针对性优化与迭代验证**：按「定位偏差层 → 分析该层实现方式 → 调整量化方式或配置（如该层回退、更换量化算法/位宽）→ 重新量化部署 → 重新验证」的循环迭代，直至确认改善。
+2. **针对性优化与迭代验证**：按定位偏差层 → 分析该层实现方式 → 调整量化方式或配置（如该层回退、更换量化算法/位宽）→ 重新量化部署 → 重新验证的循环迭代，直至确认改善。
 3. **非量化因素排查**：若偏差不符合量化影响特征，对照排查框架版本/参数配置、算子实现等非量化因素。
 4. **控制变量**：全程对比实验遵循——prompt 两组一致、logprobs 两边同开或同关、temperature 统一为 0、max_tokens 统一、prompt 构造用同一段代码、dump 配置仅 `dump_path` 不同、请求尽量在相近时间发送避让 warmup。
 

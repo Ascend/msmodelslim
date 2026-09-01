@@ -21,7 +21,7 @@
 | 运行镜像 | [`m.daocloud.io/quay.io/ascend/vllm-ascend:v0.22.1rc1-a3`](https://quay.io/repository/ascend/vllm-ascend?tab=tags&tag=v0.22.1rc1-a3) |
 | 其他依赖 | msModelSlim（本案例工具，安装见《[msModelSlim工具安装指南](../install_guide/install_guide.md)》）；AISBench（精度测评，安装见《[AISBench安装指南](https://github.com/AISBench/benchmark/blob/master/docs/source_zh_cn/get_started/install.md)》）；Qwen3-32B 模型权重与 tokenizer |
 
-**本次前置事实**：
+**本案例前置条件**：
 
 - msModelSlim 已安装，`msmodelslim` 命令可执行。
 - Qwen3-32B 浮点模型已准备，可在目标推理引擎上加载并复现原始精度。
@@ -88,13 +88,13 @@ msmodelslim quant \
 
 **操作**：
 
-1. **按优先级顺序逐次调优**：遵循「优先 Iterative Smooth、非对称 → 对称 → 调整 alpha → 其他算法」的调优顺序，逐次生成配置、量化、部署测评，每一步根据评测结果决定是否继续下一步（均搭配相同的 `linear_quant` 静态量化与 `save` 保存格式）。各组算法配置要点如下（完整参数见算法文档）：
+1. **按优先级顺序逐次调优**：遵循优先 Iterative Smooth、非对称 → 对称 → 调整 alpha → 其他算法的调优顺序，逐次执行以下循环：生成配置 → 量化 → 部署测评，每一步根据评测结果决定是否继续下一步（均搭配相同的 `linear_quant` 静态量化与 `save` 保存格式）。各组算法配置要点如下（完整参数见算法文档）：
 
    a. **Iterative Smooth（非对称/alpha:0.5）**：优先尝试非对称方案，非对称仅支持 `norm-linear` 子图。详见《[Iterative Smooth 算法](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md)》。
 
-   b. **Iterative Smooth（对称/alpha:0.5）**：切换为对称方案，使用默认 alpha 值 0.5（4 类子图）。详见《[Iterative Smooth 算法](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md)》。——评测后若精度不达标，调整 alpha。
+   b. **Iterative Smooth（对称/alpha:0.5）**：切换为对称方案，使用默认 alpha 值 0.5。详见《[Iterative Smooth 算法](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md)》。——评测后若精度不达标，调整 alpha。
 
-   c. **Iterative Smooth（对称/alpha:0.9）**：保持对称方案，将 alpha 调大至 0.9（4 类子图）。详见《[Iterative Smooth 算法](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md)》。——评测后若精度仍不达标，换其他离群值抑制算法。
+   c. **Iterative Smooth（对称/alpha:0.9）**：保持对称方案，将 alpha 调大至 0.9。详见《[Iterative Smooth 算法](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md)》。——评测后若精度仍不达标，换其他离群值抑制算法。
 
    d. **Flex Smooth Quant（备选）**：alpha/beta 缺省自动搜索。详见《[Flex Smooth Quant 算法](../knowledge_base/quantization_algorithms/flex_smooth_quant/usage_flex_smooth_quant.md)》。——仅在 Iterative Smooth 所有方案均不达标时使用。
 
@@ -108,12 +108,12 @@ msmodelslim quant \
 | 初始 | Smooth Quant | 0 | 326 | 初始配置，输出乱码 |
 | 第1次 | Iterative Smooth（非对称/alpha:0.5） | 0 | 305 | 输出乱码，换对称 |
 | 第2次 | Iterative Smooth（对称/alpha:0.5） | 3.33 | 324 | 存在重复token输出，精度不达标，调整alpha |
-| 第3次 | Iterative Smooth（对称/alpha:0.9） | 63.33 | 319 | 精度正常 |
+| 第3次 | Iterative Smooth（对称/alpha:0.9） | 63.33 | 319 | 精度正常，但未达到预设精度要求（70.00%），用于支撑继续更换 Flex Smooth Quant 算法验证 |
 | 备选 | Flex Smooth Quant | 13.33 | 1380 | 存在重复token输出且所需时间明显更长 |
 
 **输出**：量化权重及对应 AIME25 测评报告；确定离群值抑制算法为 Iterative Smooth（对称/alpha:0.9）。
 
-**记录**：上表 5 组配置的精度与量化时间实测数据。对比分析：对称/alpha:0.5（3.33%）、非对称/alpha:0.5（0%）、Flex Smooth Quant（13.33%）在 per-tensor 静态激活量化下均出现重复 token/乱码的严重退化，仅对称/alpha:0.9 精度正常（63.33%），量化时间 319秒，较 Flex Smooth Quant 节省 76.9%。
+**记录**：上表 5 组配置的精度与量化时间实测数据。对比分析：对称/alpha:0.5（3.33%）、非对称/alpha:0.5（0%）、Flex Smooth Quant（13.33%）在 per-tensor 静态激活量化下均出现重复 token/乱码的严重退化，仅对称/alpha:0.9 精度正常（63.33%），但仍未达到预设精度要求（70.00%），需进入步骤3 继续调整量化策略；量化时间 319秒，较 Flex Smooth Quant 节省 76.9%。
 
 **下一步**：步骤2 最优配置（Iterative Smooth 对称/alpha:0.9）AIME25 精度 63.33%，未达到预设精度要求（70.00%），进入步骤3，在固定离群值抑制算法下调整量化策略。
 
@@ -125,7 +125,11 @@ msmodelslim quant \
 
 **操作**：
 
-1. **生成配置并量化**：在量化配置 YAML 的 `linear_quant` 处理器中，分别修改 `qconfig.act.scope`（`per_tensor`/`per_token`），组合出 2 组配置并逐一执行量化命令。`linear_quant` 处理器参数详见《[Linear Quant 算法](../knowledge_base/quantization_algorithms/linear_quant/usage_linear_quant.md)》，量化方法参数详见[MinMax](../knowledge_base/quantization_algorithms/minmax/usage_minmax.md)。
+1. **按优先级顺序逐次调优**：可以优先选择 `per_tensor`（静态量化）, `per_token`（动态量化）的两种方法。如果 `per_tensor` 和 `per_token` 均不达标，可参考《[量化精度调优指南 - 量化算法选择](../user_guide/process_quantization_precision_tuning.md#步骤3量化算法选择)》尝试其他量化策略，例如切换权重量化方法（`ssz`/`gptq`/`autoround`）或激活量化方法（`histogram`）、`pd_mix` 混合粒度等。
+
+   a. **per_tensor（静态量化）**：在量化配置 YAML 的 `linear_quant` 处理器中，将 `qconfig.act.scope` 设为 `per_tensor`，执行量化命令。`linear_quant` 处理器参数详见《[Linear Quant 算法](../knowledge_base/quantization_algorithms/linear_quant/usage_linear_quant.md)》，量化方法参数详见[MinMax](../knowledge_base/quantization_algorithms/minmax/usage_minmax.md)。——评测后若精度不达标，切换为 per_token。
+
+   b. **per_token（动态量化）**：将 `qconfig.act.scope` 改为 `per_token`，执行量化命令。——评测后若精度仍不达标，参考上述指南链接尝试其他量化策略。
 
 2. **部署测评**：将每组量化产物部署后执行测评命令，记录量化耗时与AIME25数据集精度。
 3. **汇总对比**：对比精度与量化时间，选择综合最优配置。
@@ -143,15 +147,15 @@ msmodelslim quant \
 
 ### 步骤4：调整校准集
 
-**目标**：通过校准集优化（加入 badcase 样本）验证对量化精度的提升效果。GPQA 数据集题目数量更多，能够更清晰地展现不同配置间的精度差异。
+**目标**：通过校准集优化（加入 badcase 样本）验证对量化精度的提升效果。本步骤使用 GPQA 数据集（题目数量更多，能够更清晰地展现不同配置间的精度差异）。
 
 **输入**：步骤3达到精度要求后的量化配置（本节以 Iterative Smooth + 静态量化作为基准配置，在 GPQA 数据集上验证）、该基准配置的 GPQA 测评结果（含 badcase 样本）、校准集文件、GPQA 测评数据集。
 
 **操作**：
 
-1. **加入 badcase 样本**：校准集优化策略详见[量化精度调优指南 - 校准集调整](../user_guide/process_quantization_precision_tuning.md#步骤4校准集调整)，本案例执行「加入 badcase」策略。使用默认校准集 `mix_calib.jsonl`（48 条），加入 5 条 badcase 后为 53 条。
+1. **加入 badcase 样本**：校准集优化策略详见[量化精度调优指南 - 校准集调整](../user_guide/process_quantization_precision_tuning.md#步骤4校准集调整)，本案例执行"加入 badcase"策略。使用默认校准集 `mix_calib.jsonl`（48 条），加入 5 条 badcase 后为 53 条。
 
-2. **获取 badcase 样本**：从 AISBench 测评结果文件中筛选「模型输出（`prediction` 字段）与参考答案（`gold` 字段）不一致」的样本，提取少量 badcase。例如，一个 badcase 样本为：
+2. **获取 badcase 样本**：从 AISBench 测评结果文件中筛选"模型输出（`prediction` 字段）与参考答案（`gold` 字段）不一致"的样本，提取少量 badcase。例如，一个 badcase 样本为：
 
    ```text
    What is the correct answer to this question: Two quantum states with energies E1 and E2 have a lifetime of 10^-9 sec and 10^-8 sec, respectively. We want to clearly distinguish these two energy levels. Which one of the following options could be their energy difference so that they can be clearly resolved?
@@ -176,7 +180,7 @@ msmodelslim quant \
 
    将 badcase 样本与原校准集样本合并，生成新的校准集文件（本案例为 48→53 条）。
 
-4. **重新量化**：在量化配置 YAML 的 `spec` 下通过 `dataset` 字段指定加入 badcase 后的校准集文件（无需改动仓库默认校准集），其余处理器与 `save` 配置参考步骤5 的 YAML 示例（仅 `iter_smooth` 和 `linear_quant` 部分，不含 `exclude` 回退层），使用命令约定的量化命令重新生成量化权重。
+4. **重新量化**：在量化配置 YAML 的 `spec` 下通过 `dataset` 字段指定加入 badcase 后的校准集文件，其余处理器与 `save` 配置参考步骤5 的 YAML 示例（仅 `iter_smooth` 和 `linear_quant` 部分，不含 `exclude` 回退层），使用命令约定的量化命令重新生成量化权重。
 
 5. **测评验证**：将每组量化产物部署后执行测评命令，记录GPQA数据集精度。
 
@@ -277,7 +281,7 @@ msmodelslim quant \
 
 3. **重新生成量化权重**：使用修改后的配置执行量化命令，生成包含回退层的量化模型。
 
-4. **测评验证**：将新量化产物部署后执行测评命令（GPQA 数据集）。
+4. **测评验证**：将量化产物部署后执行测评命令，记录GPQA数据集精度。
 
 **输出**：含 9 个回退层的量化模型。GPQA 精度从基准的 48.98% 提升至 49.49%（提升 0.51 个百分点）。
 

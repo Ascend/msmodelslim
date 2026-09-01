@@ -8,12 +8,12 @@
 适用于以下场景：
 
 - 目标模型已收录于《[大模型支持矩阵](../knowledge_base/model/README.md)》；
-- 目标模型被所选推理框架支持：vLLM-Ascend 支持范围见《[vLLM-Ascend 支持模型列表](https://docs.vllm.ai/projects/ascend/zh-cn/latest/user_guide/support_matrix/supported_models.html)》，SGLang 支持范围见《[SGLang 支持模型列表](https://docs.sglang.io/docs/supported-models)》；
-- 目标推理框架为 vLLM、SGLang 或 MindIE-Motor，目标硬件为昇腾 NPU；
+- 目标推理框架为 vLLM、SGLang，目标硬件为昇腾 NPU；
+- 目标模型被所选推理框架支持：vLLM-Ascend 支持范围见《[vLLM-Ascend 支持模型列表](https://docs.vllm.ai/projects/ascend/zh-cn/latest/user_guide/support_matrix/supported_models.html)》，SGLang 支持范围见《[SGLang 支持模型列表](https://docs.sglang.io/docs/supported-models)》。
 
 以下情况**不适用**本流程：
 
-- 模型未收录支持矩阵或未验证：请先参考《[新模型权重量化流程](./process_new_model_quantization_tuning.md)》，完成模型适配后，再执行本指南；
+- 模型未收录支持矩阵或未验证：请参考《[新模型量化调优流程](./process_new_model_quantization_tuning.md)》。
 
 ## 2. 流程关系与前置条件
 
@@ -108,11 +108,12 @@ flowchart LR
 
 ### 步骤4：在线监控
 
-**目标**：服务上线后持续观测服务性能与资源使用情况，及时发现异常。
+**目标**：服务上线后持续观测服务性能与资源使用情况，及时发现异常。本步骤为可选步骤，仅在需要持续监控服务性能时执行。
 
 **操作**：
 
 1. **在线监控与性能采集**：使用《[msServiceProfiler](https://gitcode.com/Ascend/msserviceprofiler)》（MindStudio Service Profiler，昇腾 AI 服务化调优工具）对服务进行在线监测与性能分析。
+
 **输出**：在线监控与性能采集记录。
 
 **通过条件**：在线监控与性能采集可正常执行。
