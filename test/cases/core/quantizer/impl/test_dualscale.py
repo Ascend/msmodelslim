@@ -67,8 +67,8 @@ class TestMXWeightDualScaleMinmax:
     @pytest.mark.parametrize(
         "weight_tensor, expected_dual_scale",
         [
-            # 边界 1：全零矩阵边界 [1, 512]，对应 1 个大块
-            (torch.zeros(1, 512), torch.zeros(1, 1)),
+            # 边界 1：全零大块时 dual_scale 下钳到 1e-5，避免 0/0 → NaN
+            (torch.zeros(1, 512), torch.full((1, 1), 1e-5)),
             # 边界 2：包含 2 个大块的矩阵 [1, 1024]
             # 第一块极大绝对值 12.0 -> dual_scale = 12 / 6 = 2.0
             # 第二块极大绝对值 24.0 -> dual_scale = 24 / 6 = 4.0
@@ -100,7 +100,32 @@ class TestMXWeightDualScaleMinmax:
         assert "dual_scale" in quantizer.w_q_param.ext
         calculated_dual_scale = quantizer.w_q_param.ext["dual_scale"]
 
+        assert torch.isfinite(calculated_dual_scale).all()
+        assert torch.all(calculated_dual_scale >= 1e-5)
         assert torch.allclose(calculated_dual_scale.flatten(), expected_dual_scale.flatten(), atol=1e-5)
+
+    def test_dual_scale_keeps_finite_when_weight_all_zeros(self, standard_config):
+        """全零权重：dual_scale 钳位后，权重归一化结果应有限且无 NaN。"""
+        weight_tensor = torch.zeros(1, 512)
+        quantizer = MXWeightDualScaleMinmax(standard_config)
+        captured = {}
+
+        def _capture_init_weight(storage, bias=None):
+            captured["normalized"] = storage.value
+
+        quantizer.inner_quantizer.init_weight = MagicMock(side_effect=_capture_init_weight)
+        quantizer.inner_quantizer.get_q_param = MagicMock(
+            return_value=QParam(scheme=standard_config.to_scheme(), ext={"axes": [1]})
+        )
+        quantizer.inner_quantizer.get_q_storage = MagicMock(return_value=QStorage(QDType.FLOAT, weight_tensor))
+
+        quantizer.init_weight(QStorage(QDType.FLOAT, weight_tensor))
+
+        dual_scale = quantizer.w_q_param.ext["dual_scale"]
+        assert torch.allclose(dual_scale.flatten(), torch.tensor([1e-5]), atol=1e-8)
+        assert "normalized" in captured
+        assert torch.isfinite(captured["normalized"]).all()
+        assert not torch.isnan(captured["normalized"]).any()
 
     def test_forward_raise_unexpected_error_when_dual_scale_is_none(self, standard_config):
         """测试异常边界：若未执行权重初始化直接调用 forward，内部因拿不到 dual_scale 抛出 UnexpectedError"""

@@ -18,8 +18,10 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import torch
 from msmodelslim.utils.exception import UnexpectedError, UnsupportedError
+
 
 def round_ste(x: torch.Tensor):
     """实现直通估计器（STE）的四舍五入操作"""
@@ -32,7 +34,7 @@ def get_qmin_qmax(bits, sym):
         q_max = torch.tensor(2 ** (bits - 1) - 1)
         q_min = -q_max - 1
     else:
-        q_max, q_min = torch.tensor(2 ** bits - 1), 0
+        q_max, q_min = torch.tensor(2**bits - 1), 0
     return q_max, q_min
 
 
@@ -41,14 +43,14 @@ def get_maxq(bits, sym):
     if sym:
         return torch.tensor(2 ** (bits - 1) - 1)
     else:
-        return torch.tensor(2 ** bits - 1)
+        return torch.tensor(2**bits - 1)
 
 
 def sym_quant(x, scale, bits, is_signed=True):
     """对称量化：x -> q"""
     scale = scale.to(x.device)
-    q_min = -2 ** (bits - 1) if is_signed else 0
-    q_max = 2 ** (bits - 1) - 1 if is_signed else 2 ** bits - 1
+    q_min = -(2 ** (bits - 1)) if is_signed else 0
+    q_max = 2 ** (bits - 1) - 1 if is_signed else 2**bits - 1
     q = torch.clamp(round_ste(x / scale), q_min, q_max)
     return q, scale
 
@@ -67,8 +69,8 @@ def asym_quant(x, scale, zero, bits, is_signed=True):
     """非对称量化：x -> q"""
     scale = scale.to(x.device)
     zero = zero.to(x.device)
-    q_min = -2 ** (bits - 1) if is_signed else 0
-    q_max = 2 ** (bits - 1) - 1 if is_signed else 2 ** bits - 1
+    q_min = -(2 ** (bits - 1)) if is_signed else 0
+    q_max = 2 ** (bits - 1) - 1 if is_signed else 2**bits - 1
     q = torch.clamp(round_ste(x / scale) + zero, q_min, q_max)
     return q, scale, zero
 
@@ -85,6 +87,7 @@ def asym_quant_dequant(x, scale, zero, bits, is_signed=True):
 
 class ActivationQuantizer(torch.nn.Module):
     """激活量化器，支持对称/非对称量化"""
+
     def __init__(self, bits, sym=False, lac=False, groupsize=-1, clip_ratio=None, per_tensor=False, is_signed=True):
         super().__init__()
         self.bits = bits
@@ -101,19 +104,21 @@ class ActivationQuantizer(torch.nn.Module):
             self.sigmoid = torch.nn.Sigmoid()
             self.clip_factor = torch.nn.Parameter(torch.ones(1) * init_value, requires_grad=True)
         self.enable = True
- 
+
         self.is_signed = is_signed
         self.scale, self.zero = None, None
 
     def __repr__(self):
-        return (f"{self.__class__.__name__}(bits={self.bits}, "
-                f"sym={self.sym}, lac={self.lac}, "
-                f"is_signed={self.is_signed})")
+        return (
+            f"{self.__class__.__name__}(bits={self.bits}, sym={self.sym}, lac={self.lac}, is_signed={self.is_signed})"
+        )
 
     def reparameterize(self):
         """将可学习的剪裁因子转为缓冲区"""
         if self.lac:
             clip_factor = self.clip_factor
+            del self.clip_factor
+            self.register_buffer('clip_factor', clip_factor)
 
     def forward(self, x, quantize=True):
         """前向传播：根据模式决定是否量化"""
@@ -154,12 +159,12 @@ class ActivationQuantizer(torch.nn.Module):
             xmin = xmin * self._clip_ratio
 
         if self.sym:
-            xmax = torch.maximum(torch.abs(xmin), xmax)
+            xmax = torch.maximum(torch.abs(xmin), xmax).clamp(min=1e-5)
             scale = xmax / q_max
             scale = scale.repeat(1, reshaped_x.shape[-1]).reshape(init_shape)
             zero = torch.zeros_like(scale)
         else:
-            scale = (xmax - xmin) / q_max
+            scale = (xmax - xmin).clamp(min=1e-5) / q_max
             zero = torch.round(-xmin / scale)
             if self.is_signed:
                 zero = zero - 2 ** (self.bits - 1)
@@ -171,6 +176,7 @@ class ActivationQuantizer(torch.nn.Module):
 
 class WeightQuantizer(torch.nn.Module):
     """权重量化器，支持每通道/全局、对称/非对称、可学习剪裁"""
+
     def __init__(self, in_size, out_size, bits=8, perchannel=False, sym=True, lwc=False, is_signed=True):
         super().__init__()
         self.in_size = in_size
@@ -189,16 +195,23 @@ class WeightQuantizer(torch.nn.Module):
             self.clip_factor_w_max = torch.nn.Parameter(torch.ones(out_size, 1) * init_value, requires_grad=True)
             self.clip_factor_w_min = torch.nn.Parameter(torch.ones(out_size, 1) * init_value, requires_grad=True)
             self.sigmoid = torch.nn.Sigmoid()
+        self.scale = None
+        self.zero = None
 
     def __repr__(self):
-        return (f"{self.__class__.__name__}(bits={self.bits}, sym={self.sym}, "
-                f"lwc={self.lwc}, is_signed={self.is_signed})")
+        return (
+            f"{self.__class__.__name__}(bits={self.bits}, sym={self.sym}, lwc={self.lwc}, is_signed={self.is_signed})"
+        )
 
     def reparameterize(self):
         """将可学习的权重剪裁因子转为缓冲区"""
         if self.lwc:
             clip_factor_w_max = self.clip_factor_w_max
             clip_factor_w_min = self.clip_factor_w_min
+            del self.clip_factor_w_max
+            del self.clip_factor_w_min
+            self.register_buffer('clip_factor_w_max', clip_factor_w_max)
+            self.register_buffer('clip_factor_w_min', clip_factor_w_min)
 
     def apply_wclip(self, weight):
         """应用可学习权重剪裁（LWC）"""

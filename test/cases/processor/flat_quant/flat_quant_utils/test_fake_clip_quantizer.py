@@ -182,6 +182,18 @@ class TestActivationQuantizer:
         with pytest.raises(UnsupportedError):
             ActivationQuantizer(bits=8, sym=True, groupsize=8)
 
+    @pytest.mark.parametrize("sym", [True, False])
+    def test_get_scale_zero_keeps_finite_when_input_all_zeros(self, sym):
+        """全零激活：scale 下钳，避免 0/0 → NaN。"""
+        q = ActivationQuantizer(bits=8, sym=sym)
+        x = torch.zeros(2, 4)
+
+        scale, zero = q.get_scale_zero(x)
+
+        assert torch.isfinite(scale).all()
+        assert torch.isfinite(zero).all()
+        assert torch.all(scale > 0)
+
 
 class TestWeightQuantizer:
     """Test suite for WeightQuantizer — 权重量化器（构造 + 基本行为）。"""
@@ -287,3 +299,17 @@ class TestWeightQuantizer:
 
         # reparameterize 后应该没有 learnable clip_factor
         assert not hasattr(w, 'clip_factor') or w.clip_factor is None or not w.clip_factor.requires_grad
+
+    @pytest.mark.parametrize("sym", [True, False])
+    def test_find_params_keeps_finite_scale_when_weight_all_zeros(self, sym):
+        """全零权重：find_params 后 scale 有限，量化结果无 NaN。"""
+        w = WeightQuantizer(in_size=4, out_size=4, bits=8, sym=sym, perchannel=True)
+        x = torch.zeros(4, 4)
+
+        w.find_params(x)
+        out = w.quantize(x)
+
+        assert torch.isfinite(w.scale).all()
+        assert torch.all(w.scale > 0)
+        assert torch.isfinite(out).all()
+        assert not torch.isnan(out).any()
