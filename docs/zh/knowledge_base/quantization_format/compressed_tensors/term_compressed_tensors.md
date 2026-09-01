@@ -1,46 +1,47 @@
-# compressed-tensors
+# compressed-tensors 量化格式 量化术语百科词条
 
-> **词条类别**：量化数据格式
->
-> **英文名称**：compressed-tensors
->
-> **应用领域**：HuggingFace / vLLM 生态量化权重交换
->
-> **msModelSlim 实现**：`msmodelslim/format/compressed_tensors_format/`
+> **词条类别**：[量化数据格式](../README.md)<br>
+> **英文名称**：compressed_tensors<br>
+> **应用领域**：HuggingFace / vLLM 生态量化权重交换<br>
+> **msModelSlim 实现**：[`msmodelslim/format/compressed_tensors_format/`](../../../../../msmodelslim/format/compressed_tensors_format/)
+
+---
 
 ## 1. 概述
 
-compressed-tensors 是与 HuggingFace / vLLM 生态兼容的[量化格式](../README.md)，字段约定遵循 [vllm-project/compressed-tensors](https://github.com/vllm-project/compressed-tensors) 规范。msModelSlim **导出时内置**该规范的结构定义，量化过程**无需**安装 `compressed-tensors` 包。核心特征是将方案写入 `config.json` → `quantization_config`，权重写入 HF 风格 safetensors。
+compressed-tensors 是与 HuggingFace / vLLM 生态兼容的[量化格式 量化术语百科词条](../README.md)，字段约定遵循 [vllm-project/compressed-tensors](https://github.com/vllm-project/compressed-tensors) 规范。msModelSlim **导出时内置**该规范的结构定义，量化过程**无需**安装 `compressed-tensors` 包。核心特征是将方案写入 `config.json` → `quantization_config`，权重写入 HF 风格 safetensors。
 
 配置、执行与部署步骤见《[compressed-tensors 使用指南](compressed_tensors_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/README.md)》及下文支持表中的词条链接。
+
+---
 
 ## 2. 词条介绍
 
 ### 2.1 原理
 
-#### 2.1.1 核心思想
+**核心思想**
 
 compressed-tensors 本质上是一套**面向 HuggingFace / vLLM 生态的量化模型落盘约定**：它不执行校准或伪量化计算，而是在一键量化流水线末尾，将已量化完成的 QIR 模块转换为推理框架可直接加载的两类交付件——**注入 `config.json` 的 `quantization_config`** 与 **HF 风格权重文件** `model*.safetensors`。前者描述 `quant_method: "compressed-tensors"`、scheme（`QuantizationArgs` / `config_groups`）等元数据，供 vLLM 等按 HF 自动检测路径识别量化方案；后者按模块前缀写入 int8 / scale / zero-point 等张量。推理侧先读 `quantization_config` 确定 scheme，再按键名从 safetensors 取数。
 
 因此，用户可将 compressed-tensors 理解为：**msModelSlim 量化结果的 HF 生态标准导出包**——算法负责量化计算，本格式负责与 [vllm-project/compressed-tensors](https://github.com/vllm-project/compressed-tensors) 规范对齐的落盘与描述。
 
-#### 2.1.2 关键性质
+**关键性质**
 
 - 与 HF `from_pretrained` / vLLM 自动检测路径兼容。
 - 当前仅线性层量化；`targets` 固定为 `["Linear"]`。
 - 不支持分布式导出；`kv_cache_scheme` 恒为 `null`。
-- 仅部分 QIR preset 实现了导出 handler（见下文支持表）。
 
-### 2.2 <span id="export-artifacts">导出产物（交付件）</span>
+---
 
-#### 目录与文件说明
+## 3. <span id="export-artifacts">导出产物（交付件）</span>
+### 3.1 目录与文件说明
 
-执行一键量化（`compressed_tensors`）后，在指定的 `save_path` 目录下典型生成以下文件：
+执行一键量化并指定 compressed-tensors 落盘格式（保存器 `type` 为 `compressed_tensors`）后，在指定的 `save_path` 目录下生成以下文件：
 
 ```text
 save_directory/
 ├── config.json                          # 注入 quantization_config 字段
-├── model.safetensors                    # 或 model-00001-of-xxxxx.safetensors（分片）
+├── model*.safetensors                   # 不分片时为 model.safetensors；分片时为 model-*-of-*.safetensors
 ├── model.safetensors.index.json         # 分片时生成
 └── （从源模型复制的 HF 辅助文件）
     └── *.json / *.py / *.txt / *.jinja
@@ -53,11 +54,11 @@ save_directory/
 | `model.safetensors.index.json` | 分片索引（仅分片时生成）                                      |
 | HF 辅助文件                        | 自源模型复制的 `*.json` / `*.py` / `*.txt` / `*.jinja` 等 |
 
-#### config.json → quantization_config
+### 3.2 config.json → quantization_config
 
-##### 文件结构示例
+**文件结构示例**
 
-`quantization_config` 典型结构如下：
+`quantization_config` 结构示例如下：
 
 ```json
 {
@@ -81,7 +82,8 @@ save_directory/
 }
 ```
 
-##### <span id="global-metadata">顶层字段说明</span>
+**<span id="global-metadata">顶层字段说明</span>**
+
 
 | 字段                                     | 说明                                                            |
 | -------------------------------------- | ------------------------------------------------------------- |
@@ -95,7 +97,8 @@ save_directory/
 | `kv_cache_scheme`                      | KV Cache 量化方案，**当前不支持**，恒为 `null`                             |
 | `sparsity_config` / `transform_config` | 空对象占位                                                         |
 
-##### QuantizationScheme（config_groups 内）
+**QuantizationScheme（config_groups 内）**
+
 
 每个 `config_groups` 条目描述一组层的量化方案。**msModelSlim 当前仅支持线性层（**`nn.Linear` **/ QIR FakeQuantLinear）量化**，因此 `targets` 固定为 `["Linear"]`。
 
@@ -107,7 +110,8 @@ save_directory/
 | `output_activations` | 输出激活量化参数                      |
 | `format`             | 层压缩格式，如 `int-quantized`       |
 
-##### QuantizationArgs 参数说明
+**QuantizationArgs 参数说明**
+
 
 | 参数                | 类型        | 默认值     | 说明                                                                                     |
 | ----------------- | --------- | ------- | -------------------------------------------------------------------------------------- |
@@ -124,37 +128,42 @@ save_directory/
 | `observer`        | string    | 自动推断    | 校准方法；静态量化默认 `memoryless_minmax`，动态量化为 `null`                                           |
 | `observer_kwargs` | object    | `{}`    | 传给 observer 的额外参数                                                                      |
 
-### 2.3 <span id="engine-support">推理引擎支持情况</span>
+---
 
-compressed-tensors **均可导出**下表中的 Preset；下表描述的是产物能否被目标推理引擎按 HF `quantization_config` 加载。具体模型 × Preset × 引擎组合以支持矩阵与官方最佳实践为准。
+## 4. <span id="engine-support">推理引擎支持情况</span>
+
+下表中的 Preset **均可被 compressed-tensors 导出**；下表描述的是产物能否被目标推理引擎按 HF `quantization_config` 加载。具体模型 × Preset × 引擎组合以《[大模型支持矩阵](../../model/README.md)》与官方最佳实践为准。
 
 | 格式 Preset | vLLM（HF 生态） | 说明 |
 | --- | --- | --- |
 | W8A8 Static | √ | 激活已离线校准；`act.scope: per_tensor` |
 | W8A8 Dynamic | √ | 激活动态；`act.scope: per_token` |
 
-> **图例**：`√` 表示该引擎存在可加载路径或已有验证实践。选型时先确认框架支持 `quant_method: "compressed-tensors"`，再在下文「[量化模式支持情况](#mode-support)」核对交付件字段。Ascend 私有路径请改用《[AscendV1](../ascendv1/term_ascendv1.md)》。
+> **图例**：`√` 表示该引擎存在可加载路径或已有验证实践。选型时先确认框架支持 `quant_method: "compressed-tensors"`，再在下文 [量化模式支持情况](#mode-support) 核对交付件字段。Ascend 私有路径请改用《[AscendV1](../ascendv1/term_ascendv1.md)》。
 
-### 2.4 <span id="mode-support">量化模式支持情况</span>
+---
 
-> **交付件说明**：「交付件：quantization_config」→ `config.json` 内 scheme；「交付件：safetensors」→ `model*.safetensors`。模式原理见《[量化模式](../../quantization_mode/README.md)》词条。
+## 5. <span id="mode-support">量化模式支持情况</span>
+
+> **交付件说明**：表中交付件：quantization_config对应 `config.json` 内 scheme；交付件：safetensors对应 `model*.safetensors`。模式原理见《[量化模式](../../quantization_mode/README.md)》词条。本词条交付件分两列说明：`quantization_config` 与 `model*.safetensors`。
 
 | 格式 Preset    | compressed-tensors 是否支持导出 | 量化模式词条 | 交付件：quantization_config                   | 交付件：safetensors                       |
 | ------------ | ------------------------- | ---------------- | ----------------------------------------- | ------------------------------------- |
 | W8A8 Static  | 支持                        | [W8A8 静态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_static.md) | [W8A8 Static scheme](#desc-w8a8-static)   | [W8A8 Static 权重张量](#st-w8a8-static)   |
 | W8A8 Dynamic | 支持                        | [W8A8 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_dynamic.md) | [W8A8 Dynamic scheme](#desc-w8a8-dynamic) | [W8A8 Dynamic 权重张量](#st-w8a8-dynamic) |
 
-### 2.5 各量化模式交付件格式
+---
+
+## 6. 各量化模式交付件格式
 
 约定：
 
 - `{prefix}` 为模块前缀（例如 `model.layers.0.self_attn.q_proj`）。
-- **quantization_config**：写入 `config.json`；顶层与 `QuantizationArgs` 见上文「[顶层字段说明](#global-metadata)」；下文给出各 Preset 在 `config_groups` 中的典型 scheme。
+- **quantization_config**：写入 `config.json`；顶层与 `QuantizationArgs` 见上文[顶层字段说明](#global-metadata)；下文给出各 Preset 在 `config_groups` 中的典型 scheme。
 - **safetensors**：文件 `model*.safetensors`（可分片）；键为 `{prefix}.<param>`，存实际数值张量。
 
-#### W8A8 Static
-
-##### <span id="desc-w8a8-static">config.json → quantization_config</span>
+### 6.1 W8A8 Static
+**<span id="desc-w8a8-static">config.json → quantization_config</span>**
 
 典型 `config_groups` 条目（`weights.dynamic = false`，含静态激活）：
 
@@ -165,7 +174,8 @@ compressed-tensors **均可导出**下表中的 Preset；下表描述的是产�
 | `input_activations.num_bits` / `type` / `strategy` / `symmetric` / `dynamic` | `8` / `"int"` / `"tensor"` / `false` / `false` | 静态激活量化 |
 | `format`                                                                     | `"int-quantized"`                              | 层压缩格式  |
 
-##### <span id="st-w8a8-static">model*.safetensors</span>
+**<span id="st-w8a8-static">`model*.safetensors`</span>**
+
 
 | 张量名                         | 数据类型    | 说明                         |
 | --------------------------- | ------- | -------------------------- |
@@ -175,20 +185,20 @@ compressed-tensors **均可导出**下表中的 Preset；下表描述的是产�
 | `{prefix}.input_zero_point` | -       | 仅当 `input_offset != 0` 时写入 |
 | `{prefix}.bias`             | float32 | 可选                         |
 
-#### W8A8 Dynamic
+### 6.2 W8A8 Dynamic
+**<span id="desc-w8a8-dynamic">config.json → quantization_config</span>**
 
-##### <span id="desc-w8a8-dynamic">config.json → quantization_config</span>
+典型 `config_groups` 条目（激活为动态，导出时 `input_activations.dynamic = true`）：
 
-典型 `config_groups` 条目（激活为动态，导出时 `input_activations.dynamic = true` 或按 QIR 约定写入）：
+| 字段路径                                                                         | 典型取值                                          | 说明                              |
+| ---------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------- |
+| `targets`                                                                    | `["Linear"]`                                  | 仅线性层                            |
+| `weights.num_bits` / `type` / `strategy` / `symmetric` / `dynamic`           | `8` / `"int"` / `"channel"` / `true` / `false` | 权重量化（per-channel）               |
+| `input_activations.num_bits` / `type` / `strategy` / `symmetric` / `dynamic` | `8` / `"int"` / `"token"` / `false` / `true`  | 动态激活；scale / zero-point **不落盘** |
+| `format`                                                                     | `"int-quantized"`                             | 层压缩格式                           |
 
-| 字段路径                                                               | 典型取值                                           | 说明                              |
-| ------------------------------------------------------------------ | ---------------------------------------------- | ------------------------------- |
-| `targets`                                                          | `["Linear"]`                                   | 仅线性层                            |
-| `weights.num_bits` / `type` / `strategy` / `symmetric` / `dynamic` | `8` / `"int"` / `"channel"` / `true` / `false` | 权重量化（per-channel）               |
-| `input_activations`                                                | 动态激活参数（`dynamic: true`）                        | 激活动态；scale / zero-point **不落盘** |
-| `format`                                                           | `"int-quantized"`                              | 层压缩格式                           |
+**<span id="st-w8a8-dynamic">`model*.safetensors`</span>**
 
-##### <span id="st-w8a8-dynamic">model*.safetensors</span>
 
 | 张量名                     | 数据类型    | 说明                              |
 | ----------------------- | ------- | ------------------------------- |
@@ -198,31 +208,35 @@ compressed-tensors **均可导出**下表中的 Preset；下表描述的是产�
 
 > 动态激活的 scale / zero-point **不写入**权重文件，推理时 per-token 动态计算。
 
-### 2.6 适用场景与限制
+---
 
-#### 2.6.1 适用场景
+## 7. 适用场景与限制
+
+### 7.1 适用场景
 
 - 向 vLLM 等 HF 生态框架交付可互换量化权重。
 - 需要与 compressed-tensors 规范对齐的 `quantization_config` 交换。
 
-#### 2.6.2 使用限制
+### 7.2 使用限制
 
 - 不支持分布式导出（`support_distributed() = False`）。
 - KV Cache 量化暂不支持（`kv_cache_scheme = null`）。
 - 仅 W8A8 Static / W8A8 Dynamic 两种 QIR 有 handler。
-- 本词条交付件分两列说明：`quantization_config` 与 `model*.safetensors`；不展开量化模式原理与算子说明（见《[量化模式](../../quantization_mode/README.md)》）。
+- 不展开量化模式原理与算子说明（见《[量化模式](../../quantization_mode/README.md)》）。
 
-## 3. 关联流程
+---
 
-| 流程                                                            | 说明                |
-| ------------------------------------------------------------- | ----------------- |
-| 《[compressed-tensors 使用指南](compressed_tensors_usage.md)》      | 确认模式支持、配置与执行 |
-| 《[量化格式接入指南](../iformat_integration_guide.md)》                 | IFormat 1-shot 参考 |
-| 《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》 | save 配置总览         |
+## 8. 关联流程
 
-## 4. 关联词条
+- 《[compressed-tensors 使用指南](compressed_tensors_usage.md)》：确认模式支持、配置与执行。
+- 《[量化格式接入指南](../iformat_integration_guide.md)》：IFormat 1-shot 参考。
+- 《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》：save 配置总览。
 
-- [量化格式](../README.md)：上位概念，本词条所属目录。
-- [AscendV1](../ascendv1/term_ascendv1.md)：其他，同属量化格式的并列落盘协议。
-- [MindIE-SD](../mindie_sd/term_mindie_sd.md)：其他，同属量化格式的并列落盘协议。
-- [量化模式](../../quantization_mode/README.md)：配套术语，本格式 Preset 与交付件字段对应各量化模式；详见本页「[量化模式支持情况](#mode-support)」。
+---
+
+## 9. 关联词条
+
+- [量化格式 量化术语百科词条](../README.md)：上位概念，本词条所属目录。
+- [AscendV1 量化格式 量化术语百科词条](../ascendv1/term_ascendv1.md)：其他，同属量化格式的并列落盘协议。
+- [MindIE-SD 量化格式 量化术语百科词条](../mindie_sd/term_mindie_sd.md)：其他，同属量化格式的并列落盘协议。
+- [量化模式](../../quantization_mode/README.md)：配套术语，本格式 Preset 与交付件字段对应各量化模式；详见本页[量化模式支持情况](#mode-support)。

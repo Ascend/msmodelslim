@@ -23,8 +23,8 @@
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 浮点模型目录 | 本地或 ModelScope/HF | 可被目标 Transformers 版本加载 | `from_pretrained` 冒烟通过 |
-| 输入 | 量化 YAML / 最佳实践 | 最佳实践库或自定义 `config_path` | 含 `spec.save` 且 `type` 为 `ascendv1_saver` | 字段通过配置协议校验 |
+| 输入 | 浮点模型目录 | 本地或 ModelScope/HF | 可被目标 Transformers 版本加载 | `from_pretrained` 可成功加载 |
+| 输入 | 量化 YAML / 最佳实践 | 最佳实践库或自定义`--config`| 含 `spec.save` 且 `type` 为 `ascendv1_saver` | 字段通过配置协议校验 |
 | 交付件 | AscendV1 量化权重目录 | `${SAVE_PATH}` | 含 `quant_model_description.json` 与权重 safetensors | 见《[AscendV1](term_ascendv1.md#export-artifacts)》导出产物 |
 
 ## 4. 流程总览
@@ -34,8 +34,6 @@ flowchart LR
   adapt[确认模式支持] --> adapter["适配器适配save（可选）"] --> config[配置save] --> run[执行量化并核对产物]
 ```
 
-各阶段对应下文步骤 1～4：**确认**目标推理框架是否支持所选量化模式、**（可选）适配**模型适配器的 AscendV1 save 接口、**配置** `ascendv1_saver`、**执行**一键量化并核对交付件。
-
 ## 5. 操作步骤
 
 ### 步骤 1：确认目标推理框架支持所选量化模式
@@ -44,13 +42,13 @@ flowchart LR
 
 **操作**：
 
-1. 确认推理侧通过 `quant_model_description.json` 识别各张量量化类型，并从 `quant_model_weights*.safetensors`（或分片 + index）加载参数。
-2. 对照《[AscendV1](term_ascendv1.md#engine-support)》「推理引擎支持情况」与《[AscendV1](term_ascendv1.md#mode-support)》「量化模式支持情况」，以及目标框架版本说明，确认所选量化模式可被该栈加载。
+1. 对照《[AscendV1](term_ascendv1.md#engine-support)》推理引擎支持情况与《[AscendV1](term_ascendv1.md#mode-support)》量化模式支持情况，以及目标框架版本说明，确认所选量化模式可被该栈加载。
+2. 确认推理侧通过 `quant_model_description.json` 识别各张量量化类型，并从 `quant_model_weights*.safetensors`（或分片 + index）加载参数。
 3. 若启用 QuaRot 且需导出旋转矩阵，确认推理框架可消费 `optional/quarot.safetensors`（见《[AscendV1](term_ascendv1.md#optional-quarot)》可选导出：QuaRot 相关文件）。
 
 **输出**：明确的目标框架、量化模式与是否导出 optional 的决策记录。
 
-**通过条件**：已选定 vLLM Ascend、SGLang 或 MindIE 作为部署目标；已确认采用 AscendV1 约定（`quant_model_description.json` + 权重 safetensors）加载；若启用 QuaRot 可选导出，已确认目标栈可消费对应文件。
+**通过条件**：已选定 vLLM Ascend、SGLang 或 MindIE 作为部署目标；已确认采用 AscendV1 约定（`quant_model_description.json` + 权重 safetensors）加载；若启用 QuaRot 可选导出，推理侧已确认可加载 `optional/`。
 
 ### 步骤 2（可选）：模型适配器实现 AscendV1SaveInterface
 
@@ -63,13 +61,16 @@ flowchart LR
 
 **操作**：
 
-1. 让模型适配器继承 `AscendV1SaveInterface`，按需实现：
+1. 让模型适配器继承 [`AscendV1SaveInterface`](../../../../../msmodelslim/core/quant_service/modelslim_v1/save/interface.py)，按需实现：
    - `ascendv1_save_module_preprocess(prefix, module, model)`：保存模块前返回新的 `(prefix, module)`
    - `ascendv1_save_postprocess(model, save_directory)`：全部导出件写完后的目录后处理
 2. 保存器仅在 `isinstance(adapter, AscendV1SaveInterface)` 时调用上述钩子；未实现则走默认落盘路径。
-3. 参考已实现该接口的适配器（如 DeepSeek-V3、Qwen3-Next、MiniMax-M2 等）核对行为是否与目标推理栈一致。
+3. 参考已实现该接口的适配器源码核对行为是否与目标推理栈一致，例如：
+   - [`msmodelslim/model/deepseek_v3/`](../../../../../msmodelslim/model/deepseek_v3/)
+   - [`msmodelslim/model/qwen3_next/`](../../../../../msmodelslim/model/qwen3_next/)
+   - [`msmodelslim/model/minimax_m2/`](../../../../../msmodelslim/model/minimax_m2/)
 
-**输出**：已实现钩子的适配器，或「无需实现、跳过本步骤」的结论。
+**输出**：已实现钩子的适配器，或“无需实现、跳过本步骤”的结论。
 
 **通过条件**：不需要特殊钩子则可跳过；若实现了接口，则预处理 / 后处理与目标 AscendV1 产物约定一致。
 
@@ -100,7 +101,7 @@ spec:
 
 ### 步骤 4：执行量化并核对产物
 
-**目标**：生成 AscendV1 权重并完成冒烟核对。
+**目标**：生成 AscendV1 权重并完成加载与推理验证。
 
 **操作**：
 
@@ -137,20 +138,20 @@ spec:
      --save_path ${SAVE_PATH} \
      --device npu \
      --model_type ${MODEL_TYPE} \
-     --config_path ${CONFIG_PATH} \
-     --trust_remote_code True
+     --config ${CONFIG_PATH} \
+     --trust_remote_code False
    ```
 
 3. 核对 `${SAVE_PATH}` 中至少存在：
    - `quant_model_description.json`（含 `model_quant_type` 与各张量类型）
    - `quant_model_weights.safetensors` 或分片权重 + index
-   - 自源模型复制的 `config.json` / tokenizer 等辅助文件
-   目录树与字段细则见《[AscendV1](term_ascendv1.md#export-artifacts)》导出产物及「各量化模式交付件格式」。
-4. 使用目标推理框架加载该目录，完成 ≥1 条 generate 或 API 请求冒烟。
+   - 自源模型复制的 `config.json` / tokenizer 等辅助文件  
+   目录树与字段细则见《[AscendV1](term_ascendv1.md#export-artifacts)》导出产物及各量化模式交付件格式。
+4. 使用目标推理框架加载该目录，完成至少 1 条 generate 或 API 请求，确认量化权重可正常加载且推理返回正常。该步骤为部署前的快速验证，不要求完整精度评测。
 
-**输出**：可部署的 `${SAVE_PATH}` 目录与冒烟日志。
+**输出**：可部署的 `${SAVE_PATH}` 目录与验证日志。
 
-**通过条件**：描述文件与权重齐全；推理加载正常；冒烟返回正常。
+**通过条件**：描述文件与权重齐全；推理加载正常；至少 1 条请求返回正常。
 
 ## 6. 验收条件
 
@@ -164,11 +165,3 @@ spec:
 | --- | --- | --- |
 | AscendV1 | 昇腾侧量化落盘格式 | 《[AscendV1](term_ascendv1.md)》 |
 | 量化格式 | 工具与推理框架的落盘协议 | 《[量化格式](../README.md)》 |
-
-## 8. 接口文档列表
-
-| 接口或能力 | 简述 | 链接 |
-| --- | --- | --- |
-| 一键量化 | 命令与配置协议 | 《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》 |
-| ascendv1_saver | save 字段 | 《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md#5251-ascendv1_saver)》 |
-| 格式接入 | 新格式开发对照 | 《[量化格式接入指南](../iformat_integration_guide.md)》 |

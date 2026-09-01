@@ -1,6 +1,6 @@
 # compressed-tensors 使用指南
 
-本指南说明如何在 msModelSlim 中选用 **compressed-tensors** 量化格式，按 **确认模式支持 → 配置 → 执行** 完成落盘，并将产物部署到 vLLM 等支持 HuggingFace `quantization_config` 的推理框架。格式字段与 Preset 见《[compressed-tensors](term_compressed_tensors.md)》；一键量化命令总览见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》。
+本指南说明如何在 msModelSlim 中选用 **compressed-tensors** 量化格式，按 **确认模式支持 → 配置 save → 执行量化并核对产物** 完成落盘，并将产物部署到 vLLM 等支持 HuggingFace `quantization_config` 的推理框架。格式字段与 Preset 见《[compressed-tensors](term_compressed_tensors.md)》；一键量化命令总览见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》。
 
 ## 1. 适用范围
 
@@ -24,18 +24,16 @@
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 浮点模型目录 | 本地或 ModelScope/HF | 可被目标 Transformers 版本加载 | `from_pretrained` 冒烟通过 |
-| 输入 | 量化 YAML / 最佳实践 | 最佳实践库或自定义 `config_path` | 含 `spec.save` 且 `type` 为 `compressed_tensors` | 字段通过配置协议校验 |
+| 输入 | 浮点模型目录 | 本地或 ModelScope/HF | 可被目标 Transformers 版本加载 | `from_pretrained` 可成功加载 |
+| 输入 | 量化 YAML / 最佳实践 | 最佳实践库或自定义 `--config` | 含 `spec.save` 且 `type` 为 `compressed_tensors` | 字段通过配置协议校验 |
 | 交付件 | compressed-tensors 权重目录 | `${SAVE_PATH}` | 含注入 `quantization_config` 的 `config.json` 与 `model*.safetensors` | 见《[compressed-tensors](term_compressed_tensors.md#export-artifacts)》导出产物 |
 
 ## 4. 流程总览
 
 ```mermaid
 flowchart LR
-  adapt[确认模式支持] --> config[配置save] --> run[执行量化并核对产物]
+  adapt[确认模式支持] --> config[配置 save] --> run[执行量化并核对产物]
 ```
-
-各阶段对应下文步骤 1～3：**确认**目标推理框架是否支持所选量化模式、**配置** `compressed_tensors`、**执行**一键量化并核对交付件。
 
 ## 5. 操作步骤
 
@@ -46,7 +44,7 @@ flowchart LR
 **操作**：
 
 1. 确认目标框架读取 `config.json` 中 `quantization_config.quant_method == "compressed-tensors"`（或显式 `quantization="compressed-tensors"`），而非 Ascend 私有加载路径。
-2. 对照《[compressed-tensors](term_compressed_tensors.md#mode-support)》「量化模式支持情况」，确认当前仅 W8A8 Static / Dynamic 有导出 handler；不支持分布式导出与 KV Cache scheme。
+2. 对照《[compressed-tensors](term_compressed_tensors.md#mode-support)》量化模式支持情况，确认当前仅 W8A8 Static / Dynamic 有导出 handler；不支持分布式导出与 KV Cache scheme。
 3. 规划推理启动参数：避免误用 `--quantization ascend`。
 
 **输出**：明确的目标框架、Preset（W8A8 Static / Dynamic）与加载参数说明。
@@ -79,7 +77,7 @@ spec:
 
 ### 步骤 3：执行量化并核对产物
 
-**目标**：生成可被 vLLM 等加载的权重并完成冒烟核对。
+**目标**：生成可被 vLLM 等加载的权重并完成加载与推理验证。
 
 **操作**：
 
@@ -115,20 +113,20 @@ spec:
      --save_path ${SAVE_PATH} \
      --device npu \
      --model_type ${MODEL_TYPE} \
-     --config_path ${CONFIG_PATH} \
-     --trust_remote_code True
+     --config ${CONFIG_PATH} \
+     --trust_remote_code False
    ```
 
 3. 核对 `${SAVE_PATH}` 中至少存在：
    - `config.json` 含 `quantization_config`，且 `quant_method` 为 `"compressed-tensors"`
    - `model.safetensors` 或分片权重 + `model.safetensors.index.json`
    - 自源模型复制的 HF 辅助文件齐全  
-   目录树与字段细则见《[compressed-tensors](term_compressed_tensors.md#export-artifacts)》导出产物及「各量化模式交付件格式」。
-4. 使用目标推理框架加载该目录，完成 ≥1 条 generate 或 API 请求冒烟。
+   目录树与字段细则见《[compressed-tensors](term_compressed_tensors.md#export-artifacts)》导出产物及各量化模式交付件格式。
+4. 使用目标推理框架加载该目录，完成至少 1 条 generate 或 API 请求，确认量化权重可正常加载且推理返回正常。该步骤为部署前的快速验证，不要求完整精度评测。
 
-**输出**：可部署的 `${SAVE_PATH}` 目录与冒烟日志。
+**输出**：可部署的 `${SAVE_PATH}` 目录与验证日志。
 
-**通过条件**：无权重 shape / dtype mismatch；`quantization_config` 字段合法；冒烟返回正常。
+**通过条件**：无权重 shape / dtype mismatch；`quantization_config` 字段合法；至少 1 条请求返回正常。
 
 ## 6. 验收条件
 
@@ -142,11 +140,3 @@ spec:
 | --- | --- | --- |
 | compressed-tensors | HF / vLLM 生态量化格式 | 《[compressed-tensors](term_compressed_tensors.md)》 |
 | 量化格式 | 工具与推理框架的落盘协议 | 《[量化格式](../README.md)》 |
-
-## 8. 接口文档列表
-
-| 接口或能力 | 简述 | 链接 |
-| --- | --- | --- |
-| 一键量化 | 命令与配置协议 | 《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》 |
-| compressed_tensors | save 字段 | 《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md#5252-compressed_tensors)》 |
-| 格式接入 | IFormat 1-shot | 《[量化格式接入指南](../iformat_integration_guide.md)》 |
