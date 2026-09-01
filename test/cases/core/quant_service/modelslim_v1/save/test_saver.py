@@ -22,15 +22,16 @@ See the Mulan PSL v2 for more details.
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import TypeAdapter, ValidationError
 from torch import nn
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Config
 from msmodelslim.core.quant_service.modelslim_v1.save.saver import (
     AutoSaverBaseConfig,
+    AutoSaverConfigList,
     AutoSaverProcessor,
     _convert_hookir_to_wrapper,
-    validate_auto_saver_processor_config_list,
 )
 import msmodelslim.ir as qir
 
@@ -48,29 +49,30 @@ class TestAutoSaverBaseConfig:
 
 
 class TestValidateAutoSaverConfigList:
-    """Tests for validate_auto_saver_processor_config_list."""
+    """Tests for AutoSaverConfigList（原生 List[SerializeAsAny[AutoSaverBaseConfig]]）。"""
 
     def test_validates_dict_list_when_last_is_saver_config(self):
-        """场景：列表末项为 saver 配置 dict。预期：解析为 AutoSaverBaseConfig。"""
-        result = validate_auto_saver_processor_config_list([{"type": "ascendv1_saver", "part_file_size": 4}])
+        """场景：合法 saver 配置 dict。预期：解析为 AutoSaverBaseConfig。"""
+        result = TypeAdapter(AutoSaverConfigList).validate_python([{"type": "ascendv1_saver", "part_file_size": 4}])
         assert isinstance(result[-1], AutoSaverBaseConfig)
 
-    def test_raises_type_error_when_last_not_saver(self):
-        """场景：末项校验结果非 AutoSaverBaseConfig。预期：TypeError。"""
-        not_saver = MagicMock()
-        with patch.object(AutoSaverBaseConfig, "model_validate", return_value=not_saver):
-            with pytest.raises(TypeError, match="not a saver config"):
-                validate_auto_saver_processor_config_list([{"type": "x"}])
+    def test_raises_validation_error_when_invalid_type(self):
+        """场景：非法 type。预期：ValidationError 含 union_tag_invalid。"""
+        with pytest.raises(ValidationError) as exc_info:
+            TypeAdapter(AutoSaverConfigList).validate_python([{"type": "x"}])
+        assert any(e["type"] == "union_tag_invalid" for e in exc_info.value.errors())
 
-    def test_raises_value_error_when_item_not_dict_or_config(self):
-        """场景：列表项类型非法。预期：ValueError。"""
-        with pytest.raises(ValueError, match="Invalid config item type"):
-            validate_auto_saver_processor_config_list([123])
+    def test_raises_validation_error_when_item_not_dict_or_config(self):
+        """场景：列表项非 dict 非实例。预期：ValidationError 含 invalid_processor_item。"""
+        with pytest.raises(ValidationError) as exc_info:
+            TypeAdapter(AutoSaverConfigList).validate_python([123])
+        assert any(e["type"] == "invalid_processor_item" for e in exc_info.value.errors())
 
-    def test_raises_value_error_when_not_list(self):
-        """场景：入参非 list。预期：ValueError。"""
-        with pytest.raises(ValueError, match="Expected a list"):
-            validate_auto_saver_processor_config_list("bad")
+    def test_raises_validation_error_when_not_list(self):
+        """场景：入参非 list。预期：ValidationError 含 list_type。"""
+        with pytest.raises(ValidationError) as exc_info:
+            TypeAdapter(AutoSaverConfigList).validate_python("bad")
+        assert any(e["type"] == "list_type" for e in exc_info.value.errors())
 
 
 class _StubSaver(AutoSaverProcessor):  # pylint: disable=abstract-method
@@ -162,9 +164,10 @@ class TestAutoSaverProcessor:
         assert saver._float_called[1] is relu
 
     def test_validate_raises_value_error_when_invalid_item_in_list(self):
-        """场景：validate 非法列表项。预期：ValueError。"""
-        with pytest.raises(ValueError, match="Invalid config item type"):
-            validate_auto_saver_processor_config_list([object()])
+        """场景：validate 非法列表项。预期：ValidationError 含 invalid_processor_item。"""
+        with pytest.raises(ValidationError) as exc_info:
+            TypeAdapter(AutoSaverConfigList).validate_python([object()])
+        assert any(e["type"] == "invalid_processor_item" for e in exc_info.value.errors())
 
     def test_on_rotation_wrapper_processes_wrapped_module_when_called(self, saver):
         """场景：QuarotOnlineHeadRotationWrapper。预期：处理 wrapped_module。"""

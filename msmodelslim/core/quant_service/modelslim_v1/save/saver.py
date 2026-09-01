@@ -25,9 +25,7 @@ from typing import Optional, Dict, Type, Any, Set, List, Literal
 
 import torch.distributed as dist
 from pydantic import SerializeAsAny
-from pydantic.functional_validators import BeforeValidator
 from torch import nn
-from typing_extensions import Annotated
 
 import msmodelslim.ir as qir
 from msmodelslim.core.base.protocol import BatchProcessRequest
@@ -44,25 +42,7 @@ class AutoSaverBaseConfig(AutoProcessorConfig):
         pass
 
 
-def validate_auto_saver_processor_config_list(v: Any) -> List['AutoProcessorConfig']:
-    if isinstance(v, list):
-        validated_configs = []
-        for item in v:
-            if isinstance(item, dict):
-                validated_configs.append(AutoSaverBaseConfig.model_validate(item))
-            elif isinstance(item, AutoSaverBaseConfig):
-                validated_configs.append(item)
-            else:
-                raise ValueError(f"Invalid config item type: {type(item)}")
-        if not isinstance(validated_configs[-1], AutoSaverBaseConfig):
-            raise TypeError("The save config you provide is not a saver config")
-        return validated_configs
-    raise ValueError("Expected a list of AutoSaverBaseConfig or dict")
-
-
-AutoSaverConfigList = Annotated[
-    List[SerializeAsAny[AutoSaverBaseConfig]], BeforeValidator(validate_auto_saver_processor_config_list)
-]
+AutoSaverConfigList = List[SerializeAsAny[AutoSaverBaseConfig]]
 
 
 def _convert_hookir_to_wrapper(module: nn.Module) -> None:
