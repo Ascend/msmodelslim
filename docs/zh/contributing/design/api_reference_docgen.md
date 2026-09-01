@@ -159,7 +159,7 @@ YAML 是「根配置 → spec → process[] / save[] → 嵌套对象」的树�
 | 默认值 | Schema `default`；没有时回退 Field / `default_factory`（工厂值常不进 Schema） |
 | 取值范围或格式 | Schema `enum` / `const` / `minimum` / `maxLength` / `pattern` 等 |
 | 含义 | Schema `description`（即 `Field(description=)`）；没有则为 `—` |
-| 引用配置 | Schema `$ref` 对应的嵌套模型（展开进本页时写页内 HTML 锚点 `<a href="#anchor">`；独立页面写相对链接）；type 分派字段统一指向基础类块锚点「本页 <a href="#anchor">§x.y</a>」 |
+| 引用配置 | Schema `$ref` 对应的嵌套模型（展开进本页时写页内 HTML 锚点 `<a href="#anchor">`；独立页面写相对链接）；type 分派字段统一指向基础类块锚点`「本页 <a href="#anchor">§x.y</a>」` |
 
 `AfterValidator` **不会**进入 JSON Schema。长度、区间必须写成 `Field(max_length=N)` / `ge` / `le`，或 `Literal` / `Enum`，才会出现在文档里。生成器不再解析校验闭包，也不维护函数名到中文的对照表。
 
@@ -182,7 +182,7 @@ YAML 是「根配置 → spec → process[] / save[] → 嵌套对象」的树�
 
 不再渲染「被引用的配置」小节（内部仍保留 `parents` 反查表供示例 YAML 上溯宿主）。展开嵌套时，BFS 从 `nested_refs` 出发，把可达的嵌套配置按引用处上下文路径渲染进「参数列表」内对应类名子块；task 页把 spec 一并展开。对未独立成页的 spec 的引用（如调优策略的 `template` 指向 `ModelslimV1ServiceConfig`）重定向到所属 task 页的 2.2 小节锚点（task 页块序固定：根块 §2.1，spec 为首个嵌套块 §2.2）；跨目录链接按输出子目录计算相对路径。
 
-**type 分派渲染**：同一字段路径下引用数 ≥2 或含 `type 分派` 即判为分派组。渲染成一个 `<h3 id="…">2.x 基础类名（按 type 分派）</h3>` 块：块内含基础类参数表（基础类本身是真实模型时）与「派生类」列表（每项 = 类名、`type` 值、一行说明、本页子块锚点或独立页相对链接），各派生类参数表 + 配置约束作为 `<h4 id="…">2.x 派生类名</h4>` 子块排在其后。同一页面同一基础类只渲染一次，后续分派字段的「引用配置」列别名指向该块锚点（例如 task 页的 `spec.process[]` 与 `spec.prior[].process` 共用同一个 `AutoProcessorConfig` 块）。「引用配置」列对分派字段统一写「本页 <a href="#anchor">§x.y</a>」指向基础类块锚点，不再逐个子类型平铺、也不再写「按 `type` 分派，见对应配置文档」汇总文案。配置块标题带可见编号，且标题与页内跳转统一用 HTML 标签（`<h3 id>` / `<h4 id>` / `<a href="#…">`），不用 Markdown 的 `{#anchor}` 属性语法。
+**type 分派渲染**：同一字段路径下引用数 ≥2 或含 `type 分派` 即判为分派组。渲染成一个 `<h3 id="…">2.x 基础类名（按 type 分派）</h3>` 块：块内含基础类参数表（基础类本身是真实模型时）与「派生类」列表（每项 = 类名、`type` 值、一行说明、本页子块锚点或独立页相对链接），各派生类参数表 + 配置约束作为 `<h4 id="…">2.x 派生类名</h4>` 子块排在其后。同一页面同一基础类只渲染一次，后续分派字段的「引用配置」列别名指向该块锚点（例如 task 页的 `spec.process[]` 与 `spec.prior[].process` 共用同一个 `AutoProcessorConfig` 块）。「引用配置」列对分派字段统一写`「本页 <a href="#anchor">§x.y</a>」`指向基础类块锚点，不再逐个子类型平铺、也不再写「按 `type` 分派，见对应配置文档」汇总文案。配置块标题带可见编号，且标题与页内跳转统一用 HTML 标签（`<h3 id>` / `<h4 id>` / `<a href="#…">`），不用 Markdown 的 `{#anchor}` 属性语法。
 
 #### 4.3.6 示例 YAML
 

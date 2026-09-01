@@ -34,8 +34,8 @@ AscendV1 本质上是一套**昇腾推理侧的量化模型落盘约定**：它�
 - 可选导出 QuaRot 旋转矩阵。
 - 通过描述文件中的枚举值表达对多种量化模式的承载能力。
 
-
 ### 2.2 <span id="export-artifacts">导出产物（交付件）</span>
+
 #### 目录与文件说明
 
 执行一键量化（`ascendv1_saver`）后，在指定的 `save_path` 目录下典型生成以下文件：
@@ -65,7 +65,7 @@ AscendV1 本质上是一套**昇腾推理侧的量化模型落盘约定**：它�
 | `{model_type}_best_practice.yaml` | **量化配置协议文件**，记录本次量化所使用的完整配置信息，参考《[量化配置协议详解](../../../user_guide/usage_quick_quantization.md#5-量化配置协议详解)》 |
 | `vocab.json` | 原始词汇映射文件，部分模型（如 GPT 风格模型）会包含此文件 |
 | `optional/quarot.safetensors` | **可选导出**：QuaRot 全局旋转矩阵（仅在使用 QuaRot 且 `export_extra_info: true` 时生成），见下文可选导出 |
-`quant_model_description.json` 中，每个张量键对应一个量化类型标识；同一 Linear 层的所有参数（weight、scale 等）共享相同的类型标识。
+|`quant_model_description.json` | 每个张量键对应一个量化类型标识；同一 Linear 层的所有参数（weight、scale 等）共享相同的类型标识。|
 
 #### quant_model_description.json
 
@@ -105,6 +105,7 @@ AscendV1 本质上是一套**昇腾推理侧的量化模型落盘约定**：它�
 其余键值对为 `{张量名}: {量化类型}`，例如 `"model.layers.0.self_attn.q_proj.weight": "W8A8"`。
 
 #### <span id="optional-quarot">可选导出：QuaRot 相关文件</span>
+
 当流水线启用 QuaRot 且配置 `export_extra_info: true` 时，AscendV1 可额外写出旋转矩阵文件，并在描述文件中登记路径。算法本身见对应算法词条；此处仅说明**格式侧**落盘约定。
 
 ```bash
@@ -225,6 +226,7 @@ AscendV1 **均可落盘**下表中的格式枚举；下表描述的是产物能�
 #### W8A8
 
 ##### <span id="desc-w8a8">quant_model_description.json</span>
+
 同一 Linear 下下列键共享类型 `"W8A8"`（`bias` 若保留浮点则可标 `"FLOAT"`）：
 
 | 描述键 | 取值 | 说明 |
@@ -287,6 +289,7 @@ AscendV1 **均可落盘**下表中的格式枚举；下表描述的是产物能�
 | `{prefix}.bias` | `"FLOAT"` 或 `"W8A8_MIX"` | 偏置（可选） |
 
 ##### <span id="st-w8a8-mix">quant_model_weights*.safetensors</span>
+
 W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 
 | 张量名 | 数据类型 | 说明 |
@@ -387,6 +390,7 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 #### W8A8_MXFP8 / W4A8_MXFP / W4A4_MXFP4
 
 ##### <span id="desc-mxfp">quant_model_description.json</span>
+
 描述键取值分别为 `"W8A8_MXFP8"` / `"W4A8_MXFP"` / `"W4A4_MXFP4"`（与具体枚举一致）：
 
 | 描述键 | 取值 | 说明 |
@@ -406,6 +410,7 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 #### W4A4_MXFP4_DUALSCALE
 
 ##### <span id="desc-mxfp-dualscale">quant_model_description.json</span>
+
 在 [MXFP 描述字段](#desc-mxfp)基础上，取值均为 `"W4A4_MXFP4_DUALSCALE"`，并增加：
 
 | 描述键 | 取值 | 说明 |
@@ -413,6 +418,7 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `{prefix}.weight_dual_scale` | `"W4A4_MXFP4_DUALSCALE"` | 第二路 scale |
 
 ##### <span id="st-mxfp-dualscale">quant_model_weights*.safetensors</span>
+
 在 [MXFP 权重字段](#st-mxfp)基础上额外包含：
 
 | 张量名 | 数据类型 | 说明 |

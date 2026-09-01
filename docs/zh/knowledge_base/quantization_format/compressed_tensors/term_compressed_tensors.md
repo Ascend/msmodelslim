@@ -32,6 +32,7 @@ compressed-tensors 本质上是一套**面向 HuggingFace / vLLM 生态的量化
 - 仅部分 QIR preset 实现了导出 handler（见下文支持表）。
 
 ### 2.2 <span id="export-artifacts">导出产物（交付件）</span>
+
 #### 目录与文件说明
 
 执行一键量化（`compressed_tensors`）后，在指定的 `save_path` 目录下典型生成以下文件：
@@ -154,6 +155,7 @@ compressed-tensors **均可导出**下表中的 Preset；下表描述的是产�
 #### W8A8 Static
 
 ##### <span id="desc-w8a8-static">config.json → quantization_config</span>
+
 典型 `config_groups` 条目（`weights.dynamic = false`，含静态激活）：
 
 | 字段路径                                                                         | 典型取值                                           | 说明     |
@@ -176,6 +178,7 @@ compressed-tensors **均可导出**下表中的 Preset；下表描述的是产�
 #### W8A8 Dynamic
 
 ##### <span id="desc-w8a8-dynamic">config.json → quantization_config</span>
+
 典型 `config_groups` 条目（激活为动态，导出时 `input_activations.dynamic = true` 或按 QIR 约定写入）：
 
 | 字段路径                                                               | 典型取值                                           | 说明                              |
