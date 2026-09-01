@@ -60,7 +60,7 @@ For details about the parameters, see [Quick Quantization Parameters](../feature
 Quantize the Qwen2.5-7B-Instruct model in w8a8 mode by using the quick quantization feature:
 
 ```bash
-msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --device_id 0 1 --model_type Qwen2.5-7B-Instruct --quant_type w8a8 --trust_remote_code True
+msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --device_id 0 1 --model_type Qwen2.5-7B-Instruct --quant_type w8a8 --trust_remote_code true
 ```
 
 where
@@ -110,7 +110,7 @@ python3 example/Qwen/quant_qwen.py \
     --w_bit 8 \
     --a_bit 8 \
     --device_type npu \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 **Notes**:

@@ -61,7 +61,7 @@ msmodelslim quant \
   --model_type ${MODEL_TYPE} \          # 已注册或支持矩阵中的模型名，大小写敏感
   --quant_type ${QUANT_TYPE} \          # 量化类型，如 w8a8
   --tags ${TAG} \                        # 场景标签，如 vLLM-Ascend Atlas_A2_Inference
-  --trust_remote_code False             # 仅可信模型必要时设为 True
+  --trust_remote_code false             # 仅可信模型必要时设为 True
 ```
 
 ### 执行前预检
@@ -158,7 +158,7 @@ msmodelslim quant \
 
 在命令中添加 `--device` 参数：
 
-- **填写**：`npu`（默认，单卡）、`npu:0,1,2,3`（多卡）、`cpu`。
+- **填写**：`npu`（默认，单卡）、`npu --device_id 0 1 2 3`（多卡）、`cpu`。
 - **注意**：指定多张卡时自动启用分布式逐层量化，详见下方"可选：多卡分布式量化"。
 
 **输出**：已指定量化设备的命令。
@@ -226,7 +226,7 @@ msmodelslim quant \
 
 - **交互询问场景**：`--tags` 或 `--quant_type` 未命中已验证配置时，工具会询问是否采用推荐配置，确认场景与推荐配置匹配后按提示执行；
 - **量化失败或 OOM**：先排查 NPU 状态（`npu-smi info`）与环境变量 `ASCEND_RT_VISIBLE_DEVICES` 是否指向有效空闲卡；显存不足（OOM）时改用空闲卡，或开启逐层量化、分布式逐层量化；
-- **模型加载报错**：确认 transformers 等依赖库版本与支持矩阵要求一致，必要时补充 `--trust_remote_code True`（仅限可信模型）；
+- **模型加载报错**：确认 transformers 等依赖库版本与支持矩阵要求一致，必要时补充 `--trust_remote_code true`（仅限可信模型）；
 - **部署测评后精度异常**：量化权重已完成交付，但部署测评出现 badcase 或输出异常时，进入《[量化推理精度异常定位流程指南](process_quantization_accuracy_anomaly_locating.md)》定位异常位点，并按《[量化精度调优指南](process_quantization_precision_tuning.md)》调优后重新量化。
 
 ## 8. 案例列表

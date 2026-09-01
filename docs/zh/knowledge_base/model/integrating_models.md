@@ -178,7 +178,7 @@ msmodelslim quant --model_path ${MODEL_PATH} \
                   --device npu \
                   --model_type ${MODEL_TYPE} \
                   --config ${CONFIG_PATH} \
-                  --trust_remote_code False
+                  --trust_remote_code false
 ```
 
 - 详细用法与参数说明请参阅：《[一键量化使用说明](../../user_guide/usage_quick_quantization.md)》

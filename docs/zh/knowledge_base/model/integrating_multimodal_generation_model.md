@@ -1375,7 +1375,7 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2.2-T2V-A14B \
     --quant_type w8a8f8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 **方式二：使用自定义 YAML**：
@@ -1387,7 +1387,7 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2.2-T2V-A14B \
     --config ${CONFIG_PATH} \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 请注意`trust_remote_code`为`True`时可能执行浮点模型权重中的代码文件，请确保浮点模型来源安全可靠。其中 `${MODEL_PATH}` 为原始浮点权重路径，`${SAVE_PATH}` 为用户自定义的量化权重保存路径，model_type对应配置为注册的模型名称，`${CONFIG_PATH}` 为YAML配置文件路径。

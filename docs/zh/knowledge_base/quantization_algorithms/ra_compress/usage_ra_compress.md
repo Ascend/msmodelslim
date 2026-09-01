@@ -15,7 +15,7 @@
 不适用场景：
 
 - **多模态理解模型（VLM）** 与 **多模态生成模型**（文生图 / 文生视频等）：`ra_compress` / `analyze attn_head` 当前仅支持大语言模型（LLM）。
-- 未指定或未使用 `--calib_dataset calib_dummy.jsonl`：须显式指定该内置合成校准集；使用其他校准集不保证筛选效果。
+- 未指定或未使用 `--calibration_dataset calib_dummy.jsonl`：须显式指定该内置合成校准集；使用其他校准集不保证筛选效果。
 - 目标 `model_type` 的适配器未实现 `RaCompressAnalysisInterface` 且 Q/K 投影层命名与默认模式不匹配。
 
 ## 2. 流程关系与前置条件
@@ -25,7 +25,7 @@
 **前置条件**：
 
 - 已安装兼容版本的 msModelSlim 工具（详见《[msModelSlim 工具安装指南](../../../install_guide/install_guide.md)》）。
-- 命令行须显式指定 `--calib_dataset calib_dummy.jsonl`（`attn_head` 子命令不再为此场景设置默认值）；使用其他校准集不保证效果。
+- 命令行须显式指定 `--calibration_dataset calib_dummy.jsonl`（`attn_head` 子命令不再为此场景设置默认值）；使用其他校准集不保证效果。
 - 若目标模型 Q/K 投影层命名非 `q_proj` / `k_proj` / `qkv_proj`，需在适配器中实现 `RaCompressAnalysisInterface`。
 
 **后续操作**：将产出的 `head.pt` 送入 RA Compress KV cache 压缩量化流程，生成压缩后的模型。
@@ -35,7 +35,7 @@
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
 | 输入 | 浮点模型权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` | 可被目标 Transformers 版本加载 |
-| 输入 | 校准数据集 | 工具内置 `calib_dummy.jsonl` | 须通过 `--calib_dataset calib_dummy.jsonl` 显式指定；使用其他校准集不保证效果 | 命令行已指定且可被加载 |
+| 输入 | 校准数据集 | 工具内置 `calib_dummy.jsonl` | 须通过 `--calibration_dataset calib_dummy.jsonl` 显式指定；使用其他校准集不保证效果 | 命令行已指定且可被加载 |
 | 交付件 | `head.pt` | `--save_path` 指定目录 | dict 序列化 `.pt` 文件，含 `prefix_matching` 与 `copying` 字段 | 文件存在且可被 torch.load 读取 |
 | 交付件 | 入选 head 列表 | 命令行输出 | 每层 KV head 索引列表 | 可读且包含入选 head |
 
@@ -58,7 +58,7 @@ flowchart LR
 **操作**：
 
 1. 检查 Q/K 投影层命名：默认匹配 `q_proj`、`k_proj`、`qkv_proj`，若命名不一致，需在模型适配器中实现 `RaCompressAnalysisInterface.get_ra_compress_proj_patterns()`，返回 `{"q": "...", "k": "...", "qkv": "..."}`。
-2. **必须**在命令行通过 `--calib_dataset calib_dummy.jsonl` 显式指定内置合成校准集（`attn_head` 子命令不再为此场景设置默认值）。该文件经 tokenizer 后严格对齐到 2500×4 段边界；使用其他校准集不保证筛选效果。
+2. **必须**在命令行通过 `--calibration_dataset calib_dummy.jsonl` 显式指定内置合成校准集（`attn_head` 子命令不再为此场景设置默认值）。该文件经 tokenizer 后严格对齐到 2500×4 段边界；使用其他校准集不保证筛选效果。
 
 接口约定详见《[RA Compress 词条](./term_ra_compress.md)》。
 
@@ -75,9 +75,9 @@ msmodelslim analyze attn_head \
     --model_type Qwen2.5-7B-Instruct \
     --model_path ${model_path} \
     --metrics ra_compress \
-    --calib_dataset calib_dummy.jsonl \
+    --calibration_dataset calib_dummy.jsonl \
     --device npu \
-    --trust_remote_code True \
+    --trust_remote_code true \
     --save_path ./head_result
 ```
 
@@ -88,7 +88,7 @@ msmodelslim analyze attn_head \
 | `attn_head` | KV 注意力头粒度分析（`ra_compress` 为默认 metrics） |
 | `--metrics` | 指定分析算法，取值为 `ra_compress` 时使用本算法 |
 | `--save_path` | `head.pt` 与结果文件保存目录 |
-| `--calib_dataset` | **必须**显式指定为 `calib_dummy.jsonl`；使用其他校准集不保证筛选效果 |
+| `--calibration_dataset` | **必须**显式指定为 `calib_dummy.jsonl`；使用其他校准集不保证筛选效果 |
 
 完整参数见《[Attention Head 筛选分析使用指南](../../../user_guide/usage_sensitive_attn_head_analysis.md)》。
 
@@ -109,12 +109,12 @@ msmodelslim analyze attn_head \
 ## 6. 验收条件
 
 - 分析命令执行成功，`head.pt` 已生成在 `--save_path` 目录下。
-- 命令行已指定 `--calib_dataset calib_dummy.jsonl`，且 induction heads / echo heads 列表非空。
+- 命令行已指定 `--calibration_dataset calib_dummy.jsonl`，且 induction heads / echo heads 列表非空。
 - `head.pt` 可被后续 RA Compress 压缩量化流程正确读取。
 
 ## 7. 异常处置
 
-- **得分或 head 列表为空**：确认已指定 `--calib_dataset calib_dummy.jsonl`；未使用该内置校准集时效果不保证。
+- **得分或 head 列表为空**：确认已指定 `--calibration_dataset calib_dummy.jsonl`；未使用该内置校准集时效果不保证。
 - **未命中 Q/K 投影层**：目标模型 Q/K 命名与默认模式不匹配。在适配器中实现 `RaCompressAnalysisInterface.get_ra_compress_proj_patterns()`，返回正确的模块名模式。
 - **GQA 分组相关报错**：确认模型 `config.json` 中 `num_attention_heads` 与 `num_key_value_heads` 字段正确，工具会自动按组取 max。
 

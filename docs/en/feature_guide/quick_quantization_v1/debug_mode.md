@@ -35,7 +35,7 @@ msmodelslim quant \
   --device npu \
   --model_type Qwen2.5-7B-Instruct \
   --quant_type w8a8 \
-  --trust_remote_code True \
+  --trust_remote_code true \
   --debug
 ```
 
@@ -50,7 +50,7 @@ msmodelslim quant \
   --device npu --device_id 0 1 2 3 \
   --model_type Qwen2.5-7B-Instruct \
   --quant_type w8a8 \
-  --trust_remote_code True \
+  --trust_remote_code true \
   --debug
 ```
 
@@ -65,7 +65,7 @@ msmodelslim quant \
   --device npu \
   --model_type ${MODEL_TYPE} \
   --config ${CONFIG_PATH} \
-  --trust_remote_code True \
+  --trust_remote_code true \
   --debug
 ```
 

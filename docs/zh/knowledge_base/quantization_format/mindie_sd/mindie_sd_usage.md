@@ -129,7 +129,7 @@ spec:
      --device npu \
      --model_type ${MODEL_TYPE} \
      --config ${CONFIG_PATH} \
-     --trust_remote_code False
+     --trust_remote_code true
    ```
 
 3. 核对 `${SAVE_PATH}` 中至少存在：

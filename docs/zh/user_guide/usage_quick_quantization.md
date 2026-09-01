@@ -11,7 +11,7 @@ toc_depth: 3
 一键量化提供了两种使用方式：
 
 1. **方式1（推荐）**：适用于工具已经支持且用户无特殊量化诉求的主流模型量化场景，可通过指定 `quant_type` 参数，工具在最佳实践库中自动匹配最适合的量化配置进行量化。量化配置请参考[量化配置协议详解](#5-量化配置协议详解)。
-2. **方式2**：适用于模型或模型量化方式未收录最佳实践库或用户有特殊量化诉求场景，可通过指定 `config_path` 参数，工具直接使用用户指定的自定义量化配置进行量化。量化配置请参考[量化配置协议详解](#5-量化配置协议详解)。
+2. **方式2**：适用于模型或模型量化方式未收录最佳实践库或用户有特殊量化诉求场景，可通过指定 `config` 参数，工具直接使用用户指定的自定义量化配置进行量化。量化配置请参考[量化配置协议详解](#5-量化配置协议详解)。
 
 ## 2. 使用前准备
 
@@ -54,10 +54,10 @@ msmodelslim quant [ARGS]
 |-------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |model_path|必选| 模型路径。<br>类型：Str。                                                                                                                                                                                                                                                                                          |
 |save_path|必选| 量化权重保存路径。<br>类型：Str。                                                                                                                                                                                                                                                                                      |
-|device|可选| 量化设备。<br>1. 类型：Str。 <br>2. 参考值：'npu','npu:0,1,2,3','cpu'。 <br>3. 默认值为"npu"（单设备）。<br>4. 当配置文件启用分布式逐层量化，且指定多个设备时（如：'npu:0,1,2,3'），系统启动DP逐层量化，请确定配置的算法是否支持分布式执行，配置方式及算法支持详见[逐层量化及分布式逐层量化](#41-逐层量化及分布式逐层量化)。                                                                                                    |
+|device|可选| 量化设备。<br>1. 类型：Str。 <br>2. 参考值：'npu','npu --device_id 0 1 2 3','cpu'。 <br>3. 默认值为"npu"（单设备）。<br>4. 当配置文件启用分布式逐层量化，且指定多个设备时（如：'npu --device_id 0 1 2 3'），系统启动DP逐层量化，请确定配置的算法是否支持分布式执行，配置方式及算法支持详见[逐层量化及分布式逐层量化](#41-逐层量化及分布式逐层量化)。                                                                                                    |
 |model_type|必选| 模型名称。<br>1. 类型：Str。 <br>2. 大小写敏感，请参考《[大模型支持矩阵](../knowledge_base/model/README.md)》。                                                                                                                                                                                                  |
-|config_path|与"quant_type"不共存。| 指定配置路径。<br>1. 类型：Str。 <br>2. 配置文件格式为yaml。<br>3. 当前只支持最佳实践库中已验证的配置，若自定义配置，msModelSlim不为量化结果负责。配置指导可参考[量化配置协议详解](#5-量化配置协议详解)。 <br> 4. 用户选用config_path后，tag参数无效。                                                                                                                                              |
-|quant_type|与"config_path"不共存| 量化类型。<br>w4a4, w4a8, w4a4c8, w4a4f8, w4a8c8, w8a16, w8a8, w8a8s, w8a8c8, w8a8f8, w4a4f4, w16a16s，请参考《[大模型支持矩阵](../knowledge_base/model/README.md)》。若未找到匹配的最佳实践配置，将与用户交互，询问是否采用推荐配置，详见[命令格式搜索优先级](#31-命令格式)。                                                                                                                                                                |
+|config|与"quant_type"不共存。| 指定配置路径。<br>1. 类型：Str。 <br>2. 配置文件格式为yaml。<br>3. 当前只支持最佳实践库中已验证的配置，若自定义配置，msModelSlim不为量化结果负责。配置指导可参考[量化配置协议详解](#5-量化配置协议详解)。 <br> 4. 用户选用config后，tag参数无效。                                                                                                                                              |
+|quant_type|与"config"不共存| 量化类型。<br>w4a4, w4a8, w4a4c8, w4a4f8, w4a8c8, w8a16, w8a8, w8a8s, w8a8c8, w8a8f8, w4a4f4, w16a16s，请参考《[大模型支持矩阵](../knowledge_base/model/README.md)》。若未找到匹配的最佳实践配置，将与用户交互，询问是否采用推荐配置，详见[命令格式搜索优先级](#31-命令格式)。                                                                                                                                                                |
 |tag|可选| 校验指定场景标签。<br>1. 类型：Str。<br> 2. 大小写不敏感，支持多个标签，用空格分割；支持用户确定地指定一种场景。<br> 3. 当前支持两类标签，每一类别可指定一种场景：指定使用的推理引擎，包含MindIE、vLLM-Ascend、SGLang等；指定推理用的硬件形态，包含Atlas_A2_Inference、Atlas_A3_Inference、Atlas_A2_Training、Atlas_A3_Training、Atlas_300I_Duo、Ascend_950、CPU等。 <br> 4. 如果未找到已验证当前场景的配置，则与用户交互，询问是否采用匹配 quant_type 或 model_type 的量化配置。 |
 |debug|可选| 启用调试模式。<br>1. 类型：Bool，默认值：False。 <br>2. 启用后会在量化完成时自动保存量化过程中的上下文信息到 `save_path/debug_info` 目录，用于问题排查和算法分析，详见《[调试模式使用指南](usage_debug_mode.md)》。                                                                                                                                                                   |
 |trust_remote_code|可选| 是否信任自定义代码。<br>1. 类型：Bool，默认值：False。 <br>2. 请确保加载的自定义代码文件的安全性，设置为True有安全风险。                                                                                                                                                                                                                                |
@@ -76,7 +76,7 @@ msmodelslim quant \
   --device npu \
   --model_type Qwen2.5-7B-Instruct \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 其中：
@@ -86,7 +86,7 @@ msmodelslim quant \
 - `--device npu` 指定使用单卡NPU进行量化
 - `--model_type Qwen2.5-7B-Instruct` 指定模型类型，需与支持矩阵中的名称一致
 - `--quant_type w8a8` 指定量化类型为W8A8
-- `--trust_remote_code True` 信任远程代码，部分模型需要开启此选项
+- `--trust_remote_code true` 信任远程代码，部分模型需要开启此选项
 
 #### 3.3.2 示例2：使用配置文件参数
 
@@ -122,7 +122,7 @@ msmodelslim quant \
   --device npu --device_id 0 1 2 3 \
   --model_type ${MODEL_TYPE} \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 其中：
@@ -132,7 +132,7 @@ msmodelslim quant \
 - `--device npu --device_id 0 1 2 3` 指定使用4张NPU卡进行分布式量化
 - `${MODEL_TYPE}` 为模型类型，需与支持矩阵中的名称一致
 - `--quant_type w8a8` 指定量化类型为W8A8
-- `--trust_remote_code True` 信任远程代码
+- `--trust_remote_code true` 信任远程代码
 
 >[!NOTE]
 >

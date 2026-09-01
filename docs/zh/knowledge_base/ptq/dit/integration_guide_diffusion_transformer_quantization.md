@@ -544,7 +544,7 @@ msmodelslim quant \
   --device npu \
   --model_type ${MODEL_TYPE} \
   --config ${CONFIG_PATH} \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 **验证要点**：

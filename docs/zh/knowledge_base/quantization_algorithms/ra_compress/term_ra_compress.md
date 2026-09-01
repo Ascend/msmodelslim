@@ -54,7 +54,7 @@ $$
 ### 3.3 关键性质
 
 - **仅支持 LLM**：不支持多模态理解（VLM）与多模态生成（文生图 / 文生视频等）模型；请仅对大语言模型使用 `analyze attn_head --metrics ra_compress`。
-- **必须使用 `calib_dummy.jsonl`**：须通过 `--calib_dataset calib_dummy.jsonl` 显式指定内置合成校准集（`attn_head` 不再设置默认值）；该文件经 tokenizer 后严格对齐到 2500×4 段边界。使用其他校准集不保证筛选效果。
+- **必须使用 `calib_dummy.jsonl`**：须通过 `--calibration_dataset calib_dummy.jsonl` 显式指定内置合成校准集（`attn_head` 不再设置默认值）；该文件经 tokenizer 后严格对齐到 2500×4 段边界。使用其他校准集不保证筛选效果。
 - **attn_head 粒度**：输出 KV head 粒度的入选列表（每层若干 head 索引），而非层粒度排序。
 - **数据依赖强**：内置 `calib_dummy.jsonl` 满足 tokenize 后总长度 ≥ 10000 tokens；长度不足时段位置偏移无意义、得分被置空。
 - **适配器接口可选依赖**：默认匹配 `q_proj` / `k_proj` / `qkv_proj` 命名，若模型命名不同，需在适配器实现 `RaCompressAnalysisInterface`。
@@ -109,9 +109,9 @@ msmodelslim analyze attn_head \
     --model_type Qwen2.5-7B-Instruct \
     --model_path ${model_path} \
     --metrics ra_compress \
-    --calib_dataset calib_dummy.jsonl \
+    --calibration_dataset calib_dummy.jsonl \
     --device npu \
-    --trust_remote_code True \
+    --trust_remote_code true \
     --save_path ./head_result
 ```
 
@@ -177,7 +177,7 @@ class XxxAdapter(RaCompressAnalysisInterface):
 
 ### 6.2 使用限制
 
-- **必须**通过 `--calib_dataset calib_dummy.jsonl` 显式指定内置合成校准集；使用其他校准集不保证筛选效果。
+- **必须**通过 `--calibration_dataset calib_dummy.jsonl` 显式指定内置合成校准集；使用其他校准集不保证筛选效果。
 - 目前仅分析 Transformer 自注意力的 Q / K 投影层（或 QKV 融合层）；其他结构不在范围内。
 - 结果不输出敏感度 Score 排序，只输出入选的 head 索引；ratio 目前使用默认常量（14% / 1%），不通过 YAML 配置。
 - 仅支持 LLM；不支持多模态理解与多模态生成模型。

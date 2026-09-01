@@ -189,7 +189,7 @@ fi
 执行以下命令，使用一键量化功能。系统将自动匹配该模型的最佳实践配置，以 W8A8（将模型权重和激活均量化为 8-bit）模式完成量化：
 
 ```bash
-msmodelslim quant --model_path ~/qwen36_27b_base --save_path ~/qwen36_27b_w8a8 --device npu --model_type Qwen3.6-27B --quant_type w8a8 --trust_remote_code True
+msmodelslim quant --model_path ~/qwen36_27b_base --save_path ~/qwen36_27b_w8a8 --device npu --model_type Qwen3.6-27B --quant_type w8a8 --trust_remote_code true
 ```
 
 量化耗时约 4 分钟，出现如下输出即表示完成：

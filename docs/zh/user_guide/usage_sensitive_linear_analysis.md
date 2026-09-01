@@ -66,7 +66,7 @@ msmodelslim analyze linear \
   --calibration_dataset ${CALIB_DATASET} \    # LLM：.json/.jsonl；VLM：图文目录如 calibImages
   --top_k ${TOPK} \                      # TopK 数量，默认 15；成组模块一并输出时实际条数可能 ≥ top_k
   --device npu \                        # 分析设备：npu、cpu；多卡另加 --device_id 0 1 2 3
-  --trust_remote_code False             # 默认 False；仅可信模型必要时设为 True
+  --trust_remote_code false             # 默认 false；仅可信模型必要时设为 true
 ```
 
 ### 步骤 1：确认推荐指标

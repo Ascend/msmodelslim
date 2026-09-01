@@ -109,9 +109,9 @@ msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${
 | model_path        | 模型路径      | 必选                | 类型：Str                                                                               |
 | save_path         | 调优结果保存路径  | 必选                | 类型：Str                                                                               |
 | config            | 调优配置文件路径  | 必选                | 1. 类型：Str <br>2. 配置文件路径，必须为完整的文件路径 <br>3. 配置文件格式为 YAML，配置协议说明见 《[自动调优配置协议说明](usage_auto_precision_tuning.md)》，示例配置见各策略目录（如 《[Standing High 示例](../knowledge_base/tuning_strategies/standing_high/standing_high.yaml)》） |
-| device            | 量化设备      | 可选                | 1. 类型：Str <br>2. 参考值：'npu','npu:0,1,2,3','cpu' <br>3. 默认值为"npu"（单设备）<br>4. 指定多个设备时（如：'npu:0,1,2,3'），系统可启动分布式逐层量化（DP）。算法支持范围与配置方式详见《[一键量化使用说明](usage_quick_quantization.md#41-逐层量化及分布式逐层量化)》 |
+| device            | 量化设备      | 可选                | 1. 类型：Str <br>2. 参考值：'npu','npu --device_id 0 1 2 3','cpu' <br>3. 默认值为"npu"（单设备）<br>4. 指定多个设备时（如：'npu --device_id 0 1 2 3'），系统可启动分布式逐层量化（DP）。算法支持范围与配置方式详见《[一键量化使用说明](usage_quick_quantization.md#41-逐层量化及分布式逐层量化)》 |
 | model_type        | 模型名称      | 可选                | 1. 类型：Str <br>2. 默认值为"default" <br>3. 大小写敏感，请参考《[大模型支持矩阵](../knowledge_base/model/README.md)》 |
-| timeout           | 调优超时时间    | 可选                | 1. 类型：Str <br>2. 格式：`<天数>D`、`<小时数>H` 或 `<天数>D<小时数>H` <br>3. 示例：'1D'、'2H'、'3D4H' <br>4. 默认值：None（无超时限制） |
+| timeout           | 调优超时时间    | 可选                | 1. 类型：Int（秒） <br>2. 示例：'7200'（2小时）、'3600'（1小时） <br>3. 兼容遗留时长字符串：'1D'、'2H'、'3D4H' <br>4. 默认值：None（无超时限制） |
 | trust_remote_code | 是否信任自定义代码 | 可选                | 1. 类型：Bool，默认值：False <br>2. 请确保加载的自定义代码文件的安全性，设置为True有安全风险。                          |
 | h, help           | 命令行参数帮助信息 | 可选                |               -            |
 
@@ -120,7 +120,7 @@ msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${
 例如，使用自动调优功能对 Qwen3-32B 模型进行调优，调优命令如下。
 
 ``` bash
-msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${CONFIG} --device npu --model_type Qwen3-32B --trust_remote_code True
+msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${CONFIG} --device npu --model_type Qwen3-32B --trust_remote_code true
 ```
 
 用户输入命令后，系统将根据配置文件中指定的精度需求，自动尝试不同的量化配置，并对量化后的模型进行评估，直到找到满足精度要求的量化方案或达到最大迭代次数/超时时间。

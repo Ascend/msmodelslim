@@ -57,7 +57,7 @@ msmodelslim quant \
     --save_path ${SAVE_PATH} \
     --device npu \
     --config ${CONFIG_PATH} \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 **测评命令**：精度测评使用 AISBench 工具完成，使用方法见[AISBench 快速入门](https://github.com/AISBench/benchmark/blob/master/docs/source_zh_cn/get_started/quick_start.md)。本案例使用数据集配置 `aime2025_gen_0_shot_chat_prompt`（AIME25）、`gpqa_gen_0_shot_cot_chat_prompt`（GPQA），数据集说明见 [AIME25](https://github.com/AISBench/benchmark/blob/master/ais_bench/benchmark/configs/datasets/aime2025/README.md)、[GPQA](https://github.com/AISBench/benchmark/blob/master/ais_bench/benchmark/configs/datasets/gpqa/README.md)。

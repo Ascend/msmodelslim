@@ -9,7 +9,7 @@
 - Because newer versions of the Qwen series have been released with more powerful capabilities, the Qwen1.5-14B/32B/72B models have exceeded the maintenance period. Old models in this series will be sunset, and maintenance support for the quantization modes of their live-network versions will be discontinued.
 
 ```bash
-msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type ${MODEL_TYPE} --quant_type ${QUANT_TYPE} --trust_remote_code True
+msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type ${MODEL_TYPE} --quant_type ${QUANT_TYPE} --trust_remote_code true
 ```
 
 - For best practices not marked with "quick quantization", read the best practices page of the corresponding model type. Execute the command in the subdirectory of the model type within the [example](https://gitcode.com/Ascend/msmodelslim/tree/master/example) directory, such as [DeepSeek](https://gitcode.com/Ascend/msmodelslim/tree/master/example/DeepSeek) or [Qwen3](https://gitcode.com/Ascend/msmodelslim/tree/master/example/Qwen).

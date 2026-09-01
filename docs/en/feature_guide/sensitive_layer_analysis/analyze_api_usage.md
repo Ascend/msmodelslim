@@ -244,7 +244,7 @@ msmodelslim analyze \
     --metrics kurtosis \
     --calibration_dataset ${calib_dataset} \
     --top_k 15 \
-    --trust_remote_code False
+    --trust_remote_code false
 ```
 
 ### Output Description

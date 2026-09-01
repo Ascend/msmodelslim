@@ -9,7 +9,7 @@
 - 因 Qwen 系列推出能力更强的新版本，Qwen1.5-14B/32B/72B 模型已超出维护周期，后续将对该系列老模型实施日落处理，其现网版本量化模式不再提供维护支持。
 
 ```bash
-msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type ${MODEL_TYPE} --quant_type ${QUANT_TYPE} --trust_remote_code True
+msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type ${MODEL_TYPE} --quant_type ${QUANT_TYPE} --trust_remote_code true
 ```
 
 - 未标记“一键量化”的最佳实践请阅读对应模型类别的最佳实践页面并在 [example](https://gitcode.com/Ascend/msmodelslim/tree/master/example) 目录下对应模型类别的子目录中执行命令，如 [DeepSeek](https://gitcode.com/Ascend/msmodelslim/tree/master/example/DeepSeek)、[Qwen3](https://gitcode.com/Ascend/msmodelslim/tree/master/example/Qwen)。

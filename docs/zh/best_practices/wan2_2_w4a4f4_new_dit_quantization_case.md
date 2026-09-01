@@ -231,7 +231,7 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2.2-T2V-A14B \
     --config ${YAML_PATH} \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 **输出**：量化权重保存至`${SAVE_PATH}`目录，包含双专家量化权重与描述文件。  

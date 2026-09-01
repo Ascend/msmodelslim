@@ -109,9 +109,9 @@ To control the log level or configure the storage path for the "best practice li
 | model_path        | Specifies the model path.     | Yes               | Type: `str`.                                                                              |
 | save_path         | Specifies the storage path for the tuning results. | Yes               | Type: `str`.                                                                              |
 | config            | Specifies the path to the tuning configuration file. | Yes               | 1. Type: `str`.<br>2. The path must be a complete file path.<br>3. The configuration file must be in YAML format. For details about the configuration protocol, see Automatic Tuning Configuration Protocols. For a sample configuration, see [example](example).|
-| device            | Specifies the quantization device.     | No               | 1. Type: `str`.<br>2. Example values: `'npu'`, `'npu:0,1,2,3'`, `'cpu'`<br>3. Default value: `'npu'` (single device).<br>4. When multiple devices are specified (such as, `'npu:0,1,2,3'`), the system can start distributed layer-wise quantization (DP layer-wise). For details about the algorithm support scope and configuration method, see [Layer-wise and DP Layer-wise Quantization](../quick_quantization_v1/usage.md#layer-wise-and-dp-layer-wise-quantization).|
+| device            | Specifies the quantization device.     | No               | 1. Type: `str`.<br>2. Example values: `'npu'`, `'npu --device_id 0 1 2 3'`, `'cpu'`<br>3. Default value: `'npu'` (single device).<br>4. When multiple devices are specified (such as, `'npu --device_id 0 1 2 3'`), the system can start distributed layer-wise quantization (DP layer-wise). For details about the algorithm support scope and configuration method, see [Layer-wise and DP Layer-wise Quantization](../quick_quantization_v1/usage.md#layer-wise-and-dp-layer-wise-quantization).|
 | model_type        | Specifies the model name.     | No               | 1. Type: `str`.<br>2. Default value: `default`.<br>3. The value is case-sensitive. For details, see [Foundation Model Support Matrix](../../model_support/foundation_model_support_matrix.md).|
-| timeout           | Specifies the tuning timeout duration.   | No               | 1. Type: `str`.<br>2. Format: `D`, `H`, or `DH`.<br>3. Examples: `'1D'`, `'2H'`, and `'3D4H'`.<br>4. Default value: `None` (no timeout limit).|
+| timeout           | Specifies the tuning timeout duration.   | No               | 1. Type: `int` (seconds).<br>2. Examples: `7200` (2 hours), `3600` (1 hour).<br>3. Legacy duration strings such as `'1D'`, `'2H'`, and `'3D4H'` are also accepted.<br>4. Default value: `None` (no timeout limit).|
 | trust_remote_code | Specifies whether to trust custom code.| No               | 1. Type: `bool`. Default value: `False`.<br>2. Setting this parameter to `True` enables the execution of custom code, which may pose security risks. Ensure the loaded custom code file is secure.                         |
 | h, help           | Displays help information for command-line options.| No               |               -            |
 
@@ -120,7 +120,7 @@ To control the log level or configure the storage path for the "best practice li
 The following example shows how to use the automatic tuning feature to tune the Qwen3-32B model:
 
 ``` bash
-msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${CONFIG} --device npu --model_type Qwen3-32B --trust_remote_code True
+msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${CONFIG} --device npu --model_type Qwen3-32B --trust_remote_code true
 ```
 
 After you run the command, the system automatically attempts different quantization configurations based on the accuracy requirements specified in the configuration file, and evaluates the quantized model until a quantization solution that meets the accuracy requirements is found or the maximum number of iterations or timeout duration is reached.

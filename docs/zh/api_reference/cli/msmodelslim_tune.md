@@ -17,7 +17,7 @@ msmodelslim tune --model_path <model_path> --save_path <save_path> --config <con
 - 尖括号内为需替换的值，方括号内为可选参数。
 - `--model_path`、`--save_path`、`--config` 为必选参数。
 - `--config` 是必选的调优 YAML 路径；与一键量化命令的 `--config` 同名，但语义不同（一键量化的 `--config` 可选）。
-- `--timeout` 为时长字符串，如 `2H`、`3D4H`。
+- `--timeout` 为整数秒（如 `7200` 表示 2 小时）；兼容遗留时长字符串如 `2H`、`3D4H`。
 - `--trust_remote_code` 是可选值布尔参数：不带值传入即开启（等价 `true`），或跟 `true`/`false`（大小写不敏感，兼容遗留 `True`/`False`、`yes`/`no`、`on`/`off`）。
 - 本命令无位置参数。本语法摘要用于说明参数结构，不作为可复制命令；可复制命令见「使用示例」。
 
@@ -31,11 +31,12 @@ msmodelslim tune --model_path <model_path> --save_path <save_path> --config <con
 | `--config` | 无 | `string` | 单值 | 必选 | 无 | 可读 YAML 文件路径 | 调优配置 YAML，含 `strategy` 与 `evaluation` 字段。 |
 | `--device` | 无 | `string` | 单值 | 可选 | `npu` | `npu`、`cpu` | 运行设备类型；多卡索引请用 `--device_id` 指定。 |
 | `--device_id` | 无 | `list` | 一次接收多个值，空格分隔 | 可选 | 无 | 非负整数列表，如 `0` 或 `0 1 2 3` | 设备索引，用于指定多个 NPU 设备。 |
-| `--timeout` | 无 | `string` | 单值 | 可选 | 无（不限时） | 形如 `1D2H30M15S`，单位固定顺序 D/H/M/S，可省略任意一段（如 `1D2H`、`30M`、`10S`），至少含一个单位，字母大写 | 调优墙钟超时；到达超时时间后停止本次调优。 |
+| `--timeout` | 无 | `int`（秒） | 单值 | 可选 | 无（不限时） | 整数秒，如 `7200`（2 小时）、`3600`（1 小时）；兼容遗留时长字符串（如 `1D2H30M15S`，单位固定顺序 D/H/M/S） | 调优墙钟超时；到达超时时间后停止本次调优。 |
 | `--trust_remote_code` | 无 | `bool` | 可选值（不带值传入即开启，或跟 `true`/`false`） | 可选 | `false` | `true`/`false`（大小写不敏感；兼容 `True`/`False`、`yes`/`no`、`on`/`off`） | 是否信任并执行模型目录中的自定义 Python 代码；仅在确认代码来源可信时开启。 |
 | `--log_level` | 无 | `string` | 单值 | 可选 | `info` | `debug`、`info`、`warning`、`error` | 日志级别。 |
 | `-v` / `--verbose` | 无 | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 提高输出详细程度（等价 `--log_level debug`）。 |
 | `-q` / `--quiet` | 无 | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 抑制非错误输出（等价 `--log_level error`）。 |
+| `-V` / `--version` | 无 | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 显示版本信息后退出（顶层全局参数，可在任意子命令后使用，如 `msmodelslim tune --version`）。 |
 
 ## 4. 参数关系
 
@@ -80,12 +81,12 @@ msmodelslim tune \
   --model_path "${MODEL_PATH}" \
   --save_path "${SAVE_PATH}" \
   --config "${CONFIG_PATH}" \
-  --timeout 2H \
+  --timeout 7200 \
   --device npu \
   --device_id 0 1 2 3
 ```
 
-`--timeout 2H` 表示最多运行2H；`--device_id 0 1 2 3` 使用4个 NPU 设备。
+`--timeout 7200` 表示最多运行2H；`--device_id 0 1 2 3` 使用4个 NPU 设备。
 
 ## 8. 退出码与异常处理
 

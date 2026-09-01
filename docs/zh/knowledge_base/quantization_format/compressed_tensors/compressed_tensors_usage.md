@@ -24,8 +24,8 @@
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 浮点模型目录 | 本地或 ModelScope/HF | 可被目标 Transformers 版本加载 | `from_pretrained` 可成功加载 |
-| 输入 | 量化 YAML / 最佳实践 | 最佳实践库或自定义 `--config` | 含 `spec.save` 且 `type` 为 `compressed_tensors` | 字段通过配置协议校验 |
+| 输入 | 浮点模型目录 | 本地或 ModelScope/HF | 可被目标 Transformers 版本加载 | `from_pretrained` 冒烟通过 |
+| 输入 | 量化 YAML / 最佳实践 | 最佳实践库或自定义 `config` | 含 `spec.save` 且 `type` 为 `compressed_tensors` | 字段通过配置协议校验 |
 | 交付件 | compressed-tensors 权重目录 | `${SAVE_PATH}` | 含注入 `quantization_config` 的 `config.json` 与 `model*.safetensors` | 见《[compressed-tensors](term_compressed_tensors.md#export-artifacts)》导出产物 |
 
 ## 4. 流程总览
@@ -114,7 +114,7 @@ spec:
      --device npu \
      --model_type ${MODEL_TYPE} \
      --config ${CONFIG_PATH} \
-     --trust_remote_code False
+     --trust_remote_code true
    ```
 
 3. 核对 `${SAVE_PATH}` 中至少存在：

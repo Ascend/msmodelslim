@@ -63,9 +63,9 @@ msmodelslim analyze attn_head \
   --model_type ${MODEL_TYPE} \          # 已注册或支持矩阵中的模型名，大小写敏感
   --model_path ${MODEL_PATH} \          # 浮点权重目录
   --metrics ra_compress \               # 分析指标，固定为 ra_compress
-  --calib_dataset calib_dummy.jsonl \   # 须显式指定为 calib_dummy.jsonl（合成重复段校准集，tokenize 后总长度 ≥ 10000）
+  --calibration_dataset calib_dummy.jsonl \   # 须显式指定为 calib_dummy.jsonl（合成重复段校准集，tokenize 后总长度 ≥ 10000）
   --device npu \                        # 分析设备：npu、cpu；多卡另加 --device_id 0 1 2 3
-  --trust_remote_code False \           # 默认 False；仅可信模型必要时设为 True
+  --trust_remote_code false \           # 默认 false；仅可信模型必要时设为 true
   --save_path ${SAVE_PATH}              # 可选；指定则保存 head.pt，不指定仅打印到控制台
 ```
 
@@ -93,7 +93,7 @@ msmodelslim analyze attn_head \
 
 1. 从 [ModelScope](https://www.modelscope.cn/)、[Hugging Face](https://huggingface.co/) 或团队内部模型存放位置获取完整权重到本地目录；具体下载方式以对应社区或仓库文档为准。
 2. 核对目录含配置、权重分片及 tokenizer 等附属文件。若官方页面提供文件校验值（如 MD5/SHA256）或明确的版本号/提交号，与本地下载结果比对一致即可。
-3. 准备校准集：`ra_compress` 算法要求校准数据 tokenize 后总长度 ≥ **10000 tokens**（即 `DUMMY_INPUT_LENGTH=2500` × `REPET_TIMES=4` 段重复）。工具内置 [`calib_dummy.jsonl`](../../../lab_calib/) 已满足此要求，`attn_head` 子命令须在命令行显式指定 `--calib_dataset calib_dummy.jsonl`（该子命令不再为此场景设置默认值）。也可使用自有校准集，但须确保 tokenize 后的 token 总数 ≥ 10000，否则分析将跳过分数计算并返回空结果。
+3. 准备校准集：`ra_compress` 算法要求校准数据 tokenize 后总长度 ≥ **10000 tokens**（即 `DUMMY_INPUT_LENGTH=2500` × `REPET_TIMES=4` 段重复）。工具内置 [`calib_dummy.jsonl`](../../../lab_calib/) 已满足此要求，`attn_head` 子命令须在命令行显式指定 `--calibration_dataset calib_dummy.jsonl`（该子命令不再为此场景设置默认值）。也可使用自有校准集，但须确保 tokenize 后的 token 总数 ≥ 10000，否则分析将跳过分数计算并返回空结果。
 
 **输出**：浮点模型目录与校准集路径（或工具内置校准集短名称）。
 
@@ -122,7 +122,7 @@ msmodelslim analyze attn_head \
 
 - 已完成步骤 1～3 的指标、权重与模型适配确认。
 - `trust_remote_code` 默认 `False`；仅当模型必须执行仓库内自定义代码且来源可信时设为 `True`。
-- `--calib_dataset` 须显式指定为 `calib_dummy.jsonl`（`attn_head` 子命令不再为此场景设置默认值）；如使用自定义校准集，请确认 token 长度满足要求（见步骤 2）。
+- `--calibration_dataset` 须显式指定为 `calib_dummy.jsonl`（`attn_head` 子命令不再为此场景设置默认值）；如使用自定义校准集，请确认 token 长度满足要求（见步骤 2）。
 
 **操作**：
 
@@ -133,9 +133,9 @@ msmodelslim analyze attn_head \
   --model_type Qwen2.5-7B-Instruct \
   --model_path /data/models/Qwen/Qwen2.5-7B-Instruct/ \
   --metrics ra_compress \
-  --calib_dataset calib_dummy.jsonl \
+  --calibration_dataset calib_dummy.jsonl \
   --device npu \
-  --trust_remote_code True \
+  --trust_remote_code true \
   --save_path ./head_result
 ```
 

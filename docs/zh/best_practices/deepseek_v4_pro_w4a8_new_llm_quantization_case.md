@@ -266,8 +266,8 @@ msmodelslim quant \
 - `--model_path`：原始浮点模型权重目录路径。
 - `--save_path`：量化权重保存目录路径。
 - `--model_type`：模型类型，固定为 `DeepSeek-V4-Pro`。
-- `--config`：量化配置文件路径，直接指定 [deepseek_v4_pro_w4a8.yaml](../../../lab_practice/deepseek_v4/deepseek_v4_pro_w4a8.yaml)，需要根据实际 msmodelslim 的安装路径填写。
-- `--device npu --device_id 0 1 2 3 4 5 6 7`：指定 8 张 NPU（`--device` 指定设备类型，`--device_id` 指定设备编号列表）；W4A8 量化算法较复杂，使用多卡可缩短量化耗时。
+- `--quant_type`：量化策略类型，`w4a8` 表示权重 INT4 + 激活 INT8。
+- `--device`：指定量化使用的 NPU 设备，W4A8 量化算法较复杂，单卡量化耗时较长，建议使用 8 卡（`npu --device_id 0 1 2 3 4 5 6 7`）进行多卡量化以缩短耗时。
 - `--trust_remote_code`：信任自定义模型代码（请确保代码来源可靠）。
 
 DeepSeek-V4-Pro 已在 `model.py` 中设置 `USE_DP_MODE=True`，并在 `model_adapter.py` 中实现分布式同步和 EP 本地专家范围处理，因此无需额外适配即可按上述命令启动多卡量化。量化日志需进一步确认实际出现多卡分布式启动和各 rank 初始化信息。

@@ -214,7 +214,7 @@ flowchart LR
 
 **通过条件**：日志出现 `Starting distributed execution with N devices`（N ≥ 2），各 rank 打印 `Rank i/N initialized on device ...`。
 
-**异常处置**：若日志显示回退单卡（`Number of devices <= 1, falling back to single-device execution`），检查是否用 `--device_id` 传入了多个索引（如 `--device_id 0 1 2 3 4 5 6 7`）。
+**异常处置**：若日志显示回退单卡（`Number of devices <= 1, falling back to single-device execution`），检查是否用 `--device_id` 传入了多个索引（如 `--device_id 0 1 2 3 4 5 6 7`）；多模态 VLM 服务不支持多卡（见适用范围），请确认目标服务为 `modelslim_v1`。
 
 ## 6. 验收条件
 

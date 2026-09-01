@@ -69,7 +69,7 @@ msmodelslim quant \
   --device_id 0 \                       # 设备索引；多卡示例：--device_id 0 1 2 3
   --model_type ${MODEL_TYPE} \          # 已注册或支持矩阵中的模型名，大小写敏感
   --config ${CONFIG_PATH} \             # 本指南步骤 3 编写的量化配置 YAML
-  --trust_remote_code False             # 仅可信模型必要时设为 True
+  --trust_remote_code false             # 仅可信模型必要时设为 true
 ```
 
 ### 执行前预检
@@ -195,7 +195,7 @@ msmodelslim quant \
   --device_id 0 \
   --model_type ${MODEL_TYPE} \
   --config ${CONFIG_PATH} \
-  --trust_remote_code False
+  --trust_remote_code false
 ```
 
 参数说明：

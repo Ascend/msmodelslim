@@ -34,7 +34,7 @@
 | --- | --- | --- | --- | --- |
 | 输入 | 浮点权重 | [Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3) | 权重文件完整 | 下载完成且哈希值匹配 |
 | 交付件 | 模型适配器代码 | [`msmodelslim/model/kimi_k3/`](../../../msmodelslim/model/kimi_k3/) | 适配器需实现量化流水线所需接口 | 命令行指定 `--model_type Kimi-K3` 可命中适配器 |
-| 交付件 | 量化最佳实践 | [`lab_practice/kimi_k3/kimi_k3_w4a8.yaml`](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | 遵循[量化配置协议](../user_guide/usage_quick_quantization.md#5-量化配置协议详解) | 命令行参数 `--config_path` 指定量化配置文件 |
+| 交付件 | 量化最佳实践 | [`lab_practice/kimi_k3/kimi_k3_w4a8.yaml`](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | 遵循[量化配置协议](../user_guide/usage_quick_quantization.md#5-量化配置协议详解) | 命令行参数 `--config` 指定量化配置文件 |
 | 交付件 | 量化权重目录 | 命令行参数 `--save_path` 指定保存位置 | 遵循[AscendV1 格式](../knowledge_base/quantization_format/ascendv1/ascendv1_usage.md) | 量化权重精度测试达标 |
 
 ## 4. 操作步骤
@@ -130,7 +130,7 @@
        --device npu --device_id 0 1 2 3 4 5 6 7 \
        --model_type Kimi-K3 \
        --config ${YAML_PATH} \
-       --trust_remote_code True
+       --trust_remote_code true
    ```
 
 **输出**：
