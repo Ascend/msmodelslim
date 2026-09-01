@@ -1,42 +1,63 @@
-# LLM 模型接入案例——以 DeepSeek V4 为例
+# LLM 模型接入量化流程指南
 
 ## 1. 适用范围
 
-本文档面向需要将**新的 Decoder-only 大语言模型**接入 msModelSlim 量化流程的开发人员。通过分析 DeepSeek V4 模型适配器的完整实现，展示从创建适配器到注册模型、执行量化的全流程。
+本文档面向需要将**新的 Decoder-only 大语言模型**（LLM）接入 msModelSlim 量化流程的开发人员，介绍从创建模型适配器、实现组件接口、注册模型到执行量化验证的完整接入流程。
 
-**目标**：掌握 LLM 模型接入 msModelSlim 的代码开发规范，理解模型适配器（Model Adapter）的设计模式与接口实现方法。
+**适用对象**：负责新 LLM 模型接入的模型开发或量化工程师。
 
-**覆盖流程**：模型适配器创建 → 组件接口实现 → 配置注册 → YAML 量化配置 → 量化验证
+**适用场景**：
 
-**关联流程**：[LLM 量化使用指南](usage_large_language_model_quantization.md)
+- 目标 LLM 不在支持矩阵中，需要新增 `model_type` 并打通量化链路；
+- 已有 `model_type` 需要扩展新的量化模式（如从 W8A8 动态扩展至 W4A16）。
 
-## 2. 环境与版本
+**不适用场景**：
 
-| 项 | 版本或配置 |
-| --- | --- |
-| 产品形态 | Atlas 800I A2 / Atlas A3（不限定） |
-| CANN | 参考安装指南 |
-| PyTorch | >= 2.7.1 (推荐使用镜像配置2.10.0) |
-| Transformers | == 4.48.2 |
-| 其他依赖 | 参考requirements.txt |
+- 模型已在支持矩阵中且目标量化模式已验证：请直接按《[LLM 量化使用指南](usage_large_language_model_quantization.md)》执行，无需编写适配器；
+- 多模态模型（VLM / DiT）的接入：见《[VLM 模型接入量化流程指南](../vlm/integration_guide_vision_transformer_quantization.md)》与《[DiT 模型接入量化流程指南](../dit/integration_guide_diffusion_transformer_quantization.md)》。
 
-**本次前置事实**：
+> 本文档只讲「接入新模型的开发流程」。基础接口概念与模型适配器设计，请先阅读《[LLM 大模型接入指南](../../model/integrating_models.md)》。
 
-- msModelSlim 工具已安装并可正常执行 `msmodelslim --help`
-- 目标模型的浮点权重已下载到本地（HuggingFace 格式）
-- 目标模型在已有支持矩阵之外，需要新增适配
+## 2. 流程关系与前置条件
+
+**上级流程**：先阅读《[LLM 大模型接入指南](../../model/integrating_models.md)》，理解接口与模型适配器的基本概念后，再进入本接入流程。
+
+**前置条件**：
+
+- msModelSlim 已安装，可执行 `msmodelslim --help`
+- 目标 LLM 浮点权重已下载到本地（HuggingFace 格式），可被目标 Transformers 版本加载
+- 校准数据已准备（文本校准集，如 `mix_calib.jsonl`）
+- 已明确目标量化场景（如 W8A8 动态），并知晓其 YAML 配置协议（`apiversion: modelslim_v1`）
+
+**后续操作**：接入并验证通过后，进入《[LLM 量化使用指南](usage_large_language_model_quantization.md)》调整量化参数，或进入正式量化部署。
 
 ## 3. 输入和交付件
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 浮点模型权重 | `${MODEL_PATH}` | HuggingFace 格式，含 `config.json` 及 `*.safetensors` | 可被目标 Transformers 版本加载 |
-| 输入 | 校准数据集 | `lab_calib/` 或用户指定 | JSONL 格式，每条含文本 prompt | 至少 128条样本 |
-| 交付件 | 模型适配器代码 | `msmodelslim/model/{model_name}/` | Python 源码，含 loader、adapter | 代码审查通过 |
-| 交付件 | 量化配置 | `lab_practice/{model_name}/` | YAML 格式 | 配置校验通过 |
-| 交付件 | 量化权重 | `${SAVE_PATH}` | 含 `quant_model_description.json` 及 `*.safetensors` | 推理冒烟通过 |
+| 输入 | 浮点 LLM 权重目录 | 本地路径（从 ModelScope / HuggingFace 下载） | HuggingFace 格式，含 `config.json` 及权重分片 | 可被目标 Transformers 版本加载 |
+| 输入 | 校准数据集 | 本地路径 | 文本校准数据（如 `mix_calib.jsonl`） | 至少 128 条样本，可被 `handle_dataset` 解析 |
+| 交付件 | 模型适配器代码 | `msmodelslim/model/{model_name}/` | Python 源码，含 loader、model_adapter 等 | 代码审查通过 |
+| 交付件 | 模型注册配置 | `config/config.ini` | `[ModelAdapter]`、`[ModelAdapterEntryPoints]` 等段落 | key 一致，`msmodelslim` 可通过 `--model_type` 创建适配器 |
+| 交付件 | 量化配置 | `lab_practice/{model_name}/` | YAML 格式（`apiversion: modelslim_v1`） | 配置校验通过 |
+| 交付件 | 量化权重目录 | `--save_path` 指定路径 | 含 `quant_model_description.json` 及权重分片 | 推理冒烟通过 |
 
-## 4. 操作步骤
+## 4. 流程总览
+
+```mermaid
+flowchart LR
+    A[分析模型结构] --> B[创建适配器目录]
+    B --> C[实现 Loader 加载器]
+    C --> D[定义适配器类]
+    D --> E[实现核心接口方法]
+    E --> F[注册模型到配置]
+    F --> G[创建 YAML 配置]
+    G --> H[执行量化验证]
+```
+
+## 5. 操作步骤
+
+以下以 W8A8 动态量化场景（简称“场景示例”）为例，给出接入新 LLM 的通用步骤。其余量化场景（W4A16、W8A8 静态等）接入流程一致，仅 YAML 配置不同，参数选择参考《[LLM 量化使用指南](usage_large_language_model_quantization.md)》。
 
 ### 步骤 1：分析模型结构，确定适配策略
 
@@ -45,21 +66,14 @@
 **操作**：
 
 1. **分析模型架构**：查阅目标模型的官方实现，了解其结构组成。Decoder-only LLM 通常由 Embedding、多个 Decoder Layer、Norm 和 LM Head 组成。
-2. **确定加载策略**：确认模型是否支持 `from_pretrained` 加载。若支持，可直接使用 `TransformersModel` 基类；若不支持，需自定义模型定义（如 DeepSeek V4 自定义 `Transformer` 类）。
-3. **确定量化策略**：根据模型规模和推理场景，确定是否需要逐层量化（Layer-wise）、MTP 支持、异常值抑制算法等。
+2. **确定加载策略**：确认模型是否支持 `from_pretrained` 加载。若支持，可直接使用 `TransformersModel` 基类；若不支持，需自定义模型定义。
+3. **确定量化策略**：根据模型规模和推理场景，确定是否需要逐层量化（Layer-wise）、是否包含 MTP / MoE 等特殊结构，以及权重是否需要反量化。
 
 **分析要点**：
 
 - Decoder Layer 结构：Attention 和 FFN 的子模块命名
 - 特殊结构：MTP（Multi-Token Prediction）、MoE（Mixture of Experts）、压缩注意力等
 - 权重格式：FP8 权重是否需要反量化
-
-**DeepSeek V4 结构特点**：
-
-- 自定义模型定义（非 Transformers 标准库），继承 `Transformer` 类
-- 支持 MTP（Multi-Token Prediction）结构
-- 使用压缩注意力（Compressed Attention）机制
-- 权重可能为 FP8 格式，需调用 `auto_dequant_state_dict` 反量化
 
 **输出**：模型结构分析文档，确定适配策略
 
@@ -81,17 +95,7 @@ msmodelslim/model/{model_name}/
 └── convert_fp8_to_bf16.py  # （可选）FP8 权重转换
 ```
 
-**DeepSeek V4 参考结构**：
-
-```text
-msmodelslim/model/deepseek_v4/
-├── __init__.py
-├── model_adapter.py     # DeepSeekV4ModelAdapter 类
-├── loader.py            # DeepseekV4AdapterLoader 类
-├── model.py             # Transformer, ModelArgs, Block 等
-├── mtp_quant_module.py  # MTP 层量化支持
-└── convert_fp8_to_bf16.py  # FP8→BF16 反量化
-```
+> 文件是否必需取决于目标模型的实际结构：基于 Transformers 标准库的模型通常只需 `model_adapter.py` 与 `loader.py`；自定义模型定义、MTP 支持、FP8 转换等按需添加。
 
 **输出**：模型适配器目录结构创建完成
 
@@ -110,13 +114,6 @@ from msmodelslim.model.plugin_factory.base_loader import BaseModelAdapterLoader
 
 class {ModelName}AdapterLoader(BaseModelAdapterLoader):
     ADAPTER_CLASS_PATH = "msmodelslim.model.{model_name}.model_adapter:{ModelName}ModelAdapter"
-```
-
-**DeepSeek V4 参考**：`msmodelslim/model/deepseek_v4/loader.py:7`
-
-```python
-class DeepseekV4AdapterLoader(BaseModelAdapterLoader):
-    ADAPTER_CLASS_PATH = "msmodelslim.model.deepseek_v4.model_adapter:DeepSeekV4ModelAdapter"
 ```
 
 **输出**：加载器文件创建完成
@@ -145,29 +142,16 @@ from msmodelslim.utils.logging import logger_setter
 
 @logger_setter("msmodelslim.model.{model_name}")
 class {ModelName}ModelAdapter(
-    TransformersModel,
-    ModelSlimPipelineInterfaceV1,  # 必需：量化调度支持
-    IterSmoothInterface,           # 可选：异常值抑制
-    FlexSmoothQuantInterface,      # 可选：Flex Smooth
-    QuaRotInterface,               # 可选：QuaRot 旋转
+    TransformersModel,               # 继承自 BaseModelAdapter，基于 Transformers 模型通用特性简化接口实现
+    ModelSlimPipelineInterfaceV1,    # 必需：量化调度支持
+    IterSmoothInterface,             # 可选：异常值抑制
+    FlexSmoothQuantInterface,        # 可选：Flex Smooth
+    QuaRotInterface,                 # 可选：QuaRot 旋转
 ):
     ...
 ```
 
-**DeepSeek V4 参考**：`msmodelslim/model/deepseek_v4/model_adapter.py:52-61`
-
-```python
-@logger_setter("msmodelslim.model.deepseek_v4")
-class DeepSeekV4ModelAdapter(
-    TransformersModel,
-    ModelInfoInterface,
-    ModelSlimPipelineInterfaceV1,
-    IterSmoothInterface,
-    FlexSmoothQuantInterface,
-    QuaRotInterface,
-    AscendV1SaveInterface,
-):
-```
+> 若目标模型为自定义实现（无法直接使用 `TransformersModel`），需继承 `BaseModelAdapter` 并自行实现 config 加载、权重获取等底层逻辑。
 
 **输出**：适配器类骨架定义完成
 
@@ -289,9 +273,19 @@ def generate_model_forward(self, model: nn.Module, inputs: Any) -> Generator[Pro
         args = (h, *args[1:])
 ```
 
-#### 5.6 可选：实现异常值抑制接口
+#### 5.6 `enable_kv_cache`——控制 KVCache
 
-若需要支持 IterSmooth / FlexSmoothQuant 等异常值抑制算法，需实现 `get_adapter_config_for_subgraph`，定义 LayerNorm 与 Linear 层的融合映射关系：
+实现是否启用 KVCache 的控制，可在逐层前向时禁用缓存以减少显存占用。基于 Transformers 的模型可直接使用基类默认实现：
+
+```python
+def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
+    # 描述是否禁用 KVCache，可减少显存
+    return self._enable_kv_cache(model, need_kv_cache)  # TransformersModel 默认实现
+```
+
+#### 5.7 可选：实现异常值抑制接口
+
+若需要支持 IterSmooth / FlexSmoothQuant 等异常值抑制算法，需实现 `get_adapter_config_for_subgraph`，定义 Norm-Linear、Up-Down 等子图的融合映射关系：
 
 ```python
 def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
@@ -300,7 +294,7 @@ def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
         # Norm-Linear 融合
         input_norm_mapping = MappingConfig(
             source=f"layers.{layer_idx}.attn_norm",
-            targets=[f"layers.{layer_idx}.attn.wq_a", f"layers.{layer_idx}.attn.wkv"],
+            targets=[f"layers.{layer_idx}.attn.wq", f"layers.{layer_idx}.attn.wk", f"layers.{layer_idx}.attn.wv"],
         )
         adapter_config.append(AdapterConfig(
             subgraph_type="norm-linear", mapping=input_norm_mapping
@@ -308,8 +302,8 @@ def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
 
         # Up-Down 融合（FFN）
         up_down_mapping = MappingConfig(
-            source=f"layers.{layer_idx}.ffn.experts.expert.w3",
-            targets=[f"layers.{layer_idx}.ffn.experts.expert.w2"],
+            source=f"layers.{layer_idx}.ffn.w3",
+            targets=[f"layers.{layer_idx}.ffn.w2"],
         )
         adapter_config.append(AdapterConfig(
             subgraph_type="up-down", mapping=up_down_mapping
@@ -317,7 +311,29 @@ def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
     return adapter_config
 ```
 
+> 融合映射中的模块名（`attn_norm`、`attn.wq`、`ffn.w3` 等）仅为示意，需替换为目标模型的真实子模块路径。
+
+#### 5.8 可选：支持自动调优与敏感层分析
+
+使用《[自动调优使用说明](../../../user_guide/usage_auto_precision_tuning.md)》且策略需**自动生成回退候选**时（`standing_high` 始终；`binary_fallback` 在未配置非空 `rollback_candidates` 时；`standing_high_with_experience` 委托 Standing High 执行），模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**：
+
+```python
+from msmodelslim.model.interface_hub import ModelSlimPipelineInterfaceV1
+```
+
+该接口与 CLI **`msmodelslim analyze`** 及 `PipelineAnalysisService` 的模型协议相同，需实现 `init_model`、`handle_dataset`、`generate_model_visit`、`generate_model_forward` 等方法。调优策略内由 `PipelineAnalysisService` 调用上述方法，**不会在策略侧预先 `load_model`**。
+
+| 调优策略 | 敏感层分析 | 额外接口 |
+|----------|------------|----------|
+| `standing_high` | 始终自动运行 | 无 |
+| `binary_fallback` | 配置了非空 `rollback_candidates` 时跳过 | 无 |
+| `standing_high_with_experience` | 委托 Standing High | **`StandingHighWithExperienceInterface`**（`load_model`，离群值抑制能力探测）；**`ModelSlimPipelineInterfaceV1` 须单独继承** |
+
+详见《[自动调优使用说明](../../../user_guide/usage_auto_precision_tuning.md)》及各策略算法文档。
+
 **输出**：适配器接口方法实现完成
+
+**通过条件**：`handle_dataset`、`init_model`、`generate_model_visit`、`generate_decoder_layer`、`generate_model_forward`、`enable_kv_cache` 均已实现；逐层加载与 hook 捕获首层输入的关键策略生效。
 
 ### 步骤 6：注册模型到配置
 
@@ -341,18 +357,7 @@ def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
 {model_name} = {"transformers": "==x.x.x"}
 ```
 
-**DeepSeek V4 参考**：
-
-```ini
-[ModelAdapter]
-deepseek_v4 = DeepSeek-V4-Flash, DeepSeek-V4-Pro
-
-[ModelAdapterEntryPoints]
-deepseek_v4 = msmodelslim.model.deepseek_v4.loader:DeepseekV4AdapterLoader
-
-[ModelAdapterDependencies]
-deepseek_v4 = {"transformers": "==4.48.2"}
-```
+> 注意 `ModelAdapter` 与 `ModelAdapterEntryPoints` 中的 key 需要保持一致，否则配置不生效。
 
 **输出**：模型注册完成
 
@@ -362,7 +367,7 @@ deepseek_v4 = {"transformers": "==4.48.2"}
 
 **操作**：
 
-在 `lab_practice/{model_name}/` 下创建 YAML 文件，定义量化方案：
+在 `lab_practice/{model_name}/` 下创建 YAML 文件，定义量化方案。以下为 W8A8 动态量化示例：
 
 ```yaml
 # lab_practice/{model_name}/{model_name}_{quant_type}.yaml
@@ -384,7 +389,8 @@ spec:
       include:
         - "*"
       exclude:
-        - "*gate*"  # 排除 router 等特殊层
+        - "*gate*"             # 排除 router 等特殊层
+        - "*down_proj*"        # 可选：回退 down_proj 层以提升精度（W8A8 动态常见做法）
 
   dataset: mix_calib.jsonl
   save:
@@ -392,7 +398,7 @@ spec:
       part_file_size: 4
 ```
 
-**DeepSeek V4 参考**：`lab_practice/deepseek_v4/deepseek_v4_flash_w8a8.yaml`
+> 各配置项含义与选择参考《[LLM 量化使用指南](usage_large_language_model_quantization.md#步骤-3选择并调整参数)》。
 
 **输出**：量化配置文件创建完成
 
@@ -421,34 +427,33 @@ msmodelslim quant \
 
 **输出**：量化验证通过
 
-## 5. 结果与经验
+**通过条件**：模型加载、校准、量化、保存均无报错，且输出目录包含 `quant_model_description.json`。
 
-### 5.1 关键结果汇总
+## 6. 验收条件
 
-| 步骤 | 关键操作 | 指标 | 变化 | 备注 |
-| --- | --- | --- | --- | --- |
-| 适配器创建 | 定义 adapter 类，继承 TransformersModel + PipelineInterfaceV1 | 代码行数 | 基础适配器约300行 | 不含可选接口实现 |
-| 模型注册 | config.ini 配置 ModelAdapter + EntryPoints | 配置项 | 新增2项 | 含版本依赖声明 |
-| 核心接口实现 | handle_dataset / init_model / generate_model_visit/forward | 接口方法 | 4个核心方法 | 逐层加载策略节省显存 |
-| YAML 配置 | 创建量化配置 | 配置项 | 1个YAML文件 | 支持多种量化方案 |
+- 适配器代码可被 `msmodelslim` 通过 `--model_type` 匹配并创建；
+- 使用步骤 7 的 YAML 配置执行 `msmodelslim quant` 成功，输出目录包含 `quant_model_description.json`；
+- 量化产物冒烟推理通过（可选）。
 
-### 5.2 经验总结
+## 7. 异常处置
 
-1. **逐层加载策略**：对于大模型，在 `init_model` 中仅加载第一层 Decoder Layer，其余层在 `generate_decoder_layer` 中按需加载，可显著降低显存占用。适用边界：所有 Decoder-only 架构，需确保 `__class__` 一致性。
-2. **Hook 获取首层输入**：使用 `register_forward_pre_hook` 配合 `TransformersForwardBreak` 中断首次前向传播，可获取第一层 Decoder Layer 的输入参数，适用于所有逐层量化场景。
-3. **自定义模型 vs Transformers 标准库**：若模型使用 Transformers 标准库实现，可直接继承 `TransformersModel` 节省工作量；若模型为自定义实现（如 DeepSeek V4），需自行实现 `_load_config`、`get_state_dict` 等底层方法。
-4. **接口按需实现**：`ModelSlimPipelineInterfaceV1` 是唯一必需接口，其余算法接口（如 `IterSmoothInterface`、`QuaRotInterface`）仅在需要对应算法时实现，避免过度设计。
+| 现象 | 处理方向 |
+| --- | --- |
+| 模型加载失败 | 检查 `config.ini` 中 ModelAdapter 与 ModelAdapterEntryPoints 的 key 是否一致；若不一致，配置不生效 |
+| 显存不足（OOM） | 确认 `init_model` 中 `num_hidden_layers` 临时设置为 1；确认 `generate_decoder_layer` 实现了按需加载而非全量加载；确认指定 NPU 未被其他任务占用 |
+| 权重加载错误 | 若模型使用 FP8 权重，需在加载后调用反量化函数；检查 `get_state_dict` 的 prefix 是否与权重文件中的 key 一致 |
+| 校准数据格式错误 | 确认 `handle_dataset` 返回的数据格式与模型的 forward 签名匹配 |
 
-## 6. 异常处理
+## 8. 接口文档列表
 
-- **模型加载失败**：检查 `config.ini` 中 ModelAdapter 和 ModelAdapterEntryPoints 的 key 是否一致。若不一致，配置不生效。
-- **显存不足（OOM）**：确认 `init_model` 中将 `num_hidden_layers` 临时设置为 1；确认 `generate_decoder_layer` 实现了按需加载而非全量加载。此外，若仍遇到显存不足，请确认 `--device npu --device_id 0` 指定的 NPU 未被其他任务占用。
-- **权重加载错误**：若模型使用 FP8 权重，需在加载后调用反量化函数；检查 `get_state_dict` 的 prefix 是否与权重文件中的 key 一致。
-- **校准数据格式错误**：确认 `handle_dataset` 返回的数据格式与模型的 forward 签名匹配。
+| 接口或能力 | 简述 | 链接 |
+| --- | --- | --- |
+| Interface Hub | 量化机制与算法组件对模型的接口定义汇总 | 《[Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py)》 |
+| 通用接入指南 | 基础接口概念与模型适配器设计 | 《[LLM 大模型接入指南](../../model/integrating_models.md)》 |
+| 量化流程 | LLM 量化流程与配置参数含义 | 《[LLM 量化使用指南](usage_large_language_model_quantization.md)》 |
+| 自动调优 | `msmodelslim analyze` 自动回退候选与策略说明 | 《[自动调优使用说明](../../../user_guide/usage_auto_precision_tuning.md)》 |
 
-## 7. 附录
+## 9. 安全说明
 
-- 参考实现：[DeepSeek V4 模型适配器](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/deepseek_v4/model_adapter.py)
-- 参考配置：[DeepSeek V4 Flash W8A8 配置](https://gitcode.com/Ascend/msmodelslim/blob/master/lab_practice/deepseek_v4/deepseek_v4_flash_w8a8.yaml)
-- 接口定义：[Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py)
-- 基础指南：[LLM Model Integration Guide (英文)](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/en/developer_guide/integrating_models.md)
+- `trust_remote_code` 默认保持 `False`；仅当浮点仓库必须执行自定义代码且来源可信、可审计时开启。
+- 校准数据与量化产物按业务权限管控，勿将含业务数据的校准集提交到公开渠道。
