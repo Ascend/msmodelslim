@@ -1,10 +1,10 @@
-# Wan2.2 W4A4F4量化验证案例
+# Wan2.2 新模型 W4A4F4 量化案例
 
 ## 1. 案例背景
 
-**目标**：基于 MindIE-SD 推理栈，对 Wan2.2 系列双专家 DiT 文生视频模型进行 W4A4F4 量化验证，对比原始浮点权重与量化后权重的生成质量。相对原始浮点权重，量化后模型生成视频质量损失控制在可接受范围内，无肉眼可识别的严重画质崩坏；且在 VBench-1.0-mini 的 1% 子集上，VBench Quality 与 VBench Semantic 的绝对得分下降均小于1个百分点（pp），即 `FP 得分 − 量化得分 < 1 pp`。
+**目标**：基于 MindIE-SD 推理栈，对 Wan2.2 系列双专家 DiT 文生视频模型进行 W4A4F4 量化验证，对比原始浮点权重与量化后权重的生成质量。相对原始浮点权重，量化后模型生成视频质量损失控制在可接受范围内，无肉眼可识别的严重画质崩坏；且在 VBench-1.0-mini 的 1% 子集上，VBench Quality 与 VBench Semantic 的绝对得分下降均小于1个百分点（pp），即 `|FP 得分 − 量化得分| < 1pp`。
 
-**覆盖流程**：模型接入适配 → 逐层量化 → 权重导出 → 精度评测
+**覆盖流程**：模型接入适配 → 量化方案设计 → 权重量化 → 精度评测
 
 **关联流程**：《[多模态生成模型接入指南](../knowledge_base/model/integrating_multimodal_generation_model.md)》、《[一键量化使用说明](../user_guide/usage_quick_quantization.md)》
 
@@ -19,7 +19,7 @@
 | 模型结构            | 双专家DiT（low_noise_model + high_noise_model）+ GQA注意力 + 文本编码器 + VAE |
 | 量化类型            | w4a4f4 |
 | 开源权重来源         | [Wan2.2-T2V-A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) 等官方开源地址 |
-| 推理框架与并行 | MindIE-SD；本案例并行策略：DiT/T5 启用 FSDP 切分、序列维度启用 Ulysses Sequence Parallel（SP）、CFG 双卡分离、VAE 启用并行；未启用 Expert Parallel（双专家由框架自动调度）。对比双方使用完全相同的并行约定，具体取值见“操作步骤“章节的步骤 5/6。 |
+| 推理框架与并行 | MindIE-SD；本案例并行策略：DiT/T5 启用 FSDP 切分、序列维度启用 Ulysses Sequence Parallel（SP）、CFG 双卡分离、VAE 启用并行；未启用 Expert Parallel（双专家由框架自动调度）。对比双方使用完全相同的并行约定，具体取值见“操作步骤“章节的步骤 6/7。 |
 
 **验证范围声明**：
 
@@ -50,6 +50,7 @@
 | --- | -------------------- | ------------------------ | -------------------------- | --------------------------------- |
 | 输入  | Wan2.2浮点模型权重       | `${MODEL_PATH}`         | 官方开源格式，含DiT双专家权重、VAE、文本编码器、tokenizer、config.json | 可通过官方推理仓正常加载，720P视频生成无异常 |
 | 交付件 | Wan2.2 W4A4F4量化权重 | `${SAVE_PATH}` | msModelSlim量化导出格式，含`quant_model_description.json`、双专家量化权重 | 可被MindIE-SD正常加载，成功生成视频 |
+| 交付件 | 量化最佳实践 | [`lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml`](../../../lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml) | 遵循[量化配置协议](../user_guide/usage_quick_quantization.md#5-量化配置协议详解) | 命令行参数 `--config` 指定量化配置文件 |
 | 输入  | 精度评测集       | `${EVAL_DATA_PATH}`         | VBench标准评测集 | 对比双方使用完全相同的数据和随机种子       |
 | 交付件 | 精度报告 | `./outputs/default/{timestamp}/` | 生成视频样例（FP vs 量化对比）、VBench等客观指标结果表 | 满足预设验收阈值，无严重画质问题 |
 
@@ -96,7 +97,7 @@ Wan2.2 适配器基类 `Wan2_2BaseModelAdapter` 实现公共逻辑，场景子�
 
 3. 子类需实现的方法
 
-    `MultimodalPipelineInterface` 共 5 个抽象方法，其中 `configure_runtime`、`inference_dump_calib_data`、`prepare_calib_data` 三个已由基类实现，子类需实现以下内容：
+    `MultimodalPipelineInterface` 共5个抽象方法，其中 `configure_runtime`、`inference_dump_calib_data`、`prepare_calib_data` 三个已由基类实现，子类需实现以下内容：
 
     | 成员 | 类型 | 说明 |
     |------|------|------|
@@ -143,25 +144,52 @@ Wan2.2 适配器基类 `Wan2_2BaseModelAdapter` 实现公共逻辑，场景子�
         ADAPTER_CLASS_PATH = "msmodelslim.model.wan2_2.t2v.model_adapter:Wan2_2T2VModelAdapter"
     ```
 
-6. 量化配置 YAML
+    > [!NOTE]
+    >
+    > 完成模型适配与注册后，需在源代码目录执行 `bash install.sh` 重新安装 msmodelslim，使适配器代码生效；否则 `--model_type Wan2.2-T2V-A14B` 无法命中适配器。
 
-    `inference_config` 字段须与原仓 CLI 对齐，`task` 与 `scene_task` 一致：
-
-    ```yaml
-    multimodal_sd_config:
-    inference_config:
-        size: "1280*720"
-        frame_num: 81
-        sample_steps: 40
-        task: "t2v-A14B"
-    ```
-
-**输出**：适配器代码编写完成，模型名注册完成，msModelSlim 可识别 `Wan2.2-T2V-A14B` 并执行量化流程。  
-**记录**：适配器代码文件列表（`base_model_adapter.py`、`expert_sub_adapter.py`、`constants.py`、`t2v/model_adapter.py`、`t2v/loader.py`）、`config.ini` 注册配置、量化配置文件 YAML 内容。  
+**输出**：适配器代码编写完成，模型名注册完成，msModelSlim 可识别 `Wan2.2-T2V-A14B`。  
+**记录**：适配器代码文件列表（`base_model_adapter.py`、`expert_sub_adapter.py`、`constants.py`、`t2v/model_adapter.py`、`t2v/loader.py`）、`config.ini` 注册配置。  
 
 **参考**：《[多模态生成模型接入指南](../knowledge_base/model/integrating_multimodal_generation_model.md)》
 
-### 步骤 2：环境准备与路径配置
+### 步骤 2：量化方案设计
+
+**目标**：结合模型结构与原厂权重特性，设计 W4A4F4 混合量化方案。
+
+**输入**：步骤 1 确认的模型结构特性。
+
+**操作**：
+
+1. 确定整体量化策略。
+
+    Wan2.2 双专家 DiT 主干采用 W4A4F4 混合量化方案，要点如下：
+ 
+    - 根据经验前五层一般比较敏感，因此将前5层（blocks.0 ~ blocks.4）回退为 W8A8 量化（激活/权重均 mxfp8），降低浅层特征量化误差对生成质量的冲击。
+    - 主干绝大多数层（`blocks.5` 及之后）进行 W4A4 量化：激活与权重均按 `per_block` 粒度对称量化为 mxfp4（激活 `minmax`、权重 `ceil_x` 并开启 `enable_search` 搜索），在保证生成质量的同时取得显存与带宽收益。
+    - 注意力（`self_attn`）使能在线 QuaRot（`online_quarot`）：attention 激活通常存在离群值，直接低比特量化易产生精度损失，因此通过 Hadamard 旋转改善激活分布，降低量化的精度损失。
+    - 使能 FA3 激活量化：`self_attn` 按 mxfp4 量化，其中 `blocks.0.self_attn` 回退为 fp8_e4m3 量化。
+
+2. 编写量化实践配置。
+
+   完整量化配置单独编写为量化实践配置（[`lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml`](../../../lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml)），量化时通过 `--config` 参数指定。其中 `inference_config` 字段须与原仓 CLI 对齐，`task` 与 `scene_task` 一致：
+
+    ```yaml
+    multimodal_sd_config:
+      inference_config:
+        size: "1280*720"
+        frame_num: 81
+        convert_model_dtype: True
+        task: "t2v-A14B"
+    ```
+
+**输出**：
+
+- Wan2.2 W4A4F4 量化实践配置。
+
+**记录**：量化方案设计要点与决策依据（各层量化位宽/粒度/算法、QuaRot 与 FA3 使能范围）。
+
+### 步骤 3：环境准备与路径配置
 
 **目标**：设置环境变量，核对依赖版本，确认模型和数据路径正确。  
 **输入**：模型路径、数据路径、输出路径。  
@@ -171,7 +199,7 @@ Wan2.2 适配器基类 `Wan2_2BaseModelAdapter` 实现公共逻辑，场景子�
 # 设置环境变量（替换为实际路径）
 export MODEL_PATH=/path/to/Wan2.2-T2V-A14B                   # 浮点模型权重路径
 export SAVE_PATH=/path/to/output/wan22_w4a4f4                # 量化权重导出路径
-export EVAL_DATA_PATH=/path/to/eval/final_mini_dataset_0_01  # 评测数据集路径，具体可见下方步骤 4
+export EVAL_DATA_PATH=/path/to/eval/final_mini_dataset_0_01  # 评测数据集路径，具体可见下方步骤 5
 export OUTPUT_DIR=/path/to/output/wan22_verification         # 推理结果输出目录
 export PYTHONPATH=/path/to/Wan2.2:$PYTHONPATH                # 推理仓库路径
 
@@ -186,28 +214,30 @@ pip show msmodelslim mindiesd
 **输出**：环境变量配置完成，所有依赖版本核对记录在案。  
 **记录**：CANN版本、PyTorch/TorchNPU版本、msmodelslim版本、NPU型号与驱动。  
 
-### 步骤 3：执行Wan2.2 W4A4F4量化
+### 步骤 4：执行Wan2.2 W4A4F4量化
 
 **目标**：运行msModelSlim量化流程，完成双专家逐层量化，导出量化权重。  
-**输入**：浮点模型、校准数据集、量化配置。  
+**输入**：浮点模型、校准数据集、量化配置（`${YAML_PATH}`）。  
 **操作**：使用对应model_type执行W4A4F4量化。  
 
 ```bash
+# 浮点模型权重路径：${MODEL_PATH}
+# 量化权重导出路径：${SAVE_PATH}
+# 量化配置文件路径：${YAML_PATH}（即步骤 2 中的 wan2_2_w4a4f4_mxfp_t2v.yaml）
 # T2V文生视频量化示例
 msmodelslim quant \
-    --model_path ${MODEL_PATH} \      # 浮点模型权重路径
-    --save_path ${SAVE_PATH} \        # 量化权重导出路径
+    --model_path ${MODEL_PATH} \
+    --save_path ${SAVE_PATH} \
     --device npu \
     --model_type Wan2.2-T2V-A14B \
-    --quant_type w4a4f4 \
+    --config ${YAML_PATH} \
     --trust_remote_code True
-
 ```
 
 **输出**：量化权重保存至`${SAVE_PATH}`目录，包含双专家量化权重与描述文件。  
 **记录**：量化过程完整日志、量化总时长、各层量化状态。  
 
-### 步骤 4：准备VBench-1.0-mini评测子集
+### 步骤 5：准备VBench-1.0-mini评测子集
 
 **目标**：从VBench-1.0-mini原始数据集中整理出0.01子集，供推理脚本使用。  
 **输入**：已下载的VBench-1.0-mini原始数据集。  
@@ -217,9 +247,9 @@ VBench-1.0-mini原始目录结构如下：
 
 ```text
 VBench-1.0-mini/
-├── VBench_kmeans_info.json              # 全量 mini，91 条 prompt
-├── VBench_kmeans_info_0.01.json         # 11 条 prompt（0.01 子集）
-├── VBench_kmeans_info_0.05.json         # 43 条 prompt
+├── VBench_kmeans_info.json              # 全量 mini，91条prompt
+├── VBench_kmeans_info_0.01.json         # 11条prompt（0.01 子集）
+├── VBench_kmeans_info_0.05.json         # 43条prompt
 ├── VBench_kmeans_info_0.10.json         # 同全量 mini
 └── README.md
 ```
@@ -243,12 +273,12 @@ cp VBench-1.0-mini/VBench_kmeans_info_0.01.json \
    final_mini_dataset_0_01/VBench_kmeans_info.json
 ```
 
-完成后推理传参 `--vbench_mini_root ./final_mini_dataset_0_01` 即可使用 0.01 子集。该子集包含 11 条 prompt，覆盖 11 个维度；按每条 prompt 生成 1 个视频计算，共 11 个视频。
+完成后推理传参 `--vbench_mini_root ./final_mini_dataset_0_01` 即可使用0.01子集。该子集包含11条prompt，覆盖11个维度；按每条prompt生成1个视频计算，共11个视频。
 
 **输出**：`final_mini_dataset_0_01/` 目录准备完毕，可直接传入 `--vbench_mini_root`。  
-**记录**：整理后的目录结构、`VBench_kmeans_info.json` 文件内容（11 条 prompt 列表）。  
+**记录**：整理后的目录结构、`VBench_kmeans_info.json` 文件内容（11条prompt列表）。  
 
-### 步骤 5：执行Wan2.2浮点模型VBench评测推理
+### 步骤 6：执行Wan2.2浮点模型VBench评测推理
 
 **目标**：运行浮点模型推理，在VBench-mini数据集上生成评测结果作为精度对比基线，该步骤只生成视频。  
 **输入**：浮点模型权重、VBench-mini评测数据集、推理超参配置。  
@@ -288,7 +318,7 @@ torchrun --nproc_per_node=4 --master_port=23459 vbench.py \
 **输出**：推理正常完成，所有评测视频生成完毕，结果保存至`${OUTPUT_DIR}/vbench_fp_output/`目录，生成视频无画质崩坏。  
 **记录**：推理完整运行日志。  
 
-### 步骤 6：执行Wan2.2量化模型VBench评测推理
+### 步骤 7：执行Wan2.2量化模型VBench评测推理
 
 **目标**：运行 W4A4F4 量化模型推理，生成评测视频，用于与浮点基线对比。  
 **输入**：W4A4F4量化权重、与浮点相同的VBench-mini评测数据集、W4A4F4的推理超参配置。  
@@ -343,30 +373,30 @@ torchrun --nproc_per_node=4 --master_port=23459 vbench.py \
 | 数据集与任务     | Vbench-1.0-mini 1%子集 |
 | 样本数 / 子集策略 | VBench-1.0-mini 1%子集共11条prompt，每条prompt生成1个视频，共11个视频样本 |
 | 指标与方向      | VBench Quality、VBench Semantic |
-| 验收阈值       | VBench Quality 与 Semantic 两项的绝对得分下降均 < 1 pp（即 `FP 得分 − 量化得分 < 1 pp`）；逐项判定，任一项超阈值即不通过 |
+| 验收阈值       | VBench Quality 与 Semantic 两项的绝对得分下降均 < 1pp（即 `\|FP 得分 − 量化得分\| < 1pp`）；逐项判定，任一项超阈值即不通过 |
 | 随机性控制      | 固定随机种子seed=0、固定采样步数=40、固定分辨率720P、固定帧数81帧，对比双方所有推理参数完全一致 |
 
 ### 6.2 可复现过程
 
 **数据准备**：
 
-VBench-1.0-mini 数据集已在步骤 4 中准备完毕（`final_mini_dataset_0_01/` 目录）。VBench 评测的数据准备、小模型权重缓存下载及 AISBench 环境安装请参考 《[AISBench VBench 评测文档](https://github.com/AISBench/benchmark/blob/master/docs/source_zh_cn/extended_benchmark/lmm_generate/vbench.md)》。
+VBench-1.0-mini 数据集已在步骤 5 中准备完毕（`final_mini_dataset_0_01/` 目录）。VBench 评测的数据准备、小模型权重缓存下载及 AISBench 环境安装请参考 《[AISBench VBench 评测文档](https://github.com/AISBench/benchmark/blob/master/docs/source_zh_cn/extended_benchmark/lmm_generate/vbench.md)》。
 
 **评测配置要点**：
 
 VBench 指标计算通过 aisbench 的 `VBenchEvalTask` 完成，核心配置项如下（以 `ais_bench/configs/vbench_examples/eval_vbench_standard.py` 为例）。
 
-**注意**：以下取值需直接写入配置文件，配置文件中不解析 shell 环境变量，请填写展开后的**绝对路径**（下表以步骤 2 中 `OUTPUT_DIR=/path/to/output/wan22_verification`、`EVAL_DATA_PATH=/path/to/eval/final_mini_dataset_0_01` 为例，请替换为实际路径）。
+**注意**：以下取值需直接写入配置文件，配置文件中不解析 shell 环境变量，请填写展开后的**绝对路径**（下表以步骤 3 中 `OUTPUT_DIR=/path/to/output/wan22_verification`、`EVAL_DATA_PATH=/path/to/eval/final_mini_dataset_0_01` 为例，请替换为实际路径）。
 
 | 配置项 | 取值 |
 | ------ | ---- |
-| `DATA_PATH` | 浮点：`/path/to/output/wan22_verification/vbench_fp_output/`；量化：`/path/to/output/wan22_verification/vbench_quant_output/`（即步骤 5/6 `--save_path` 展开后的实际视频目录） |
-| `full_json_dir` | `/path/to/eval/final_mini_dataset_0_01/VBench_kmeans_info.json`（步骤 4 准备的 0.01 子集 JSON，与推理阶段 `--vbench_mini_root` 下的文件一致） |
+| `DATA_PATH` | 浮点：`/path/to/output/wan22_verification/vbench_fp_output/`；量化：`/path/to/output/wan22_verification/vbench_quant_output/`（即步骤 6/7 `--save_path` 展开后的实际视频目录） |
+| `full_json_dir` | `/path/to/eval/final_mini_dataset_0_01/VBench_kmeans_info.json`（步骤 5 准备的 0.01 子集 JSON，与推理阶段 `--vbench_mini_root` 下的文件一致） |
 | `VBENCH_CACHE_DIR` | 小模型权重缓存目录路径 |
-| `dimension_list` | 留空即评测全部 16 个维度 |
+| `dimension_list` | 留空即评测全部16个维度 |
 | `load_ckpt_from_local` | `True`（从本地缓存加载小模型权重） |
 
-**执行命令**（推理阶段已在步骤 5/6 中生成视频，此处执行 VBench 指标计算）：
+**执行命令**（推理阶段已在步骤 6/7 中生成视频，此处执行 VBench 指标计算）：
 
 ```bash
 # 1) 浮点结果指标计算：先将配置文件中的 DATA_PATH 改为 .../vbench_fp_output/
@@ -404,7 +434,7 @@ ais_bench ais_bench/configs/vbench_examples/eval_vbench_standard.py \
 | VBench Semantic | 11 | 72.01 | 71.06 | +0.95 | 通过 |
 | VBench Total | 11 | 83.04 | 83.05 | −0.01 | 通过 |
 
-**精度结论**：在 VBench-1.0-mini 1% 子集（共11条prompt，每条生成1个视频）上，Wan2.2-T2V-A14B W4A4F4 量化推理结果的 VBench Quality 与 VBench Semantic 两项指标相对 FP16 浮点基线（85.80% / 72.01%）的绝对得分变化分别为 −0.25 pp 与 +0.95 pp，均满足"绝对得分下降 < 1 pp"的验收阈值；VBench Total 相对变化 −0.01 pp，亦通过验证。综合而言，本案例 W4A4F4 量化在 VBench-1.0-mini 1% 子集上达到预设精度目标，验收通过。
+**精度结论**：在 VBench-1.0-mini 1% 子集（共11条prompt，每条生成1个视频）上，Wan2.2-T2V-A14B W4A4F4 量化推理结果的 VBench Quality 与 VBench Semantic 两项指标相对 FP16 浮点基线（85.80% / 72.01%）的绝对得分变化分别为 −0.25pp 与 +0.95pp，均满足"绝对得分下降 < 1pp"的验收阈值；VBench Total 相对变化 −0.01pp，亦通过验证。综合而言，本案例 W4A4F4 量化在 VBench-1.0-mini 1% 子集上达到预设精度目标，验收通过。
 
 ## 7. 结果与经验
 
@@ -412,9 +442,9 @@ ais_bench ais_bench/configs/vbench_examples/eval_vbench_standard.py \
 
 | 步骤 | 关键操作 | 指标 | 变化 | 备注 |
 | ------------------ | -------------------- | -------------------- | ------------------- | ------------------ |
-| Wan2.2 A14B量化 | W4A4F4量化 | VBench Quality | −0.25 pp | 满足阈值（< 1 pp） |
-| Wan2.2 A14B量化 | W4A4F4量化 | VBench Semantic | +0.95 pp | 满足阈值（< 1 pp） |
-| Wan2.2 A14B量化 | W4A4F4量化 | VBench Total | −0.01 pp | 满足阈值（< 1 pp） |
+| Wan2.2 A14B量化 | W4A4F4量化 | VBench Quality | −0.25pp | 满足阈值（< 1pp） |
+| Wan2.2 A14B量化 | W4A4F4量化 | VBench Semantic | +0.95pp | 满足阈值（< 1pp） |
+| Wan2.2 A14B量化 | W4A4F4量化 | VBench Total | −0.01pp | 满足阈值（< 1pp） |
 
 ### 7.2 经验总结
 

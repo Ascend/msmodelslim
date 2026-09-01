@@ -261,7 +261,7 @@ msmodelslim quant \
 | --- | --- | --- |
 | DeepSeek-V4-Pro W4A8 新接入 | 大语言模型新接入：适配、W4A8 配置、一键量化与部署评测 | 《[DeepSeek-V4-Pro W4A8 新模型量化案例](../best_practices/deepseek_v4_pro_w4a8_new_llm_quantization_case.md)》 |
 | Kimi-K3 W4A8 新接入 | 多模态理解新接入：适配、W4A8 量化与精度测评 | 《[Kimi-K3 新模型 W4A8 量化案例](../best_practices/kimi_k3_adaptation_case.md)》 |
-| Wan2.2 W4A4F4 验证 | 多模态生成新接入：适配、逐层量化、权重导出与精度评测 | 《[Wan2.2 W4A4F4 验证案例](../best_practices/wan2_2_w4a4f4_verification_case.md)》 |
+| Wan2.2 W4A4F4 新接入 | 多模态生成新接入：适配、逐层量化、权重导出与精度评测 | 《[Wan2.2 新模型 W4A4F4 量化案例](../best_practices/wan2_2_w4a4f4_new_dit_quantization_case.md)》 |
 
 ## 9. 术语
 
