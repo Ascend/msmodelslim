@@ -25,7 +25,7 @@
 
 - 已安装 msModelSlim（详见《[安装指南](../install_guide/install_guide.md)》）。
 - 目标模型为 LLM 或已接入的 VLM，且已确定可用的 `--model_type`（与支持矩阵 / 适配器注册名一致，大小写敏感；通常已在上级流程或权重量化流程中完成适配）。
-- 已具备可用的昇腾 NPU（单卡 `--device npu`，或多卡 `--device npu:0,1,...` 走 `DPLayerWiseRunner`；仅做小规模调试时使用 `--device cpu`）。
+- 已具备可用的昇腾 NPU（单卡 `--device npu`，或多卡 `--device npu --device_id 0 1 ...`；仅做小规模调试时使用 `--device cpu`）。
 - 若所选指标要求额外分析接口，目标适配器已具备或计划补齐对应能力（见步骤 3）。
 
 **后续操作**：
@@ -64,7 +64,7 @@ msmodelslim analyze attn \
   --metrics ${METRICS} \                # 分析指标
   --calibration_dataset ${CALIB_DATASET} \    # LLM：.json/.jsonl；VLM：图文目录如 calibImages
   --top_k ${TOPK} \                      # TopK 数量，默认 15
-  --device npu \                        # 分析设备：npu / cpu，或多卡 npu:0,1,2,3
+  --device npu \                        # 分析设备：npu、cpu；多卡另加 --device_id 0 1 2 3
   --trust_remote_code False             # 默认 False；仅可信模型必要时设为 True
 ```
 

@@ -14,9 +14,9 @@
 
 - 目标模型**未出现在支持矩阵**，或虽已收录但**目标量化模式（`quant_type`）未验证**，需要完成适配与配置后，通过 `msmodelslim quant` 产出可部署量化权重。
 
-> [!NOTE] 不适用场景
->
-> - 支持矩阵中已标记「一键量化」且目标 `quant_type` 已验证的模型：请直接按《[一键量化使用指南](usage_one_click_quantization.md)》执行，无需走本指南的适配开发步骤。
+**不适用场景**：
+
+- 支持矩阵中已标记**一键量化**且目标 `quant_type` 已验证的模型：请直接按《[一键量化使用指南](usage_one_click_quantization.md)》执行，无需走本指南的适配开发步骤。
 
 ## 2. 流程关系与前置条件
 
@@ -65,9 +65,10 @@ flowchart LR
 msmodelslim quant \
   --model_path ${MODEL_PATH} \          # 浮点权重目录
   --save_path ${SAVE_PATH} \            # 量化权重输出目录
-  --device npu \                        # 量化设备，如 npu、npu --device_id 0 1 2 3
+  --device npu \                        # 量化设备：npu、cpu
+  --device_id 0 \                       # 设备索引；多卡示例：--device_id 0 1 2 3
   --model_type ${MODEL_TYPE} \          # 已注册或支持矩阵中的模型名，大小写敏感
-  --config ${CONFIG_PATH} \        # 本指南步骤 3 编写的量化配置 YAML
+  --config ${CONFIG_PATH} \             # 本指南步骤 3 编写的量化配置 YAML
   --trust_remote_code False             # 仅可信模型必要时设为 True
 ```
 
@@ -191,6 +192,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 \
   --model_type ${MODEL_TYPE} \
   --config ${CONFIG_PATH} \
   --trust_remote_code False
@@ -200,7 +202,8 @@ msmodelslim quant \
 
 - `--model_path`：浮点权重目录 `${MODEL_PATH}`。
 - `--save_path`：量化产物输出目录 `${SAVE_PATH}`。
-- `--device`：量化设备，如 `npu`、`cpu`，或多卡场景下的 `npu:0,1,2,3`。
+- `--device`：量化设备类型，如 `npu`、`cpu`。
+- `--device_id`：设备索引；单卡如 `0`，多卡如 `0 1 2 3`。
 - `--model_type`：步骤 2 注册的模型名 `${MODEL_TYPE}`，或支持矩阵中已有名称；大小写敏感。
 - `--config`：步骤 3 编写的 YAML `${CONFIG_PATH}`。
 - `--trust_remote_code`：仅当模型必须执行仓库内自定义代码且来源可信时设为 `True`。
@@ -279,9 +282,9 @@ msmodelslim quant \
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
 | `msmodelslim quant` | 权重量化统一命令行入口 | 《[msmodelslim quant 命令行 API](../api_reference/cli/msmodelslim_quant.md)》 |
-| 量化配置协议（大语言模型） | `modelslim_v1` YAML 约定 | 《[modelslim_v1 配置说明](../api_reference/config/task/modelslim_v1.md)》 |
-| 量化配置协议（多模态理解） | `multimodal_vlm_modelslim_v1` YAML 约定 | 《[multimodal_vlm_modelslim_v1 配置说明](../api_reference/config/task/multimodal_vlm_modelslim_v1.md)》 |
-| 量化配置协议（多模态生成） | `multimodal_sd_modelslim_v1` YAML 约定 | 《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/task/multimodal_sd_modelslim_v1.md)》 |
+| `modelslim_v1`  | 大语言模型量化配置协议 | 《[modelslim_v1 配置说明](../api_reference/config/task/modelslim_v1.md)》 |
+| `multimodal_vlm_modelslim_v1` | 多模态理解模型量化配置协议 | 《[multimodal_vlm_modelslim_v1 配置说明](../api_reference/config/task/multimodal_vlm_modelslim_v1.md)》 |
+| `multimodal_sd_modelslim_v1` | 多模态生成模型量化配置协议 | 《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/task/multimodal_sd_modelslim_v1.md)》 |
 
 ## 11. 安全说明
 

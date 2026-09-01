@@ -11,7 +11,7 @@
 
 > [!NOTE]
 >
-> - 支持矩阵已标记「一键量化」且目标 `quant_type` 已验证：请直接按《[一键量化完整指南](usage_quick_quantization.md)》执行。
+> - 支持矩阵已标记**一键量化**且目标 `quant_type` 已验证：请直接按《[一键量化完整指南](usage_quick_quantization.md)》执行。
 > - 调优链路已打通，只查阅调优手段与算法建议：请阅读《[量化精度调优指南](process_quantization_precision_tuning.md)》。
 > - 希望全自动搜索配置：可参考《[自动调优使用指南](usage_auto_precision_tuning.md)》。
 
@@ -21,7 +21,7 @@
 
 - 已核对《[大模型支持矩阵](../knowledge_base/model/README.md)》，确认目标模型未收录，或目标量化模式（`quant_type`）尚未验证。
 - 已明确精度与性能目标（相对浮点的可接受掉点、业务阈值，或性能约束）。
-- 已准备浮点模型目录；若尚未获取，须已满足《[权重量化使用指南](usage_weight_quantization.md)》中的下载与模型适配前置条件（环境、依赖、源码安装等）。
+- 已准备浮点模型目录。
 - 已确定目标推理引擎与导出格式（见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》，如 AscendV1、MindIE-SD）；浮点与量化测评须使用相同测评集、指标与推理引擎配置（引擎版本、并行与采样等保持一致）。
 - 若方案依赖新算子或组图能力，已具备对应推理引擎与 CANN 侧开发与合入条件。
 
@@ -43,7 +43,7 @@
 
 ## 4. 流程总览
 
-主路径按「量化方案设计 → 权重量化 → 算子开发与组图 → 精度与性能测评 → 权重发布」顺序推进。精度与性能测评后：达标则进入权重发布；不达标则进入量化方案修订，再回到权重量化继续闭环。各阶段顺序如下：
+主路径按“量化方案设计 → 权重量化 → 算子开发与组图 → 精度与性能测评 → 权重发布”的顺序推进。精度与性能测评后：达标则进入权重发布；不达标则进入量化方案修订，再回到权重量化继续闭环。各阶段顺序如下：
 
 ```mermaid
 flowchart LR
@@ -103,7 +103,7 @@ flowchart LR
 
 1. 对照方案中的算子依赖，确定单算子开发与融合算子开发需求。
 2. 完成必要的算子分解、融合与映射，使量化图可在目标推理引擎执行。算子与部署实现通常落在目标推理引擎侧，可参考：
-   - [vLLM Ascend](https://github.com/vllm-project/vllm-ascend)（[量化适配指南](https://docs.vllm.ai/projects/ascend/zh-cn/v0.23.0/developer_guide/Design_Documents/quantization.html)）
+   - [vLLM Ascend 量化适配指南](https://docs.vllm.ai/projects/ascend/zh-cn/v0.23.0/developer_guide/Design_Documents/quantization.html)
    - [CANN 算子库介绍](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/latest/API/aolapi/operatorlist_00001.html)
 3. 完成结构组图，确认与导出格式、引擎图优化路径一致。
 4. 确认可按本轮量化权重正常拉起服务化推理；记录所用推理引擎版本号。

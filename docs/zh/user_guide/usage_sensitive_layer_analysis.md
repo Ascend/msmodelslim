@@ -25,7 +25,7 @@
 
 - 已安装 msModelSlim（详见《[安装指南](../install_guide/install_guide.md)》）。
 - 目标模型为 LLM 或已接入的 VLM，且已确定可用的 `--model_type`（与支持矩阵 / 适配器注册名一致，大小写敏感；通常已在上级流程或权重量化流程中完成适配）。
-- 已具备可用的昇腾 NPU（单卡 `--device npu`，或多卡 `--device npu:0,1,...` 走 `DPLayerWiseRunner`；仅做小规模调试时使用 `--device cpu`）。
+- 已具备可用的昇腾 NPU（单卡 `--device npu`，或多卡 `--device npu --device_id 0 1 ...`；仅做小规模调试时使用 `--device cpu`）。
 
 **后续操作**：
 
@@ -64,7 +64,7 @@ msmodelslim analyze layer \
   --quant_modules "*" \                 # 参与对比的子模块通配，可多个；默认 "*"
   --calibration_dataset ${CALIB_DATASET} \    # LLM：.json/.jsonl；VLM：图文目录如 calibImages
   --top_k ${TOPK} \                      # TopK 数量，默认 15
-  --device npu \                        # 分析设备：npu / cpu，或多卡 npu:0,1,2,3
+  --device npu \                        # 分析设备：npu、cpu；多卡另加 --device_id 0 1 2 3
   --trust_remote_code False             # 默认 False；仅可信模型必要时设为 True
 ```
 
@@ -186,7 +186,7 @@ msmodelslim analyze layer \
 | 校准集格式错误或无法读取 | 按步骤 2 核对 `.json` 或 `.jsonl` 格式、路径与权限及解析规则后，再执行分析命令 |
 | `model_type` 未命中或告警走默认模型 | 按步骤 3 完成模型适配与 `--model_type` 注册，重新执行 `bash install.sh` 使注册生效后，再执行分析命令 |
 | 显存不足或运行失败 | 缩小校准集、优先使用 `mse_layer_wise`，或换更大显存设备后，再执行分析命令；`mse_model_wise` 显存压力更大宜慎用 |
-| 回退后仍无法部署或精度异常 | 核对通配符是否过宽或过窄，以及引擎对回退层数的限制；修正配置后重新量化并测评 |
+| 回退后仍无法部署或精度异常 | 核对通配符是否过宽或过窄，以及推理引擎对回退层数的限制；修正配置后重新量化并测评 |
 
 ## 8. 术语
 
@@ -203,5 +203,5 @@ msmodelslim analyze layer \
 
 ## 10. 安全说明
 
-- `trust_remote_code` 默认保持 `False`；仅当浮点仓库必须执行自定义代码且来源可信、可审计时开启。
+- `trust_remote_code` 默认保持 `False`；仅当浮点模型必须执行自定义代码且来源可信、可审计时开启。
 - 浮点权重与校准数据应按业务权限管控；勿将含业务数据的校准集或分析日志提交到公开渠道。
