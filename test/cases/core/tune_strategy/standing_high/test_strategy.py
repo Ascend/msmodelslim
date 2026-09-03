@@ -38,7 +38,7 @@ from msmodelslim.core.quantizer.linear import LinearQConfig
 from msmodelslim.format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
 from msmodelslim.ir.qal import QDType, QScope
 from msmodelslim.processor.quant.linear import LinearProcessorConfig
-from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
+from msmodelslim.utils.exception import SchemaValidateError, SpecError, UnsupportedError
 
 
 def _default_quant_save_list():
@@ -183,10 +183,10 @@ class TestStandingHighStrategy:
             next(gen)
         assert "PipelineInterface" in str(exc_info.value)
 
-    def test_generate_practice_yields_zero_practice_then_stops_when_send_is_satisfied_true(self):
+    def test_generate_practice_yields_float_full_fallback_practice_as_first_yield(self):
         """
-        场景：调用 generate_practice 后 next 取第一个 practice，再 send(is_satisfied=True)。
-        预期：首项为 standing_high_ 前缀的 practice，send 后迭代器结束。
+        场景：generate_practice 首次 yield。
+        预期：产出 config_id 以 standing_high_float_ 开头的 practice，且每个 linear_quant 的 exclude 包含 "*"。
         """
         config = self._make_config()
         loader = self._make_dataset_loader()
@@ -196,15 +196,62 @@ class TestStandingHighStrategy:
         with patch.object(strategy, "_run_sensitive_layer_analysis", return_value=None):
             gen = strategy.generate_practice(model, device=DeviceType.NPU)
             practice = next(gen)
-        assert practice is not None
-        assert practice.spec is not None
-        assert practice.metadata.config_id.startswith("standing_high_")
 
-        result = EvaluateResult(accuracies=[], expectations=[], is_satisfied=True)
+        assert practice is not None
+        assert practice.metadata.config_id.startswith("standing_high_float_")
+        linear_procs = [p for p in practice.spec.process if getattr(p, "type", None) == "linear_quant"]
+        assert linear_procs, "全回退 practice 应至少保留一个 linear_quant"
+        assert all("*" in (proc.exclude or []) for proc in linear_procs)
+
+    def test_generate_practice_raises_SpecError_when_float_full_fallback_unsatisfied(self):
+        """
+        场景：首轮 yield 浮点全回退 practice 后，send 一个 is_satisfied=False 的 EvaluateResult。
+        预期：抛出 SpecError，Message 与 action 与 binary_fallback 风格一致（"with full float fallback" / "Relax accuracy expectations"）。
+        """
+        config = self._make_config()
+        loader = self._make_dataset_loader()
+        strategy = StandingHighStrategy(config=config, dataset_loader=loader)
+
+        model = _MockModel()
+        with patch.object(strategy, "_run_sensitive_layer_analysis", return_value=None):
+            gen = strategy.generate_practice(model, device=DeviceType.NPU)
+            _ = next(gen)
+
+        unsatisfied = EvaluateResult(accuracies=[], expectations=[], is_satisfied=False)
+        with pytest.raises(SpecError) as exc_info:
+            gen.send(unsatisfied)
+
+        message = str(exc_info.value)
+        assert "full float fallback" in message
+        assert "relax" in message.lower()
+
+    def test_generate_practice_yields_zero_practice_then_stops_when_send_is_satisfied_true(self):
+        """
+        场景：浮点全回退预检通过（send is_satisfied=True）后，再 send 一个 is_satisfied=True，触发结束。
+        预期：首项为 standing_high_float_ 前缀，第二次 yield 为 standing_high_ 前缀，最终 StopIteration。
+        """
+        config = self._make_config()
+        loader = self._make_dataset_loader()
+        strategy = StandingHighStrategy(config=config, dataset_loader=loader)
+
+        model = _MockModel()
+        with patch.object(strategy, "_run_sensitive_layer_analysis", return_value=None):
+            gen = strategy.generate_practice(model, device=DeviceType.NPU)
+            float_practice = next(gen)
+
+        assert float_practice.metadata.config_id.startswith("standing_high_float_")
+
+        satisfied = EvaluateResult(accuracies=[], expectations=[], is_satisfied=True)
+        zero_practice = gen.send(satisfied)
+        assert zero_practice.metadata.config_id.startswith("standing_high_")
+        assert not zero_practice.metadata.config_id.startswith("standing_high_float_")
+
         try:
-            gen.send(result)
+            gen.send(satisfied)
         except StopIteration:
             pass
+        else:
+            pytest.fail("zero evaluation 满足时应该结束")
 
     def test_build_practice_config_returns_PracticeConfig_with_metadata_and_spec_when_valid_anti_outlier(self):
         """
@@ -242,7 +289,8 @@ class TestStandingHighStrategy:
 
     def test_generate_practice_yields_multiple_practices_when_send_is_satisfied_false_then_true(self):
         """
-        场景：generate_practice 后多次 send EvaluateResult（先 is_satisfied=False 再 True），直至 send(None)。
+        场景：generate_practice 后多次 send EvaluateResult。
+        流程：首轮浮点全回退通过 → zero 不满足进入二分 → 二分找到最小级别 → 摸高迭代 → 结束。
         预期：可依次取到多个 practice，最后 send(None) 触发 StopIteration。
         """
         config = self._make_config()
@@ -277,18 +325,29 @@ class TestStandingHighStrategy:
             mock_find_level.side_effect = _fake_find_level
             mock_stand_high.side_effect = _fake_stand_high
 
+            satisfied = EvaluateResult(accuracies=[], expectations=[], is_satisfied=True)
+            unsatisfied = EvaluateResult(accuracies=[], expectations=[], is_satisfied=False)
+
             gen = strategy.generate_practice(model, device=DeviceType.NPU)
             p1 = next(gen)
-            assert p1.metadata.config_id.startswith("standing_high_")
+            # 首轮必为浮点全回退预检
+            assert p1.metadata.config_id.startswith("standing_high_float_")
 
-            p2 = gen.send(EvaluateResult(accuracies=[], expectations=[], is_satisfied=False))
-            assert p2 is not None
+            # 浮点全回退满足 → 进入 zero 评估
+            p2 = gen.send(satisfied)
+            assert p2.metadata.config_id.startswith("standing_high_")
+            assert not p2.metadata.config_id.startswith("standing_high_float_")
 
-            p3 = gen.send(EvaluateResult(accuracies=[], expectations=[], is_satisfied=True))
+            # zero 不满足 → 进入二分搜索
+            p3 = gen.send(unsatisfied)
             assert p3 is not None
 
-            p4 = gen.send(EvaluateResult(accuracies=[], expectations=[], is_satisfied=True))
+            # 二分搜索满足 → 进入摸高循环
+            p4 = gen.send(satisfied)
             assert p4 is not None
+
+            p5 = gen.send(satisfied)
+            assert p5 is not None
 
             with pytest.raises(StopIteration):
                 gen.send(None)

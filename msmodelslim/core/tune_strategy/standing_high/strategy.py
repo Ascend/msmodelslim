@@ -41,7 +41,7 @@ from msmodelslim.ir.qal import QScope, QDType
 from msmodelslim.model import IModel
 from msmodelslim.processor.base import AutoProcessorConfigList
 from msmodelslim.processor.quant.linear import LinearProcessorConfig
-from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
+from msmodelslim.utils.exception import SchemaValidateError, SpecError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.validation.pydantic import at_least_one_element
 from msmodelslim.utils.config_map import ConfigSet
@@ -157,6 +157,18 @@ class StandingHighStrategy(BaseTuningStrategy, ITuningStrategy):
 
         self._run_sensitive_layer_analysis(model=model, device=device)
 
+        float_evaluation = yield self._build_full_fallback_practice_config()
+
+        if not float_evaluation.is_satisfied:
+            get_logger().error(
+                "Floating-point fallback accuracy does not satisfy demand: %s",
+                float_evaluation.accuracies,
+            )
+            raise SpecError(
+                "Accuracy demand not satisfied with full float fallback.",
+                action="Relax accuracy expectations because the floating-point model cannot meet the requested accuracy.",
+            )
+
         zero_evaluation = yield self._build_practice_config(self.config.anti_outlier_strategies[0], [])
 
         if zero_evaluation.is_satisfied:
@@ -203,6 +215,48 @@ class StandingHighStrategy(BaseTuningStrategy, ITuningStrategy):
             return []
         topk = self._analysis_layer_scores[:disable_level]
         return [row["name"] for row in topk if "name" in row]
+
+    def _build_full_fallback_practice_config(self) -> PracticeConfig:
+        """构建"全回退浮点"practice：所有 linear_quant 层均被排除，从而不进行量化，得到纯浮点基线。
+
+        说明：
+        - 不注入离群值抑制（anti_outlier）处理器，避免改变权重以保证基线纯净；
+        - 每个 linear_quant 处理器额外追加 ``exclude=["*"]``，使其匹配不到任何层；
+        - 保留 template 中的 runner、save、dataset，确保量化服务能正常保存并被评估服务加载；
+        - ``config_id`` 使用独立前缀 ``standing_high_float_``，避免与后续摸高轮次混淆；
+        - 不复用 ``_build_practice_config``，因为它会注入 anti_outlier 并使用通用回退逻辑。
+        """
+        template = self.config.template
+        process: AutoProcessorConfigList = []
+        for proc in template.process:
+            if isinstance(proc, LinearProcessorConfig):
+                merged_exclude = list(dict.fromkeys(list(proc.exclude or []) + ["*"]))
+                process.append(
+                    LinearProcessorConfig(
+                        type="linear_quant",
+                        qconfig=proc.qconfig,
+                        include=list(proc.include or []),
+                        exclude=merged_exclude,
+                    )
+                )
+            else:
+                # 跳过非 linear_quant 处理器（通常是 anti_outlier），
+                # 保证浮点基线不被任何权重变换影响。
+                continue
+
+        new_config_id = f"standing_high_float_{self.__counter}"
+        self.__counter += 1
+
+        return PracticeConfig(
+            apiversion="modelslim_v1",
+            spec=ModelslimV1ServiceConfig(
+                runner=template.runner, process=process, save=template.save, dataset=template.dataset
+            ),
+            metadata=Metadata(
+                config_id=new_config_id,
+                label=self.config.metadata.label,
+            ),
+        )
 
     def _build_practice_config(
         self,
