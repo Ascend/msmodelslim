@@ -1,6 +1,6 @@
 apiversion: multimodal_vlm_modelslim_v1
 metadata:
-  config_id: kimi_k3_w4a8
+  config_id: kimi_k3_w4a8c8
   score: 90
   verified_tags:
     Kimi-K3:
@@ -12,7 +12,8 @@ metadata:
     w_bit: 4
     a_bit: 8
     is_sparse: False
-    kv_cache: False
+    kv_cache: True
+
 
 default_w8a8_dynamic: &default_w8a8_dynamic
   act:
@@ -42,7 +43,6 @@ spec:
   runner: auto
   process:
     - type: "quarot"
-      block_size: 32
     - type: "flex_awq_ssz"
       qconfig:
         act:
@@ -70,6 +70,26 @@ spec:
         - "language_model.model.layers.*.input_layernorm"
         - "language_model.model.layers.*.self_attn.q_a_layernorm"
 
+    - type: "fa3_quant"
+      details:
+        fa_q:
+          dtype: "int8"
+          scope: "per_token"
+          symmetric: True
+          method: "minmax"
+        fa_k:
+          dtype: "int8"
+          scope: "per_head"
+          symmetric: True
+          method: "minmax"
+        fa_v:
+          dtype: "int8"
+          scope: "per_head"
+          symmetric: True
+          method: "minmax"
+      include:
+        - "*"
+
     - type: "group"
       configs:
         - type: "linear_quant"
@@ -96,6 +116,7 @@ spec:
             - "language_model.model.layers.0.mlp.down_proj"
             - "language_model.model.layers.*.block_sparse_moe.routed_expert_up_proj"
             - "language_model.model.layers.*.block_sparse_moe.routed_expert_down_proj"
+
 
   dataset: calibImages
   save:

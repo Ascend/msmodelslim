@@ -965,6 +965,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <th>w8a8c8/w8a8f8</th>
       <th>w8a8s(稀疏量化)<sup>1</sup></th>
       <th>w4a8</th>
+      <th>w4a8c8</th>
       <th>w4a4c8</th>
             <th>w4a4f4</th>
     </tr>
@@ -979,6 +980,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -989,12 +991,14 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
       <td>Qwen3-VL-32B-Instruct</td>
       <td>transformers==4.57.1</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1010,12 +1014,14 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
       <td>Qwen3-VL-Embedding-8B</td>
       <td>transformers==4.57.1</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1030,12 +1036,14 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
       <td>Qwen3-VL-Reranker-8B</td>
       <td>transformers==4.57.1</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1051,6 +1059,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -1062,12 +1071,14 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
       <td>Qwen3-Omni-30B-A3B-Instruct</td>
       <td>transformers==4.57.3</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1083,6 +1094,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -1094,12 +1106,14 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
       <td>Qwen2.5-VL-72B</td>
       <td>transformers==4.49.0, qwen_vl_utils</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1115,6 +1129,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -1126,12 +1141,14 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
       <td>Qwen2-VL-72B</td>
       <td>transformers==4.46.0, qwen_vl_utils</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1147,6 +1164,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -1158,12 +1176,14 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
       <td>InternVL2-40B</td>
       <td>transformers==4.46.0, timm, fastchat</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1179,6 +1199,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -1190,6 +1211,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -1197,6 +1219,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>GLM-4.6V</td>
       <td>transformers==5.0.0rc0</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1212,6 +1235,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>√</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -1222,6 +1246,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>√</td>
     <td>-</td>
     </tr>
@@ -1232,7 +1257,8 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
-      <td>√</td>
+      <td>√(一键量化)<sup>3</sup></td>
+      <td>√(一键量化)</td>
       <td>-</td>
     <td>-</td>
     </tr>
@@ -1241,6 +1267,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>InternVL3_5-38B</td>
       <td>transformers==4.57.6</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1256,6 +1283,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -1263,6 +1291,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>gemma-4-26B-A4B-it</td>
       <td>transformers==5.5.3</td>
       <td>√（另见 README：MXFP8/MXFP4 混合，一键量化 w4a4）</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1278,6 +1307,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -1285,6 +1315,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>SD3-Medium</td>
       <td>diffusers</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1299,6 +1330,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
@@ -1306,6 +1338,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>√</td>
       <td>√(一键量化)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1319,12 +1352,14 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     <td>-</td>
     </tr>
     <tr>
       <td>Wan2.1</td>
       <td>-</td>
       <td>√(一键量化)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1339,6 +1374,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
       <td>√(一键量化)</td>
     </tr>
     <tr>
@@ -1346,6 +1382,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>√(一键量化)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1359,3 +1396,4 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 
 - <sup>1</sup> 压缩后配合Atlas 300I Duo系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式。
 - <sup>2</sup> 其中FLUX.1-dev、HunyuanVideo、Wan2.2、Qwen-Image-Edit-2509支持[MXFP量化](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf)。
+- <sup>3</sup> Kimi-K3 的 w4a8 含 INT 与 MXFP 两套实践（共用 `quant_type=w4a8`）；MXFP 需额外指定 `--tags vLLM_Ascend Ascend_950`，详见[Kimi-K3 量化案例](https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Kimi-K3/README.md)。
