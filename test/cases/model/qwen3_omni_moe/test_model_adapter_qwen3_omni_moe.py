@@ -18,9 +18,9 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import importlib.util
 import json
-import os
 import sys
 import tempfile
 import types
@@ -28,8 +28,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch, PropertyMock
 
+
 class _FakeLoader:
     pass
+
 
 def _add_fake_module(name, attrs=None):
     spec = importlib.util.spec_from_loader(name, _FakeLoader())
@@ -40,16 +42,19 @@ def _add_fake_module(name, attrs=None):
             setattr(mod, k, v)
     sys.modules[name] = mod
 
+
 _add_fake_module("librosa")
 _add_fake_module("qwen_vl_utils", {"process_vision_info": MagicMock()})
 _add_fake_module("qwen_omni_utils", {"process_mm_info": MagicMock()})
 
 # Mock transformers components when not available (e.g. older transformers without Qwen3-Omni-Moe)
-import transformers
+import transformers  # noqa: E402
+
 if not hasattr(transformers, "Qwen3OmniMoeProcessor"):
     transformers.Qwen3OmniMoeProcessor = MagicMock()
 if not hasattr(transformers, "Qwen3OmniMoeThinkerForConditionalGeneration"):
     transformers.Qwen3OmniMoeThinkerForConditionalGeneration = MagicMock()
+
 
 def _ensure_module_chain(module_name: str):
     """Ensure module exists in sys.modules and is attached to its parent module."""
@@ -62,9 +67,10 @@ def _ensure_module_chain(module_name: str):
         setattr(sys.modules[parent_name], child_name, module)
     return module
 
+
 # Ensure qwen3 omni moe module chain exists without relying on transformers version details.
 if hasattr(transformers, "models") and "transformers.models" not in sys.modules:
-    sys.modules["transformers.models"] = transformers.models
+    sys.modules["transformers.models"] = transformers.models  # pylint: disable=c-extension-no-member
 qwen3_mod = _ensure_module_chain("transformers.models.qwen3_omni_moe")
 modeling_mod = _ensure_module_chain("transformers.models.qwen3_omni_moe.modeling_qwen3_omni_moe")
 if not hasattr(qwen3_mod, "modeling_qwen3_omni_moe"):
@@ -87,18 +93,21 @@ if str(_test_dir) not in sys.path:
     sys.path.insert(0, str(_test_dir))
 try:
     from testing_utils.mock import mock_init_config
+
     mock_init_config()
 except ImportError:
     pass
 
-import torch
-from torch import nn
+import torch  # noqa: E402
+from torch import nn  # noqa: E402
 
-from msmodelslim.core.base.protocol import ProcessRequest
+from msmodelslim.core.base.protocol import ProcessRequest  # noqa: E402
+
 # Ensure model_adapter is loaded so patch target "....model_adapter.VLMBaseModelAdapter" resolves
 import msmodelslim.model.qwen3_omni_moe.model_adapter  # noqa: F401, E402
-from msmodelslim.core.const import DeviceType
-from msmodelslim.core.graph import AdapterConfig, MappingConfig
+from msmodelslim.core.const import DeviceType  # noqa: E402
+from msmodelslim.core.graph import AdapterConfig, MappingConfig  # noqa: E402
+from msmodelslim.utils.exception import InvalidDatasetError  # noqa: E402
 
 
 def _make_thinker_config(
@@ -173,6 +182,7 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
             from msmodelslim.model.qwen3_omni_moe.model_adapter import (
                 Qwen3OmniMoeThinkerModelAdapter,
             )
+
             adapter = Qwen3OmniMoeThinkerModelAdapter(
                 model_type=self.model_type,
                 model_path=str(self.model_path),
@@ -206,12 +216,15 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         mock_inputs = {"input_ids": torch.tensor([[1, 2, 3]])}
         mock_processor.return_value = mock_inputs
 
-        with patch(
-            "transformers.Qwen3OmniMoeProcessor.from_pretrained",
-            return_value=mock_processor,
-        ), patch(
-            "msmodelslim.model.qwen3_omni_moe.model_adapter.process_mm_info",
-            return_value=([], [], []),
+        with (
+            patch(
+                "transformers.Qwen3OmniMoeProcessor.from_pretrained",
+                return_value=mock_processor,
+            ),
+            patch(
+                "msmodelslim.model.qwen3_omni_moe.model_adapter.process_mm_info",
+                return_value=([], [], []),
+            ),
         ):
             adapter._collect_inputs_to_device = MagicMock(return_value={"input_ids": mock_inputs["input_ids"]})
             sample = MagicMock()
@@ -231,15 +244,19 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         mock_processor = MagicMock()
         mock_processor.apply_chat_template.return_value = "text"
         mock_processor.return_value = {"input_ids": torch.tensor([[1]])}
-        with patch(
-            "transformers.Qwen3OmniMoeProcessor.from_pretrained",
-            return_value=mock_processor,
-        ), patch(
-            "msmodelslim.model.qwen3_omni_moe.model_adapter.process_mm_info",
-            return_value=([], [], []),
-        ), patch(
-            "msmodelslim.model.qwen3_omni_moe.model_adapter.get_valid_read_path",
-            side_effect=lambda x: x,
+        with (
+            patch(
+                "transformers.Qwen3OmniMoeProcessor.from_pretrained",
+                return_value=mock_processor,
+            ),
+            patch(
+                "msmodelslim.model.qwen3_omni_moe.model_adapter.process_mm_info",
+                return_value=([], [], []),
+            ),
+            patch(
+                "msmodelslim.model.qwen3_omni_moe.model_adapter.get_valid_read_path",
+                side_effect=lambda x: x,
+            ),
         ):
             adapter._collect_inputs_to_device = MagicMock(return_value={})
             sample = MagicMock()
@@ -252,6 +269,70 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         self.assertEqual(len(result), 1)
         mock_processor.assert_called_once()
 
+    def _run_handle_dataset_with_patches(self, adapter, dataset, extra_patches=()):
+        from contextlib import ExitStack
+
+        mock_processor = MagicMock()
+        mock_processor.apply_chat_template.return_value = "text"
+        mock_processor.return_value = {"input_ids": torch.tensor([[1]])}
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch("transformers.Qwen3OmniMoeProcessor.from_pretrained", return_value=mock_processor)
+            )
+            stack.enter_context(
+                patch("msmodelslim.model.qwen3_omni_moe.model_adapter.process_mm_info", return_value=([], [], []))
+            )
+            stack.enter_context(
+                patch(
+                    "msmodelslim.model.qwen3_omni_moe.model_adapter.get_valid_read_path",
+                    side_effect=lambda x: x,
+                )
+            )
+            for extra_patch in extra_patches:
+                stack.enter_context(extra_patch)
+            adapter._collect_inputs_to_device = MagicMock(return_value={})
+            return adapter.handle_dataset(dataset=dataset, device=DeviceType.CPU)
+
+    def test_handle_dataset_rejects_mixed_modalities(self):
+        """handle_dataset 异构模态样本应抛出 InvalidDatasetError"""
+        adapter = self._create_adapter()
+        text_only = MagicMock(text="hello", image="", audio="", video="")
+        with_image = MagicMock(text="hi", image="/tmp/img.jpg", audio="", video="")
+        with self.assertRaises(InvalidDatasetError) as ctx:
+            self._run_handle_dataset_with_patches(adapter, [text_only, with_image])
+        self.assertIn("Inconsistent calibration sample modalities", str(ctx.exception))
+
+    def test_handle_dataset_accepts_homogeneous_modalities(self):
+        """handle_dataset 同质模态多样本应全部处理"""
+        adapter = self._create_adapter()
+        samples = [MagicMock(text=t, image="", audio="", video="") for t in ("hello", "world")]
+        result = self._run_handle_dataset_with_patches(adapter, samples)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(adapter._collect_inputs_to_device.call_count, 2)
+
+    def test_handle_dataset_rejects_mixed_video_audio_tracks(self):
+        """text+video 混用有音轨/无声视频应抛出 InvalidDatasetError"""
+        adapter = self._create_adapter()
+        with_audio = MagicMock(text="with audio", image="", audio="", video="/tmp/with_audio.mp4")
+        silent = MagicMock(text="silent", image="", audio="", video="/tmp/silent.mp4")
+        track_patch = patch(
+            "msmodelslim.model.qwen3_omni_moe.model_adapter.Qwen3OmniMoeThinkerModelAdapter._video_has_audio_track",
+            side_effect=lambda path: str(path).endswith("with_audio.mp4"),
+        )
+        with self.assertRaises(InvalidDatasetError):
+            self._run_handle_dataset_with_patches(adapter, [with_audio, silent], extra_patches=(track_patch,))
+
+    def test_handle_dataset_accepts_homogeneous_video_audio_tracks(self):
+        """text+video 均为无声视频时应全部处理"""
+        adapter = self._create_adapter()
+        samples = [MagicMock(text=t, image="", audio="", video=f"/tmp/{t}.mp4") for t in ("clip-a", "clip-b")]
+        track_patch = patch(
+            "msmodelslim.model.qwen3_omni_moe.model_adapter.Qwen3OmniMoeThinkerModelAdapter._video_has_audio_track",
+            return_value=False,
+        )
+        result = self._run_handle_dataset_with_patches(adapter, samples, extra_patches=(track_patch,))
+        self.assertEqual(len(result), 2)
+
     def test_init_model(self):
         """init_model 应加载 skeleton、state_dict 并设置 config"""
         adapter = self._create_adapter()
@@ -263,13 +344,16 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         from_pretrained_return.eval.return_value = mock_model
         mock_model.from_pretrained.return_value = from_pretrained_return
         mock_model.load_state_dict = MagicMock()
-        with patch(
-            "msmodelslim.model.qwen3_omni_moe.model_adapter.get_valid_read_path",
-            return_value=str(self.model_path),
-        ), patch(
-            "transformers.Qwen3OmniMoeThinkerForConditionalGeneration",
-            return_value=mock_model,
-        ) as mock_cls:
+        with (
+            patch(
+                "msmodelslim.model.qwen3_omni_moe.model_adapter.get_valid_read_path",
+                return_value=str(self.model_path),
+            ),
+            patch(
+                "transformers.Qwen3OmniMoeThinkerForConditionalGeneration",
+                return_value=mock_model,
+            ) as mock_cls,
+        ):
             adapter._get_state_dict = MagicMock(return_value={})
             result = adapter.init_model(device=DeviceType.CPU)
         self.assertIsNotNone(result)
@@ -281,7 +365,7 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         )
 
     def test_generate_model_visit(self):
-        """generate_model_visit 应先 yield audio_tower、visual，再 yield from decoder"""
+        """generate_model_visit 应固定 yield audio/visual/decoder tower"""
         adapter = self._create_adapter()
         mock_audio = MagicMock()
         mock_visual = MagicMock()
@@ -348,7 +432,11 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
                 while True:
                     collected.append(req)
                     if req.name.startswith("model.layers"):
-                        out = (torch.randn(1, 4, 64),) if isinstance(req.module.return_value, tuple) else req.module.return_value
+                        out = (
+                            (torch.randn(1, 4, 64),)
+                            if isinstance(req.module.return_value, tuple)
+                            else req.module.return_value
+                        )
                         if isinstance(out, tuple):
                             req = gen.send(out[0])
                         else:
@@ -592,8 +680,7 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         adapter = self._create_adapter(thinker_config=thinker_config)
         result = adapter.get_adapter_config_for_subgraph()
         expert_sources = [
-            c.mapping.source for c in result
-            if "experts" in c.mapping.source and c.subgraph_type == "up-down"
+            c.mapping.source for c in result if "experts" in c.mapping.source and c.subgraph_type == "up-down"
         ]
         self.assertGreater(len(expert_sources), 0)
 
@@ -641,12 +728,15 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         adapter._get_weight_map.cache_clear()
         mock_module = MagicMock()
         mock_module.named_parameters.return_value = [("input_layernorm.weight", torch.nn.Parameter(torch.zeros(64)))]
-        with patch(
-            "msmodelslim.model.qwen3_omni_moe.model_adapter.get_valid_read_path",
-            return_value=str(self.model_path / "model.safetensors"),
-        ), patch(
-            "msmodelslim.model.qwen3_omni_moe.model_adapter.safe_open",
-        ) as mock_open:
+        with (
+            patch(
+                "msmodelslim.model.qwen3_omni_moe.model_adapter.get_valid_read_path",
+                return_value=str(self.model_path / "model.safetensors"),
+            ),
+            patch(
+                "msmodelslim.model.qwen3_omni_moe.model_adapter.safe_open",
+            ) as mock_open,
+        ):
             mock_f = MagicMock()
             mock_f.get_tensor.return_value = torch.zeros(64)
             mock_open.return_value.__enter__.return_value = mock_f
@@ -692,13 +782,16 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
 
         real_decoder = _DummyDecoder()
         mock_state_dict = {name: torch.randn_like(param) for name, param in real_decoder.named_parameters()}
-        real_decoder.load_state_dict = MagicMock(return_value=None)
-        with patch.object(
-            sys.modules["transformers.models.qwen3_omni_moe.modeling_qwen3_omni_moe"],
-            "Qwen3OmniMoeThinkerTextDecoderLayer",
-            return_value=real_decoder,
-            create=True,
-        ), patch.object(nn.Linear, "reset_parameters", lambda self: None):
+        with (
+            patch.object(real_decoder, "load_state_dict", MagicMock(return_value=None)),
+            patch.object(
+                sys.modules["transformers.models.qwen3_omni_moe.modeling_qwen3_omni_moe"],
+                "Qwen3OmniMoeThinkerTextDecoderLayer",
+                return_value=real_decoder,
+                create=True,
+            ),
+            patch.object(nn.Linear, "reset_parameters", lambda self: None),
+        ):
             adapter._get_state_dict = MagicMock(return_value=mock_state_dict)
             result = adapter._load_decoder_if_not_exist(model=mock_model, name="model.layers.0", idx=0)
         self.assertIsInstance(result, nn.Module)
@@ -706,6 +799,7 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
 
     def test_load_decoder_if_not_exist_meta_device_continues_load(self):
         """_load_decoder_if_not_exist 当已存在但 weight 在 meta 上时重新加载"""
+
         class MetaWeight:
             @property
             def device(self):
@@ -736,13 +830,16 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
 
         real_decoder = _DummyDecoder()
         mock_state_dict = {name: torch.randn_like(param) for name, param in real_decoder.named_parameters()}
-        real_decoder.load_state_dict = MagicMock(return_value=None)
-        with patch.object(
-            sys.modules["transformers.models.qwen3_omni_moe.modeling_qwen3_omni_moe"],
-            "Qwen3OmniMoeThinkerTextDecoderLayer",
-            return_value=real_decoder,
-            create=True,
-        ), patch.object(nn.Linear, "reset_parameters", lambda self: None):
+        with (
+            patch.object(real_decoder, "load_state_dict", MagicMock(return_value=None)),
+            patch.object(
+                sys.modules["transformers.models.qwen3_omni_moe.modeling_qwen3_omni_moe"],
+                "Qwen3OmniMoeThinkerTextDecoderLayer",
+                return_value=real_decoder,
+                create=True,
+            ),
+            patch.object(nn.Linear, "reset_parameters", lambda self: None),
+        ):
             adapter._get_state_dict = MagicMock(return_value=mock_state_dict)
             result = adapter._load_decoder_if_not_exist(model=mock_model, name="model.layers.0", idx=0)
         self.assertIsInstance(result, nn.Module)
@@ -752,7 +849,7 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
     def test_init_model_import_error(self):
         """init_model 在无法导入 Qwen3OmniMoeThinkerForConditionalGeneration 时抛出 ImportError"""
         adapter = self._create_adapter()
-        import transformers
+
         with patch.object(
             transformers,
             "Qwen3OmniMoeThinkerForConditionalGeneration",
@@ -765,17 +862,7 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
     def test_handle_dataset_empty(self):
         """handle_dataset 空数据集应返回空列表"""
         adapter = self._create_adapter()
-        # Patch handle_dataset to return [] for empty dataset (compatible with old model_adapter)
-        from msmodelslim.model.qwen3_omni_moe.model_adapter import Qwen3OmniMoeThinkerModelAdapter
-        _orig_handle = Qwen3OmniMoeThinkerModelAdapter.handle_dataset
-
-        def _patched_handle(self, dataset, device=DeviceType.NPU):
-            if not dataset:
-                return []
-            return _orig_handle(self, dataset, device)
-
-        with patch.object(Qwen3OmniMoeThinkerModelAdapter, "handle_dataset", _patched_handle):
-            result = adapter.handle_dataset(dataset=[], device=DeviceType.CPU)
+        result = adapter.handle_dataset(dataset=[], device=DeviceType.CPU)
         self.assertEqual(result, [])
 
     def test_generate_model_forward_inputs_not_list(self):
@@ -836,9 +923,7 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         gen = adapter.generate_model_forward(model=mock_model, inputs=sample)
         with self.assertRaises(ValueError) as ctx:
             next(gen)
-        self.assertTrue(
-            "audio_feature_lengths" in str(ctx.exception) or "feature_attention_mask" in str(ctx.exception)
-        )
+        self.assertTrue("audio_feature_lengths" in str(ctx.exception) or "feature_attention_mask" in str(ctx.exception))
 
     def test_position_embeddings_not_tuple_warning(self):
         """generate_model_forward 当 rotary_emb 返回非 tuple 时打 warning 仍继续"""

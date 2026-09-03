@@ -30,7 +30,7 @@ from msmodelslim.core.quant_service import KeyInfoPersistenceInfra
 from msmodelslim.core.runner.layer_wise_runner import LayerWiseRunner
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
 from msmodelslim.core.runner.optional_interface import LayerWiseOffloadOptionalInterface
-from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
+from msmodelslim.utils.exception import InvalidDatasetError, SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.utils.seed import seed_all
 from msmodelslim.core.context import ContextManager, IContextFactory
@@ -136,6 +136,24 @@ class MultimodalVLMModelslimV1QuantService(IQuantService):
                     )
         return offload_device
 
+    @staticmethod
+    def _validate_loaded_samples_text(dataset: List[Any]) -> None:
+        """Validate that every loaded calibration sample has non-empty text."""
+        from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VlmCalibSample
+
+        for index, sample in enumerate(dataset, start=1):
+            if isinstance(sample, VlmCalibSample):
+                text = sample.text
+            elif isinstance(sample, dict):
+                text = sample.get("text")
+            else:
+                text = getattr(sample, "text", None)
+            if text is None or (isinstance(text, str) and not text.strip()):
+                raise InvalidDatasetError(
+                    "text data is missing",
+                    action="Provide non-empty text in calibration samples.",
+                )
+
     def quantize(
         self,
         quant_config: BaseQuantConfig,
@@ -217,6 +235,7 @@ class MultimodalVLMModelslimV1QuantService(IQuantService):
         # Set default_text to dataset_loader
         self.dataset_loader.default_text = quant_config.spec.default_text
         dataset = self.dataset_loader.get_dataset_by_name(dataset_path)
+        self._validate_loaded_samples_text(dataset)
         get_logger().info("Prepared dataset from %s successfully", dataset_path)
 
         final_process_cfg = quant_config.spec.process.copy()

@@ -30,13 +30,18 @@ import torch
 from safetensors import safe_open
 from torch import nn
 from tqdm import tqdm
-from transformers import AutoProcessor
-from transformers.masking_utils import create_causal_mask
+from transformers import AutoProcessor  # pylint: disable=no-name-in-module
+from transformers.masking_utils import create_causal_mask  # pylint: disable=no-name-in-module
 
-from transformers import Qwen3_5MoeForConditionalGeneration, Qwen3_5ForConditionalGeneration
-from transformers.models.qwen3.modeling_qwen3 import Qwen3RMSNorm
-from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5RMSNorm
-from transformers.models.qwen3_5_moe.modeling_qwen3_5_moe import Qwen3_5MoeRMSNorm
+from transformers import (  # pylint: disable=no-name-in-module
+    Qwen3_5MoeForConditionalGeneration,
+    Qwen3_5ForConditionalGeneration,
+)
+from transformers.models.qwen3.modeling_qwen3 import Qwen3RMSNorm  # pylint: disable=no-name-in-module
+from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5RMSNorm  # pylint: disable=no-name-in-module
+from transformers.models.qwen3_5_moe.modeling_qwen3_5_moe import (  # pylint: disable=no-name-in-module
+    Qwen3_5MoeRMSNorm,
+)
 from msmodelslim.core.const import DeviceType
 from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInterface
 from msmodelslim.core.base.protocol import ProcessRequest
@@ -51,7 +56,7 @@ from msmodelslim.model.interface_hub import (
 )
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
 from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VlmCalibSample
-from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
+from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import get_valid_read_path, json_safe_load, MAX_READ_FILE_SIZE_512G
 
@@ -147,6 +152,10 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
         """Return model type"""
         return self.model_type
 
+    @staticmethod
+    def _non_empty_path(path: Any) -> bool:
+        return path is not None and bool(str(path).strip())
+
     def get_layer_wise_offload_device(self):
         """Return preferred offload device for layer-wise runner."""
         return "meta"
@@ -158,11 +167,7 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
         Supported sample structure (preferred):
             VlmCalibSample(text: str, image: Optional[str])
 
-        For image+text samples:
-            [{"role": "user", "content": [
-                {"type": "image", "image": "<path>"},
-                {"type": "text", "text": text}
-            ]}]
+        Pure-text and image+text samples are supported within one homogeneous task.
 
         Returns a list of processor-ready dicts for LayerWiseRunner.
         """
@@ -170,34 +175,23 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
             self.model_path, trust_remote_code=self.trust_remote_code, local_files_only=True
         )
 
-        # Validate dataset modality: Qwen3-VL-MoE adapter expects image+text only (no pure-text or mixed-without-image)
-        for item in dataset:
-            is_dataclass = isinstance(item, VlmCalibSample)
-            image_path = item.image if is_dataclass else item.get('image')
-            text = item.text if is_dataclass else item.get('text')
-            if image_path is None or text is None:
-                raise UnsupportedError(
-                    ("Qwen3-VL-MoE adapter currently requires both image and text for calibration."),
-                    action=(
-                        "Please use multimodal (image+text) calibration data; pure-text or "
-                        "missing image is not supported yet."
-                    ),
-                )
-
-        # Preprocess each sample
+        has_image = False
         processed_data = []
         for item in tqdm(dataset, desc="Processing calibration dataset"):
-            # Support dataclass
-            image_path = item.image
-            text = item.text
+            is_dataclass = isinstance(item, VlmCalibSample)
+            text = item.text if is_dataclass else item.get('text')
+            image_path = item.image if is_dataclass else item.get('image')
 
-            # Build messages based on presence of image
-            # Validate image path
-            image_path = get_valid_read_path(image_path)
-            content = [
-                {"type": "image", "image": str(image_path)},
-                {"type": "text", "text": text},
-            ]
+            if self._non_empty_path(image_path):
+                has_image = True
+                image_path = get_valid_read_path(image_path)
+                content = [
+                    {"type": "image", "image": str(image_path)},
+                    {"type": "text", "text": text},
+                ]
+            else:
+                # transformers>=5.2 apply_chat_template expects list-of-parts, not a bare string
+                content = [{"type": "text", "text": text}]
 
             messages = [{"role": "user", "content": content}]
 
@@ -227,7 +221,11 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
 
             processed_data.append(processed_item)
 
-        get_logger().info("Processed %d multimodal vlm samples", len(processed_data))
+        get_logger().info(
+            "Processed %d calibration samples (image=%s)",
+            len(processed_data),
+            has_image,
+        )
         return processed_data
 
     def init_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
@@ -343,36 +341,31 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
         else:
             sample = inputs
 
-        # 2. Vision encoder forward
-        pixel_values = sample['pixel_values']
-        image_grid_thw = sample['image_grid_thw']
-
-        # Yield vision encoder result
-        vision_outputs = yield ProcessRequest(
-            name="model.visual", module=model.model.visual, args=(pixel_values, image_grid_thw), kwargs={}
-        )
-
-        image_embeds = vision_outputs['pooler_output']
-
-        # 3. Prepare inputs for text decoder
+        # 2. Vision encoder forward (optional for text-only calibration)
+        pixel_values = sample.get('pixel_values')
+        image_grid_thw = sample.get('image_grid_thw')
         input_ids = sample['input_ids']
         attention_mask = sample['attention_mask']
-
-        # Get input embeddings
         inputs_embeds = model.model.language_model.embed_tokens(input_ids)
 
-        # CRITICAL: Merge visual features into text embeddings
-        # This mimics Qwen3VLMoeModel.forward (lines 1320-1358)
-        if isinstance(image_embeds, (list, tuple)):
-            image_embeds_cat = torch.cat(image_embeds, dim=0).to(inputs_embeds.device, inputs_embeds.dtype)
+        if pixel_values is not None:
+            vision_outputs = yield ProcessRequest(
+                name="model.visual", module=model.model.visual, args=(pixel_values, image_grid_thw), kwargs={}
+            )
+
+            image_embeds = vision_outputs['pooler_output']
+
+            if isinstance(image_embeds, (list, tuple)):
+                image_embeds_cat = torch.cat(image_embeds, dim=0).to(inputs_embeds.device, inputs_embeds.dtype)
+            else:
+                image_embeds_cat = image_embeds.to(inputs_embeds.device, inputs_embeds.dtype)
+
+            image_mask = (input_ids == model.config.image_token_id).unsqueeze(-1).expand_as(inputs_embeds)
+            inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds_cat)
         else:
-            image_embeds_cat = image_embeds.to(inputs_embeds.device, inputs_embeds.dtype)
+            get_logger().info("Text-only calibration path: skipping vision encoder forward.")
 
-        # Get image token mask for fusion
-        image_mask = (input_ids == model.config.image_token_id).unsqueeze(-1).expand_as(inputs_embeds)
-        inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds_cat)
-
-        # Get cache_position for attention mask creation
+        # 3. Prepare inputs for text decoder
         cache_position = torch.arange(0, inputs_embeds.shape[1], device=inputs_embeds.device)
 
         # Get position ids

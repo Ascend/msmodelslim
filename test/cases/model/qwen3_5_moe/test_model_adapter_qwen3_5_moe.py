@@ -37,7 +37,7 @@ from msmodelslim.model.qwen3_5_moe.model_adapter import (
     remove_zero_and_shift,
     default_dtype,
 )
-from msmodelslim.utils.exception import UnsupportedError, InvalidModelError
+from msmodelslim.utils.exception import InvalidModelError
 
 _scipy_mock = types.ModuleType("scipy")
 _scipy_mock.__spec__ = importlib.util.spec_from_loader("scipy", loader=None)
@@ -192,17 +192,6 @@ class TestQwen3_5ModelAdapterGetModelPedigree(unittest.TestCase):
             self.assertEqual(result, 'qwen3_5_moe')
 
 
-class TestQwen3_5ModelAdapterGetLayerWiseOffloadDevice(unittest.TestCase):
-    """测试Qwen3_5ModelAdapter的get_layer_wise_offload_device方法"""
-
-    def test_returns_qwen3_5_moe_when_called(self):
-        """测试get_layer_wise_offload_device方法：应返回'meta'"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
-            adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
-            result = adapter.get_layer_wise_offload_device()
-            self.assertEqual(result, 'meta')
-
-
 class TestQwen3_5ModelAdapterGetModelType(unittest.TestCase):
     """测试Qwen3_5ModelAdapter的get_model_type方法"""
 
@@ -327,57 +316,37 @@ class TestQwen3_5ModelAdapterGetAdapterConfigForSubgraph(unittest.TestCase):
 class TestQwen3_5ModelAdapterHandleDataset(unittest.TestCase):
     """测试Qwen3_5ModelAdapter的handle_dataset方法"""
 
-    def test_raises_unsupported_when_missing_image(self):
-        """测试缺少image时：应抛出UnsupportedError"""
+    def test_accepts_text_only_samples(self):
+        """纯文本样本应通过 handle_dataset"""
         with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter._model_path = Path('/fake/path')
             adapter._trust_remote_code = False
+            adapter._collect_inputs_to_device = MagicMock(return_value={"input_ids": torch.tensor([[1]])})
             from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VlmCalibSample
 
+            mock_processor = MagicMock()
+            mock_processor.apply_chat_template.return_value = {"input_ids": torch.tensor([[1]])}
             dataset = [VlmCalibSample(text="hello", image=None)]
             with patch('msmodelslim.model.qwen3_5_moe.model_adapter.AutoProcessor') as mock_ap:
-                mock_ap.from_pretrained.return_value = MagicMock()
-                with self.assertRaises(UnsupportedError):
-                    adapter.handle_dataset(dataset)
+                mock_ap.from_pretrained.return_value = mock_processor
+                result = adapter.handle_dataset(dataset)
+            self.assertEqual(len(result), 1)
 
-    def test_raises_unsupported_when_missing_text(self):
-        """测试缺少text时：应抛出UnsupportedError"""
+    def test_accepts_dict_text_only_samples(self):
+        """字典格式纯文本样本应通过 handle_dataset"""
         with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter._model_path = Path('/fake/path')
             adapter._trust_remote_code = False
-            from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VlmCalibSample
-
-            dataset = [VlmCalibSample(text=None, image="/fake/image.png")]
-            with patch('msmodelslim.model.qwen3_5_moe.model_adapter.AutoProcessor') as mock_ap:
-                mock_ap.from_pretrained.return_value = MagicMock()
-                with self.assertRaises(UnsupportedError):
-                    adapter.handle_dataset(dataset)
-
-    def test_raises_unsupported_when_dict_missing_image(self):
-        """测试字典格式缺少image时：应抛出UnsupportedError"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
-            adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
-            adapter._model_path = Path('/fake/path')
-            adapter._trust_remote_code = False
+            adapter._collect_inputs_to_device = MagicMock(return_value={"input_ids": torch.tensor([[1]])})
+            mock_processor = MagicMock()
+            mock_processor.apply_chat_template.return_value = {"input_ids": torch.tensor([[1]])}
             dataset = [{"text": "hello"}]
             with patch('msmodelslim.model.qwen3_5_moe.model_adapter.AutoProcessor') as mock_ap:
-                mock_ap.from_pretrained.return_value = MagicMock()
-                with self.assertRaises(UnsupportedError):
-                    adapter.handle_dataset(dataset)
-
-    def test_raises_unsupported_when_dict_missing_text(self):
-        """测试字典格式缺少text时：应抛出UnsupportedError"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
-            adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
-            adapter._model_path = Path('/fake/path')
-            adapter._trust_remote_code = False
-            dataset = [{"image": "/fake/path"}]
-            with patch('msmodelslim.model.qwen3_5_moe.model_adapter.AutoProcessor') as mock_ap:
-                mock_ap.from_pretrained.return_value = MagicMock()
-                with self.assertRaises(UnsupportedError):
-                    adapter.handle_dataset(dataset)
+                mock_ap.from_pretrained.return_value = mock_processor
+                result = adapter.handle_dataset(dataset)
+            self.assertEqual(len(result), 1)
 
 
 class TestQwen3_5ModelAdapterInitModel(unittest.TestCase):

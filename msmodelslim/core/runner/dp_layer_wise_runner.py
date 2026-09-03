@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from typing import List, Optional, Any
 import os
 
@@ -42,7 +43,6 @@ from msmodelslim.utils.distributed import (
 )
 
 
-
 @logger_setter()
 class DPLayerWiseRunner(LayerWiseRunner):
     """
@@ -55,8 +55,12 @@ class DPLayerWiseRunner(LayerWiseRunner):
     3. Running quantization on each device
     """
 
-    def __init__(self, adapter: PipelineInterface, offload_device: str = 'meta',
-                 backend: str = 'hccl'):
+    def __init__(
+        self,
+        adapter: PipelineInterface,
+        offload_device: str = "meta",
+        backend: str = "hccl",
+    ):
         """
         Initialize DPLayerWiseRunner.
 
@@ -81,25 +85,32 @@ class DPLayerWiseRunner(LayerWiseRunner):
         """
         from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Config
         from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1_distributed import DistributedAscendV1Config
+
         if isinstance(processor_cfg, AscendV1Config) and not isinstance(processor_cfg, DistributedAscendV1Config):
             # Convert to DistributedAscendV1Config
             distributed_cfg = DistributedAscendV1Config(
                 type="ascendv1_saver_distributed",
                 save_directory=processor_cfg.save_directory,
                 part_file_size=processor_cfg.part_file_size,
-                ext=processor_cfg.ext
+                ext=processor_cfg.ext,
             )
-            get_logger().info(
-                "Converted AscendV1Config to DistributedAscendV1Config for distributed saving"
-            )
+            get_logger().info("Converted AscendV1Config to DistributedAscendV1Config for distributed saving")
             return distributed_cfg
 
         return processor_cfg
 
-    def distributed_worker(self, rank: int, world_size: int, device_indices: List[int],
-                          model: Optional[nn.Module], calib_data: Optional[List[Any]],
-                          device: DeviceType, master_port: int = 29500,
-                          shared_ctx=None, work_queue=None):
+    def distributed_worker(
+        self,
+        rank: int,
+        world_size: int,
+        device_indices: List[int],
+        model: Optional[nn.Module],
+        calib_data: Optional[List[Any]],
+        device: DeviceType,
+        master_port: int = 29500,
+        shared_ctx=None,
+        work_queue=None,
+    ):
         """
         Worker function for distributed execution.
 
@@ -123,7 +134,9 @@ class DPLayerWiseRunner(LayerWiseRunner):
 
                 # Setup distributed environment
                 # rank is used for process group communication, actual_device_idx is used for device selection
-                setup_distributed(rank, world_size, self.backend, device_index=actual_device_idx, master_port=master_port)
+                setup_distributed(
+                    rank, world_size, self.backend, device_index=actual_device_idx, master_port=master_port
+                )
 
                 if work_queue is not None:
                     set_distributed_task_work_queue(work_queue)
@@ -135,7 +148,12 @@ class DPLayerWiseRunner(LayerWiseRunner):
 
                 get_logger().info(
                     "Rank %s/%s initialized on device %s (device index %s) with backend %s",
-                    rank, world_size, actual_device_idx, actual_device_idx, self.backend)
+                    rank,
+                    world_size,
+                    actual_device_idx,
+                    actual_device_idx,
+                    self.backend,
+                )
 
                 # Initialize model in distributed environment
                 _ = get_input_datas(self.adapter, calib_data, DeviceType.CPU)
@@ -163,16 +181,17 @@ class DPLayerWiseRunner(LayerWiseRunner):
                 self.preprocess_processor(processor_list, model, device=device)
 
                 from msmodelslim.core.base.protocol import DataUnit
+
                 data_recorder = DataUnit(None, None)
-                process_unit = self.build_process_unit(
+                process_units = self.build_process_unit(
                     processor_list,
                     model=model,
                     adapter=self.adapter,
                     calib_data=calib_data,
-                    data_recorder=data_recorder
+                    data_recorder=data_recorder,
                 )
 
-                self.generated_schedule(process_unit, data_recorder)
+                self.generated_schedule(process_units, model, calib_data)
 
         except Exception as e:
             get_logger().error("Error in rank %s: %s", rank, e)
@@ -182,8 +201,13 @@ class DPLayerWiseRunner(LayerWiseRunner):
             if dist.is_initialized():
                 dist.destroy_process_group()
 
-    def run(self, model: nn.Module = None, calib_data: Optional[List[Any]] = None,
-            device: DeviceType = DeviceType.NPU, device_indices: Optional[List[int]] = None):
+    def run(
+        self,
+        model: nn.Module = None,
+        calib_data: Optional[List[Any]] = None,
+        device: DeviceType = DeviceType.NPU,
+        device_indices: Optional[List[int]] = None,
+    ):
         """
         Run distributed quantization.
 
@@ -204,7 +228,8 @@ class DPLayerWiseRunner(LayerWiseRunner):
 
         get_logger().info(
             "Starting distributed execution with %s devices: %s. ",
-            world_size, device_indices,
+            world_size,
+            device_indices,
         )
 
         try:
@@ -223,8 +248,8 @@ class DPLayerWiseRunner(LayerWiseRunner):
             else:
                 master_port = int(os.environ['MASTER_PORT'])
                 get_logger().info(
-                    "Main process: Using existing MASTER_PORT %s for distributed quantization",
-                    master_port)
+                    "Main process: Using existing MASTER_PORT %s for distributed quantization", master_port
+                )
 
             shared_ctx = get_current_context()
 
@@ -241,7 +266,7 @@ class DPLayerWiseRunner(LayerWiseRunner):
                     self.distributed_worker,
                     args=(world_size, device_indices, model, calib_data, device, master_port, shared_ctx, work_queue),
                     nprocs=world_size,
-                    join=True
+                    join=True,
                 )
             finally:
                 if _port_set_by_us:
@@ -270,8 +295,9 @@ class DPLayerWiseRunner(LayerWiseRunner):
         else:
             self.process_config_list.insert(0, converted_cfg)
 
-    def _check_distributed_support(self, processor_list: List[AutoProcessorConfig],
-                                    model: nn.Module) -> List[AutoSessionProcessor]:
+    def _check_distributed_support(
+        self, processor_list: List[AutoProcessorConfig], model: nn.Module
+    ) -> List[AutoSessionProcessor]:
         """
         Check which processors support distributed execution.
 

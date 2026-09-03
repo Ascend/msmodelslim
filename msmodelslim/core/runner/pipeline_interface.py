@@ -48,7 +48,8 @@ class PipelineInterface(IModel):
         """
         raise ToDoError(
             "This model does not support generate dataset.",
-            action="Please implement generate_dataset for PipelineInterface.")
+            action="Please implement generate_dataset for PipelineInterface.",
+        )
 
     @abstractmethod
     def init_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
@@ -56,44 +57,53 @@ class PipelineInterface(IModel):
         Init the model to specified device which may be different from execution device.
         If the model is large, just load a part of the model.
         You can extend the model when generating model visit and forward.
-        
+
         Returns:
             nn.Module: The loaded model.
         """
         raise ToDoError(
             "This model does not support init model to specified device.",
-            action="Please implement init_model for PipelineInterface.")
+            action="Please implement init_model for PipelineInterface.",
+        )
 
     @abstractmethod
     def generate_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
         """
-        Determine the model visit, which is used to modify the model in fine-scheduling runner.
+        Determine the model visit pipeline for data-free quantization.
+        Used when **all** processors in the pipeline are data-free.
+
         The model visit pipeline is a generator of ProcessRequest,
             which decomposes the model modification into a list of module visit.
-        NOTICE: The yield sequence of modules in ProcessRequest should be same as generate_model_forward.
 
         Returns:
             Generator[ProcessRequest, Any, None]: The generator of model visit.
         """
         raise ToDoError(
             "This model does not support generate_model_visit, which is required for model modification.",
-            action="Please implement generate_model_visit for PipelineInterface.")
+            action="Please implement generate_model_visit for PipelineInterface.",
+        )
 
     @abstractmethod
-    def generate_model_forward(self, model: nn.Module, inputs: Any,
-                               ) -> Generator[ProcessRequest, Any, None]:
+    def generate_model_forward(
+        self,
+        model: nn.Module,
+        inputs: Any,
+    ) -> Generator[ProcessRequest, Any, None]:
         """
-        Determine the model forward, which is used to calibrate the model in fine-scheduling runner.
+        Determine the model forward pipeline for calibration-based quantization.
+        Used when **any** processor in the pipeline requires calibration data.
+        All process units share this forward schedule (data-free processors skip ``process()``).
+
         The model forward pipeline is a generator of ProcessRequest,
             which decomposes the model forward into a list of module forward.
-        NOTICE: The yield sequence of modules in ProcessRequest should be same as generate_model_visit.
 
         Returns:
             Generator[ProcessRequest, Any, None]: The generator of model forward.
         """
         raise ToDoError(
             "This model does not support generate_model_forward, which is required for model calibration.",
-            action="Please implement generate_model_forward for PipelineInterface.")
+            action="Please implement generate_model_forward for PipelineInterface.",
+        )
 
     @abstractmethod
     def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
@@ -104,4 +114,5 @@ class PipelineInterface(IModel):
         """
         raise ToDoError(
             "This model does not support enable_kv_cache, which is required for model calibration.",
-            action="Please implement enable_kv_cache for PipelineInterface.")
+            action="Please implement enable_kv_cache for PipelineInterface.",
+        )

@@ -45,7 +45,9 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
     def setup_method(self):
         # 轻量级 dataset_loader mock，仅暴露测试需要的接口
         self.dataset_loader = Mock()
-        self.dataset_loader.get_dataset_by_name.return_value = "mock_dataset"
+        # quant_process 会对加载结果做非空 text 校验，mock 需返回带 text 的样本列表
+        self.mock_dataset = [{"text": "hello"}]
+        self.dataset_loader.get_dataset_by_name.return_value = self.mock_dataset
 
         # QuantService 初始化使用 QuantServiceConfig（仅 apiversion），不是 QuantConfig
         self.quant_service_config = MultimodalVLMModelslimV1QuantServiceConfig()
@@ -134,6 +136,30 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
             self.device,
             [0],
         )
+
+    @patch("msmodelslim.core.quant_service.multimodal_vlm_v1.quant_service.seed_all")
+    def test_quant_process_raises_when_loaded_sample_text_missing(self, mock_seed_all):
+        """加载后的校准样本若缺少非空 text，应在进入 runner 前失败。"""
+        from msmodelslim.utils.exception import InvalidDatasetError
+
+        self.dataset_loader.get_dataset_by_name.return_value = [{"text": ""}]
+        spec = Mock()
+        spec.dataset = "empty_text_dataset"
+        spec.default_text = "unused"
+        spec.process = []
+        spec.save = []
+        spec.runner = RunnerType.LAYER_WISE
+        quant_cfg = Mock()
+        quant_cfg.spec = spec
+
+        with pytest.raises(InvalidDatasetError) as exc_info:
+            self.service.quant_process(
+                quant_config=quant_cfg,
+                model_adapter=self.model_adapter,
+                save_path=None,
+                device=DeviceType.CPU,
+            )
+        assert "text data is missing" in str(exc_info.value)
 
     @pytest.mark.parametrize(
         "runner_value, device_indices, expected_type",
@@ -230,7 +256,7 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
         runner.add_processor.assert_has_calls(expected_calls, any_order=False)
 
         # 最终量化执行（透传 device_indices）
-        runner.run.assert_called_once_with(calib_data="mock_dataset", device=self.device, device_indices=[0])
+        runner.run.assert_called_once_with(calib_data=self.mock_dataset, device=self.device, device_indices=[0])
         self.context_factory.create.assert_called_once_with(is_distributed=False)
         # 确保结束日志被打印
         assert mock_get_logger.return_value.info.called
@@ -273,7 +299,7 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
 
         mock_dp_runner_cls.assert_called_once_with(adapter=self.model_adapter, offload_device="cpu")
         runner.run.assert_called_once_with(
-            calib_data="mock_dataset",
+            calib_data=self.mock_dataset,
             device=self.device,
             device_indices=[0, 1, 2, 3],
         )
@@ -317,7 +343,7 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
 
         mock_dp_runner_cls.assert_called_once_with(adapter=self.model_adapter, offload_device="cpu")
         runner.run.assert_called_once_with(
-            calib_data="mock_dataset",
+            calib_data=self.mock_dataset,
             device=self.device,
             device_indices=[0, 1],
         )
@@ -377,7 +403,7 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
             [call(processor_cfg=cfg) for cfg in process_cfgs],
             any_order=False,
         )
-        runner.run.assert_called_once_with(calib_data="mock_dataset", device=cpu_device, device_indices=None)
+        runner.run.assert_called_once_with(calib_data=self.mock_dataset, device=cpu_device, device_indices=None)
 
     @staticmethod
     def _make_quant_config_for_offload_case():

@@ -20,14 +20,17 @@ See the Mulan PSL v2 for more details.
 """
 
 import unittest
+from unittest.mock import MagicMock, patch
 
 import torch
+from torch import nn
 
+from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.core.quantizer.base import QConfig
-from msmodelslim.core.quantizer.linear import LinearQConfig
+from msmodelslim.core.quantizer.linear import LinearQConfig, LinearQuantizer
 from msmodelslim.ir import AutoFakeQuantLinear
 from msmodelslim.ir.qal import QDType, QScope
-from msmodelslim.processor.quant.linear import LinearProcessorConfig
+from msmodelslim.processor.quant.linear import LinearProcessorConfig, LinearQuantProcessor
 from ..test_processor_base import TestProcessorBase
 
 
@@ -364,8 +367,6 @@ class TestLinearQuantProcessor(TestProcessorBase):
 
     def test_DTS_calibrate_methods_should_exist(self):
         """验证 DTS calibrate 方法存在"""
-        from msmodelslim.processor.quant.linear import LinearQuantProcessor
-
         assert hasattr(LinearQuantProcessor, '_calibrate_shared_data_free_with_dts'), (
             "LinearQuantProcessor should have _calibrate_shared_data_free_with_dts"
         )
@@ -380,10 +381,75 @@ class TestLinearQuantProcessor(TestProcessorBase):
         inputs = self.create_test_input()
         self.assert_model_runs_without_error(inputs)
 
+    def test_support_distributed_returns_value_when_quantizer_reports_capability(self):
+        config = self.create_processor_config()
+        processor = LinearQuantProcessor(self.model, config)
+
+        with patch.object(LinearQuantizer, "support_distributed", return_value=True):
+            assert processor.support_distributed() is True
+
+    def test_preprocess_calls_distributed_calibration_when_distributed_is_initialized(self):
+        config = self.create_processor_config()
+        processor = LinearQuantProcessor(self.model, config)
+        request = BatchProcessRequest(name="", module=self.model, datas=[])
+
+        with (
+            patch("msmodelslim.processor.quant.linear.dist.is_initialized", return_value=True),
+            patch("msmodelslim.processor.quant.linear.DistHelper", return_value=MagicMock()),
+            patch.object(processor, "_calibrate_shared_data_free_with_dts") as calibrate,
+        ):
+            processor.preprocess(request)
+
+        calibrate.assert_called_once_with("", self.model)
+
+    def test_calibrate_shared_data_free_submits_candidates_when_shared_quantizers_exist(self):
+        config = self.create_processor_config()
+        processor = LinearQuantProcessor(self.model, config)
+        processor.dist_helper = MagicMock()
+        processor.dist_helper.is_shared.return_value = True
+        processor._install_quantizer("", self.model)
+        for module in self.model.modules():
+            if isinstance(module, LinearQuantizer):
+                module.weight_quantizer.is_data_free = MagicMock(return_value=True)
+        expected_candidates = sum(isinstance(module, LinearQuantizer) for module in self.model.modules())
+        scheduler = MagicMock()
+        scheduler_context = MagicMock()
+        scheduler_context.__enter__.return_value = scheduler
+
+        with (
+            patch("msmodelslim.processor.quant.linear.dist.get_rank", return_value=0),
+            patch("msmodelslim.processor.quant.linear.dist.get_world_size", return_value=1),
+            patch(
+                "msmodelslim.processor.quant.linear.DistributedTaskScheduler",
+                return_value=scheduler_context,
+            ),
+        ):
+            processor._calibrate_shared_data_free_with_dts("", self.model)
+
+        assert scheduler.submit.call_count == expected_candidates
+        scheduler.run.assert_called_once_with()
+
+    def test_calibrate_shared_data_free_returns_without_scheduler_when_candidates_are_empty(self):
+        processor = LinearQuantProcessor(self.model, self.create_processor_config())
+        processor.dist_helper = MagicMock()
+
+        with patch("msmodelslim.processor.quant.linear.DistributedTaskScheduler") as scheduler:
+            processor._calibrate_shared_data_free_with_dts("", nn.ReLU())
+
+        scheduler.assert_not_called()
+
+    def test_dts_calibrate_forward_calls_weight_quantizer_when_module_exists(self):
+        processor = LinearQuantProcessor(self.model, self.create_processor_config())
+        quantizer = nn.Module()
+        quantizer.weight_quantizer = MagicMock()
+        self.model.set_submodule("model.layers.0.self_attn.q_proj", quantizer)
+
+        processor._dts_calibrate_forward("model.layers.0.self_attn.q_proj")
+
+        quantizer.weight_quantizer.forward.assert_called_once_with(None)
+
     def test_calibrate_forward_calls_weight_quantizer_forward(self):
         """验证 _dts_calibrate_forward 触发 weight_quantizer.forward"""
-        from msmodelslim.processor.quant.linear import LinearQuantProcessor
-
         # 验证方法存在于 LinearQuantProcessor 类上
         assert hasattr(LinearQuantProcessor, '_dts_calibrate_forward'), (
             "LinearQuantProcessor should have _dts_calibrate_forward"
@@ -404,9 +470,7 @@ class TestLinearQuantProcessor(TestProcessorBase):
 
     def test_dts_calibrate_shared_data_free_when_distributed(self):
         """分布式下共享 data-free 权重量化经 DTS 调度完成校准（替换 pygtrie 后的业务级验证）。"""
-        from unittest.mock import MagicMock, patch
         from msmodelslim.core.quantizer.base import AutoWeightQuantizer
-        from msmodelslim.core.quantizer.linear import LinearQuantizer
         from msmodelslim.processor.quant import linear as linear_module
 
         config = self.create_processor_config(include=["*"])
