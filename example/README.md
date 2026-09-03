@@ -39,6 +39,7 @@ msModelSlim 推荐实践集提供了各种大语言模型、多模态理解模�
   - Kimi-K3 模型
   - InternVL3.5 系列模型
   - InternVL3.5-MoE 系列模型
+  - Step-3.7-Flash 模型
 
 ### 多模态生成模型量化说明
 

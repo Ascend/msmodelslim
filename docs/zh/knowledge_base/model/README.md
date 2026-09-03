@@ -1311,6 +1311,17 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Step-3.7-Flash/README.md">Step-3.7-Flash系列</a></strong></td>
+      <td>Step-3.7-Flash</td>
+      <td>transformers>=4.57.1,&lt;5.0.0</td>
+      <td>√(一键量化，仅vLLM Ascend支持)</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
       <td rowspan="7"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_sd/README.md">多模态生成模型</a></strong></td>
       <td>SD3-Medium</td>
       <td>diffusers</td>
