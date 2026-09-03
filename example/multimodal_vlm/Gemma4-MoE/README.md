@@ -27,18 +27,15 @@
 | 模型 | 原始浮点权重 | 量化方式 | 推理框架支持情况 | 量化命令 |
 |------|-------------|---------|----------------|---------|
 | gemma-4-26B-A4B-it | [gemma-4-26B-A4B-it](https://huggingface.co/google/gemma-4-26B-A4B-it) | W8A8 动态量化（MoE experts） | vLLM Ascend 支持 | [W8A8 动态量化](#gemma-4-26b-a4b-it-w8a8-动态量化) |
+| gemma-4-26B-A4B-it | [gemma-4-26B-A4B-it](https://huggingface.co/google/gemma-4-26B-A4B-it) | MXFP8 / MXFP4 混合量化 | vLLM Ascend（优先 Ascend 950） | [MXFP8/MXFP4 混合量化](#gemma-4-26b-a4b-it-mxfp8mxfp4-混合量化) |
 
-**说明：**
-
-- 点击量化命令列中的链接可跳转到对应的具体量化命令。
-- 当前实践配置对 `*experts*` 做 W8A8 动态量化（激活 `per_token`、权重 `per_channel`），`vision_tower` / `embed_vision` / `router` 保持浮点。
-- 该配置为 data-free 动态量化：量化阶段可不跑前向校准；若后续使用混合/静态 W8A8 配置，仍需提供图像+文本校准样本。
+**说明：** 点击量化命令列中的链接可跳转到对应的具体量化命令。
 
 ## 校准数据说明
 
 校准数据支持的方式，详见《[dataset 配置说明](../../../docs/zh/user_guide/usage_quick_quantization.md#526-dataset---校准数据集配置)》。
 
-- **当前 W8A8 动态实践（`gemma4_moe_w8a8.yaml`）**：data-free，可不依赖校准前向。
+- **当前 W8A8 动态 / MXFP8·MXFP4 实践**：data-free，可不依赖校准前向。
 - **混合/静态激活量化**：每条样本需同时提供 `image` 与 `text`；缺项样本暂不支持。
 
 ## 生成量化权重
@@ -57,6 +54,24 @@ msmodelslim quant \
     --trust_remote_code True
 ```
 
+### <span id="gemma-4-26b-a4b-it-mxfp8mxfp4-混合量化">gemma-4-26B-A4B-it MXFP8/MXFP4 混合量化</span>
+
+实践配置见 [`gemma4_moe_mxfp8_mxfp4.yaml`](../../../lab_practice/gemma4_moe/gemma4_moe_mxfp8_mxfp4.yaml)。可通过 `--quant_type w4a4`（匹配 `label.w_bit/a_bit=4`）。
+
+```shell
+msmodelslim quant \
+    --model_path /path/to/gemma-4-26B-A4B-it \
+    --save_path /path/to/gemma4_moe_mxfp8_mxfp4 \
+    --device npu \
+    --model_type gemma-4-26B-A4B-it \
+    --quant_type w4a4 \
+    --trust_remote_code True
+```
+
+> [!NOTE]
+>
+> MXFP4/MXFP8 算子路径优先在 Ascend 950 + vLLM Ascend 验证；其他硬件请以实际 CANN / 推理框架版本为准。
+
 ## 附录
 
 ### 相关资源
@@ -64,3 +79,4 @@ msmodelslim quant \
 - 《[一键量化配置协议说明](../../../docs/zh/user_guide/usage_quick_quantization.md#5-量化配置协议详解)》。
 - 《[multimodal_vlm_modelslim_v1 量化服务配置详解](../../../docs/zh/user_guide/usage_quick_quantization.md#54-multimodal_vlm_modelslim_v1-配置详解)》。
 - 《[实践配置 gemma4_moe_w8a8.yaml](../../../lab_practice/gemma4_moe/gemma4_moe_w8a8.yaml)》。
+- 《[实践配置 gemma4_moe_mxfp8_mxfp4.yaml](../../../lab_practice/gemma4_moe/gemma4_moe_mxfp8_mxfp4.yaml)》。

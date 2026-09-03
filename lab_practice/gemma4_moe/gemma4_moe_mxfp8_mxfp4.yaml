@@ -1,0 +1,74 @@
+# Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
+apiversion: multimodal_vlm_modelslim_v1
+metadata:
+  config_id: gemma4_moe_mxfp8_mxfp4
+  score: 90
+  verified_tags:
+    gemma-4-26B-A4B-it:
+      - - vLLM_Ascend
+        - Ascend_950
+  label:
+    w_bit: 4
+    a_bit: 4
+    is_sparse: False
+    kv_cache: False
+
+default_w8a8_mxfp8: &default_w8a8_mxfp8
+  act:
+    scope: per_block
+    dtype: mxfp8
+    symmetric: true
+    method: minmax
+  weight:
+    scope: per_block
+    dtype: mxfp8
+    symmetric: true
+    method: minmax
+
+default_w4a4_mxfp4: &default_w4a4_mxfp4
+  act:
+    scope: per_block
+    dtype: mxfp4
+    symmetric: true
+    method: minmax
+    ext:
+      axes: -1
+  weight:
+    scope: per_block
+    dtype: mxfp4
+    symmetric: true
+    method: minmax
+    ext:
+      axes: -1
+
+spec:
+  process:
+  - type: group
+    configs:
+    - type: linear_quant
+      qconfig: *default_w8a8_mxfp8
+      include:
+      - '*self_attn*'
+      - '*mlp*'
+      exclude:
+      - '*vision_tower*'
+      - '*embed_vision*'
+    - type: linear_quant
+      qconfig: *default_w8a8_mxfp8
+      include:
+      - '*vision_tower*'
+      exclude:
+      - '*embed_vision*'
+    - type: linear_quant
+      qconfig: *default_w4a4_mxfp4
+      include:
+      - '*experts*'
+      exclude:
+      - '*vision_tower*'
+      - '*embed_vision*'
+      - '*router*'
+  save:
+  - type: ascendv1_saver
+    part_file_size: 4
+  dataset: calibImages
+  default_text: Describe this image in detail.

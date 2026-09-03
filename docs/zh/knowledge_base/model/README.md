@@ -1078,7 +1078,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Gemma4/README.md">Gemma4系列</a></strong></td>
       <td>gemma-4-31B-it</td>
       <td>transformers==5.5.3</td>
-      <td>√(一键量化，仅vLLM Ascend支持)</td>
+      <td>√(一键量化，仅vLLM Ascend支持；另见 README：MXFP8/MXFP4 混合，一键量化 w4a4)</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1262,7 +1262,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Gemma4-MoE/README.md">Gemma4-MoE系列</a></strong></td>
       <td>gemma-4-26B-A4B-it</td>
       <td>transformers==5.5.3</td>
-      <td>√</td>
+      <td>√（另见 README：MXFP8/MXFP4 混合，一键量化 w4a4）</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>

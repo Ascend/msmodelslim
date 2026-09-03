@@ -21,7 +21,7 @@
 | Qwen3-VL | W8A8量化，W8A8SC量化【vLLM Ascend暂不支持】 | [Qwen3-VL-8B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct)<br>[Qwen3-VL-32B-Instruct](https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct) | MindIE 预计3.0.RC1版本支持<br>vLLM Ascend v0.13.0及之后版本支持 | 《[Qwen3-VL 量化使用说明](./Qwen3-VL/README.md)》 |
 | Qwen3-VL-MoE | W8A8混合量化（MoE专家动态量化） | [Qwen3-VL-30B-A3B](https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct/tree/main)<br>[Qwen3-VL-235B-A22B](https://huggingface.co/Qwen/Qwen3-VL-235B-A22B-Instruct/tree/main) | MindIE 待支持<br>vLLM Ascend 支持中 | 《[Qwen3-VL-MoE 量化使用说明](./Qwen3-VL-MoE/README.md)》 |
 | Qwen3-Omni | W8A8量化 | [Qwen3-Omni-30B-A3B-Thinking](https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Thinking)<br>[Qwen3-Omni-30B-A3B-Instruct](https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Instruct) | vLLM Ascend | 《[Qwen3-Omni 量化使用说明](./Qwen3-Omni/README.md)》 |
-| Gemma4 | W8A8量化 | [gemma-4-31B-it](https://huggingface.co/google/gemma-4-31B-it) | vLLM Ascend | 《[Gemma4 量化使用说明](./Gemma4/README.md)》 |
+| Gemma4 | W8A8量化；MXFP8/MXFP4 混合量化 | [gemma-4-31B-it](https://huggingface.co/google/gemma-4-31B-it) | vLLM Ascend（MXFP 优先 Ascend 950） | 《[Gemma4 量化使用说明](./Gemma4/README.md)》 |
 | GLM-4.1V | W8A8SC量化 | [GLM-4.1V-9B-Thinking](https://huggingface.co/zai-org/GLM-4.1V-9B-Thinking/tree/main) | MindIE 预计3.0.RC1版本支持<br>vLLM Ascend 当前不支持 | 《[GLM-4.1V 量化使用说明](./GLM-4.1V/README.md)》 |
 | GLM-4.6V | W8A8混合量化（MoE专家动态量化） | [GLM-4.6V](https://huggingface.co/zai-org/GLM-4.6V) | MindIE 待支持<br>vLLM Ascend 支持中 | 《[GLM-4.6V 量化使用说明](./GLM-4.6V/README.md)》 |
 | Kimi-K2.5 | W4A8混合量化（MoE专家动态量化） | [Kimi-K2.5](https://huggingface.co/moonshotai/Kimi-K2.5) | MindIE 待支持<br>vLLM Ascend 支持中 | 《[Kimi-K2.5 量化使用说明](./Kimi-K2.5/README.md)》 |
@@ -30,4 +30,4 @@
 | InternVL3.5 | W8A8量化 | [InternVL3_5-38B](https://huggingface.co/OpenGVLab/InternVL3_5-38B) | MindIE 待支持<br>vLLM Ascend | 《[InternVL3.5 量化使用说明](./InternVL3_5/README.md)》 |
 | InternVL3.5-MoE | W8A8混合量化（MoE专家动态量化） | [InternVL3_5-241B-A28B](https://huggingface.co/OpenGVLab/InternVL3_5-241B-A28B) | MindIE 待支持<br>vLLM Ascend | 《[InternVL3.5-MoE 量化使用说明](./InternVL3_5-MoE/README.md)》 |
 | MiniMax-M3 | W8A8量化 | [MiniMax-M3-preview](https://huggingface.co/MiniMaxAI/MiniMax-M3-preview) | vLLM Ascend 支持 | 《[MiniMax-M3 量化使用说明](./MiniMax-M3/README.md)》 |
-| Gemma4-MoE | W8A8动态量化（MoE专家动态量化） | [gemma-4-26B-A4B-it](https://huggingface.co/google/gemma-4-26B-A4B-it) | vLLM Ascend 支持 | 《[Gemma4-MoE 量化使用说明](./Gemma4-MoE/README.md)》 |
+| Gemma4-MoE | W8A8动态量化（MoE专家动态量化）；MXFP8/MXFP4 混合量化 | [gemma-4-26B-A4B-it](https://huggingface.co/google/gemma-4-26B-A4B-it) | vLLM Ascend 支持（MXFP 优先 Ascend 950） | 《[Gemma4-MoE 量化使用说明](./Gemma4-MoE/README.md)》 |
