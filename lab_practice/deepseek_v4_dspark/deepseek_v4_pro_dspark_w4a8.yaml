@@ -1,0 +1,132 @@
+apiversion: modelslim_v1
+metadata:
+  config_id: deepseek_v4_pro_dspark_w4a8
+  score: 0
+  verified_model_types:
+    - DeepSeek-V4-Pro-DSpark
+  verified_tags:
+    DeepSeek-V4-Pro-DSpark:
+      - - vLLM-Ascend
+        - Atlas_A3_Inference
+  label:
+    w_bit: 4
+    a_bit: 8
+    is_sparse: False
+    kv_cache: False
+
+default_w4a8_dynamic: &default_w4a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int4"
+    symmetric: True
+    method: "ssz"
+
+default_w4a8_dynamic_minmax: &default_w4a8_dynamic_minmax
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int4"
+    symmetric: True
+    method: "minmax"
+
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+
+spec:
+  process:
+    - type: "quarot"
+      block_size: 32
+    # ---- backbone (same as deepseek_v4_flash_w4a8) ----
+    - type: "flex_awq_ssz"
+      qconfig:
+        act:
+          scope: "per_token"
+          dtype: "int8"
+          symmetric: True
+          method: "minmax"
+        weight:
+          scope: "per_channel"
+          dtype: "int4"
+          symmetric: True
+          method: "ssz"
+          ext:
+            step: 10
+      enable_subgraph_type:
+        - 'up-down'
+      include:
+        - "*"
+      exclude:
+        - "*.ffn.shared_experts.*"
+        - "mtp*"
+    - type: "flex_smooth_quant"
+      enable_subgraph_type:
+        - 'norm-linear'
+      include:
+        - "*"
+      exclude:
+        - "*ffn_norm*"
+        - "mtp*"
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*attn*"
+      exclude:
+        - "*wo_a"
+        - "*wo_b"
+        - "*compressor.wgate"
+        - "*compressor.wkv"
+        - "*indexer.weights_proj"
+        - "*indexer.compressor.wgate"
+        - "*indexer.compressor.wkv"
+        - "mtp*"
+    - type: "linear_quant"
+      qconfig: *default_w4a8_dynamic
+      include:
+        - "*ffn*"
+      exclude:
+        - "*gate"
+        - "*shared_experts*"
+        - "mtp*"
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*ffn.shared_experts*"
+      exclude:
+        - "mtp*"
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "mtp.*.attn.wq_a"
+        - "mtp.*.attn.wq_b"
+        - "mtp.*.attn.wkv"
+        - "mtp.*.ffn.shared_experts.w1"
+        - "mtp.*.ffn.shared_experts.w2"
+        - "mtp.*.ffn.shared_experts.w3"
+    - type: "linear_quant"
+      qconfig: *default_w4a8_dynamic_minmax
+      include:
+        - "mtp.*.ffn.experts.*.w1"
+        - "mtp.*.ffn.experts.*.w2"
+        - "mtp.*.ffn.experts.*.w3"
+  dataset: mix_calib.jsonl
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4

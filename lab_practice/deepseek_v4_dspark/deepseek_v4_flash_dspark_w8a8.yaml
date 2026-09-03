@@ -1,0 +1,71 @@
+apiversion: modelslim_v1
+metadata:
+  config_id: deepseek_v4_flash_dspark_w8a8
+  score: 90
+  verified_model_types:
+    - DeepSeek-V4-Flash-DSpark
+  verified_tags:
+    DeepSeek-V4-Flash-DSpark:
+      - - vLLM-Ascend
+        - Atlas_A3_Inference
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: False
+
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+
+spec:
+  process:
+    - type: "quarot"
+      block_size: 32
+    - type: "flex_smooth_quant"
+      enable_subgraph_type:
+        - 'norm-linear'
+      include:
+        - "*"
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*attn*"
+      exclude:
+        - "*wo_a"
+        - "*wo_b"
+        - "*compressor.wgate"
+        - "*compressor.wkv"
+        - "*indexer.weights_proj"
+        - "*indexer.compressor.wgate"
+        - "*indexer.compressor.wkv"
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*ffn*"
+      exclude:
+        - "*gate"
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "mtp.*.attn.wq_a"
+        - "mtp.*.attn.wq_b"
+        - "mtp.*.attn.wkv"
+        - "mtp.*.ffn.shared_experts.w1"
+        - "mtp.*.ffn.shared_experts.w2"
+        - "mtp.*.ffn.shared_experts.w3"
+        - "mtp.*.ffn.experts.*.w1"
+        - "mtp.*.ffn.experts.*.w2"
+        - "mtp.*.ffn.experts.*.w3"
+  dataset: mix_calib.jsonl
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
