@@ -11,10 +11,10 @@
 
   <!-- Use a divider instead of a background -->
 
- [![Quick Start](https://badgen.net/badge/Quick%20Start/QuickStart/blue)](./docs/zh/quick_start/quantization_quick_start.md)
+ [![Quick Start](https://badgen.net/badge/Quick%20Start/QuickStart/blue)](./docs/en/quick_start/quantization_quick_start.md)
  [![AI Q&A (DeepWiki)](https://badgen.net/badge/AI%20Q%26A/DeepWiki/blue)](https://deepwiki.com/Keithwwa/msmodelslim)
  [![AI Q&A (ZRead)](https://badgen.net/badge/AI%20Q%26A/ZRead/blue)](https://zread.ai/mindstudio-docs/master)
- [![Ascend Community](https://badgen.net/badge/Ascend%20Community/Community/blue)](https://www.hiascend.com/cn/developer/software/mindstudio)
+ [![Ascend Community](https://badgen.net/badge/Ascend%20Community/Community/blue)](https://www.hiascend.com/en/developer/software/mindstudio)
  [![Report Issues](https://badgen.net/badge/Report%20Issues/Issues/blue)](https://gitcode.com/Ascend/msmodelslim/issues/new)
 
 </div>
@@ -144,7 +144,7 @@ For common issues and solutions, see [FAQs](./docs/en/support/faq.md).
 
 To improve document retrieval efficiency, we provide multiple efficient search methods:<br>
 🔹 [AI Q&A (DeepWiki)](https://deepwiki.com/Keithwwa/msmodelslim): natural language Q&A to quickly grasp the project architecture and module relationships.<br>
-🔹 [Precise Search (ReadTheDocs)](https://msmodelslim.readthedocs.io/zh-cn/latest/): full-text keyword search to directly access interfaces, parameters, and error messages.<br>
+🔹 [Precise Search (ReadTheDocs)](https://www.hiascend.com/document/detail/en/mindstudio/latest/TITools/msModelSlim/docs/en/getting_started/quantization_quick_start.md): full-text keyword search to directly access interfaces, parameters, and error messages.<br>
 
 ## 🛠️ Contribution Guide
 
