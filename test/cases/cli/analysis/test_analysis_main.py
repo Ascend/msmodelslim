@@ -51,6 +51,7 @@ class TestAnalysisMain:
             calib_dataset="mix_calib.jsonl",
             topk=15,
             trust_remote_code=False,
+            save_path=None,
         )
         defaults.update(overrides)
         return Namespace(**defaults)

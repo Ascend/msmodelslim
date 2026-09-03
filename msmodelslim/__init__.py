@@ -18,7 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-__all__ = ['set_logger_level']
+
+__all__ = ['set_logger_level', 'logger']
 
 from msmodelslim.utils.logging import logger, set_logger_level
 from msmodelslim.utils.patch import patch_torch, patch_pydantic

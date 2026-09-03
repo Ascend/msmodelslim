@@ -19,7 +19,6 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-
 import unittest
 from typing import Any, List
 from unittest.mock import MagicMock, patch
@@ -63,7 +62,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
             symmetric=True,
             enable_subgraph_type=["norm-linear", "linear-linear", "ov", "up-down"],
             include=["*layer1*"],
-            exclude=["*layer3*"]
+            exclude=["*layer3*"],
         )
         self.adapter = MagicMock()
         self.processor = ConcreteSmoothProcessor(self.model, self.config, self.adapter)
@@ -71,12 +70,9 @@ class TestBaseSmoothProcessor(unittest.TestCase):
     def test_validate_parameters_valid(self):
         self.processor._validate_parameters()
         # No exception should be raised
-        self.assertTrue(True)
 
     def test_validate_parameters_invalid_subgraph_type(self):
-        invalid_config = IterSmoothProcessorConfig(
-            enable_subgraph_type=["invalid-type"]
-        )
+        invalid_config = IterSmoothProcessorConfig(enable_subgraph_type=["invalid-type"])
         processor = ConcreteSmoothProcessor(self.model, invalid_config)
         with self.assertRaises(SchemaValidateError):
             processor._validate_parameters()
@@ -103,7 +99,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
         self.processor.global_adapter_config = ["config1", "config2"]
         mock_return_value = ["filtered_config"]
         with patch.object(
-                self.processor, '_filter_adapter_configs_by_config', return_value=mock_return_value
+            self.processor, '_filter_adapter_configs_by_config', return_value=mock_return_value
         ) as mock_filter:
             with patch.object(self.processor, '_install_statistics_hooks') as mock_install:
                 self.processor.preprocess(request)
@@ -132,7 +128,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
             MagicMock(spec=AdapterConfig, subgraph_type="norm-linear", mapping=MagicMock(source="layer1.module")),
             MagicMock(spec=AdapterConfig, subgraph_type="linear-linear", mapping=MagicMock(source="layer2.module")),
             MagicMock(spec=AdapterConfig, subgraph_type="ov", mapping=MagicMock(source="layer3.module")),
-            MagicMock(spec=AdapterConfig, subgraph_type="up-down", mapping=MagicMock(source="layer4.module"))
+            MagicMock(spec=AdapterConfig, subgraph_type="up-down", mapping=MagicMock(source="layer4.module")),
         ]
         result = self.processor._filter_adapter_configs_by_config(adapter_configs, self.config, "layer1")
         self.assertEqual(len(result), 1)
@@ -141,18 +137,10 @@ class TestBaseSmoothProcessor(unittest.TestCase):
     def test_filter_adapter_configs_by_config_source_none_uses_targets_first(self):
         """When mapping.source is None, module_name is targets[0] for filtering."""
         adapter_configs = [
-            AdapterConfig(
-                subgraph_type="up-down",
-                mapping=MappingConfig(targets=["layer1.linear"], source=None)
-            ),
-            AdapterConfig(
-                subgraph_type="up-down",
-                mapping=MappingConfig(targets=["layer2.linear"], source=None)
-            ),
+            AdapterConfig(subgraph_type="up-down", mapping=MappingConfig(targets=["layer1.linear"], source=None)),
+            AdapterConfig(subgraph_type="up-down", mapping=MappingConfig(targets=["layer2.linear"], source=None)),
         ]
-        result = self.processor._filter_adapter_configs_by_config(
-            adapter_configs, self.config, "layer1"
-        )
+        result = self.processor._filter_adapter_configs_by_config(adapter_configs, self.config, "layer1")
         self.assertEqual(len(result), 1)
         self.assertIsNone(result[0].mapping.source)
         self.assertEqual(result[0].mapping.targets[0], "layer1.linear")
@@ -165,9 +153,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
 
         self.processor.adapter_config = [
             MagicMock(
-                spec=AdapterConfig,
-                subgraph_type="norm-linear",
-                mapping=MagicMock(targets=["target1", "target2"])
+                spec=AdapterConfig, subgraph_type="norm-linear", mapping=MagicMock(targets=["target1", "target2"])
             )
         ]
 
@@ -191,8 +177,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
 
     def test_apply_norm_linear_smooth(self):
         adapter_config = MagicMock(
-            spec=AdapterConfig,
-            mapping=MagicMock(source="source", targets=["target1", "target2"])
+            spec=AdapterConfig, mapping=MagicMock(source="source", targets=["target1", "target2"])
         )
         source_module = MagicMock(spec=nn.Module)
         target_modules = [MagicMock(spec=nn.Module), MagicMock(spec=nn.Module)]
@@ -215,9 +200,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
         adapter_config = MagicMock(spec=AdapterConfig, subgraph_type="norm-linear")
         adapter_config.mapping = MagicMock(source=None, targets=["fc1", "fc2"])
         target_modules = [MagicMock(spec=nn.Module), MagicMock(spec=nn.Module)]
-        self.model.get_submodule.side_effect = (
-            lambda n: target_modules[0] if n == "fc1" else target_modules[1]
-        )
+        self.model.get_submodule.side_effect = lambda n: target_modules[0] if n == "fc1" else target_modules[1]
         with patch.object(self.processor, 'apply_smooth_algorithm') as mock_apply:
             self.processor._process_single_subgraph(adapter_config)
             mock_apply.assert_called_once()
@@ -243,9 +226,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
         adapter_config = MagicMock(spec=AdapterConfig, subgraph_type="linear-linear")
         adapter_config.mapping = MagicMock(source=None, targets=["linear1", "linear2"])
         target_modules = [MagicMock(spec=nn.Module), MagicMock(spec=nn.Module)]
-        self.model.get_submodule.side_effect = (
-            lambda n: target_modules[0] if n == "linear1" else target_modules[1]
-        )
+        self.model.get_submodule.side_effect = lambda n: target_modules[0] if n == "linear1" else target_modules[1]
         with patch.object(self.processor, 'apply_smooth_algorithm') as mock_apply:
             self.processor._process_single_subgraph(adapter_config)
             mock_apply.assert_called_once()
@@ -282,9 +263,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
         adapter_config = MagicMock(spec=AdapterConfig, subgraph_type="ov")
         adapter_config.mapping = MagicMock(source=None, targets=["v_layer", "o_layer"])
         target_modules = [MagicMock(spec=nn.Module), MagicMock(spec=nn.Module)]
-        self.model.get_submodule.side_effect = (
-            lambda n: target_modules[0] if n == "v_layer" else target_modules[1]
-        )
+        self.model.get_submodule.side_effect = lambda n: target_modules[0] if n == "v_layer" else target_modules[1]
         with patch.object(self.processor, 'apply_smooth_algorithm') as mock_apply:
             self.processor._process_single_subgraph(adapter_config)
             mock_apply.assert_called_once()
@@ -296,11 +275,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
         adapter_config = MagicMock(
             spec=AdapterConfig,
             mapping=MagicMock(source="v_module", targets=["o_module"]),
-            fusion=MagicMock(
-                fusion_type="qkv",
-                num_attention_heads=8,
-                num_key_value_heads=4
-            )
+            fusion=MagicMock(fusion_type="qkv", num_attention_heads=8, num_key_value_heads=4),
         )
         v_module = MagicMock(spec=nn.Linear)
         o_module = MagicMock(spec=nn.Module)
@@ -320,10 +295,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
                 mock_virtual_instance.update_weights.assert_called_once()
 
     def test_apply_standard_ov_smooth(self):
-        adapter_config = MagicMock(
-            spec=AdapterConfig,
-            mapping=MagicMock(source="v_module", targets=["o_module"])
-        )
+        adapter_config = MagicMock(spec=AdapterConfig, mapping=MagicMock(source="v_module", targets=["o_module"]))
         v_module = MagicMock(spec=nn.Linear)
         o_module = MagicMock(spec=nn.Module)
 
@@ -331,12 +303,8 @@ class TestBaseSmoothProcessor(unittest.TestCase):
             return v_module if x == "v_module" else o_module
 
         self.model.get_submodule.side_effect = get_submodule_for_standard_ov
-        with patch.object(
-                self.processor, '_get_num_attention_heads', return_value=8
-        ) as mock_heads:
-            with patch.object(
-                    self.processor, '_get_num_key_value_heads', return_value=4
-            ) as mock_kv_heads:
+        with patch.object(self.processor, '_get_num_attention_heads', return_value=8) as mock_heads:
+            with patch.object(self.processor, '_get_num_key_value_heads', return_value=4) as mock_kv_heads:
                 with patch.object(self.processor, 'apply_smooth_algorithm') as mock_apply:
                     self.processor._apply_standard_ov_smooth(adapter_config)
                     mock_heads.assert_called_once()
@@ -345,8 +313,7 @@ class TestBaseSmoothProcessor(unittest.TestCase):
 
     def test_apply_up_down_smooth(self):
         adapter_config = MagicMock(
-            spec=AdapterConfig,
-            mapping=MagicMock(source="up_module", targets=["down_module", "gate_module"])
+            spec=AdapterConfig, mapping=MagicMock(source="up_module", targets=["down_module", "gate_module"])
         )
         up_module = MagicMock(spec=nn.Module)
         down_module = MagicMock(spec=nn.Module)
@@ -391,10 +358,8 @@ class TestBaseSmoothProcessor(unittest.TestCase):
             spec=AdapterConfig,
             mapping=MagicMock(source="v_module", targets=["o_module"]),
             fusion=MagicMock(
-                fusion_type="kv",
-                num_attention_heads=8,
-                custom_config={"qk_nope_head_dim": 64, "v_head_dim": 64}
-            )
+                fusion_type="kv", num_attention_heads=8, custom_config={"qk_nope_head_dim": 64, "v_head_dim": 64}
+            ),
         )
         v_module = MagicMock(spec=nn.Linear)
         o_module = MagicMock(spec=nn.Module)

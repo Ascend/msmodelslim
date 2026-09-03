@@ -19,19 +19,22 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
+# pylint: disable=too-many-lines
+
 import argparse
+import datetime
 import subprocess  # nosec B404
 import sys
+import textwrap
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
-import msmodelslim  # noqa
 from msmodelslim.cli.logo import print_logo
 from msmodelslim.core.const import DeviceType, QuantType
 from msmodelslim.utils.config import msmodelslim_config
 from msmodelslim.utils.logging import get_logger, set_logger_level
 
-FAQ_HOME = "gitcode repo: Ascend/msmodelslim, wiki"
+FAQ_URL = "https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/support/faq.md"
 MIND_STUDIO_LOGO = "[Powered by MindStudio]"
 
 _BOOL_TRUE_VALUES = frozenset(('true', 'yes', 'on'))
@@ -70,7 +73,7 @@ DEPRECATED_ALIASES = {
 
 
 def _repo_root() -> Path:
-    """Return the msmodelslim repository root (dir containing .git or setup.py)."""
+    """Return the repository root (directory containing .git or setup.py)."""
     cur = Path(__file__).resolve().parent
     for parent in cur.parents:
         if (parent / '.git').exists() or (parent / 'setup.py').exists():
@@ -78,19 +81,26 @@ def _repo_root() -> Path:
     return cur
 
 
+def _load_build_info() -> Tuple[str, str]:
+    """Return ``(git_hash, build_date)`` written at pack time, if present."""
+    try:
+        from msmodelslim._build_info import BUILD_DATE, GIT_HASH  # pylint: disable=no-name-in-module
+
+        return (GIT_HASH or '').strip(), (BUILD_DATE or '').strip()
+    except Exception:
+        return '', ''
+
+
 def _get_version() -> str:
-    """Return the installed package version, falling back to 'unknown'."""
-    # 1) Prefer the metadata registered by the installed distribution.
+    """Return the installed package version, falling back to setup.py then 'unknown'."""
     try:
         from importlib.metadata import version as _pkg_version  # type: ignore
 
         pkg_version = _pkg_version('msmodelslim')
-    except Exception:  # pragma: no cover - not installed as a package
+    except Exception:
         pkg_version = ''
     if pkg_version:
         return pkg_version
-    # 2) Fall back to reading `__version__` from the repo setup.py without importing it
-    #    (importing setup.py has heavy build side effects we must avoid).
     import re as _re
 
     setup_file = _repo_root() / 'setup.py'
@@ -105,12 +115,10 @@ def _get_version() -> str:
 
 
 def _get_git_hash() -> str:
-    """
-    Return the current git commit hash (>= 7 chars) or empty string.
-
-    Uses subprocess only to run ``git rev-parse HEAD`` with a fixed argument
-    list, no shell and no user-controlled input (hence the nosec exemptions).
-    """
+    """Return a short git commit hash from the wheel, else from the source checkout."""
+    baked_hash, _ = _load_build_info()
+    if baked_hash:
+        return baked_hash[:12]
     try:
         out = subprocess.check_output(  # nosec B603, B607
             ['git', 'rev-parse', 'HEAD'],
@@ -122,20 +130,36 @@ def _get_git_hash() -> str:
         return ''
 
 
+def _get_build_date() -> str:
+    """Return the pack-time UTC date, else the package directory mtime."""
+    _, baked_date = _load_build_info()
+    if baked_date:
+        return baked_date
+    module_dir = Path(__file__).resolve().parents[1]
+    try:
+        ts = module_dir.stat().st_mtime
+    except OSError:
+        return ''
+    return datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
 def _print_version() -> None:
     """Print the unified version banner (MindStudio CLI spec section 4.5)."""
     version = _get_version()
-    git_hash = _get_git_hash()
+    git_hash = _get_git_hash() or 'unknown'
+    build_date = _get_build_date()
     print_logo()
-    sys.stdout.write(
-        f"msmodelslim {version} ({git_hash})\n"
-        "Copyright (C) 2026 Huawei Technologies Co., Ltd.\n"
-        "License: Mulan PSL v2.\n"
-    )
-    if git_hash:
-        sys.stdout.write(
-            f"\nBuild Info:\n  GitCommit : {git_hash}\n  Repo      : https://gitcode.com/Ascend/msmodelslim\n"
-        )
+    lines = [
+        f"msmodelslim {version} ({git_hash})\n",
+        "Copyright (C) 2026 Huawei Technologies Co., Ltd.\n",
+        "License: Mulan PSL v2.\n",
+        "\n",
+        "Build Info:\n",
+    ]
+    if build_date:
+        lines.append(f"  Date: {build_date}\n")
+    lines.append("  Repo: https://gitcode.com/Ascend/msmodelslim\n")
+    sys.stdout.write(''.join(lines))
 
 
 class _UnifiedHelpFormatter(argparse.RawDescriptionHelpFormatter):
@@ -181,6 +205,31 @@ class _UnifiedHelpFormatter(argparse.RawDescriptionHelpFormatter):
 
         return _format
 
+    def _format_args(self, action, default_metavar):
+        """
+        Render the value placeholder of an option per spec 4.4.2.2.
+
+        * nargs='*' (space-separated multi-value) -> ``[<NAME> ...]``;
+        * nargs='?' (optional single value, e.g. --trust_remote_code) ->
+          single ``<NAME>`` without brackets;
+        * otherwise delegate to argparse's default rendering.
+        """
+        if action.nargs == '*':
+            name = self._single_metavar(action, default_metavar)
+            return '[%s ...]' % name
+        if action.nargs == '?':
+            return self._single_metavar(action, default_metavar)
+        return super()._format_args(action, default_metavar)
+
+    @staticmethod
+    def _single_metavar(action, default_metavar):
+        """Resolve the single-value placeholder for ``action`` (without brackets)."""
+        if action.metavar is not None:
+            return str(action.metavar)
+        if action.choices is not None:
+            return '{%s}' % ','.join(str(getattr(c, 'value', c)) for c in action.choices)
+        return str(default_metavar)
+
     def _format_action_invocation(self, action):
         opts = action.option_strings
         if not opts:
@@ -201,34 +250,142 @@ class _UnifiedHelpFormatter(argparse.RawDescriptionHelpFormatter):
     def _indent_text(text, indent='  '):
         return '\n'.join(indent + line if line else line for line in text.splitlines())
 
+    def _pos_metavar(self, action):
+        """Return the metavar of a positional action (choices -> {a,b,c})."""
+        if isinstance(action, argparse._SubParsersAction):
+            # 子命令（subparser）在 usage 中显示为 <dest>（如 <subcmd>、<scope>），
+            # 不用 {a,b,c} 枚举子命令名。
+            return '<%s>' % action.dest
+        if action.metavar is not None:
+            return str(action.metavar)
+        if action.choices is not None:
+            return '{%s}' % ','.join(str(c) for c in action.choices)
+        return str(action.dest).upper()
+
+    def _long_option(self, action):
+        """Return the canonical long option string of an optional action."""
+        if not action.option_strings:
+            return ''
+        long_opts = [s for s in action.option_strings if s.startswith('--')]
+        return long_opts[0] if long_opts else action.option_strings[0]
+
+    def _format_action_columns(self, action):
+        """
+        Split one action into the 3 help columns (spec 4.4.1):
+          col1 = short option (e.g. '-c,'), empty when absent;
+          col2 = long option + metavar (e.g. '--config <FILE>');
+          col3 = description text.
+        """
+        opts = action.option_strings
+        if not opts:
+            return '', self._pos_metavar(action), (action.help or '')
+        short_opts = [s for s in opts if s.startswith('-') and not s.startswith('--')]
+        short_col = (short_opts[0] + ',') if short_opts else ''
+        long_name = self._long_option(action)
+        if action.nargs == 0:
+            long_col = long_name
+        else:
+            default = self._get_default_metavar_for_optional(action)
+            args_string = self._format_args(action, default)
+            long_col = '%s %s' % (long_name, args_string)
+        return short_col, long_col, (action.help or '')
+
     def _format_action_section(self, heading, actions):
-        """Render one argument section (heading + action lines) like argparse does."""
+        """
+        Render one argument section with 3-column alignment; column widths are
+        the maximum within the section (spec 4.4.1).
+        """
         if not actions:
             return ''
-        root = self._Section(self, None, None)
-        section = self._Section(self, root, heading)
+        rows = []
         for action in actions:
-            if action.help is not argparse.SUPPRESS:
-                invocations = [self._format_action_invocation(action)]
-                for subaction in self._iter_indented_subactions(action):
-                    invocations.append(self._format_action_invocation(subaction))
-                self._action_max_length = max(
-                    self._action_max_length,
-                    max(len(invocation) for invocation in invocations) + self._current_indent,
-                )
-                section.items.append((self._format_action, [action]))
-        return section.format_help()
+            if action.help is argparse.SUPPRESS:
+                continue
+            subactions = list(self._iter_indented_subactions(action))
+            if subactions:
+                for sub in subactions:
+                    # 子命令（subparser）没有 option_strings，直接显示子命令名。
+                    name = sub.option_strings[0] if sub.option_strings else sub.dest
+                    rows.append(('', name, sub.help or ''))
+            else:
+                rows.append(self._format_action_columns(action))
+        if not rows:
+            return ''
+        # 过长的占位符/choices 会让第 3 列被推到很右，可读性差；
+        # 当第 2 列超宽时，该行把描述换到下一行（缩进到第 3 列起点），
+        # 且不参与列宽计算（只按正常行的最宽值对齐）。
+        max_col2 = 52
+        col1_width = max(len(r[0]) for r in rows)
+        normal = [r for r in rows if len(r[1]) <= max_col2] or rows
+        col2_width = max(len(r[1]) for r in normal)
+        pad = 2 + col1_width + 1 + col2_width + 2
+        width = max(80, pad + 40)
+        help_width = max(1, width - pad)
+        indent = ' ' * pad
+        lines = [heading + ':']
+        for short_col, long_col, help_text in rows:
+            wrapped = textwrap.wrap(
+                help_text or '',
+                width=help_width,
+                break_long_words=False,
+                break_on_hyphens=False,
+            ) or ['']
+            if len(long_col) > max_col2:
+                lines.append('  ' + short_col.ljust(col1_width) + ' ' + long_col)
+                lines.extend(indent + line for line in wrapped)
+                continue
+            head = '  ' + short_col.ljust(col1_width) + ' ' + long_col.ljust(col2_width) + '  '
+            lines.append(head + wrapped[0])
+            lines.extend(indent + line for line in wrapped[1:])
+        return '\n'.join(lines) + '\n\n'
+
+    def _format_usage(self, usage, actions, groups, prefix):
+        """
+        Single-line usage template (spec 4.4.1):
+          <tool> <subcmd> <required-args> [options]
+        Required arguments are expanded, everything optional collapses to
+        ``[options]``.
+        """
+        if not prefix:
+            # argparse 内部推导子命令 prog 时以空串调用，保持默认渲染。
+            return super()._format_usage(usage, actions, groups, prefix)
+        parts = [self._prog]
+        for action in actions:
+            if not action.option_strings:
+                parts.append(self._pos_metavar(action))
+        has_optional = False
+        for action in actions:
+            if not action.option_strings or not action.required:
+                if action.option_strings:
+                    has_optional = True
+                continue
+            long_name = self._long_option(action)
+            if action.nargs == 0:
+                parts.append(long_name)
+            else:
+                default = self._get_default_metavar_for_optional(action)
+                args_string = self._format_args(action, default)
+                parts.append('%s %s' % (long_name, args_string))
+        if has_optional:
+            parts.append('[options]')
+        return 'Usage:\n  ' + ' '.join(parts) + '\n\n'
 
     def format_help(self):
-        """Render help in the unified section layout (spec section 4.4.1)."""
+        """Render help in the unified section layout (spec section 4.4.1).
+
+        Section order follows the spec: Description -> Usage -> Required
+        arguments -> Optional arguments -> Examples -> Output.
+        """
         usage, actions, groups = self._usage_args
-        # argparse 内部会用 format_help() 推导子命令的 prog 前缀（prefix=''），
-        # 此时保持默认渲染；只有真实帮助输出（prefix=None）才使用统一标题。
-        prefix = 'Usage:\n  ' if self._usage_prefix is None else self._usage_prefix
-        help_text = self._format_usage(usage, actions, groups, prefix)
+        help_text = ''
 
         if self._description_text:
             help_text += 'Description:\n' + self._indent_text(self._description_text) + '\n\n'
+
+        # argparse 内部会用 format_help() 推导子命令的 prog 前缀（prefix=''），
+        # 此时保持默认渲染；只有真实帮助输出（prefix=None）才使用统一标题。
+        prefix = 'Usage:\n  ' if self._usage_prefix is None else self._usage_prefix
+        help_text += self._format_usage(usage, actions, groups, prefix)
 
         positionals = [a for a in actions if not a.option_strings]
         required = [a for a in actions if a.option_strings and a.required]
@@ -482,7 +639,7 @@ def main():
         f"{MIND_STUDIO_LOGO}.\n"
         "Providing functions such as model quantization and compression "
         "based on Ascend.\n"
-        f"For any issue, refer FAQ first: {FAQ_HOME}",
+        f"For any issue, refer to the FAQ at {FAQ_URL}",
         epilog="Examples:\n"
         "  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu "
         "--model_type Qwen2.5-7B-Instruct --quant_type w8a8 --trust_remote_code True\n"
@@ -505,7 +662,7 @@ def main():
         'quant',
         help='Model quantization',
         formatter_class=_UnifiedHelpFormatter,
-        description='Quantize a model (W4A4/W8A8/etc.) and save the quantized weights.',
+        description='Quantize a model (W4A4/W8A8/etc.) or convert model weights, and save the results.',
         epilog='Examples:\n'
         '  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} '
         '--device npu --model_type Qwen2.5-7B-Instruct --quant_type w8a8 --trust_remote_code True\n'
@@ -557,6 +714,7 @@ def main():
         help='Device index (integer) to use for quantization, e.g. 0 or 0 1 2 3',
     )
     quant_parser.add_argument(
+        '-c',
         '--config',
         '--config_path',
         dest='config_path',
@@ -595,7 +753,7 @@ def main():
         nargs='*',
         metavar='<TAG>',
         default=None,
-        help="Optional tags to match configs with verified scenario tags (e.g. mindie Atlas_A2_Inference, vllm cpu). "
+        help="Optional tags to match configs with verified scenario tags (e.g. vLLM-Ascend Atlas_A2_Inference). "
         "User can add multiple tags; matching requires all tags to appear in the same scenario. "
         "If this parameter is specified without a hardware type tag, the current device type is matched automatically.",
     )
@@ -612,7 +770,7 @@ def main():
         epilog='Examples:\n'
         '  msmodelslim analyze linear --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct\n'
         '  msmodelslim analyze layer --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct '
-        '--quant_modules lm_head\n'
+        '--quant_modules model.layers.0.self_attn.*\n'
         'Output:\n'
         '  Analysis results are logged to the console/stdout.',
     )
@@ -655,12 +813,13 @@ def main():
         '--calibration_dataset',
         '--calib_dataset',
         dest='calib_dataset',
-        metavar='<FILE>',
+        metavar='<PATH>',
         type=str,
         default='mix_calib.jsonl',
-        help='Calibration dataset file path or filename in lab_calib directory. '
-        'LLM: .json/.jsonl text file [default: mix_calib.jsonl]. '
-        'VLM: multimodal directory such as calibImages (image+text).',
+        help='Calibration dataset. LLM: a .json/.jsonl file — the filename under lab_calib '
+        '(default mix_calib.jsonl) or a path to that file, not the parent directory. '
+        'VLM: a multimodal dataset directory name under lab_calib (e.g. calibImages) '
+        'or a path to that directory.',
     )
     analyze_common_parser.add_argument(
         '--save_path',
@@ -676,7 +835,7 @@ def main():
         metavar='<N>',
         type=int,
         default=15,
-        help='Number of top layers to output for disable_names [default: 15, empirical value, for reference only]',
+        help='Number of top layers to output for disable_names [default: 15]',
     )
     analyze_common_parser.add_argument(
         '--trust_remote_code',
@@ -732,9 +891,10 @@ def main():
         description='Analyze layer/block as a group. '
         '--quant_modules selects modules to include in the pipeline config.',
         epilog='Examples:\n'
-        '  msmodelslim analyze layer --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct\n'
         '  msmodelslim analyze layer --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct '
-        '--quant_modules lm_head',
+        '--metrics mse_model_wise\n'
+        '  msmodelslim analyze layer --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct '
+        '--quant_modules model.layers.0.self_attn.*',
     )
     analysis_layer_parser.add_argument(
         '--metrics',
@@ -742,7 +902,7 @@ def main():
         type=str,
         choices=['mse_model_wise', 'mse_layer_wise'],
         default='mse_layer_wise',
-        help='Analysis metrics [default: mse_layer_wise]',
+        help='Analysis metrics, e.g. mse_model_wise [default: mse_layer_wise]',
     )
     analysis_layer_parser.add_argument(
         '--quant_modules',
@@ -774,13 +934,16 @@ def main():
         'attn_head',
         parents=[analyze_common_parser],
         help='Analyze attention heads with ra_compress metric (induction/echo head selection)',
+        formatter_class=_UnifiedHelpFormatter,
+        description='Analyze attention heads with the ra_compress metric (induction/echo head selection).',
+        epilog='Examples:\n  msmodelslim analyze attn_head --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct',
     )
     analysis_attn_head_parser.add_argument(
         '--metrics',
         type=str,
         choices=['ra_compress'],
         default='ra_compress',
-        help='Analysis metrics: ra_compress (default: ra_compress)',
+        help='Analysis metrics [default: ra_compress]',
     )
 
     # ------------------------------------------------------------------
@@ -824,6 +987,7 @@ def main():
         help='Path to save tuning results',
     )
     tuning_parser.add_argument(
+        '-c',
         '--config',
         dest='config',
         metavar='<FILE>',

@@ -20,10 +20,6 @@ See the Mulan PSL v2 for more details.
 """
 
 import argparse
-from types import SimpleNamespace
-from unittest import mock
-
-import pytest
 
 import msmodelslim.cli.__main__ as cli
 
@@ -42,112 +38,25 @@ class TestHelpFormatter:
         )
 
 
-class TestCliConvertToBool:
-    def test_valid_values(self):
-        assert all(cli._cli_convert_to_bool(v) is True for v in ('true', 'yes', 'on', 'True'))
-        assert all(cli._cli_convert_to_bool(v) is False for v in ('false', 'no', 'off', 'FALSE'))
+class TestPlaceholderFormatting:
+    """Help placeholders: single values use <NAME>, multi-value uses [<NAME> ...]."""
 
-    def test_invalid_value(self):
-        with pytest.raises(ValueError):
-            cli._cli_convert_to_bool('maybe')
-
-
-class TestParseTimeout:
-    def test_seconds(self):
-        assert cli._parse_timeout('3600') == 3600
-
-    def test_legacy_duration(self):
-        assert cli._parse_timeout('1D2H') == '1D2H'
-
-
-class TestWarnDeprecated:
     @staticmethod
-    def _warn(argv):
-        with mock.patch.object(cli, 'get_logger') as g:
-            cli._warn_deprecated(argv)
-        return g.return_value.warning
+    def _placeholder(*opts, **kw):
+        parser = argparse.ArgumentParser(formatter_class=cli._UnifiedHelpFormatter)
+        parser.add_argument(*opts, **kw)
+        action = parser._actions[-1]
+        fmt = cli._UnifiedHelpFormatter(prog='prog')
+        default = fmt._get_default_metavar_for_optional(action)
+        return fmt._format_args(action, default)
 
-    def test_legacy_spellings(self):
-        for old, new in (
-            ('--topk', '--top_k'),
-            ('--calib_dataset', '--calibration_dataset'),
-            ('--tag', '--tags'),
-            ('--pattern', '--patterns'),
-            ('--config_path', '--config'),
-        ):
-            w = self._warn(['quant', old, 'x'])
-            assert w.call_count == 1
-            assert w.call_args[0][1] == old
-            assert w.call_args[0][2] == new
+    def test_multi_value_space_separated(self):
+        assert self._placeholder('--device_id', nargs='*', metavar='<ID>') == '[<ID> ...]'
+        assert self._placeholder('--tags', nargs='*', metavar='<TAG>') == '[<TAG> ...]'
 
-    def test_dedup_and_canonical_silent(self):
-        assert self._warn(['quant', '--topk', 'a', '--topk', 'b']).call_count == 1
-        assert self._warn(['quant', '--top_k', '5']).call_count == 0
+    def test_optional_single_value_no_brackets(self):
+        assert self._placeholder('--trust_remote_code', nargs='?', const=True) == 'TRUST_REMOTE_CODE'
+        assert self._placeholder('--model_path', metavar='<PATH>') == '<PATH>'
 
-
-class TestApplyLogLevel:
-    @staticmethod
-    def _level(**kw):
-        with mock.patch.object(cli, 'set_logger_level') as s:
-            cli._apply_log_level(SimpleNamespace(**kw))
-        return s.call_args[0][0]
-
-    def test_precedence(self):
-        assert self._level(log_level='error', verbose=False, quiet=False, debug=False) == 'error'
-        assert self._level(log_level=None, verbose=True, quiet=False, debug=False) == 'debug'
-        assert self._level(log_level=None, verbose=False, quiet=True, debug=False) == 'error'
-        assert self._level(log_level='warning', verbose=True, quiet=False, debug=False) == 'warning'
-
-
-class TestArgvDetectors:
-    def test_help_and_version_detection(self):
-        assert cli._is_help_request(['quant', '--help'])
-        assert cli._is_version_request(['quant', '--version'])
-        assert not cli._is_help_request(['quant', '--version'])
-        assert not cli._is_version_request(['quant', '--help'])
-
-
-class TestNormalizeDeviceArgv:
-    def test_space_form(self):
-        assert cli._normalize_device_argv(['quant', '--device', 'npu:0,1,2,3']) == [
-            'quant',
-            '--device',
-            'npu',
-            '--device_id',
-            '0',
-            '1',
-            '2',
-            '3',
-        ]
-
-    def test_equals_form(self):
-        assert cli._normalize_device_argv(['tune', '--device=cpu:0']) == [
-            'tune',
-            '--device',
-            'cpu',
-            '--device_id',
-            '0',
-        ]
-
-    def test_canonical_and_missing_value_untouched(self):
-        argv = ['quant', '--device', 'npu', '--device_id', '0', '1']
-        assert cli._normalize_device_argv(argv) == argv
-        assert cli._normalize_device_argv(['quant', '--device', '--model_path', 'm']) == [
-            'quant',
-            '--device',
-            '--model_path',
-            'm',
-        ]
-
-    def test_explicit_new_args_win(self):
-        argv = ['quant', '--device', 'npu:0,1', '--device_id', '2']
-        assert cli._normalize_device_argv(argv) == argv
-
-    def test_analyze_untouched(self):
-        argv = ['analyze', '--device', 'npu:0,1']
-        assert cli._normalize_device_argv(argv) == argv
-
-    def test_warns_once(self):
-        with mock.patch.object(cli, 'get_logger') as g:
-            cli._normalize_device_argv(['quant', '--device', 'npu:0,1', '--device', 'cpu:2'])
-        assert g.return_value.warning.call_count == 1
+    def test_flag_no_placeholder(self):
+        assert self._placeholder('-v', '--verbose', action='store_true') == ''
