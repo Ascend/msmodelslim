@@ -1,0 +1,28 @@
+apiversion: modelslim_v1
+
+metadata:
+  config_id: llm_transformers_w8a16
+  score: 50
+  verified_model_types:
+    - transformers
+  label:
+    w_bit: 8
+    a_bit: 16
+    is_sparse: False
+    kv_cache: False
+
+spec:
+  runner: "model_wise"
+  process:
+    - type: "linear_quant"
+      qconfig:
+        weight:
+          scope: "per_channel"
+          dtype: "int8"
+          symmetric: True
+          method: "minmax"
+      include: [ "*" ]
+
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4

@@ -156,6 +156,20 @@ def validate_device_index(device_index: Optional[List[int]], device_type: Device
             )
 
 
+def check_model_type_transformers(model_adapter: IModel, config: PracticeConfig):
+    model_type = model_adapter.get_model_type()
+    if model_type == "transformers" and config.apiversion == "multimodal_vlm_modelslim_v1":
+        raise UnsupportedError(
+            "VLM quantization is not supported for model_type transformers",
+            action="Please use a dedicated model adapter for multimodal models",
+        )
+    if model_type == "transformers" and config.apiversion == "multimodal_sd_modelslim_v1":
+        raise UnsupportedError(
+            "DiT quantization is not supported for model_type transformers",
+            action="Please use a dedicated model adapter for multimodal models",
+        )
+
+
 @logger_setter('msmodelslim.app.naive_quantization')
 class NaiveQuantizationApplication:
     def __init__(
@@ -235,6 +249,7 @@ class NaiveQuantizationApplication:
         if config_path is not None:
             config = PracticeConfig.model_validate(yaml_safe_load(str(config_path)))
             get_logger().info("Naive Quant apply config_path: %s", config_path)
+            check_model_type_transformers(model_adapter, config)
             return config
 
         if not isinstance(model_adapter, ModelInfoInterface):

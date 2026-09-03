@@ -24,13 +24,13 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from testing_utils.mock import mock_init_config
 
 from msmodelslim.core.const import QuantType
 from msmodelslim.core.practice.interface import Metadata
-from msmodelslim.utils.exception import SchemaValidateError, ToDoError
+from msmodelslim.utils.exception import SchemaValidateError, ToDoError, UnsupportedError
 
 mock_init_config()
 
@@ -225,6 +225,38 @@ class TestCheckConfig(TestNaiveQuantizationAppBase):
 class TestGetBestPractice(TestNaiveQuantizationAppBase):
     """测试 get_best_practice"""
 
+    def _make_app(self):
+        from msmodelslim.app.naive_quantization.application import NaiveQuantizationApplication
+
+        return NaiveQuantizationApplication(
+            practice_manager=MagicMock(),
+            quant_service=MagicMock(),
+            model_factory=MagicMock(),
+        )
+
+    def _get_best_practice_with_mocked_yaml(self, model_type, apiversion, config_id="test_w8a8"):
+        mock_model_adapter = MagicMock()
+        mock_model_adapter.model_type = model_type
+        mock_model_adapter.get_model_type.return_value = model_type
+        app = self._make_app()
+        mock_config = MagicMock()
+        mock_config.apiversion = apiversion
+        mock_config.metadata.config_id = config_id
+        with (
+            patch(
+                "msmodelslim.app.naive_quantization.application.yaml_safe_load",
+                return_value={},
+            ),
+            patch(
+                "msmodelslim.app.naive_quantization.application.PracticeConfig.model_validate",
+                return_value=mock_config,
+            ),
+        ):
+            return app.get_best_practice(
+                model_adapter=mock_model_adapter,
+                config_path=Path("config.yaml"),
+            )
+
     def test_get_best_practice_with_config_path(self):
         """测试指定 config_path 时直接返回配置"""
         from msmodelslim.app.naive_quantization.application import NaiveQuantizationApplication
@@ -289,6 +321,36 @@ spec: {}
                 model_adapter=mock_model_adapter,
                 quant_type=QuantType.W8A8,
             )
+
+    def test_get_best_practice_raises_unsupported_error_when_transformers_and_vlm_apiversion(self):
+        with self.assertRaises(UnsupportedError) as ctx:
+            self._get_best_practice_with_mocked_yaml("transformers", "multimodal_vlm_modelslim_v1")
+
+        self.assertIn("VLM", str(ctx.exception))
+        self.assertIn("transformers", str(ctx.exception))
+
+    def test_get_best_practice_raises_unsupported_error_when_transformers_and_sd_apiversion(self):
+        with self.assertRaises(UnsupportedError) as ctx:
+            self._get_best_practice_with_mocked_yaml("transformers", "multimodal_sd_modelslim_v1")
+
+        self.assertIn("DiT", str(ctx.exception))
+        self.assertIn("transformers", str(ctx.exception))
+
+    def test_get_best_practice_returns_config_when_transformers_and_modelslim_v1(self):
+        config = self._get_best_practice_with_mocked_yaml("transformers", "modelslim_v1")
+
+        self.assertEqual(config.metadata.config_id, "test_w8a8")
+        self.assertEqual(config.apiversion, "modelslim_v1")
+
+    def test_get_best_practice_returns_config_when_other_model_type_and_vlm_apiversion(self):
+        config = self._get_best_practice_with_mocked_yaml(
+            "Qwen2.5-VL-7B-Instruct",
+            "multimodal_vlm_modelslim_v1",
+            config_id="vlm_ok",
+        )
+
+        self.assertEqual(config.metadata.config_id, "vlm_ok")
+        self.assertEqual(config.apiversion, "multimodal_vlm_modelslim_v1")
 
 
 class TestQuantParameterValidation(TestNaiveQuantizationAppBase):
