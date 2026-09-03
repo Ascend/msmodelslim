@@ -281,17 +281,12 @@ def _attach_preserve_all_catalog(
     matched_paths: set[str],
 ) -> None:
     """
-    将 catalog 中尚未绑定的张量挂为 ``PassthroughModule``，保存时原样 FLOAT 落盘。
+    将 catalog 中尚未绑定的张量挂为 ``PassthroughModule``，保存时原样落盘。
 
     覆盖 ``embed_tokens``、``lm_head``、``norm`` 等非 linears 匹配的 key。
+    ``weight_scale_inv`` 与对应 ``weight`` 同组挂载，避免漏配的 FP8 只留下无 scale 的量化权重。
     """
-    remaining: list[str] = []
-    for key in catalog_keys:
-        if key in handled:
-            continue
-        if key.endswith(WEIGHT_SCALE_INV_SUFFIX):
-            continue
-        remaining.append(key)
+    remaining: list[str] = [key for key in catalog_keys if key not in handled]
 
     if not remaining:
         return

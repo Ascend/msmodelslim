@@ -132,6 +132,26 @@ class TestVirtualModelTreeBuilder:
         mod = tree.get_submodule("lm_head")
         assert isinstance(mod, PassthroughModule)  # 校验未匹配权重走 passthrough
 
+    def test_build_passthrough_keep_scale_inv_when_unmatched_fp8(self):
+        """未匹配 linears 的 FP8 权重应与 weight_scale_inv 同组挂到 PassthroughModule。"""
+        catalog = TensorCatalog()
+        catalog.add(
+            TensorEntry(key="mtp.embed_tokens.weight", shard="s0", dtype="float8_e4m3fn", shape=(4, 8)),
+        )
+        catalog.add(
+            TensorEntry(key="mtp.embed_tokens.weight_scale_inv", shard="s0", dtype="bf16", shape=(1, 1)),
+        )
+        config = ConvertConfig(model_path="/m", save_path="/o", module_rules=[])
+        context = ConvertContext(config=config)
+        context.reader = MagicMock()
+
+        tree = VirtualModelTreeBuilder().build(context, catalog)
+        mod = tree.get_submodule("mtp.embed_tokens")
+        assert isinstance(mod, PassthroughModule)
+        assert "weight" in mod.tensor_bindings
+        assert "weight_scale_inv" in mod.tensor_bindings
+        assert mod.tensor_bindings["weight_scale_inv"].key == "mtp.embed_tokens.weight_scale_inv"
+
     def test_build_skip_norm_modules_when_convert_false(self):
         catalog = TensorCatalog()
         catalog.add(TensorEntry(key="model.norm.weight", shard="s0", dtype="bf16", shape=(2,)))
