@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Iterator, Protocol, runtime_checkable
+from typing import Any, Iterator, Literal, Protocol, runtime_checkable
 
 from torch import nn
 
@@ -69,6 +69,12 @@ class ConvertContext:
         # resolve_worker_device(config.parallel.worker_device) 的结果；executor / processor 共用。
         # worker_backend=process 时固定为 "cpu"。
         self.resolved_worker_device: str = "cpu"
+        # 并行模式。npu_multi = 每张 NPU 卡一个子进程（torch.npu.set_device 绑卡）。
+        # AscendV1 时 worker 直接写盘，主进程只写 passthrough 并 merge staging。
+        # 默认 thread：与 Application 在未开多卡、非 process 时的选择一致。
+        self.parallel_mode: Literal["npu_multi", "process", "thread"] = "thread"
+        # npu_multi 时供日志使用的设备串，如 ["npu:0", "npu:1", ...]；绑卡用 config.parallel.device_indices。
+        self.resolved_worker_devices: list[str] = []
 
 
 class ICheckpointReader(ABC):
@@ -259,26 +265,4 @@ class IConvertExecutor(ABC):
         context: ConvertContext,
         routed_tasks: list[RoutedTask],
     ) -> Iterator[IRResult]:
-        pass
-
-
-class ISaveProcessorAdapter(ABC):
-    """
-    保存适配接口：把虚拟树导出到目标权重格式。
-
-    目的：
-    - 复用现有 SaveProcessor / format writer，而不是重复实现写盘逻辑。
-    - 根据 ``dst_format`` 选择具体保存后端（如 AscendV1 / HF 等）。
-
-    注意：
-    - convert 侧只关心“给我一棵最终树，把它写出去”；
-    - 具体文件布局、分片策略、附加元信息由保存后端负责。
-    """
-
-    @abstractmethod
-    def save(
-        self,
-        context: ConvertContext,
-        tree: nn.Module,
-    ) -> None:
         pass

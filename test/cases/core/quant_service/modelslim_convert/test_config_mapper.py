@@ -122,8 +122,9 @@ class TestSpecToConvertConfig:
                 "parallel": {"workers": 8},
             }
         )
-        cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o")
+        cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o", device_indices=[0, 1])
         assert cfg.parallel.worker_backend == "process"
+        assert cfg.parallel.device_indices == [0, 1]
 
     def test_spec_to_convert_config_map_workers_one_to_thread_backend(self):
         spec = ModelslimConvertServiceConfig.model_validate(

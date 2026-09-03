@@ -8,10 +8,18 @@ msmodelslim.core.quant_service.modelslim_convert.application 模块的单元测�
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from msmodelslim.core.convert.catalog import PreprocessResult, TensorCatalog, TensorEntry
+import pytest
+
+from msmodelslim.core.convert.catalog import (
+    PreprocessResult,
+    TensorCatalog,
+    TensorEntry,
+)
 from msmodelslim.core.convert.config import ConvertConfig, ConvertRule, ModuleRule
 from msmodelslim.core.convert.types import IRKind
-from msmodelslim.core.quant_service.modelslim_convert.application import ConvertApplication
+from msmodelslim.core.quant_service.modelslim_convert.application import (
+    ConvertApplication,
+)
 
 
 class TestConvertApplication:
@@ -75,5 +83,48 @@ class TestConvertApplication:
         )
         app.run(config)
         executor.run.assert_called_once()
-        save_adapter.save.assert_called_once()
-        assert save_adapter.save.call_args[0][1] is tree
+        save_adapter.begin.assert_called_once()
+        save_adapter.finalize.assert_called_once()
+        save_adapter.abort.assert_not_called()
+        save_adapter.save.assert_not_called()
+        assert save_adapter.begin.call_args[0][1] is tree
+
+    def test_run_call_abort_when_executor_raises(self, tmp_path: Path):
+        """场景：executor.run 抛异常。
+        预期：调用 abort，不调用 finalize。
+        """
+        catalog = TensorCatalog()
+        preprocess_result = PreprocessResult(catalog=catalog)
+        reader = MagicMock()
+        reader.read_catalog.return_value = catalog
+        preprocess = MagicMock()
+        preprocess.run.return_value = preprocess_result
+        from torch import nn
+
+        tree = nn.Module()
+        tree_builder = MagicMock()
+        tree_builder.build.return_value = tree
+        task_builder = MagicMock()
+        task_builder.build.return_value = []
+        executor = MagicMock()
+        executor.run.side_effect = RuntimeError("convert failed")
+        save_adapter = MagicMock()
+        from msmodelslim.core.convert.router import IRRouter
+
+        app = ConvertApplication(
+            checkpoint_reader_factory=lambda _: reader,
+            preprocess_executor=preprocess,
+            tree_builder=tree_builder,
+            task_builder=task_builder,
+            executor=executor,
+            save_adapter=save_adapter,
+            router=IRRouter.default(),
+        )
+        save_path = tmp_path / "out"
+        save_path.mkdir()
+        config = ConvertConfig(model_path=str(tmp_path / "model"), save_path=str(save_path))
+        with pytest.raises(RuntimeError, match="convert failed"):
+            app.run(config)
+        save_adapter.begin.assert_called_once()
+        save_adapter.abort.assert_called_once()
+        save_adapter.finalize.assert_not_called()

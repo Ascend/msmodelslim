@@ -300,6 +300,7 @@ def spec_to_convert_config(
     model_path: str,
     save_path: str,
     model_family: Optional[str] = None,
+    device_indices: Optional[List[int]] = None,
 ) -> ConvertConfig:
     """将 quant spec 转为可执行的 ``ConvertConfig``。"""
     if not isinstance(spec, ModelslimConvertServiceConfig):
@@ -315,6 +316,7 @@ def spec_to_convert_config(
         shard_cache_size=_DEFAULT_SHARD_CACHE_SIZE,
         worker_device=spec.parallel.worker_device,
         npu_max_workers=spec.parallel.npu_max_workers,
+        device_indices=device_indices or [],
     )
 
     return ConvertConfig(

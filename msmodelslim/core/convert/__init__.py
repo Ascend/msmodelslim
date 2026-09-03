@@ -32,7 +32,6 @@ from msmodelslim.core.convert.protocol import (
     IIRTransformProcessor,
     IPreprocessExecutor,
     IRTaskBuilder,
-    ISaveProcessorAdapter,
     IVirtualModelTreeBuilder,
 )
 from msmodelslim.core.convert.edges import RouteConstraints, TransformEdge
@@ -65,7 +64,6 @@ __all__ = [
     "IIRTransformProcessor",
     "IPreprocessExecutor",
     "IRTaskBuilder",
-    "ISaveProcessorAdapter",
     "IVirtualModelTreeBuilder",
     "RouteConstraints",
     "IRRouter",

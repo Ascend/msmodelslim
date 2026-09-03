@@ -59,8 +59,8 @@ def _restore_state_dict(state_dict: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _is_mxfp8_deploy_state(state_dict: dict[str, Any]) -> bool:
-    """True when state_dict 来自 ``W8A8MXDynamicPerBlockFakeQuantLinear.deploy()``。"""
+def is_mxfp8_deploy_state(state_dict: dict[str, Any]) -> bool:
+    """判断 state_dict 是否来自 ``W8A8MXDynamicPerBlockFakeQuantLinear.deploy()``。"""
     return _MXFP8_DEPLOY_KEYS.issubset(state_dict.keys())
 
 
@@ -102,7 +102,9 @@ class IRTask:
 
     def create_empty_module(self) -> nn.Module:
         """Build placeholder module for this task; filled by lazy_init in worker."""
-        from msmodelslim.core.quant_service.modelslim_convert.virtual_module import create_model_free_module
+        from msmodelslim.core.quant_service.modelslim_convert.virtual_module import (
+            create_model_free_module,
+        )
 
         return create_model_free_module(
             module_path=self.module_path,
@@ -129,6 +131,7 @@ class IRResult:
     final_ir: IRKind
     module: nn.Module | None = None
     state_dict: dict[str, Any] | None = None
+    already_saved: bool = False
     loss_level: str = "lossy"
     route_ir_names: list[IRKind] = field(default_factory=list)
 
@@ -142,8 +145,10 @@ class IRResult:
         if self.final_ir == IRKind.FLOAT:
             return _float_module_from_state_dict(state_dict)
         if self.final_ir == IRKind.W8A8_MXFP8:
-            if _is_mxfp8_deploy_state(state_dict):
-                from msmodelslim.ir.w8a8_mx_dynamic import W8A8MXDynamicPerBlockFakeQuantLinear
+            if is_mxfp8_deploy_state(state_dict):
+                from msmodelslim.ir.w8a8_mx_dynamic import (
+                    W8A8MXDynamicPerBlockFakeQuantLinear,
+                )
 
                 return W8A8MXDynamicPerBlockFakeQuantLinear.from_deploy_state_dict(state_dict)
             return _float_module_from_state_dict(state_dict)

@@ -12,17 +12,28 @@ from __future__ import annotations
 import threading
 import time
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 
+import torch
 from torch import nn
 
 from msmodelslim.core.convert.catalog import TensorCatalog
 from msmodelslim.core.convert.protocol import ConvertContext
 from msmodelslim.core.convert.router import IRRouter
-from msmodelslim.core.convert.tasks import IRResult, IRTask, PortableTensor, RoutedTask
-from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeModule
-from msmodelslim.core.quant_service.modelslim_convert.weight_mapping.fused_cache import FusedTensorCache
+from msmodelslim.core.convert.tasks import (
+    IRResult,
+    IRTask,
+    PortableTensor,
+    RoutedTask,
+    is_mxfp8_deploy_state,
+)
+from msmodelslim.core.quant_service.modelslim_convert.virtual_module import (
+    ModelFreeModule,
+)
+from msmodelslim.core.quant_service.modelslim_convert.weight_mapping.fused_cache import (
+    FusedTensorCache,
+)
 from msmodelslim.infra.io.shard_handle_cache import ShardHandleCache
 
 
@@ -85,12 +96,21 @@ def prepare_result(result: IRResult, return_mode: str) -> IRResult:
     """
     if return_mode != "state_dict" or result.module is None:
         return result
-    state_dict = {key: PortableTensor.from_tensor(value) for key, value in result.module.state_dict().items()}
+    state_dict = result.module.state_dict()
+    is_mxfp8 = is_mxfp8_deploy_state(state_dict)
+    packed = {}
+    for key, value in state_dict.items():
+        if is_mxfp8 and key == "weight" and value.dtype == torch.bfloat16 and value.ndim == 2:
+            # MXFP8 量化值精确落在 fp8 网格上（bf16->fp8->bf16 无损），
+            # 提前转 fp8 可让跨进程结果队列负载减半（AscendV1 落盘时同样转 fp8）。
+            # 需先回 CPU 再转：torch_npu 对 fp8 的 dtype 转换（aclnnInplaceCopy）不可用。
+            value = value.detach().cpu().to(torch.float8_e4m3fn)
+        packed[key] = PortableTensor.from_tensor(value)
     return IRResult(
         module_path=result.module_path,
         final_ir=result.final_ir,
         module=None,
-        state_dict=state_dict,
+        state_dict=packed,
         loss_level=result.loss_level,
         route_ir_names=result.route_ir_names,
     )
@@ -142,28 +162,30 @@ class DependencyGroupRunner:
                     _emit(result)
             else:
                 with ThreadPoolExecutor(max_workers=max_workers) as pool:
-                    pending: list[tuple[int, object]] = []
+                    pending: dict[object, int] = {}
                     submitted = completed = 0
                     while completed < len(group):
                         while submitted < len(group) and len(pending) < max_workers:
                             if budget is not None and pending:
-                                used = sum(est for est, _ in pending)
+                                used = sum(pending.values())
                                 est = estimate_task_bytes(group[submitted].task, catalog)
                                 if used + est > budget:
                                     break
                             rt = group[submitted]
                             est = estimate_task_bytes(rt.task, catalog)
-                            pending.append((est, pool.submit(self._run_one, context, rt)))
+                            pending[pool.submit(self._run_one, context, rt)] = est
                             submitted += 1
                         if not pending:
                             break
-                        _, fut = pending.pop(0)
                         wait_t0 = time.perf_counter()
-                        result, timing = fut.result()
+                        done, _ = wait(set(pending.keys()), return_when=FIRST_COMPLETED)
                         pool_wait_s += time.perf_counter() - wait_t0
-                        collector.record(timing)
-                        _emit(result)
-                        completed += 1
+                        for fut in done:
+                            pending.pop(fut)
+                            result, timing = fut.result()
+                            collector.record(timing)
+                            _emit(result)
+                            completed += 1
         finally:
             if reader is not None:
                 if had_fused_attr:

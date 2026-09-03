@@ -29,8 +29,8 @@ def _materialize_linear(module: nn.Module, context: ConvertContext | None = None
 
     if isinstance(module, ModelFreeLinear):
         if not module.lazy_initialized and context is not None and context.reader is not None:
-            # convert 计算全程 CPU；NPU 设备解析交由 group_runner 的 lazy_init 处理。
-            module.lazy_init(context.reader, device="cpu")
+            # 设备从 context 取：npu_multi 下为子进程绑定的 npu:card，否则 CPU。
+            module.lazy_init(context.reader, device=context.resolved_worker_device)
         weight = getattr(module, "weight", None)
         if weight is None:
             return None
@@ -43,7 +43,13 @@ def _materialize_linear(module: nn.Module, context: ConvertContext | None = None
             return None
         bias = getattr(module, "bias", None)
         linear = nn.Linear(weight.shape[1], weight.shape[0], bias=bias is not None)
-        linear.weight = nn.Parameter(weight.detach().to(torch.bfloat16), requires_grad=False)
+        w = weight.detach()
+        if str(w.device).startswith("npu") and w.dtype == torch.float8_e4m3fn:
+            dev = w.device
+            w = w.to("cpu").to(torch.bfloat16).to(dev)
+        else:
+            w = w.to(torch.bfloat16)
+        linear.weight = nn.Parameter(w, requires_grad=False)
         if bias is not None:
             linear.bias = nn.Parameter(bias.detach().to(torch.bfloat16), requires_grad=False)
         return linear

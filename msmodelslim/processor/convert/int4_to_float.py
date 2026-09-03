@@ -46,7 +46,7 @@ class Int4PackedToFloatProcessor(BaseConvertProcessor):
         if not isinstance(module, ModelFreeLinear):
             return module
         if not module.lazy_initialized:
-            module.lazy_init(context.reader, device="cpu")
+            module.lazy_init(context.reader, device=context.resolved_worker_device)
 
         packed = module._buffers.get("weight_packed")
         scale = module._buffers.get("weight_scale")

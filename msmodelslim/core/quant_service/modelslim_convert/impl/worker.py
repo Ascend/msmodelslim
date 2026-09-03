@@ -12,7 +12,7 @@ ProcessPool 调度粒度为 dependency group，组内仍用 ThreadPoolExecutor +
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from msmodelslim.core.convert.config import ConvertConfig
 from msmodelslim.core.convert.tasks import IRResult, RoutedTask
@@ -20,6 +20,9 @@ from msmodelslim.core.quant_service.modelslim_convert.impl.group_runner import (
     DependencyGroupRunner,
     GroupRunStats,
 )
+
+if TYPE_CHECKING:
+    from msmodelslim.core.convert.protocol import ConvertContext
 
 _PROCESS_DEVICE = "cpu"
 # 由 ProcessPoolExecutor.initializer 注入；spawn 下不可通过 payload pickle 传递 Queue
@@ -68,6 +71,45 @@ class GroupWorkSummary:
     pool_wait_s: float = 0.0
     worker_wall_s: float = 0.0
 
+    @classmethod
+    def from_runner(cls, runner: DependencyGroupRunner) -> "GroupWorkSummary":
+        """从 ``DependencyGroupRunner`` 最近一次 ``run_group`` 的统计构造摘要。"""
+        stats: GroupRunStats = runner.last_stats
+        return cls(
+            task_count=stats.task_count,
+            fused_loads=stats.fused_loads,
+            fused_hits=stats.fused_hits,
+            shard_opens=stats.shard_opens,
+            shard_hits=stats.shard_hits,
+            lazy_init_s=stats.lazy_init_s,
+            transform_s=stats.transform_s,
+            lookup_s=stats.lookup_s,
+            pool_wait_s=stats.pool_wait_s,
+            worker_wall_s=runner.last_wall_s,
+        )
+
+
+def bootstrap_convert_worker(
+    model_path: str,
+    config: ConvertConfig,
+    device: str,
+) -> tuple[ConvertContext, DependencyGroupRunner]:
+    """
+    子进程内构造 reader / router / Context / GroupRunner。
+
+    CPU ProcessPool 与 npu_multi spawn 共用；调用方只负责设备串与调度循环。
+    返回的 Context 类型为 ``ConvertContext``（延迟导入，避免父进程提前拉起 IO 栈）。
+    """
+    from msmodelslim.core.convert.protocol import ConvertContext
+    from msmodelslim.infra.io.checkpoint_reader import CheckpointReader
+    from msmodelslim.processor.convert.registry import register_convert_processors
+
+    router = register_convert_processors()
+    reader = CheckpointReader(model_path)
+    context = ConvertContext(config=config, reader=reader)
+    context.resolved_worker_device = device
+    return context, DependencyGroupRunner(router)
+
 
 def convert_dependency_group(payload: GroupWorkPayload) -> GroupWorkSummary:
     """
@@ -75,19 +117,10 @@ def convert_dependency_group(payload: GroupWorkPayload) -> GroupWorkSummary:
 
     必须在模块顶层定义以便 ``spawn`` 上下文 pickle。
     """
-    from msmodelslim.core.convert.protocol import ConvertContext
-    from msmodelslim.infra.io.checkpoint_reader import CheckpointReader
-    from msmodelslim.processor.convert.registry import register_convert_processors
-
     if _RESULT_QUEUE is None:
         raise RuntimeError("convert worker result queue is not initialized")
 
-    router = register_convert_processors()
-    reader = CheckpointReader(payload.model_path)
-    context = ConvertContext(config=payload.config, reader=reader)
-    context.resolved_worker_device = _PROCESS_DEVICE
-
-    runner = DependencyGroupRunner(router)
+    context, runner = bootstrap_convert_worker(payload.model_path, payload.config, _PROCESS_DEVICE)
 
     def _sink(result: IRResult) -> None:
         _RESULT_QUEUE.put(result)
@@ -101,16 +134,4 @@ def convert_dependency_group(payload: GroupWorkPayload) -> GroupWorkSummary:
         return_mode=payload.return_mode,
         result_sink=_sink,
     )
-    stats: GroupRunStats = runner.last_stats
-    return GroupWorkSummary(
-        task_count=stats.task_count,
-        fused_loads=stats.fused_loads,
-        fused_hits=stats.fused_hits,
-        shard_opens=stats.shard_opens,
-        shard_hits=stats.shard_hits,
-        lazy_init_s=stats.lazy_init_s,
-        transform_s=stats.transform_s,
-        lookup_s=stats.lookup_s,
-        pool_wait_s=stats.pool_wait_s,
-        worker_wall_s=runner.last_wall_s,
-    )
+    return GroupWorkSummary.from_runner(runner)

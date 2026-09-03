@@ -40,7 +40,7 @@ class DequantToFloatProcessor(BaseConvertProcessor):
             for logical, ref in module.tensor_bindings.items():
                 if logical in ("weight_scale_inv", "weight_scale") and ref.key.endswith(WEIGHT_SCALE_INV_SUFFIX):
                     if not module.lazy_initialized:
-                        module.lazy_init(context.reader, device="cpu")
+                        module.lazy_init(context.reader, device=context.resolved_worker_device)
                     scale = module._buffers.get(logical)
                     break
 
@@ -48,7 +48,11 @@ class DequantToFloatProcessor(BaseConvertProcessor):
         if scale is not None:
             weight_bf16 = weight_dequant(weight, scale, block_size=block_size)
         else:
-            weight_bf16 = weight.to(torch.bfloat16)
+            if str(weight.device).startswith("npu") and weight.dtype == torch.float8_e4m3fn:
+                dev = weight.device
+                weight_bf16 = weight.to("cpu").to(torch.bfloat16).to(dev)
+            else:
+                weight_bf16 = weight.to(torch.bfloat16)
 
         bias = getattr(module, "bias", None)
         out = nn.Linear(weight_bf16.shape[1], weight_bf16.shape[0], bias=bias is not None)

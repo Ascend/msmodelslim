@@ -20,6 +20,11 @@ def npu_available() -> bool:
     return hasattr(torch, "npu") and torch.npu.is_available()
 
 
+def _npu_device_count() -> int:
+    """当前可用 NPU 设备数量（仅在 ``npu_available()`` 为真时调用）。"""
+    return int(torch.npu.device_count())
+
+
 def resolve_worker_device(worker_device: str | None) -> str:
     """
     将 ``parallel.worker_device`` 解析为 safetensors / torch 可用的设备字符串。
@@ -57,6 +62,30 @@ def resolve_worker_device(worker_device: str | None) -> str:
         f"Unsupported worker_device {worker_device!r}; "
         "expected cpu, npu, auto, or an explicit npu:<index> device string"
     )
+
+
+def resolve_multi_worker_devices(device_indices: list[int] | None) -> list[str]:
+    """
+    将 CLI ``--device npu --device_id`` 的卡索引映射为每进程设备串。
+
+    空 / None / NPU 不可用返回 ``[]``（走 CPU 路径）；否则 ``["npu:i", ...]``（走 NPU 路径）。
+    索引须非负、唯一、且在 ``torch.npu.device_count()`` 范围内。
+    """
+    if not device_indices:
+        return []
+    if not npu_available():
+        logger.warning(
+            "device_indices=%s but NPU unavailable; convert multi-NPU disabled, falling back to default path",
+            device_indices,
+        )
+        return []
+    if len(device_indices) != len(set(device_indices)):
+        raise ValueError(f"Duplicate device indices: {device_indices}")
+    max_count = _npu_device_count()
+    invalid = [idx for idx in device_indices if idx < 0 or idx >= max_count]
+    if invalid:
+        raise ValueError(f"Device indices {invalid} out of range [0, {max_count - 1}] for {max_count} NPU device(s)")
+    return [f"npu:{idx}" for idx in device_indices]
 
 
 def effective_convert_workers(

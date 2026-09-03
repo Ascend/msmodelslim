@@ -21,26 +21,13 @@ See the Mulan PSL v2 for more details.
 msmodelslim.core.quant_service.modelslim_convert.impl.worker 模块的单元测试
 """
 
-from unittest.mock import MagicMock, patch
-
 import pytest
 
 from msmodelslim.core.convert.config import ConvertConfig
 from msmodelslim.core.quant_service.modelslim_convert.impl.worker import (
     GroupWorkPayload,
-    _init_worker,
     convert_dependency_group,
 )
-
-
-class TestInitWorker:
-    """测试 _init_worker 函数"""
-
-    def test_init_worker_bind_queue_when_called(self):
-        queue = MagicMock()
-        with patch("torch.set_num_threads") as mock_threads:
-            _init_worker(queue)
-        mock_threads.assert_called_once_with(1)  # 校验限制 torch 线程数
 
 
 class TestConvertDependencyGroup:

@@ -25,7 +25,12 @@ from unittest.mock import patch
 
 import pytest
 
-from msmodelslim.core.convert.device import effective_convert_workers, npu_available, resolve_worker_device
+from msmodelslim.core.convert.device import (
+    effective_convert_workers,
+    npu_available,
+    resolve_multi_worker_devices,
+    resolve_worker_device,
+)
 
 
 class TestNpuAvailable:
@@ -71,3 +76,36 @@ class TestEffectiveConvertWorkers:
 
     def test_effective_convert_workers_return_one_when_max_workers_zero(self):
         assert effective_convert_workers(0, "cpu", npu_max_workers=1) == 1  # 校验至少 1 worker
+
+
+class TestResolveMultiWorkerDevices:
+    """测试 resolve_multi_worker_devices 函数"""
+
+    def test_resolve_multi_worker_devices_return_empty_when_disabled(self):
+        assert resolve_multi_worker_devices(None) == []
+        assert resolve_multi_worker_devices([]) == []
+        with patch("msmodelslim.core.convert.device.npu_available", return_value=False):
+            assert resolve_multi_worker_devices([0, 1, 2]) == []
+
+    def test_resolve_multi_worker_devices_map_indices_to_npu_strings(self):
+        with (
+            patch("msmodelslim.core.convert.device.npu_available", return_value=True),
+            patch("msmodelslim.core.convert.device._npu_device_count", return_value=8),
+        ):
+            assert resolve_multi_worker_devices([0, 1, 2]) == ["npu:0", "npu:1", "npu:2"]
+
+    def test_resolve_multi_worker_devices_raise_when_duplicate_indices(self):
+        with (
+            patch("msmodelslim.core.convert.device.npu_available", return_value=True),
+            patch("msmodelslim.core.convert.device._npu_device_count", return_value=8),
+        ):
+            with pytest.raises(ValueError, match="Duplicate device indices"):
+                resolve_multi_worker_devices([0, 0])
+
+    def test_resolve_multi_worker_devices_raise_when_index_out_of_range(self):
+        with (
+            patch("msmodelslim.core.convert.device.npu_available", return_value=True),
+            patch("msmodelslim.core.convert.device._npu_device_count", return_value=2),
+        ):
+            with pytest.raises(ValueError, match="out of range"):
+                resolve_multi_worker_devices([0, 5])

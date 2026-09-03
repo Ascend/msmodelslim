@@ -1,0 +1,66 @@
+# -*- coding: UTF-8 -*-
+
+# 权重转换配置：DeepSeek-V3 / DeepSeek-V3.1（结构与参数一致）FP8 block → W8A8_MXFP8
+# 参照 qwen3_8b_fp8_to_mxfp8.yaml，按 DeepSeek-V3 结构（MLA + MoE）调整 match 规则。
+#
+# DeepSeek-V3 权重结构（依 model.safetensors.index.json 校准）：
+#   - 前缀 model.layers.*，共 61 层
+#   - 前 first_k_dense_replace（默认 1）层为 Dense FFN：mlp.{gate,up,down}_proj
+#   - 其余层为 MoE FFN：
+#       mlp.gate_proj（路由门控）
+#       mlp.shared_experts.{up,down}_proj（共享专家，默认 1 个）
+#       mlp.experts.{0..255}.{up,down}_proj（路由专家，默认 256 个）
+#   - MLA 注意力：self_attn.{q_a,q_b,kv_a_proj_with_mqa,kv_b,o}_proj
+#   - 各 linear 均带 .weight_scale_inv（FP8 block 特征）
+#   - embed_tokens / norm 等非 linears 权重自动原样保留并落盘
+# 路由说明：route: auto 时工具按 FP8_BLOCK -> FLOAT -> W8A8_MXFP8 最短路径自动串联。
+# 多卡：CLI 传 --device npu --device_id 0 1 ...；可将 max_group_size 设为约「每层 expert 任务数 / 卡数」（8 卡约 96）。
+apiversion: modelslim_convert
+
+spec:
+  linears:
+    # MLA 注意力投影（5 个）
+    - match:
+        - "model.layers.*.self_attn.q_a_proj"
+        - "model.layers.*.self_attn.q_b_proj"
+        - "model.layers.*.self_attn.kv_a_proj_with_mqa"
+        - "model.layers.*.self_attn.kv_b_proj"
+        - "model.layers.*.self_attn.o_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+    # 路由门控
+    - match:
+        - "model.layers.*.mlp.gate_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+    # Dense FFN（前 first_k_dense_replace 层）
+    - match:
+        - "model.layers.*.mlp.up_proj"
+        - "model.layers.*.mlp.down_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+    # MoE FFN：共享专家
+    - match:
+        - "model.layers.*.mlp.shared_experts.up_proj"
+        - "model.layers.*.mlp.shared_experts.down_proj"
+        - "model.layers.*.mlp.shared_experts.gate_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+    # MoE FFN：路由专家（256 个/层）
+    - match:
+        - "model.layers.*.mlp.experts.*.up_proj"
+        - "model.layers.*.mlp.experts.*.down_proj"
+        - "model.layers.*.mlp.experts.*.gate_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+  save:
+    - type: ascend_v1
+      part_file_size: 4
+
+  parallel:
+    workers: 8

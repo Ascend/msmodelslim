@@ -111,6 +111,8 @@ class ParallelConfig(BaseModel):
     # 缓解 MoE 大组（一层 512 个 expert 任务）只能单进程承包导致的收尾拖尾、多核空闲。
     # None 或 <=0 表示不拆分（保持整组，fused 缓存复用率最高）。
     max_group_size: Optional[int] = None
+    # CLI --device npu --device_id；非空且 NPU 可用走 NPU 路径，否则 CPU 路径。
+    device_indices: List[int] = Field(default_factory=list)
 
 
 class ConvertConfig(BaseModel):

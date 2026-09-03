@@ -37,6 +37,9 @@ from msmodelslim.core.quant_service.modelslim_convert.impl.group_runner import (
     DependencyGroupRunner,
     estimate_task_bytes,
 )
+from msmodelslim.core.quant_service.modelslim_convert.impl.multi_npu import (
+    MultiNpuConvertScheduler,
+)
 from msmodelslim.core.quant_service.modelslim_convert.impl.worker import (
     GroupWorkPayload,
     GroupWorkSummary,
@@ -214,6 +217,12 @@ class ConvertExecutor(IConvertExecutor):
     def __init__(self, router: IRRouter | None = None) -> None:
         self._router = router or IRRouter.default()
         self._group_runner = DependencyGroupRunner(self._router)
+        self._direct_worker_metas: list = []
+
+    @property
+    def direct_worker_metas(self) -> list:
+        """worker 直接写盘后回传的 (staging_subdir, weight_map, desc_map)。"""
+        return list(self._direct_worker_metas)
 
     def run(
         self,
@@ -258,7 +267,15 @@ class ConvertExecutor(IConvertExecutor):
         budget = parallel.max_inflight_bytes
         pbar = tqdm(total=len(routed_tasks), desc="convert ir tasks")
 
-        if backend == "process" and process_workers > 1:
+        if context.parallel_mode == "npu_multi":
+            yield from self._run_multinpu(
+                context,
+                groups,
+                budget,
+                pbar,
+                run_stats,
+            )
+        elif backend == "process" and process_workers > 1:
             yield from self._run_multiprocess(
                 context,
                 groups,
@@ -291,7 +308,7 @@ class ConvertExecutor(IConvertExecutor):
 
         pbar.close()
         run_stats.total_s = time.perf_counter() - run_t0
-        _log_run_timing(run_stats, backend)
+        _log_run_timing(run_stats, context.parallel_mode)
 
     @staticmethod
     def _drain_result_queue(result_queue, pbar: tqdm, block: bool) -> Iterator[IRResult]:
@@ -419,6 +436,52 @@ class ConvertExecutor(IConvertExecutor):
                 "ConvertExecutor process: expected %d task results, got %d from queue",
                 total_tasks,
                 pbar.n,
+            )
+
+    def _run_multinpu(
+        self,
+        context: ConvertContext,
+        groups: list[list[RoutedTask]],
+        budget: int | None,
+        pbar: tqdm,
+        run_stats: _ConvertRunTiming,
+    ) -> Iterator[IRResult]:
+        from msmodelslim.core.quant_service.modelslim_convert.impl.save_adapter import (
+            is_npu_direct_write,
+        )
+
+        direct_write = is_npu_direct_write(context.parallel_mode, context.config.dst_format)
+        scheduler = MultiNpuConvertScheduler(
+            model_path=str(context.model_path),
+            config=context.config,
+            device_indices=list(context.config.parallel.device_indices),
+            groups=groups,
+            save_path=str(context.save_path) if direct_write else None,
+            budget=budget,
+            # 直接写盘在本进程完成，保留 module 避免 PortableTensor 打包/还原。
+            return_mode="module" if direct_write else "state_dict",
+        )
+        self._direct_worker_metas = []
+        for result in scheduler.run():
+            pbar.update(1)
+            yield result
+        self._direct_worker_metas = scheduler.worker_metas
+        # 汇总各子进程回传的组摘要，供 timing summary 使用。
+        for summary in scheduler.summaries:
+            run_stats.add_group(
+                _GroupTimingRecord(
+                    group_key="npu_multi",
+                    task_count=summary.task_count,
+                    wall_s=summary.worker_wall_s,
+                    lazy_init_s=summary.lazy_init_s,
+                    transform_s=summary.transform_s,
+                    lookup_s=summary.lookup_s,
+                    pool_wait_s=summary.pool_wait_s,
+                    fused_loads=summary.fused_loads,
+                    fused_hits=summary.fused_hits,
+                    shard_opens=summary.shard_opens,
+                    shard_hits=summary.shard_hits,
+                ),
             )
 
     def _run_group_inprocess(

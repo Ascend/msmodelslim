@@ -59,13 +59,30 @@ class ModelslimConvertQuantService(IQuantService):
             model_path=str(model_adapter.model_path),
             save_path=str(save_path),
             model_family=getattr(model_adapter, "model_type", None),
+            device_indices=device_indices,
         )
 
         logger.info(
-            "==========CONVERT: model_path=%s save_path=%s==========",
+            "==========CONVERT: model_path=%s save_path=%s device_indices=%s==========",
             convert_config.model_path,
             convert_config.save_path,
+            device_indices,
         )
+        # 数据安全：禁止 save_path 指向源模型目录或其子目录，避免清理逻辑误删源权重。
+        model_path_res = Path(model_adapter.model_path).resolve()
+        save_path_res = Path(save_path).resolve()
+        if save_path_res == model_path_res or model_path_res in save_path_res.parents:
+            raise ValueError(
+                f"save_path ({save_path}) must not be the model_path or inside it "
+                f"({model_adapter.model_path}); refusing to overwrite source weights"
+            )
+        # save_path 已禁止落在源模型目录内，此处清掉旧分片以免总数变化后残留同名/旧序号文件。
+        # 先删后转，转换失败会留下空目录/旧输出，需由用户在全新 save_path 上重跑。
+        if save_path.exists():
+            for item in save_path.iterdir():
+                if item.is_file() and item.suffix == ".safetensors":
+                    item.unlink()
+            logger.info("Cleared previous convert safetensors under save_path: %s", save_path)
         app = create_convert_application()
         app.run(convert_config)
         logger.info("==========CONVERT: END==========")

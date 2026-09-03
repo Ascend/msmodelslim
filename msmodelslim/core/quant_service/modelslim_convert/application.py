@@ -19,13 +19,20 @@ from __future__ import annotations
 import time
 
 from tqdm import tqdm
+from torch import nn
 
 from msmodelslim.core.convert.config import ConvertConfig
-from msmodelslim.core.convert.device import resolve_worker_device
+from msmodelslim.core.convert.device import (
+    resolve_multi_worker_devices,
+    resolve_worker_device,
+)
 from msmodelslim.core.convert.protocol import ConvertContext
 from msmodelslim.core.convert.router import IRRouter
 from msmodelslim.core.convert.tasks import RoutedTask
-from msmodelslim.core.quant_service.modelslim_convert.virtual_module import set_submodule_by_path
+from msmodelslim.core.quant_service.modelslim_convert.impl.save_adapter import SaveProcessorAdapter
+from msmodelslim.core.quant_service.modelslim_convert.virtual_module import (
+    set_submodule_by_path,
+)
 from msmodelslim.utils.logging import get_logger, logger_setter
 
 logger = get_logger()
@@ -49,7 +56,7 @@ class ConvertApplication:
         tree_builder,
         task_builder,
         executor,
-        save_adapter,
+        save_adapter: SaveProcessorAdapter,
         router: IRRouter | None = None,
     ) -> None:
         self._reader_factory = checkpoint_reader_factory
@@ -64,17 +71,29 @@ class ConvertApplication:
         """执行一次完整 convert 任务。"""
         pipeline_t0 = time.perf_counter()
         context = ConvertContext(config=config)
-        # process 后端固定 CPU（多进程突破 GIL）；thread 后端可解析到 NPU。
-        if config.parallel.worker_backend == "process":
+        # NPU 路径：CLI 给出卡号且设备可用 → npu_multi（进程数=卡数）。
+        # CPU 路径：否则按 YAML worker_backend 走 process / thread。
+        devices = config.parallel.device_indices
+        resolved_multi = resolve_multi_worker_devices(devices) if devices else []
+        if resolved_multi:
+            context.parallel_mode = "npu_multi"
+            context.resolved_worker_devices = resolved_multi
+            # 主进程仍 CPU：streaming 落盘与队列回传均在 CPU 侧完成。
+            context.resolved_worker_device = "cpu"
+        elif config.parallel.worker_backend == "process":
+            context.parallel_mode = "process"
             context.resolved_worker_device = "cpu"
         else:
+            context.parallel_mode = "thread"
             context.resolved_worker_device = resolve_worker_device(config.parallel.worker_device)
         reader = self._reader_factory(config.model_path)
         context.reader = reader
         logger.info(
-            "Convert backend=%s, device=%s",
+            "Convert parallel_mode=%s, backend=%s, device=%s, devices=%s",
+            context.parallel_mode,
             config.parallel.worker_backend,
             context.resolved_worker_device,
+            context.resolved_worker_devices or None,
         )
 
         phase_t0 = time.perf_counter()
@@ -122,14 +141,35 @@ class ConvertApplication:
             len(routed),
         )
 
-        phase_t0 = time.perf_counter()
-        for result in self._executor.run(context, routed):
-            set_submodule_by_path(tree, result.module_path, result.resolve_module())
-        logger.info("Convert phase timing: convert_ir=%.2fs", time.perf_counter() - phase_t0)
-
-        phase_t0 = time.perf_counter()
-        with tqdm(total=1, desc="save checkpoint") as pbar:
-            self._save_adapter.save(context, tree)
-            pbar.update(1)
-        logger.info("Convert phase timing: save_checkpoint=%.2fs", time.perf_counter() - phase_t0)
+        self._run_convert_with_streaming_save(context, tree, routed)
         logger.info("Convert finished in %.2fs", time.perf_counter() - pipeline_t0)
+
+    def _run_convert_with_streaming_save(self, context: ConvertContext, tree, routed: list[RoutedTask]) -> None:
+        phase_t0 = time.perf_counter()
+        self._save_adapter.begin(context, tree)
+        accepted = 0
+        completed = False
+        try:
+            for result in self._executor.run(context, routed):
+                if result.already_saved:
+                    set_submodule_by_path(tree, result.module_path, nn.Module())
+                else:
+                    module = result.resolve_module()
+                    self._save_adapter.accept(result.module_path, module)
+                    set_submodule_by_path(tree, result.module_path, nn.Module())
+                    del module
+                accepted += 1
+            completed = True
+        finally:
+            if completed:
+                metas = getattr(self._executor, "direct_worker_metas", None)
+                if isinstance(metas, list) and metas:
+                    self._save_adapter.set_direct_worker_metas(metas)
+                self._save_adapter.finalize()
+            else:
+                self._save_adapter.abort()
+        logger.info(
+            "Convert phase timing: convert_ir_stream_save=%.2fs (converted_modules=%d)",
+            time.perf_counter() - phase_t0,
+            accepted,
+        )

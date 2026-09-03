@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 msmodelslim.core.quant_service.modelslim_convert.impl.executor 模块的单元测试
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import torch
 from torch import nn
@@ -31,10 +31,15 @@ from msmodelslim.core.convert.config import ConvertConfig, ParallelConfig
 from msmodelslim.core.convert.edges import TransformEdge
 from msmodelslim.core.convert.protocol import ConvertContext
 from msmodelslim.core.convert.router import IRRouter
-from msmodelslim.core.convert.tasks import IRTask, RoutedTask
+from msmodelslim.core.convert.tasks import IRResult, IRTask, RoutedTask
 from msmodelslim.core.convert.types import IRKind, LossLevel, SourceIR, TensorRef
-from msmodelslim.core.quant_service.modelslim_convert.impl.executor import ConvertExecutor, _schedule_groups
-from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeLinear
+from msmodelslim.core.quant_service.modelslim_convert.impl.executor import (
+    ConvertExecutor,
+    _schedule_groups,
+)
+from msmodelslim.core.quant_service.modelslim_convert.virtual_module import (
+    ModelFreeLinear,
+)
 
 
 class TestScheduleGroups:
@@ -65,7 +70,10 @@ class TestScheduleGroups:
         dep.add_dependency("k1", "fused")
         dep.add_dependency("k2", "fused")
         groups = _schedule_groups(
-            [RoutedTask(task=task1, route=[], route_ir_names=[]), RoutedTask(task=task2, route=[], route_ir_names=[])],
+            [
+                RoutedTask(task=task1, route=[], route_ir_names=[]),
+                RoutedTask(task=task2, route=[], route_ir_names=[]),
+            ],
             dep,
         )
         assert len(groups) == 1  # 校验 fused 依赖合并为一组
@@ -169,3 +177,76 @@ class TestConvertExecutor:
         results = list(ConvertExecutor(router=router).run(context, [routed]))
         assert len(results) == 1  # 校验 run 流式产出一条结果
         assert results[0].module_path == "layers.0.q_proj"
+
+    def test_run_uses_multinpu_when_parallel_mode_is_npu_multi(self):
+        task = IRTask(
+            module_path="layers.0.q_proj",
+            source_ir=SourceIR(kind=IRKind.FLOAT),
+            target_ir=IRKind.FLOAT,
+            tensor_bindings={"weight": TensorRef("weight", "k", "s", "bf16", (2, 2))},
+            inverse_weight_map={},
+        )
+        routed = [RoutedTask(task=task, route=[], route_ir_names=[])]
+
+        config = ConvertConfig(
+            model_path="/m",
+            save_path="/o",
+            parallel=ParallelConfig(
+                max_workers=1,
+                task_granularity="ir_task",
+                device_indices=[0, 1],
+            ),
+        )
+        context = ConvertContext(config=config)
+        context.parallel_mode = "npu_multi"
+
+        mock_result = IRResult(module_path="layers.0.q_proj", final_ir=IRKind.FLOAT)
+        mock_scheduler = MagicMock()
+        mock_scheduler.run.return_value = iter([mock_result])
+        mock_scheduler.summaries = []
+        mock_scheduler.worker_metas = []
+
+        with patch(
+            "msmodelslim.core.quant_service.modelslim_convert.impl.executor.MultiNpuConvertScheduler",
+            return_value=mock_scheduler,
+        ) as mock_cls:
+            results = list(ConvertExecutor(router=IRRouter()).run(context, routed))
+
+        assert len(results) == 1  # 校验 npu_multi 分支产出结果
+        assert results[0].module_path == "layers.0.q_proj"
+        # 校验 device_indices 来自 ConvertConfig.parallel，不再拆设备串
+        assert mock_cls.call_args.kwargs["device_indices"] == [0, 1]
+        assert mock_cls.call_args.kwargs["save_path"] == "/o"
+        assert mock_cls.call_args.kwargs["return_mode"] == "module"
+
+    def test_run_multinpu_skip_direct_write_when_dst_format_is_hf(self):
+        """场景：npu_multi 但 dst_format 不是 AscendV1。
+        预期：不打开 worker 直写，结果仍走 state_dict 回传。
+        """
+        task = IRTask(
+            module_path="layers.0.q_proj",
+            source_ir=SourceIR(kind=IRKind.FLOAT),
+            target_ir=IRKind.FLOAT,
+            tensor_bindings={"weight": TensorRef("weight", "k", "s", "bf16", (2, 2))},
+            inverse_weight_map={},
+        )
+        routed = [RoutedTask(task=task, route=[], route_ir_names=[])]
+        config = ConvertConfig(
+            model_path="/m",
+            save_path="/o",
+            dst_format="huggingface",
+            parallel=ParallelConfig(max_workers=1, device_indices=[0, 1]),
+        )
+        context = ConvertContext(config=config)
+        context.parallel_mode = "npu_multi"
+        mock_scheduler = MagicMock()
+        mock_scheduler.run.return_value = iter([])
+        mock_scheduler.summaries = []
+        mock_scheduler.worker_metas = []
+        with patch(
+            "msmodelslim.core.quant_service.modelslim_convert.impl.executor.MultiNpuConvertScheduler",
+            return_value=mock_scheduler,
+        ) as mock_cls:
+            list(ConvertExecutor(router=IRRouter()).run(context, routed))
+        assert mock_cls.call_args.kwargs["save_path"] is None
+        assert mock_cls.call_args.kwargs["return_mode"] == "state_dict"
