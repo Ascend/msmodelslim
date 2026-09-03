@@ -39,7 +39,7 @@ python3 skills/docs-management/scripts/gen_quant_config_docs.py --check
 - 每个对外 Pydantic 配置类生成一份 Markdown；`type` 以 `_` 开头的内部配置不生成。
 - 文档按类型子目录组织：任务配置 `task/`、处理器 `processor/`、保存格式 `format/`、自动调优 `tuning/`；服务规格随 task 页展开，不单独生成 `spec/` 页面。
 - 参数表「字段路径」为相对当前配置的字段名；子标题不显示 YAML 路径后缀。
-- 参数列表按配置类名分块组织，块标题带可见编号（如 `<h3 id="2-1-...">2.1 类名</h3>`、`<h4 id="...">2.x 派生类名</h4>`）；每个块含自身参数表与「配置约束」子项；嵌套配置（含 task 的 spec）展开进对应子块；嵌套块若类 docstring 首段非空，标题后先输出该句类概述。
+- 参数列表按配置类名分块组织，块标题带可见编号（如 `<h3 id="2-1-...">2.1类名</h3>`、`<h4 id="...">2.x 派生类名</h4>`）；每个块含自身参数表与「配置约束」子项；嵌套配置（含 task 的 spec）展开进对应子块；嵌套块若类 docstring 首段非空，标题后先输出该句类概述。
 - `PracticeConfig`（`BaseQuantConfig` 子类，含 `metadata` → `Metadata`）作为任务基类配置独立成 `task/practice_config.md` 页，被调优策略引用时链接到该页。
 - type/mode 分派字段（`process`、`save`、`strategy`、`evaluation`、`select_best`、`operations`、`preprocess` 等）渲染为基础类块（`<h3 id="…">基础类名（按 type 分派）</h3>`，含基础类参数表与「派生类」列表）+ 各派生类 `<h4 id="…">` 子块；同一页面同一基础类只渲染一次，分派字段的「引用配置」列统一指向基础类块锚点。
 - 配置块标题与页内跳转统一用 HTML 标签（`<h3 id>` / `<h4 id>` / `<a href="#…">`），不使用 Markdown 的 `{#anchor}` 属性语法。

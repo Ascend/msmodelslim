@@ -1,0 +1,86 @@
+# msmodelslim 测评 YAML 可复用模板（service_oriented + aisbench + vllm-ascend）
+# 全文模板仅此一份；改参清单与字段说明见同目录 ../SKILL.md。勿为补字段打开 msmodelslim/infra 下 Python 源码。
+
+type: service_oriented
+
+demand:
+  expectations:
+    # dataset 必须与 evaluation.datasets 下的 key 完全一致
+    - dataset: gsm8k
+      target: 83 # 目标精度（百分比数值，如 83 表示 83%）
+      tolerance: 2
+
+evaluation:
+  type: aisbench
+
+  precheck:
+    - type: expected_answer
+      test_cases:
+        - "What is 2+2?": ["4", "four"]
+        - "What is the capital of China?": "Beijing"
+      max_tokens: 256
+      timeout: 60.0
+
+  aisbench:
+    binary: ais_bench
+    mode: all
+    timeout: 10800
+    request_rate: 0.0001
+    retry: 3
+    batch_size: 16
+    max_out_len: 32768
+    trust_remote_code: false
+    pred_postprocessor: extract_non_reasoning_content
+    generation_kwargs:
+      temperature: 1.0
+    model_meta:
+      base_name: vllm_api_general_chat
+      subdir: vllm_api
+      abbr: vllm-api-general-chat
+      attr: service
+
+  datasets:
+    gsm8k:
+      config_name: "gsm8k_gen_0_shot_cot_str"
+      mode: all
+    gpqa:
+      config_name: "gpqa_gen"
+      mode: all
+    aime25:
+      config_name: "aime2025_gen_0_shot_chat_prompt"
+      mode: all
+
+  # 须与 inference_engine 段对齐（同一服务入口）
+  host: localhost
+  port: 8000
+  served_model_name: example-qwen3-32b-w8a8
+
+inference_engine:
+  type: vllm-ascend
+  entrypoint: vllm.entrypoints.openai.api_server
+  env_vars:
+    HCCL_BUFFSIZE: 1024
+    ASCEND_RT_VISIBLE_DEVICES: "0,1" # 用户选择的物理设备索引
+
+  served_model_name: example-qwen3-32b-w8a8
+  host: localhost
+  port: 8000
+  health_check_endpoint: /v1/models
+  startup_timeout: 600
+
+  args:
+    served-model-name: example-qwen3-32b-w8a8
+    trust-remote-code: true
+    tensor-parallel-size: 2 # 与 ASCEND_RT_VISIBLE_DEVICES 中的设备数量对齐
+    data-parallel-size: 1 # 固定为 1，与模型无关
+    quantization: ascend  # 测评非量化的浮点权重时，此行改为 dtype: bfloat16
+    enable-prefix-caching: false
+    max-model-len: 65536
+    max-num-batched-tokens: 33792
+    gpu-memory-utilization: 0.9
+    enable-auto-tool-choice: true
+    tool-call-parser: hermes
+    additional_config:
+      ascend_scheduler_config:
+        enable: true
+      enable_weight_nz_layout: true

@@ -6,7 +6,9 @@ target_dir: docs/zh/<领域>/<name>/
 create_subdir: true
 subdir_name: "<name>：英文小写，多词以下划线连接，与目标目录既有文档命名一致"
 templates:
+
   - "02_process_guide_template.md → <name>.md（使用指南）"
+
 ---
 
 # 新增示例场景

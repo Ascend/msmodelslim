@@ -34,6 +34,7 @@ msmodelslim/
 ├── msmodelslim/           # 源代码
 ├── precision_tool/        # 伪量化精度评估工具（V0框架）
 ├── security/              # 安全检查基础模块（V0框架）
+├── skills/                # Agent Skills（资料管理、量化安装/适配/量化/策略/调优/测评等）
 ├── test/                  # 测试用例与测试脚本
 ├── install.sh             # 安装脚本
 ├── requirements.txt       # 第三方依赖列表
@@ -54,6 +55,7 @@ msmodelslim/
 ├── lab_calib/             # 量化校准数据集示例，如json、jsonl、图片等
 ├── lab_practice/          # 量化最佳实践仓库，管理各模型已验证的量化配置
 ├── msmodelslim/           # 源代码
+├── skills/                # Agent Skills（含量化安装/适配/量化/策略/调优/测评）
 ├── test/                  # 测试用例与测试脚本
 ├── install.sh             # 安装脚本
 ├── requirements.txt       # 第三方依赖列表
