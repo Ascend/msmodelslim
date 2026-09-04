@@ -14,11 +14,11 @@
 
 ### 2.1 Online Installation
 
-If your device has Internet access, you can complete the download and installation of the tool automatically with a single command. See the MindStudio [Download](https://www.hiascend.com/en/developer/software/mindstudio/download?versionId=150&ids=45%2C42671e3507254c1fb6f56b379948506f%2C129%2C49%2C) page on the Ascend Community, select the corresponding CANN version, and choose **Online** as the installation method. The system will guide you through the subsequent operations.
+If your device has Internet access, you can complete the download and installation of the tool automatically with a single command. See the MindStudio [Download](https://www.hiascend.com/en/developer/software/mindstudio/download?versionId=152&ids=45%2Cb1e62037594d4e5c9a0fd797ff490006%2C129%2C49%2C) page on the Ascend Community, select the corresponding CANN version, and choose **Online** as the installation method. The system will guide you through the subsequent operations.
 
 ### 2.2 Offline Installation
 
-For devices in environments without external network access, such as enterprise intranets, first download the complete offline installation package on a machine with network access, and then transfer it to the target device for installation. See the MindStudio [Download](https://www.hiascend.com/en/developer/software/mindstudio/download?versionId=150&ids=45%2C42671e3507254c1fb6f56b379948506f%2C129%2C49%2C) page on the Ascend Community, select the corresponding CANN version, and choose "Offline" as the installation method to obtain the corresponding installation package and operation instructions.
+For devices in environments without external network access, such as enterprise intranets, first download the complete offline installation package on a machine with network access, and then transfer it to the target device for installation. See the MindStudio [Download](https://www.hiascend.com/en/developer/software/mindstudio/download?versionId=152&ids=45%2Cb1e62037594d4e5c9a0fd797ff490006%2C129%2C50%2C) page on the Ascend Community, select the corresponding CANN version, and choose "Offline" as the installation method to obtain the corresponding installation package and operation instructions.
 
 ### 2.3 Source Installation
 
