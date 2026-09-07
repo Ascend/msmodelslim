@@ -108,8 +108,8 @@ msmodelslim quant \
 | 初始 | Smooth Quant | 0 | 326 | 初始配置，输出乱码 |
 | 第1次 | Iterative Smooth（非对称/alpha:0.5） | 0 | 305 | 输出乱码，换对称 |
 | 第2次 | Iterative Smooth（对称/alpha:0.5） | 3.33 | 324 | 存在重复token输出，精度不达标，调整alpha |
-| 第3次 | Iterative Smooth（对称/alpha:0.9） | 63.33 | 319 | 精度正常，但未达到预设精度要求（70.00%），用于支撑继续更换 Flex Smooth Quant 算法验证 |
-| 备选 | Flex Smooth Quant | 13.33 | 1380 | 存在重复token输出且所需时间明显更长 |
+| 第3次 | Iterative Smooth（对称/alpha:0.9） | 63.33 | 319 | 精度正常，但未达到预设精度要求（70.00%），更换 Flex Smooth Quant 算法 |
+| 第4次 | Flex Smooth Quant | 13.33 | 1380 | 存在重复token输出且所需时间明显更长 |
 
 **输出**：量化权重及对应 AIME25 测评报告；确定离群值抑制算法为 Iterative Smooth（对称/alpha:0.9）。
 
