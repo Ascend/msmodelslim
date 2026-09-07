@@ -36,7 +36,7 @@ from msmodelslim.processor.anti_outlier.iter_smooth import IterSmoothProcessorCo
 from msmodelslim.core.graph.adapter_types import AdapterConfig, MappingConfig
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.processor.anti_outlier.common.subgraph_type import NonFusionSubgraph
-from msmodelslim.utils.exception import SchemaValidateError
+from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError, UnexpectedError
 
 
 class ConcreteSmoothProcessor(BaseSmoothProcessor):
@@ -69,7 +69,6 @@ class TestBaseSmoothProcessor(unittest.TestCase):
 
     def test_validate_parameters_valid(self):
         self.processor._validate_parameters()
-        # No exception should be raised
 
     def test_validate_parameters_invalid_subgraph_type(self):
         invalid_config = IterSmoothProcessorConfig(enable_subgraph_type=["invalid-type"])
@@ -257,6 +256,57 @@ class TestBaseSmoothProcessor(unittest.TestCase):
                 self.processor._apply_ov_smooth(adapter_config)
                 mock_fusion.assert_not_called()
                 mock_standard.assert_called_once_with(adapter_config)
+
+    def test_apply_ov_smooth_raises_on_error(self):
+        """非预期异常（如 NPU OOM）应包装为 UnexpectedError 并向上传播，中断量化。"""
+        adapter_config = MagicMock(
+            spec=AdapterConfig,
+            mapping=MagicMock(source="v_proj", targets=["o_proj"]),
+            fusion=MagicMock(fusion_type="qkv"),
+        )
+        original_error = RuntimeError("NPU out of memory")
+        with patch.object(
+            self.processor,
+            "_apply_qkv_fusion_smooth",
+            side_effect=original_error,
+        ):
+            with self.assertRaises(UnexpectedError) as ctx:
+                self.processor._apply_ov_smooth(adapter_config)
+            self.assertIn("Error occurred while applying OV smoothing", str(ctx.exception))
+            self.assertIs(ctx.exception.__cause__, original_error)
+
+    def test_apply_ov_smooth_standard_raises_on_error(self):
+        """Non-fusion OV smoothing 的非预期异常同样包装为 UnexpectedError 并向上传播。"""
+        adapter_config = MagicMock(
+            spec=AdapterConfig,
+            mapping=MagicMock(source="v_proj", targets=["o_proj"]),
+            fusion=None,
+        )
+        original_error = RuntimeError("NPU out of memory")
+        with patch.object(
+            self.processor,
+            "_apply_standard_ov_smooth",
+            side_effect=original_error,
+        ):
+            with self.assertRaises(UnexpectedError) as ctx:
+                self.processor._apply_ov_smooth(adapter_config)
+            self.assertIn("Error occurred while applying OV smoothing", str(ctx.exception))
+            self.assertIs(ctx.exception.__cause__, original_error)
+
+    def test_apply_ov_smooth_unsupported_skips(self):
+        """UnsupportedError（不支持的 fusion 配置）保持跳过语义，不中断量化。"""
+        adapter_config = MagicMock(
+            spec=AdapterConfig,
+            mapping=MagicMock(source="v_proj", targets=["o_proj"]),
+            fusion=MagicMock(fusion_type="qkv"),
+        )
+        with patch.object(
+            self.processor,
+            '_apply_qkv_fusion_smooth',
+            side_effect=UnsupportedError("Unsupported fusion type: custom"),
+        ):
+            # 不应抛出，量化继续
+            self.processor._apply_ov_smooth(adapter_config)
 
     def test_apply_ov_smooth_non_fusion(self):
         """When mapping.source is None and targets present, _process_single_subgraph applies NonFusionSubgraph."""

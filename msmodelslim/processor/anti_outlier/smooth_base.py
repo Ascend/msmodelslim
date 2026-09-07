@@ -19,6 +19,8 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
+import traceback
+
 from abc import ABC, abstractmethod
 from typing import List, Optional, Any
 
@@ -29,18 +31,26 @@ from msmodelslim.processor.anti_outlier.common.subgraph_type import (
 )
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.core.graph.adapter_types import AdapterConfig
-from msmodelslim.processor.anti_outlier.common.subgraph_type import LinearLinearSubgraph, NonFusionSubgraph, NormLinearSubgraph, OVSubgraph
-from msmodelslim.processor.base import AutoSessionProcessor, AutoProcessorConfig
-from msmodelslim.processor.anti_outlier.default.model_adapter import get_adapter_config_for_subgraph as default_get_adapter_config
-from msmodelslim.utils.config_map import ConfigSet
-from msmodelslim.utils.exception import MisbehaviorError, SchemaValidateError, UnsupportedError
-from msmodelslim.utils.logging import get_logger
-from .common import (
-    VirtualVModuleFromQKVFused,
-    VirtualVModuleFromKVFused,
-    HookManager,
-    SubgraphRegistry
+from msmodelslim.processor.anti_outlier.common.subgraph_type import (
+    LinearLinearSubgraph,
+    NonFusionSubgraph,
+    NormLinearSubgraph,
+    OVSubgraph,
 )
+from msmodelslim.processor.base import AutoSessionProcessor, AutoProcessorConfig
+from msmodelslim.processor.anti_outlier.default.model_adapter import (
+    get_adapter_config_for_subgraph as default_get_adapter_config,
+)
+from msmodelslim.utils.config_map import ConfigSet
+from msmodelslim.utils.exception import (
+    MisbehaviorError,
+    SchemaValidateError,
+    UnsupportedError,
+    ModelslimError,
+    UnexpectedError,
+)
+from msmodelslim.utils.logging import get_logger
+from .common import VirtualVModuleFromQKVFused, VirtualVModuleFromKVFused, HookManager, SubgraphRegistry
 
 
 class BaseSmoothProcessor(AutoSessionProcessor, ABC):
@@ -52,13 +62,9 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
     2. Define abstract interfaces (implemented by subclasses)
     3. Manage common resources (config, hooks, context)
     """
+
     SUBGRAPH_HANDLERS = SubgraphRegistry.NAME_TO_HANDLER
-    SUBGRAPH_PRIORITY = {
-        "up-down": 1,
-        "ov": 2,
-        "norm-linear": 4,
-        "linear-linear": 3
-    }
+    SUBGRAPH_PRIORITY = {"up-down": 1, "ov": 2, "norm-linear": 4, "linear-linear": 3}
 
     def __init__(self, model: nn.Module, config: AutoProcessorConfig, adapter: Optional[Any] = None):
         super().__init__(model)
@@ -72,17 +78,16 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
         self.global_adapter_config = None
         self.adapter_config = None
         self.stats_collector = None
+
     @abstractmethod
     def apply_smooth_algorithm(self, subgraph_obj: Any, linear_names: List[str]) -> None:
         """Apply smooth algorithm (must be implemented by subclass)"""
-        ...
 
     @abstractmethod
     def _validate_adapter_interface(self, adapter: object) -> None:
         """Validate if the adapter implements the required interface.
-           Raise UnsupportedError if the adapter does not implement the required interface.
+        Raise UnsupportedError if the adapter does not implement the required interface.
         """
-        ...
 
     def preprocess(self, request: BatchProcessRequest) -> None:
         if self.is_defalut_adapter:
@@ -91,24 +96,20 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
             self.global_adapter_config = self.adapter.get_adapter_config_for_subgraph()
         self._validate_parameters()
         self.adapter_config = self._filter_adapter_configs_by_config(
-            self.global_adapter_config,
-            self.config,
-            request.name
+            self.global_adapter_config, self.config, request.name
         )
-        get_logger().debug(
-            "Processed %d subgraphs for submodule %s",
-            len(self.adapter_config), request.name
-        )
+        get_logger().debug("Processed %d subgraphs for submodule %s", len(self.adapter_config), request.name)
         self._install_statistics_hooks()
 
     def postprocess(self, request: BatchProcessRequest) -> None:
-        self._process_subgraphs_by_priority()
-
-        # Cleanup resources
-        if self.stats_collector:
-            self.stats_collector.clear_stats()
-        self._remove_all_hooks()
-        get_logger().debug("Completed smoothing, cleared statistics and hooks")
+        try:
+            self._process_subgraphs_by_priority()
+        finally:
+            # Cleanup resources
+            if self.stats_collector:
+                self.stats_collector.clear_stats()
+            self._remove_all_hooks()
+            get_logger().debug("Completed smoothing, cleared statistics and hooks")
 
     def _validate_parameters(self) -> None:
         """Validate all parameter legality"""
@@ -116,15 +117,12 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
         for subgraph_type in self.config.enable_subgraph_type:
             if not SubgraphRegistry.is_supported(subgraph_type):
                 raise SchemaValidateError(
-                    f"Elements in enable_subgraph_type must be in {valid_types}, "
-                    f"current element: {subgraph_type}",
-                    action=f"Please use only valid subgraph types: {valid_types}")
+                    f"Elements in enable_subgraph_type must be in {valid_types}, current element: {subgraph_type}",
+                    action=f"Please use only valid subgraph types: {valid_types}",
+                )
 
     def _filter_adapter_configs_by_config(
-            self,
-            adapter_configs: List[AdapterConfig],
-            config: AutoProcessorConfig,
-            scope: str
+        self, adapter_configs: List[AdapterConfig], config: AutoProcessorConfig, scope: str
     ) -> List[AdapterConfig]:
         """Filter adapter configurations based on config"""
         result = []
@@ -137,9 +135,7 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
             if not adapter_config.mapping:
                 continue
             module_name = (
-                adapter_config.mapping.source
-                if adapter_config.mapping.source
-                else adapter_config.mapping.targets[0]
+                adapter_config.mapping.source if adapter_config.mapping.source else adapter_config.mapping.targets[0]
             )
             if not module_name.startswith(layer_prefix):
                 continue
@@ -164,18 +160,14 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
     def _process_subgraphs_by_priority(self) -> None:
         """Process subgraphs in priority order"""
         get_logger().debug("Starting smoothing application")
-        sorted_configs = sorted(
-            self.adapter_config,
-            key=lambda x: self.SUBGRAPH_PRIORITY.get(x.subgraph_type, 999)
-        )
+        sorted_configs = sorted(self.adapter_config, key=lambda x: self.SUBGRAPH_PRIORITY.get(x.subgraph_type, 999))
 
         for idx, adapter_config in enumerate(sorted_configs, start=1):
             priority = self.SUBGRAPH_PRIORITY.get(adapter_config.subgraph_type, 999)
-            module_name = adapter_config.mapping.source \
-                if adapter_config.mapping.source else adapter_config.mapping.targets[0]
-            get_logger().debug(
-                "  %d. %s (priority: %d) - %s", idx, adapter_config.subgraph_type, priority, module_name
+            module_name = (
+                adapter_config.mapping.source if adapter_config.mapping.source else adapter_config.mapping.targets[0]
             )
+            get_logger().debug("  %d. %s (priority: %d) - %s", idx, adapter_config.subgraph_type, priority, module_name)
             self._process_single_subgraph(adapter_config)
 
     def _process_single_subgraph(self, adapter_config: AdapterConfig) -> None:
@@ -185,10 +177,7 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
             return
         handler_name = SubgraphRegistry.get_handler_name(adapter_config.subgraph_type)
         handler = getattr(self, handler_name, None)
-        get_logger().debug(
-            "    Mapping: %s -> %s",
-            adapter_config.mapping.source, adapter_config.mapping.targets
-        )
+        get_logger().debug("    Mapping: %s -> %s", adapter_config.mapping.source, adapter_config.mapping.targets)
         handler(adapter_config)
 
     def _try_apply_non_fusion_smooth(self, adapter_config: AdapterConfig) -> bool:
@@ -196,23 +185,15 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
         If mapping is non-fusion (source is None, targets present), apply NonFusionSubgraph
         and return True; otherwise return False.
         """
-        if (
-            adapter_config.mapping.source is not None
-            or not adapter_config.mapping.targets
-        ):
+        if adapter_config.mapping.source is not None or not adapter_config.mapping.targets:
             return False
-        target_modules = [
-            self.model.get_submodule(name)
-            for name in adapter_config.mapping.targets
-        ]
+        target_modules = [self.model.get_submodule(name) for name in adapter_config.mapping.targets]
         if adapter_config.subgraph_type == "norm-linear":
             linear_names = adapter_config.mapping.targets
         else:
             linear_names = [adapter_config.mapping.targets[0]]
         self.apply_smooth_algorithm(
-            NonFusionSubgraph(
-                linears=target_modules, linear_names=adapter_config.mapping.targets
-            ),
+            NonFusionSubgraph(linears=target_modules, linear_names=adapter_config.mapping.targets),
             linear_names,
         )
         return True
@@ -227,11 +208,7 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
             get_logger().warning("Failed to get modules for up-down subgraph: %s", adapter_config.mapping.source)
             return
         gate_module = None
-        get_logger().debug(
-            "Up module name:%s Down module name:%s",
-            up_name,
-            down_name
-        )
+        get_logger().debug("Up module name:%s Down module name:%s", up_name, down_name)
         self.apply_smooth_algorithm(
             UpDownSubgraph(
                 up_module,
@@ -253,8 +230,14 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
                 self._apply_qkv_fusion_smooth(adapter_config)
             else:
                 self._apply_standard_ov_smooth(adapter_config)
+        except UnsupportedError as e:
+            # Keep original semantics for unsupported fusion config: skip this
+            # subgraph with a warning instead of aborting the whole quantization.
+            get_logger().warning("Unsupported OV smoothing config, skip: %s", e)
+        except ModelslimError:
+            raise
         except Exception as e:
-            get_logger().error("Error occurred while applying OV smoothing: %s", e)
+            raise UnexpectedError(f"Error occurred while applying OV smoothing: {e}") from e
 
     def _apply_qkv_fusion_smooth(self, adapter_config: AdapterConfig) -> None:
         """Apply QKV fusion smoothing (OV sub-method)"""
@@ -278,13 +261,11 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
                 v_module,
                 num_attention_heads=fusion.num_attention_heads,
                 qk_nope_head_dim=fusion.custom_config["qk_nope_head_dim"],
-                v_head_dim=fusion.custom_config["v_head_dim"]
+                v_head_dim=fusion.custom_config["v_head_dim"],
             )
         elif fusion.fusion_type == "qkv":
             virtual_v_module = VirtualVModuleFromQKVFused(
-                v_module,
-                num_attention_heads=fusion.num_attention_heads,
-                num_key_value_heads=fusion.num_key_value_heads
+                v_module, num_attention_heads=fusion.num_attention_heads, num_key_value_heads=fusion.num_key_value_heads
             )
         else:
             raise UnsupportedError(f"Unsupported fusion type: {fusion.fusion_type}")
@@ -348,9 +329,7 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
             return
 
         self.apply_smooth_algorithm(
-            NormLinearSubgraph(
-                source_module, target_modules, linear_names=target_names
-            ),
+            NormLinearSubgraph(source_module, target_modules, linear_names=target_names),
             target_names,
         )
 
@@ -401,15 +380,12 @@ class BaseSmoothProcessor(AutoSessionProcessor, ABC):
         """Get number of key-value heads from model config"""
         if not hasattr(self.model.config, "num_key_value_heads"):
             num_key_value_heads = self._get_num_attention_heads()
-            get_logger().warning(
-                "Failed to obtain `num_key_value_heads`, assuming Multi-head Attention by default."
-            )
+            get_logger().warning("Failed to obtain `num_key_value_heads`, assuming Multi-head Attention by default.")
         else:
             num_key_value_heads = self.model.config.num_key_value_heads
 
         if not num_key_value_heads:
             raise MisbehaviorError(
-                "the config of model must have num_key_value_heads, "
-                "please check or modify the config file"
+                "the config of model must have num_key_value_heads, please check or modify the config file"
             )
         return num_key_value_heads
