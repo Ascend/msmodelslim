@@ -23,11 +23,12 @@ AscendV1 落盘格式配置（占位）；运行时由 core ``AscendV1Saver`` / 
 
 from __future__ import annotations
 
-from typing import Any, Dict, Literal
+from typing import Any, Dict, Literal, Annotated
 
-from pydantic import Field
+from pydantic import Field, AfterValidator
 
 from msmodelslim.format.base import QuantFormatConfig
+from msmodelslim.utils.validation.pydantic import in_range
 
 
 class AscendV1QuantFormatConfig(QuantFormatConfig):
@@ -40,7 +41,9 @@ class AscendV1QuantFormatConfig(QuantFormatConfig):
         default="ascendv1_saver", description="保存格式类型，固定为 `ascendv1_saver`。"
     )
     save_directory: str = Field(default=".", exclude=True)
-    part_file_size: int = Field(default=4, description="分片文件大小，单位 GB；0 表示不分片。")
+    part_file_size: Annotated[int, AfterValidator(in_range(min_val=0))] = Field(
+        default=4, description="分片文件大小，单位 GB；0 表示不分片。"
+    )
     ext: Dict[str, Any] = Field(
         default_factory=dict,
         exclude_if=lambda v: not v,
