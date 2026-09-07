@@ -429,7 +429,7 @@ class AscendV1Saver(AutoSaverProcessor):
             weight = module.weight.to(torch.float32)
             deq_weight = weight.T * module.weight_scale
             scale_bias = process_scale(prefix, deq_weight.T, 16)
-            self.write_tensor(prefix + ".weight", "W4A8_DYNAMIC", w4a8_pack_int4(module.weight.to(torch.int8)))
+            self.write_tensor(prefix + ".weight", "W4A8_DYNAMIC", w4a8_pack_int4(module.weight.cpu().to(torch.int8)))
             self.write_tensor(prefix + ".weight_scale", "W4A8_DYNAMIC", weight_scale.to(torch.float32))
             self.write_tensor(
                 prefix + ".weight_offset", "W4A8_DYNAMIC", torch.zeros_like(weight_scale).to(torch.float32)

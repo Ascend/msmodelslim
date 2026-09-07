@@ -71,6 +71,7 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         self.assertEqual(p._float_outputs, [])
         self.assertEqual(p._quant_inputs, [])
         self.assertEqual(p._merged_outputs, [])
+        self.assertEqual(p._segment_layer_scores, [])
 
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.get_current_context")
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
@@ -157,8 +158,9 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         datas = [((hidden,), {"attention_mask": torch.ones(2, 8)})]
         p._merged_outputs = [{"pooler_output": torch.ones(4, 5)}]
 
-        new_rows = p._replace_request_datas_with_merged_outputs_if_need(datas)
+        new_rows, chained = p._replace_request_datas_with_merged_outputs_if_need(datas)
         self.assertIs(new_rows, datas)
+        self.assertFalse(chained)
 
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
@@ -180,7 +182,8 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         datas = [((x,), {"foo": "bar"})]
         p._merged_outputs = [x.clone()]
 
-        new_rows = p._replace_request_datas_with_merged_outputs_if_need(datas)
+        new_rows, chained = p._replace_request_datas_with_merged_outputs_if_need(datas)
+        self.assertTrue(chained)
         self.assertEqual(len(new_rows), 1)
         (args, kwargs) = new_rows[0]
         self.assertTrue(torch.allclose(args[0], x))
@@ -242,6 +245,110 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
 
         mock_barrier.assert_called_once()
         qp.preprocess.assert_called_once_with(request)
+
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
+    def test_preprocess_shouldRestartSegment_whenVisualLanguageBoundary(self, mock_create_method, mock_from_config):
+        """visual→language 断链：密封旧 segment 分数并清空链状态，当前层作为新链起点。"""
+        from msmodelslim.core.base.protocol import BatchProcessRequest
+        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
+            BinaryOperatorModelWiseProcessor,
+        )
+
+        fake_method = self._build_fake_method()
+        mock_create_method.return_value = fake_method
+        mock_from_config.return_value = MagicMock()
+
+        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
+        p._base_data_count = 1
+        p._block_names = ["model.visual"]
+        # valid 1-layer segment: [ref, cand]
+        p._merged_outputs = [torch.zeros(1), torch.ones(1)]
+
+        lang_hidden = torch.zeros(2, 3)
+        request = BatchProcessRequest(
+            name="model.language_model.layers.0",
+            module=self.model,
+            datas=[((lang_hidden,), {})],
+        )
+
+        with patch.object(p, "_run_forward_if_need") as mock_fwd:
+
+            def _fake_fwd(req):
+                req.outputs = [torch.zeros(2, 3)]
+
+            mock_fwd.side_effect = _fake_fwd
+            p.preprocess(request)
+
+        self.assertEqual(p._segment_layer_scores, [{"name": "model.visual", "score": 0.1}])
+        self.assertEqual(p._block_names, ["model.language_model.layers.0"])
+        self.assertEqual(p._base_data_count, 1)
+        self.assertEqual(p._merged_outputs, [])
+        fake_method.compute_score.assert_called_once()
+
+    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
+    def test_postRun_shouldMergeSegmentScores_whenPriorSegmentFinalized(
+        self, mock_create_method, mock_from_config, mock_get_current_context
+    ):
+        """post_run 应合并已密封 segment 与当前链上的层分数。"""
+        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
+            BinaryOperatorModelWiseProcessor,
+        )
+
+        fake_method = self._build_fake_method()
+        fake_method.name = "mse_model_wise"
+        mock_create_method.return_value = fake_method
+        mock_from_config.return_value = MagicMock()
+
+        ctx = {"layer_analysis": SimpleNamespace(debug={})}
+        mock_get_current_context.return_value = ctx
+
+        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
+        p._segment_layer_scores = [{"name": "model.visual", "score": 0.2}]
+        p._base_data_count = 1
+        p._block_names = ["model.language_model.layers.0", "mtp"]
+        # 2 layers: [ref, L0, mtp] => length 3
+        p._merged_outputs = [torch.zeros(1), torch.ones(1), torch.full((1,), 2.0)]
+
+        p.post_run()
+
+        scores = ctx["layer_analysis"].debug["layer_scores"]
+        self.assertEqual(len(scores), 3)
+        self.assertEqual(scores[0]["name"], "model.visual")
+        self.assertEqual(scores[0]["score"], 0.2)
+        self.assertEqual(scores[1]["name"], "model.language_model.layers.0")
+        self.assertEqual(scores[2]["name"], "mtp")
+
+    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
+    def test_postRun_shouldPass_whenLanguageChainMatchesQwenStyleCounts(
+        self, mock_create_method, mock_from_config, mock_get_current_context
+    ):
+        """复现日志计数：语言链 41 层 merged=168 时校验应通过（不再把 visual 算进同一条链）。"""
+        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
+            BinaryOperatorModelWiseProcessor,
+        )
+
+        fake_method = self._build_fake_method()
+        fake_method.name = "mse_model_wise"
+        mock_create_method.return_value = fake_method
+        mock_from_config.return_value = MagicMock()
+        mock_get_current_context.return_value = {"layer_analysis": SimpleNamespace(debug={})}
+
+        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
+        p._segment_layer_scores = [{"name": "model.visual", "score": 0.01}]
+        p._base_data_count = 4
+        # layers.0..39 + mtp
+        p._block_names = [f"model.language_model.layers.{i}" for i in range(40)] + ["mtp"]
+        p._merged_outputs = [torch.zeros(1) for _ in range(168)]  # 4 * (41 + 1)
+
+        p.post_run()  # should not raise
+
+        self.assertEqual(len(p._block_names), 41)
+        self.assertEqual(len(p._merged_outputs), 4 * (len(p._block_names) + 1))
 
 
 if __name__ == "__main__":

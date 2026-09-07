@@ -114,10 +114,9 @@ class BinaryAnalysisProcessor(AutoSessionProcessor):
 
         if len(self._target_layers) == 0:
             get_logger().warning(
-                "No target layers/modules found matching the specified patterns for %s. "
-                "Please check the patterns %s and the model structure, to ensure it meets expectations.",
+                "No target layers/modules found for %s. "
+                "Please check the model structure to ensure it meets expectations.",
                 request.name,
-                self.config.patterns,
             )
 
         hook_fn = self._analysis_method.get_hook()
@@ -180,7 +179,7 @@ class BinaryAnalysisProcessor(AutoSessionProcessor):
         if not self._layer_scores:
             get_logger().warning(
                 "No statistics collected. This may be caused by empty calibration data "
-                "or incompatible patterns with the model structure."
+                "or an incompatible model structure."
             )
 
     def _register_hooks_for_request(

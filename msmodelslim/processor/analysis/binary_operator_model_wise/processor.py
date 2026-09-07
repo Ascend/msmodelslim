@@ -84,6 +84,8 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
         self._float_outputs: List[Any] = []
         self._quant_inputs: List[Any] = []
         self._merged_outputs: List[Any] = []
+        # Scores sealed from earlier chain segments (e.g. vision before language).
+        self._segment_layer_scores: List[Dict[str, Any]] = []
         # Skip switch for non-chainable layers. Once enabled, this and all subsequent blocks are skipped.
         self._skip_remaining_blocks: bool = False
         self._skipped_request_names: List[str] = []
@@ -114,10 +116,12 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
                 self._run_forward_if_need(request)
             return
 
-        # Auto-detect non-chainable layers (e.g. MTP input)
-        # once chaining check fails, warn and skip this and all subsequent layers.
+        # Auto-detect non-chainable layers:
+        # - value mismatch (allclose fail) -> skip this and all subsequent layers
+        # - shape / extract failure while prior merged exists -> seal segment and restart chain
+        had_merged = bool(self._merged_outputs)
         try:
-            request.datas = self._replace_request_datas_with_merged_outputs_if_need(request.datas)
+            new_datas, chained = self._replace_request_datas_with_merged_outputs_if_need(request.datas)
         except UnsupportedError as e:
             self._skipped_request_names.append(request.name)
             get_logger().warning(
@@ -131,6 +135,10 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
             self._skip_remaining_blocks = True
             return
 
+        if had_merged and not chained and request.datas is not None:
+            self._finalize_current_segment(request.name)
+
+        request.datas = new_datas
         self._block_names.append(request.name)
 
         if self._base_data_count == 0:
@@ -140,7 +148,7 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
 
         request.datas = float_inputs
         self._run_forward_if_need(request)
-        self._float_outputs = request.outputs
+        self._float_outputs = list(request.outputs) if request.outputs is not None else []
         self._quant_inputs = quant_inputs
 
     def process(self, request: BatchProcessRequest) -> None:
@@ -160,14 +168,20 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
         self._run_forward_if_need(request)
 
         # 将纯浮点输出与带量化输出结果拼接
-        self._merged_outputs = [*self._float_outputs, *request.outputs]
+        quant_outputs = list(request.outputs) if request.outputs is not None else []
+        self._merged_outputs = [*self._float_outputs, *quant_outputs]
 
     def post_run(self) -> None:
         for processor in self.quant_processors:
             processor.post_run()
 
-        self._validate_merged_outputs()
-        layer_scores = self._compute_layer_scores()
+        if self._block_names:
+            self._validate_merged_outputs()
+            current_scores = self._compute_layer_scores()
+        else:
+            current_scores = []
+
+        layer_scores = [*self._segment_layer_scores, *current_scores]
         layer_scores = publish_layer_analysis_result(
             layer_scores,
             self._analysis_method.name,
@@ -187,6 +201,44 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
             self._analysis_method.name,
             self.config.quant_modules,
         )
+
+    def _finalize_current_segment(self, boundary_name: str) -> None:
+        """Seal scores for the finished chain segment and reset state for a new segment."""
+        prev_names = list(self._block_names)
+        if prev_names and self._base_data_count > 0:
+            try:
+                self._validate_merged_outputs()
+                self._segment_layer_scores.extend(self._compute_layer_scores())
+                get_logger().warning(
+                    "BinaryOperatorModelWiseProcessor: chain boundary at %s; "
+                    "finalized previous segment with %d layers (%s), starting new segment.",
+                    boundary_name,
+                    len(prev_names),
+                    ", ".join(prev_names),
+                )
+            except UnexpectedError as exc:
+                get_logger().warning(
+                    "BinaryOperatorModelWiseProcessor: chain boundary at %s; "
+                    "discarding invalid previous segment with %d layers (%s). reason=%s",
+                    boundary_name,
+                    len(prev_names),
+                    ", ".join(prev_names),
+                    str(exc),
+                )
+        elif prev_names:
+            get_logger().warning(
+                "BinaryOperatorModelWiseProcessor: chain boundary at %s; "
+                "discarding empty previous segment with %d layers (%s).",
+                boundary_name,
+                len(prev_names),
+                ", ".join(prev_names),
+            )
+
+        self._block_names = []
+        self._merged_outputs = []
+        self._base_data_count = 0
+        self._float_outputs = []
+        self._quant_inputs = []
 
     def _validate_merged_outputs(self) -> None:
         base_count = self._base_data_count
@@ -219,13 +271,18 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
 
     def _replace_request_datas_with_merged_outputs_if_need(
         self, datas: Optional[List[Tuple[tuple, dict]]]
-    ) -> Optional[List[Tuple[tuple, dict]]]:
-        """若存在上一层 merged_outputs，则用其 hidden_states 重建当前层 datas。"""
+    ) -> Tuple[Optional[List[Tuple[tuple, dict]]], bool]:
+        """若存在上一层 merged_outputs，则用其 hidden_states 重建当前层 datas。
+
+        Returns:
+            (datas, chained): ``chained=True`` 表示已用 merged_outputs 重建输入；
+            ``chained=False`` 且先前存在 merged 时，由调用方开启新 segment。
+        """
         merged_outputs = self._merged_outputs
         base_data_count = self._base_data_count
 
         if not merged_outputs or datas is None:
-            return datas
+            return datas, False
 
         old_rows = datas
 
@@ -244,20 +301,24 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
                     req_hidden = self._block_data.extract_hidden_states(row)
                     merged_hidden = self._block_data.extract_hidden_states(out)
                 except UnsupportedError:
-                    get_logger().debug(
-                        "BinaryOperatorModelWiseProcessor: skip output chaining; use generator datas.",
+                    get_logger().warning(
+                        "BinaryOperatorModelWiseProcessor: cannot chain outputs "
+                        "(unsupported block I/O); use generator datas and restart segment.",
                     )
-                    return datas
+                    return datas, False
 
                 merged_hidden = merged_hidden.to(
                     device=req_hidden.device,
                     dtype=req_hidden.dtype,
                 )
                 if req_hidden.shape != merged_hidden.shape:
-                    get_logger().debug(
-                        "BinaryOperatorModelWiseProcessor: skip output chaining due to shape mismatch.",
+                    get_logger().warning(
+                        "BinaryOperatorModelWiseProcessor: cannot chain outputs "
+                        "(shape mismatch %s vs %s); use generator datas and restart segment.",
+                        tuple(req_hidden.shape),
+                        tuple(merged_hidden.shape),
                     )
-                    return datas
+                    return datas, False
                 if not torch.allclose(req_hidden, merged_hidden):
                     raise UnsupportedError(
                         "Model-wise chaining broken: current layer input hidden_states != previous layer output."
@@ -268,14 +329,15 @@ class BinaryOperatorModelWiseProcessor(AutoSessionProcessor):
             try:
                 hidden = self._block_data.extract_hidden_states(out)
             except UnsupportedError:
-                get_logger().debug(
-                    "BinaryOperatorModelWiseProcessor: skip output chaining; use generator datas.",
+                get_logger().warning(
+                    "BinaryOperatorModelWiseProcessor: cannot rebuild chained datas "
+                    "(unsupported merged output); use generator datas and restart segment.",
                 )
-                return datas
+                return datas, False
             _, template_kwargs = old_rows[idx % len(old_rows)]
             new_rows.append(((hidden,), template_kwargs))
 
-        return new_rows
+        return new_rows, True
 
     def _build_float_quant_inputs(
         self,
