@@ -191,7 +191,13 @@ class RaCompressAnalysisResultDisplayer(AnalysisResultDisplayerInfra):
             output_path = _save_head_pt(head_dict, save_path)
             get_logger().info("RA compress heads saved to: %s", output_path)
         else:
-            get_logger().info("No --save_path specified, results printed to console only.")
+            get_logger().info("")
+            get_logger().info("=== Head dict (same content as head.pt) ===")
+            get_logger().info("")
+            with clean_output():
+                get_logger().info("%s", head_dict)
+            get_logger().info("")
+            get_logger().info("=== End of Head dict ===")
 
         get_logger().info("=" * 80)
 
