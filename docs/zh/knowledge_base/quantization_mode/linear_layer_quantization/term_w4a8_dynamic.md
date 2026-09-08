@@ -1,21 +1,19 @@
 # W4A8 动态量化
 
-> **词条类别**：量化数据格式（[线性层量化](README.md)）
-> **英文名称**：W4A8 Dynamic Quantization
-> **应用领域**：大语言模型量化压缩、推理加速
-> **承载 IR 类**：`W4A8DynamicFakeQuantLinear`（[`msmodelslim/ir/w4a8_dynamic.py`](../../../../../msmodelslim/ir/w4a8_dynamic.py)）
-
----
+> **词条类别**：量化数据格式（[线性层量化](README.md)）<br>
+> **英文名称**：W4A8 Dynamic Quantization<br>
+> **应用领域**：大语言模型量化压缩、推理加速<br>
+> **承载 IR 类**：`W4A8DynamicFakeQuantLinear`（[`msmodelslim/ir/w4a8_dynamic.py`](../../../../../msmodelslim/ir/w4a8_dynamic.py)）<br>
 
 ## 1. 概述
 
-W4A8 动态量化 = 权重压到 [INT4](../../quantization_basic/term_int4.md)、激活保持 [INT8](../../quantization_basic/term_int8.md) 的**混合位宽**线性层方案，激活量化参数逐 token 在线计算。它在压缩与精度之间取折中：权重是每 token 都要整体读取的静态数据，压到 4bit 把权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4；激活是量化误差最敏感的一方，保留 8bit 分辨率并逐 token 动态量化，是「权重使劲压、激活保精度」的典型配置。
+W4A8 动态量化是权重压到 [INT4](../../quantization_basic/term_int4.md)、激活保持 [INT8](../../quantization_basic/term_int8.md) 的**混合位宽**线性层方案，激活量化参数逐 token 在线计算。它在压缩与精度之间取折中：权重是每 token 都要整体读取的静态数据，压到 4bit 把权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4；激活是量化误差最敏感的一方，保留 8bit 分辨率并逐 token 动态量化，是权重使劲压、激活保精度的典型配置。
 
 ---
 
 ## 2. 词条介绍
 
-### 模式规格
+### 2.1 模式规格
 
 | 维度 | 取值 | 说明 |
 |------|------|------|
@@ -26,20 +24,20 @@ W4A8 动态量化 = 权重压到 [INT4](../../quantization_basic/term_int4.md)�
 | 量化粒度 | 权重 per-channel；激活 per-token | 权重逐输出通道共享 scale；激活逐 token 共享 scale |
 | 对称性 | 对称 | 仅 scale，无 offset |
 
-### 量化公式
+### 2.2 量化公式
 
 量化与反量化采用标准线性映射。对称量化（仅 scale、无零点）：
-$$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|x|)}{2^{b-1}}$$
+$$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|x|)}{2^{b-1}-1}$$
 
 非对称量化（含零点 offset）：
 $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \frac{\max(x) - \min(x)}{2^b - 1}$$
 
-其中 $x$ 为待量化张量，$q$ 为量化后的整数值，$\hat{x}$ 为反量化还原值，$s$ 为 scale，$z$ 为零点 offset，$b$ 为位宽（INT8 取 $b=8$，INT4 取 $b=4$），且 $z = \mathrm{round}(-\min(x)/s)$。量化参数 $s$、$z$ 的获取方式（静态校准或在线动态）与作用粒度（per-channel、per-token、per-tensor 等）见「模式规格」表。
+其中 $x$ 为待量化张量，$q$ 为量化后的整数值，$\hat{x}$ 为反量化还原值，$s$ 为 scale，$z$ 为零点 offset，$b$ 为位宽（INT8 取 $b=8$，INT4 取 $b=4$），且 $z = \mathrm{round}(-\min(x)/s)$。量化参数 $s$、$z$ 的获取方式（静态校准或在线动态）与作用粒度（per-channel、per-token、per-tensor 等）见上文模式规格表。
 
-### 与其他模式的关系
+### 2.3 与其他模式的关系
 
 - **与 [W8A8 动态量化](term_w8a8_dynamic.md)（激活同为动态，权重位宽不同）**
-  - 本模式：优势是权重压到 4bit、访存降至 FP16 的 1/4，权重侧压缩更彻底；劣势是权重仅16档、有精度风险，且权重/激活位宽不一致时算子需混合处理。
+  - 本模式：优势是权重压到 4bit、访存降至 FP16 的 1/4，权重侧压缩更彻底；劣势是 INT4 有符号仅能表示 −8～7 共 16 个整数档位，存在精度风险，且权重/激活位宽不一致时算子需混合处理。
   - W8A8 动态：优势是权重 8bit 分辨率高、精度更稳，算子实现简单；劣势是权重访存仅减半。
 
 - **与 [W4A4 动态量化](term_w4a4_dynamic.md)（权重同为 4bit，激活位宽不同）**
@@ -54,16 +52,16 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
   - 本模式（INT4 per-channel）：优势是整数格式、硬件算子生态成熟；劣势是均匀分档对权重离群值敏感，per-channel 粒度需逐输出通道记 scale。
   - MXFP4：优势是块级共享指数保留浮点动态范围、对离群值更耐受；劣势是依赖硬件 MX 支持、块大小需对齐。
 
-### 适用场景与限制
+### 2.4 适用场景与限制
 
-#### 1. 适用场景
+#### 2.4.1 适用场景
 
 - **权重内存/带宽主导的部署**：模型权重是主要显存占用，decode 时（逐个生成 token 的推理阶段）权重读取是吞吐瓶颈的场景。
 - **精度与压缩折中**：需要比 W8A8 更强的权重压缩，又不敢把激活压到 4bit 的场景。
 
-#### 2. 使用限制
+#### 2.4.2 使用限制
 
-- **权重精度风险**：4bit 权重仅16档，对离群值敏感，需配合离群值抑制或更细分组。
+- **权重精度风险**：INT4 有符号仅能表示 −8～7 共 16 个整数档位，对离群值敏感，需配合离群值抑制或更细分组。
 - **混合位宽算子依赖**：INT4×INT8 混合位宽 GEMM 需要目标硬件算子库支持，否则收益打折。
 
 ---
@@ -82,11 +80,11 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W4A4 动态量化](term_w4a4_dynamic.md)：对比模式，激活压到 4bit、压缩更狠。
 - [W8A16 静态量化](term_w8a16_static.md)：对比模式，激活不量化的高精度基线。
 - [W4A8 MX 动态量化](term_w4a8_mx_dynamic.md)：同类模式，改用 MX 浮点格式承载同一位宽。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，本模式的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的处理器实现。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
+1. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》

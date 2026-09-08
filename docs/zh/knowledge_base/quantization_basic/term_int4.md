@@ -1,10 +1,8 @@
-# 数据类型：INT4 量化术语百科词条
+# 数据类型：INT4
 
-> **词条类别**：量化基础概念（[量化基础](../README.md)）
-> **英文名称**：INT4（4-bit Integer）
-> **应用领域**：权重量化、超低比特压缩
-
----
+> **词条类别**：量化基础概念（[量化基础](README.md)）<br>
+> **英文名称**：INT4（4-bit Integer）<br>
+> **应用领域**：权重量化、超低比特压缩<br>
 
 ## 1. 概述
 
@@ -14,18 +12,18 @@
 
 ## 2. 词条介绍
 
-### 定义
+### 2.1 定义
 
 INT4 占 4位，可表示 $-8\sim7$ 共 16个整数档位。按[量化公式](term_quantization.md)映射到这些档位后存储，即为 INT4 量化。
 
-### 使用场景
+### 2.2 使用场景
 
 - **权重**：如 [W4A8 动态量化](../quantization_mode/linear_layer_quantization/term_w4a8_dynamic.md) 的 INT4 权重、[W4A4 动态量化](../quantization_mode/linear_layer_quantization/term_w4a4_dynamic.md)。
 - **配合重构算法**：INT4 精度风险高，常配合分组量化与权重重构（如 [GPTQ](../quantization_algorithms/gptq/term_gptq.md)、[LAOS](../quantization_algorithms/laos/term_laos.md)）降低损失。
 
-### 与相关类型对比
+### 2.3 与相关类型对比
 
-- 相比 [INT8](term_int8.md)：位宽减半、压缩更大；但分辨率低、精度风险高，一般只用于权重、不用于激活。
+- 相比 [INT8](term_int8.md)：位宽减半、压缩更大，但分辨率低、精度风险高，一般只用于权重、不用于激活。
 - 相比 [MXFP4](term_mxfp.md)：INT4 均匀分档无浮点动态范围，对离群值更敏感；MXFP4 用块级共享指数保留动态范围。
 
 ---

@@ -1,21 +1,19 @@
 # W8A8 FP8 动态量化
 
-> **词条类别**：量化数据格式（[线性层量化](README.md)）
-> **英文名称**：W8A8 FP8 Dynamic Quantization
-> **应用领域**：大语言模型量化压缩、推理加速
-> **承载 IR 类**：`WFP8AFP8DynamicPerChannelFakeQuantLinear`（[`msmodelslim/ir/w8a8_fp_dynamic.py`](../../../../../msmodelslim/ir/w8a8_fp_dynamic.py)）
-
----
+> **词条类别**：量化数据格式（[线性层量化](README.md)）<br>
+> **英文名称**：W8A8 FP8 Dynamic Quantization<br>
+> **应用领域**：大语言模型量化压缩、推理加速<br>
+> **承载 IR 类**：`WFP8AFP8DynamicPerChannelFakeQuantLinear`（[`msmodelslim/ir/w8a8_fp_dynamic.py`](../../../../../msmodelslim/ir/w8a8_fp_dynamic.py)）<br>
 
 ## 1. 概述
 
-W8A8 FP8 动态量化 = **[FP8（E4M3）](../../quantization_basic/term_fp8.md) 版本**的 W8A8 动态量化：权重与激活都以 [FP8（E4M3）](../../quantization_basic/term_fp8.md) 存储，激活量化参数逐 token 在线计算。与 [INT8](../../quantization_basic/term_int8.md) 相比，E4M3 的 4bit 指数保留了浮点动态范围，对「数值跨度大、离群值多」的激活更耐受，无需先做离群值抑制；位宽同为 8bit，访存收益与 [INT8](../../quantization_basic/term_int8.md) 一致。代价是必须依赖支持 [FP8](../../quantization_basic/term_fp8.md) [GEMM](../term_gemm.md) 的硬件算子。模式名按家族 `W{位宽}A{位宽} + 数据类型` 记法，`W8A8 FP8` 表示 W 与 A 均为 8bit、数据类型为 [FP8（E4M3）](../../quantization_basic/term_fp8.md)。
+W8A8 FP8 动态量化是**[FP8（E4M3）](../../quantization_basic/term_fp8.md) 版本**的 W8A8 动态量化：权重与激活都以 [FP8（E4M3）](../../quantization_basic/term_fp8.md) 存储，激活量化参数逐 token 在线计算。与 [INT8](../../quantization_basic/term_int8.md) 相比，E4M3 的 4bit 指数保留了浮点动态范围，对数值跨度大、离群值多的激活更耐受，无需先做离群值抑制；位宽同为 8bit，访存收益与 [INT8](../../quantization_basic/term_int8.md) 一致。代价是必须依赖支持 [FP8](../../quantization_basic/term_fp8.md) [GEMM](../term_gemm.md) 的硬件算子。模式名按家族 `W{位宽}A{位宽} + 数据类型` 记法，`W8A8 FP8` 表示 W 与 A 均为 8bit、数据类型为 [FP8（E4M3）](../../quantization_basic/term_fp8.md)。
 
 ---
 
 ## 2. 词条介绍
 
-### 模式规格
+### 2.1 模式规格
 
 | 维度 | 取值 | 说明 |
 |------|------|------|
@@ -26,14 +24,14 @@ W8A8 FP8 动态量化 = **[FP8（E4M3）](../../quantization_basic/term_fp8.md) 
 | 量化粒度 | 权重 per-channel；激活 per-token | 权重逐输出通道共享 scale；激活逐 token 共享 scale |
 | 对称性 | 对称 | 仅 scale，无 offset |
 
-### 量化公式
+### 2.2 量化公式
 
-FP8（E4M3）量化的 scale 按 FP8 可表示最大值确定：
+FP8（E4M3）量化的 scale 等于张量绝对值最大值除以 448（E4M3 最大有限值）：
 $$q = \mathrm{round}_{FP8}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|x|)}{448}$$
 
-其中 $x$ 为待量化张量，$q$ 为量化后的 FP8 值（$\mathrm{round}_{FP8}$ 表示舍入到 E4M3 可表示的最近值，最大有限值 448），$\hat{x}$ 为反量化还原值，$s$ 为 scale。量化参数的获取方式与作用粒度见「模式规格」表。
+其中 $x$ 为待量化张量，$q$ 为量化后的 FP8 值（$\mathrm{round}_{FP8}$ 表示舍入到 E4M3 可表示的最近值，最大有限值 448），$\hat{x}$ 为反量化还原值，$s$ 为 scale。量化参数的获取方式与作用粒度见上文模式规格表。
 
-### 与其他模式的关系
+### 2.3 与其他模式的关系
 
 - **与 [W8A8 动态量化](term_w8a8_dynamic.md)（同为 8bit 动态家族，数据类型不同）**
   - 本模式（FP8 E4M3）：优势是浮点格式、4bit 指数保留动态范围，对宽动态范围与离群值比 INT8 均匀分档更耐受；劣势是 FP8 GEMM 的硬件支持面窄于 INT8，算子生态不成熟。
@@ -47,14 +45,14 @@ $$q = \mathrm{round}_{FP8}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{
   - 本模式：优势是激活亦量化、可走低精度 GEMM，压缩彻底；劣势是激活引入 FP8 量化误差。
   - W8A16：优势是激活 FP16 零误差；劣势是权重反量化回浮点执行、无低精度 GEMM 加速。
 
-### 适用场景与限制
+### 2.4 适用场景与限制
 
-#### 1. 适用场景
+#### 2.4.1 适用场景
 
 - **支持 FP8 的硬件部署**：目标硬件原生支持 FP8 GEMM 的场景。
 - **宽动态范围激活**：激活数值跨度大、离群值多的模型，FP8 浮点格式比 INT8 均匀分档更耐受。
 
-#### 2. 使用限制
+#### 2.4.2 使用限制
 
 - **硬件算子依赖**：FP8 GEMM 需目标硬件算子库支持，否则只能软件模拟、收益打折。
 - **溢出边界**：E4M3 表示范围有限（max 448），超出范围的值需依赖 scale 缩放兜底，极端分布仍需验证。
@@ -76,12 +74,12 @@ $$q = \mathrm{round}_{FP8}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{
 - [W8A8 MX 动态量化](term_w8a8_mx_dynamic.md)：同类模式，块级共享指数的 MXFP8 方案。
 - [W8A16 静态量化](term_w8a16_static.md)：对比模式，激活保持 16bit 的高精度基线。
 - [FA PerHead 量化](../fa_quantization/term_fa_perhead.md)：配套模式，同样使用 FP8 数据类型的注意力激活量化。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，本模式的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的处理器实现。
 
 ---
 
 ## 5. 参考文档
 
 1. Kuzmin A et al. FP8 Formats for Deep Learning. arXiv:2209.05433. https://arxiv.org/abs/2209.05433
-2. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
+2. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 3. 《[量化模式](../README.md)》

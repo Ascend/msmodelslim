@@ -1,21 +1,19 @@
 # W4A4 动态量化
 
-> **词条类别**：量化数据格式（[线性层量化](README.md)）
-> **英文名称**：W4A4 Dynamic Quantization
-> **应用领域**：大语言模型量化压缩、推理加速
-> **承载 IR 类**：`W4A4DynamicPerChannelFakeQuantLinear` / `W4A4DynamicPerGroupFakeQuantLinear`（[`msmodelslim/ir/w4a4_dynamic.py`](../../../../../msmodelslim/ir/w4a4_dynamic.py)）
-
----
+> **词条类别**：量化数据格式（[线性层量化](README.md)）<br>
+> **英文名称**：W4A4 Dynamic Quantization<br>
+> **应用领域**：大语言模型量化压缩、推理加速<br>
+> **承载 IR 类**：`W4A4DynamicPerChannelFakeQuantLinear` / `W4A4DynamicPerGroupFakeQuantLinear`（[`msmodelslim/ir/w4a4_dynamic.py`](../../../../../msmodelslim/ir/w4a4_dynamic.py)）<br>
 
 ## 1. 概述
 
-W4A4 动态量化 = 对线性层的权重与激活都做 [INT4](../../quantization_basic/term_int4.md) 量化，激活量化参数逐 token 在线计算。它是压缩比最高的一类线性层方案：权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4；但 4bit 仅16个量化档位，必须依赖 per-token 动态量化与 per-channel/per-group 细粒度兜底，才能把精度损失压到可接受范围。
+W4A4 动态量化是对线性层的权重与激活都做 [INT4](../../quantization_basic/term_int4.md) 量化，激活量化参数逐 token 在线计算。它是压缩比最高的一类线性层方案：权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4，但 INT4 有符号仅能表示 −8～7 共 16 个整数档位，必须依赖 per-token 动态量化与 per-channel/per-group 细粒度兜底，才能把精度损失压到可接受范围。
 
 ---
 
 ## 2. 词条介绍
 
-### 模式规格
+### 2.1 模式规格
 
 | 维度 | 取值 | 说明 |
 |------|------|------|
@@ -26,20 +24,20 @@ W4A4 动态量化 = 对线性层的权重与激活都做 [INT4](../../quantizati
 | 量化粒度 | 权重 per-channel/per-group；激活 per-token | 权重逐输出通道或按固定分组（如 128元素）共享 scale/offset；激活逐 token 共享 scale |
 | 对称性 | 激活对称；权重对称或非对称 | 激活对称仅 scale；权重可加 offset 适配非对称分布 |
 
-### 量化公式
+### 2.2 量化公式
 
 量化与反量化采用标准线性映射。对称量化（仅 scale、无零点）：
-$$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|x|)}{2^{b-1}}$$
+$$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|x|)}{2^{b-1}-1}$$
 
 非对称量化（含零点 offset）：
 $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \frac{\max(x) - \min(x)}{2^b - 1}$$
 
-其中 $x$ 为待量化张量，$q$ 为量化后的整数值，$\hat{x}$ 为反量化还原值，$s$ 为 scale，$z$ 为零点 offset，$b$ 为位宽（INT8 取 $b=8$，INT4 取 $b=4$），且 $z = \mathrm{round}(-\min(x)/s)$。量化参数 $s$、$z$ 的获取方式（静态校准或在线动态）与作用粒度（per-channel、per-token、per-tensor 等）见「模式规格」表。
+其中 $x$ 为待量化张量，$q$ 为量化后的整数值，$\hat{x}$ 为反量化还原值，$s$ 为 scale，$z$ 为零点 offset，$b$ 为位宽（INT8 取 $b=8$，INT4 取 $b=4$），且 $z = \mathrm{round}(-\min(x)/s)$。量化参数 $s$、$z$ 的获取方式（静态校准或在线动态）与作用粒度（per-channel、per-token、per-tensor 等）见上文模式规格表。
 
-### 与其他模式的关系
+### 2.3 与其他模式的关系
 
 - **与 [W8A8 静态量化](term_w8a8_static.md)（位宽不同）**
-  - 本模式：优势是权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4，压缩与带宽收益最大化；劣势是仅16个量化档位、精度风险高，需动态量化 + per-group 粒度 + 离群值抑制兜底。
+  - 本模式：优势是权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4，压缩与带宽收益最大化；劣势是 INT4 有符号仅能表示 −8～7 共 16 个整数档位，精度风险高，需动态量化 + per-group 粒度 + 离群值抑制兜底。
   - W8A8：优势是 8bit 分辨率高、精度更稳，是通用部署基线；劣势是权重访存仅减半。
 
 - **与 [W8A8 动态量化](term_w8a8_dynamic.md)（同为动态家族，位宽不同）**
@@ -50,14 +48,14 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
   - 本模式（INT4）：优势是整数格式、硬件算子生态成熟；劣势是均匀分档对离群值敏感，动态范围受限。
   - MXFP4：优势是块级共享指数保留浮点动态范围，对离群值更耐受；劣势是依赖硬件 MX 支持、块粒度需对齐。
 
-### 适用场景与限制
+### 2.4 适用场景与限制
 
-#### 1. 适用场景
+#### 2.4.1 适用场景
 
 - **高压缩比部署**：显存/带宽受限、追求极致压缩的场景，如大规模服务端多模型部署。
 - **对精度不敏感的任务**：任务本身对量化噪声容忍度高的场景。
 
-#### 2. 使用限制
+#### 2.4.2 使用限制
 
 - **精度门槛高**：4bit 激活量化精度风险大，通常需要配合离群值抑制（如 [SmoothQuant](../../quantization_algorithms/smooth_quant/term_smooth_quant.md)）与精度调优方可上线。
 - **硬件算子依赖**：INT4 整数 GEMM 需目标硬件算子库支持，否则无法兑现计算收益。
@@ -79,12 +77,13 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W4A4 MX 动态量化](term_w4a4_mx_dynamic.md)：同类模式，改用 MXFP4 浮点格式。
 - [W8A16 静态量化](term_w8a16_static.md)：对比模式，激活保持 16bit 的高精度方案。
 - [SVDQuant 量化](term_svdquant.md)：对比模式，以低秩分解吸收离群值、仅量化残差分量，降低 4bit 精度风险。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，本模式的处理器实现。
-- 《[LAOS：w4a4量化方案说明](../../quantization_algorithms/laos/usage_laos.md)》：配套术语，面向 W4A4 的精度优化算法。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的处理器实现。
+- [LAOS 低比特量化方案](../../quantization_algorithms/laos/term_laos.md)：配套术语，面向 W4A4 的精度优化算法。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
-2. 《[量化模式](../README.md)》
+1. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
+2. 《[LAOS 参数配置流程指南](../../quantization_algorithms/laos/usage_laos.md)》
+3. 《[量化模式](../README.md)》

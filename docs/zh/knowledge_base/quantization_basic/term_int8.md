@@ -1,33 +1,31 @@
-# 数据类型：INT8 量化术语百科词条
+# 数据类型：INT8
 
-> **词条类别**：量化基础概念（[量化基础](../README.md)）
-> **英文名称**：INT8（8-bit Integer）
-> **应用领域**：权重、激活、KVCache 量化
-
----
+> **词条类别**：量化基础概念（[量化基础](README.md)）<br>
+> **英文名称**：INT8（8-bit Integer）<br>
+> **应用领域**：权重、激活、KVCache 量化<br>
 
 ## 1. 概述
 
-**INT8** 是 8位有符号整数，范围 $-128\sim127$，1字节/元素。它是量化的**主流格式**：存储与带宽为 [FP16/BF16](term_fp16_bf16.md) 的一半，且整数格式可走 [GEMM](../quantization_mode/term_gemm.md) 加速，权重、激活、KVCache 均可使用。
+**INT8** 是 8位有符号整数，范围 $-128\sim127$，1字节/元素。INT8 的存储与带宽为 [FP16/BF16](term_fp16_bf16.md) 的一半，且整数格式可走 [GEMM](../quantization_mode/term_gemm.md) 加速，权重、激活、KVCache 均可使用，是量化的主流格式。
 
 ---
 
 ## 2. 词条介绍
 
-### 定义
+### 2.1 定义
 
 INT8 占 8位，可表示 $-128\sim127$ 共 256个整数档位。对浮点张量按[量化公式](term_quantization.md)映射到这些档位后存储，即为 INT8 量化。
 
-### 使用场景
+### 2.2 使用场景
 
 - **权重**：如 [W8A8 静态量化](../quantization_mode/linear_layer_quantization/term_w8a8_static.md)、[W8A8 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_dynamic.md) 的权重。
 - **激活**：配合动态量化（per-token），如 [W8A8 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_dynamic.md) 的激活。
 - **KVCache**：如 [KVCache-PerChannel 量化](../quantization_mode/kv_cache_quantization/term_kv_cache_perchannel.md)。
 
-### 与相关类型对比
+### 2.3 与相关类型对比
 
-- 相比 [FP8（E4M3）](term_fp8.md)：INT8 是均匀分档、无浮点动态范围，对离群值更敏感；但硬件算子生态更成熟。
-- 相比 [INT4](term_int4.md)：分辨率更高、精度更稳；但位宽翻倍、压缩幅度较小。
+- 相比 [FP8（E4M3）](term_fp8.md)：INT8 是均匀分档，无浮点动态范围，对离群值更敏感，但硬件算子生态更成熟。
+- 相比 [INT4](term_int4.md)：分辨率更高，精度更稳，但位宽翻倍，压缩幅度较小。
 
 ---
 

@@ -1,21 +1,19 @@
 # W8A8 动态量化
 
-> **词条类别**：量化数据格式（[线性层量化](README.md)）
-> **英文名称**：W8A8 Dynamic Quantization
-> **应用领域**：大语言模型量化压缩、推理加速
-> **承载 IR 类**：`W8A8DynamicPerChannelFakeQuantLinear` / `W8A8DynamicPerGroupFakeQuantLinear`（[`msmodelslim/ir/w8a8_dynamic.py`](../../../../../msmodelslim/ir/w8a8_dynamic.py)）
-
----
+> **词条类别**：量化数据格式（[线性层量化](README.md)）<br>
+> **英文名称**：W8A8 Dynamic Quantization<br>
+> **应用领域**：大语言模型量化压缩、推理加速<br>
+> **承载 IR 类**：`W8A8DynamicPerChannelFakeQuantLinear` / `W8A8DynamicPerGroupFakeQuantLinear`（[`msmodelslim/ir/w8a8_dynamic.py`](../../../../../msmodelslim/ir/w8a8_dynamic.py)）<br>
 
 ## 1. 概述
 
-W8A8 动态量化 = 对线性层的权重与激活都做 [INT8](../../quantization_basic/term_int8.md) 量化，其中**激活的量化参数在推理时逐 token 在线计算**。它与 [W8A8 静态量化](term_w8a8_static.md) 位宽完全相同，唯一区别是参数获取方式：「静态」离线校准固化、「动态」在线统计。动态方案免校准、逐 token 更贴合自身数值范围，代价是每次前向多一次 min/max 归约。
+W8A8 动态量化是对线性层的权重与激活都做 [INT8](../../quantization_basic/term_int8.md) 量化，其中**激活的量化参数在推理时逐 token 在线计算**。它与 [W8A8 静态量化](term_w8a8_static.md) 位宽完全相同，唯一区别是参数获取方式：静态离线校准固化、动态在线统计。动态方案免校准、逐 token 更贴合自身数值范围，代价是每次前向多一次 min/max 归约。
 
 ---
 
 ## 2. 词条介绍
 
-### 模式规格
+### 2.1 模式规格
 
 | 维度 | 取值 | 说明 |
 |------|------|------|
@@ -26,17 +24,17 @@ W8A8 动态量化 = 对线性层的权重与激活都做 [INT8](../../quantizati
 | 量化粒度 | 权重 per-channel/per-group；激活 per-token | 权重逐输出通道或按固定分组（如 128元素）共享 scale；激活逐 token（一行）共享 scale |
 | 对称性 | 激活对称；权重对称（per-group 支持非对称） | 激活对称仅 scale；权重 per-group 可加 offset |
 
-### 量化公式
+### 2.2 量化公式
 
 量化与反量化采用标准线性映射。对称量化（仅 scale、无零点）：
-$$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|x|)}{2^{b-1}}$$
+$$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|x|)}{2^{b-1}-1}$$
 
 非对称量化（含零点 offset）：
 $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \frac{\max(x) - \min(x)}{2^b - 1}$$
 
-其中 $x$ 为待量化张量，$q$ 为量化后的整数值，$\hat{x}$ 为反量化还原值，$s$ 为 scale，$z$ 为零点 offset，$b$ 为位宽（INT8 取 $b=8$，INT4 取 $b=4$），且 $z = \mathrm{round}(-\min(x)/s)$。量化参数 $s$、$z$ 的获取方式（静态校准或在线动态）与作用粒度（per-channel、per-token、per-tensor 等）见「模式规格」表。
+其中 $x$ 为待量化张量，$q$ 为量化后的整数值，$\hat{x}$ 为反量化还原值，$s$ 为 scale，$z$ 为零点 offset，$b$ 为位宽（INT8 取 $b=8$，INT4 取 $b=4$），且 $z = \mathrm{round}(-\min(x)/s)$。量化参数 $s$、$z$ 的获取方式（静态校准或在线动态）与作用粒度（per-channel、per-token、per-tensor 等）见上文模式规格表。
 
-### 与其他模式的关系
+### 2.3 与其他模式的关系
 
 - **与 [W8A8 静态量化](term_w8a8_static.md)（位宽相同，参数获取方式不同）**
   - 本模式（动态）：优势是逐 token 在线算 scale、免校准，激活量化贴合每个 token 的数值范围，精度高于静态 per-tensor，对输入分布漂移鲁棒；劣势是每次前向多一次 min/max 归约，带来少量延迟开销。
@@ -48,18 +46,18 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 
 - **与 [W4A4 动态量化](term_w4a4_dynamic.md)（同为动态家族，位宽不同）**
   - 本模式：优势是 8bit 分辨率高、精度更稳，是通用选择；劣势是权重访存仅减半（FP16 的 1/2）。
-  - W4A4：优势是权重访存降至 FP16 的 1/4、压缩更彻底；劣势是仅16档、精度风险高，需更细粒度与离群抑制兜底。
+  - W4A4：优势是权重访存降至 FP16 的 1/4、压缩更彻底；劣势是 INT4 有符号仅能表示 −8～7 共 16 个整数档位，精度风险高，需更细粒度与离群抑制兜底。
 
-### 适用场景与限制
+### 2.4 适用场景与限制
 
-#### 1. 适用场景
+#### 2.4.1 适用场景
 
 - **校准数据不足或分布不确定**：免校准，适合无代表性校准集、或部署时输入分布变化大的场景。
 - **精度要求高于静态**：需要比静态 W8A8 更好的激活精度，且可接受少量在线归约开销。
 
-#### 2. 使用限制
+#### 2.4.2 使用限制
 
-- **在线归约开销**：per-token min/max 归约增加少量延迟，对每 token 计算量极小的层占比更明显。
+- **在线归约开销**：per-token min/max 归约增加少量延迟，对每 token 计算量极小的层，开销占比更明显。
 - **硬件算子依赖**：per-token 动态量化需推理框架/算子库支持逐 token 参数计算，否则只能软件模拟、收益打折。
 
 ---
@@ -78,11 +76,11 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 PD-Mix 量化](term_w8a8_pdmix.md)：同类模式，激活策略随 Prefill/Decode 阶段切换。
 - [W4A4 动态量化](term_w4a4_dynamic.md)：同类模式，更低比特的权重+激活量化。
 - [FA PerToken 量化](../fa_quantization/term_fa_pertoken.md)：同类模式，把 per-token 动态量化应用于注意力 Q/K/V 激活。
-- 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》：配套术语，本模式的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的处理器实现。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化算法说明](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
+1. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》

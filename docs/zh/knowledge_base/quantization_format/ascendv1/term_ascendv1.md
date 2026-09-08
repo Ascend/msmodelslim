@@ -42,7 +42,7 @@ AscendV1 本质上是一套**昇腾推理侧的量化模型落盘约定**：它�
 ```bash
 ├── config.json                            # 原始模型配置文件
 ├── generation_config.json                 # 原始生成配置文件
-├── quant_model_description.json           # 量化权重描述文件
+├── quant_model_description.json           # 量化描述文件
 ├── quant_model_weights*.safetensors       # 量化权重：不分片为 quant_model_weights.safetensors；分片如 quant_model_weights-00001-of-00003.safetensors … + quant_model_weights.safetensors.index.json
 ├── tokenizer_config.json                  # 原始分词器配置文件
 ├── tokenizer.json                         # 原始分词器词汇表
@@ -56,7 +56,7 @@ AscendV1 本质上是一套**昇腾推理侧的量化模型落盘约定**：它�
 |--------|------|
 | `config.json` | 原始模型的配置文件，包含模型架构、层数、隐藏维度等关键参数 |
 | `generation_config.json` | 原始模型的生成配置文件，包含采样策略、最大生成长度等推理相关参数 |
-| `quant_model_description.json` | **量化权重描述文件**，记录每个权重张量的量化类型和元数据；每个张量键对应一个量化类型标识，同一 Linear 层的所有参数（weight、scale 等）共享相同的类型标识 |
+| `quant_model_description.json` | **量化描述文件**，记录每个权重张量的量化类型和元数据；每个张量键对应一个量化类型标识，同一 Linear 层的所有参数（weight、scale 等）共享相同的类型标识 |
 | `quant_model_weights*.safetensors` | **量化权重文件**；不分片为 `quant_model_weights.safetensors`；分片为 `quant_model_weights-00001-of-0000N.safetensors` 等形式，并由 `quant_model_weights.safetensors.index.json` 索引 |
 | `tokenizer_config.json` | 原始分词器的配置文件，包含特殊 token、词表大小等信息 |
 | `tokenizer.json` | 原始分词器的词汇表文件，定义 token 与 ID 的映射关系 |
@@ -117,7 +117,7 @@ AscendV1 本质上是一套**昇腾推理侧的量化模型落盘约定**：它�
 10. `W4A4_DYNAMIC`
 11. `W4A4_MXFP4`
 12. `W4A4_MXFP4_DUALSCALE`
-13. `W4A4_MXFP4_SVD`
+13. `W4A4_MXFP4_SVD`（SVDQuant 残差导出时在底层量化类型后追加的后缀标记，非独立交付件小节）
 
 ### 3.3 <span id="optional-quarot">可选导出：QuaRot 相关文件</span>
 
@@ -195,12 +195,12 @@ optional/
 
 ## 5. <span id="mode-support">量化模式支持情况</span>
 
-> **交付件说明**：表中交付件：量化描述 JSON对应 `quant_model_description.json`；交付件：量化 safetensors对应 `quant_model_weights*.safetensors`。模式原理见《[量化模式](../../quantization_mode/README.md)》词条，本表不展开反量化公式与 NPU 算子。本词条交付件分两列说明：描述 JSON 键值与 safetensors 张量字段。
+> **交付件说明**：表中交付件：量化描述 JSON对应 `quant_model_description.json`；交付件：量化权重文件对应 `quant_model_weights*.safetensors`。模式原理见《[量化模式](../../quantization_mode/README.md)》词条，本表不展开反量化公式与 NPU 算子。本词条交付件分两列说明：描述 JSON 键值与 safetensors 张量字段。
 
-| 格式枚举值 | AscendV1 是否支持落盘 | 量化模式词条 | 交付件：量化描述 JSON | 交付件：量化 safetensors |
+| 格式枚举值 | AscendV1 是否支持落盘 | 量化模式词条 | 交付件：量化描述 JSON | 交付件：量化权重文件 |
 | --- | --- | --- | --- | --- |
 | `FLOAT` | 支持 | [量化模式总览](../../quantization_mode/README.md) | [FLOAT 描述键](#desc-float) | [FLOAT 权重张量](#st-float) |
-| `W16A16S` | 支持 | [W16A16S](../../quantization_mode/linear_layer_quantization/term_w16a16s.md) | [W16A16S 描述键](#desc-w16a16s) | [W16A16S 权重张量](#st-w16a16s) |
+| `W16A16S` | 支持 | [浮点稀疏量化](../../quantization_mode/linear_layer_quantization/term_float_sparse.md) | [W16A16S 描述键](#desc-w16a16s) | [W16A16S 权重张量](#st-w16a16s) |
 | `W8A8` | 支持 | [W8A8 静态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_static.md) | [W8A8 描述键](#desc-w8a8) | [W8A8 权重张量](#st-w8a8) |
 | `W8A8_DYNAMIC` | 支持 | [W8A8 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_dynamic.md) | [W8A8_DYNAMIC 描述键](#desc-w8a8-dynamic) | [W8A8_DYNAMIC 权重张量](#st-w8a8-dynamic) |
 | `W8A8_MIX` | 支持 | [W8A8 PD-Mix](../../quantization_mode/linear_layer_quantization/term_w8a8_pdmix.md) | [W8A8_MIX 描述键](#desc-w8a8-mix) | [W8A8_MIX 权重张量](#st-w8a8-mix) |
@@ -226,6 +226,7 @@ optional/
 - **safetensors**：文件 `quant_model_weights*.safetensors`（可分片）；键为 `{prefix}.<param>`，存实际数值张量。
 
 ### 6.1 FLOAT
+
 **<span id="desc-float">quant_model_description.json</span>**
 
 | 描述键 | 取值 | 说明 |
@@ -243,8 +244,8 @@ optional/
 | `{prefix}.bias` | float16 / bfloat16 | 偏置（可选） |
 
 ### 6.2 W16A16S
-**<span id="desc-w16a16s">quant_model_description.json</span>**
 
+**<span id="desc-w16a16s">quant_model_description.json</span>**
 
 | 描述键 | 取值 | 说明 |
 | --- | --- | --- |
@@ -253,16 +254,16 @@ optional/
 
 **<span id="st-w16a16s">`quant_model_weights*.safetensors`</span>**
 
-
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
 | `{prefix}.weight` | float16 / bfloat16 | 稀疏处理后的权重 |
 | `{prefix}.scale` | float16 / bfloat16 | 缩放因子 |
 
 ### 6.3 W8A8
+
 **<span id="desc-w8a8">quant_model_description.json</span>**
 
-同一 Linear 下下列键共享类型 `"W8A8"`（`bias` 若保留浮点则可标 `"FLOAT"`）：
+同一 Linear 下列键共享类型 `"W8A8"`（`bias` 若保留浮点则可标 `"FLOAT"`）：
 
 | 描述键 | 取值 | 说明 |
 | --- | --- | --- |
@@ -275,7 +276,6 @@ optional/
 
 **<span id="st-w8a8">`quant_model_weights*.safetensors`</span>**
 
-
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
 | `{prefix}.weight` | int8 | 量化权重 |
@@ -286,8 +286,8 @@ optional/
 | `{prefix}.bias` | float32 | 原始浮点偏置（可选） |
 
 ### 6.4 W8A8_DYNAMIC
-**<span id="desc-w8a8-dynamic">quant_model_description.json</span>**
 
+**<span id="desc-w8a8-dynamic">quant_model_description.json</span>**
 
 | 描述键 | 取值 | 说明 |
 | --- | --- | --- |
@@ -300,7 +300,6 @@ optional/
 
 **<span id="st-w8a8-dynamic">`quant_model_weights*.safetensors`</span>**
 
-
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
 | `{prefix}.weight` | int8 | 量化权重 |
@@ -311,8 +310,8 @@ optional/
 激活量化参数在推理时动态计算，**不写入**权重文件。
 
 ### 6.5 W8A8_MIX
-**<span id="desc-w8a8-mix">quant_model_description.json</span>**
 
+**<span id="desc-w8a8-mix">quant_model_description.json</span>**
 
 | 描述键 | 取值 | 说明 |
 | --- | --- | --- |
@@ -341,8 +340,8 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `{prefix}.bias` | float32 | 原始浮点偏置（可选） |
 
 ### 6.6 W8A16
-**<span id="desc-w8a16">quant_model_description.json</span>**
 
+**<span id="desc-w8a16">quant_model_description.json</span>**
 
 | 描述键 | 取值 | 说明 |
 | --- | --- | --- |
@@ -353,7 +352,6 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 
 **<span id="st-w8a16">`quant_model_weights*.safetensors`</span>**
 
-
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
 | `{prefix}.weight` | int8 | 量化权重 |
@@ -362,8 +360,8 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `{prefix}.bias` | float32 | 原始浮点偏置（可选） |
 
 ### 6.7 W4A4_DYNAMIC
-**<span id="desc-w4a4-dynamic">quant_model_description.json</span>**
 
+**<span id="desc-w4a4-dynamic">quant_model_description.json</span>**
 
 | 描述键 | 取值 | 说明 |
 | --- | --- | --- |
@@ -373,7 +371,6 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `{prefix}.bias` | `"FLOAT"` 或 `"W4A4_DYNAMIC"` | 偏置（可选） |
 
 **<span id="st-w4a4-dynamic">`quant_model_weights*.safetensors`</span>**
-
 
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
@@ -385,8 +382,8 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 激活量化参数推理时动态计算，不写入权重文件。
 
 ### 6.8 W4A8_DYNAMIC
-**<span id="desc-w4a8-dynamic">quant_model_description.json</span>**
 
+**<span id="desc-w4a8-dynamic">quant_model_description.json</span>**
 
 | 描述键 | 取值 | 说明 |
 | --- | --- | --- |
@@ -398,7 +395,6 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 
 **<span id="st-w4a8-dynamic">`quant_model_weights*.safetensors`</span>**
 
-
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
 | `{prefix}.weight` | int8 | int4 打包存储 |
@@ -408,8 +404,8 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `{prefix}.bias` | float32 | 原始浮点偏置（可选） |
 
 ### 6.9 WFP8AFP8_DYNAMIC
-**<span id="desc-wfp8afp8-dynamic">quant_model_description.json</span>**
 
+**<span id="desc-wfp8afp8-dynamic">quant_model_description.json</span>**
 
 | 描述键 | 取值 | 说明 |
 | --- | --- | --- |
@@ -420,7 +416,6 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 
 **<span id="st-wfp8afp8-dynamic">`quant_model_weights*.safetensors`</span>**
 
-
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
 | `{prefix}.weight` | float8_e4m3fn | FP8 权重 |
@@ -429,6 +424,7 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `{prefix}.bias` | float32 | 原始浮点偏置（可选） |
 
 ### 6.10 W8A8_MXFP8 / W4A8_MXFP / W4A4_MXFP4
+
 **<span id="desc-mxfp">quant_model_description.json</span>**
 
 描述键取值分别为 `"W8A8_MXFP8"` / `"W4A8_MXFP"` / `"W4A4_MXFP4"`（与具体枚举一致）：
@@ -441,7 +437,6 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 
 **<span id="st-mxfp">`quant_model_weights*.safetensors`</span>**
 
-
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
 | `{prefix}.weight` | float8_e4m3fn 或 uint8（packed fp4） | 量化权重 |
@@ -449,6 +444,7 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `{prefix}.bias` | float32 | 原始浮点偏置（可选） |
 
 ### 6.11 W4A4_MXFP4_DUALSCALE
+
 **<span id="desc-mxfp-dualscale">quant_model_description.json</span>**
 
 在 [MXFP 描述字段](#desc-mxfp)基础上，取值均为 `"W4A4_MXFP4_DUALSCALE"`，并增加：
@@ -466,8 +462,8 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `{prefix}.weight_dual_scale` | float32 | 第二路 scale |
 
 ### 6.12 C8
-**<span id="desc-c8">quant_model_description.json</span>**
 
+**<span id="desc-c8">quant_model_description.json</span>**
 
 | 描述键 / 全局字段 | 取值 | 说明 |
 | --- | --- | --- |
@@ -477,7 +473,6 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 
 **<span id="st-c8">`quant_model_weights*.safetensors`</span>**
 
-
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
 | `{prefix}.kv_cache_scale` | float32 / float16 | KV Cache 量化 scale |
@@ -486,10 +481,10 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 具体 `{prefix}` 随注意力 KV 相关模块命名而定。
 
 ### 6.13 FAQuant
+
 > **命名约定**：本节 `{prefix}` 指**注意力模块**全名（如 `model.layers.0.self_attn`），与上文 Linear 的 `{prefix}`（如 `...self_attn.q_proj`）不同。AscendV1 经 `export_fa_quant_params` 按 Q / K / V **分别**写出 `fa_q` / `fa_k` / `fa_v` 子键，而非单一的 `{prefix}.scale` / `{prefix}.offset`。
 
 **<span id="desc-faquant">quant_model_description.json</span>**
-
 
 | 描述键 / 全局字段 | 取值 | 说明 |
 | --- | --- | --- |
@@ -505,7 +500,6 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 动态量化路径（激活 `scope` 为 `per_token` / `per_block`）下，对应激活**不落盘** `scale` / `offset`，仅更新上述 `{prefix}.quant_type`；静态 per-head 路径通常 Q/K/V 六键齐全。该落盘差异由 AscendV1 导出逻辑决定，与《[FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)》算法配置（`qconfig` / `details`）配合使用。
 
 **<span id="st-faquant">`quant_model_weights*.safetensors`</span>**
-
 
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
