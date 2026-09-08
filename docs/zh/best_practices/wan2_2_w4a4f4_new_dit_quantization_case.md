@@ -282,7 +282,7 @@ cp VBench-1.0-mini/VBench_kmeans_info_0.01.json \
 
 **目标**：运行浮点模型推理，在VBench-mini数据集上生成评测结果作为精度对比基线，该步骤只生成视频。  
 **输入**：浮点模型权重、VBench-mini评测数据集、推理超参配置。  
-**操作**：本案例中具体取值为：`ulysses_size=2`、`dit_fsdp + t5_fsdp`、`cfg_size=2`、`vae_parallel` 启用。FP16 与 W4A4F4 两组使用完全相同的并行约定。其中 `ALGO` 为推理仓用于选择 FA 计算方式的环境变量，需按设备与推理方式取值（取值说明详见推理仓文档 [开始前必读-ALGO配置说明](https://modelers.cn/models/MindIE/wan2.2#31-%E5%BC%80%E5%A7%8B%E5%89%8D%E5%BF%85%E8%AF%BB)）。本案例产品形态为 昇腾950PR&950DT系列产品：浮点推理取 `ALGO=0`；量化推理因使能 attention FP8，取 `ALGO=3`。此为两侧唯一的非模型路径差异。
+**操作**：本案例中具体取值为：`ulysses_size=2`、`dit_fsdp + t5_fsdp`、`cfg_size=2`、`vae_parallel` 启用。FP16 与 W4A4F4 两组使用完全相同的并行约定。其中 `ALGO` 为推理仓用于选择 FA 计算方式的环境变量，需按设备与推理方式取值（取值说明详见推理仓文档 [开始前必读-ALGO配置说明](https://modelers.cn/models/MindIE/wan2.2#31-%E5%BC%80%E5%A7%8B%E5%89%8D%E5%BF%85%E8%AF%BB)）。本案例产品形态为昇腾950PR&950DT系列产品：浮点推理取 `ALGO=0`；量化推理因使能 attention FP8，取 `ALGO=3`。此为两侧唯一的非模型路径差异。
 
 ```bash
 # Wan2.2浮点模型推理

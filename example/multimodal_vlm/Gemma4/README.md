@@ -20,7 +20,7 @@ Gemma4 是多模态视觉语言模型，支持图像与文本联合输入。msMo
 | 模型 | 原始浮点权重 | 量化方式 | 推理框架支持情况 | 量化命令 |
 |------|-------------|---------|----------------|---------|
 | gemma-4-31B-it | [gemma-4-31B-it](https://huggingface.co/google/gemma-4-31B-it) | W8A8量化 | vLLM Ascend | [W8A8量化](#gemma4-31b-dense-w8a8量化) |
-| gemma-4-31B-it | [gemma-4-31B-it](https://huggingface.co/google/gemma-4-31B-it) | MXFP8 / MXFP4 混合量化 | vLLM Ascend（优先 Ascend 950） | [MXFP8/MXFP4 混合量化](#gemma4-31b-dense-mxfp8mxfp4-混合量化) |
+| gemma-4-31B-it | [gemma-4-31B-it](https://huggingface.co/google/gemma-4-31B-it) | MXFP8 / MXFP4 混合量化 | vLLM Ascend（仅支持昇腾950PR&950DT系列产品） | [MXFP8/MXFP4 混合量化](#gemma4-31b-dense-mxfp8mxfp4-混合量化) |
 
 **说明：** 点击量化命令列中的链接可跳转到对应的具体量化命令。
 
@@ -68,7 +68,7 @@ msmodelslim quant \
 
 > [!NOTE]
 >
-> MXFP4/MXFP8 算子路径优先在 Ascend 950 + vLLM Ascend 验证；其他硬件请以实际 CANN / 推理框架版本为准。
+> MXFP4/MXFP8 量化优先在昇腾950PR&950DT系列产品上结合 vLLM Ascend 推理框架验证；其他硬件请以实际 CANN / 推理框架版本为准。
 
 ## 附录
 

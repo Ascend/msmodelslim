@@ -26,7 +26,7 @@
 
 ### 使用案例
 
-- 如果需要使用NPU多卡量化，请先配置多卡环境变量（Atlas 300I Duo 系列产品不支持多卡量化）：
+- 如果需要使用NPU多卡量化，请先配置多卡环境变量（昇腾310P系列产品不支持多卡量化）：
 
   ```shell
   export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
@@ -43,7 +43,7 @@
 
 请将{浮点权重路径}和{W8A8S量化权重路径}替换为用户实际路径。{校准集图片路径}默认为"../calibImages"，以当前"../calibImages"目录中2张图片作为校准集。部署量化权重时，如在使用场景精度出现明显掉点，用户可根据实际场景替换为其他图片（建议30张）。
 
-Atlas 300I DUO 使用以下方法稀疏量化
+昇腾310P系列产品使用以下方法稀疏量化
 
 - 稀疏量化
 
@@ -128,7 +128,7 @@ msmodelslim quant \
 **说明：**
 
 - Qwen3-VL-4B-Instruct 默认精度为`bfloat16`，若修改模型权重路径下`config.json`中的`torch_dtype`为`float16`进行量化，可能会导致模型精度异常。
-- 若硬件只支持float16精度推理（例如Atlas 300I/300T系列），建议采用默认精度`bfloat16`量化后将模型权重路径下`config.json`中的`torch_dtype`修改为`float16`进行推理。
+- 若硬件只支持float16精度推理（例如昇腾310P系列产品），建议采用默认精度`bfloat16`量化后将模型权重路径下`config.json`中的`torch_dtype`修改为`float16`进行推理。
 
 ##### <span id="qwen3-vl-w8a8">1.3 Qwen3-VL-32B-Instruct W8A8量化</span>
 

@@ -42,3 +42,7 @@ if __name__ == '__main__':
     fakecalibrator = FakeQuantizeCalibrator(model, None, "cpu", description_dict, safetensor_dict)
     model = fakecalibrator.model
 ```
+
+## FAQ
+
+1. The V0 pseudo-quantization interface has known accuracy issues. As V0 is no longer under active development, this will be addressed in the new pseudo-quantization implementation based on the V1 architecture.

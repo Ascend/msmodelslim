@@ -948,7 +948,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 
 - <sup>1</sup> 仅MindIE支持w8a16量化模式。
 - <sup>2</sup> kvcache量化和fa3量化都纳入c8，两者均量化LLM中的k和v缓存；仅MindIE支持c8量化模式，包括w8a8c8和w4a8c8。
-- <sup>3</sup> 压缩后配合Atlas 300I Duo系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式，包括w8a8s和w16a16s。
+- <sup>3</sup> 压缩后配合昇腾310P系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式，包括w8a8s和w16a16s。
 - <sup>4</sup> 仅MindIE支持采用了PDMIX量化方案的最佳实践。
 
 ## 多模态模型支持列表
@@ -1405,6 +1405,6 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 
 **注释说明：**
 
-- <sup>1</sup> 压缩后配合Atlas 300I Duo系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式。
+- <sup>1</sup> 压缩后配合昇腾310P系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式。
 - <sup>2</sup> 其中FLUX.1-dev、HunyuanVideo、Wan2.2、Qwen-Image-Edit-2509支持[MXFP量化](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf)。
 - <sup>3</sup> Kimi-K3 的 w4a8 含 INT 与 MXFP 两套实践（共用 `quant_type=w4a8`）；MXFP 需额外指定 `--tags vLLM_Ascend Ascend_950`，详见[Kimi-K3 量化案例](https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Kimi-K3/README.md)。

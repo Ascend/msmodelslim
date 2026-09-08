@@ -16,6 +16,8 @@
 
 </div>
 
+简体中文 | [English](./README_EN.md)
+
 ## ✨ 最新消息
 
 <span style="font-size:14px;">

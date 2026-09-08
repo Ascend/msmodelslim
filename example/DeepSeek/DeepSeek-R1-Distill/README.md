@@ -20,7 +20,7 @@
 - ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
 - 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
 - 点击量化命令列中的链接可跳转到对应的具体量化命令
-- **注意：** Atlas 300I DUO目前仅支持单片量化，请先确保待量化模型的大小可适配单片容量，以保证量化过程正常进行。
+- **注意：** 昇腾310P系列产品目前仅支持单片量化，请先确保待量化模型的大小可适配单片容量，以保证量化过程正常进行。
 
 ## 量化权重生成
 
@@ -48,7 +48,7 @@ Atlas 800I A2 w8a8量化
 
 #### <span id="deepseek-r1-distill-llama-8b-稀疏量化">DeepSeek-R1-Distill-Llama-8B 稀疏量化</span>
 
-Atlas 300I DUO  使用以下方法稀疏量化
+昇腾310P系列产品使用以下方法稀疏量化
 
 - 稀疏量化
 
@@ -88,7 +88,7 @@ Atlas 800I A2 w8a8量化
 
 OrangePi
 
-- 使用 OrangePi 推理，需要准备另外一台Atlas 800I A2 或 Atlas 300I DUO 进行w8a8量化，量化后把权重转移至香橙派上
+- 使用 OrangePi 推理，需要准备另外一台Atlas 800I A2 或 Atlas 300I DUO 进行w8a8量化，量化后把权重转移至香橙派上。
 
 ```shell
 # w8a8 量化指令
@@ -98,7 +98,7 @@ python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8�
 
 #### <span id="deepseek-r1-distill-qwen-15b-稀疏量化">DeepSeek-R1-Distill-Qwen-1.5B 稀疏量化</span>
 
-Atlas 300I DUO 使用以下方法稀疏量化
+昇腾310P系列产品使用以下方法稀疏量化
 
 - 稀疏量化
 
@@ -128,7 +128,7 @@ Atlas 800I A2 w8a8量化
 
 #### <span id="deepseek-r1-distill-qwen-7b-稀疏量化">DeepSeek-R1-Distill-Qwen-7B 稀疏量化</span>
 
-Atlas 300I DUO 使用以下方法稀疏量化
+昇腾310P系列产品使用以下方法稀疏量化
 
 - 稀疏量化
 
@@ -160,7 +160,7 @@ Atlas 800I A2 w8a8量化
 
 - 稀疏量化
 
-Atlas 300I DUO 使用以下方法稀疏量化
+昇腾310P系列产品使用以下方法稀疏量化
 
 ```shell
 cd msmodelslim/example/Qwen
@@ -190,7 +190,7 @@ Atlas 800I A2 w8a8量化
 
 - 稀疏量化
 
-Atlas 300I DUO 使用以下方法稀疏量化
+昇腾310P系列产品使用以下方法稀疏量化
 
 ```shell
 cd msmodelslim/example/Qwen
