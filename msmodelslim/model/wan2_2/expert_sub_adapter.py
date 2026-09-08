@@ -20,15 +20,17 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
 from torch import nn
 
+from msmodelslim.core.graph import AdapterConfig
 from msmodelslim.model.base import BaseModelAdapter
 from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface
 from msmodelslim.processor.quarot import OnlineQuaRotInterface
 from ..interface_hub import (
     IterSmoothInterface,
+    OASQInterface,
 )
 
 if TYPE_CHECKING:
@@ -40,6 +42,7 @@ class Wan2_2ExpertSubAdapter(
     OnlineQuaRotInterface,
     FA3QuantAdapterInterface,
     IterSmoothInterface,
+    OASQInterface,
 ):
     """
     Wan2.2 内部 expert 子适配器（不注册 model_type）。
@@ -85,13 +88,13 @@ class Wan2_2ExpertSubAdapter(
     ) -> None:
         self._parent.inject_fa3_placeholders(root_name, root_module, should_inject)
 
-    def get_adapter_config_for_subgraph(self) -> None:
+    def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
         return self._parent.get_adapter_config_for_subgraph(self._module.num_layers)
 
 
-class Wan2_2LowNoiseSubAdapter(Wan2_2ExpertSubAdapter):
+class Wan2_2LowNoiseSubAdapter(Wan2_2ExpertSubAdapter):  # pylint: disable=too-many-ancestors
     """low_noise_model 默认子适配器（可按需重写 forward/visit/context）。"""
 
 
-class Wan2_2HighNoiseSubAdapter(Wan2_2ExpertSubAdapter):
+class Wan2_2HighNoiseSubAdapter(Wan2_2ExpertSubAdapter):  # pylint: disable=too-many-ancestors
     """high_noise_model 默认子适配器（可按需重写 forward/visit/context）。"""

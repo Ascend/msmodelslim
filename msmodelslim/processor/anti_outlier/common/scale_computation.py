@@ -263,9 +263,9 @@ class OASQScaleCalculator(BaseScaleCalculator):
             scales = torch.ones_like(a)
             normal_mask = ~outlier_mask
             # normal channels
-            scales[normal_mask] = torch.sqrt(w[normal_mask] / torch.sqrt(a[normal_mask]) + 1e-6)
+            scales[normal_mask] = torch.sqrt(w[normal_mask]) / (torch.sqrt(a[normal_mask]) + 1e-6)
             # outlier channels
-            scales[outlier_mask] = torch.log1p(w[outlier_mask] / torch.log1p(a[outlier_mask]) + 1e-6)
+            scales[outlier_mask] = torch.log1p(w[outlier_mask]) / (torch.log1p(a[outlier_mask]) + 1e-6)
             scales = scales / (scales.mean() + 1e-6)
             get_logger().debug("[OASQ] z_thr=%.3f, outlier_ratio=%.4f", z_thr, outlier_ratio)
             if best_scales is None:

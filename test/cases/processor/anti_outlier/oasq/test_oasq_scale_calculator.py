@@ -53,6 +53,38 @@ class TestOASQScaleCalculatorComputeSmoothScale(unittest.TestCase):
         self.assertEqual(tuple(scales.shape), (16,))
         self.assertTrue(torch.all(torch.isfinite(scales)))
 
+    def test_compute_smooth_scale_when_normal_branch_then_uses_sqrt_w_over_sqrt_a(self):
+        """正常通道须用 sqrt(w)/(sqrt(a)+eps)，而非 sqrt(w/sqrt(a))。"""
+        a = torch.tensor([1.0, 1.1, 0.9, 1.05], dtype=torch.float32)
+        w = torch.tensor([4.0, 9.0, 1.0, 16.0], dtype=torch.float32)
+        # High z threshold keeps all channels on the normal path.
+        calc = OASQScaleCalculator(
+            base_z_threshold=100.0,
+            target_outlier_min=0.0,
+            target_outlier_max=1.0,
+            max_iters=1,
+        )
+        scales = calc.compute_smooth_scale(a, w)
+        expected = torch.sqrt(w) / (torch.sqrt(a) + 1e-6)
+        expected = expected / (expected.mean() + 1e-6)
+        torch.testing.assert_close(scales, expected)
+
+    def test_compute_smooth_scale_when_outlier_branch_then_uses_log1p_w_over_log1p_a(self):
+        """离群通道须用 log1p(w)/(log1p(a)+eps)，而非 log1p(w/log1p(a))。"""
+        a = torch.tensor([1.0, 100.0], dtype=torch.float32)
+        w = torch.tensor([4.0, 9.0], dtype=torch.float32)
+        # Force both channels into outlier path and skip z-threshold search.
+        calc = OASQScaleCalculator(
+            base_z_threshold=-1.0,
+            target_outlier_min=0.0,
+            target_outlier_max=1.0,
+            max_iters=1,
+        )
+        scales = calc.compute_smooth_scale(a, w)
+        expected = torch.log1p(w) / (torch.log1p(a) + 1e-6)
+        expected = expected / (expected.mean() + 1e-6)
+        torch.testing.assert_close(scales, expected)
+
     def test_compute_smooth_scale_when_weight_act_length_mismatch_then_raises_value_error(self):
         """给定权重与激活通道数不一致，期望抛出 ValueError。"""
         a_scale = torch.ones(4)

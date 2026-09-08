@@ -53,6 +53,7 @@ from ..interface_hub import (
     LegacyMultimodalPipelineInterface,
     OnlineQuaRotInterface,
     IterSmoothInterface,
+    OASQInterface,
 )
 
 MAX_RECURSION_DEPTH = 20
@@ -91,6 +92,7 @@ class Wan2Point2Adapter(
     FA3QuantAdapterInterface,
     OnlineQuaRotInterface,
     IterSmoothInterface,
+    OASQInterface,
 ):
     def __init__(self, model_type: str, model_path: Path, trust_remote_code: bool = False):
         super().__init__(model_type, model_path, trust_remote_code)

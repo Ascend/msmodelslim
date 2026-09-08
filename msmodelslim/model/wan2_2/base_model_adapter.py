@@ -60,6 +60,7 @@ from ..interface_hub import (
     MultimodalPipelineInterface,
     OnlineQuaRotInterface,
     IterSmoothInterface,
+    OASQInterface,
 )
 from .constants import DEFAULT_SIZE, DUAL_EXPERT_SCENE_TASKS, EXAMPLE_PROMPT, TASK_TYPES
 from .expert_sub_adapter import (
@@ -77,6 +78,7 @@ class Wan2_2BaseModelAdapter(
     FA3QuantAdapterInterface,
     OnlineQuaRotInterface,
     IterSmoothInterface,
+    OASQInterface,
 ):
     """
     1.公共流水线接口
