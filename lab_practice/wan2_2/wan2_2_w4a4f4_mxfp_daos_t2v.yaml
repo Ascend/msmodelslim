@@ -1,0 +1,186 @@
+apiversion: multimodal_sd_modelslim_v1
+metadata:
+  config_id: wan2_2_w4a4f4_mxfp_daos_t2v
+  score: 80
+  verified_tags:
+    Wan2.2-T2V-A14B:
+      - - MindIE-SD
+        - Ascend_950
+
+  label:
+    w_bit: 4
+    a_bit: 4
+    is_sparse: False
+    fa_quant: True
+    fa_bit: 4
+
+w4a4_qconfig: &w4a4_qconfig
+  act:
+    scope: "per_block"
+    dtype: "mxfp4"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_block"
+    dtype: "mxfp4"
+    symmetric: True
+    method: "minmax"
+
+w8a8_qconfig: &w8a8_qconfig
+  act:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+
+fa3_mxfp4_qconfig: &fa3_mxfp4_qconfig
+  dtype: "mxfp4"
+  scope: "per_block"
+  symmetric: True
+  method: "minmax"
+
+fa3_fp8_qconfig: &fa3_fp8_qconfig
+  dtype: "fp8_e4m3"
+  scope: "per_token"
+  symmetric: True
+  method: "minmax"
+
+spec:
+  process: []
+  dataset: wan2_2_t2v
+  per_expert:
+    low_noise_model:
+      - type: "trainable_linear_quant"
+        train_with_act_quant: false
+        enable_quanted_input: false
+        operations:
+          - type: "minmax_tune"
+          - type: "round_tune"
+
+        train_config:
+          iters: 100
+          lr: 0.01
+          gradient_accumulate_steps: 8
+          select_best:
+            mode: "ema"
+            ema_beta: 0.7
+            ema_window_size: 5
+            early_stop_patience: -1
+          loss_type: "l1"
+          train_seed: 42
+
+        strategies:
+          - qconfig: *w4a4_qconfig
+            include:
+              - "*"
+            exclude:
+              - "*blocks.0.*"
+              - "*blocks.1.*"
+              - "*blocks.2.*"
+              - "*blocks.3.*"
+              - "*blocks.4.*"
+          - qconfig: *w8a8_qconfig
+            include:
+              - "*blocks.0.*"
+              - "*blocks.1.*"
+              - "*blocks.2.*"
+              - "*blocks.3.*"
+              - "*blocks.4.*"
+
+      - type: "online_quarot"
+        include:
+          - "*.self_attn.*"
+      - type: "fa3_quant"
+        qconfig: *fa3_mxfp4_qconfig
+        include:
+          - "*self_attn"
+        exclude:
+          - "blocks.0*"
+      - type: "fa3_quant"
+        qconfig: *fa3_fp8_qconfig
+        include:
+          - "blocks.0.self_attn"
+
+    high_noise_model:
+      - type: "oasq"
+        max_iters: 8
+        enable_subgraph_type:
+          - "norm-linear"
+        include:
+          - "blocks.*.ffn.*"
+        exclude:
+          - "blocks.0.ffn.*"
+          - "blocks.1.ffn.*"
+          - "blocks.2.ffn.*"
+          - "blocks.3.ffn.*"
+          - "blocks.4.ffn.*"
+      - type: "trainable_linear_quant"
+        train_with_act_quant: false
+        enable_quanted_input: false
+        operations:
+          - type: "minmax_tune"
+          - type: "round_tune"
+
+        train_config:
+          iters: 100
+          lr: 0.01
+          gradient_accumulate_steps: 8
+          select_best:
+            mode: "ema"
+            ema_beta: 0.7
+            ema_window_size: 5
+            early_stop_patience: -1
+          loss_type: "l1"
+          train_seed: 42
+
+        strategies:
+          - qconfig: *w4a4_qconfig
+            include:
+              - "*"
+            exclude:
+              - "*blocks.0.*"
+              - "*blocks.1.*"
+              - "*blocks.2.*"
+              - "*blocks.3.*"
+              - "*blocks.4.*"
+          - qconfig: *w8a8_qconfig
+            include:
+              - "*blocks.0.*"
+              - "*blocks.1.*"
+              - "*blocks.2.*"
+              - "*blocks.3.*"
+              - "*blocks.4.*"
+
+      - type: "online_quarot"
+        include:
+          - "*.self_attn.*"
+      - type: "fa3_quant"
+        qconfig: *fa3_mxfp4_qconfig
+        include:
+          - "*self_attn"
+        exclude:
+          - "blocks.0*"
+      - type: "fa3_quant"
+        qconfig: *fa3_fp8_qconfig
+        include:
+          - "blocks.0.self_attn"
+
+  save:
+    - type: "mindie_format_saver"
+      part_file_size: 0
+
+  multimodal_sd_config:
+    dump_config:
+      enable_dump: True
+      capture_mode: "args"
+      dump_data_dir: ""
+    inference_config:
+      size: "1280*720"
+      frame_num: 41
+      convert_model_dtype: True
+      task: "t2v-A14B"

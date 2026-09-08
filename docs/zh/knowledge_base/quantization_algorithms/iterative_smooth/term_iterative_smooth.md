@@ -100,6 +100,7 @@ $$
 
 - [SmoothQuant](../smooth_quant/term_smooth_quant.md)：上位概念，本算法是 SmoothQuant 的迭代扩展。
 - [Flex Smooth Quant](../flex_smooth_quant/term_flex_smooth_quant.md)：同类算法，通过二阶段网格搜索自动寻找最优 `alpha`/`beta`。
+- [OASQ](../oasq/term_oasq.md)：同类算法，同样支持多子图融合，但按离群通道分流尺度。
 - [SVDQuant](../svdquant/term_svdquant.md)：配套术语，SVDQuant 流水线使用本算法完成离群值迁移。
 - [AutoRound](../autoround/term_autoround.md)：配套术语，低比特量化前常配合本算法使用。
 - [QuaRot](../quarot/term_quarot.md)：对比算法，采用正交旋转而非通道缩放抑制离群值。

@@ -18,6 +18,7 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 | **Flex AWQ SSZ** | 结合 AWQ 与 SSZ，使用真实量化器评估误差 | 自动搜索最优平滑参数 | [Flex AWQ SSZ 词条](flex_awq_ssz/term_flex_awq_ssz.md) | [Flex AWQ SSZ 使用指南](flex_awq_ssz/usage_flex_awq_ssz.md) |
 | **KV Smooth** | 针对 KV Cache 的平滑抑制算法 | 降低 KV Cache 显存占用 | [KV Smooth 词条](kv_smooth/term_kv_smooth.md) | [KV Smooth 使用指南](kv_smooth/usage_kv_smooth.md) |
 | **AWQ** | 基于激活值统计特征网格搜索最优缩放因子 | 自动搜索最优平滑参数 | [AWQ 词条](awq_smooth/term_awq_smooth.md) | [AWQ 使用指南](awq_smooth/usage_awq_smooth.md) |
+| **OASQ** | 按通道 z-score 识别离群并分流平滑尺度 | 激活通道离群明显的前置抑制 | [OASQ 词条](oasq/term_oasq.md) | [OASQ 使用指南](oasq/usage_oasq.md) |
 
 ## 2. 量化算法
 
@@ -26,6 +27,7 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 | 算法名称 | 类型 | 核心思想 | 适用场景 | 词条 | 使用指南 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **AutoRound** | 权重量化优化 | 基于 SignSGD 优化舍入偏移，降低重构误差 | 4bit 等超低比特量化 | [AutoRound 词条](autoround/term_autoround.md) | [AutoRound 使用指南](autoround/usage_autoround.md) |
+| **Trainable Linear Quant** | 权重量化优化 | 块级训练 + 可插拔 OP（范围/舍入/可选平滑）优化线性量化参数 | 主要用于 W4A4 等极低比特；显存与耗时较高 | [Trainable Linear Quant 词条](trainable_linear_quant/term_trainable_linear_quant.md) | [Trainable Linear Quant 使用指南](trainable_linear_quant/usage_trainable_linear_quant.md) |
 | **FA3 Quant** | 激活量化 | 针对 Attention 激活的 per-head INT8 量化 | 长序列、MLA 架构模型 | [FA3 Quant 词条](fa3_quant/term_fa3_quant.md) | [FA3 Quant 使用指南](fa3_quant/usage_fa3_quant.md) |
 | **GPTQ** | 权重量化优化 | 通过逐列优化和误差补偿最小化量化误差 | 高精度权重量化需求 | [GPTQ 词条](gptq/term_gptq.md) | [GPTQ 使用指南](gptq/usage_gptq.md) |
 | **KVCache Quant** | KV Cache 量化 | 针对 KV Cache 的量化方案 | 提升长序列推理效率 | [KVCache Quant 词条](kvcache_quant/term_kvcache_quant.md) | [KVCache Quant 使用指南](kvcache_quant/usage_kvcache_quant.md) |
@@ -34,7 +36,8 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 | **Histogram** | 激活量化 | 分析直方图分布，搜索最优截断区间 | 过滤离群值，提高精度 | [Histogram 词条](histogram_activation_quantization/term_histogram_activation_quantization.md) | [Histogram 使用指南](histogram_activation_quantization/usage_histogram_activation_quantization.md) |
 | **MinMax** | 基础量化 | 统计最大最小值确定量化范围 | 基础量化场景，计算开销低 | [MinMax 词条](minmax/term_minmax.md) | [MinMax 使用指南](minmax/usage_minmax.md) |
 | **SSZ** | 权重量化 | 迭代搜索最优缩放因子和偏移量 | 权重分布不均的精度优化 | [SSZ 词条](ssz/term_ssz.md) | [SSZ 使用指南](ssz/usage_ssz.md) |
-| **LAOS** | 低比特量化 | 针对 W4A4 等极低比特场景的优化 | 极致压缩需求 | [LAOS 词条](laos/term_laos.md) | [LAOS 使用指南](laos/usage_laos.md) |
+| **LAOS** | 联合方案（LLM） | Adapt Rotation + AutoRound，面向大语言模型 W4A4 等极低比特 | LLM 极致压缩 | [LAOS 词条](laos/term_laos.md) | [LAOS 使用指南](laos/usage_laos.md) |
+| **DAOS** | 联合方案（多模态生成） | OASQ + TLQ；可配合 FA3 做 FA 量化加速推理 | 多模态生成低比特 | [DAOS 词条](daos/term_daos.md) | [DAOS 使用指南](daos/usage_daos.md) |
 | **Float Sparse** | 稀疏化 | 基于 ADMM 算法实现模型浮点稀疏化 | 高压缩率需求 | [Float Sparse 词条](float_sparse/term_float_sparse.md) | [Float Sparse 使用指南](float_sparse/usage_float_sparse.md) |
 | **SVDQuant** | 综合方案 | 离群值迁移 + SVD 低秩残差 + 残差量化 | 扩散模型等低比特量化 | [SVDQuant 词条](svdquant/term_svdquant.md) | [SVDQuant 使用指南](svdquant/usage_svdquant.md) |
 | **MSE_Round** | 权重量化 | 按 block 在 ceil/floor shared exponent 间按 MSE 择优 | MXFP8 权重量化精度优化 | [MSE_Round 词条](mse_round/term_mse_round.md) | [MSE_Round 使用指南](mse_round/usage_mse_round.md) |
@@ -65,19 +68,22 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 - **W8A8**：最常用 **MinMax**——统计最大最小值确定量化范围，计算开销低，适合作为默认起步方案。
 - **W4A8**：权重侧用 **SSZ** 迭代搜索缩放因子与偏移，激活 A8 仍用 **MinMax**，二者配合使用。
 - **W4A4 MXFP**：优先 **Ceil_X**，用 ceil + 可配置除数收紧 shared exponent，抑制 floor 缩放带来的大值截断。
-- **W4A4（INT / MXFP）**：可选用基于训练的 **AutoRound** 进一步抬精度，INT 与 MXFP 均支持；但对算力要求更高，量化耗时通常成倍高于其他大多数算法，选用时需权衡资源与时延。
+- **W4A4（INT / MXFP）**：可选用基于训练的 **Trainable Linear Quant（TLQ）** 进一步提升精度，INT 与 MXFP 均支持；TLQ 以可插拔 OP 管线组织范围/舍入（及可选可训练平滑），但对算力要求更高，量化耗时通常成倍高于其他大多数算法，选用时需权衡资源与时延。
+- **LLM 联合低比特**：**LAOS**（Adapt Rotation + AutoRound），面向大语言模型；实践见 `lab_practice` 下对应 LLM 配方。
+- **多模态生成联合低比特**：**DAOS**（OASQ + TLQ；需要时再配 FA3 做 FA 量化以加速推理）。不要与 LAOS 混用任务协议或校准路径。
 - **长序列 / C8**：产品上将 **KVCache Quant** 与 **FA3 Quant** 都纳入 C8。前者量化写入缓存的 Key/Value，专攻缩小 KV Cache、缓解推理显存压力；后者量化 Attention 路径上的 Q/K/V 激活以加速 Attention 运算（仅支持 MLA）。二者机制不同，实践中一般只开其一，按显存或算力瓶颈选择。
 
 ### 4.2 离群值抑制算法
 
 - 常用 **Flex Smooth Quant** 与 **QuaRot**：可独立使用，也可串联叠加。前者二阶段网格搜索 alpha / beta，适配面广；后者正交旋转平滑激活离群，精度收益往往更明显，但对模型适配要求更高。
-- **Flex AWQ SSZ** 在 4bit 低精场景下效果较好，但搜索相对较慢，适合精度优先、可接受更长量化时间的场景。
+- **OASQ** 适合激活存在明显通道级离群、希望按离群/正常通道分流平滑尺度的场景，可作为后续线性量化或可训练量化的前置步骤。
+- **Flex AWQ SSZ** 在 4bit 低精度场景下效果较好，但搜索相对较慢，适合精度优先、可接受更长量化时间的场景。
 
 ### 4.3 敏感层分析
 
 当前敏感层分析支持按不同范围（`linear` / `layer` / `attn` / `attn_head`）度量敏感度，并据此做对应粒度的回退、混精调参或 KV Cache 压缩配置。使用指南：《[线性层](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级](../../user_guide/usage_sensitive_layer_analysis.md)》、《[Attention](../../user_guide/usage_sensitive_attn_analysis.md)》、《[Attention Head](../../user_guide/usage_sensitive_attn_head_analysis.md)》。
 
-- **linear**（线性层）：首选 **Kurtosis**，用激活峰度刻画尖峰与尾部影响，辅助识别需回退或提位宽的线性层。
+- **linear**（线性层）：首选 **Kurtosis**，用激活峰度刻画尖峰与尾部影响，辅助识别需回退或提升位宽的线性层。
 - **layer**（Decoder 块）：首选 **mse_layer_wise**，适合整层 / 整块（如 MLP、Attention 段）回退。
 - **attn**（Attention 结构）：首选 **Attention MSE（mse）**，主要用于配合 **FA3 Quant** 识别需回退的 Attention 模块（需适配器接口）。
 - **attn_head**（注意力头）：首选 **RA Compress**，基于重复段结构筛选归纳头 / 回声头，用于长序列 KV Cache 压缩配置（仅支持 LLM，须使用 `calib_dummy.jsonl`）。

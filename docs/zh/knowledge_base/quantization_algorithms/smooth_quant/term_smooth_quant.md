@@ -104,6 +104,7 @@ $$
 
 - [Iterative Smooth](../iterative_smooth/term_iterative_smooth.md)：同类算法，本算法的迭代扩展，支持更多子图类型。
 - [Flex Smooth Quant](../flex_smooth_quant/term_flex_smooth_quant.md)：同类算法，通过二阶段网格搜索自动寻找最优 `alpha`/`beta`。
+- [OASQ](../oasq/term_oasq.md)：同类算法，按通道离群分流尺度的平滑扩展。
 - [AWQ](../awq_smooth/term_awq_smooth.md)：同类算法，基于激活均值识别重要通道并搜索缩放因子。
 - [QuaRot](../quarot/term_quarot.md)：对比算法，采用正交旋转而非通道缩放抑制离群值。
 - [MinMax](../minmax/term_minmax.md)：应用对象，平滑后的激活更易于 MinMax 量化。

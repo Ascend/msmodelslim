@@ -35,7 +35,7 @@ Flex Smooth Quant 将标准 SmoothQuant 中相互绑定的指数关系拆开。�
 缩放因子计算公式：
 
 $$
-s = \left( \frac{A_{\text{scale}}^{\alpha}}{W_{\text{scale}}^{\beta}} \right) \cdot \operatorname{clamp}(\min=10^{-5})
+s = \operatorname{clamp}\left( \frac{A_{\text{scale}}^{\alpha}}{W_{\text{scale}}^{\beta}}, \min=10^{-5} \right)
 $$
 
 - $s$：逐通道缩放因子
@@ -94,6 +94,7 @@ $$
 
 - [SmoothQuant](../smooth_quant/term_smooth_quant.md)：上位概念，本算法是 SmoothQuant 的灵活扩展。
 - [Iterative Smooth](../iterative_smooth/term_iterative_smooth.md)：同类算法，同样支持多子图类型的平滑。
+- [OASQ](../oasq/term_oasq.md)：同类算法，按通道离群分流尺度，而非搜索 alpha/beta。
 - [Flex AWQ SSZ](../flex_awq_ssz/term_flex_awq_ssz.md)：同类算法，使用真实量化器评估参数，`beta` 固定为 `0`。
 - [AWQ](../awq_smooth/term_awq_smooth.md)：对比算法，基于激活均值识别重要通道并搜索缩放因子。
 - [AutoRound](../autoround/term_autoround.md)：配套术语，低比特量化前常配合本算法使用。

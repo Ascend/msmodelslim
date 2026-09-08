@@ -8,7 +8,7 @@
 
 ## 1. 概述
 
-LAOS 是一种面向 W4A4 超低比特场景的组合量化方案。它先利用 [Adapt Rotation](../adapt_rotation/term_adapt_rotation.md) 重分布离群信息，再通过 [AutoRound](../autoround/term_autoround.md) 优化低比特权重舍入，并用混合精度保护敏感模块；核心特征是旋转与舍入优化串联、数据驱动和面向极低比特精度恢复。
+LAOS 是一种面向**大语言模型** W4A4 超低比特场景的**联合量化方案**（非单一 processor）。它先利用 [Adapt Rotation](../adapt_rotation/term_adapt_rotation.md) 重分布离群信息，再通过 [AutoRound](../autoround/term_autoround.md) 优化低比特权重舍入，并用混合精度保护敏感模块；核心特征是旋转与舍入优化串联、数据驱动和面向极低比特精度恢复。
 
 ---
 
@@ -45,10 +45,10 @@ $$
 第二阶段基于可学习舍入的权重量化：
 
 $$
-\hat{W} = s \times \operatorname{clip}(\lfloor W/s + zp + V \rceil, n, m)
+\hat{W} = s \times (\operatorname{clip}(\lfloor W/s + zp + V \rceil, n, m) - zp)
 $$
 
-- $\hat{W}$：量化后的权重
+- $\hat{W}$：量化后的权重（反量化重建值）
 - $s$：缩放因子
 - $zp$：零点
 - $V$：控制舍入方向的可学习偏移
@@ -83,7 +83,7 @@ $$
 
 - 需要足够的校准数据或训练迭代次数来优化参数，量化时长相对较久。
 - 当前主要面向 Qwen3 稠密系列模型（如 Qwen3-8B/14B/32B），不保证可泛化到其他系列模型。
-- 算法实现包含训练过程，对 NPU 显存有一定要求，仅支持 NPU 显存 ≥64G 的设备。
+- 算法实现包含训练过程，对 NPU 显存有一定要求，仅支持 NPU 显存 ≥64GB 的设备。
 
 这些限制应在调参前确认，而不是等精度异常后再排查。尤其是数据类型、张量维度、分组大小和后端算子支持等硬约束，一旦不满足，继续调整算法参数通常无法解决问题；应先回到受支持的配置组合。
 
@@ -97,6 +97,7 @@ $$
 - [AutoRound](../autoround/term_autoround.md)：配套术语，LAOS 使用其舍入训练完成低比特量化。
 - [QuaRot](../quarot/term_quarot.md)：上位概念，Adapt Rotation 基于 QuaRot 框架。
 - [DualScale](../dual_scale/term_dual_scale.md)：同类算法，同为面向 Qwen3 稠密系列的 W4A4 量化方案。
+- [DAOS](../daos/term_daos.md)：同类算法，面向多模态生成的联合低比特方案（OASQ + TLQ）。
 
 ---
 

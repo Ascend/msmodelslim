@@ -94,7 +94,7 @@ $$
 
 - 仅适用于 LLM 中的线性层量化。
 - 需要足够的校准数据或训练迭代次数来优化参数。
-- 包含训练过程，对 NPU 显存有一定要求，仅支持 NPU 显存 ≥64G 的设备。
+- 包含训练过程，对 NPU 显存有一定要求，仅支持 NPU 显存 ≥64GB 的设备。
 - 低比特量化极度依赖良好的离群值抑制算法，建议配合 [QuaRot](../quarot/term_quarot.md) 或 [Iterative Smooth](../iterative_smooth/term_iterative_smooth.md) 使用，不建议单独使用。
 
 这些限制应在调参前确认，而不是等精度异常后再排查。尤其是数据类型、张量维度、分组大小和后端算子支持等硬约束，一旦不满足，继续调整算法参数通常无法解决问题；应先回到受支持的配置组合。
@@ -108,6 +108,7 @@ $$
 - [QuaRot](../quarot/term_quarot.md)：配套术语，常在本算法前作为离群值抑制步骤。
 - [Adapt Rotation](../adapt_rotation/term_adapt_rotation.md)：配套术语，常与本算法配合用于 W4A4 量化。
 - [Iterative Smooth](../iterative_smooth/term_iterative_smooth.md)：配套术语，常在本算法前作为离群值抑制步骤。
+- [Trainable Linear Quant](../trainable_linear_quant/term_trainable_linear_quant.md)：同类算法，同为基于 SignSGD 的可训练线性量化，提供可组合 OP 管线。
 - [GPTQ](../gptq/term_gptq.md)：同类算法，同为高精度权重量化优化算法。
 - [MinMax](../minmax/term_minmax.md)：对比算法，本算法是 MinMax 的低比特精度优化扩展。
 
