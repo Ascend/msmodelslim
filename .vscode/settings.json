@@ -1,0 +1,47 @@
+{
+  // msModelSlim devcontainer 工作区设置。
+  // 本文件随仓库提交（post-create.sh 会对其执行 skip-worktree，避免本地个人化改动
+  // 污染 git status）；如需修改默认值，先取消 skip-worktree 再提交。
+  // 均指向工作区 .venv（gitignored，bind mount 持久化）。
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.analysis.diagnosticMode": "openFilesOnly",
+  "python.analysis.typeCheckingMode": "basic",
+  "ruff.path": ["${workspaceFolder}/.venv/bin/ruff"],
+
+  // pytest：从工作区源码运行（pytest.ini pythonpath = . test）
+  "python.testing.pytestEnabled": true,
+  "python.testing.cwd": "${workspaceFolder}",
+  "python.testing.pytestArgs": [],
+
+  // 终端默认 bash 登录 shell，与 postCreateCommand / tasks 一致（镜像 python 环境
+  // 由登录 profile 导出）
+  "terminal.integrated.defaultProfile.linux": "msmodelslim bash",
+  "terminal.integrated.profiles.linux": {
+    "msmodelslim bash": { "path": "/bin/bash", "args": ["-l"], "overrideName": true }
+  },
+
+  // 搜索与文件监听排除：重型/生成目录
+  "search.exclude": {
+    "**/.venv": true,
+    "**/build": true,
+    "**/dist": true,
+    "**/artifacts": true,
+    "**/msmodelslim.egg-info": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/test/report": true,
+    ".devcontainer/.host-gitconfig": true
+  },
+  "files.watcherExclude": {
+    "**/.venv/**": true,
+    "**/build/**": true,
+    "**/dist/**": true,
+    "**/artifacts/**": true,
+    "**/msmodelslim.egg-info/**": true,
+    "**/test/report/**": true,
+    "**/__pycache__/**": true,
+    "**/.git/**": true
+  },
+
+  "files.eol": "\n"
+}

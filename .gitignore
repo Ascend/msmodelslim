@@ -2,3 +2,21 @@
 msmodelslim/config
 msmodelslim/lab_practice
 msmodelslim/lab_calib
+
+# ---- devcontainer / dev-only artifacts --------------------------------
+.devcontainer/.host-gitconfig
+.venv/
+
+# ---- python packaging & build artifacts -------------------------------
+build/
+dist/
+artifacts/
+*.egg-info/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# ---- test output --------------------------------------------------------
+test/report/
+test/.coverage
+.coverage

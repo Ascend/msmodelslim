@@ -21,6 +21,9 @@ repos:
       - id: check-merge-conflict
       - id: detect-private-key
       - id: check-json
+        # devcontainer.json 与 .vscode/*.json 使用 JSONC（带注释），VS Code 依赖注释，
+        # 需排除出严格 JSON 校验（对齐 devcontainer 方案文档的 JSONC 排除治理）。
+        exclude: ^\.devcontainer/devcontainer\.json$|^\.vscode/
 
   # -------------------------- Python 核心检查 --------------------------
   # Ruff：指定读取 pre-commit/pyproject.toml

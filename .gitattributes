@@ -1,0 +1,5 @@
+# 行尾策略
+# shell 脚本必须保持 LF：devcontainer 内以 bash -lc 执行 post-create.sh，
+# 以及 CI/构建容器中执行 build.sh / run_ut.sh / install.sh 时，CRLF 会导致
+# bash 语法错误（error near unexpected token `$'{\r''）。此处覆盖 core.autocrlf。
+*.sh text eol=lf

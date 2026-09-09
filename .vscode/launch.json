@@ -1,0 +1,64 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    // msModelSlim devcontainer 调试模板（Python Debugger）。
+    // 均固定 python 为工作区 .venv/bin/python、cwd 为源码根目录；pytest 直接以
+    // 源码方式运行（pytest.ini pythonpath = . test），调试进源码。CLI 调试以
+    // 模块方式加载 msmodelslim.cli.__main__，等价于 console 脚本入口
+    // msmodelslim = msmodelslim.cli.__main__:main。
+    {
+      "name": "Python: msmodelslim CLI (module)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "msmodelslim.cli.__main__",
+      "args": ["--help"],
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "DEVICE_ID": "0",
+        "MSMODELSLIM_LOG_LEVEL": "info"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Python: pytest current file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-s", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/test",
+        "DEVICE_ID": "0"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: pytest modelslim_v1 module dirs",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "-s",
+        "test/cases/app",
+        "test/cases/core",
+        "test/cases/ir",
+        "test/cases/infra",
+        "test/cases/processor",
+        "test/cases/utils"
+      ],
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}:${workspaceFolder}/test",
+        "DEVICE_ID": "0"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

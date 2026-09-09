@@ -1,0 +1,135 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // msModelSlim devcontainer 任务编排。命令等价既有 CLI（python3 build.py / pre-commit …），
+    // 非 devcontainer 用户可直接照抄 command 执行。统一 bash -lc + source .venv/bin/activate 运行。
+    {
+      "label": "msmodelslim: bootstrap dev env (post-create.sh)",
+      "type": "shell",
+      "command": "bash .devcontainer/init.sh",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "msmodelslim: Reinstall package (dev, non-editable, UT-safe)",
+      "type": "shell",
+      "command": "source .venv/bin/activate && pip install . --no-cache-dir",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "build",
+      "dependsOn": ["msmodelslim: bootstrap dev env (post-create.sh)"]
+    },
+    {
+      // 警告：editable 会把 config/lab_calib/lab_practice 建成符号链接，run_ut.sh 的
+      // cp/chmod 穿透符号链接会报错或弄脏 config/config.ini（100640）。UT 密集请用上方
+      // 非 editable 安装；确需 editable 请在跑 UT 前重跑本任务或 post-create.sh。
+      "label": "msmodelslim: Editable install (pip install -e .)",
+      "type": "shell",
+      "command": "source .venv/bin/activate && pip install -e .",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "build",
+      "dependsOn": ["msmodelslim: bootstrap dev env (post-create.sh)"]
+    },
+    {
+      "label": "msmodelslim: Install test deps (reduced)",
+      "type": "shell",
+      "command": "source .venv/bin/activate && pip install -r test/requirements.txt",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "msmodelslim: Install test deps (full UT)",
+      "type": "shell",
+      "command": "source .venv/bin/activate && pip install mindformers==1.3.2 --no-deps && pip install -r test/requirements_all.txt",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      // 精简 UT（modelslim_v1）。DEVICE_ID=0 为 run_ut.sh 所需；UT 基于
+      // 纯 torch + mock torch_npu，装过 torch_npu 的环境会被告警。
+      // dependsOn：build.py test local 会跳过依赖安装，故先自动装测试依赖。
+      "label": "msmodelslim: UT reduced (modelslim_v1)",
+      "type": "shell",
+      "command": "source .venv/bin/activate && export DEVICE_ID=0 && python3 build.py test local",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "test",
+      "dependsOn": ["msmodelslim: Install test deps (reduced)"]
+    },
+    {
+      // 全量 UT（含 smoke）。自动先装全量测试依赖。
+      "label": "msmodelslim: UT full",
+      "type": "shell",
+      "command": "source .venv/bin/activate && export DEVICE_ID=0 && python3 build.py test local -e full_ut=true",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "test",
+      "dependsOn": ["msmodelslim: Install test deps (full UT)"]
+    },
+    {
+      "label": "msmodelslim: Lint (pre-commit all files)",
+      "type": "shell",
+      "command": "source .venv/bin/activate && pre-commit run --all-files",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      // gitleaks 二进制下载失败（离线/受限网络）时使用此变体跳过密钥扫描。
+      "label": "msmodelslim: Lint (pre-commit, SKIP gitleaks)",
+      "type": "shell",
+      "command": "source .venv/bin/activate && SKIP=gitleaks-offline-scan pre-commit run --all-files",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "msmodelslim: Build wheel (local)",
+      "type": "shell",
+      "command": "source .venv/bin/activate && python3 build.py local",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "msmodelslim: Clean build/test artifacts",
+      "type": "shell",
+      "command": "rm -rf build dist artifacts msmodelslim.egg-info test/report test/.coverage .pytest_cache && find . -name __pycache__ -type d -prune -exec rm -rf {} +",
+      "options": {
+        "shell": { "executable": "/bin/bash", "args": ["-lc"] },
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

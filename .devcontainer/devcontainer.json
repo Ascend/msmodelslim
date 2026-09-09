@@ -1,0 +1,57 @@
+{
+  // msModelSlim Dev Container：引用 SWR 预置 MindStudio 构建镜像（无 in-repo Dockerfile）
+  "name": "msModelSlim Dev (MindStudio build image)",
+
+  // MindStudio 标准构建镜像（换版本按 MSOT 统一构建镜像指南同步升级）。
+  "image": "swr.cn-north-4.myhuaweicloud.com/mindstudio-image/mindstudio-build:26.2.0-0801",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "workspaceFolder": "/workspace",
+
+  // 非 root mindstudio，uid 对齐宿主避免 bind 属主问题（镜像须含该用户，$HOME=/home/mindstudio）。
+  "remoteUser": "mindstudio",
+  "updateRemoteUserUID": true,
+  "runArgs": [
+    "--network=host",
+    "--privileged",
+    "--ipc=host",
+    "--ulimit", "memlock=-1",
+    "--ulimit", "stack=67108864"
+  ],
+
+  // 容器创建前在宿主执行：生成 .host-gitconfig，并预建缓存目录作为下方 bind 的 source。
+  "initializeCommand": [
+    "bash",
+    "-lc",
+    "cd \"${localWorkspaceFolder:-.}\" && bash .devcontainer/initialize.sh"
+  ],
+
+  // pip/pre-commit 缓存 bind 宿主 ~/.cache，避免空 named volume（root 属主）对非 root 用户不可写。
+  "mounts": [
+    "source=${localEnv:HOME}/.cache/pip,target=/home/mindstudio/.cache/pip,type=bind",
+    "source=${localEnv:HOME}/.cache/pre-commit,target=/home/mindstudio/.cache/pre-commit,type=bind"
+  ],
+
+  // PIP_CACHE_DIR/PRE_COMMIT_HOME：postCreate、Git Hook、后台预热共享同一缓存，重建复用。
+  "containerEnv": {
+    "PIP_CACHE_DIR": "/home/mindstudio/.cache/pip",
+    "PRE_COMMIT_HOME": "/home/mindstudio/.cache/pre-commit"
+  },
+
+  // 前置 ~/.local/bin（非 root pip --user 工具，如 gitleaks）。
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:${containerEnv:HOME}/.local/bin"
+  },
+  "postCreateCommand": "bash -lc 'bash /workspace/.devcontainer/init.sh'",
+
+  "features": {},
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff"
+      ]
+    }
+  }
+}
