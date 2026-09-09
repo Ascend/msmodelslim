@@ -142,7 +142,7 @@ calib_data_<task_config>_high_noise_model.pth
 | `W8A8_MXFP8`           | 支持               | [W8A8 MX 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_mx_dynamic.md) | [W8A8_MXFP8 描述键](#desc-w8a8-mxfp8)               | [W8A8_MXFP8 权重张量](#st-w8a8-mxfp8)               |
 | `W4A4_MXFP4`           | 支持               | [W4A4 MX 动态量化](../../quantization_mode/linear_layer_quantization/term_w4a4_mx_dynamic.md) | [W4A4_MXFP4 描述键](#desc-w4a4-mxfp4)               | [W4A4_MXFP4 权重张量](#st-w4a4-mxfp4)               |
 | `W4A4_MXFP4_DUALSCALE` | 支持               | [W4A4 MX 双 Scale](../../quantization_mode/linear_layer_quantization/term_w4a4_mx_dualscale.md) | [W4A4_MXFP4_DUALSCALE 描述键](#desc-mxfp-dualscale) | [W4A4_MXFP4_DUALSCALE 权重张量](#st-mxfp-dualscale) |
-| `FAQuant`              | 支持（FA3 等）        | [FA PerHead](../../quantization_mode/fa_quantization/term_fa_perhead.md) | [FAQuant 描述键](#desc-faquant)                     | [FAQuant 权重张量](#st-faquant)                     |
+| `FAQuant`              | 支持（FA3 等）        | [FA INT8 PerHead 量化](../../quantization_mode/fa_quantization/term_fa_int8_perhead.md) | [FAQuant 描述键](#desc-faquant)                     | [FAQuant 权重张量](#st-faquant)                     |
 
 ---
 
@@ -277,7 +277,7 @@ calib_data_<task_config>_high_noise_model.pth
 | --------------------------------- | ----------- | ------------------ |
 | `{prefix}.scale`                  | `"FAQuant"` | FA per-head scale  |
 | `{prefix}.offset`                 | `"FAQuant"` | FA per-head offset |
-| `fa_quant_type` / 层级 `quant_type` | 由 FA3 策略拼装  | 启用 FA3 等时写入        |
+| 全局 `fa_quant_type`、层级 `quant_type` | string | 启用 FA3 等时写入；层级 `quant_type` 取值随 Q/K/V 各分支的量化方式而定；各整体方案见《[FA 量化](../../quantization_mode/fa_quantization/README.md)》 |
 
 **<span id="st-faquant">`quant_model_weight*.safetensors`</span>**
 

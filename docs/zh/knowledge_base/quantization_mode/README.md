@@ -42,7 +42,7 @@
 
 - **[线性层量化](linear_layer_quantization/README.md)**：对大语言模型中占比最高的线性层（Linear / MatMul）权重与激活进行量化，是量化模式的主体、模式数量最多，如 [W8A8 静态量化](linear_layer_quantization/term_w8a8_static.md)、[W4A4 动态量化](linear_layer_quantization/term_w4a4_dynamic.md)。
 - **[KVCache 量化](kv_cache_quantization/README.md)**：对注意力机制的 KVCache 进行量化。KVCache 本质上是一种特殊的激活——历史 token 的 Key/Value 投影被缓存下来供后续 token 复用，其显存随序列长度线性增长；量化 K/V 使缓存显存减半，如 [KVCache-PerChannel 量化](kv_cache_quantization/term_kv_cache_perchannel.md)。
-- **[FA 量化](fa_quantization/README.md)**：KVCache 量化的进阶——在量化 K/V 的基础上进一步量化送入 Flash Attention 的 Q，使能低精度注意力矩阵运算，如 [FA PerHead 量化](fa_quantization/term_fa_perhead.md)。
+- **[FA 量化](fa_quantization/README.md)**：KVCache 量化的进阶——在量化 K/V 的基础上进一步量化送入 Flash Attention 的 Q，使能低精度注意力矩阵运算，如 [FA INT8 PerHead 量化](fa_quantization/term_fa_int8_perhead.md)。
 
 三类量化作用于计算图的不同位置，可以独立或组合使用，共同构成推理加速的优化空间；其中 FA 量化以 KVCache 量化为基础，是其在计算层面的延伸。
 
@@ -83,21 +83,18 @@
 
 ### 3.3 FA 量化（KVCache 量化的进阶）
 
-| 模式 | 承载 IR 类 | 量化参数 |
-|------|-----------|----------|
-| [FA PerHead 量化](fa_quantization/term_fa_perhead.md) | INT8：`INT8FakeQuantActivationPerHead`；FP8：`FP8FakeQuantActivationPerHead` | INT8/FP8 per-head 静态 |
-| [FA PerToken 量化](fa_quantization/term_fa_pertoken.md) | `FakeQuantActivationPerToken` | INT8/FP8 per-token 动态 |
-| [FA PerBlock 量化](fa_quantization/term_fa_perblock.md) | `FakeQuantActivationPerBlock` | MXFP8/MXFP4 per-block 动态 |
+FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V 三分支**，各分支选择一种激活值量化模式，三分支的组合构成**整体方案**（见 [FA 量化](fa_quantization/README.md)）。下表为已实践验证的整体方案，每个方案对应一个词条。
 
-FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V 三分支**，三分支各选一个量化模式组合成整体方案。常见组合如下。
+| 模式 | 承载 IR 类 | Q 分支 | K 分支 | V 分支 | 参数获取 |
+|------|-----------|-----------|----------|----------|---------|
+| [FA INT8 PerHead 量化](fa_quantization/term_fa_int8_perhead.md) | `INT8FakeQuantActivationPerHead` | INT8 per-head | INT8 per-head | INT8 per-head | 静态 |
+| [FA INT8 动态量化](fa_quantization/term_fa_int8_dynamic.md) | `FakeQuantActivationPerToken` | INT8 per-token | INT8 per-token | INT8 per-token | 动态 |
+| [FA FP8 动态量化](fa_quantization/term_fa_fp8_dynamic.md) | `FakeQuantActivationPerToken` | FP8 per-token | FP8 per-token | FP8 per-token | 动态 |
+| [FA MXFP4 动态量化](fa_quantization/term_fa_mxfp4_dynamic.md) | `FakeQuantActivationPerBlock` | MXFP4 per-block | MXFP4 per-block | MXFP4 per-block | 动态 |
+| [FA Q-INT8 动态 K/V-INT8 静态量化](fa_quantization/term_fa_q_int8_dynamic_kv_int8.md) | Q：`FakeQuantActivationPerToken`；K/V：`INT8FakeQuantActivationPerHead` | INT8 per-token | INT8 per-head | INT8 per-head | Q 动态；K/V 静态 |
+| [FA Q-FP8 动态 K/V-FP8 静态量化](fa_quantization/term_fa_q_fp8_dynamic_kv_fp8.md) | Q：`FakeQuantActivationPerToken`；K/V：`FP8FakeQuantActivationPerHead` | FP8 per-token | FP8 per-head | FP8 per-head | Q 动态；K/V 静态 |
 
-| Q/K/V 组合 | 数据类型 / 粒度 | 参数获取 |
-|-----------|----------------|---------|
-| Q/K/V 统一 [INT8 per-head](fa_quantization/term_fa_perhead.md) | INT8 per-head | 静态 |
-| Q/K/V 统一 [FP8（E4M3）per-token](fa_quantization/term_fa_pertoken.md) | FP8 per-token | 动态 |
-| Q/K/V 统一 [MXFP4 per-block](fa_quantization/term_fa_perblock.md) | MXFP4 per-block | 动态 |
-
-三分支也可以分别选用不同粒度或数据类型；未量化的分支保持原精度。
+三分支可采用同一种激活值量化模式，也可分别选用不同的激活值量化模式；未量化的分支保持原精度。
 
 ---
 

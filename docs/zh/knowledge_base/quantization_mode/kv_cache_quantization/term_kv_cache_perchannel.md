@@ -36,7 +36,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 
 ### 2.3 与其他模式的关系
 
-- **与 [FA PerHead 量化](../fa_quantization/term_fa_perhead.md)（进阶关系）**
+- **与 [FA 量化](../fa_quantization/README.md)（进阶关系）**
   - 本模式只量化 K/V，解决"存储"问题——缓存显存减半、支持更长上下文。
   - FA 量化在其基础上进一步量化 Q，额外使能低精度注意力矩阵运算。本模式是 FA 量化的必要基础：若 K 不量化，仅量化 Q 无法走整数/低精度注意力得分计算。
 
@@ -69,7 +69,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 ## 4. 关联词条
 
 - [量化模式](../README.md)：上位概念，本词条属于[KVCache 量化](README.md)类别，是该类别下的一种具体模式。
-- [FA PerHead 量化](../fa_quantization/term_fa_perhead.md)：进阶模式，在 K/V 量化基础上追加 Q 量化。
+- [FA 量化](../fa_quantization/README.md)：进阶概念，在 K/V 量化基础上追加 Q 量化。
 - [W8A8 静态量化](../linear_layer_quantization/term_w8a8_static.md)：配套模式，可与本模式叠加使用。
 - [KVCache Quant 缓存量化算法](../../quantization_algorithms/kvcache_quant/term_kvcache_quant.md)：配套术语，本模式对应的算法处理器文档。
 - [KV Smooth 缓存平滑算法](../../quantization_algorithms/kv_smooth/term_kv_smooth.md)：前置术语，量化前对 KV 做平滑以降低量化误差。

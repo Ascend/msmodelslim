@@ -73,7 +73,7 @@ $$q = \mathrm{round}_{FP8}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{
 - [W8A8 动态量化](term_w8a8_dynamic.md)：对比模式，INT8 数据类型的同构方案。
 - [W8A8 MX 动态量化](term_w8a8_mx_dynamic.md)：同类模式，块级共享指数的 MXFP8 方案。
 - [W8A16 静态量化](term_w8a16_static.md)：对比模式，激活保持 16bit 的高精度基线。
-- [FA PerHead 量化](../fa_quantization/term_fa_perhead.md)：配套模式，同样使用 FP8 数据类型的注意力激活量化。
+- [FA FP8 动态量化](../fa_quantization/term_fa_fp8_dynamic.md)：配套模式，同样使用 FP8 数据类型的注意力激活量化。
 - [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的处理器实现。
 
 ---

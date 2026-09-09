@@ -482,33 +482,53 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 
 ### 6.13 FAQuant
 
-> **命名约定**：本节 `{prefix}` 指**注意力模块**全名（如 `model.layers.0.self_attn`），与上文 Linear 的 `{prefix}`（如 `...self_attn.q_proj`）不同。AscendV1 经 `export_fa_quant_params` 按 Q / K / V **分别**写出 `fa_q` / `fa_k` / `fa_v` 子键，而非单一的 `{prefix}.scale` / `{prefix}.offset`。
+> **命名约定**：本节 `{prefix}` 指**注意力模块**全名（如 `model.layers.0.self_attn`），与上文 Linear 的 `{prefix}`（如 `...self_attn.q_proj`）不同。FA 量化的 Q/K/V 分支分别以 `fa_q` / `fa_k` / `fa_v` 子键落盘，而非单一的 `{prefix}.scale` / `{prefix}.offset`。各 FA 整体方案见《[FA 量化](../../quantization_mode/fa_quantization/README.md)》。
 
 **<span id="desc-faquant">quant_model_description.json</span>**
 
 | 描述键 / 全局字段 | 取值 | 说明 |
 | --- | --- | --- |
-| `{prefix}.fa_q.scale` | `"FAQuant"` | Q 激活量化 scale（仅静态 per-head 路径写出） |
-| `{prefix}.fa_q.offset` | `"FAQuant"` | Q 激活量化 zero-point（仅静态 per-head 路径写出） |
-| `{prefix}.fa_k.scale` | `"FAQuant"` | K 激活量化 scale（仅静态 per-head 路径写出） |
-| `{prefix}.fa_k.offset` | `"FAQuant"` | K 激活量化 zero-point（仅静态 per-head 路径写出） |
-| `{prefix}.fa_v.scale` | `"FAQuant"` | V 激活量化 scale（仅静态 per-head 路径写出） |
-| `{prefix}.fa_v.offset` | `"FAQuant"` | V 激活量化 zero-point（仅静态 per-head 路径写出） |
-| `{prefix}.quant_type` | string | 该注意力层 FA 策略串，由 AscendV1 按 Q/K/V 的 dtype 与 STATIC/DYNAMIC 拼装（如 `INT8`、`FP8_DYNAMIC`） |
+| `{prefix}.fa_q.scale` | `"FAQuant"` | Q 激活量化 scale（该分支为静态量化时写出） |
+| `{prefix}.fa_q.offset` | `"FAQuant"` | Q 激活量化 zero-point（该分支为静态量化时写出） |
+| `{prefix}.fa_k.scale` | `"FAQuant"` | K 激活量化 scale（该分支为静态量化时写出） |
+| `{prefix}.fa_k.offset` | `"FAQuant"` | K 激活量化 zero-point（该分支为静态量化时写出） |
+| `{prefix}.fa_v.scale` | `"FAQuant"` | V 激活量化 scale（该分支为静态量化时写出） |
+| `{prefix}.fa_v.offset` | `"FAQuant"` | V 激活量化 zero-point（该分支为静态量化时写出） |
+| `{prefix}.quant_type` | string | 该注意力层 FA 量化类型串，取值见下方规则，例如 `INT8`、`FP8_DYNAMIC`、`Q_INT8_DYNAMIC_KV_INT8` |
 | `fa_quant_type` | string | 全局 FA 量化类型（启用 FA 量化时写入，如 `"FAQuant"`） |
 
-动态量化路径（激活 `scope` 为 `per_token` / `per_block`）下，对应激活**不落盘** `scale` / `offset`，仅更新上述 `{prefix}.quant_type`；静态 per-head 路径通常 Q/K/V 六键齐全。该落盘差异由 AscendV1 导出逻辑决定，与《[FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)》算法配置（`qconfig` / `details`）配合使用。
+**`{prefix}.quant_type` 取值规则**：
+
+| 规则 | 说明 | 示例 |
+| --- | --- | --- |
+| 数据类型名 | 类型串采用数据类型名称：FP8（E4M3）为 `FP8`，INT8 为 `INT8`，MXFP4 为 `MXFP4`，MXFP8 为 `MXFP8` | — |
+| 动态标记 | 动态（per-token/per-block）在类型名后追加 `_DYNAMIC`；静态不加 | per-token 动态的 INT8 记作 `INT8_DYNAMIC` |
+| 前缀规则 | 采用同一量化方式的分支合并，按 Q/K/V/P 顺序拼接前缀；QKV 三分支完全一致时省略前缀 | Q、K 采用同一量化方式记作 `QK_...`；QKV 一致时省略前缀 |
+| 多组拼接 | 不同量化方式的分组之间以 `_` 连接 | `Q_INT8_DYNAMIC_KV_INT8` |
+
+已验证方案与 `{prefix}.quant_type` 对应关系：
+
+| `{prefix}.quant_type` | 对应量化模式 |
+| --- | --- |
+| `INT8` | [FA INT8 PerHead 量化](../../quantization_mode/fa_quantization/term_fa_int8_perhead.md) |
+| `INT8_DYNAMIC` | [FA INT8 动态量化](../../quantization_mode/fa_quantization/term_fa_int8_dynamic.md) |
+| `FP8_DYNAMIC` | [FA FP8 动态量化](../../quantization_mode/fa_quantization/term_fa_fp8_dynamic.md) |
+| `MXFP4_DYNAMIC` | [FA MXFP4 动态量化](../../quantization_mode/fa_quantization/term_fa_mxfp4_dynamic.md) |
+| `Q_INT8_DYNAMIC_KV_INT8` | [FA Q-INT8 动态 K/V-INT8 静态量化](../../quantization_mode/fa_quantization/term_fa_q_int8_dynamic_kv_int8.md) |
+| `Q_FP8_DYNAMIC_KV_FP8` | [FA Q-FP8 动态 K/V-FP8 静态量化](../../quantization_mode/fa_quantization/term_fa_q_fp8_dynamic_kv_fp8.md) |
+
+静态分支中，per-head 静态写出 float32 类型的 scale，并写出一个取值为零的 zero-point，INT8 方案为零值 int8、FP8 方案为零值 float32。动态分支（per-token / per-block）对应激活不落盘 `scale` / `offset`，仅写入上述 `{prefix}.quant_type`。算法配置见《[FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)》。
 
 **<span id="st-faquant">`quant_model_weights*.safetensors`</span>**
 
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
-| `{prefix}.fa_q.scale` | float16 / bfloat16 | Q 的 per-head scale |
-| `{prefix}.fa_q.offset` | int8 | Q 的 per-head zero-point（导出时转为 int8） |
-| `{prefix}.fa_k.scale` | float16 / bfloat16 | K 的 per-head scale |
-| `{prefix}.fa_k.offset` | int8 | K 的 per-head zero-point |
-| `{prefix}.fa_v.scale` | float16 / bfloat16 | V 的 per-head scale |
-| `{prefix}.fa_v.offset` | int8 | V 的 per-head zero-point |
+| `{prefix}.fa_q.scale` | float32 | Q 的静态 scale |
+| `{prefix}.fa_q.offset` | int8 或 float32 | Q 的静态 zero-point，INT8 方案为 int8 零值、FP8 方案为 float32 零值 |
+| `{prefix}.fa_k.scale` | float32 | K 的静态 scale |
+| `{prefix}.fa_k.offset` | int8 或 float32 | K 的静态 zero-point，INT8 方案为 int8 零值、FP8 方案为 float32 零值 |
+| `{prefix}.fa_v.scale` | float32 | V 的静态 scale |
+| `{prefix}.fa_v.offset` | int8 或 float32 | V 的静态 zero-point，INT8 方案为 int8 零值、FP8 方案为 float32 零值 |
 
 ---
 
