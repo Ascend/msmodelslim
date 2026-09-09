@@ -29,7 +29,8 @@ FA 量化**本质上是一个组合量化模式**：作用于注意力 Q/K/V 三
 - **分支可选的量化粒度**：
   - **per-head**：按注意力头共享 scale，**静态**（需校准），如 [FA INT8 PerHead 量化](term_fa_int8_perhead.md)。
   - **per-token**：逐 token 在线计算 scale，**动态**（免校准），如 [FA INT8 动态量化](term_fa_int8_dynamic.md)、[FA FP8 动态量化](term_fa_fp8_dynamic.md)。
-  - **per-block**：沿 head_dim 按 32 元素分块、块级共享指数，**动态**（免校准），如 [FA MXFP4 动态量化](term_fa_mxfp4_dynamic.md)。
+  - **per-block**：沿 head_dim 按 32 元素分块、块级共享指数，**动态**（免校准），如 [FA MXFP4 动态量化](term_fa_mxfp4_dynamic.md)、[FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md)。
+  - **per-channel（V 分支专用）**：沿 `(head, dim)` 通道共享指数，**静态**（需校准），如 [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md)。
 - **数据类型**：INT8、FP8（E4M3）、MXFP8、MXFP4。
 - **与 KV 的关系**：本类以 [KVCache 量化](../kv_cache_quantization/README.md)为基础（继承其显存收益），追加 Q 量化使能低精度注意力矩阵运算。
 
@@ -57,6 +58,7 @@ FA 量化的一个"模式"是指 **Q/K/V 三分支量化方式的整体组合**�
 | [FA MXFP4 动态量化](term_fa_mxfp4_dynamic.md) | MXFP4 per-block | MXFP4 per-block | MXFP4 per-block | 动态 |
 | [FA Q-INT8 动态 K/V-INT8 静态量化](term_fa_q_int8_dynamic_kv_int8.md) | INT8 per-token | INT8 per-head | INT8 per-head | Q 动态；K/V 静态 |
 | [FA Q-FP8 动态 K/V-FP8 静态量化](term_fa_q_fp8_dynamic_kv_fp8.md) | FP8 per-token | FP8 per-head | FP8 per-head | Q 动态；K/V 静态 |
+| [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md) | MXFP8 per-block | MXFP8 per-block | MXFP8 per-channel | Q/K 动态；V 静态 |
 
 三分支可采用同一种激活值量化模式，也可分别选用不同的激活值量化模式；未量化的分支保持原精度。上表中每行代表一个可选的 FA 量化模式。
 
@@ -76,6 +78,7 @@ FA 量化的一个"模式"是指 **Q/K/V 三分支量化方式的整体组合**�
 | [FA MXFP4 动态量化](term_fa_mxfp4_dynamic.md) | Q/K/V 统一块级共享指数量化，MXFP4，免校准 |
 | [FA Q-INT8 动态 K/V-INT8 静态量化](term_fa_q_int8_dynamic_kv_int8.md) | Q 逐 token 动态、K/V 按头静态，INT8 |
 | [FA Q-FP8 动态 K/V-FP8 静态量化](term_fa_q_fp8_dynamic_kv_fp8.md) | Q 逐 token 动态、K/V 按头静态，FP8 |
+| [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md) | Q/K 块级动态、V 按 `(head, dim)` 通道静态，MXFP8 |
 
 ---
 

@@ -215,6 +215,11 @@ class AscendV1Saver(AutoSaverProcessor):
         for key, val in self.json_append.items():
             self.json_writer.write(key, val)
 
+        # 注意: FA 分支状态(fa_layer_states/*)不在此落盘。
+        # record_fa_layer_states 只在 DistributedAscendV1Saver.post_run 中调用(紧随 merge_ranks,
+        # 内部 key 会被 _merge_json_files 消费清理)。普通 AscendV1Saver 无 merge 阶段,
+        # 若在此落盘会在单卡/未转分布式配置的场景残留内部 key。
+
         if self.quarot_info is not None:
             self.metadata['quarot'] = self.quarot_info.get_quarot_save_info()
 
@@ -571,8 +576,20 @@ class AscendV1Saver(AutoSaverProcessor):
         self.update_fa_quant_type(prefix, module)
 
     def on_activation_per_block(self, prefix: str, module: qir.FakeQuantActivationPerBlock):
-        # FA3 MXFP4 per-block 动态量化保存策略
+        # FA3 MXFP4/MXFP8 per-block 动态量化保存策略
         self.update_fa_quant_type(prefix, module)
+
+    def on_mxfp8_activation_per_channel(self, prefix: str, module: qir.MXFP8FakeQuantActivationPerChannel):
+        # FA MXFP8 per-channel 静态：scale 为 E8M0 shared_exp，导出为 uint8(exp + 127)
+        shared_exp = module.input_scale.to(torch.float32)
+        scale = (shared_exp + 127).to(torch.uint8).unsqueeze(-1)
+        if scale.dim() == 1:
+            scale = scale.unsqueeze(-1)
+        offset = torch.zeros_like(scale, dtype=torch.uint8)
+        self.write_tensor(prefix + ".scale", "FAQuant", scale)
+        self.write_tensor(prefix + ".offset", "FAQuant", offset)
+        self.update_fa_quant_type(prefix, module)
+        self.update_global_fa_quant_type('FAKQuant')
 
     def update_fa_quant_type(self, prefix: str, module):
         """
@@ -585,49 +602,90 @@ class AscendV1Saver(AutoSaverProcessor):
         dtype = DTYPE_PREFIX_MAP.get(module.x_q_scheme.dtype)
         if not dtype:
             raise SchemaValidateError(f"AutoFakeQuantActivation Unsupported dtype: {module.x_q_scheme.dtype}")
-        is_dynamic = module.x_q_scheme.scope in (QScope.PER_TOKEN, QScope.PER_BLOCK)
+        scope = module.x_q_scheme.scope
+        is_dynamic = scope in (QScope.PER_TOKEN, QScope.PER_BLOCK)
         strategy = "DYNAMIC" if is_dynamic else "STATIC"
+        # per_channel 静态需在描述串中显式带 PER_CHANNEL（如 V_MXFP8_PER_CHANNEL）
+        scope_tag = "PER_CHANNEL" if scope == QScope.PER_CHANNEL else ""
 
         if parent_prefix not in self.fa_quant_states:
             self.fa_quant_states[parent_prefix] = {}
 
-        # 记录格式: parent_prefix -> { 'Q': ('FP8', 'DYNAMIC'), 'K': ('INT8', 'STATIC'), ... }
-        self.fa_quant_states[parent_prefix][act] = (dtype, strategy)
-        layer_states = self.fa_quant_states[parent_prefix]
+        # 记录格式: parent_prefix -> { 'Q': ('FP8', 'DYNAMIC', ''), 'V': ('MXFP8', 'STATIC', 'PER_CHANNEL'), ... }
+        self.fa_quant_states[parent_prefix][act] = (dtype, strategy, scope_tag)
 
-        # 使用字典保存 { (dtype, strategy) : ['Q', 'K'] }
-        # 按照 Q, K, V, P 的严格顺序遍历，确保输出的合并顺序稳定（如始终是 KV_FP8 而不是 VK_FP8）
-        config_to_acts = {}
-        for expected_act in ['Q', 'K', 'V', 'P']:
-            if expected_act in layer_states:
-                cfg = layer_states[expected_act]
-                if cfg not in config_to_acts:
-                    config_to_acts[cfg] = []
-                config_to_acts[cfg].append(expected_act)
-
-        parts = []
-        for (cfg_dtype, cfg_strategy), acts in config_to_acts.items():
-            act_prefix = "".join(acts)
-            # 规则: 如果 Q、K、V 配置一致，省略激活值前缀
-            if act_prefix == "QKV":
-                act_prefix = ""
-            # 规则: 静态(STATIC)省略后缀，动态保留 "_DYNAMIC"
-            strat_suffix = "_DYNAMIC" if cfg_strategy == "DYNAMIC" else ""
-            # 基础格式如: "FP8_DYNAMIC" 或是 "INT8"
-            config_str = f"{cfg_dtype}{strat_suffix}"
-
-            if act_prefix:
-                parts.append(f"{act_prefix}_{config_str}")
-            else:
-                # 当 act_prefix 被省略时（如QKV的情况），直接使用 config_str
-                parts.append(config_str)
-
-        final_quant_type = "_".join(parts)
+        # 与分布式 merge 汇总共用同一拼串规则(见 assemble_fa_quant_type), 保证单卡/多卡结果一致
+        final_quant_type = self.assemble_fa_quant_type(self.fa_quant_states[parent_prefix])
         self.json_writer.write(quant_type_key, final_quant_type)
 
     def update_global_fa_quant_type(self, states=None):
         if self.fa_quant_states:
             self.json_append['fa_quant_type'] = states
+
+    # ---- 分布式 FA quant_type 聚合 ----
+    # 多卡分发按子模块粒度(fa_q/fa_k/fa_v 会分到不同 rank), 单 rank 只能见到部分分支,
+    # 无法拼出完整 quant_type。因此把每层已见分支状态单独落为 json key,
+    # 由 DistributedAscendV1Saver._merge_json_files 在合并时跨 rank 汇总后统一拼串。
+    FA_LAYER_STATE_PREFIX = "fa_layer_states"
+
+    def record_fa_layer_states(self) -> None:
+        """把本 saver(本 rank)已见到的每层 fa 分支状态写成独立 json key, 供分布式 merge 聚合。
+
+        分支状态结构: fa_layer_states/<parent> = {"Q": ["MXFP8", "DYNAMIC", ""], ...}
+        (act → [dtype_str, strategy, scope_tag], 值可 json 序列化)
+        无 fa 分支时跳过, 避免给每层都留空 key。
+        """
+        if not self.fa_quant_states:
+            return
+        for parent, layer_states in self.fa_quant_states.items():
+            key = f"{self.FA_LAYER_STATE_PREFIX}/{parent}"
+            self.json_writer.write(key, {act: list(cfg) for act, cfg in layer_states.items()})
+
+    @classmethod
+    def assemble_fa_quant_type(cls, merged_layer_states) -> str:
+        """跨 rank 汇总后的某层 fa 分支状态 → 完整 quant_type 串。
+
+        与 update_fa_quant_type 中拼串规则保持一致:
+          - 相同配置的分支合并, 按 Q/K/V/P 顺序;  QKV 全一致则省略前缀
+          - 动态保留 _DYNAMIC;  per_channel 静态追加 _PER_CHANNEL
+        """
+        config_to_acts = {}
+        for expected_act in ['Q', 'K', 'V', 'P']:
+            if expected_act not in merged_layer_states:
+                continue
+            cfg = tuple(merged_layer_states[expected_act])
+            if cfg not in config_to_acts:
+                config_to_acts[cfg] = []
+            config_to_acts[cfg].append(expected_act)
+
+        parts = []
+        for (cfg_dtype, cfg_strategy, cfg_scope_tag), acts in config_to_acts.items():
+            act_prefix = "".join(acts)
+            if act_prefix == "QKV":
+                act_prefix = ""
+            suffixes = []
+            if cfg_strategy == "DYNAMIC":
+                suffixes.append("DYNAMIC")
+            if cfg_scope_tag:
+                suffixes.append(cfg_scope_tag)
+            config_str = cfg_dtype if not suffixes else f"{cfg_dtype}_{'_'.join(suffixes)}"
+            parts.append(f"{act_prefix}_{config_str}" if act_prefix else config_str)
+        return "_".join(parts)
+
+    @classmethod
+    def merge_fa_layer_states(cls, merged_meta: dict, per_rank_layer_states: dict) -> None:
+        """把各 rank 的同层 fa 分支状态合并, 在 merged_meta 中写完整 quant_type。
+
+        Args:
+            merged_meta: 最终要写盘的顶层 json (已有各 rank 合并内容)。
+            per_rank_layer_states: {parent: {act: cfg}} 已跨 rank 汇总的层状态。
+        """
+        fa_parents = sorted(set(per_rank_layer_states))
+        for parent in fa_parents:
+            parent_layer_state = per_rank_layer_states.get(parent, {})
+            if not parent_layer_state:
+                continue
+            merged_meta[f"{parent}.quant_type"] = cls.assemble_fa_quant_type(parent_layer_state)
 
     def on_online_rotation_wrapper(self, prefix: str, module: qir.OnlineRotationWrapper):
         """

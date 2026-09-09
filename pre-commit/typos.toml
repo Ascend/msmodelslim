@@ -1,6 +1,7 @@
  [files]
  	 # these files may be written in non english words
- 	 extend-exclude = ["lab_calib/calib_dummy.jsonl"]
+ 	 # lab_calib 为自然语言校准样本，易触发假阳性拼写告警
+ 	 extend-exclude = ["lab_calib/**"]
  	 ignore-hidden = true
  	 ignore-files = true
  	 ignore-dot = true

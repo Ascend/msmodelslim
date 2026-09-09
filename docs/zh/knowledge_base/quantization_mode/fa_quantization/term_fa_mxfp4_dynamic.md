@@ -41,6 +41,8 @@ $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \ma
   - FP8/INT8 动态：优势是 8bit 每元素格式、硬件生态更成熟；劣势是位宽更高、粒度行级。
 - **与 [W8A8 MX 动态量化](../linear_layer_quantization/term_w8a8_mx_dynamic.md)（同类 MX per-block 动态思路）**
   - 本模式把同一思路应用于注意力 Q/K/V 激活；W8A8 MX 应用于线性层权重与激活。
+- **与 [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md)（同为 MX 家族，位宽与分支量化方式不同）**
+  - 本模式为 4bit，Q/K/V 三分支统一 per-block 动态、免校准；MXFP8 混合为 8bit，Q/K 走 per-block 动态、V 改走 per-channel 静态。V 静态化规避按 32 分组可能出现的尾块问题，精度更高，但位宽更大、V 需校准数据。
 
 ### 2.4 适用场景与限制
 
@@ -72,6 +74,7 @@ $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \ma
 - [量化模式](../README.md)：上位概念，本词条属于[FA 量化](README.md)类别，是该类别下的一种具体模式。
 - [FA FP8 动态量化](term_fa_fp8_dynamic.md)：同类模式，per-token 动态的 FP8 统一模式。
 - [FA INT8 动态量化](term_fa_int8_dynamic.md)：同类模式，per-token 动态的 INT8 统一模式。
+- [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md)：同类模式，MXFP8 per-block/per-channel 的 8bit 混合模式。
 - [W8A8 MX 动态量化](../linear_layer_quantization/term_w8a8_mx_dynamic.md)：配套模式，MX per-block 思路在线性层上的应用。
 - [KVCache 量化](../kv_cache_quantization/README.md)：基础类别，本模式在其基础上追加 Q 量化。
 

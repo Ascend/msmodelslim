@@ -33,6 +33,7 @@ from torch import nn
 import msmodelslim.ir as qir
 from msmodelslim.core.quant_service.modelslim_v1.save.interface import AscendV1GlobalModelDtypeInterface
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Config, AscendV1Saver
+from msmodelslim.model import IModel
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.ir.qal import QParam, QScheme, QStorage, QScope, QDType
 
@@ -275,6 +276,35 @@ class TestOnFp8ActivationPerHead:
         assert saver.json_append.get('fa_quant_type') == "FAKQuant"
 
 
+class TestOnMxfp8ActivationPerChannel:
+    """on_mxfp8_activation_per_channel：FA V 路 MXFP8 per-channel 静态导出"""
+
+    def test_write_tensor_writes_uint8_e8m0_scale_when_called(self):
+        saver = _make_mock_saver()
+        prefix = "model.layers.0.self_attn.fa_v"
+        module = MagicMock(spec=qir.MXFP8FakeQuantActivationPerChannel)
+        # shared_exp = [-1, 0] → uint8 [126, 127]
+        module.input_scale = torch.tensor([-1.0, 0.0], dtype=torch.float32)
+        module.x_q_scheme = MagicMock()
+        module.x_q_scheme.dtype = QDType.MXFP8
+        module.x_q_scheme.scope = QScope.PER_CHANNEL
+
+        saver.on_mxfp8_activation_per_channel(prefix, module)
+
+        assert saver.write_tensor.call_count == 2
+        scale_args = saver.write_tensor.call_args_list[0][0]
+        assert scale_args[0] == prefix + ".scale"
+        assert scale_args[1] == "FAQuant"
+        assert scale_args[2].dtype == torch.uint8
+        assert torch.equal(scale_args[2].reshape(-1), torch.tensor([126, 127], dtype=torch.uint8))
+        offset_args = saver.write_tensor.call_args_list[1][0]
+        assert offset_args[0] == prefix + ".offset"
+        assert offset_args[1] == "FAQuant"
+        assert offset_args[2].dtype == torch.uint8
+        assert (offset_args[2] == 0).all()
+        assert saver.json_append.get("fa_quant_type") == "FAKQuant"
+
+
 class TestOnActivationPerToken:
     """on_activation_per_token 方法应仅触发 update_fa_quant_type"""
 
@@ -406,6 +436,24 @@ class TestUpdateFaQuantType:
 
         saver.json_writer.write.assert_called_with("l.s.quant_type", "KV_FP8")
 
+    def test_update_fa_quant_type_writes_QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL_when_mixed(self):
+        """Q/K MXFP8 per_block 动态 + V MXFP8 per_channel 静态"""
+        saver = _make_mock_saver()
+        qk = MagicMock()
+        qk.x_q_scheme = MagicMock()
+        qk.x_q_scheme.dtype = QDType.MXFP8
+        qk.x_q_scheme.scope = QScope.PER_BLOCK
+        v = MagicMock()
+        v.x_q_scheme = MagicMock()
+        v.x_q_scheme.dtype = QDType.MXFP8
+        v.x_q_scheme.scope = QScope.PER_CHANNEL
+
+        self._call_update(saver, "l.s.fa_q", qk)
+        self._call_update(saver, "l.s.fa_k", qk)
+        self._call_update(saver, "l.s.fa_v", v)
+
+        saver.json_writer.write.assert_called_with("l.s.quant_type", "QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL")
+
 
 class TestUpdateGlobalFaQuantType:
     """测试 AscendV1Saver.update_global_fa_quant_type 方法"""
@@ -439,3 +487,166 @@ class TestUpdateGlobalFaQuantType:
         AscendV1Saver.update_global_fa_quant_type(saver, states="any_value")
         AscendV1Saver.update_global_fa_quant_type(saver)
         assert saver.json_append["fa_quant_type"] is None
+
+
+class TestRecordFaLayerStates:
+    """测试 AscendV1Saver.record_fa_layer_states"""
+
+    def test_writes_per_parent_state_when_fa_quant_states_present(self):
+        saver = _make_mock_saver()
+        saver.fa_quant_states = {
+            "model.layers.3.self_attn": {"Q": ["MXFP8", "DYNAMIC", ""], "V": ["MXFP8", "STATIC", "PER_CHANNEL"]},
+        }
+        saver.record_fa_layer_states()
+        saver.json_writer.write.assert_called_once_with(
+            "fa_layer_states/model.layers.3.self_attn",
+            {"Q": ["MXFP8", "DYNAMIC", ""], "V": ["MXFP8", "STATIC", "PER_CHANNEL"]},
+        )
+
+    def test_skips_when_fa_quant_states_empty(self):
+        saver = _make_mock_saver()
+        saver.record_fa_layer_states()
+        saver.json_writer.write.assert_not_called()
+
+
+class TestAssembleFaQuantType:
+    """测试 AscendV1Saver.assemble_fa_quant_type"""
+
+    def test_assembles_QK_dynamic_V_per_channel_when_mixed(self):
+        states = {
+            "Q": ["MXFP8", "DYNAMIC", ""],
+            "K": ["MXFP8", "DYNAMIC", ""],
+            "V": ["MXFP8", "STATIC", "PER_CHANNEL"],
+        }
+        assert AscendV1Saver.assemble_fa_quant_type(states) == "QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL"
+
+    def test_assembles_single_scope_omits_prefix_when_QKV_identical(self):
+        states = {"Q": ["INT8", "STATIC", ""], "K": ["INT8", "STATIC", ""], "V": ["INT8", "STATIC", ""]}
+        assert AscendV1Saver.assemble_fa_quant_type(states) == "INT8"
+
+    def test_assembles_partial_scope_keeps_act_prefix(self):
+        states = {"V": ["MXFP8", "STATIC", "PER_CHANNEL"]}
+        assert AscendV1Saver.assemble_fa_quant_type(states) == "V_MXFP8_PER_CHANNEL"
+
+
+class TestMergeFaLayerStates:
+    """测试 AscendV1Saver.merge_fa_layer_states"""
+
+    def test_overwrites_layer_quant_type_with_merged_state_when_cross_rank(self):
+        merged_meta = {"model.layers.3.self_attn.quant_type": "Q_MXFP8_DYNAMIC"}  # rank0 的部分串
+        per_rank_layer_states = {
+            "model.layers.3.self_attn": {
+                "Q": ["MXFP8", "DYNAMIC", ""],
+                "K": ["MXFP8", "DYNAMIC", ""],
+                "V": ["MXFP8", "STATIC", "PER_CHANNEL"],
+            }
+        }
+        AscendV1Saver.merge_fa_layer_states(merged_meta, per_rank_layer_states)
+        assert merged_meta["model.layers.3.self_attn.quant_type"] == "QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL"
+
+    def test_leaves_other_quant_type_untouched_when_no_fa_state(self):
+        merged_meta = {"some.linear.quant_type": "W8A8"}
+        AscendV1Saver.merge_fa_layer_states(merged_meta, {})
+        assert merged_meta["some.linear.quant_type"] == "W8A8"
+
+
+class _MinimalIModel(IModel):
+    """最小 IModel 实现，供 post_run 契约测试使用。"""
+
+    def __init__(self, model_path):
+        self._path = Path(model_path)
+
+    @property
+    def model_type(self):
+        return "test"
+
+    @property
+    def model_path(self):
+        return self._path
+
+    @property
+    def trust_remote_code(self):
+        return False
+
+
+class TestPostRunNotRecordFaLayerStatesOnSingleDevice:
+    """单卡(非分布式)AscendV1Saver.post_run 不应落 fa_layer_states 内部 key。
+
+    fa_layer_states/* 由 DistributedAscendV1Saver 在 merge 前写入、merge 后消费清理；
+    普通 AscendV1Saver 没有 merge 阶段，若落盘会残留内部 key 污染导出件。
+    """
+
+    @patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.dist.is_initialized")
+    def test_post_run_skips_record_when_single_device(self, mock_dist_init, tmp_path):
+        mock_dist_init.return_value = False
+        saver = AscendV1Saver(nn.Module(), AscendV1Config(save_directory=str(tmp_path)), _MinimalIModel(str(tmp_path)))
+        saver.json_writer = MagicMock()
+        saver.safetensors_writer = MagicMock()
+        with (
+            patch.object(saver, "record_fa_layer_states") as mock_record,
+            patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.copy_files"),
+            patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.remove_quantization_config"),
+        ):
+            saver.post_run()
+        mock_record.assert_not_called()
+
+    @patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.dist.is_initialized")
+    def test_post_run_writes_no_internal_key_when_fa_states_present(self, mock_dist_init, tmp_path):
+        mock_dist_init.return_value = False
+        saver = AscendV1Saver(nn.Module(), AscendV1Config(save_directory=str(tmp_path)), _MinimalIModel(str(tmp_path)))
+        saver.json_writer = MagicMock()
+        saver.safetensors_writer = MagicMock()
+        # 即使本 saver 见过 FA 分支(单卡完整拼串写入 quant_type), 也不应写内部聚合 key
+        saver.fa_quant_states["model.layers.3.self_attn"] = {"V": ("MXFP8", "STATIC", "PER_CHANNEL")}
+        with (
+            patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.copy_files"),
+            patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.remove_quantization_config"),
+        ):
+            saver.post_run()
+        internal_keys = [
+            c[0][0]
+            for c in saver.json_writer.write.call_args_list
+            if c[0][0].startswith(AscendV1Saver.FA_LAYER_STATE_PREFIX)
+        ]
+        assert internal_keys == []
+
+
+class TestSingleVsMergedFaQuantTypeConsistent:
+    """单卡拼串路径(update_fa_quant_type)与多卡 merge 聚合路径(assemble/merge)结果一致。
+
+    同一层 Q/K/V 若全部由单卡处理, 最终 quant_type 应与跨 rank 拆分后
+    merge 汇总拼出的完整串完全相同, 保证"单卡正确 = 多卡正确"。
+    """
+
+    def _make_module(self, dtype, scope):
+        module = MagicMock()
+        module.x_q_scheme = MagicMock()
+        module.x_q_scheme.dtype = dtype
+        module.x_q_scheme.scope = scope
+        return module
+
+    def test_single_device_string_equals_merged_string_when_branches_split_across_ranks(self):
+        parent = "model.layers.3.self_attn"
+        # 目标策略: QK MXFP8 per_block 动态 + V MXFP8 per_channel 静态
+        qk_cfg = ("MXFP8", "DYNAMIC", "")
+        v_cfg = ("MXFP8", "STATIC", "PER_CHANNEL")
+        expected = "QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL"
+
+        # 单卡: 同一 saver 依序处理 Q/K/V
+        single = _make_mock_saver()
+        single.update_fa_quant_type(f"{parent}.fa_q", self._make_module(QDType.MXFP8, QScope.PER_BLOCK))
+        single.update_fa_quant_type(f"{parent}.fa_k", self._make_module(QDType.MXFP8, QScope.PER_BLOCK))
+        single.update_fa_quant_type(f"{parent}.fa_v", self._make_module(QDType.MXFP8, QScope.PER_CHANNEL))
+        single_value = [c[0][1] for c in single.json_writer.write.call_args_list if c[0][0] == f"{parent}.quant_type"][
+            -1
+        ]
+        assert single_value == expected
+
+        # 多卡: 三个分支分布三个 rank, 每 rank 只写自己部分
+        merged_meta = {}
+        per_rank_layer_states = {}
+        per_rank_layer_states.setdefault(parent, {})["Q"] = list(qk_cfg)
+        per_rank_layer_states.setdefault(parent, {})["K"] = list(qk_cfg)
+        per_rank_layer_states.setdefault(parent, {})["V"] = list(v_cfg)
+        AscendV1Saver.merge_fa_layer_states(merged_meta, per_rank_layer_states)
+        assert merged_meta[f"{parent}.quant_type"] == expected

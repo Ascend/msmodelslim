@@ -93,6 +93,7 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 | [FA MXFP4 动态量化](fa_quantization/term_fa_mxfp4_dynamic.md) | `FakeQuantActivationPerBlock` | MXFP4 per-block | MXFP4 per-block | MXFP4 per-block | 动态 |
 | [FA Q-INT8 动态 K/V-INT8 静态量化](fa_quantization/term_fa_q_int8_dynamic_kv_int8.md) | Q：`FakeQuantActivationPerToken`；K/V：`INT8FakeQuantActivationPerHead` | INT8 per-token | INT8 per-head | INT8 per-head | Q 动态；K/V 静态 |
 | [FA Q-FP8 动态 K/V-FP8 静态量化](fa_quantization/term_fa_q_fp8_dynamic_kv_fp8.md) | Q：`FakeQuantActivationPerToken`；K/V：`FP8FakeQuantActivationPerHead` | FP8 per-token | FP8 per-head | FP8 per-head | Q 动态；K/V 静态 |
+| [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](fa_quantization/term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md) | Q/K：`FakeQuantActivationPerBlock`；V：`MXFP8FakeQuantActivationPerChannel` | MXFP8 per-block | MXFP8 per-block | MXFP8 per-channel | Q/K 动态；V 静态 |
 
 三分支可采用同一种激活值量化模式，也可分别选用不同的激活值量化模式；未量化的分支保持原精度。
 

@@ -30,6 +30,7 @@ from msmodelslim.core.quantizer.base import QConfig, AutoActQuantizer, AutoWeigh
 from msmodelslim.core.quantizer.impl.minmax import (
     ActPerTensorMinmax,
     ActPerTokenMinmax,
+    ActPerChannelMinmax,
     WeightPerChannelMinmax,
     MXWeightPerBlockMinmax,
 )
@@ -283,6 +284,23 @@ class TestWeightPerChannelMinmax:  # pylint: disable=attribute-defined-outside-i
         quantizer.init_weight(weight)
         qp = quantizer.get_q_param()
         assert qp is not None
+
+
+class TestActPerChannelMinmax:
+    """覆盖 ActPerChannelMinmax 对 mxfp8_per_channel_sym 的注册。"""
+
+    def test_from_config_returns_ActPerChannelMinmax_when_mxfp8_per_channel(self):
+        quantizer = AutoActQuantizer.from_config(to_qconfig(qir.mxfp8_per_channel_sym, "minmax"))
+        assert isinstance(quantizer, ActPerChannelMinmax)
+
+    def test_forward_returns_same_shape_when_2d_input(self):
+        quantizer = ActPerChannelMinmax(to_qconfig(qir.mxfp8_per_channel_sym, "minmax"))
+        x = torch.randn(32, 8, dtype=torch.float32)
+        out = quantizer(x)
+        assert out.shape == x.shape
+        assert torch.isfinite(out).all()
+        assert quantizer.get_q_param() is not None
+        assert quantizer.get_q_param().scheme == qir.mxfp8_per_channel_sym
 
 
 def _make_mxfp_qconfig(dtype: QDType, **ext_kwargs) -> QConfig:

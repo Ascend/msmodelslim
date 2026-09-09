@@ -504,6 +504,9 @@ class MindIEFormatSaver(AutoSaverProcessor):
     def on_activation_per_block(self, prefix: str, module: qir.FakeQuantActivationPerBlock):
         self.update_fa_quant_type(prefix, module)
 
+    def on_mxfp8_activation_per_channel(self, prefix: str, module: qir.MXFP8FakeQuantActivationPerChannel):
+        self._raise_ascendv1_saver_recommended("on_mxfp8_activation_per_channel")
+
     def on_svd_wrapper(self, prefix: str, module: qir.SVDResidualWrapper):
         """
         处理 SVDResidualWrapper 类型的模块。

@@ -32,7 +32,6 @@ from msmodelslim.ir.api.impl.mx_quantization import (
     calculate_mxfp4_qparam,
     mxfp4_quantize,
     _quant,
-    _clamp_out,
 )
 from msmodelslim.ir.qal import QDType, QParam, QScope, QScheme, QStorage
 
@@ -85,41 +84,6 @@ class TestQuantFunction(unittest.TestCase):
         result = _quant(a, bits, exp, exp_bits)
 
         self.assertTrue(torch.isfinite(result).all())
-
-
-class TestClampOutFunction(unittest.TestCase):
-    """测试 _clamp_out 函数"""
-
-    def test_should_clamp_to_max_norm(self):
-        """测试裁剪到 max_norm"""
-        out = torch.tensor([10.0, -10.0, 5.0])
-        a = torch.tensor([10.0, -10.0, 5.0])
-        max_norm = 6.0
-
-        result = _clamp_out(out, a, max_norm)
-
-        self.assertTrue(torch.all(result <= max_norm))
-        self.assertTrue(torch.all(result >= -max_norm))
-
-    def test_should_preserve_inf(self):
-        """测试保留 Inf"""
-        out = torch.tensor([10.0, 0.0])
-        a = torch.tensor([float("Inf"), 0.0])
-        max_norm = 6.0
-
-        result = _clamp_out(out, a, max_norm)
-
-        self.assertEqual(result[0], float("Inf"))
-
-    def test_should_preserve_negative_inf(self):
-        """测试保留 -Inf"""
-        out = torch.tensor([-10.0, 0.0])
-        a = torch.tensor([-float("Inf"), 0.0])
-        max_norm = 6.0
-
-        result = _clamp_out(out, a, max_norm)
-
-        self.assertEqual(result[0], -float("Inf"))
 
 
 class TestCalculateMxQparam(unittest.TestCase):

@@ -34,6 +34,7 @@ int8_pd_mix_asym = QScheme(scope=QScope.PD_MIX, dtype=QDType.INT8, symmetric=Fal
 mxfp4_per_block_sym = QScheme(scope=QScope.PER_BLOCK, dtype=QDType.MXFP4, symmetric=True)
 mxfp4_dual_scale_sym = QScheme(scope=QScope.DUAL_SCALE, dtype=QDType.MXFP4, symmetric=True)
 mxfp8_per_block_sym = QScheme(scope=QScope.PER_BLOCK, dtype=QDType.MXFP8, symmetric=True)
+mxfp8_per_channel_sym = QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.MXFP8, symmetric=True)
 int8_per_head_sym = QScheme(scope=QScope.PER_HEAD, dtype=QDType.INT8, symmetric=True)
 
 int4_per_token_asym = QScheme(scope=QScope.PER_TOKEN, dtype=QDType.INT4, symmetric=False)

@@ -120,6 +120,7 @@ class ActPerTokenMinmax(AutoActQuantizer):
         (qir.int8_per_channel_sym, "minmax"),
         (qir.int8_per_channel_asym, "minmax"),
         (qir.fp8_e4m3_per_channel_sym, "minmax"),
+        (qir.mxfp8_per_channel_sym, "minmax"),
     ],
     abc_type=AutoActQuantizer,
 )

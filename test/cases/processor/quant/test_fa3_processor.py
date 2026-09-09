@@ -16,7 +16,7 @@ import torch
 from torch import nn
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
-from msmodelslim.ir import FP8FakeQuantActivationPerHead, FakeQuantActivationPerToken
+from msmodelslim.ir import FP8FakeQuantActivationPerHead, FakeQuantActivationPerToken, FakeQuantActivationPerBlock
 from msmodelslim.processor.quant.fa3 import (
     FA3QuantProcessor,
     FA3QuantProcessorConfig,
@@ -417,6 +417,141 @@ class TestFA3QuantProcessor(unittest.TestCase):
                 c for c in mock_logger.debug.call_args_list if "layer.fa_k" in str(c) and "skipping" in str(c)
             ]
             self.assertTrue(len(debug_calls) > 0, "Debug log for skipping layer.fa_k not found")
+
+    @patch("msmodelslim.processor.quant.fa3.processor.dist.is_initialized", return_value=False)
+    def test_preprocess_replaces_placeholder_with_per_channel_observer_when_scope_per_channel(self, mock_dist):
+        from msmodelslim.processor.quant.fa3.processor import _FA3PerChannelObserver
+
+        details = {
+            "fa_q": create_qconfig(QDType.MXFP8, QScope.PER_BLOCK).model_dump(),
+            "fa_v": create_qconfig(QDType.MXFP8, QScope.PER_CHANNEL).model_dump(),
+        }
+        config = create_processor_config(include=["block.fa_v"], details=details)
+        model = create_simple_model()
+        block = nn.Module()
+        block.fa_v = FA3QuantPlaceHolder(ratio=1.0)
+        model.block = block
+        processor = FA3QuantProcessor(model, config, self.adapter)
+        request = BatchProcessRequest(name="block", module=block, datas=None, outputs=None)
+        processor.preprocess(request)
+        self.assertIsInstance(block.fa_v, _FA3PerChannelObserver)
+
+    @patch("msmodelslim.processor.quant.fa3.processor.dist.is_initialized", return_value=False)
+    def test_preprocess_keeps_placeholder_when_scope_per_block(self, mock_dist):
+        """PER_BLOCK 动态分支免校准：preprocess 不应替换为 per-head observer。"""
+        details = {
+            "fa_q": create_qconfig(QDType.MXFP8, QScope.PER_BLOCK).model_dump(),
+        }
+        config = create_processor_config(include=["block.fa_q"], details=details)
+        model = create_simple_model()
+        block = nn.Module()
+        block.fa_q = FA3QuantPlaceHolder(ratio=0.9999)
+        model.block = block
+        processor = FA3QuantProcessor(model, config, self.adapter)
+        request = BatchProcessRequest(name="block", module=block, datas=None, outputs=None)
+        processor.preprocess(request)
+        # 动态分支：保留占位符（纯透传），避免校准阶段触发 recall_window 等无谓统计
+        self.assertIsInstance(block.fa_q, FA3QuantPlaceHolder)
+
+    @patch("msmodelslim.ir.auto.AutoFakeQuantActivation.create")
+    def test_postprocess_replaces_placeholder_with_dynamic_ir_when_per_block_qconfig(self, mock_create):
+        """动态占位符（preprocess 未替换）在 postprocess 时替换为 per-block 动态 IR。"""
+        details = {
+            "fa_q": create_qconfig(QDType.MXFP8, QScope.PER_BLOCK).model_dump(),
+        }
+        model = create_simple_model()
+        config = create_processor_config(include=["layer.fa_q"], details=details)
+        processor = FA3QuantProcessor(model, config, self.adapter)
+
+        layer = nn.Module()
+        layer.fa_q = FA3QuantPlaceHolder(ratio=0.9999)
+        model.layer = layer
+
+        fake_qparam = QParam(scheme=QScheme(scope=QScope.PER_BLOCK, dtype=QDType.MXFP8, symmetric=True))
+        real_ir = FakeQuantActivationPerBlock(fake_qparam)
+        mock_create.return_value = real_ir
+
+        request = BatchProcessRequest(name="layer", module=layer, datas=None, outputs=None)
+        processor.postprocess(request)
+        mock_create.assert_called_once()
+        self.assertIs(layer.fa_q, real_ir)
+
+    def test_is_data_free_returns_False_when_mixed_per_block_and_per_channel(self):
+        details = {
+            "fa_q": create_qconfig(QDType.MXFP8, QScope.PER_BLOCK).model_dump(),
+            "fa_v": create_qconfig(QDType.MXFP8, QScope.PER_CHANNEL).model_dump(),
+        }
+        config = create_processor_config(details=details)
+        processor = FA3QuantProcessor(self.simple_model, config, self.adapter)
+        self.assertFalse(processor.is_data_free())
+
+    def test_postprocess_replaces_observer_with_mxfp8_ir_when_per_channel_calibrated(self):
+        from msmodelslim.processor.quant.fa3.processor import _FA3PerChannelObserver
+        from msmodelslim.ir.mxfp8_activation_static import MXFP8FakeQuantActivationPerChannel
+
+        details = {
+            "fa_v": create_qconfig(QDType.MXFP8, QScope.PER_CHANNEL).model_dump(),
+        }
+        model = create_simple_model()
+        config = create_processor_config(include=["layer.fa_v"], details=details)
+        processor = FA3QuantProcessor(model, config, self.adapter)
+
+        layer = nn.Module()
+        observer = _FA3PerChannelObserver(name="layer.fa_v")
+        layer.fa_v = observer
+        model.layer = layer
+        observer(torch.randn(2, 4, 10, 16))  # 通道 = H*D = 4*16 = 64
+
+        request = BatchProcessRequest(name="layer", module=layer, datas=None, outputs=None)
+        processor.postprocess(request)
+        self.assertIsInstance(layer.fa_v, MXFP8FakeQuantActivationPerChannel)
+        self.assertEqual(tuple(layer.fa_v.input_scale.shape), (64,))
+        out = layer.fa_v(torch.randn(1, 4, 3, 16))
+        self.assertEqual(out.shape, (1, 4, 3, 16))
+
+    def test_postprocess_raises_UnsupportedError_when_per_channel_no_calibration_data(self):
+        from msmodelslim.processor.quant.fa3.processor import _FA3PerChannelObserver
+
+        details = {
+            "fa_v": create_qconfig(QDType.MXFP8, QScope.PER_CHANNEL).model_dump(),
+        }
+        model = create_simple_model()
+        config = create_processor_config(include=["layer.fa_v"], details=details)
+        processor = FA3QuantProcessor(model, config, self.adapter)
+
+        layer = nn.Module()
+        layer.fa_v = _FA3PerChannelObserver(name="layer.fa_v")
+        model.layer = layer
+        request = BatchProcessRequest(name="layer", module=layer, datas=None, outputs=None)
+        with self.assertRaises(UnsupportedError):
+            processor.postprocess(request)
+
+
+class TestFA3PerChannelObserver(unittest.TestCase):
+    """对应 processor._FA3PerChannelObserver"""
+
+    def test_min_val_is_None_when_no_update(self):
+        from msmodelslim.processor.quant.fa3.processor import _FA3PerChannelObserver
+
+        observer = _FA3PerChannelObserver(name="fa_v")
+        self.assertIsNone(observer.min_val)
+        self.assertIsNone(observer.max_val)
+
+    def test_forward_updates_channel_minmax_when_4d_input(self):
+        from msmodelslim.processor.quant.fa3.processor import _FA3PerChannelObserver
+
+        observer = _FA3PerChannelObserver(name="fa_v")
+        # B=1, H=2, S=3, D=4 → 通道 = H*D = 8
+        x = torch.zeros(1, 2, 3, 4)
+        x[0, 0, 0, 0] = -2.0
+        x[0, 0, 0, 1] = 3.0
+        out = observer(x)
+        self.assertIs(out, x)
+        # head 并入通道: (h0,d0)=-2, (h0,d1)=3, 其余通道全 0
+        self.assertEqual(tuple(observer.min_val.shape), (8,))
+        self.assertEqual(tuple(observer.max_val.shape), (8,))
+        self.assertTrue(torch.allclose(observer.min_val, torch.tensor([-2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])))
+        self.assertTrue(torch.allclose(observer.max_val, torch.tensor([0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])))
 
 
 if __name__ == '__main__':

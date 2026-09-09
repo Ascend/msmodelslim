@@ -430,6 +430,46 @@ class TestDistributedAscendV1Saver:
         assert merged_data["optional"] == rank_optional
 
     @staticmethod
+    def test_merge_json_files_aggregates_cross_rank_fa_states_when_split_by_branch(
+        setup_rank_directories, mock_model, mock_adapter
+    ):
+        """场景：同层 fa_q/fa_k/fa_v 被分到不同 rank(各 rank json 只含部分分支)。
+        预期：合并后 quant_type 为跨 rank 汇总拼出的完整串，且内部 fa_layer_states key 被清理。
+        """
+        temp_dir = setup_rank_directories
+        rank_payloads = [
+            {
+                "fa_layer_states/model.layers.3.self_attn": {"Q": ["MXFP8", "DYNAMIC", ""]},
+                "model.layers.3.self_attn.quant_type": "Q_MXFP8_DYNAMIC",
+            },
+            {
+                "fa_layer_states/model.layers.3.self_attn": {
+                    "K": ["MXFP8", "DYNAMIC", ""],
+                    "V": ["MXFP8", "STATIC", "PER_CHANNEL"],
+                },
+                "model.layers.3.self_attn.quant_type": "KV_MXFP8_PER_CHANNEL",
+            },
+        ]
+        for rank, payload in enumerate(rank_payloads):
+            rank_dir = os.path.join(temp_dir, f"rank_{rank}")
+            os.makedirs(rank_dir, exist_ok=True)
+            with open(os.path.join(rank_dir, "quant_model_description.json"), "w", encoding="utf-8") as f:
+                json.dump(payload, f)
+
+        saver = TestDistributedAscendV1Saver.create_saver_with_rank_dir(temp_dir, mock_model, mock_adapter)
+        saver.json_writer = MagicMock()
+        saver.json_writer.file_name = "quant_model_description.json"
+
+        saver._merge_json_files()
+
+        merged_json_path = os.path.join(temp_dir, "quant_model_description.json")
+        with open(merged_json_path, "r", encoding="utf-8") as f:
+            merged_data = json.load(f)
+        assert merged_data["model.layers.3.self_attn.quant_type"] == "QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL"
+        # 内部 fa_layer_states key 不应落盘
+        assert not any(k.startswith("fa_layer_states/") for k in merged_data)
+
+    @staticmethod
     def test_merge_ranks_calls_barrier_when_on_rank0(setup_rank_directories, mock_model, mock_adapter):
         """场景：rank0 调用 merge_ranks。预期：barrier 被调用。"""
         temp_dir = setup_rank_directories
@@ -538,6 +578,33 @@ class TestDistributedAscendV1Saver:
             saver.post_run()
 
             saver.json_writer.write.assert_any_call("optional", expected_optional)
+
+    @staticmethod
+    def test_post_run_records_fa_layer_states_when_distributed(temp_dir, mock_model, mock_adapter_with_interface):
+        """场景: 分布式保存时每 rank post_run 应把已见 FA 分支状态落盘(供 merge 跨 rank 聚合)。"""
+        dist_path = 'msmodelslim.core.quant_service.modelslim_v1.save.ascendv1_distributed'
+
+        def gather_all(output_list, obj):
+            for i in range(len(output_list)):
+                output_list[i] = obj
+
+        with (
+            patch(f'{dist_path}.copy_files'),
+            patch(f'{dist_path}.remove_quantization_config'),
+            patch(f'{dist_path}.dist.barrier'),
+            patch(f'{dist_path}.dist.all_gather_object', side_effect=gather_all),
+        ):
+            TestDistributedAscendV1Saver.setup_rank_directories(temp_dir)
+            saver = TestDistributedAscendV1Saver.create_saver_with_rank_dir(
+                temp_dir, mock_model, mock_adapter_with_interface
+            )
+            TestDistributedAscendV1Saver.setup_writers(saver)
+            saver.fa_quant_states["model.layers.3.self_attn"] = {"V": ("MXFP8", "STATIC", "PER_CHANNEL")}
+
+            with patch.object(saver, "record_fa_layer_states") as mock_record:
+                saver.post_run()
+
+            mock_record.assert_called_once()
 
     @pytest.mark.skipif(sys.platform == "win32", reason="spawn+dist worker needs valid Unix paths; run on Linux CI")
     def test_iter_tasks_distributes_modules_when_multiprocess(self, temp_dir):

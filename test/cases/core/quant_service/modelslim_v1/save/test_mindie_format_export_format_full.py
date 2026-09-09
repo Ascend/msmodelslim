@@ -415,3 +415,14 @@ class TestMindIEFormatSaverFA3:
         saver.on_activation_per_block("blocks.0.self_attn.fa3_k", module)
         saver.on_activation_per_block("blocks.0.self_attn.fa3_v", module)
         saver.json_writer.write.assert_called_with("blocks.0.self_attn.quant_type", "MXFP8_DYNAMIC")
+
+    def test_on_mxfp8_activation_per_channel_raises_UnsupportedError_when_called(self, saver):
+        """MindIE 暂不支持 MXFP8 per-channel FA 导出，应提示改用 AscendV1。"""
+        from msmodelslim.utils.exception import UnsupportedError
+
+        v = SimpleNamespace(
+            x_q_scheme=SimpleNamespace(dtype=QDType.MXFP8, scope=QScope.PER_CHANNEL),
+            input_scale=torch.tensor([0.0, 1.0], dtype=torch.float32),
+        )
+        with pytest.raises(UnsupportedError, match="AscendV1Saver"):
+            saver.on_mxfp8_activation_per_channel("blocks.0.self_attn.fa_v", v)

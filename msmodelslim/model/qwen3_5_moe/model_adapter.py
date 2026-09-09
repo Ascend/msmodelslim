@@ -23,8 +23,9 @@ from collections import defaultdict
 from contextlib import contextmanager
 from functools import lru_cache
 from pathlib import Path
-from typing import List, Any, Generator, Tuple, Dict
+from typing import List, Any, Generator, Tuple, Dict, Optional, Callable
 from unittest.mock import patch
+import types
 
 import torch
 from safetensors import safe_open
@@ -53,6 +54,8 @@ from msmodelslim.model.interface_hub import (
     ModelSlimPipelineInterfaceV1,
     LayerWiseOffloadOptionalInterface,
     AscendV1SaveInterface,
+    FA3QuantAdapterInterface,
+    FA3QuantPlaceHolder,
 )
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
 from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VlmCalibSample
@@ -97,6 +100,7 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
     ModelSlimPipelineInterfaceV1,
     IterSmoothInterface,
     FlexSmoothQuantInterface,
+    FA3QuantAdapterInterface,
     LayerWiseOffloadOptionalInterface,
     AscendV1SaveInterface,
 ):
@@ -227,6 +231,120 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
             has_image,
         )
         return processed_data
+
+    def inject_fa3_placeholders(
+        self, root_name: str, root_module: nn.Module, should_inject: Callable[[str], bool]
+    ) -> None:
+        """为 Qwen3.5 full attention 层注入 FA3 占位（fa_q/fa_k/fa_v），排除 linear_attention 层。
+
+        注意：Qwen3.5 每个 decoder 层会同时实例化 self_attn(Qwen3_5MoeAttention) 与
+        linear_attn(Qwen3_5MoeGatedDeltaNet)，实际执行哪个由 config.layer_types[layer_idx]
+        决定。仅对 layer_type 为 full_attention 的层注入，否则 linear 层会空挂占位/观测器，
+        既浪费又会导致“每层都跑 FA 量化”的假象。
+
+        forward 对齐 config.ini 中 qwen3_5_moe 约束的 transformers==5.2.0：
+        Qwen3_5Attention / Qwen3_5MoeAttention（含 cache_position + cache_kwargs）。
+        """
+        from importlib import import_module
+
+        def _is_full_attention(module: nn.Module) -> bool:
+            cls_name = module.__class__.__name__
+            # Qwen3_5Attention / Qwen3_5MoeAttention；排除 LinearAttention / GatedDeltaNet 等
+            if "Linear" in cls_name:
+                return False
+            if not cls_name.endswith("Attention"):
+                return False
+            # 每层都实例化了 self_attn，但 linear_attention 层的 self_attn 不会被执行：
+            # 按 config.layer_types 过滤，只量化真正 full_attention 的层
+            config = getattr(module, "config", None)
+            layer_types = getattr(config, "layer_types", None)
+            if layer_types is None:
+                return True
+            idx = getattr(module, "layer_idx", None)
+            if idx is None or idx >= len(layer_types):
+                return True
+            return layer_types[idx] != "linear_attention"
+
+        def _wrap_attention_forward(attn_mod: nn.Module):
+            attn_module = import_module(attn_mod.forward.__module__)
+            apply_rotary_pos_emb = attn_module.apply_rotary_pos_emb
+            eager_attention_forward = attn_module.eager_attention_forward
+            all_attention_functions = attn_module.ALL_ATTENTION_FUNCTIONS
+
+            def new_forward(
+                self,
+                hidden_states: torch.Tensor,
+                position_embeddings: tuple,
+                attention_mask: Optional[torch.Tensor] = None,
+                past_key_values: Optional[Any] = None,
+                cache_position: Optional[torch.LongTensor] = None,
+                **kwargs,
+            ):
+                input_shape = hidden_states.shape[:-1]
+                hidden_shape = (*input_shape, -1, self.head_dim)
+
+                query_states, gate = torch.chunk(
+                    self.q_proj(hidden_states).view(*input_shape, -1, self.head_dim * 2), 2, dim=-1
+                )
+                gate = gate.reshape(*input_shape, -1)
+
+                query_states = self.q_norm(query_states.view(hidden_shape)).transpose(1, 2)
+                key_states = self.k_norm(self.k_proj(hidden_states).view(hidden_shape)).transpose(1, 2)
+                value_states = self.v_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+
+                cos, sin = position_embeddings
+                query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+
+                if past_key_values is not None:
+                    # transformers==5.2.0: sin/cos + cache_position for static cache
+                    cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
+                    key_states, value_states = past_key_values.update(
+                        key_states, value_states, self.layer_idx, cache_kwargs
+                    )
+
+                # ===== FA3 placeholders (after RoPE / cache, before attention kernel) =====
+                if hasattr(self, "fa_q"):
+                    query_states = self.fa_q(query_states)
+                if hasattr(self, "fa_k"):
+                    key_states = self.fa_k(key_states)
+                if hasattr(self, "fa_v"):
+                    value_states = self.fa_v(value_states)
+                # ========================================================================
+
+                attention_interface: Callable = all_attention_functions.get_interface(
+                    self.config._attn_implementation, eager_attention_forward
+                )
+
+                attn_output, attn_weights = attention_interface(
+                    self,
+                    query_states,
+                    key_states,
+                    value_states,
+                    attention_mask,
+                    dropout=0.0 if not self.training else self.attention_dropout,
+                    scaling=self.scaling,
+                    **kwargs,
+                )
+
+                attn_output = attn_output.reshape(*input_shape, -1).contiguous()
+                attn_output = attn_output * torch.sigmoid(gate)
+                attn_output = self.o_proj(attn_output)
+                return attn_output, attn_weights
+
+            attn_mod.forward = types.MethodType(new_forward, attn_mod)
+
+        for name, module in root_module.named_modules():
+            if not _is_full_attention(module):
+                continue
+            full_name = f"{root_name}.{name}" if root_name else name
+            if not should_inject(full_name):
+                continue
+            prefix = f"{name}." if name else ""
+            root_module.set_submodule(f"{prefix}fa_q", FA3QuantPlaceHolder(ratio=0.9999))
+            root_module.set_submodule(f"{prefix}fa_k", FA3QuantPlaceHolder(ratio=0.9999))
+            root_module.set_submodule(f"{prefix}fa_v", FA3QuantPlaceHolder(ratio=0.9999))
+            _wrap_attention_forward(module)
+            get_logger().info("Injected FA3 placeholders into %s", full_name)
 
     def init_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
         """

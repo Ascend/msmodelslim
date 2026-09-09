@@ -31,6 +31,7 @@ FP32_MIN_NORMAL = 2 ** (-FP32_EXPONENT_BIAS + 1)
 
 
 @QFuncRegistry.register(dispatch_key=(QDType.MXFP8, QScope.PER_BLOCK, True), api_name="calculate_qparam")
+@QFuncRegistry.register(dispatch_key=(QDType.MXFP8, QScope.PER_CHANNEL, True), api_name="calculate_qparam")
 def calculate_mx_qparam(
     min_val: torch.Tensor, max_val: torch.Tensor, q_dtype: QDType, q_scope: QScope, symmetric: bool, **kwargs
 ) -> QParam:
@@ -61,6 +62,7 @@ def calculate_mx_qparam(
 
 
 @QFuncRegistry.register(dispatch_key=(QDType.FLOAT, QDType.MXFP8, QScope.PER_BLOCK, True), api_name="quantize")
+@QFuncRegistry.register(dispatch_key=(QDType.FLOAT, QDType.MXFP8, QScope.PER_CHANNEL, True), api_name="quantize")
 def mxfp_per_block_quantize(tensor: QStorage, q_param: QParam) -> QStorage:
     mx_finfo = q_param.scheme.dtype.mx_finfo
     inp = tensor.value
@@ -73,14 +75,26 @@ def mxfp_per_block_quantize(tensor: QStorage, q_param: QParam) -> QStorage:
     if keep_mask is not None:
         inp = inp * keep_mask.to(inp.dtype)
 
-    inp = torch.where(inp == 0, torch.zeros_like(inp), inp / (2**shared_exp))
-    private_exp = torch.floor(torch.log2(torch.abs(inp) + (inp == 0).to(inp.dtype)))
+    # 0 值保持为 0（shared_exp 含 NaN/±Inf 时 0/scale 会产生非有限值）。
+    # 用 0 维标量广播替代 torch.zeros_like 的整份分配，避免一个全量 fp32 临时。
+    inp = torch.where(inp == 0, torch.zeros((), dtype=inp.dtype, device=inp.device), inp / (2**shared_exp))
 
-    inp_ = inp.clone()
+    # 用 1B/elem 的布尔掩码记录非有限值位置（与原实现此处整份 fp32 clone 语义一致，
+    # 但显存占用降到 1/4），供 clamp 后恢复 ±Inf。
+    zero_mask = inp == 0
+    pos_inf_mask = torch.isposinf(inp)
+    neg_inf_mask = torch.isneginf(inp)
+
+    private_exp = torch.floor(torch.log2(torch.abs(inp) + zero_mask.to(inp.dtype)))
+
     inp = _quant(inp, mx_finfo.mbits, private_exp, mx_finfo.ebits)
-    inp = _clamp_out(inp, inp_, mx_finfo.max_norm)
+    inp = torch.clamp(inp, min=-mx_finfo.max_norm, max=mx_finfo.max_norm)
+    # 恢复量化前的非有限值（对应原实现 _clamp_out(inp, inp_, ...) 的恢复逻辑；
+    # NaN 不恢复：与原实现 a == NaN 比较恒为 False 的行为一致）
+    inp[pos_inf_mask] = float("Inf")
+    inp[neg_inf_mask] = -float("Inf")
+
     inp = inp.to(dtype)
-    del inp_
 
     tensor_q = tensor.same_like(inp).to(q_param.scheme.dtype)
     return tensor_q
@@ -88,6 +102,7 @@ def mxfp_per_block_quantize(tensor: QStorage, q_param: QParam) -> QStorage:
 
 @QFuncRegistry.register(dispatch_key=(QDType.MXFP8, QDType.MXFP8, QScope.PER_BLOCK, True), api_name="dequantize")
 @QFuncRegistry.register(dispatch_key=(QDType.MXFP4, QDType.MXFP4, QScope.PER_BLOCK, True), api_name="dequantize")
+@QFuncRegistry.register(dispatch_key=(QDType.MXFP8, QDType.MXFP8, QScope.PER_CHANNEL, True), api_name="dequantize")
 def mxfp_per_block_dequantize(tensor: QStorage, q_param: QParam) -> QStorage:
     shared_exp = q_param.ext['scale']
     quant_inp = tensor.value
@@ -112,14 +127,6 @@ def _quant(a, bits, exp, exp_bits):
         a = torch.sign(a) * torch.floor(torch.abs(a) + 0.5)
         a = a / (2**bits_) * (2**exp)
     return a
-
-
-def _clamp_out(out, a, max_norm):
-    out = torch.clamp(out, min=-max_norm, max=max_norm)
-    out[a == float("Inf")] = float("Inf")
-    out[a == -float("Inf")] = -float("Inf")
-    out[a == float("NaN")] = float("NaN")  # pylint: disable=nan-comparison
-    return out
 
 
 @QFuncRegistry.register(dispatch_key=(QDType.MXFP4, QScope.PER_BLOCK, True), api_name="calculate_qparam")

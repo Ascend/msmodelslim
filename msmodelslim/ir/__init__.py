@@ -56,6 +56,7 @@ __all__ = [
     "INT8FakeQuantActivationPerHead",
     "FP8FakeQuantActivationPerHead",
     "FakeQuantActivationPerHead",
+    "MXFP8FakeQuantActivationPerChannel",
     "FakeQuantActivationPerToken",
     "FakeQuantActivationPerBlock",
     "FlatQuantOnlineWrapper",
@@ -83,6 +84,7 @@ __all__ = [
     "mxfp4_per_block_sym",
     "mxfp4_dual_scale_sym",
     "mxfp8_per_block_sym",
+    "mxfp8_per_channel_sym",
     "float_per_tensor_sym",
     "fp8_e4m3_per_head_sym",
     "fp8_e4m3_per_token_sym",
@@ -97,6 +99,7 @@ __all__ = [
 
 from .int8_activation_static import INT8FakeQuantActivationPerHead
 from .fp8_activation_static import FP8FakeQuantActivationPerHead
+from .mxfp8_activation_static import MXFP8FakeQuantActivationPerChannel
 from .activation_static import FakeQuantActivationPerHead
 from .activation_dynamic import FakeQuantActivationPerToken, FakeQuantActivationPerBlock
 from .api.impl import int_quantization, fp_quantization, mx_quantization
@@ -123,6 +126,7 @@ from .const import (
     mxfp4_per_block_sym,
     mxfp4_dual_scale_sym,
     mxfp8_per_block_sym,
+    mxfp8_per_channel_sym,
     fp8_e4m3_per_token_sym,
     fp8_e4m3_per_tensor_sym,
     fp8_e4m3_per_channel_sym,

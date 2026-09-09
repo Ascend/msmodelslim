@@ -47,7 +47,8 @@ repos:
             "--skip",
             "*.py,*.cpp,*.hpp,*.c,*.h,pre-commit/typos.toml",
           ]
-        exclude: ^pre-commit/|typos.toml|^lab_calib/calib_dummy\.jsonl$
+        # lab_calib 为自然语言校准样本，易触发假阳性拼写告警
+        exclude: ^pre-commit/|typos.toml|^lab_calib/
 
   # pylint：指定 pre-commit/pyproject.toml
   - repo: https://gitcode.com/gh_mirrors/pyl/pylint
