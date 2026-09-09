@@ -1,4 +1,4 @@
-# 专家并行 量化术语百科词条
+# 专家并行
 
 > **词条类别**：其他
 >
@@ -58,7 +58,7 @@ MoE 模型通过稀疏激活多个专家，在不显著增加计算量的前提�
 
 ## 5. 关联流程
 
-- 《[专家并行机制使用指南](expert_parallelism_guide.md)》：阐述 EP 下共享 / 局部模块划分及 DistHelper 使用约束。
+- 《[专家并行使用指南](expert_parallelism_guide.md)》：阐述 EP 下共享 / 局部模块划分及 DistHelper 使用约束。
 - 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》：多卡量化入口。
 
 ---
@@ -74,4 +74,4 @@ MoE 模型通过稀疏激活多个专家，在不显著增加计算量的前提�
 
 ## 7. 参考资料
 
-1. 《[专家并行机制使用指南](expert_parallelism_guide.md)》
+1. 《[专家并行使用指南](expert_parallelism_guide.md)》

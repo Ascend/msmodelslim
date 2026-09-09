@@ -1,4 +1,4 @@
-# 数据并行 量化术语百科词条
+# 数据并行
 
 > **词条类别**：其他
 >
@@ -48,7 +48,7 @@
 
 ## 4. 流程示意
 
-> 详细适配步骤与案例，请参阅《[数据并行机制使用指南](data_parallelism_guide.md)》。
+> 详细适配步骤与案例，请参阅《[数据并行使用指南](data_parallelism_guide.md)》。
 
 ```mermaid
 flowchart LR
@@ -77,8 +77,8 @@ flowchart LR
 
 ## 6. 关联流程
 
-- 《[数据并行机制使用指南](data_parallelism_guide.md)》：说明 DP 完备性支持、统计量同步与适配步骤。
-- 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》：通过 `--device_id` 参数触发多卡量化。
+- 《[数据并行使用指南](data_parallelism_guide.md)》：说明 DP 完备性支持、统计量同步与适配步骤。
+- 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》：通过 `--device npu --device_id 0 1 2 3 4 5 6 7` 参数传入多个设备索引触发多卡量化。
 
 ---
 

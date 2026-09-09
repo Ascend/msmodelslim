@@ -13,9 +13,9 @@ msModelSlim 的并行机制以数据并行（Data Parallel, DP）为基础，当
 | 文档 | 说明 |
 |------|------|
 | 《[数据并行](data_parallelism/term_data_parallelism.md)》 | DP 术语百科 |
-| 《[数据并行机制使用指南](data_parallelism/data_parallelism_guide.md)》 | DP 使用指南 |
+| 《[数据并行使用指南](data_parallelism/data_parallelism_guide.md)》 | DP 使用指南 |
 | 《[专家并行](expert_parallelism/term_expert_parallelism.md)》 | EP 术语百科 |
-| 《[专家并行机制使用指南](expert_parallelism/expert_parallelism_guide.md)》 | EP 使用指南 |
+| 《[专家并行使用指南](expert_parallelism/expert_parallelism_guide.md)》 | EP 使用指南 |
 | 《[分布式任务调度器](distributed_task_scheduler/term_distributed_task_scheduler.md)》 | DTS 术语百科 |
 | 《[分布式任务调度器使用指南](distributed_task_scheduler/distributed_task_scheduler_guide.md)》 | DTS 使用指南 |
 
@@ -48,7 +48,7 @@ msModelSlim 的并行机制以数据并行（Data Parallel, DP）为基础，当
 
 ## 4. 多卡量化配置与使用
 
-通过命令行 `--device` 参数传入多个设备索引即可启动多卡量化：
+通过命令行 `--device npu --device_id 0 1 ...` 参数传入多个设备索引即可启动多卡量化：
 
 ```shell
 msmodelslim quant \

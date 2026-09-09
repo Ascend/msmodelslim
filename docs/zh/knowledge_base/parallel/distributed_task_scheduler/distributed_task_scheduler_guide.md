@@ -6,7 +6,7 @@
 
 ## 2. 流程关系与前置条件
 
-**上级流程**：按[数据并行机制使用指南](../data_parallelism/data_parallelism_guide.md)完成算法的 DP 支持。
+**上级流程**：按[数据并行使用指南](../data_parallelism/data_parallelism_guide.md)完成算法的 DP 支持。
 
 **前置条件**：
 
@@ -42,7 +42,7 @@ flowchart LR
 
 **操作**：
 
-1. **确认 DP 支持**：多卡量化产物与单卡语义等价（未完成请先按[数据并行机制使用指南](../data_parallelism/data_parallelism_guide.md)完成支持）。
+1. **确认 DP 支持**：多卡量化产物与单卡语义等价（未完成请先按[数据并行使用指南](../data_parallelism/data_parallelism_guide.md)完成支持）。
 2. **识别可拆分任务并核对约束**：子任务须可被任意单个 rank 独立执行并产生一致结果。
 
 **输出**：可拆分任务清单（每项标注依赖模块路径、是否允许跨 rank 分工）。

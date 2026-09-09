@@ -61,7 +61,7 @@
    | `format` | `mxfp4-pack-quantized` | 原生权重中包含 MXFP4 量化权重，需要离线或在线完成权重反量化 |
    | `mm_projector_type` | `patchmergerv2` | 视觉特征的融合模块类，影响旋转量化算法适配 |
 
-2. 按照《[多模态理解模型接入指南](../knowledge_base/model/integrating_multimodal_understanding_model.md)》开发模型适配器（[`msmodelslim/model/kimi_k3/model_adapter.py`](../../../msmodelslim/model/kimi_k3/model_adapter.py)）。对于 Kimi-K3，即使采用逐层加载方式，单卡 64GB 显存仍会溢出，需参考《[专家并行机制使用指南](../knowledge_base/parallel/expert_parallelism/expert_parallelism_guide.md)》完成专家并行的适配（[`ep_patches.py`](../../../msmodelslim/model/kimi_k3/ep_patches.py)）。
+2. 按照《[多模态理解模型接入指南](../knowledge_base/model/integrating_multimodal_understanding_model.md)》开发模型适配器（[`msmodelslim/model/kimi_k3/model_adapter.py`](../../../msmodelslim/model/kimi_k3/model_adapter.py)）。对于 Kimi-K3，即使采用逐层加载方式，单卡 64GB 显存仍会溢出，需参考《[专家并行使用指南](../knowledge_base/parallel/expert_parallelism/expert_parallelism_guide.md)》完成专家并行的适配（[`ep_patches.py`](../../../msmodelslim/model/kimi_k3/ep_patches.py)）。
 
 3. 注册模型适配器（[`config/config.ini`](../../../config/config.ini)）：
 

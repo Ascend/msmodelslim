@@ -1,4 +1,4 @@
-# 数据并行机制使用指南
+# 数据并行使用指南
 
 ## 1. 适用范围
 
@@ -241,7 +241,7 @@ flowchart LR
 | `sync_base_operation` 等 | 跨 rank 统计量归约工具函数 | [dist_ops.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_ops.py) |
 | `support_distributed()` | Processor 分布式支持声明（基类默认 `False`） | [processor/base.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/base.py) |
 | `ascendv1_saver_distributed` | 分布式保存器（由 `ascendv1_saver` 自动转换） | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
-| `--device_id 0 1 ...` | 多卡量化入口配置 | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
+| `--device npu --device_id 0 1 ...` | 多卡量化入口配置 | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
 
 ## 10. 产品形态与资源限制
 
