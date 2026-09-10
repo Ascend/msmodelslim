@@ -43,6 +43,7 @@ msModelSlim 的并行机制以数据并行（Data Parallel, DP）为基础，当
 | `DeepSeekV4ModelAdapter` | `DeepSeek-V4-Flash`、`DeepSeek-V4-Pro` |
 | `GLM5ModelAdapter` | `GLM-5`、`GLM-5.1` |
 | `GLM52ModelAdapter` | `GLM-5.2`、`GLM-5.3` |
+| `GLM5NextModelAdapter` | `GLM-5.3-Flash` |
 | `KimiK2ModelAdapter` | `Kimi-K2-Instruct-0905`、`Kimi-K2-Thinking` |
 | `KimiK3ModelAdapter` | `Kimi-K3` |
 

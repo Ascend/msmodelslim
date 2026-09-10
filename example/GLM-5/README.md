@@ -25,6 +25,12 @@
   pip install transformers==5.15.0
   ```
 
+- GLM-5.3-Flash（GLM-5-Next）需要配置安装 transformers 5.16.0 版本：
+
+  ```bash
+  pip install transformers==5.16.0
+  ```
+
 ## 支持的模型版本与量化策略
 
 | 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A8C8 | W8A16 | W4A8 | W4A8C8 | W4A16 | W4A4C8  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
@@ -33,6 +39,7 @@
 | **GLM5-MOE** | GLM-5.1 | <https://huggingface.co/zai-org/GLM-5.1> | ✅ | ✅ |  | ✅ | ✅ |        | ✅ |  |   |   | [W8A8](#glm-51-w8a8量化) / [W4A8](#glm-51-w4a8量化) / [W8A8C8](#glm-51-w8a8c8量化) / [W4A8C8](#glm-51-w4a8c8量化) / [W4A4C8](#glm-51-w4a4c8-mxfp4量化) |
 | **GLM5-MOE** | GLM-5.2 | <https://huggingface.co/zai-org/GLM-5.2> | ✅ | ✅ |  |  |  |        | ✅ |  |   |   | [W8A8](#glm-52-w8a8量化) / [W8A8C8](#glm-52-w8a8c8量化) / [W4A4](#glm-52-w4a4-mxfp4量化) / [W4A4C8](#glm-52-w4a4c8-mxfp4量化) |
 | **GLM5-MOE** | GLM-5.3 | <https://huggingface.co/zai-org/GLM-5.3> | ✅ | ✅ |  |  |  |        |   |  |   |   | [W8A8](#glm-53-w8a8量化) / [W8A8C8](#glm-53-w8a8c8量化) |
+| **GLM5-MOE** | GLM-5.3-Flash | <https://huggingface.co/zai-org/GLM-5.3-Flash> | ✅ |  |  |  |  |        |   |  |   |   | [W8A8](#glm-53-flash-w8a8量化) / [浮点权重 转 MXFP8](#glm-53-flash-浮点权重-转-mxfp8) |
 
 **说明：**
 
@@ -281,3 +288,35 @@ msmodelslim quant \
 
 - 其中`MODEL_PATH`为GLM-5.3模型的路径，`SAVE_PATH`为量化后的权重保存路径。
 - 该一键量化命令匹配使用的量化配置文件为[glm_5_3_w8a8c8_mxfp8.yaml](../../lab_practice/glm_5_2/glm_5_3_w8a8c8_mxfp8.yaml)，可以在其中查看具体的量化策略。
+
+### GLM-5.3-Flash 一键量化命令示例
+
+#### GLM-5.3-Flash W8A8量化
+
+``` bash
+msmodelslim quant \
+  --model_path ${MODEL_PATH} \
+  --save_path ${SAVE_PATH} \
+  --device npu \
+  --model_type GLM-5.3-Flash \
+  --quant_type w8a8 \
+  --trust_remote_code True
+```
+
+- 其中`MODEL_PATH`为GLM-5.3-Flash模型的路径，`SAVE_PATH`为量化后的权重保存路径。
+- 该一键量化命令匹配使用的量化配置文件为[glm_5_next_w8a8.yaml](../../lab_practice/glm_5_next/glm_5_next_w8a8.yaml)，可以在其中查看具体的量化策略。
+
+#### GLM-5.3-Flash 浮点权重 转 MXFP8
+
+针对发布的 GLM-5.3-Flash BF16、FP8 浮点权重，可使用离线权重转换命令将其重排为 MXFP8(W8A8_MXFP8) 格式并落盘为 AscendV1（FP8 权重会先经适配器转换为 BF16 再做重排）：
+
+```bash
+msmodelslim convert \
+  --model_path ${MODEL_PATH} \
+  --save_path ${SAVE_PATH} \
+  --config_path ${CONFIG_PATH}/glm_5_next_convert_mxfp8.yaml \
+  --trust_remote_code True
+```
+
+- 其中`MODEL_PATH`为GLM-5.3-Flash模型的路径，`SAVE_PATH`为转换后的权重保存路径，`CONFIG_PATH`为 msModelSlim 安装目录下的 `lab_practice` 路径。
+- 该命令匹配使用的转换配置文件为[glm_5_next_convert_mxfp8.yaml](../../lab_practice/glm_5_next/glm_5_next_convert_mxfp8.yaml)，可以在其中查看具体的转换策略。

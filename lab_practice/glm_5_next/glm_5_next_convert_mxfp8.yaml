@@ -1,0 +1,39 @@
+apiversion: modelslim_convert
+
+metadata:
+  config_id: glm_5_next_convert_mxfp8
+  score: 90
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: False
+
+# 用途：对 GLM5.3-Flash 模型做离线权重转换，重排为 MXFP8(W8A8_MXFP8) 并落盘为 AscendV1。
+#       支持 BF16/FP8 输入；输入为 HF FP8 checkpoint 时，先经适配器转换为 BF16 再做重排（FP8 -> BF16 -> MXFP8）。
+#       配置文件位于 msmodelslim 仓的 lab_practice/glm_5_next/glm_5_next_convert_mxfp8.yaml，通过 --config_path 指定。
+
+spec:
+  linears:
+    - match:
+        - "model.language_model.layers.*.mlp.gate_proj"
+        - "model.language_model.layers.*.mlp.up_proj"
+        - "model.language_model.layers.*.mlp.down_proj"
+        - "model.language_model.layers.*.mlp.shared_experts.gate_proj"
+        - "model.language_model.layers.*.mlp.shared_experts.up_proj"
+        - "model.language_model.layers.*.mlp.shared_experts.down_proj"
+        - "model.language_model.layers.*.mlp.experts.*.gate_proj"
+        - "model.language_model.layers.*.mlp.experts.*.up_proj"
+        - "model.language_model.layers.*.mlp.experts.*.down_proj"
+        - "model.language_model.layers.*.self_attn.q_a_proj"
+        - "model.language_model.layers.*.self_attn.q_b_proj"
+        - "model.language_model.layers.*.self_attn.kv_a_proj_with_mqa"
+      target: W8A8_MXFP8
+      route: auto
+
+  save:
+    - type: ascend_v1
+      part_file_size: 4
+
+  parallel:
+    workers: 8
