@@ -14,7 +14,7 @@
 
 | 项 | 版本或配置 |
 | --- | --- |
-| 产品形态 | Atlas 800I A3 推理服务器（限定，本案例基于该服务器单节点 16 卡环境验证） |
+| 产品形态 |Atlas 800I A3产品（限定，本案例基于该服务器单节点 16 卡环境验证） |
 | 环境镜像 | [quay.io/ascend/vllm-ascend:v0.22.1rc1-a3](https://quay.io/repository/ascend/vllm-ascend?tab=tags&tag=v0.22.1rc1-a3) |
 | CANN | CANN-9.0.0（随镜像预置） |
 | PyTorch | 2.10.0（随镜像预置） |
@@ -354,7 +354,7 @@ msmodelslim quant \
 
 2. **Transformers 版本需与模型适配**：DeepSeek-V4-Flash 建议使用 `transformers==4.48.2`，版本不匹配可能导致模型加载失败。msModelSlim 不强求特定版本，但建议量化时安装模型适配的版本。适用边界：该版本建议仅用于 DeepSeek-V4-Flash 量化阶段（vLLM Ascend 0.22.1rc1 镜像）。
 
-3. **量化权重需同时通过格式和加载验收**：按 [AscendV1 导出格式](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md#export-artifacts) 核对 `quant_model_description.json`、配置文件、全部权重分片及 index、必要辅助文件，并通过 vLLM Ascend 完成加载和冒烟请求后，再进入正式精度评测。适用边界：vLLM Ascend 0.22.1rc1 及 Atlas 800I A3 推理服务器。
+3. **量化权重需同时通过格式和加载验收**：按 [AscendV1 导出格式](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md#export-artifacts) 核对 `quant_model_description.json`、配置文件、全部权重分片及 index、必要辅助文件，并通过 vLLM Ascend 完成加载和冒烟请求后，再进入正式精度评测。适用边界：vLLM Ascend 0.22.1rc1 及Atlas 800I A3产品。
 
 4. **精度验收以选定的精度基线为准**：使用与论文或模型卡片一致的评测配置获得量化结果分数，并与选定的精度基线分数对比；量化结果分数不低于选定的精度基线分数时直接通过，低于选定的精度基线分数时相对下降不超过 1% 才通过。本案例不要求额外测试浮点模型。适用边界：本案例 GPQA 评测。
 

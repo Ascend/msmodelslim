@@ -29,7 +29,7 @@
 
 | 项 | 版本或配置 |
 | --- | --- |
-| 产品形态 | Atlas 800I A3 推理服务器（限定，本案例基于该服务器两节点 32 卡环境验证） |
+| 产品形态 |Atlas 800I A3产品（限定，本案例基于该服务器两节点 32 卡环境验证） |
 | 环境镜像 | [quay.io/ascend/vllm-ascend:v0.22.1rc1-a3](https://quay.io/repository/ascend/vllm-ascend?tab=tags&tag=v0.22.1rc1-a3) |
 | CANN | CANN-9.0.0（随镜像预置） |
 | PyTorch | 2.10.0（随镜像预置） |
@@ -332,7 +332,7 @@ DeepSeek-V4-Pro 已在 `model.py` 中设置 `USE_DP_MODE=True`，并在 `model_a
 
 2. 配置环境变量并拉起 vLLM Ascend 推理服务（参考[《vLLM Ascend 官方文档》](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Pro.html)）：
 
-   DeepSeek-V4-Pro 模型较大，这里官方示例是多节点部署。以下为 Atlas 800I A3 推理服务器节点 0 的拉起命令，具体命令可以参考对应的官方文档：
+   DeepSeek-V4-Pro 模型较大，这里官方示例是多节点部署。以下为Atlas 800I A3产品节点 0 的拉起命令，具体命令可以参考对应的官方文档：
 
    ```bash
    export QUANT_HOST=${QUANT_HOST:-localhost}
@@ -388,7 +388,7 @@ DeepSeek-V4-Pro 已在 `model.py` 中设置 `USE_DP_MODE=True`，并在 `model_a
 
    > [!NOTE]
    >
-   > DeepSeek-V4-Pro 需要多节点部署，至少 2 个 Atlas 800I A3 推理服务器节点（16 卡/节点）。节点 1 需额外添加 `--headless` 参数，并将 `--data-parallel-start-rank` 设为 1。详细配置请参考[《vLLM Ascend 官方文档》](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Pro.html)。
+   > DeepSeek-V4-Pro 需要多节点部署，至少 2 个Atlas 800I A3产品节点（16 卡/节点）。节点 1 需额外添加 `--headless` 参数，并将 `--data-parallel-start-rank` 设为 1。详细配置请参考[《vLLM Ascend 官方文档》](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Pro.html)。
 
 3. 服务启动后，对量化服务使用 curl 验证模型是否能正常回答：
 
@@ -548,9 +548,9 @@ ais_bench \
 
 5. **DeepSeek-V4-Pro 已具备 DP+EP 多卡量化适配**：`model.py` 中设置 `USE_DP_MODE=True`，`model_adapter.py` 负责分布式同步和 EP 本地路由专家处理，当前配置使用的 QuaRot、FlexAWQSSZ、FlexSmoothQuant 和 LinearQuant 均支持 DP。因此可直接通过 `--device npu --device_id 0 1 2 3 4 5 6 7` 启动多卡量化，并以日志确认各 rank 已初始化且未回退到单卡。适用边界：DeepSeek-V4-Pro W4A8 量化阶段。
 
-6. **W4A8 混合量化策略**：DeepSeek-V4-Pro 的 W4A8 量化采用混合策略——路由专家使用 W4A8 动态量化（`ssz` 方法），共享专家和注意力层使用 W8A8 动态量化，在保证精度的同时有效降低模型大小和推理显存占用。适用边界：DeepSeek-V4-Pro W4A8 量化方案（Atlas 800I A3 推理服务器）。
+6. **W4A8 混合量化策略**：DeepSeek-V4-Pro 的 W4A8 量化采用混合策略——路由专家使用 W4A8 动态量化（`ssz` 方法），共享专家和注意力层使用 W8A8 动态量化，在保证精度的同时有效降低模型大小和推理显存占用。适用边界：DeepSeek-V4-Pro W4A8 量化方案（Atlas 800I A3产品）。
 
-7. **量化产物需同时通过格式和加载验收**：按 [AscendV1 导出格式](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md#export-artifacts) 核对 `quant_model_description.json`、权重文件或分片及 index、`config.json`、tokenizer 等辅助文件，确认描述 JSON 可解析且配置标识、模型类型一致，并通过目标推理框架完成至少一次加载和推理冒烟后，才能进入正式精度评测。适用边界：vLLM Ascend 0.22.1rc1 及 Atlas 800I A3 推理服务器。
+7. **量化产物需同时通过格式和加载验收**：按 [AscendV1 导出格式](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md#export-artifacts) 核对 `quant_model_description.json`、权重文件或分片及 index、`config.json`、tokenizer 等辅助文件，确认描述 JSON 可解析且配置标识、模型类型一致，并通过目标推理框架完成至少一次加载和推理冒烟后，才能进入正式精度评测。适用边界：vLLM Ascend 0.22.1rc1 及Atlas 800I A3产品。
 
 8. **精度调优以选定的精度基线为依据**：当量化结果低于相同条件下的选定精度基线且相对下降比例超过 1% 时，才通过敏感层分析进行回退或局部提位宽；分析和重新量化的输入始终是原始浮点权重 `${MODEL_PATH}`，`${SAVE_PATH}` 仅作为量化输出和结果对比目录，不能作为调优输入。论文或模型卡片公开分数可作为基线，但需注明来源并确保评测条件一致。适用边界：DeepSeek-V4-Pro W4A8 量化方案。
 

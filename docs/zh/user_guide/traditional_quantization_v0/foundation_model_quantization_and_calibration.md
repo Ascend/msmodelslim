@@ -245,7 +245,7 @@ def get_calib_dataset(tokenizer, mixed_dataset, device='npu'):
 
 前提条件参考大模型量化的[使用前准备](foundation_model_compression.md#11-使用前准备)。
 
-说明：仅Atlas 800I A2推理产品支持FA3量化功能。当前 FA3 量化功能已完成对大语言模型 Llama3.1-70B、Qwen2.5-72B 和多模态模型 Flux.1-dev、HunyuanVideo 的验证。
+说明：仅Atlas 800I A2产品支持FA3量化功能。当前 FA3 量化功能已完成对大语言模型 Llama3.1-70B、Qwen2.5-72B 和多模态模型 Flux.1-dev、HunyuanVideo 的验证。
 
 ### 3.2 功能介绍
 
