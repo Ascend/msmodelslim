@@ -17,16 +17,18 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
-
-AscendV1 format: save-side config (AscendV1QuantFormatConfig) and load-side
-loader (AscendV1Format) + decoder (AscendV1FormatDecoder).
 """
 
-from .ascendV1 import AscendV1QuantFormatConfig
-from .format import ASCENDV1_DESC_JSON_NAME, AscendV1Format
+from abc import ABC, abstractmethod
+from typing import List, Optional
 
-__all__ = [
-    "AscendV1QuantFormatConfig",
-    "AscendV1Format",
-    "ASCENDV1_DESC_JSON_NAME",
-]
+from msmodelslim.core.infer_engine.interface import InferenceResult
+
+
+class InferenceResultDisplayerInfra(ABC):
+    @abstractmethod
+    def display_result(
+        self,
+        result: InferenceResult,
+        device_indices: Optional[List[int]] = None,
+    ) -> None: ...

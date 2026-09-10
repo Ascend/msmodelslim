@@ -186,7 +186,7 @@ class TestQwen3_5ModelAdapterGetModelPedigree(unittest.TestCase):
 
     def test_returns_qwen3_5_moe_when_called(self):
         """测试get_model_pedigree方法：应返回'qwen3_5_moe'"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             result = adapter.get_model_pedigree()
             self.assertEqual(result, 'qwen3_5_moe')
@@ -197,7 +197,7 @@ class TestQwen3_5ModelAdapterGetModelType(unittest.TestCase):
 
     def test_returns_model_type_when_called(self):
         """测试get_model_type方法：应返回初始化时传入的model_type"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter.model_type = 'Qwen3_5_MoE'
             result = adapter.get_model_type()
@@ -209,14 +209,14 @@ class TestQwen3_5ModelAdapterInit(unittest.TestCase):
 
     def test_processor_none_when_initialized(self):
         """测试初始化后：_processor应为None"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter._processor = None
             self.assertIsNone(adapter._processor)
 
     def test_tokenizer_none_when_initialized(self):
         """测试初始化后：_tokenizer应为None"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter._tokenizer = None
             self.assertIsNone(adapter._tokenizer)
@@ -227,7 +227,7 @@ class TestQwen3_5ModelAdapterEnableKvCache(unittest.TestCase):
 
     def test_use_cache_true_when_need_kv_cache_is_true(self):
         """测试need_kv_cache为True时：应设置use_cache为True"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             mock_model = MagicMock()
             mock_model.config = MagicMock()
@@ -236,7 +236,7 @@ class TestQwen3_5ModelAdapterEnableKvCache(unittest.TestCase):
 
     def test_use_cache_false_when_need_kv_cache_is_false(self):
         """测试need_kv_cache为False时：应设置use_cache为False"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             mock_model = MagicMock()
             mock_model.config = MagicMock()
@@ -249,7 +249,7 @@ class TestQwen3_5ModelAdapterGetAdapterConfigForSubgraph(unittest.TestCase):
 
     def test_returns_list_when_called(self):
         """测试调用后：应返回列表"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter.config = DummyConfig()
             result = adapter.get_adapter_config_for_subgraph()
@@ -257,7 +257,7 @@ class TestQwen3_5ModelAdapterGetAdapterConfigForSubgraph(unittest.TestCase):
 
     def test_correct_config_count_when_full_attention_interval_2(self):
         """测试full_attention_interval为2且4层时：应返回2个配置"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter.config = DummyConfig()
             adapter.config.text_config.full_attention_interval = 2
@@ -267,7 +267,7 @@ class TestQwen3_5ModelAdapterGetAdapterConfigForSubgraph(unittest.TestCase):
 
     def test_empty_list_when_no_full_attention_layers(self):
         """测试full_attention_interval大于层数时：应返回空列表"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter.config = DummyConfig()
             adapter.config.text_config.full_attention_interval = 10
@@ -277,7 +277,7 @@ class TestQwen3_5ModelAdapterGetAdapterConfigForSubgraph(unittest.TestCase):
 
     def test_norm_linear_type_when_config_returned(self):
         """测试返回配置的subgraph_type：应为norm-linear"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter.config = DummyConfig()
             adapter.config.text_config.full_attention_interval = 2
@@ -289,7 +289,7 @@ class TestQwen3_5ModelAdapterGetAdapterConfigForSubgraph(unittest.TestCase):
 
     def test_mapping_source_correct_when_config_returned(self):
         """测试返回配置的mapping.source：应包含input_layernorm"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter.config = DummyConfig()
             adapter.config.text_config.full_attention_interval = 2
@@ -300,7 +300,7 @@ class TestQwen3_5ModelAdapterGetAdapterConfigForSubgraph(unittest.TestCase):
 
     def test_mapping_targets_contain_qkv_when_config_returned(self):
         """测试返回配置的mapping.targets：应包含q_proj、k_proj、v_proj"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter.config = DummyConfig()
             adapter.config.text_config.full_attention_interval = 2
@@ -318,7 +318,7 @@ class TestQwen3_5ModelAdapterHandleDataset(unittest.TestCase):
 
     def test_accepts_text_only_samples(self):
         """纯文本样本应通过 handle_dataset"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter._model_path = Path('/fake/path')
             adapter._trust_remote_code = False
@@ -335,7 +335,7 @@ class TestQwen3_5ModelAdapterHandleDataset(unittest.TestCase):
 
     def test_accepts_dict_text_only_samples(self):
         """字典格式纯文本样本应通过 handle_dataset"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter._model_path = Path('/fake/path')
             adapter._trust_remote_code = False
@@ -354,7 +354,7 @@ class TestQwen3_5ModelAdapterInitModel(unittest.TestCase):
 
     def test_raises_invalid_model_when_unknown_architecture(self):
         """测试未知架构时：应抛出InvalidModelError"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter._model_path = Path('/fake/path')
             adapter.config = DummyConfig()
@@ -369,7 +369,7 @@ class TestQwen3_5ModelAdapterHasMtp(unittest.TestCase):
 
     def test_returns_true_when_mtp_keys_present(self):
         """测试权重映射包含mtp键时：应返回True"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter._get_weight_map = MagicMock(
                 return_value={
@@ -381,7 +381,7 @@ class TestQwen3_5ModelAdapterHasMtp(unittest.TestCase):
 
     def test_returns_false_when_no_mtp_keys(self):
         """测试权重映射不包含mtp键时：应返回False"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             adapter._get_weight_map = MagicMock(
                 return_value={
@@ -400,7 +400,7 @@ class TestQwen3_5ModelAdapterGetWeightMap(unittest.TestCase):
         import tempfile
         import os
 
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             weight_map = {"model.layers.0.self_attn.q_proj.weight": "model-00001.safetensors"}
             index_data = {"weight_map": weight_map}
@@ -421,7 +421,7 @@ class TestQwen3_5ModelAdapterGetWeightMap(unittest.TestCase):
         import tempfile
         import os
 
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             weight_map = {"key1": "file1.safetensors"}
             index_data = {"weight_map": weight_map}
@@ -442,7 +442,7 @@ class TestQwen3_5ModelAdapterGetStateDict(unittest.TestCase):
 
     def test_returns_dict_when_module_has_params(self):
         """测试模块有参数时：应返回字典"""
-        with patch.object(Qwen3_5ModelAdapter.__bases__[0], '__init__', return_value=None):
+        with patch.object(Qwen3_5ModelAdapter, '__init__', return_value=None):
             adapter = Qwen3_5ModelAdapter(model_type='Qwen3_5_MoE', model_path=Path('/fake/path'))
             weight_map = {"model.layers.0.input_layernorm.weight": "model-00001.safetensors"}
             adapter._get_weight_map = MagicMock(return_value=weight_map)

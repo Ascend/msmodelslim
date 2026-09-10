@@ -552,7 +552,7 @@ def _normalize_device_argv(argv: List[str]) -> List[str]:
     untouched (it takes precedence). Also applies to `analyze` so legacy
     `--device npu:0,1` enables multi-device DP via `--device_id`.
     """
-    if not argv or argv[0] not in ('quant', 'tune', 'analyze'):
+    if not argv or argv[0] not in ('quant', 'tune', 'analyze', 'eval'):
         return argv
     if not any(arg == '--device' or arg.startswith('--device=') for arg in argv):
         return argv
@@ -947,6 +947,53 @@ def main():
     )
 
     # ------------------------------------------------------------------
+    # Eval command (AscendV1 FakeQuant)
+    eval_parser = subparsers.add_parser(
+        'eval',
+        help='Run fake-quant model evaluation based on AscendV1 export',
+    )
+    eval_parser.add_argument(
+        '--model_type',
+        required=True,
+        help="Type of model (e.g. 'Qwen3-32B', 'Qwen3.6-27B')",
+    )
+    eval_parser.add_argument(
+        '--model_path',
+        dest='model_path',
+        metavar='<PATH>',
+        required=True,
+        type=str,
+        help='Path to the quantized weight directory (e.g. AscendV1 export)',
+    )
+    eval_parser.add_argument(
+        '--device',
+        type=str,
+        default='npu',
+        help="Target device type (e.g. 'npu', 'cpu'). Default: 'npu'",
+    )
+    eval_parser.add_argument(
+        '--device_id',
+        dest='device_id',
+        nargs='*',
+        type=int,
+        metavar='<ID>',
+        default=None,
+        help='Device index for inference, e.g. 0 or 0 1 2 3 for multi-card sample DP',
+    )
+    eval_parser.add_argument(
+        '--prompt_file',
+        type=str,
+        required=True,
+        help='Prompt file path or filename in lab_calib directory. Supports .json and .jsonl formats.',
+    )
+    eval_parser.add_argument(
+        '--max_new_tokens',
+        type=int,
+        default=1,
+        help='Maximum number of new tokens to generate, excluding the prompt tokens (default: 1)',
+    )
+    _add_log_level_args(eval_parser)
+
     # auto tuning command
     # ------------------------------------------------------------------
     tuning_parser = subparsers.add_parser(
@@ -1053,6 +1100,10 @@ def main():
         from msmodelslim.cli.analysis.__main__ import main as analysis_main
 
         analysis_main(args)
+    elif args.command == 'eval':
+        from msmodelslim.cli.eval.__main__ import main as eval_main
+
+        eval_main(args)
     elif args.command == 'tune':
         from msmodelslim.cli.auto_tuning.__main__ import main as tuning_main
 

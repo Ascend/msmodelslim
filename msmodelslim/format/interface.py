@@ -24,6 +24,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 from torch import nn
 
@@ -71,4 +72,41 @@ class IFormat(ABC):
         pass
 
 
-__all__ = ["IFormat", "ExportContext"]
+class IFormatLoader(ABC):
+    """Protocol for loading a quantized model export and rebuilding FakeQuant IR.
+
+    The load-side counterpart of ``IFormat``. A concrete loader (e.g. ``AscendV1Format``)
+    reads the export directory, applies FakeQuant IR structure to the empty-weights shell
+    (``apply_ir``), and hydrates weights per scope (``hydrate``).
+
+    Basic usage::
+
+        loader: IFormatLoader = build_default_format_chain().handle(path, device="cpu")
+        loader.bind_adapter(adapter)
+        loader.apply_ir(model)                          # full tree, one pass
+        loader.hydrate(model, skip_prefixes=decoders)    # shared modules
+        # ... per decoder layer:
+        loader.hydrate(model, prefix="model.layers.0")
+    """
+
+    def bind_adapter(self, adapter: object) -> None:
+        """Optional runtime adapter (e.g. FA3 inject). Default: ignore."""
+
+    @abstractmethod
+    def apply_ir(self, model: nn.Module) -> None:
+        """Apply FakeQuant IR to every described Linear / activation in the full tree.
+
+        Called once during shell build. Meta FakeQuant modules do not occupy real storage,
+        so a full-tree pass is safe.
+        """
+
+    @abstractmethod
+    def hydrate(self, model: nn.Module, prefix: Optional[str] = None, skip_prefixes: Optional[set] = None) -> None:
+        """Load FakeQuant / FLOAT weights for modules in scope.
+
+        ``prefix`` limits to one subtree (e.g. one decoder layer); ``skip_prefixes`` excludes
+        subtrees (e.g. all decoder layers for shared hydrate); both ``None`` means full tree.
+        """
+
+
+__all__ = ["IFormat", "ExportContext", "IFormatLoader"]

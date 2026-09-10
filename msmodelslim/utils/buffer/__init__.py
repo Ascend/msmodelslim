@@ -17,16 +17,11 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
-
-AscendV1 format: save-side config (AscendV1QuantFormatConfig) and load-side
-loader (AscendV1Format) + decoder (AscendV1FormatDecoder).
 """
 
-from .ascendV1 import AscendV1QuantFormatConfig
-from .format import ASCENDV1_DESC_JSON_NAME, AscendV1Format
+from .runtime import RuntimeBufferStore, collect_nonpersistent_buffers
 
 __all__ = [
-    "AscendV1QuantFormatConfig",
-    "AscendV1Format",
-    "ASCENDV1_DESC_JSON_NAME",
+    "RuntimeBufferStore",
+    "collect_nonpersistent_buffers",
 ]

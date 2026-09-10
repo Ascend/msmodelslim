@@ -58,6 +58,7 @@ from msmodelslim.processor.anti_outlier.flex_smooth.interface import FlexSmoothQ
 from msmodelslim.processor.anti_outlier.iter_smooth.interface import IterSmoothInterface
 from msmodelslim.processor.anti_outlier.oasq.interface import OASQInterface
 from msmodelslim.processor.anti_outlier.smooth_quant.interface import SmoothQuantInterface
+from msmodelslim.core.infer_engine.interface import FakeQuantInferenceInterface
 from msmodelslim.processor.kv_smooth import KVSmoothFusedInterface
 from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
 from msmodelslim.processor.quarot import LAOSOnlineRotationInterface, OnlineQuaRotInterface, QuaRotInterface
@@ -107,6 +108,8 @@ __all__ = [
     # FA3 activation quantization interface
     'FA3QuantAdapterInterface',  # For FA3 activation quantization, inject placeholders.
     'FA3QuantPlaceHolder',  # For FA3 activation quantization, placeholders.
+    # Fake-quant inference
+    'FakeQuantInferenceInterface',  # Adapter contract for fake-quant inference engines.
     # QuaRot interface
     'QuaRotInterface',  # For QuaRot.
     'AdaptRotationInterface',  # For AdaptRotation stage1/stage2.

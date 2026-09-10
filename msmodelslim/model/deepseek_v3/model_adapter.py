@@ -42,7 +42,10 @@ from msmodelslim import ir as qir
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph import AdapterConfig, MappingConfig, FusionConfig
-from msmodelslim.model.common.layer_wise_forward import generated_decoder_layer_visit_func, TransformersForwardBreak
+from msmodelslim.model.common.layer_wise_forward import (
+    generated_decoder_layer_visit_func,
+    TransformersForwardBreak,
+)
 from msmodelslim.model.common.utils import _get_expert_range
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
@@ -59,6 +62,7 @@ from ..interface_hub import (
     FlexSmoothQuantInterface,
     FA3QuantAdapterInterface,
     FA3QuantPlaceHolder,
+    FakeQuantInferenceInterface,
     QuaRotInterface,
     AscendV1SaveInterface,
     AttentionAnalysisInterface,
@@ -86,6 +90,7 @@ class DeepSeekV3ModelAdapter(
     IterSmoothInterface,  # support iter smooth
     FlexSmoothQuantInterface,  # support flex smooth quant
     FA3QuantAdapterInterface,  # support FA3 activation quant placeholders
+    FakeQuantInferenceInterface,  # support AscendV1 fake-quant inference
     QuaRotInterface,
     AscendV1SaveInterface,
 ):
@@ -255,6 +260,44 @@ class DeepSeekV3ModelAdapter(
             return args, kwargs
 
         model.model.register_forward_pre_hook(pre_forward_hook, with_kwargs=True)
+
+    # ===== FakeQuantInferenceInterface =====
+    def build_meta_model(self) -> nn.Module:
+        """Build an empty-weights DeepSeek-V3 shell.
+
+        Does not allocate the extra MTP slot used by quant ``init_model`` / ``generate_decoder_layer``.
+        Weights are filled later by AscendV1 hydrate.
+        """
+        try:
+            from transformers import AutoModelForCausalLM
+        except ImportError as exc:
+            raise InvalidModelError(
+                "Failed to import AutoModelForCausalLM for fake-quant inference shell",
+                action="Please install a transformers version that provides AutoModelForCausalLM.",
+            ) from exc
+
+        use_remote = self.trust_remote_code
+        origin_layers = int(self.config.num_hidden_layers)
+        if dist.is_initialized():
+            self.config.ep_size = dist.get_world_size()
+        if hasattr(self.config, "use_cache"):
+            self.config.use_cache = False
+        from accelerate import init_empty_weights
+
+        with init_empty_weights(include_buffers=False):
+            model = AutoModelForCausalLM.from_config(
+                self.config,
+                trust_remote_code=use_remote,
+            )
+
+        if hasattr(model, "config"):
+            model.config.num_hidden_layers = origin_layers
+            if hasattr(model.config, "use_cache"):
+                model.config.use_cache = False
+
+        return model
+
+    # ===== FakeQuantInferenceInterface =====
 
     def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
         adapter_config = []

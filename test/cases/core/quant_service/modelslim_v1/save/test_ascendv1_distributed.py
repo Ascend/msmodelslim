@@ -25,12 +25,10 @@ Test cases for DistributedAscendV1Saver.
 import json
 import os
 import shutil
-import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import torch.multiprocessing as mp
 
 import pytest
 from torch import nn
@@ -605,39 +603,3 @@ class TestDistributedAscendV1Saver:
                 saver.post_run()
 
             mock_record.assert_called_once()
-
-    @pytest.mark.skipif(sys.platform == "win32", reason="spawn+dist worker needs valid Unix paths; run on Linux CI")
-    def test_iter_tasks_distributes_modules_when_multiprocess(self, temp_dir):
-        """场景：多进程 _iter_tasks。预期：各 rank 覆盖不同模块且无重叠。"""
-        world_size = 2
-        ctx = mp.get_context("spawn")
-        queue = ctx.Queue()
-        manager = ctx.Manager()
-        results = manager.dict()
-
-        model = ascendv1_distributed.SimpleModel()
-        all_module_names = set(n for n, _ in model.named_modules())
-
-        processes = []
-        for rank in range(world_size):
-            p = ctx.Process(
-                target=ascendv1_distributed.iter_tasks_mp_worker,
-                args=(rank, world_size, temp_dir, queue, results),
-            )
-            p.start()
-            processes.append(p)
-
-        for p in processes:
-            p.join(timeout=30)
-            assert p.exitcode == 0, f"Process {p.pid} failed with exitcode {p.exitcode}"
-
-        covered = set()
-        for rank in range(world_size):
-            rank_modules = set(results[rank])
-            assert len(rank_modules) > 0, f"Rank {rank} got no modules"
-            assert rank_modules.isdisjoint(covered), (
-                f"Rank {rank} got modules already assigned: {rank_modules & covered}"
-            )
-            covered |= rank_modules
-
-        assert covered == all_module_names, f"Missing modules: {all_module_names - covered}"

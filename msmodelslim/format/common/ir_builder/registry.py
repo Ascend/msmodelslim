@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+Copyright (c) 2025 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -17,16 +17,25 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
-
-AscendV1 format: save-side config (AscendV1QuantFormatConfig) and load-side
-loader (AscendV1Format) + decoder (AscendV1FormatDecoder).
 """
 
-from .ascendV1 import AscendV1QuantFormatConfig
-from .format import ASCENDV1_DESC_JSON_NAME, AscendV1Format
+from typing import Optional, Type
 
-__all__ = [
-    "AscendV1QuantFormatConfig",
-    "AscendV1Format",
-    "ASCENDV1_DESC_JSON_NAME",
-]
+from torch import nn
+
+from msmodelslim.utils.exception import UnsupportedError
+
+from .base import IrBuilder
+
+
+def get_builder_by_ir_type(ir_type: Type[nn.Module]) -> IrBuilder:
+    """Resolve IrBuilder for an IR class via QABCRegistry."""
+    return IrBuilder.create(ir_type)
+
+
+def try_get_builder_for_module(module: nn.Module) -> Optional[IrBuilder]:
+    """Best-effort lookup by ``type(module)`` (exact key match only)."""
+    try:
+        return IrBuilder.create(type(module))
+    except UnsupportedError:
+        return None

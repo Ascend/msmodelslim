@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
 """
@@ -17,16 +16,19 @@ EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
-
-AscendV1 format: save-side config (AscendV1QuantFormatConfig) and load-side
-loader (AscendV1Format) + decoder (AscendV1FormatDecoder).
 """
 
-from .ascendV1 import AscendV1QuantFormatConfig
-from .format import ASCENDV1_DESC_JSON_NAME, AscendV1Format
+from .dp_fake_quant import DPFakeQuantInferenceEngine
+from .fake_quant import FakeQuantInferenceEngine, PrefillLoop, Session, WeightManager
+from .interface import IInferenceEngine, InferenceConfig, InferenceResult
 
 __all__ = [
-    "AscendV1QuantFormatConfig",
-    "AscendV1Format",
-    "ASCENDV1_DESC_JSON_NAME",
+    "FakeQuantInferenceEngine",
+    "DPFakeQuantInferenceEngine",
+    "IInferenceEngine",
+    "InferenceConfig",
+    "InferenceResult",
+    "PrefillLoop",
+    "Session",
+    "WeightManager",
 ]

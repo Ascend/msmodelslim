@@ -21,6 +21,7 @@ See the Mulan PSL v2 for more details.
 
 from typing import List, Any, Generator, Dict
 
+import torch
 from torch import nn
 
 from msmodelslim.core.base.protocol import ProcessRequest
@@ -29,6 +30,7 @@ from msmodelslim.core.graph.adapter_types import AdapterConfig, MappingConfig
 from msmodelslim.processor.anti_outlier.awq.interface import AWQInterface
 from msmodelslim.processor.kv_smooth import KVSmoothFusedType, KVSmoothFusedUnit
 from msmodelslim.processor.quarot import QuaRotInterface, LAOSOnlineRotationInterface
+from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from ..common.layer_wise_forward import generated_decoder_layer_visit_func, transformers_generated_forward_func
@@ -43,6 +45,7 @@ from ..interface_hub import (
     IterSmoothInterface,
     FlexSmoothQuantInterface,
     AdaptRotationInterface,
+    FakeQuantInferenceInterface,
 )
 
 from msmodelslim.processor.flat_quant import FlatQuantInterface
@@ -69,6 +72,8 @@ class Qwen3ModelAdapter(  # pylint: disable=too-many-ancestors
     LAOSOnlineRotationInterface,
     FlatQuantInterface,
     AWQInterface,
+    FakeQuantInferenceInterface,
+    FA3QuantAdapterInterface,
 ):
     def get_flatquant_subgraph(self) -> List[Dict[str, object]]:  # pylint: disable=arguments-differ
         """分析Qwen模型结构并注册所有相关的结构对。"""
@@ -121,6 +126,107 @@ class Qwen3ModelAdapter(  # pylint: disable=too-many-ancestors
 
     def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
         return self._enable_kv_cache(model, need_kv_cache)
+
+    # ===== FA3QuantAdapterInterface =====
+    def inject_fa3_placeholders(
+        self,
+        root_name: str,
+        root_module: nn.Module,
+        should_inject,
+    ) -> None:
+        """Inject fa_q / fa_k / fa_v placeholders into Qwen3 attention modules and wrap forward.
+
+        For FA3 activation quantization, the placeholders are later replaced by
+        FakeQuantActivation IR modules.  For KV-cache quantization, fa_k / fa_v are
+        replaced by FakeQuantDynamicCache.  fa_q remains a passthrough placeholder
+        when only KV-cache quantization is active.
+
+        The wrapped forward replicates ``Qwen3Attention.forward`` exactly, inserting
+        ``self.fa_q / fa_k / fa_v`` calls after RoPE and (optional) cache update,
+        before the attention interface — the correct point for both FA3 activation
+        and KV-cache fake quantization.
+        """
+        from transformers.models.qwen3.modeling_qwen3 import (
+            apply_rotary_pos_emb,
+            eager_attention_forward,
+        )
+        from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
+
+        def _wrap_attention_forward(attn_mod: nn.Module):
+            def new_forward(
+                self,
+                hidden_states: torch.Tensor,
+                position_embeddings,
+                attention_mask,
+                past_key_value=None,
+                cache_position=None,
+                **kwargs,
+            ):
+                input_shape = hidden_states.shape[:-1]
+                hidden_shape = (*input_shape, -1, self.head_dim)
+
+                query_states = self.q_norm(self.q_proj(hidden_states).view(hidden_shape)).transpose(1, 2)
+                key_states = self.k_norm(self.k_proj(hidden_states).view(hidden_shape)).transpose(1, 2)
+                value_states = self.v_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+
+                cos, sin = position_embeddings
+                query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
+
+                if past_key_value is not None:
+                    cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
+                    key_states, value_states = past_key_value.update(
+                        key_states, value_states, self.layer_idx, cache_kwargs
+                    )
+
+                # ===== fa_q / fa_k / fa_v placeholder calls =====
+                # fa_k / fa_v may be replaced by FakeQuantDynamicCache for KV-cache
+                # quantization, or by FakeQuantActivation for FA3 activation quant.
+                # fa_q stays as FA3QuantPlaceHolder (passthrough) when only KV-cache.
+                if hasattr(self, "fa_q"):
+                    query_states = self.fa_q(query_states)
+                if hasattr(self, "fa_k"):
+                    key_states = self.fa_k(key_states)
+                if hasattr(self, "fa_v"):
+                    value_states = self.fa_v(value_states)
+                # ================================================
+
+                # Dispatch attention interface the same way as the original
+                # ``Qwen3Attention.forward`` so that ``sdpa`` (default) and
+                # ``flash_attention_2`` keep working.  Hardcoding eager here would
+                # break when ``_update_causal_mask`` returns ``None`` for sdpa.
+                attention_interface = eager_attention_forward
+                if self.config._attn_implementation != "eager":
+                    attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]
+
+                attn_output, attn_weights = attention_interface(
+                    self,
+                    query_states,
+                    key_states,
+                    value_states,
+                    attention_mask,
+                    scaling=self.scaling,
+                    dropout=0.0 if not self.training else self.attention_dropout,
+                    sliding_window=self.sliding_window,
+                    **kwargs,
+                )
+
+                attn_output = attn_output.reshape(*input_shape, -1).contiguous()
+                attn_output = self.o_proj(attn_output)
+                return attn_output, attn_weights
+
+            # pylint: disable=no-value-for-parameter
+            attn_mod.forward = new_forward.__get__(attn_mod, attn_mod.__class__)
+
+        for name, module in root_module.named_modules():
+            if "Attention" not in module.__class__.__name__:
+                continue
+            full_name = f"{root_name}.{name}" if root_name else name
+            if not should_inject(full_name):
+                continue
+            root_module.set_submodule(f"{name}.fa_q", FA3QuantPlaceHolder(ratio=0.9999))
+            root_module.set_submodule(f"{name}.fa_k", FA3QuantPlaceHolder(ratio=0.9999))
+            root_module.set_submodule(f"{name}.fa_v", FA3QuantPlaceHolder(ratio=1.0))
+            _wrap_attention_forward(module)
 
     def get_kvcache_smooth_fused_subgraph(self) -> List[KVSmoothFusedUnit]:
         return [
@@ -236,6 +342,38 @@ class Qwen3ModelAdapter(  # pylint: disable=too-many-ancestors
 
     def get_pre_head_layernorm(self) -> str:
         return "model.norm"
+
+    def build_meta_model(self) -> nn.Module:
+        """Build a full-depth Qwen3 meta CausalLM skeleton for fake-quant.
+
+        Parameters live on meta; non-persistent buffers (e.g. RoPE ``inv_freq``) stay on CPU
+        so they can be snapshotted and restored after decoder ``.to(meta)``.
+        Weights are filled later by AscendV1 hydrate.
+        """
+        try:
+            from transformers import AutoModelForCausalLM
+        except ImportError as exc:
+            raise InvalidModelError(
+                "Failed to import AutoModelForCausalLM for fake-quant inference shell",
+                action="Please install a transformers version that provides AutoModelForCausalLM.",
+            ) from exc
+
+        origin_layers = int(self.config.num_hidden_layers)
+        if hasattr(self.config, "use_cache"):
+            self.config.use_cache = False
+        from accelerate import init_empty_weights
+
+        with init_empty_weights(include_buffers=False):
+            model = AutoModelForCausalLM.from_config(
+                self.config,
+                trust_remote_code=self.trust_remote_code,
+            )
+
+        get_logger().info(
+            "Built Qwen3 fake-quant inference shell: %d decoder layers (meta params, CPU non-persistent buffers)",
+            origin_layers,
+        )
+        return model
 
     def get_embedding(self) -> str:
         return "model.embed_tokens"

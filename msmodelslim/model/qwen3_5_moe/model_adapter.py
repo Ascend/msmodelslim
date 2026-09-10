@@ -18,6 +18,8 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
+# pylint: disable=too-many-lines
+
 import os
 from collections import defaultdict
 from contextlib import contextmanager
@@ -59,12 +61,14 @@ from msmodelslim.model.interface_hub import (
 )
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
 from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VlmCalibSample
+from msmodelslim.core.infer_engine.interface import FakeQuantInferenceInterface
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import get_valid_read_path, json_safe_load, MAX_READ_FILE_SIZE_512G
 
 from .moe_utils import Qwen3_5MoeSparseMoeBlockWithMLP, convert_experts_to_mlp
 from .modeling_qwen3_5_mtp import Qwen3_5MultiTokenPredictor
+from .conv1d_dtype_patch import ensure_conv1d_forward_patched
 
 
 def remove_zero_and_shift(matrix):
@@ -103,6 +107,7 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
     FA3QuantAdapterInterface,
     LayerWiseOffloadOptionalInterface,
     AscendV1SaveInterface,
+    FakeQuantInferenceInterface,
 ):
     """
     V1 Framework adapter for Qwen3-VL-MoE models.
@@ -119,10 +124,22 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
     """
 
     def __init__(self, model_type: str, model_path: Path, trust_remote_code: bool = False):
-        # Cache for processor (used in dataset handling)
-        self._processor = None
-        self._tokenizer = None
+        ensure_conv1d_forward_patched()
         super().__init__(model_type, model_path, trust_remote_code)
+        self._processor = AutoProcessor.from_pretrained(  # nosec B615
+            self.model_path, trust_remote_code=self.trust_remote_code, local_files_only=True
+        )
+        self._tokenizer = getattr(self._processor, "tokenizer", None)
+        get_logger().info(
+            "Loaded VLM processor=%s tokenizer=%s",
+            type(self._processor).__name__,
+            type(self._tokenizer).__name__,
+        )
+
+    @property
+    def tokenizer(self):
+        """Prefill / infer_loop decode via getattr(adapter, 'tokenizer')."""
+        return self._tokenizer
 
     @staticmethod
     def _convert_qwen3_5_norm_to_standard(model: nn.Module) -> None:
@@ -220,7 +237,7 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
                     'cache_position',
                     'logits_to_keep',
                 ],
-                defaults={'logits_to_keep': 0},
+                defaults={'logits_to_keep': 1},
             )
 
             processed_data.append(processed_item)
@@ -362,6 +379,7 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
         """
 
         get_logger().info("Initializing Qwen3-VL-MoE model with v1 framework (layer-wise loading)...")
+        ensure_conv1d_forward_patched()
 
         # Save original layer count
         origin_layers = self.config.text_config.num_hidden_layers
@@ -578,6 +596,41 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
             mtp_layer = self._load_mtp_if_not_loaded(model)
             mtp_name = "mtp"
             yield mtp_name, mtp_layer
+
+    def _fake_quant_model_cls(self):
+        arch = self.config.architectures[0]
+        if arch == "Qwen3_5MoeForConditionalGeneration":
+            return Qwen3_5MoeForConditionalGeneration
+        if arch == "Qwen3_5ForConditionalGeneration":
+            return Qwen3_5ForConditionalGeneration
+        raise InvalidModelError(
+            f"Invalid model architecture for fake-quant: {arch}",
+            action="Please verify the AscendV1 export config.architectures.",
+        )
+
+    def build_meta_model(self) -> nn.Module:
+        ensure_conv1d_forward_patched()
+        model_cls = self._fake_quant_model_cls()
+
+        self.config.use_cache = False
+        self.config.text_config._attn_implementation = "eager"
+
+        get_logger().info(
+            "Building Qwen3.5 fake-quant shell: %d text layers, vision depth %d",
+            self.config.text_config.num_hidden_layers,
+            self.config.vision_config.depth,
+        )
+
+        ctor_kwargs = {
+            "torch_dtype": self.get_global_model_torch_dtype(),
+            "attn_implementation": "eager",
+        }
+        from accelerate import init_empty_weights
+
+        with init_empty_weights(include_buffers=False):
+            model = model_cls._from_config(self.config, **ctor_kwargs)
+        model = model.eval()
+        return model
 
     def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
         """

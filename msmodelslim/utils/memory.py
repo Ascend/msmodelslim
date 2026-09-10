@@ -19,11 +19,10 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-
 from typing import Any, Optional
 
 import torch
-from torch import nn, distributed as dist
+from torch import nn
 
 from msmodelslim.utils.logging import get_logger
 
@@ -96,7 +95,7 @@ def _align_input_to_module_device(module: Optional[nn.Module], input_data: Any, 
             module_device,
             format_memory_size(total_moved_bytes),
             format_memory_size(get_device_allocated_memory()),
-            format_memory_size(get_device_reserved_memory())
+            format_memory_size(get_device_reserved_memory()),
         )
     else:
         get_logger().debug(
@@ -105,7 +104,7 @@ def _align_input_to_module_device(module: Optional[nn.Module], input_data: Any, 
             module.__class__.__name__,
             module_device,
             format_memory_size(get_device_allocated_memory()),
-            format_memory_size(get_device_reserved_memory())
+            format_memory_size(get_device_reserved_memory()),
         )
 
     return result
@@ -125,9 +124,62 @@ def align_input_to_module_device_hook(module: Optional[nn.Module], args: Any, kw
     返回:
         对齐后的输入数据
     """
-    input_data = (args, kwargs,)
+    input_data = (
+        args,
+        kwargs,
+    )
     aligned_input_data = _align_input_to_module_device(module, input_data)
     return aligned_input_data[0], aligned_input_data[1]
+
+
+_FLOAT_DTYPES = (torch.float16, torch.bfloat16, torch.float32, torch.float64)
+
+
+def _cast_float_to_dtype(data: Any, target_dtype: torch.dtype) -> Any:
+    """递归地将浮点张量转换到 ``target_dtype``；int 与其它类型保持不变。
+
+    与 ``_align_input_to_module_device`` 中的 ``_to_device`` 对称：只动浮点张量，
+    整型张量（如 ``input_ids``）原样返回。
+    """
+    if isinstance(data, torch.Tensor):
+        if data.is_floating_point() and data.dtype != target_dtype:
+            return data.to(target_dtype)
+        return data
+    if isinstance(data, dict):
+        return {k: _cast_float_to_dtype(v, target_dtype) for k, v in data.items()}
+    if isinstance(data, list):
+        return [_cast_float_to_dtype(v, target_dtype) for v in data]
+    if isinstance(data, tuple):
+        return tuple(_cast_float_to_dtype(v, target_dtype) for v in data)
+    return data
+
+
+def align_input_dtype_to_module_hook(module: Optional[nn.Module], args: Any, kwargs: Any) -> Any:
+    """Forward pre-hook：将模块的浮点输入对齐到模块参数的 dtype。
+
+    与 ``align_input_to_module_device_hook`` 配对使用：前者对齐设备，本函数对齐 dtype。
+    伪量化 decoder Linear 反量化输出 float32，而共享 norm / lm_head 权重为 BFloat16，
+    原生 ``model.forward`` 不做 dtype 转换，会导致 ``F.linear`` 报 dtype 不匹配。
+    整型输入（如 ``input_ids``）通过 ``is_floating_point`` 跳过。
+
+    Args:
+        module: 目标模块
+        args: 位置参数
+        kwargs: 关键字参数
+
+    Returns:
+        对齐 dtype 后的 (args, kwargs)
+    """
+    if module is None:
+        return args, kwargs
+    try:
+        target_dtype = next(module.parameters()).dtype
+    except StopIteration:
+        # 模块无参数，返回原始输入
+        return args, kwargs
+    if target_dtype not in _FLOAT_DTYPES:
+        return args, kwargs
+    return _cast_float_to_dtype(args, target_dtype), _cast_float_to_dtype(kwargs, target_dtype)
 
 
 def offload_data_to_cpu_device_hook(module: Optional[nn.Module], _: Any, output: Any) -> Any:
@@ -148,9 +200,9 @@ def offload_data_to_cpu_device_hook(module: Optional[nn.Module], _: Any, output:
     return processed_output
 
 
-def register_device_alignment_hook(module: Optional[nn.Module], with_kwargs: bool = False,
-                                   name: Optional[str] = None, post_offload: bool = False) -> Optional[
-    torch.utils.hooks.RemovableHandle]:
+def register_device_alignment_hook(
+    module: Optional[nn.Module], with_kwargs: bool = False, name: Optional[str] = None, post_offload: bool = False
+) -> Optional[torch.utils.hooks.RemovableHandle]:
     """
     为模块注册设备对齐 hook。
 
@@ -198,10 +250,7 @@ def register_device_alignment_hook(module: Optional[nn.Module], with_kwargs: boo
     module_name = name if name is not None else module.__class__.__name__
     get_logger().debug("Registered device alignment hook for %r, post_offload: %s", module_name, post_offload)
 
-    return {
-        'pre_hook': pre_hook_handle,
-        'post_hook': post_hook_handle
-    }
+    return {'pre_hook': pre_hook_handle, 'post_hook': post_hook_handle}
 
 
 def unregister_device_alignment_hook(module: Optional[nn.Module], name: Optional[str] = None) -> None:
@@ -220,7 +269,7 @@ def unregister_device_alignment_hook(module: Optional[nn.Module], name: Optional
         try:
             module._device_alignment_pre_hook_handle.remove()
         except Exception as e:
-            get_logger().warning(f"Failed to remove pre-hook: {e}")
+            get_logger().warning("Failed to remove pre-hook: %s", e)
         delattr(module, '_device_alignment_pre_hook_handle')
 
     # 移除 post-hook（仅当存在时）
@@ -228,7 +277,7 @@ def unregister_device_alignment_hook(module: Optional[nn.Module], name: Optional
         try:
             module._device_alignment_post_hook_handle.remove()
         except Exception as e:
-            get_logger().warning(f"Failed to remove post-hook: {e}")
+            get_logger().warning("Failed to remove post-hook: %s", e)
         delattr(module, '_device_alignment_post_hook_handle')
 
     # 清除注册标记
