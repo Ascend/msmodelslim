@@ -693,7 +693,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
-      <td>-</td>
+      <td>√(一键量化)</td>
     </tr>
     <tr>
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/GLM/README.md">GLM系列</a></strong></td>

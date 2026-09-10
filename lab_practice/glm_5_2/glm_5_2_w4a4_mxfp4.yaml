@@ -1,0 +1,78 @@
+apiversion: modelslim_v1
+metadata:
+  config_id: glm_5_2_w4a4_mxfp4
+  score: 90.0
+  verified_tags:
+    GLM-5.2:
+    - - vLLM_Ascend
+      - Atlas_350
+  label:
+    w_bit: 4
+    a_bit: 4
+    is_sparse: False
+    kv_cache: False
+
+default_w8a8_mxfp_dynamic:
+  &default_w8a8_mxfp_dynamic
+  act:
+    scope: per_block
+    dtype: mxfp8
+    symmetric: True
+    method: minmax
+  weight:
+    scope: per_block
+    dtype: mxfp8
+    symmetric: True
+    method: minmax
+
+default_w4a4_mxfp_dynamic:
+  &default_w4a4_mxfp_dynamic
+  act:
+    scope: per_block
+    dtype: mxfp4
+    symmetric: True
+    method: minmax
+  weight:
+    scope: per_block
+    dtype: mxfp4
+    symmetric: True
+    method: minmax
+
+spec:
+  process:
+  - type: quarot
+    export_extra_info: True
+
+  - type: flex_smooth_quant
+    enable_subgraph_type:
+    - norm-linear
+    - ov
+    include:
+    - '*'
+
+  - type: linear_quant
+    qconfig: *default_w8a8_mxfp_dynamic
+    include:
+    - '*self_attn*'
+    exclude:
+    - '*kv_b_proj'
+    - '*wk'
+    - '*weights_proj'
+
+  - type: linear_quant
+    qconfig: *default_w8a8_mxfp_dynamic
+    include:
+    - '*mlp*'
+    exclude:
+    - '*gate'
+    - '*mlp.experts.*'
+
+  - type: linear_quant
+    qconfig: *default_w4a4_mxfp_dynamic
+    include:
+    - '*mlp.experts.*'
+
+  dataset: qwen3_cot_w4a4.json
+  save:
+  - type: ascendv1_saver
+    part_file_size: 4
