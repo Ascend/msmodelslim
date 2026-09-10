@@ -366,7 +366,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="5"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md">Qwen3.5 series</a></strong></td>
+      <td rowspan="6"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md">Qwen3.5 series</a></strong></td>
       <td>Qwen3.5-397B-A17B</td>
       <td>transformers==5.2.0</td>
       <td>-</td>
@@ -426,6 +426,19 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>Qwen3.6-35B-A3B</td>
+      <td>transformers==5.2.0</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>√(quick quantization)<sup>3</sup></td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1253,3 +1266,4 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
 
 - <sup>1</sup> For optimal performance, use the decompression features of the Atlas 300I Duo series after compression. Only MindIE supports sparse quantization modes.
 - <sup>2</sup> FLUX.1-dev, HunyuanVideo, Wan2.2, and Qwen-Image-Edit-2509 support [MXFP quantization](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf).
+- <sup>3</sup> For Qwen3.6-35B-A3B, `w8a8c8` is a mixed-precision scheme: MXFP8 (W8A8) for linear layers, MXFP4 (W4A4) for routed experts, FA3 quantization for attention (Q/K MXFP8 per-block dynamic + V MXFP8 per-channel static), plus KV Cache quantization. It is verified only for vLLM_Ascend + Ascend_950, so `--tags vLLM_Ascend Ascend_950` must be specified. See [Qwen3.5 quantization guide](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md).

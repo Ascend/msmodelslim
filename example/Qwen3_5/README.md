@@ -21,12 +21,14 @@
 | **Qwen3.5-Dense** | Qwen3.5-27B | [Qwen3.5-27B](https://modelscope.cn/models/Qwen/Qwen3.5-27B)   | ✅ |  |    |        |   |  |   |   | [W8A8](#Qwen3.5-27B-w8a8)|
 | **Qwen3.5-Dense** | Qwen3.5-4B | [Qwen3.5-4B](https://modelscope.cn/models/Qwen/Qwen3.5-4B)   | ✅ |  |    |        |   |  |   |   | [W8A8](#Qwen3.5-4B-w8a8)|
 | **Qwen3.6-Dense** | Qwen3.6-27B | [Qwen3.6-27B](https://modelscope.cn/models/Qwen/Qwen3.6-27B)   | ✅ |  |    |        |   |  |   |   | [W8A8](#Qwen3.6-27B-w8a8)|
+| **Qwen3.6-MoE** | Qwen3.6-35B-A3B | [Qwen3.6-35B-A3B](https://modelscope.cn/models/Qwen/Qwen3.6-35B-A3B)   | ✅ |  |    |        |   |  | ✅ | ✅ | [W8A8C8](#Qwen3.6-35B-A3B-w8a8c8)|
 
 **说明：**
 
 - ✅ 表示该量化策略已通过 msModelSlim 官方验证，功能完整、性能稳定，建议优先采用。
 - 空格表示该量化策略暂未通过 msModelSlim 官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
 - 点击量化命令列中的链接可跳转到对应的具体量化命令。
+- Qwen3.6-35B-A3B 的 W8A8 与 KV Cache、Attention（FA3）量化在同一种混合精度方案中一并生效，对应一键量化参数为 `--quant_type w8a8c8`。
 
 ## 量化权重生成
 
@@ -100,4 +102,14 @@
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-27B --quant_type w8a8 --trust_remote_code True
+  ```
+
+#### 7. Qwen3.6-35B-A3B
+
+##### <span id="Qwen3.6-35B-A3B-w8a8c8">Qwen3.6-35B-A3B W8A8C8量化</span>
+
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+
+  ```shell
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-35B-A3B --quant_type w8a8c8 --trust_remote_code True --tags vLLM_Ascend Ascend_950
   ```

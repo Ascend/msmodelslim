@@ -364,7 +364,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="6"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md">Qwen3.5系列</a></strong></td>
+      <td rowspan="7"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md">Qwen3.5系列</a></strong></td>
       <td>Qwen3.5-397B-A17B</td>
       <td>transformers==5.2.0</td>
       <td>-</td>
@@ -437,6 +437,19 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>Qwen3.6-35B-A3B</td>
+      <td>transformers==5.2.0</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>√(一键量化)<sup>4</sup></td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -1421,3 +1434,4 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 - <sup>1</sup> 压缩后配合昇腾310P系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式。
 - <sup>2</sup> 其中FLUX.1-dev、HunyuanVideo、Wan2.2、Qwen-Image-Edit-2509支持[MXFP量化](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf)。
 - <sup>3</sup> Kimi-K3 的 w4a8 含 INT 与 MXFP 两套实践（共用 `quant_type=w4a8`）；MXFP 需额外指定 `--tags vLLM_Ascend Ascend_950`，详见[Kimi-K3 量化案例](https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Kimi-K3/README.md)。
+- <sup>4</sup> Qwen3.6-35B-A3B 的 w8a8c8 为混合精度方案：线性层 MXFP8（W8A8）、路由专家 MXFP4（W4A4）、Attention 采用 FA3 量化（Q/K MXFP8 per-block 动态 + V MXFP8 per-channel 静态），并含 KV Cache 量化；当前仅适配 vLLM_Ascend + Ascend_950，量化时需指定 `--tags vLLM_Ascend Ascend_950`，详见[Qwen3.5 量化说明](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md)。
