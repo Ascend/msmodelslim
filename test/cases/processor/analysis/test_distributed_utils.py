@@ -27,6 +27,7 @@ import pytest
 from msmodelslim.processor.analysis.distributed_utils import (
     dedupe_layer_scores_keep_max,
     merge_layer_scores_across_ranks,
+    merge_packed_layer_stats_across_ranks,
     publish_layer_analysis_result,
     read_layer_analysis_result,
     write_layer_analysis_result,
@@ -98,6 +99,58 @@ class TestMergeLayerScoresAcrossRanks:
             merged = merge_layer_scores_across_ranks(local)
 
         assert merged == [{"name": "layer.0", "score": 2.0}]
+
+
+class TestMergePackedLayerStatsAcrossRanks:
+    def test_merge_applies_merge_fn_on_single_process(self):
+        local = {
+            "layer.0": {"t_max": 2.0, "t_min": -1.0, "std": 0.5},
+            "layer.1": {"t_max": 1.0, "t_min": -2.0, "std": 0.25},
+        }
+
+        def _merge(xs):
+            return {
+                "t_max": max(s["t_max"] for s in xs),
+                "t_min": min(s["t_min"] for s in xs),
+                "std": max(s["std"] for s in xs),
+            }
+
+        with patch("msmodelslim.processor.analysis.distributed_utils.dist") as mock_dist:
+            mock_dist.is_initialized.return_value = False
+            merged = merge_packed_layer_stats_across_ranks(local, _merge)
+
+        assert merged == local
+
+    def test_merge_reduces_stats_from_ranks_that_saw_layer(self):
+        local = {"layer.0": {"t_max": 2.0, "t_min": -1.0, "std": 0.5}}
+
+        def _merge(xs):
+            return {
+                "t_max": max(s["t_max"] for s in xs),
+                "t_min": min(s["t_min"] for s in xs),
+                "std": max(s["std"] for s in xs),
+            }
+
+        with patch("msmodelslim.processor.analysis.distributed_utils.dist") as mock_dist:
+            mock_dist.is_initialized.return_value = True
+            mock_dist.get_world_size.return_value = 2
+
+            def _all_gather_object(out_list, obj):
+                out_list[0] = {
+                    "layer.0": {"t_max": 2.0, "t_min": -1.0, "std": 0.5},
+                    "layer.moe": {"t_max": 10.0, "t_min": -10.0, "std": 1.0},
+                }
+                out_list[1] = {
+                    "layer.0": {"t_max": 3.0, "t_min": -0.5, "std": 0.8},
+                }
+
+            mock_dist.all_gather_object.side_effect = _all_gather_object
+            merged = merge_packed_layer_stats_across_ranks(local, _merge)
+
+        assert merged == {
+            "layer.0": {"t_max": 3.0, "t_min": -1.0, "std": 0.8},
+            "layer.moe": {"t_max": 10.0, "t_min": -10.0, "std": 1.0},
+        }
 
 
 class TestPublishLayerAnalysisResult:
@@ -186,6 +239,36 @@ class TestPublishLayerAnalysisResult:
 
         assert scores == [{"name": "a", "score": 1.5}]
         mock_getitem.assert_not_called()
+
+    def test_publish_skips_score_merge_when_disabled(self):
+        mock_ctx = MagicMock()
+        mock_ns = MagicMock()
+        mock_ns.state = {}
+        mock_ns.debug = {}
+        mock_ctx.__getitem__.return_value = mock_ns
+
+        with (
+            patch("msmodelslim.processor.analysis.distributed_utils.dist") as mock_dist,
+            patch(
+                "msmodelslim.processor.analysis.distributed_utils.get_current_context",
+                return_value=mock_ctx,
+            ),
+            patch(
+                "msmodelslim.processor.analysis.distributed_utils.merge_layer_scores_across_ranks",
+            ) as mock_merge,
+        ):
+            mock_dist.is_initialized.return_value = True
+            mock_dist.get_world_size.return_value = 4
+            mock_dist.get_rank.return_value = 0
+            scores = publish_layer_analysis_result(
+                [{"name": "a", "score": 1.0}],
+                "std",
+                merge_across_ranks=False,
+            )
+
+        mock_merge.assert_not_called()
+        assert scores == [{"name": "a", "score": 1.0}]
+        assert mock_ns.state["layer_scores"] == scores
 
 
 class TestWriteLayerAnalysisResult:

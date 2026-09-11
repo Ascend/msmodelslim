@@ -19,7 +19,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 import torch
 from torch import nn
@@ -59,8 +59,27 @@ class QuantileAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
         """Compute quantile score for the layer"""
         tensor_data = torch.cat(layer_data['tensor']).view(-1).float()
         device = layer_data['device']
+        if not isinstance(device, torch.device):
+            device = torch.device(device)
         score = QuantileAnalysisMethod.get_quantile_score(tensor_data, device)
         return score
+
+    def pack_stats_for_distributed_merge(self, layer_data: Dict[str, Any]) -> Dict[str, Any]:
+        device = layer_data["device"]
+        device_str = str(device) if isinstance(device, torch.device) else str(device)
+        return {
+            "tensor": [t.detach().cpu() for t in layer_data["tensor"]],
+            "device": device_str,
+        }
+
+    def merge_distributed_stats(self, packed_stats_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+        tensors: List[torch.Tensor] = []
+        for packed in packed_stats_list:
+            tensors.extend(packed["tensor"])
+        return {
+            "tensor": tensors,
+            "device": packed_stats_list[0]["device"],
+        }
 
     def get_hook(self) -> Callable:
         """Get hook function for collecting activation data."""

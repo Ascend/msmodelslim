@@ -32,6 +32,7 @@ from msmodelslim.processor.base import AutoProcessorConfig, AutoSessionProcessor
 from msmodelslim.utils.validation.pydantic import validate_str_length
 from msmodelslim.processor.analysis.distributed_utils import (
     check_distributed_analysis_supported,
+    merge_packed_layer_stats_across_ranks,
     publish_layer_analysis_result,
     write_layer_analysis_result,
 )
@@ -63,9 +64,10 @@ class UnaryAnalysisProcessorConfig(AutoProcessorConfig):
 @QABCRegistry.register(dispatch_key=UnaryAnalysisProcessorConfig, abc_class=AutoSessionProcessor)
 class UnaryAnalysisProcessor(AutoSessionProcessor):
     """
-    Layer sensitivity analysis using unary activation (single forward; std/quantile/kurtosis).
-    preprocess: register hook; process: forward; postprocess: remove hook, compute_score;
-    post_run: write layer_scores to ctx['layer_analysis'].state['layer_scores'].
+    Layer sensitivity analysis using unary activation (single forward).
+
+    Lifecycle orchestration (postprocess / post_run) lives here. The analysis
+    method supplies ``compute_score`` and optionally ``pack`` / ``merge`` for DP.
     """
 
     def __init__(
@@ -79,6 +81,7 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
         self._analysis_method = UnaryAnalysisMethodFactory.create_method(config.metrics, adapter=adapter)
         self._target_layers: List[str] = []
         self._layer_stats: Dict[str, Any] = {}
+        self._pending_packed_stats: Dict[str, Any] = {}
         self._layer_scores: List[Dict[str, Any]] = []
         self._hook_handles: Dict[str, Any] = {}
 
@@ -128,24 +131,44 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
             self._hook_handles[sub_name] = handle
 
     def postprocess(self, request: BatchProcessRequest) -> None:
-        # 移除当前块下所有已注册的 hook，并计算各叶子层的 score
+        # 卸 hook；按 method.pack 决定缓存统计量或本地算分，并释放 raw 激活
         keys_to_remove = [k for k in self._hook_handles if k == request.name or k.startswith(request.name + ".")]
         for k in keys_to_remove:
             handle = self._hook_handles.pop(k, None)
             if handle is not None:
                 handle.remove()
             if k in self._layer_stats and k in self._target_layers:
-                score = self._analysis_method.compute_score(self._layer_stats[k])
-                self._layer_scores.append({"name": k, "score": score})
-                get_logger().debug("%s: %s", k, score)
-                # 分数计算完成后删除激活状态，及时释放内存
+                packed = self._analysis_method.pack_stats_for_distributed_merge(self._layer_stats[k])
+                if packed is not None:
+                    self._pending_packed_stats[k] = packed
+                    get_logger().debug("%s: packed stats for distributed merge", k)
+                else:
+                    score = self._analysis_method.compute_score(self._layer_stats[k])
+                    self._layer_scores.append({"name": k, "score": score})
+                    get_logger().debug("%s: %s", k, score)
                 del self._layer_stats[k]
 
     def post_run(self) -> None:
+        merge_across_ranks = True
+        if self._pending_packed_stats:
+            merged_stats = merge_packed_layer_stats_across_ranks(
+                self._pending_packed_stats,
+                self._analysis_method.merge_distributed_stats,
+            )
+            self._layer_scores = []
+            for name in sorted(merged_stats.keys()):
+                score = self._analysis_method.compute_score(merged_stats[name])
+                self._layer_scores.append({"name": name, "score": score})
+                get_logger().debug("%s: %s", name, score)
+            self._pending_packed_stats.clear()
+            # Scores already come from globally reduced stats.
+            merge_across_ranks = False
+
         self._layer_scores = publish_layer_analysis_result(
             self._layer_scores,
             self._analysis_method.name,
             patterns=self.config.patterns,
+            merge_across_ranks=merge_across_ranks,
         )
         self._analysis_method.enrich_layer_scores(self._layer_scores)
         self._layer_scores = write_layer_analysis_result(

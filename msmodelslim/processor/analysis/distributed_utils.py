@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import torch.distributed as dist
 
@@ -85,6 +85,10 @@ def merge_layer_scores_across_ranks(
     """
     Average layer sensitivity scores across DP ranks.
 
+    Fallback for methods that finalize by averaging local scores
+    (e.g. ra_compress).     Prefer ``merge_packed_layer_stats_across_ranks`` when methods implement
+    ``pack_stats_for_distributed_merge`` (std/quantile/kurtosis).
+
     Each rank may see a calib shard (DistributedSampler) and/or a subset of
     EP-local modules; missing layers on a rank are skipped when averaging.
     """
@@ -112,6 +116,41 @@ def merge_layer_scores_across_ranks(
         "Merged analysis layer scores across %d ranks: local=%d, merged=%d",
         dist.get_world_size(),
         len(local_scores),
+        len(merged),
+    )
+    return merged
+
+
+def merge_packed_layer_stats_across_ranks(
+    local_stats: Dict[str, Any],
+    merge_fn: Callable[[List[Any]], Any],
+) -> Dict[str, Any]:
+    """
+    Gather per-layer packed stats from all DP ranks, then reduce with ``merge_fn``.
+
+    Ranks that never activated a layer (common for MoE experts under calib
+    sharding) simply omit it; ``merge_fn`` only sees ranks that have stats.
+    Single-process / single-rank: still runs ``merge_fn([local])`` so pack and
+    merge formats stay consistent.
+    """
+    if not dist.is_initialized() or dist.get_world_size() <= 1:
+        return {name: merge_fn([packed]) for name, packed in local_stats.items()}
+
+    gathered: List[Optional[Dict[str, Any]]] = [None] * dist.get_world_size()
+    dist.all_gather_object(gathered, local_stats)
+
+    by_name: Dict[str, List[Any]] = defaultdict(list)
+    for rank_stats in gathered:
+        if not rank_stats:
+            continue
+        for name, packed in rank_stats.items():
+            by_name[name].append(packed)
+
+    merged = {name: merge_fn(packed_list) for name, packed_list in by_name.items()}
+    get_logger().info(
+        "Merged analysis layer stats across %d ranks: local=%d, merged=%d",
+        dist.get_world_size(),
+        len(local_stats),
         len(merged),
     )
     return merged
@@ -167,9 +206,13 @@ def publish_layer_analysis_result(
     *,
     patterns: Optional[List[str]] = None,
     quant_modules: Optional[List[str]] = None,
+    merge_across_ranks: bool = True,
 ) -> List[Dict[str, Any]]:
     """
-    Dedupe, merge scores under DP if needed, then publish to context.
+    Dedupe, optionally merge scores under DP, then publish to context.
+
+    Set ``merge_across_ranks=False`` when scores were already computed from
+    globally merged stats (unary std/quantile/kurtosis).
 
     Only handles ``name`` / ``score``. Method-specific fields should be added
     via ``enrich_layer_scores`` after publish, then ``write_layer_analysis_result``.
@@ -179,7 +222,7 @@ def publish_layer_analysis_result(
     """
     layer_scores = dedupe_layer_scores_keep_max(layer_scores)
 
-    if dist.is_initialized() and dist.get_world_size() > 1:
+    if merge_across_ranks and dist.is_initialized() and dist.get_world_size() > 1:
         # all_gather_object already synchronizes ranks; no extra barrier.
         layer_scores = merge_layer_scores_across_ranks(layer_scores)
 

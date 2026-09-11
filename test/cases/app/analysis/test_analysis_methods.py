@@ -214,6 +214,17 @@ class TestAnalysisMethods(unittest.TestCase):
         score = method.compute_score(layer_data)
         self.assertIsInstance(score, float)
 
+        # DP merge of packed stats must match single-card aggregation semantics
+        packed_a = method.pack_stats_for_distributed_merge(
+            {'t_max': torch.tensor(5.0), 't_min': torch.tensor(-1.0), 'std': torch.tensor(2.0)}
+        )
+        packed_b = method.pack_stats_for_distributed_merge(
+            {'t_max': torch.tensor(3.0), 't_min': torch.tensor(-4.0), 'std': torch.tensor(2.5)}
+        )
+        merged = method.merge_distributed_stats([packed_a, packed_b])
+        self.assertEqual(merged, {'t_max': 5.0, 't_min': -4.0, 'std': 2.5})
+        self.assertAlmostEqual(method.compute_score(merged), 5.0 / 2.5)
+
         # 测试get_hook方法
         hook = method.get_hook()
         self.assertTrue(callable(hook))

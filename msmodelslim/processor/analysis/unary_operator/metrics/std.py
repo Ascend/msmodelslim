@@ -19,13 +19,19 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
 import torch
 from torch import nn
 
 from msmodelslim.processor.analysis.methods_base import AnalysisTargetMatcher
 from .base import UnaryAnalysisMethod
+
+
+def _as_float(value: Any) -> float:
+    if torch.is_tensor(value):
+        return float(value.item())
+    return float(value)
 
 
 class StdAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
@@ -41,15 +47,31 @@ class StdAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
 
     def compute_score(self, layer_data: Dict[str, Any]) -> float:
         """Compute std-based score for the layer"""
-        abs_max = max(abs(layer_data['t_max']), abs(layer_data['t_min']))
+        t_max = _as_float(layer_data['t_max'])
+        t_min = _as_float(layer_data['t_min'])
+        abs_max = max(abs(t_max), abs(t_min))
 
         # 防止除零：如果标准差为0，返回abs_max或0
-        std_value = layer_data['std']
+        std_value = _as_float(layer_data['std'])
         if std_value == 0:
-            return abs_max.item() if abs_max > 0 else 0.0
+            return abs_max if abs_max > 0 else 0.0
 
-        range_param = abs_max / std_value
-        return range_param.item()
+        return abs_max / std_value
+
+    def pack_stats_for_distributed_merge(self, layer_data: Dict[str, Any]) -> Dict[str, Any]:
+        # Match within-rank aggregation: max(t_max), min(t_min), max(std).
+        return {
+            "t_max": _as_float(layer_data["t_max"]),
+            "t_min": _as_float(layer_data["t_min"]),
+            "std": _as_float(layer_data["std"]),
+        }
+
+    def merge_distributed_stats(self, packed_stats_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+        return {
+            "t_max": max(s["t_max"] for s in packed_stats_list),
+            "t_min": min(s["t_min"] for s in packed_stats_list),
+            "std": max(s["std"] for s in packed_stats_list),
+        }
 
     def get_hook(self) -> Callable:
         def activation_hook(module, input_tensor, output_tensor, layer_name, stats_dict):

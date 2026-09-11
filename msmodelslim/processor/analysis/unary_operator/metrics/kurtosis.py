@@ -19,7 +19,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, List
 
 import torch
 from torch import nn
@@ -47,6 +47,17 @@ class KurtosisAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
         tensor_data = torch.cat(layer_data['tensor']).view(-1).float()
         score = kurtosis(tensor_data)
         return score.item()
+
+    def pack_stats_for_distributed_merge(self, layer_data: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "tensor": [t.detach().cpu() for t in layer_data["tensor"]],
+        }
+
+    def merge_distributed_stats(self, packed_stats_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+        tensors: List[torch.Tensor] = []
+        for packed in packed_stats_list:
+            tensors.extend(packed["tensor"])
+        return {"tensor": tensors}
 
     def get_hook(self) -> Callable:
         def activation_hook(module, input_tensor, output_tensor, layer_name, stats_dict):
