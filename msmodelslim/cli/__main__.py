@@ -23,6 +23,7 @@ See the Mulan PSL v2 for more details.
 
 import argparse
 import datetime
+import shutil
 import subprocess  # nosec B404
 import sys
 import textwrap
@@ -290,10 +291,12 @@ class _UnifiedHelpFormatter(argparse.RawDescriptionHelpFormatter):
             long_col = '%s %s' % (long_name, args_string)
         return short_col, long_col, (action.help or '')
 
-    def _format_action_section(self, heading, actions):
+    def _format_action_section(self, heading, actions, col1_width=0):
         """
-        Render one argument section with 3-column alignment; column widths are
-        the maximum within the section (spec 4.4.1).
+        Render one argument section with 3-column alignment.
+
+        ``col1_width``（短选项列宽）由 format_help 按全命令统一传入；第 2 列
+        宽度仍按节内最大值计算（spec 4.4.1）。
         """
         if not actions:
             return ''
@@ -315,12 +318,17 @@ class _UnifiedHelpFormatter(argparse.RawDescriptionHelpFormatter):
         # 当第 2 列超宽时，该行把描述换到下一行（缩进到第 3 列起点），
         # 且不参与列宽计算（只按正常行的最宽值对齐）。
         max_col2 = 52
-        col1_width = max(len(r[0]) for r in rows)
         normal = [r for r in rows if len(r[1]) <= max_col2] or rows
         col2_width = max(len(r[1]) for r in normal)
         pad = 2 + col1_width + 1 + col2_width + 2
-        width = max(80, pad + 40)
-        help_width = max(1, width - pad)
+        # 自适应终端宽度（尊重 COLUMNS 环境变量）：下限 100 是为了覆盖
+        # CI/管道等非 tty 场景（get_terminal_size 恒返回 80，会导致描述列过窄）。
+        # 描述列上限 150：防止超宽终端或过短的第 1/2 列把描述拉出超长行。
+        # 第 2 列特别宽时保证描述列至少 40 字符，此时允许超出终端宽度。
+        term_width = shutil.get_terminal_size().columns
+        width = min(max(term_width, 100), 200)
+        # 描述列宽 [40, 150]：下限保证第 2 列超宽的节仍可读（允许超出终端），上限防超长行。
+        help_width = min(max(width - pad, 40), 150)
         indent = ' ' * pad
         lines = [heading + ':']
         for short_col, long_col, help_text in rows:
@@ -390,12 +398,26 @@ class _UnifiedHelpFormatter(argparse.RawDescriptionHelpFormatter):
         positionals = [a for a in actions if not a.option_strings]
         required = [a for a in actions if a.option_strings and a.required]
         optional = [a for a in actions if a.option_strings and not a.required]
+        # 短选项列宽跨节统一（取全命令最宽短选项）；无短选项的参数留空该列，
+        # 使 Required/Optional/Positional 各区的长选项起点对齐（spec 4.4 样例
+        # 中 --fuzzy-match 与 -o, --output-path 对齐的写法）。
+        all_section_actions = (*positionals, *required, *optional)
+        col1_width = max(
+            (
+                len(short) + 1
+                for a in all_section_actions
+                if a.help is not argparse.SUPPRESS and a.option_strings
+                for s in [x for x in a.option_strings if x.startswith('-') and not x.startswith('--')][:1]
+                for short in [s]
+            ),
+            default=0,
+        )
         for heading, section_actions in (
             ('Positional arguments', positionals),
             ('Required arguments', required),
             ('Optional arguments', optional),
         ):
-            help_text += self._format_action_section(heading, section_actions)
+            help_text += self._format_action_section(heading, section_actions, col1_width)
 
         if self._epilog_text:
             help_text += self._epilog_text + '\n'
@@ -770,7 +792,7 @@ def main():
         epilog='Examples:\n'
         '  msmodelslim analyze linear --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct\n'
         '  msmodelslim analyze layer --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct '
-        '--quant_modules model.layers.0.self_attn.*\n'
+        '--quant_modules "*mlp*"\n'
         'Output:\n'
         '  Analysis results are logged to the console/stdout.',
     )
@@ -817,12 +839,14 @@ def main():
         type=str,
         default='mix_calib.jsonl',
         help='Calibration dataset. LLM: a .json/.jsonl file — the filename under lab_calib '
-        '(default mix_calib.jsonl) or a path to that file, not the parent directory. '
-        'VLM: a multimodal dataset directory name under lab_calib (e.g. calibImages) '
-        'or a path to that directory.',
+        '[default: mix_calib.jsonl] or a path to that file, not the parent directory. '
+        'VLM: a multimodal dataset directory name under lab_calib '
+        '[default: calibImages] or a path to that directory.',
     )
     analyze_common_parser.add_argument(
         '--save_path',
+        dest='save_path',
+        metavar='<PATH>',
         type=str,
         default=None,
         help='Path to save result file (YAML for linear/layer/attn). '
@@ -894,7 +918,7 @@ def main():
         '  msmodelslim analyze layer --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct '
         '--metrics mse_model_wise\n'
         '  msmodelslim analyze layer --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct '
-        '--quant_modules model.layers.0.self_attn.*',
+        '--quant_modules "*mlp*"',
     )
     analysis_layer_parser.add_argument(
         '--metrics',
@@ -910,7 +934,7 @@ def main():
         nargs='*',
         metavar='<MODULE>',
         default=['*'],
-        help='Quant modules list that maps to pipeline scope [default: ["*"]]',
+        help='Sub-modules to include in the analysis pipeline, e.g. "*mlp*" [default: ["*"]]',
     )
 
     analysis_attn_parser = analysis_subparsers.add_parser(
