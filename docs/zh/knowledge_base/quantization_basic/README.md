@@ -1,7 +1,5 @@
 # 量化基础
 
-<!-- waiver: G01 原因：本文件为量化基础目录的索引文档，不适用 term_<english_name>.md 词条命名 -->
-
 > **词条类别**：量化基础概念<br>
 > **英文名称**：Quantization Basics<br>
 > **应用领域**：大语言模型量化压缩、推理加速、KVCache 压缩<br>

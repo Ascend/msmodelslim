@@ -1,6 +1,6 @@
 # 接口文档自动生成设计
 
-本文说明 `skills/docs-management/scripts/` 如何从源码抽出**量化配置**接口文档（模板 04）。用法见《[接口文档生成器](../../../../skills/docs-management/scripts/README.md)》；模板与校验清单见《[量化配置文档模板](../development_guide/docs_standards/04_quantization_config_document_template.md)》。
+本文说明 `skills/docs-management/scripts/` 如何从源码抽出**量化配置**接口文档（模板 04）。用法见《[接口文档生成器](../../../../skills/docs-management/scripts/README.md)》；模板与校验清单见《[配置文档模板](../development_guide/docs_standards/04_config_document_template.md)》。
 
 命令行 API（模板 05）不走生成器：对照 CLI 实现与 `--help` 撰写，见《[命令行 API 文档模板](../development_guide/docs_standards/05_cli_api_contract_template.md)》与 `docs/zh/api_reference/cli/`。
 
@@ -186,7 +186,7 @@ YAML 是「根配置 → spec → process[] / save[] → 嵌套对象」的树�
 
 #### 4.3.6 示例 YAML
 
-「完整配置参考」按模板 04 / QE-05 生成：语法正确、放在真实字段路径、可被根配置加载。抽不出满足这些条件的示例则整节省略。
+「完整配置参考」按模板 04 / FE-04 生成：语法正确、放在真实字段路径、可被根配置加载。抽不出满足这些条件的示例则整节省略。
 
 1. 优先用模型级 JSON Schema `examples` / `example`。
 2. 否则从默认值、唯一 `Literal`/`Enum`、以及参数表中的枚举 / 数值下界抽出**本配置**必选字段和带默认值的可选字段。枚举跳过 `placeholder`，并优先取典型值（如 `int8`、`per_channel`）。无约束的必选字符串不编造 `"example"`；量化算法名 `method` 取仓库中已注册的典型值 `minmax`。

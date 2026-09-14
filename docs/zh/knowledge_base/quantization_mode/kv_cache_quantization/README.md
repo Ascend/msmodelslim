@@ -1,7 +1,5 @@
 # KVCache 量化
 
-<!-- waiver: G01 原因：本文件为量化模式目录下的类别文档，不适用 term_<english_name>.md 词条命名 -->
-
 > **词条类别**：量化数据格式（[量化模式](../README.md)）<br>
 > **英文名称**：KV Cache Quantization<br>
 > **应用领域**：KVCache 压缩、长上下文推理加速<br>
