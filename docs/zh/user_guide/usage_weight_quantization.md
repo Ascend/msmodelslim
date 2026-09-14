@@ -213,7 +213,7 @@ msmodelslim quant \
 - `--device_id`：设备索引；单卡如 `0`，多卡如 `0 1 2 3`。
 - `--model_type`：步骤 2 注册的模型名 `${MODEL_TYPE}`，或支持矩阵中已有名称；大小写敏感。
 - `--config`：步骤 3 编写的 YAML `${CONFIG_PATH}`。
-- `--trust_remote_code`：仅当模型必须执行仓库内自定义代码且来源可信时设为 `True`。
+- `--trust_remote_code`：仅当模型必须执行仓库内自定义代码且来源可信时设为 `true`。
 
 **输出**：量化权重目录 `${SAVE_PATH}`。
 
@@ -295,6 +295,6 @@ msmodelslim quant \
 
 ## 11. 安全说明
 
-- `trust_remote_code` 默认保持 `False`；仅当浮点模型必须执行自定义代码且来源可信、可审计时开启。
+- `trust_remote_code` 默认保持 `false`；仅当浮点模型必须执行自定义代码且来源可信、可审计时开启。
 - 浮点权重、校准数据（含图像、视频路径所指向内容）与量化产物应按业务权限管控；勿将含业务数据的校准集或日志提交到公开渠道。
 - 调试模式可能落盘中间张量与统计信息，使用后按需清理 `${SAVE_PATH}/debug_info`。

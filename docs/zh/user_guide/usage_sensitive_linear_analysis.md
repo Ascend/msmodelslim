@@ -124,7 +124,7 @@ msmodelslim analyze linear \
 **执行前检查**：
 
 - 已完成步骤 1～3 的指标、权重与模型适配确认。
-- `trust_remote_code` 默认 `False`；仅当模型必须执行仓库内自定义代码且来源可信时设为 `True`。
+- `trust_remote_code` 默认 `false`；仅当模型必须执行仓库内自定义代码且来源可信时设为 `true`。
 
 **操作**：
 
@@ -208,5 +208,5 @@ msmodelslim analyze linear \
 
 ## 10. 安全说明
 
-- `trust_remote_code` 默认保持 `False`；仅当浮点模型必须执行自定义代码且来源可信、可审计时开启。
+- `trust_remote_code` 默认保持 `false`；仅当浮点模型必须执行自定义代码且来源可信、可审计时开启。
 - 浮点权重与校准数据应按业务权限管控；勿将含业务数据的校准集或分析日志提交到公开渠道。

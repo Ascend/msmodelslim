@@ -1390,7 +1390,7 @@ msmodelslim quant \
     --trust_remote_code true
 ```
 
-请注意`trust_remote_code`为`True`时可能执行浮点模型权重中的代码文件，请确保浮点模型来源安全可靠。其中 `${MODEL_PATH}` 为原始浮点权重路径，`${SAVE_PATH}` 为用户自定义的量化权重保存路径，model_type对应配置为注册的模型名称，`${CONFIG_PATH}` 为YAML配置文件路径。
+请注意`trust_remote_code`为`true`时可能执行浮点模型权重中的代码文件，请确保浮点模型来源安全可靠。其中 `${MODEL_PATH}` 为原始浮点权重路径，`${SAVE_PATH}` 为用户自定义的量化权重保存路径，model_type对应配置为注册的模型名称，`${CONFIG_PATH}` 为YAML配置文件路径。
 
 - 更多命令示例见《[Wan2.2 量化使用说明](../../../../example/multimodal_sd/Wan2_2/README.md)》。
 
