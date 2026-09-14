@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import os
 import time
 
@@ -25,13 +26,22 @@ import onnx
 import onnxruntime
 import numpy as np
 
-from ascend_utils.common.security import get_valid_read_path, get_valid_write_path, SafeWriteUmask, \
-    safe_delete_path_if_exists, check_type
+from ascend_utils.common.security import (
+    get_valid_read_path,
+    get_valid_write_path,
+    SafeWriteUmask,
+    safe_delete_path_if_exists,
+    check_type,
+)
 from ascend_utils.common import acl_inference
 from msmodelslim.onnx.post_training_quant.util import check_input_data
-from msmodelslim.onnx.squant_ptq.quant_deploy import quantize_model_deploy, QuantParamsDict
+from msmodelslim.onnx.squant_ptq.quant_deploy import (
+    quantize_model_deploy,
+    QuantParamsDict,
+)
 from msmodelslim.onnx.squant_ptq import QuantConfig
-from msmodelslim.onnx.squant_ptq.onnx_ptq_kia.quant_funcs_onnx import (
+
+from msmodelslim.onnx.squant_ptq.onnx_ptq_kia.quant_funcs_onnx import (  # pylint: disable=no-name-in-module
     merge_nodes,
     onnx_label_free_calib,
     onnx_data_free_calib,
@@ -46,8 +56,8 @@ from msmodelslim.onnx.squant_ptq.aok.tool_main import aok_export
 from msmodelslim import logger
 
 
-class OnnxCalibrator(object):
-    """ OnnxCalibrator for post-training quantization."""
+class OnnxCalibrator:
+    """OnnxCalibrator for post-training quantization."""
 
     def __init__(self, input_model, cfg: QuantConfig, calib_data=None):
         check_type(cfg, QuantConfig, param_name="cfg")
@@ -90,19 +100,22 @@ class OnnxCalibrator(object):
             self.temp_onnx_path = get_valid_write_path(temp_onnx_path, extensions=None)
             self.temp_om_model = get_valid_write_path(temp_om_model, extensions=None)
             os.makedirs(name=self.temp_onnx_path, mode=0o750, exist_ok=True)
-            self.graph_nodes = om_observer(self.model, self.calib_data, self.quant_param_ops, self.atc_input_shape, 
-                                           (self.temp_onnx_path, self.temp_om_model))
+            self.graph_nodes = om_observer(
+                self.model,
+                self.calib_data,
+                self.quant_param_ops,
+                self.atc_input_shape,
+                (self.temp_onnx_path, self.temp_om_model),
+            )
         self._set_quant()
         if cfg.disable_first_layer:
             disable_first_layer(self.graph, self.graph_nodes, self.logger)
         if cfg.disable_last_layer:
             disable_last_layer(self.graph, self.graph_nodes, self.logger)
 
-
     def __del__(self):
         if not self.use_onnx or self.graph_optimize_level > 0:
             acl_inference.release_acl(self.device_id)
-
 
     def aok_configuration(self, cfg):
         self.initial_input_path = self.input_path
@@ -110,22 +123,20 @@ class OnnxCalibrator(object):
         if self.graph_optimize_level > 0:
             with SafeWriteUmask():
                 timestamp = time.strftime("%Y%m%d%H%M%S", time.localtime())
-                temp_onnx_model = os.path.splitext(os.path.basename(self.input_path))[0] + timestamp + '.onnx'
+                temp_onnx_model = os.path.splitext(os.path.basename(self.input_path))[0] + timestamp + ".onnx"
                 folder_path, _ = os.path.split(self.input_path)
                 self.float_aok_output = os.path.join(folder_path, temp_onnx_model)
                 self.float_aok_output = get_valid_write_path(self.float_aok_output)
                 self.input_path = aok_export(self.input_path, cfg, self.float_aok_output)
 
-    
     def run(self):
         try:
             self._run()
         except Exception as e:
-            raise Exception("Please check your config, model and input!", e) from e
-
+            raise RuntimeError("Please check your config, model and input!", e) from e
 
     def export_quant_onnx(self, save_path, fuse_add=True, use_external=False):
-        """ Export quantized onnx for deployment"""
+        """Export quantized onnx for deployment"""
         output_model_path = get_valid_write_path(save_path, extensions=".onnx")
         check_type(fuse_add, bool, param_name="fuse_add")
         check_type(use_external, bool, param_name="use_external")
@@ -135,10 +146,9 @@ class OnnxCalibrator(object):
 
         quantized_weight_namd = []
         for item in self.graph.node:
-            if item.op_type == "Conv" or item.op_type == "Gemm" or item.op_type == "MatMul":
+            if item.op_type in ("Conv", "Gemm", "MatMul"):
                 weight_name = item.input[1]
-                if weight_name in quant_params.weight_scale and \
-                        quant_params.weight_scale[weight_name] is not None:
+                if weight_name in quant_params.weight_scale and quant_params.weight_scale[weight_name] is not None:
                     quantized_weight_namd.append(weight_name)
 
         quantize_model_deploy(self.graph, quantized_weight_namd, quant_params, fuse_add)
@@ -147,12 +157,19 @@ class OnnxCalibrator(object):
         quant_model = onnx.helper.make_model(self.model.graph, opset_imports=self.ori_opset)
         with SafeWriteUmask():
             if use_external:
-                onnx.save(quant_model, output_model_path, save_as_external_data=True, all_tensors_to_one_file=False,
-                          location=external_path, size_threshold=1024, convert_attribute=True)
+                onnx.save(
+                    quant_model,
+                    output_model_path,
+                    save_as_external_data=True,
+                    all_tensors_to_one_file=False,
+                    location=external_path,
+                    size_threshold=1024,
+                    convert_attribute=True,
+                )
             else:
                 onnx.save(quant_model, output_model_path)
             logger.info("Quantification ended and onnx is stored in %r ", output_model_path)
-            
+
             if self.graph_optimize_level > 1:
                 with SafeWriteUmask():
                     aok_export(output_model_path, self.cfg, output_model_path)
@@ -161,19 +178,19 @@ class OnnxCalibrator(object):
             safe_delete_path_if_exists(self.temp_om_model + ".om")
 
         if self.graph_optimize_level > 0:
-            safe_delete_path_if_exists(self.initial_input_path.replace('.onnx', '.om'))
+            safe_delete_path_if_exists(self.initial_input_path.replace(".onnx", ".om"))
             safe_delete_path_if_exists(self.input_path)
-            safe_delete_path_if_exists(self.input_path.replace('.onnx', '.om'))
-            safe_delete_path_if_exists(output_model_path.replace('.onnx', '.om'))
-    
+            safe_delete_path_if_exists(self.input_path.replace(".onnx", ".om"))
+            safe_delete_path_if_exists(output_model_path.replace(".onnx", ".om"))
+
     def _run(self):
-        """ Calibration"""
+        """Calibration"""
         self.logger.info("Calibration start!")
         for idx in self.graph_nodes:
             node = self.graph_nodes[idx]
-            if 'features' in node.input_tensors:
-                weight = node.input_tensors['weight']
-                features = node.input_tensors['features']
+            if "features" in node.input_tensors:
+                weight = node.input_tensors["weight"]
+                features = node.input_tensors["features"]
                 if self.cfg.quant_mode == 0 and self.cfg.act_method == 0:
                     # Data-free calibration
                     onnx_data_free_calib(node, weight, self.cfg, logger=self.logger)
@@ -197,7 +214,7 @@ class OnnxCalibrator(object):
 
     def _load_model(self):
         self.model = onnx.load(self.input_path)
-        
+
         self.ori_opset = self.model.opset_import
         opt_model_path = self.input_path + ".optimized.onnx"
         if self.use_onnx:
@@ -209,7 +226,7 @@ class OnnxCalibrator(object):
             try:
                 _ = onnxruntime.InferenceSession(self.input_path, sess_option, providers=["CPUExecutionProvider"])
             except Exception as e:
-                self.logger.error("ONNX Runtime Model Optimization Failed, Use Original Model", e)
+                self.logger.error("ONNX Runtime Model Optimization Failed, Use Original Model: %s", e)
                 self.model = onnx.load(self.input_path)
             else:
                 self.model = onnx.load(opt_model_path)
@@ -247,14 +264,14 @@ class OnnxCalibrator(object):
                 if cfg_input_shape[i]:
                     self.input_shapes.append(cfg_input_shape[i])
                 else:
-                    raise ValueError('For model with dynamic shape, please specify the shape of input'
-                                     'to construct calib data')
+                    raise ValueError(
+                        "For model with dynamic shape, please specify the shape of inputto construct calib data"
+                    )
             else:
                 if input_shape[0] in [-1, 0] or isinstance(input_shape[0], str):
                     input_shape[0] = 1
                 self.input_shapes.append(input_shape)
             self.input_types.append(temp_type)
-        return
 
     def _set_quant(self):
         # first/last node disable, disable nodes in cfg, etc.
@@ -270,13 +287,15 @@ class OnnxCalibrator(object):
         # looping of samples
         for index, data_list in enumerate(calib_data):
             if len(data_list) != num_input:
-                logger.warning("The number of %r data records in the calib_data is not equal to "
-                               "the input of the model.", index)
+                logger.warning(
+                    "The number of %r data records in the calib_data is not equal to the input of the model.",
+                    index,
+                )
                 continue
             # looping of inputs in single sample
             for input_data, input_x in zip(data_list, model_inputs):
                 if not check_input_data(input_x, input_data, quant_cfg):
-                    raise ValueError("The %r data records in calib_data is not valid", index)
+                    raise ValueError(f"The {index} data records in calib_data is not valid")
 
     def _get_calib_data(self, calib_data, quant_cfg=None):
         if self.use_onnx:
@@ -297,7 +316,8 @@ class OnnxCalibrator(object):
             for i in range(num_input):
                 random_data = np.array(
                     np.random.random(self.input_shapes[i]),
-                    dtype=get_np_datatype()[self.input_types[i]])
+                    dtype=get_np_datatype()[self.input_types[i]],
+                )
                 calib_data.append(random_data)
             return [calib_data]
 
@@ -306,7 +326,6 @@ class OnnxCalibrator(object):
         for value in dequant_index:
             self.logger.info("disable this node: %r", self.graph_nodes[value].name)
             self.graph_nodes[value].is_quant = False
-        return
 
     def _get_quant_params(self) -> QuantParamsDict:
         input_scale = {}
@@ -330,5 +349,12 @@ class OnnxCalibrator(object):
             else:
                 bias_name[node.inputs[1]] = None
             node_name[node.inputs[1]] = node.name
-        return QuantParamsDict(input_scale, input_offset, weight_scale,
-                               weight_offset, quant_weight, bias_name, node_name)
+        return QuantParamsDict(
+            input_scale,
+            input_offset,
+            weight_scale,
+            weight_offset,
+            quant_weight,
+            bias_name,
+            node_name,
+        )
