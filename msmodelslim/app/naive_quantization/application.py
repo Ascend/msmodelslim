@@ -157,6 +157,8 @@ def validate_device_index(device_index: Optional[List[int]], device_type: Device
 
 
 def check_model_type_transformers(model_adapter: IModel, config: PracticeConfig):
+    if not hasattr(model_adapter, 'get_model_type'):
+        return
     model_type = model_adapter.get_model_type()
     if model_type == "transformers" and config.apiversion == "multimodal_vlm_modelslim_v1":
         raise UnsupportedError(
