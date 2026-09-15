@@ -142,7 +142,6 @@ nav:
               - SessionConfig: "zh/api_reference/python_api_v0/unified_multimodal_generation_apis/SessionConfig.md"
   - 九、附录:
       - 常见问题: "zh/support/faq.md"
-      - 版本说明: "zh/release_notes/release_notes.md"
       - 安全声明: "zh/legal/SECURITY.md"
       - 贡献指南: "zh/contributing/contributing_guide.md"
 

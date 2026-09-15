@@ -13,4 +13,4 @@ keywords: [精度, 调优, 敏感层, 自动调优, 回退, badcase, 精度异�
 - 《[精度调优方法](../user_guide/process_quantization_precision_tuning.md)》
 - 《[量化推理精度异常定位](../user_guide/process_quantization_accuracy_anomaly_locating.md)》
 
-新增条目请按 1.x 顺序追加，并保持“问题现象 / 问题原因 / 解决方法 / 关联文档”的结构。
+新增条目请按 `1.`、`2.` 顺序在文末追加，并保持“问题现象 / 问题原因 / 解决方法 / 关联文档”的四段结构（段内小节编号依次为 `x.1`~`x.4`）。

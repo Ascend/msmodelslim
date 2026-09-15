@@ -6,11 +6,11 @@ keywords: [告警, 提示, DeprecationWarning, swigvarlink, SWIG, sentencepiece]
 
 # 告警与提示 FAQ
 
-> 本节覆盖 msModelSlim 运行过程中告警与提示类常见问题。新增条目按 1.x 顺序追加，并保持“问题现象 / 问题原因 / 解决方法”的结构。
+> 本节覆盖 msModelSlim 运行过程中告警与提示类常见问题。新增条目按 `1.`、`2.` 顺序在文末追加，并保持“问题现象 / 问题原因 / 解决方法 / 关联文档（可选）”的三段结构（段内小节编号依次为 `x.1`~`x.3`）。
 
-## 1.1 量化结束告警“sys:1: DeprecationWarning: builtin type swigvarlink has no module attribute”？
+## 1. 量化结束告警“sys:1: DeprecationWarning: builtin type swigvarlink has no module attribute”？
 
-### 问题现象
+### 1.1 问题现象
 
 量化结束时出现告警：
 
@@ -18,10 +18,10 @@ keywords: [告警, 提示, DeprecationWarning, swigvarlink, SWIG, sentencepiece]
 sys:1: DeprecationWarning: builtin type swigvarlink has no module attribute
 ```
 
-### 问题原因
+### 1.2 问题原因
 
 旧版SWIG（Simplified Wrapper and Interface Generator，简化包装器与接口生成器）生成的第三方库与Python 3.10+不兼容。
 
-### 解决方法
+### 1.3 解决方法
 
 此告警不影响量化结果，升级触发该告警的第三方库即可消除（如sentencepiece）。
