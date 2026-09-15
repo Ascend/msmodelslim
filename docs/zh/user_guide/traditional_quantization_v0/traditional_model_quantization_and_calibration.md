@@ -437,7 +437,7 @@ calib_data = []
 
 目前支持对包括但不限于表1和表2中的模型进行模型训练后量化。
 
-[表格1 已验证模型列表（昇腾A2系列产品或昇腾310P系列产品）](onnx/onnx_verification_table_1.xlsx)
+[表格1 已验证模型列表（Atlas A2 系列产品或Atlas 推理系列产品）](onnx/onnx_verification_table_1.xlsx)
 
 [表格2 已验证模型列表](onnx/onnx_verification_table_2.xlsx)
 

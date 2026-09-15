@@ -58,7 +58,7 @@
 - ✅ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
 - 空格表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
 - 点击量化命令列中的链接可跳转到对应的具体量化命令。
-- 其中FLUX.1-dev、HunyuanVideo、Wan2.2、Qwen-Image-Edit-2509支持在昇腾950代际产品上运行的mxfp8量化，详情点击查看具体量化命令。
+- 其中FLUX.1-dev、HunyuanVideo、Wan2.2、Qwen-Image-Edit-2509支持在Ascend 950PR&950DT 系列产品上运行的mxfp8量化，详情点击查看具体量化命令。
 
 ## 使用示例
 

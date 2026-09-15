@@ -174,15 +174,15 @@ optional/
 | 格式枚举值 | vLLM Ascend | SGLang | MindIE | 说明 |
 | --- | --- | --- | --- | --- |
 | `FLOAT` | √ | √ | √ | 未量化张量，随模型一并加载 |
-| `W8A8` | √ | √ | √ | 昇腾A2系列产品 / 昇腾A3系列产品 / 昇腾950PR&950DT系列产品通用入口之一 |
-| `W8A8_DYNAMIC` | √ | √ | √ | 昇腾A2系列产品 / 昇腾A3系列产品 / 昇腾950PR&950DT系列产品通用入口之一 |
+| `W8A8` | √ | √ | √ | Atlas A2 系列产品 / Atlas A3 系列产品 / Ascend 950PR&950DT 系列产品通用入口之一 |
+| `W8A8_DYNAMIC` | √ | √ | √ | Atlas A2 系列产品 / Atlas A3 系列产品 / Ascend 950PR&950DT 系列产品通用入口之一 |
 | `W4A8_DYNAMIC` | √ | √ | √ | 显存更紧时常用 |
 | `W4A4_DYNAMIC` | √ | √ | √ | 更低比特 INT 路径 |
-| `W8A8_MXFP8` | √ | √ | √ | **推荐昇腾950PR&950DT系列产品**；昇腾A2系列产品 / 昇腾A3系列产品通常不可用 |
-| `W4A8_MXFP` | √ | √ | √ | **推荐昇腾950PR&950DT系列产品** |
-| `W4A4_MXFP4` | √ | √ | √ | **推荐昇腾950PR&950DT系列产品** |
-| `W4A4_MXFP4_DUALSCALE` | √ | √ | √ | **推荐昇腾950PR&950DT系列产品** |
-| `WFP8AFP8_DYNAMIC` | √ | — | — | 仅 vLLM Ascend；**推荐昇腾950PR&950DT系列产品** |
+| `W8A8_MXFP8` | √ | √ | √ | **推荐Ascend 950PR&950DT 系列产品**；Atlas A2 系列产品 / Atlas A3 系列产品通常不可用 |
+| `W4A8_MXFP` | √ | √ | √ | **推荐Ascend 950PR&950DT 系列产品** |
+| `W4A4_MXFP4` | √ | √ | √ | **推荐Ascend 950PR&950DT 系列产品** |
+| `W4A4_MXFP4_DUALSCALE` | √ | √ | √ | **推荐Ascend 950PR&950DT 系列产品** |
+| `WFP8AFP8_DYNAMIC` | √ | — | — | 仅 vLLM Ascend；**推荐Ascend 950PR&950DT 系列产品** |
 | `W8A16` | — | — | √ | 仅 MindIE |
 | `W8A8_MIX` | — | — | √ | PD-Mix；仅 MindIE |
 | `W16A16S` | — | — | √ | 稀疏量化；仅 MindIE |

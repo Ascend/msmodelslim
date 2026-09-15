@@ -21,7 +21,7 @@
 
 | 格式 | 典型适用场景 | 目标推理框架 | 模式概要与推荐 | 分布式导出 | 词条 | 使用指南 |
 | --- | --- | --- | --- | --- | --- | --- |
-| AscendV1 | 昇腾侧 LLM / 多模态理解等通用部署 | vLLM Ascend、SGLang、MindIE | 覆盖 W8A8 / W8A16 / W4A4 / MXFP / KV Cache / FA 等 20+；**昇腾A2系列产品 / 昇腾A3系列产品推荐优先 W8A8（静/动）**，显存更紧时再选 W4；**昇腾950PR&950DT系列产品推荐优先 MXFP（W8A8_MXFP8 / W4A4_MXFP4 等）** | 支持 | 《[AscendV1 量化格式 量化术语百科词条](ascendv1/term_ascendv1.md)》 | 《[AscendV1 使用指南](ascendv1/ascendv1_usage.md)》 |
+| AscendV1 | 昇腾侧 LLM / 多模态理解等通用部署 | vLLM Ascend、SGLang、MindIE | 覆盖 W8A8 / W8A16 / W4A4 / MXFP / KV Cache / FA 等 20+；**Atlas A2 系列产品 / Atlas A3 系列产品推荐优先 W8A8（静/动）**，显存更紧时再选 W4；**Ascend 950PR&950DT 系列产品推荐优先 MXFP（W8A8_MXFP8 / W4A4_MXFP4 等）** | 支持 | 《[AscendV1 量化格式 量化术语百科词条](ascendv1/term_ascendv1.md)》 | 《[AscendV1 使用指南](ascendv1/ascendv1_usage.md)》 |
 | compressed-tensors | 量化权重要在 vLLM 等 HF 生态框架中加载，或需要与 compressed-tensors 规范的 `quantization_config` 对齐 | vLLM 等 HF 生态 | 当前仅 **W8A8 Static / W8A8 Dynamic**；激活 scale 已离线校准选 Static，需免校准或适应动态输入选 Dynamic；不支持 KV Cache | 不支持 | 《[compressed-tensors 量化格式 量化术语百科词条](compressed_tensors/term_compressed_tensors.md)》 | 《[compressed-tensors 使用指南](compressed_tensors/compressed_tensors_usage.md)》 |
 | MindIE-SD | 扩散 / DiT 等多模态**生成**模型交付 MindIE | MindIE（多模态生成） | 面向生成流水线的枚举子集（含 W8A8、MXFP、FAQuant 等）；**推荐按模型最佳实践 `quant_type` 选择**，勿套用 LLM 默认 AscendV1 路径 | 支持 | 《[MindIE-SD 量化格式 量化术语百科词条](mindie_sd/term_mindie_sd.md)》 | 《[MindIE-SD 使用指南](mindie_sd/mindie_sd_usage.md)》 |
 
