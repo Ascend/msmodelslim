@@ -18,18 +18,22 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import datetime
 from pathlib import Path
-from typing import Optional, Union, List, Tuple, Generator, Any
+from typing import Optional, Union, List
 
 from msmodelslim.core.quant_service import IQuantService
-from msmodelslim.core.tune_strategy import ITuningStrategyFactory, ITuningStrategy
+from msmodelslim.core.tune_strategy import ITuningStrategyFactory
 from msmodelslim.core.const import DeviceType
 from msmodelslim.model import IModelFactory, IModel
 from msmodelslim.utils.logging import logger_setter, get_logger
-from msmodelslim.utils.validation.conversion import convert_to_readable_dir, convert_to_writable_dir, \
-    convert_to_timedelta, \
-    convert_to_bool
+from msmodelslim.utils.validation.conversion import (
+    convert_to_readable_dir,
+    convert_to_writable_dir,
+    convert_to_timedelta,
+    convert_to_bool,
+)
 from msmodelslim.utils.validation.type import check_element_type, check_type
 from .evaluation_service_infra import EvaluateServiceInfra, EvaluateContext
 from .model_info_interface import ModelInfoInterface
@@ -43,16 +47,17 @@ MAX_ITERATION = 30
 
 @logger_setter()
 class AutoTuningApplication:
-    def __init__(self,
-                 plan_manager: TuningPlanManagerInfra,
-                 practice_manager: PracticeManagerInfra,
-                 evaluation_service: EvaluateServiceInfra,
-                 tuning_history_manager: TuningHistoryManagerInfra,
-                 tuning_accuracy_manager: TuningAccuracyManagerInfra,
-                 quantization_service: IQuantService,
-                 model_factory: IModelFactory,
-                 strategy_factory: ITuningStrategyFactory,
-                 ) -> None:
+    def __init__(
+        self,
+        plan_manager: TuningPlanManagerInfra,
+        practice_manager: PracticeManagerInfra,
+        evaluation_service: EvaluateServiceInfra,
+        tuning_history_manager: TuningHistoryManagerInfra,
+        tuning_accuracy_manager: TuningAccuracyManagerInfra,
+        quantization_service: IQuantService,
+        model_factory: IModelFactory,
+        strategy_factory: ITuningStrategyFactory,
+    ) -> None:
         self.plan_manager = plan_manager
         self.practice_manager = practice_manager
         self.evaluation_service = evaluation_service
@@ -62,15 +67,17 @@ class AutoTuningApplication:
         self.tuning_history_manager = tuning_history_manager
         self.tuning_accuracy_manager = tuning_accuracy_manager
 
-    def tune(self,
-             model_type: str,
-             model_path: Union[Path, str],
-             save_path: Union[Path, str],
-             plan_id: str,
-             device: DeviceType = DeviceType.NPU,
-             device_indices: Optional[List[int]] = None,
-             timeout: Optional[Union[datetime.timedelta, str]] = None,
-             trust_remote_code: bool = False) -> None:
+    def tune(
+        self,
+        model_type: str,
+        model_path: Union[Path, str],
+        save_path: Union[Path, str],
+        plan_id: str,
+        device: DeviceType = DeviceType.NPU,
+        device_indices: Optional[List[int]] = None,
+        timeout: Optional[Union[datetime.timedelta, str]] = None,
+        trust_remote_code: bool = False,
+    ) -> None:
         """
         Run the auto tuning application.
         Args:
@@ -106,18 +113,19 @@ class AutoTuningApplication:
             get_logger().info("timeout: %r", timeout)
         get_logger().info("trust_remote_code: %r", trust_remote_code)
 
-        self._tune(model_type, model_path, save_path, plan_id, device, device_indices, timeout,
-                   trust_remote_code)
+        self._tune(model_type, model_path, save_path, plan_id, device, device_indices, timeout, trust_remote_code)
 
-    def _tune(self,
-              model_type: str,
-              model_path: Path,
-              save_path: Path,
-              plan_id: str,
-              device: DeviceType,
-              device_indices: Optional[List[int]],
-              timeout: datetime.timedelta,
-              trust_remote_code: bool) -> None:
+    def _tune(
+        self,
+        model_type: str,
+        model_path: Path,
+        save_path: Path,
+        plan_id: str,
+        device: DeviceType,
+        device_indices: Optional[List[int]],
+        timeout: datetime.timedelta,
+        trust_remote_code: bool,
+    ) -> None:
         # analyse model
         get_logger().info("===========ANALYSE MODEL===========")
         model_adapter = self.model_factory.create(model_type, model_path, trust_remote_code)
@@ -132,7 +140,7 @@ class AutoTuningApplication:
         get_logger().info("===========CREATE TUNING STRATEGY===========")
         strategy = self.strategy_factory.create_strategy(strategy_config=plan.strategy)
         get_logger().info("Using strategy %r.", plan.strategy.type)
- 
+
         # start tuning
         get_logger().info("===========START TUNING===========")
         datetime_start = datetime.datetime.now()
@@ -143,16 +151,19 @@ class AutoTuningApplication:
         get_logger().info("===========CHECK HISTORY===========")
         history_path = str(save_path / "history")
         history = self.tuning_history_manager.load_history(history_path)
-        
+
         # Clear history records
         history.clear_records()
-        
+
         # Load accuracy record
         accuracy_record = self.tuning_accuracy_manager.load_accuracy(history_path)
         accuracy_count = accuracy_record.get_accuracy_count()
         if accuracy_count > 0:
-            get_logger().info("Detected %d existing accuracy records in %r. Will attempt to reuse accuracy records.",
-                                accuracy_count, history_path)
+            get_logger().info(
+                "Detected %d existing accuracy records in %r. Will attempt to reuse accuracy records.",
+                accuracy_count,
+                history_path,
+            )
         else:
             get_logger().info("No existing accuracy records found in %r. Starting fresh tuning.", history_path)
 
@@ -160,14 +171,13 @@ class AutoTuningApplication:
         practice_generator = strategy.generate_practice(model=model_adapter)
         evaluate_result = None
         practice = None
-        
+
         # start tuning
         for count in range(MAX_ITERATION):
             # check timeout
             current_time = datetime.datetime.now()
             if allowed_end_time and current_time > allowed_end_time:
-                get_logger().warning("Current time: %r exceed allowed end time: %r!",
-                                     current_time, allowed_end_time)
+                get_logger().warning("Current time: %r exceed allowed end time: %r!", current_time, allowed_end_time)
                 get_logger().warning("===========TIMEOUT===========")
                 break
 
@@ -185,20 +195,21 @@ class AutoTuningApplication:
                 if evaluate_result is not None:
                     get_logger().info("Got accuracy from accuracy records for iteration %d", count)
                     for accuracy_unit in evaluate_result.accuracies:
-                        get_logger().info("Accuracy from accuracy records of %r: %r",
-                                          accuracy_unit.dataset, accuracy_unit.accuracy)
-                
+                        get_logger().info(
+                            "Accuracy from accuracy records of %r: %r", accuracy_unit.dataset, accuracy_unit.accuracy
+                        )
+
                 # Path 2: If not found in accuracy records, quantize and evaluate
                 if evaluate_result is None:
-                    quant_model_path = save_path / f"quant_model"
+                    quant_model_path = save_path / "quant_model"
 
                     # quantize model
                     self.quantization_service.quantize(
-                        practice.model_copy(deep=True),
+                        practice.extract_quant_config(),
                         model_adapter=model_adapter,
                         save_path=quant_model_path,
                         device=device,
-                        device_indices=device_indices
+                        device_indices=device_indices,
                     )
                     get_logger().info("Quantize model success")
 
@@ -215,13 +226,12 @@ class AutoTuningApplication:
                     )
                     get_logger().info("Evaluate model success")
                     for accuracy_unit in evaluate_result.accuracies:
-                        get_logger().info("Evaluate Accuracy of %r: %r",
-                                          accuracy_unit.dataset, accuracy_unit.accuracy)
-                    
+                        get_logger().info("Evaluate Accuracy of %r: %r", accuracy_unit.dataset, accuracy_unit.accuracy)
+
                     # Save accuracy record only after new evaluation
                     accuracy_record.append_accuracy(practice, plan.evaluation, evaluate_result)
                     get_logger().info("Append accuracy success")
-                
+
                 history.append_history(practice, evaluate_result)
                 get_logger().info("Append history success")
             except StopIteration:
@@ -232,21 +242,19 @@ class AutoTuningApplication:
         else:
             get_logger().warning("===========EXCEED MAX TUNING ITERATION: %r===========", MAX_ITERATION)
 
-
     def _save_practice_to_custom_repo(self, model_adapter: IModel, practice):
         if not self.practice_manager.is_saving_supported():
             get_logger().warning(
-                "Custom Practice Manager is not provided. "
-                "Final practice will not be saved to Best Practice Repository.")
+                "Custom Practice Manager is not provided. Final practice will not be saved to Best Practice Repository."
+            )
             return
         if not isinstance(model_adapter, ModelInfoInterface):
             get_logger().warning(
                 "Model adapter %r does NOT implement ModelInfoInterface. "
                 "Final practice will not be saved to Best Practice Repository",
-                {model_adapter.__class__.__name__})
+                {model_adapter.__class__.__name__},
+            )
             return
 
-        self.practice_manager.save_practice(
-            model_pedigree=model_adapter.get_model_pedigree(),
-            practice=practice)
+        self.practice_manager.save_practice(model_pedigree=model_adapter.get_model_pedigree(), practice=practice)
         get_logger().info("Save practice to repo success")
