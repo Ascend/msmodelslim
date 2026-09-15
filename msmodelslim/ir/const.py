@@ -28,6 +28,7 @@ int8_per_tensor_asym = QScheme(scope=QScope.PER_TENSOR, dtype=QDType.INT8, symme
 int8_per_tensor_sym = QScheme(scope=QScope.PER_TENSOR, dtype=QDType.INT8, symmetric=True)
 int8_per_channel_asym = QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.INT8, symmetric=False)
 int8_per_channel_sym = QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.INT8, symmetric=True)
+int8_per_channel_asym_neg_offset = QScheme(scope=QScope.PER_CHANNEL_NEG_OFFSET, dtype=QDType.INT8, symmetric=False)
 int8_per_group_sym = QScheme(scope=QScope.PER_GROUP, dtype=QDType.INT8, symmetric=True)
 int8_per_group_asym = QScheme(scope=QScope.PER_GROUP, dtype=QDType.INT8, symmetric=False)
 int8_pd_mix_asym = QScheme(scope=QScope.PD_MIX, dtype=QDType.INT8, symmetric=False)

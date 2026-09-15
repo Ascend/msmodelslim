@@ -44,6 +44,7 @@ nav:
           - LAOS (W4A4): "zh/knowledge_base/quantization_algorithms/laos/laos.md"
           - Linear Quant: "zh/knowledge_base/quantization_algorithms/linear_quant/linear_quant.md"
           - MinMax: "zh/knowledge_base/quantization_algorithms/minmax/minmax.md"
+          - HQQ: "zh/knowledge_base/quantization_algorithms/hqq/hqq.md"
           - PDMIX: "zh/knowledge_base/quantization_algorithms/pdmix/pdmix.md"
           - SSZ: "zh/knowledge_base/quantization_algorithms/ssz/ssz.md"
       - 自动调优策略:

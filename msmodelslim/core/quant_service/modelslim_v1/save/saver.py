@@ -76,6 +76,7 @@ class AutoSaverProcessor(AutoSessionProcessor):
         self.process_map: Dict[Type[nn.Module], Callable[[str, nn.Module], None]] = {
             qir.W8A8StaticFakeQuantLinear: self.on_w8a8_static,
             qir.W8A16StaticPerChannelFakeQuantLinear: self.on_w8a16_static_per_channel,
+            qir.W8A16PerChannelNegOffsetFakeQuantLinear: self.on_w8a16_static_per_channel,
             qir.W8A16StaticPerGroupFakeQuantLinear: self.on_w8a16_static_per_group,
             qir.W8A8DynamicPerChannelFakeQuantLinear: self.on_w8a8_dynamic_per_channel,
             qir.W8A8PDMixFakeQuantLinear: self.on_w8a8_pd_mix,

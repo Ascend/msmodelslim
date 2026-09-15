@@ -30,6 +30,7 @@ __all__ = [
     "MXActPerBlockMinmax",
     "WeightPerChannelGPTQ",
     "ActPerTensorNone",
+    "WeightPerChannelHQQ",
     "WeightFouroverSixQuantizer",
     "MXWeightDualScaleMinmax",
     "MXActDualScaleMinmax",
@@ -48,6 +49,7 @@ from .impl.minmax import (
 )
 from .impl.ssz import WeightPerChannelSsz
 from .impl.gptq import WeightPerChannelGPTQ
+from .impl.hqq import WeightPerChannelHQQ
 from .impl.none import ActPerTensorNone
 from .impl.dualscale import MXWeightDualScaleMinmax, MXActDualScaleMinmax
 from .impl.mse_round import MXWeightPerBlockMseRound

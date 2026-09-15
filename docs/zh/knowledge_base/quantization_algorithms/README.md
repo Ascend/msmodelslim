@@ -35,6 +35,7 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 | **PDMIX** | 混合阶段量化 | Prefilling 使用动态量化，Decoding 使用静态量化 | 大模型推理加速，平衡精度与性能 | [PDMIX 词条](pdmix/term_pdmix.md) | [PDMIX 使用指南](pdmix/usage_pdmix.md) |
 | **Histogram** | 激活量化 | 分析直方图分布，搜索最优截断区间 | 过滤离群值，提高精度 | [Histogram 词条](histogram_activation_quantization/term_histogram_activation_quantization.md) | [Histogram 使用指南](histogram_activation_quantization/usage_histogram_activation_quantization.md) |
 | **MinMax** | 基础量化 | 统计最大最小值确定量化范围 | 基础量化场景，计算开销低 | [MinMax 词条](minmax/term_minmax.md) | [MinMax 使用指南](minmax/usage_minmax.md) |
+| **HQQ** | 权重量化 | 半二次分裂迭代优化量化 offset，免校准 | 免校准 W8A16 权重量化，无需校准数据 | [HQQ 词条](hqq/term_hqq.md) | [HQQ 使用指南](hqq/usage_hqq.md) |
 | **SSZ** | 权重量化 | 迭代搜索最优缩放因子和偏移量 | 权重分布不均的精度优化 | [SSZ 词条](ssz/term_ssz.md) | [SSZ 使用指南](ssz/usage_ssz.md) |
 | **LAOS** | 联合方案（LLM） | Adapt Rotation + AutoRound，面向大语言模型 W4A4 等极低比特 | LLM 极致压缩 | [LAOS 词条](laos/term_laos.md) | [LAOS 使用指南](laos/usage_laos.md) |
 | **DAOS** | 联合方案（多模态生成） | OASQ + TLQ；可配合 FA3 做 FA 量化加速推理 | 多模态生成低比特 | [DAOS 词条](daos/term_daos.md) | [DAOS 使用指南](daos/usage_daos.md) |
@@ -66,6 +67,7 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 ### 4.1 量化算法
 
 - **W8A8**：最常用 **MinMax**——统计最大最小值确定量化范围，计算开销低，适合作为默认起步方案。
+- **W8A16**：可用 **HQQ**——半二次分裂迭代优化 offset，免校准（无需校准数据）即可完成权重量化，适合无校准数据或对量化耗时敏感的场景。
 - **W4A8**：权重侧用 **SSZ** 迭代搜索缩放因子与偏移，激活 A8 仍用 **MinMax**，二者配合使用。
 - **W4A4 MXFP**：优先 **Ceil_X**，用 ceil + 可配置除数收紧 shared exponent，抑制 floor 缩放带来的大值截断。
 - **W4A4（INT / MXFP）**：可选用基于训练的 **Trainable Linear Quant（TLQ）** 进一步提升精度，INT 与 MXFP 均支持；TLQ 以可插拔 OP 管线组织范围/舍入（及可选可训练平滑），但对算力要求更高，量化耗时通常成倍高于其他大多数算法，选用时需权衡资源与时延。

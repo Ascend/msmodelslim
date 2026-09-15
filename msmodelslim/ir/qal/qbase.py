@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
@@ -30,15 +31,15 @@ from msmodelslim.utils.exception import SchemaValidateError
 def _get_format_params(elem_format):
     # 定义格式参数表
     format_info = {
-        "mxfp4": {"ebits": 2, "mbits": 3, "emax_offset": 0},    # emax = 2^(ebits - 1)
-        "mxfp8_e4m3": {"ebits": 4, "mbits": 5, "emax_offset": 0},    # emax = 2^(ebits - 1)
-        "mxfp8_e5m2": {"ebits": 5, "mbits": 4, "emax_offset": -1},   # emax = 2^(ebits - 1) - 1
-        "mxint8": {"ebits": 0, "mbits": 8, "emax_offset": 0},    # emax = 0
-        "mxint4": {"ebits": 0, "mbits": 4, "emax_offset": 0},    # emax = 0
+        "mxfp4": {"ebits": 2, "mbits": 3, "emax_offset": 0},  # emax = 2^(ebits - 1)
+        "mxfp8_e4m3": {"ebits": 4, "mbits": 5, "emax_offset": 0},  # emax = 2^(ebits - 1)
+        "mxfp8_e5m2": {"ebits": 5, "mbits": 4, "emax_offset": -1},  # emax = 2^(ebits - 1) - 1
+        "mxint8": {"ebits": 0, "mbits": 8, "emax_offset": 0},  # emax = 0
+        "mxint4": {"ebits": 0, "mbits": 4, "emax_offset": 0},  # emax = 0
     }
 
     if elem_format not in format_info:
-        raise Exception("Unknown element format %s" % elem_format)
+        raise SchemaValidateError("Unknown element format %s" % elem_format)
 
     info = format_info[elem_format]
     ebits = info["ebits"]
@@ -53,10 +54,10 @@ def _get_format_params(elem_format):
 
     # 计算 max_norm
     if elem_format == "mxfp8_e4m3":
-        max_norm = 2 ** emax * 1.75 # (1 + fraction) * 2 ^ (e-bias) fraction = 2^(-1) + 2^(-2)
+        max_norm = 2**emax * 1.75  # (1 + fraction) * 2 ^ (e-bias) fraction = 2^(-1) + 2^(-2)
     else:
         # 注意：当 mbits == 0 时此式可能无效，但当前所有格式 mbits >= 3
-        max_norm = 2 ** emax * float(2 ** (mbits - 1) - 1) / (2 ** (mbits - 2))
+        max_norm = 2**emax * float(2 ** (mbits - 1) - 1) / (2 ** (mbits - 2))
 
     return ebits, mbits, emax, max_norm
 
@@ -77,8 +78,7 @@ class QDType(str, Enum):
         if self not in [QDType.MXFP8, QDType.MXFP4]:
             raise SchemaValidateError(f"mx finfo not defined for {self}")
         Finfo = namedtuple(
-            'finfo',
-            ['block_size', 'scale_bits', 'flush_fp32_subnorms', 'ebits', 'mbits', 'emax', 'max_norm']
+            'finfo', ['block_size', 'scale_bits', 'flush_fp32_subnorms', 'ebits', 'mbits', 'emax', 'max_norm']
         )
         if self == QDType.MXFP8:
             elem_format = "mxfp8_e4m3"
@@ -94,10 +94,11 @@ class QScope(str, Enum):
     PER_CHANNEL = "per_channel"
     PER_GROUP = "per_group"
     PER_BLOCK = "per_block"
-    PER_TOKEN = "per_token"
+    PER_TOKEN = "per_token"  # nosec B105
     PD_MIX = "pd_mix"
     PER_HEAD = "per_head"
     DUAL_SCALE = "dual_scale"
+    PER_CHANNEL_NEG_OFFSET = "per_channel_neg_offset"
 
     PLACEHOLDER = "placeholder"
 
@@ -169,7 +170,7 @@ class QStorage:
 
         if self.dtype in [QDType.INT8, QDType.INT4]:
             self.value = self.value.to(torch.int8)
-        
+
         if self.dtype == QDType.FP8_E4M3:
             self.value = self.value.to(torch.float32)
 
