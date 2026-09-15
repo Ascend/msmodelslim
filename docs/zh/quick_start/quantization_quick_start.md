@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-msModelSlim 是面向昇腾生态的模型压缩工具，覆盖稠密 LLM、MoE 及多模态模型的量化与压缩。本文以 Qwen3.6-27B 为例，带你体验如何通过一键量化将模型权重压缩为 W8A8 格式，并基于vLLM-Ascend完成推理部署验证。
+MindStudio ModelSlim（msModelSlim）是面向昇腾生态的模型压缩工具，覆盖稠密 LLM、MoE 及多模态模型的量化与压缩。本文以 Qwen3.6-27B 为例，带你体验如何通过一键量化将模型权重压缩为 W8A8 格式，并基于 vLLM-Ascend 完成推理部署验证。
 
 **体验地图（核心操作约 10 分钟，不含镜像与模型下载等网络传输时间）**
 
@@ -29,7 +29,7 @@ msModelSlim 是面向昇腾生态的模型压缩工具，覆盖稠密 LLM、MoE 
 |----------|----------------------------------------------|-----------------------------------|
 | **硬件算力** | Linux 服务器配备至少 2 张 NPU 卡（Atlas A2 系列产品或Atlas A3 系列产品），驱动与固件已安装 | 执行 `npu-smi info`，确认 NPU 卡状态正常    |
 | **容器运行** | 已安装并运行 Docker（建议版本 ≥ 18.0）                   | 执行 `docker ps`，无报错即表示服务正常启动       |
-| **脚本执行** | 宿主机已安装 Python 3（任意版本）                        | 在宿主机执行 `python3 -V`，有版本信息输出即表示已安装 |
+| **脚本执行** | 宿主机已安装 Python 3，版本不低于 3.8 且不高于 3.12（推荐 3.10 或 3.11） | 在宿主机执行 `python3 -V`，确认输出版本在 3.8~3.12 范围内 |
 | **网络通信** | 已安装 curl（任意版本）                               | 执行 `curl -V`，有版本信息输出即表示已安装        |
 | **磁盘空间** | 至少 100GB 空闲磁盘空间（用于模型权重下载）                    | 执行 `df -h`，查看磁盘空间使用情况                     |
 
@@ -63,7 +63,7 @@ source /dev/stdin <<< "$(
 >
 > **命令原理**
 >
-> 通过 `lspci` 获取 NPU 的 PCI ID，自动匹配 vLLM-Ascend 官方镜像，并将镜像地址赋给环境变量 `MY_STUDY_VAR_VLLM_IMAGE`，供后续使用。  
+> 通过 `lspci` 获取 NPU 的 PCI ID，自动匹配 vLLM-Ascend 官方镜像，并将镜像地址赋给环境变量 `MY_STUDY_VAR_VLLM_IMAGE`，供后续使用。
 > 所有镜像均来自 Quay.io 发布的 vLLM-Ascend 官方仓库，镜像详情参阅 [vLLM-Ascend 官方镜像仓库](https://quay.io/repository/ascend/vllm-ascend?tab=tags)。
 
 若输出 `[PASS]`，表示识别成功，继续下一步；若输出 `[FAIL]`，可能原因如下：
@@ -79,7 +79,7 @@ source /dev/stdin <<< "$(
 docker pull ${MY_STUDY_VAR_VLLM_IMAGE}
 ```
 
-若因企业内网限制导致拉取失败，请参考 [第 3.1 节](#31-docker-镜像在隔离内网的获取方法)。
+若因企业内网限制导致拉取失败，请参考 [Docker 镜像在隔离内网的获取方法](#31-docker-镜像在隔离内网的获取方法)。
 
 #### 2.1.4 宿主机：下载容器启动脚本
 
@@ -89,7 +89,7 @@ docker pull ${MY_STUDY_VAR_VLLM_IMAGE}
 cd ~ && curl -fLO --retry 3 https://inst.obs.cn-north-4.myhuaweicloud.com/env/ctr_in.py && chmod +x ctr_in.py
 ```
 
-若因网络限制无法下载，请参考 [第 3.2 节](#32-传输容器启动脚本)。
+若因网络限制无法下载，请参考 [传输容器启动脚本](#32-传输容器启动脚本)。
 
 #### 2.1.5 宿主机：启动容器
 
@@ -107,8 +107,6 @@ cd ~ && curl -fLO --retry 3 https://inst.obs.cn-north-4.myhuaweicloud.com/env/ct
 [root@xxxxxx ~]#
 ```
 
-若出现报错或容器选择界面，请返回 [第 2.1.2 节](#212-宿主机自动识别并配置镜像环境变量) 确认输出 `[PASS]` 后重试。
-
 #### 2.1.6 容器内：安装 msModelSlim
 
 进入容器后，安装 msModelSlim 及所需的 transformers 版本：
@@ -125,7 +123,7 @@ pip install -i https://repo.huaweicloud.com/repository/pypi/simple/ \
 >
 > transformers 版本取决于所量化的模型。本例中使用的 Qwen3.6-27B 模型需在 transformers==5.2.0 环境下运行。
 
-若因企业内网限制导致安装失败，请参考 [第 3.3 节](#33-离线安装-python-依赖)。
+若因企业内网限制导致安装失败，请参考 [离线安装 Python 依赖](#33-离线安装-python-依赖)。
 
 #### 2.1.7 容器内：检查环境安装正确性
 
@@ -176,9 +174,9 @@ fi
 > **功能**：环境变量 `ASCEND_RT_VISIBLE_DEVICES` 指定当前进程可见的 NPU ID（支持单个或多个），无需修改代码即可切换设备。
 >
 > **索引映射规则**：
-> 
+>
 > 设置该变量后，可见设备的**逻辑索引将从 0 开始重新编号**，后续操作需使用新索引而非原始 NPU ID。
-> 
+>
 > - `=1`：仅 NPU 1 可见，其新索引为 **0**。
 > - `=1,2,3`：NPU 1/2/3 可见，新索引依次为 **0、1、2**。
 >
@@ -202,7 +200,7 @@ msmodelslim.app.naive_quantization - INFO - ===========SUCCESS===========
 
 1. 确认 NPU 卡状态正常：执行 `npu-smi info`，检查目标卡的 Health 状态是否为 `OK`、AI Core 占用率是否异常，若异常需先释放资源或更换卡。
 2. 检查环境变量设置：执行 `echo ${ASCEND_RT_VISIBLE_DEVICES}`，确认该变量指向的卡 ID 真实存在且未被占用，不可包含空格或无效 ID。
-3. 排查显存不足（OOM）：查看终端错误日志中是否包含类似 `Out of memory` 的关键字。若出现，说明当前卡显存不足，可切换至空闲 NPU 卡重试。
+3. 检查显存是否充足（OOM）：查看终端错误日志中是否包含类似 `Out of memory` 的关键字。若包含，说明当前卡显存不足，请确认该卡显存是否满足模型量化需求，并切换至显存充足的空闲 NPU 卡后重试。
 
 #### 2.2.4 容器内：查看量化输出结果
 
@@ -218,15 +216,17 @@ ls -al ~/qwen36_27b_w8a8
 ~/qwen36_27b_w8a8/
 ├── Qwen3.6-27B_best_practice.yaml                  # 【量化】量化配置协议文件（记录本次量化的完整配置信息，可用于方案复现）
 ├── quant_model_description.json                    # 【量化】量化权重描述文件（记录每个权重张量的量化类型与元数据，是推理框架加载量化模型的重要依据）
-├── quant_model_weights-00001-of-00009.safetensors  # 【量化】量化权重分片 1/9（INT8 量化后的模型权重数据，共 9 个分片）
-├── ...                                             # 【量化】其余权重分片（00002 ~ 00008）
-├── quant_model_weights-00009-of-00009.safetensors  # 【量化】量化权重分片 9/9（INT8 量化后的模型权重数据）
+├── quant_model_weights-00001-of-00008.safetensors  # 【量化】量化权重分片 1/8（INT8 量化后的模型权重数据）
+├── ...                                             # 【量化】其余权重分片（00002 ~ 00007）
+├── quant_model_weights-00008-of-00008.safetensors  # 【量化】量化权重分片 8/8（INT8 量化后的模型权重数据）
 ├── config.json                                     # 【原始】模型配置文件（定义网络架构、层数、隐藏层维度等结构超参数）
 ├── tokenizer_config.json                           # 【原始】分词器配置文件（定义特殊 token、词表大小及文本预处理逻辑）
 ├── tokenizer.json                                  # 【原始】分词器词汇表（定义 token 与 ID 的映射关系）
 ├── chat_template.jinja                             # 【原始】对话模板（定义多轮对话的提示词拼接格式）
 └── generation_config.json                          # 【原始】生成配置文件（定义温度、Top-P、最大生成长度等采样策略）
 ```
+
+> 说明：权重分片的实际数量由量化后权重的总体积与最佳实践配置中的 `part_file_size`（本例为 4GB）共同决定，请以实际生成结果为准。
 
 **2. 验证量化压缩效果**
 
@@ -245,7 +245,7 @@ du -sh ~/qwen36_27b_w8a8
 
 #### 2.3.1 容器内：恢复 vLLM 运行环境
 
-msModelSlim 量化阶段需要 transformers 5.x，而 vLLM 运行时需要 transformers 4.x，因此推理前需降级恢复为镜像中原来的版本：
+msModelSlim 量化阶段依赖 Qwen3.6-27B 要求的 transformers==5.2.0，而 vLLM 运行时依赖 transformers 4.x，因此推理前需将 transformers 恢复为镜像自带的 4.57.6 版本：
 
 ```bash
 pip install -i https://repo.huaweicloud.com/repository/pypi/simple/ transformers==4.57.6
@@ -291,7 +291,7 @@ vllm serve ~/qwen36_27b_w8a8 \
 > **知识点（可选阅读）：vLLM 主要启动参数说明**
 >
 > - `--quantization ascend`：指定使用 Ascend 量化推理后端，加载 msModelSlim 生成的 W8A8 权重。
-> - `--served-model-name`：对外暴露的模型名称，需与客户端请求中的 `model` 字段一致。
+> - `--served-model-name`：服务端对外暴露的模型名称（本例为 `Qwen3.6-27B-W8A8`）。服务启动后，客户端请求中的 `model` 字段需与该取值保持一致，否则请求会提示模型不存在。
 > - `--tensor-parallel-size 2`：张量并行度，将模型切分到 2 张 NPU 卡上。
 > - `--max-model-len 8192`：最大序列长度（Token 数），超出此长度的请求将被拒绝。
 > - `--compilation-config`：启用 FULL_DECODE_ONLY 图模式，将 Decode 阶段编译为静态图加速推理。
@@ -304,7 +304,7 @@ vllm serve ~/qwen36_27b_w8a8 \
 | 1  | 配置解析与插件激活 | 约 10 秒 | 加载 vLLM-Ascend 平台插件，解析模型架构与调度参数 |
 | 2  | Worker 启动与 HCCL 握手 | 约 50 秒 | 拉起多卡 Worker 进程，建立通信链路，分配 TP Rank |
 | 3  | CPU-NPU 亲和绑定 | 约 10 秒 | 按 NUMA 拓扑将 Worker 绑定至 NPU 近端 CPU 核心及中断 |
-| 4  | 加载模型权重 | 约 30 秒 | 将 9 个 safetensors 分片（每卡约 16.7GB）加载至全局内存 |
+| 4  | 加载模型权重 | 约 30 秒 | 将量化权重分片（约 30GB，均分至 2 张卡，每卡约 15GB）加载至全局内存 |
 | 5  | 图编译与算子融合 | 约 80 秒 | Dynamo 字节码转换（20s）+ CANN 算子编译（48s）+ 融合预热 |
 | 6  | NPU Graph 捕获 | 约 30 秒 | 预编译 22 种 Batch 大小（1~152）的静态执行路径 |
 
@@ -316,7 +316,7 @@ vllm serve ~/qwen36_27b_w8a8 \
 (APIServer pid=6036) INFO:     Application startup complete.
 ```
 
-> 启动过程中可能会有一些 Warning 日志，只要出现上述成功日志即可忽略，具体原因参考 [FAQ 4.3](#43-vllm-启动时出现-warning-日志是否正常)。
+> 启动过程中可能会有一些 Warning 日志，只要出现上述成功日志即可忽略，具体原因参考 [vLLM 启动时出现 WARNING 日志是否正常](#43-vllm-启动时出现-warning-日志是否正常)。
 
 若服务启动中止，未出现上述成功日志，请根据终端输出的错误信息定位问题。常见错误及处理方式：
 
@@ -336,13 +336,13 @@ curl -s http://localhost:5678/v1/completions \
   | python3 -c "import sys, json; print(json.load(sys.stdin)['choices'][0]['text'])"
 ```
 
-首次响应可能较慢或返回乱码，等待返回信息即可，返回内容可忽略。
+首次响应可能较慢或返回乱码，这是服务启动后首次推理的正常现象，等待返回信息即可，返回内容可忽略；产生该现象的原因见下方说明（可选阅读）。
 
 > [!NOTE]说明
 >
 > **知识点（可选阅读）：首次请求耗时较长或返回乱码的原因**
 >
-> 服务启动后首次推理会触发若干一次性初始化操作，导致首次推理耗时较长或返回乱码：
+> 该现象由服务启动后首次推理触发的若干一次性初始化操作导致，主要包括以下三方面：
 >
 > 1. NPU Graph 首次执行：静态图路径在首次实际推理时才真正走通完整数据流，日志中可见 `Replaying aclgraph` 提示；
 > 2. Triton 算子 JIT 编译：FlashAttention 等算子首次执行时进行动态编译与自动调优（Autotuning），产生数秒延迟；
@@ -375,9 +375,7 @@ curl -s http://localhost:5678/v1/completions \
 ~/ctr_in.py -d
 ```
 
-🎉 至此，快速入门体验已全部完成。已完成 msModelSlim 一键量化与 vLLM-Ascend 推理部署的完整流程，如需了解更多功能，请阅读 《[使用指南](../user_guide/README.md)》 等进阶文档。
-
-<br>
+🎉 至此，您已完成 msModelSlim 一键量化与 vLLM-Ascend 推理部署的完整流程。如需了解更多功能，请阅读 《[使用指南](../user_guide/README.md)》 等进阶文档。
 
 ## 3. 附录：内网环境无公网访问权限的应对方案
 
@@ -407,7 +405,7 @@ sudo systemctl restart docker
 
 **方案二：离线导入镜像**
 
-若代理方案不可行，请先在内网 NPU 服务器上执行 [第 2.1.2 节](#212-宿主机自动识别并配置镜像环境变量)，记录 `MY_STUDY_VAR_VLLM_IMAGE` 的完整值。然后在一台具备公网访问能力且 CPU 架构相同的中转机上执行：
+若代理方案不可行，请先在内网 NPU 服务器上执行 [宿主机：自动识别并配置镜像环境变量](#212-宿主机自动识别并配置镜像环境变量)，记录 `MY_STUDY_VAR_VLLM_IMAGE` 的完整值。然后在一台具备公网访问能力且 CPU 架构相同的中转机上执行：
 
 ```bash
 VLLM_IMAGE='完整镜像地址'   # 替换为 MY_STUDY_VAR_VLLM_IMAGE 的值
@@ -422,7 +420,7 @@ docker load -i vllm-ascend.tar
 docker images | grep vllm-ascend
 ```
 
-加载完成后，继续 [第 3.2 节](#32-传输容器启动脚本) 传输启动脚本，再返回 [第 2.1.5 节](#215-宿主机启动容器) 启动容器。若已切换宿主机 Shell 会话，需重新执行第 2.1.2 节恢复环境变量。
+加载完成后，继续 [传输容器启动脚本](#32-传输容器启动脚本) 传输启动脚本，再返回 [宿主机：启动容器](#215-宿主机启动容器) 启动容器。若已切换宿主机 Shell 会话，需重新执行[宿主机：自动识别并配置镜像环境变量](#212-宿主机自动识别并配置镜像环境变量)恢复环境变量。
 
 ### 3.2 传输容器启动脚本
 
@@ -440,7 +438,7 @@ chmod +x ctr_in.py
 ls -l ctr_in.py
 ```
 
-确认文件存在且具有执行权限后，返回 [第 2.1.5 节](#215-宿主机启动容器) 启动容器。
+确认文件存在且具有执行权限后，返回 [宿主机：启动容器](#215-宿主机启动容器) 启动容器。
 
 ### 3.3 离线安装 Python 依赖
 
@@ -457,7 +455,23 @@ python3 -m pip download <package_name> --dest offline_wheels
 pip3 install --no-index --find-links="${HOME}/offline_wheels" <package_name>
 ```
 
-安装完成后，返回 [第 2.1.7 节](#217-容器内检查环境安装正确性) 执行验证命令，无需再次执行联网安装命令。
+安装完成后，返回 [容器内：检查环境安装正确性](#217-容器内检查环境安装正确性) 执行验证命令，无需再次执行联网安装命令。
+
+### 3.4 离线获取模型权重
+
+若容器所在环境无公网访问能力，无法直接下载模型权重，请在具备公网访问能力的机器上执行：
+
+```bash
+modelscope download --model Qwen/Qwen3.6-27B --local_dir ./qwen36_27b_base
+```
+
+下载完成后，将 `qwen36_27b_base` 目录整体传输至内网服务器，并在宿主机上通过以下命令复制到容器内：
+
+```bash
+docker cp ./qwen36_27b_base <容器名>:/root/qwen36_27b_base
+```
+
+将 `<容器名>` 替换为实际容器名称（可通过 `docker ps` 查看）。复制完成后，在容器内执行 `ls ~/qwen36_27b_base` 确认包含 `config.json`、`model-*.safetensors` 等文件，随后返回 [容器内：准备 NPU 卡](#222-容器内准备-npu-卡) 继续执行量化。
 
 ## 4. 常见问题（FAQ）
 
@@ -501,3 +515,11 @@ sudo usermod -aG docker "${USER}"
 2. **FULL_DECODE_ONLY 图模式风险提示**：该模式处于实验阶段，提示过多 Batch 捕获可能导致显存不足。若最终输出 `Application startup complete`，即表明图捕获成功，服务可正常使用。
 3. **CUDA Graph 捕获限制**：提示 `Capping cudagraph capture sizes`，表示系统根据可用 Mamba 缓存块自动调整了最大捕获 Batch 大小，属于正常适配行为。
 4. **Gloo 通信回退**：提示 `Unable to resolve hostname`，表示 Gloo 通信库无法解析主机名，已自动回退至 loopback 地址，不影响单机多卡推理。
+
+### 4.4 模型权重下载失败或中断如何处理？
+
+若下载失败或中断，可按以下方式处理：
+
+1. 网络不通或超时：执行 `curl -I https://www.modelscope.cn` 检查网络连通性；若处于企业内网，请配置代理（如 `export HTTPS_PROXY=http://proxy.example.com:8080`）后重试，或改用离线方式获取权重（参见[离线获取模型权重](#34-离线获取模型权重)）。
+2. 磁盘空间不足：执行 `df -h` 确认剩余空间大于 100GB，清理无用文件后重新下载。
+3. 下载中断：直接重新执行上述下载命令即可续传；若反复失败，请删除 `~/qwen36_27b_base` 目录后重试。
