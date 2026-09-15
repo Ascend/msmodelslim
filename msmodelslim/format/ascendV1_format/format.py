@@ -77,7 +77,7 @@ def _is_meta_module(module: nn.Module) -> bool:
 
 def _materialize_module_cpu(module: nn.Module) -> None:
     if _is_meta_module(module):
-        module.to_empty(device="cpu")
+        module.to_empty(device="cpu", recurse=False)
 
 
 @logger_setter(prefix="msmodelslim.format.ascend_v1")
