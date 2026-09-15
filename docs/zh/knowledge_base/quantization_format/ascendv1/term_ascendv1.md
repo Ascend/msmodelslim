@@ -282,7 +282,7 @@ optional/
 | `{prefix}.quant_bias` | int32 | 量化偏置 |
 | `{prefix}.input_scale` | float32 | 激活量化 scale |
 | `{prefix}.input_offset` | float32 | 激活量化 zero-point |
-| `{prefix}.deq_scale` | int64 / float32 | 综合反量化 scale（bfloat16 模型多为 float32，否则常按算子约定以 int64 位型存储） |
+| `{prefix}.deq_scale` | int64 / float32 | 综合反量化 scale（bfloat16 模型多为 float32，否则常按算子约定以 int64 类型存储） |
 | `{prefix}.bias` | float32 | 原始浮点偏置（可选） |
 
 ### 6.4 W8A8_DYNAMIC

@@ -90,7 +90,7 @@ flowchart LR
 
 **操作**：
 
-1. 保持评测条件不变，对比量化前后（或与一次标定基线）的端到端指标。
+1. 保持测评条件不变，对比量化前后（或与一次标定基线）的端到端指标。
 2. 精度不达标时，按对应算法使用指南做单变量调整后重新量化，例如：
    - OASQ：作用范围、`enable_subgraph_type`、`max_iters` 等。
    - TLQ：`strategies` 混合位宽、`train_config`（`iters` / `lr` 等）、OP 相关开关。

@@ -18,7 +18,7 @@ QuantConfig(quant_mode=1, is_signed_quant=True, is_per_channel=True, calib_data=
 | is_signed_quant | 输入 | 激活是否符号量化。| 可选。<br>数据类型：bool。<br>默认值为True，False表示uint8量化，True表示int8量化。<br>CNN类模型建议配置True，Transformer类模型建议配置False。|
 | is_per_channel | 输入 | 权重是否per_channel量化。| 可选。<br>数据类型：bool。<br>默认值为True。|
 | calib_data | 输入 | 校正数据。| 可选。<br>数据类型：list，默认值为[]。<br>对于单输入模型，配置\[[input1]]，多输入模型，配置\[[input1,input2,input3]]。<br>配置为空时，将随机生成校正数据。|
-| calib_method | 输入 | 激活矫正的方法。| 可选。<br>数据类型：int。<br>可选值[0,1,2]，默认值为0。<br>(1)0表示min-max矫正。(2)1表示Percentile。(3)2表示Entropy。|
+| calib_method | 输入 | 激活校正的方法。| 可选。<br>数据类型：int。<br>可选值[0,1,2]，默认值为0。<br>(1)0表示min-max校正。(2)1表示Percentile。(3)2表示Entropy。|
 | quantize_nodes | 输入 | 需要量化的节点。| 可选。<br>数据类型：list。<br>默认值为[]。仅当列表为非空时，该字段生效。|
 | exclude_nodes | 输入 | 排除量化的节点名称。| 可选。<br>数据类型：list。<br>默认值为[]。|
 | amp_num | 输入 | 混合精度回退层数。| 可选。<br>数据类型：int。<br>默认为0。精度降低过多时，可以增大此值，以减少量化的层数。|

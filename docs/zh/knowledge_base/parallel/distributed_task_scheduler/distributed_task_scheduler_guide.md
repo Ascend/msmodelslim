@@ -128,7 +128,7 @@ flowchart LR
 
 1. 各 rank 在同一 `with` 块内完成全部 `submit` 后调用 `scheduler.run()`，返回与提交顺序一致的 `TaskExecutionRecord` 列表（含 `executor_rank`、`exec_time_s`、`sync_time_s` 等）。
 2. 了解执行机制（`WaveDTSBackend`）：
-   - **语义一致性校验**：`run()` 先 `all_gather_object` 比对各 rank 的任务数与任务语义哈希（`task_semantic_hash` 由 fn / sync_fn / args / kwargs / dependencies / parallel 规约后 sha256），不一致直接 `RuntimeError` 并指出首个不一致任务索引——避免各 rank 提交不同任务导致的隐性错误；
+   - **语义一致性校验**：`run()` 先 `all_gather_object` 比对各 rank 的任务数与任务语义哈希（`task_semantic_hash` 由 fn / sync_fn / args / kwargs / dependencies / parallel 归约后 sha256），不一致直接 `RuntimeError` 并指出首个不一致任务索引——避免各 rank 提交不同任务导致的隐性错误；
    - **任务分发**：优先经共享任务队列抢任务（`DPLayerWiseRunner` 在 `mp.spawn` 前创建并注入各 rank 的跨进程队列，rank 0 放入任务索引与 `None` 终止符，各 rank 阻塞 `get`，超时 300s）；无共享队列时退化为静态轮询（`idx % world_size == rank`）；
    - **执行保护**：共享任务执行期间挂载 `_collective_op_guard`，非法集合通信直接报错（子任务函数内不得含集合通信，否则引起进程死锁）；
    - **性能日志**：`run()` 结束后打印 `【DTS】 Summary: ...`（任务数、本 rank 执行数、exec/sync 耗时、speedup 与队列模式）；`exec_over_sync ≤ 1` 时输出 `DTS not suitable for parallel` 提示。
@@ -146,7 +146,7 @@ flowchart LR
 ## 7. 异常处置
 
 - **提交时依赖路径报错**：核对 `model.named_modules()` 全路径；删除 `None` / 空串条目。
-- **载荷不可规约**：`args` / `kwargs` 含非序列化对象，改为索引 / 模块名 / 标量等稳定值。
+- **载荷不可归约**：`args` / `kwargs` 含非序列化对象，改为索引 / 模块名 / 标量等稳定值。
 - **进程死锁**：检查子任务函数中是否包含集合通信，移除其中的集合通信行为。共享队列中每个子任务通常只由一个 rank 执行，其余 rank 无法到达同步位点，因此子任务函数内不应包含集合通信操作。
 
 ## 8. 案例列表

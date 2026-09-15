@@ -138,7 +138,7 @@ EP_ADAPT_RESULT=FAIL
 | EP Check 3 | forward 只走本地专家，但 `state_dict` 仍读全部权重 | FAIL |
 | EP Check 5 | 忘记修改 `get_rotate_map` / `get_adapter_config_for_subgraph` | FAIL |
 | EP Check 6 | 使用单卡，无 EP_CHECK 日志 | FAIL |
-| EP Check 7 | 多卡 EP 量化激活与单卡量化不一致：`all_reduce` 翻倍/漏做/未平均、量化 mapping 未按 rank 本地化 | cosine < 0.99 或 norm_dev > 1e-3 | FAIL |
+| EP Check 7 | 多卡 EP 量化激活与单卡量化不一致：`all_reduce` 翻倍/漏做/未平均、量化 mapping 未按 rank 本地化<br>cosine < 0.99 或 norm_dev > 1e-3 | FAIL |
 
 > 改造细节见 `ep_implementation_guide.md`（专家分片、权重按 rank 加载、mapping 本地化）、
 > `ep_quant_mapping_guide.md`（Smooth/QuaRot/LN fuse 等量化映射的 EP 本地化）

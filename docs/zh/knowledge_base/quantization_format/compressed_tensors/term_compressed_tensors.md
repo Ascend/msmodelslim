@@ -34,6 +34,7 @@ compressed-tensors 本质上是一套**面向 HuggingFace / vLLM 生态的量化
 ---
 
 ## 3. <span id="export-artifacts">导出产物（交付件）</span>
+
 ### 3.1 目录与文件说明
 
 执行一键量化并指定 compressed-tensors 落盘格式（保存器 `type` 为 `compressed_tensors`）后，在指定的 `save_path` 目录下生成以下文件：
@@ -84,7 +85,6 @@ save_directory/
 
 **<span id="global-metadata">顶层字段说明</span>**
 
-
 | 字段                                     | 说明                                                            |
 | -------------------------------------- | ------------------------------------------------------------- |
 | `version`                              | Schema 版本，固定 `"0.13.0"`                                       |
@@ -99,7 +99,6 @@ save_directory/
 
 **QuantizationScheme（config_groups 内）**
 
-
 每个 `config_groups` 条目描述一组层的量化方案。**msModelSlim 当前仅支持线性层（**`nn.Linear` **/ QIR FakeQuantLinear）量化**，因此 `targets` 固定为 `["Linear"]`。
 
 | 字段                   | 说明                            |
@@ -111,7 +110,6 @@ save_directory/
 | `format`             | 层压缩格式，如 `int-quantized`       |
 
 **QuantizationArgs 参数说明**
-
 
 | 参数                | 类型        | 默认值     | 说明                                                                                     |
 | ----------------- | --------- | ------- | -------------------------------------------------------------------------------------- |
@@ -163,6 +161,7 @@ save_directory/
 - **safetensors**：文件 `model*.safetensors`（可分片）；键为 `{prefix}.<param>`，存实际数值张量。
 
 ### 6.1 W8A8 Static
+
 **<span id="desc-w8a8-static">config.json → quantization_config</span>**
 
 典型 `config_groups` 条目（`weights.dynamic = false`，含静态激活）：
@@ -176,7 +175,6 @@ save_directory/
 
 **<span id="st-w8a8-static">`model*.safetensors`</span>**
 
-
 | 张量名                         | 数据类型    | 说明                         |
 | --------------------------- | ------- | -------------------------- |
 | `{prefix}.weight`           | int8    | 量化权重                       |
@@ -186,6 +184,7 @@ save_directory/
 | `{prefix}.bias`             | float32 | 可选                         |
 
 ### 6.2 W8A8 Dynamic
+
 **<span id="desc-w8a8-dynamic">config.json → quantization_config</span>**
 
 典型 `config_groups` 条目（激活为动态，导出时 `input_activations.dynamic = true`）：
@@ -198,7 +197,6 @@ save_directory/
 | `format`                                                                     | `"int-quantized"`                             | 层压缩格式                           |
 
 **<span id="st-w8a8-dynamic">`model*.safetensors`</span>**
-
 
 | 张量名                     | 数据类型    | 说明                              |
 | ----------------------- | ------- | ------------------------------- |

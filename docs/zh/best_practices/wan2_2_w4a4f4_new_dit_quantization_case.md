@@ -36,7 +36,7 @@
 | PyTorch     | 2.9.0 |
 | TorchNPU    | 2.9.0 |
 | MindIE-SD   | 3.1.0 |
-| 评测工具     | [AISBench](https://github.com/AISBench/benchmark) |
+| 测评工具     | [AISBench](https://github.com/AISBench/benchmark) |
 | 其他依赖     | Wan2.2-T2V-A14B 模型权重、[VBench-1.0-mini 评测数据集](https://modelers.cn/datasets/AISBench/VBench-1.0-mini) |
 
 **本案例前置条件**：
@@ -368,7 +368,7 @@ torchrun --nproc_per_node=4 --master_port=23459 vbench.py \
 
 | 项          | 内容                           |
 | ---------- | ---------------------------- |
-| 评测工具       | AISBench |
+| 测评工具       | AISBench |
 | 对比对象       | Wan2.2 FP16浮点推理生成结果 vs Wan2.2 W4A4F4量化推理生成结果 |
 | 数据集与任务     | Vbench-1.0-mini 1%子集 |
 | 样本数 / 子集策略 | VBench-1.0-mini 1%子集共11条prompt，每条prompt生成1个视频，共11个视频样本 |

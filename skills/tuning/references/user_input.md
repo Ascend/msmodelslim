@@ -9,7 +9,6 @@
 **示例：**
 
 > 帮我把 `./models/Llama-3-8B-Instruct` 量化到 NPU 设备 0，精度损失控制在 2% 以内，结果保存到 `./output/llama3-8b-quant`
-
 > Qwen2-7B 在 HuggingFace 上，**W8A8** 量化，NPU 0，`gsm8k` 不低于 81%
 
 ## 参数提取

@@ -136,7 +136,7 @@ msmodelslim --help
 ## 🌌 智能检索
 
 为提升文档查阅效率，我们提供多种高效检索方式：<br>
-🔹 [AI 智能体（msagent）](https://gitcode.com/Ascend/msagent/blob/master/docs/zh/agent_guide/Quantizer.md)：msModelSlim 量化能力已集成至 msagent 智能体，通过自然语言交互即可自动完成模型量化任务。<br>
+🔹 [AI 智能体（msagent）](https://gitcode.com/Ascend/msagent/blob/master/docs/zh/agent_guide/quantizer.md)：msModelSlim 量化能力已集成至 msagent 智能体，通过自然语言交互即可自动完成模型量化任务。<br>
 🔹 [AI 问答（DeepWiki）](https://deepwiki.com/Keithwwa/msmodelslim)：自然语言问答，快速把握项目架构与模块关系。<br>
 
 ---

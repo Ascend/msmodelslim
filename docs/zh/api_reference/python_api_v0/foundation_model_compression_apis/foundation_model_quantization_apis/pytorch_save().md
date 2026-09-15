@@ -19,13 +19,13 @@ calibrator.save(output_path, safetensors_name=None, json_name=None, save_type=No
 | output_path | 输入 | 量化后的权重及相关参数保存路径。| 必选。<br>数据类型：string。|
 | safetensors_name | 输入 | safetensors格式量化权重文件的名称。| 可选。<br>数据类型：string。|
 | json_name | 输入 | safetensors格式量化权重json描述文件的名称。| 可选。<br>数据类型：string。|
-| part_file_size | 输入 | 保存成safetensors权重文件时，进行分片保存时，每个部分的大小，单位为GB。| 可选。<br>数据类型：int。<br>参数默认为None，不启用分片保存的功能。|
+| part_file_size | 输入 | 保存成safetensors权重文件时，每个部分的大小，单位为GB。| 可选。<br>数据类型：int。<br>参数默认为None，不启用分片保存的功能。|
 | save_type | 输入 | 量化后权重的保存格式。| 可选。<br>数据类型：list，元素类型：string。<br>参数默认为["safe_tensor"], 量化权重保存格式为safetensors。|
 
 ## 参数补充说明
 
 - part_file_size
-<br>该参数设置为大于0的整数时，使能分片保存功能。将会按照用户设置的值（GB）进行分片，实际保存的权重可能会略大于设置的值。
+<br>该参数设置为大于0的整数时，开启分片保存功能。将会按照用户设置的值（GB）进行分片，实际保存的权重可能会略大于设置的值。
 - save_type
 <br>该参数支持设置为"numpy"，"safe_tensor"或"ascendV1"三种格式。用户需按照模型权重保存的实际情况进行选择：
 <br>（1）设置为"numpy"时，仅导出npy格式的量化权重文件。`注意：量化类型为W4A8_DYNAMIC时，设置"numpy"格式保存会报错。`

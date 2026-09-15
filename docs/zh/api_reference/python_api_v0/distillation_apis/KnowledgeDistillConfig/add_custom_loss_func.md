@@ -2,7 +2,7 @@
 
 ## 功能说明
 
-KnowledgeDistillConfig类方法，用户调用该方法增加自定义 loss function，而不只是使用api提供的loss function，非必须调用的方法。
+KnowledgeDistillConfig类方法，用户调用该方法增加自定义 loss function，而不只是使用api提供的loss function，非必需调用的方法。
 
 本方法只能对loss function是否为MindSpore模型或PyTorch模型进行校验，不保证用户自定义loss function的可用性、正确性。
 
