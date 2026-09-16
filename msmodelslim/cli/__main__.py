@@ -82,14 +82,17 @@ def _repo_root() -> Path:
     return cur
 
 
-def _load_build_info() -> Tuple[str, str]:
-    """Return ``(git_hash, build_date)`` written at pack time, if present."""
+def _load_build_info() -> Tuple[str, str, str]:
+    """Return ``(git_hash, build_date, git_branch)`` written at pack time, if present."""
     try:
-        from msmodelslim._build_info import BUILD_DATE, GIT_HASH  # pylint: disable=no-name-in-module
+        from msmodelslim import _build_info  # pylint: disable=no-name-in-module
 
-        return (GIT_HASH or '').strip(), (BUILD_DATE or '').strip()
+        git_hash = str(getattr(_build_info, 'GIT_HASH', '') or '').strip()
+        build_date = str(getattr(_build_info, 'BUILD_DATE', '') or '').strip()
+        git_branch = str(getattr(_build_info, 'GIT_BRANCH', '') or '').strip()
+        return git_hash, build_date, git_branch
     except Exception:
-        return '', ''
+        return '', '', ''
 
 
 def _get_version() -> str:
@@ -115,38 +118,87 @@ def _get_version() -> str:
     return 'unknown'
 
 
-def _get_git_hash() -> str:
-    """Return a short git commit hash from the wheel, else from the source checkout."""
-    baked_hash, _ = _load_build_info()
-    if baked_hash:
-        return baked_hash[:12]
+def _git_rev_parse(*args: str) -> str:
+    """Run ``git`` in the source checkout; return empty string if git is unavailable."""
     try:
         out = subprocess.check_output(  # nosec B603, B607
-            ['git', 'rev-parse', 'HEAD'],
+            ['git', *args],
             cwd=str(_repo_root()),
             stderr=subprocess.DEVNULL,
         )
-        return out.decode().strip()[:12]
+        return out.decode().strip()
     except Exception:
         return ''
 
 
+def _get_git_hash() -> str:
+    """Return a short git commit hash from the wheel, else from the source checkout."""
+    baked_hash, _, _ = _load_build_info()
+    if baked_hash:
+        return baked_hash[:12]
+    return _git_rev_parse('rev-parse', 'HEAD')[:12]
+
+
+def _normalize_git_branch(name: str) -> str:
+    """Strip detached-HEAD decorations such as ``remotes/origin/foo~1``."""
+    if not name or name in ('HEAD', 'undefined'):
+        return ''
+    name = name.replace('remotes/origin/', '').replace('remotes/', '')
+    return name.split('~', 1)[0].split('^', 1)[0]
+
+
+def _get_git_branch() -> str:
+    """Return the install/source branch so ``-V`` identifies which branch was used."""
+    _, _, baked_branch = _load_build_info()
+    if baked_branch:
+        return baked_branch
+    branch = _normalize_git_branch(_git_rev_parse('rev-parse', '--abbrev-ref', 'HEAD'))
+    if branch:
+        return branch
+    return _normalize_git_branch(_git_rev_parse('name-rev', '--name-only', 'HEAD'))
+
+
+_LOCAL_TIME_FMT = '%Y-%m-%d %H:%M:%S'
+_UTC_Z_TIME_FMT = '%Y-%m-%dT%H:%M:%SZ'
+
+
+def _format_local_time(value: datetime.datetime) -> str:
+    """Format a datetime in the machine's local timezone, without UTC ``T``/``Z``."""
+    if value.tzinfo is not None:
+        value = value.astimezone()
+    return value.strftime(_LOCAL_TIME_FMT)
+
+
+def _display_build_date(baked_date: str) -> str:
+    """Show pack-time dates in local time; convert legacy UTC ``...Z`` stamps."""
+    text = baked_date.strip()
+    if text.endswith('Z'):
+        try:
+            utc_dt = datetime.datetime.strptime(text, _UTC_Z_TIME_FMT).replace(tzinfo=datetime.timezone.utc)
+        except ValueError:
+            return text
+        return _format_local_time(utc_dt)
+    return text
+
+
 def _get_build_date() -> str:
-    """Return the pack-time UTC date, else the package directory mtime."""
-    _, baked_date = _load_build_info()
+    """Return the pack-time local date, else the package directory mtime."""
+    _, baked_date, _ = _load_build_info()
     if baked_date:
-        return baked_date
+        return _display_build_date(baked_date)
     module_dir = Path(__file__).resolve().parents[1]
     try:
         ts = module_dir.stat().st_mtime
     except OSError:
         return ''
-    return datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    return _format_local_time(datetime.datetime.fromtimestamp(ts))
 
 
 def _print_version() -> None:
     """Print the unified version banner (MindStudio CLI spec section 4.5)."""
-    version = _get_version()
+    # Prefer the git branch used to install/build; fall back to the package version
+    # (e.g. 26.1.0) only when the branch cannot be determined.
+    version = _get_git_branch() or _get_version()
     git_hash = _get_git_hash() or 'unknown'
     build_date = _get_build_date()
     print_logo()
@@ -321,23 +373,23 @@ class _UnifiedHelpFormatter(argparse.RawDescriptionHelpFormatter):
         normal = [r for r in rows if len(r[1]) <= max_col2] or rows
         col2_width = max(len(r[1]) for r in normal)
         pad = 2 + col1_width + 1 + col2_width + 2
-        # 自适应终端宽度（尊重 COLUMNS 环境变量）：下限 100 是为了覆盖
-        # CI/管道等非 tty 场景（get_terminal_size 恒返回 80，会导致描述列过窄）。
-        # 描述列上限 150：防止超宽终端或过短的第 1/2 列把描述拉出超长行。
-        # 第 2 列特别宽时保证描述列至少 40 字符，此时允许超出终端宽度。
-        term_width = shutil.get_terminal_size().columns
-        width = min(max(term_width, 100), 200)
-        # 描述列宽 [40, 150]：下限保证第 2 列超宽的节仍可读（允许超出终端），上限防超长行。
-        help_width = min(max(width - pad, 40), 150)
+        # 按真实终端宽度换行（COLUMNS / tty），对齐 msdebug/LLDB 的 term-width：
+        # 只做 10–1024 的安全夹紧，避免 COLUMNS 异常时布局崩掉或撑爆。
+        # 描述列剩余不足 16 字符时不再硬换行（LLDB 同样用 16 作为下限）。
+        term_width = min(max(shutil.get_terminal_size().columns, 10), 1024)
+        help_width = term_width - pad
         indent = ' ' * pad
         lines = [heading + ':']
         for short_col, long_col, help_text in rows:
-            wrapped = textwrap.wrap(
-                help_text or '',
-                width=help_width,
-                break_long_words=False,
-                break_on_hyphens=False,
-            ) or ['']
+            if help_width < 16:
+                wrapped = (help_text or '').splitlines() or ['']
+            else:
+                wrapped = textwrap.wrap(
+                    help_text or '',
+                    width=help_width,
+                    break_long_words=False,
+                    break_on_hyphens=False,
+                ) or ['']
             if len(long_col) > max_col2:
                 lines.append('  ' + short_col.ljust(col1_width) + ' ' + long_col)
                 lines.extend(indent + line for line in wrapped)
@@ -664,7 +716,7 @@ def main():
         f"For any issue, refer to the FAQ at {FAQ_URL}",
         epilog="Examples:\n"
         "  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu "
-        "--model_type Qwen2.5-7B-Instruct --quant_type w8a8 --trust_remote_code True\n"
+        "--model_type Qwen2.5-7B-Instruct --quant_type w8a8\n"
         "  msmodelslim analyze linear --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct\n"
         "  msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${CONFIG} "
         "--device npu --model_type Qwen3-32B",
@@ -687,9 +739,9 @@ def main():
         description='Quantize a model (W4A4/W8A8/etc.) or convert model weights, and save the results.',
         epilog='Examples:\n'
         '  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} '
-        '--device npu --model_type Qwen2.5-7B-Instruct --quant_type w8a8 --trust_remote_code True\n'
+        '--device npu --model_type Qwen2.5-7B-Instruct --quant_type w8a8\n'
         '  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} '
-        '--device npu --model_type ${MODEL_TYPE} --config ${CONFIG_PATH} --trust_remote_code ${TRUST_REMOTE_CODE}\n'
+        '--device npu --model_type ${MODEL_TYPE} --config ${CONFIG_PATH}\n'
         'Output:\n'
         '  Quantized model is written to the directory given by --save_path.',
     )
