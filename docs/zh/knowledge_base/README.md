@@ -8,5 +8,5 @@
 | `quantization_mode` | 《[量化模式](quantization_mode/README.md)》 |
 | `tuning_strategies` | 《[调优策略](tuning_strategies/README.md)》 |
 | `quantization_format` | 《[量化格式](quantization_format/README.md)》 |
-| `ptq` | 《[训练后量化](ptq/convert/usage_weight_conversion.md)》 |
-| `parallel` | 《[多卡并行](parallel/README.md)》|
+| `ptq` | 《[训练后量化](ptq/README.md)》 |
+| `parallel` | 《[多卡量化并行](parallel/README.md)》 |

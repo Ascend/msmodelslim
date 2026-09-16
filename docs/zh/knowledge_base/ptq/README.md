@@ -37,3 +37,4 @@
 | LLM 接入 | 新大语言模型（LLM）接入 msModelSlim 量化流程 | [《LLM 模型接入量化流程指南》](llm/integration_guide_large_language_model_quantization.md) |
 | VLM 接入 | 新多模态视觉语言模型（VLM）接入 msModelSlim 量化流程 | [《VLM 模型接入量化流程指南》](vlm/integration_guide_vision_transformer_quantization.md) |
 | DiT 接入 | 新多模态生成模型（DiT）接入 msModelSlim 量化流程 | [《DiT 模型接入量化流程指南》](dit/integration_guide_diffusion_transformer_quantization.md) |
+| 权重转换 | 纯配置驱动，无需编写模型适配器代码；按新模型权重结构配置 YAML 规则即可完成接入 | [《权重转换使用指南》](convert/usage_weight_conversion.md) |

@@ -3,7 +3,7 @@ apiversion: modelslim_convert
 # 权重结构（依据 qwen3-8b-fp8 model.safetensors.index.json 校准）：
 #   - 与 mxfp8 配置相同的 7×36=252 个 FP8_BLOCK linear
 #   - 仅反量化到 FLOAT(bf16)，不走 MXFP8 量化
-#   - 落盘为 HuggingFace / compressed_tensors 格式，供 HF 侧推理
+#   - 落盘为 huggingface 格式，供 HF 侧推理
 spec:
   linears:
     - match:

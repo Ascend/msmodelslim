@@ -2,7 +2,7 @@
 
 ## 1. 功能说明
 
-`msmodelslim quant` 是一键量化命令，加载原始模型权重并执行权重/激活量化，导出可部署的量化权重与描述文件。配置来源有两种：通过 `--quant_type` 按模型与量化类型自动匹配 `lab_practice` 中的最佳实践 YAML；或通过 `--config` 直接指定用户 YAML（支持 `modelslim_v1`、多模态以及 `modelslim_convert` 纯权重转换等协议，后者的配置可省略 `--model_type`）。两者都不传时按默认量化类型 `w8a8` 匹配最佳实践。
+`msmodelslim quant` 是一键量化命令，加载原始模型权重并执行权重/激活量化，导出可部署的量化权重与描述文件。配置来源有两种：通过 `--quant_type` 按模型与量化类型自动匹配 `lab_practice` 中的最佳实践 YAML；或通过 `--config` 直接指定用户 YAML（支持 `modelslim_v1`、多模态以及 `modelslim_convert` 纯权重转换等协议；权重转换不需要 `--model_type`）。两者都不传时按默认量化类型 `w8a8` 匹配最佳实践。
 
 命令边界：设备支持 `npu`、`cpu`，多卡通过 `--device_id` 指定索引列表；还支持场景标签匹配与 `--debug` 调试上下文落盘。校准数据准备与部署等操作步骤见《[一键量化完整指南](../../user_guide/usage_quick_quantization.md)》，YAML 字段说明见《[modelslim_v1 配置说明](../config/task/modelslim_v1.md)》等引用的配置文档。
 
@@ -25,7 +25,7 @@ msmodelslim quant [--model_type <model_type>] --model_path <model_path> --save_p
 
 | 参数 | 别名 | 类型 | 传入形式 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 |
 |------|------|------|----------|-----------|--------|----------------|------|
-| `--model_type` | 无 | `string` | 单值 | 条件必选（普通量化路径必选；`--config` 指向 `apiversion: modelslim_convert` 的配置时可省略） | 无 | 模型类型名称，如 `Qwen2.5-7B-Instruct`、`transformers` | 指定待量化模型类型，用于加载对应模型适配器并匹配最佳实践；`transformers`支持加载基于 transformers 的通用基础模型适配器，当前仅适用于大语言模型量化；仅当 `--config` 指向 `apiversion: modelslim_convert` 的配置时可省略。 |
+| `--model_type` | 无 | `string` | 单值 | 条件必选（量化路径必选；权重转换不需要） | 无 | 模型类型名称，如 `Qwen2.5-7B-Instruct`、`transformers` | 指定待量化模型类型，用于加载对应模型适配器并匹配最佳实践；`transformers`支持加载基于 transformers 的通用基础模型适配器，当前仅适用于大语言模型量化。权重转换不需要此参数。 |
 | `--model_path` | 无 | `string` | 单值 | 必选 | 无 | 原始模型权重目录（需存在且可读） | 待量化模型的权重目录。 |
 | `--save_path` | 无 | `string` | 单值 | 必选 | 无 | 输出目录（需可写） | 量化权重与描述文件的保存目录。 |
 | `--device` | 无 | `string` | 单值 | 可选 | `npu` | `npu`、`cpu` | 运行设备类型；多卡索引请用 `--device_id` 指定。 |
@@ -45,7 +45,7 @@ msmodelslim quant [--model_type <model_type>] --model_path <model_path> --save_p
 - `--config` 与 `--quant_type` 互斥，同时传入会报错。
 - 两者都不传时，按默认量化类型 `w8a8` 匹配最佳实践；未匹配到最佳实践时会给出提示并等待确认（输入 `y` 继续，否则退出）。
 - 指定 `--config` 后直接采用该配置，`--quant_type` 与 `--tags` 的最佳实践匹配均被忽略。
-- `--model_type` 在普通量化路径下必须提供；仅当 `--config` 指向 `apiversion: modelslim_convert` 的配置时可省略。
+- `--model_type`：量化路径必须提供；权重转换不需要。
 - `--model_type` 指定 `transformers` 时，若使用 `--quant_type`， 仅支持 `w8a16`/`w8a8`；若使用 `--config`，当前仅支持大语言模型量化配置（`apiversion: modelslim_v1`）。
 - `--tags` 指定多个值时须同时出现在同一已验证场景；未提供硬件类型标签时自动匹配当前设备类型。
 - `--debug` 启用后量化上下文写入 `${SAVE_PATH}/debug_info/`。
@@ -57,7 +57,7 @@ msmodelslim quant [--model_type <model_type>] --model_path <model_path> --save_p
 | `--config` | `modelslim_v1` | 加载整份量化 YAML | 《[modelslim_v1 配置说明](../config/task/modelslim_v1.md)》 |
 | `--config` | `multimodal_vlm_modelslim_v1` | 多模态理解模型量化 YAML | 《[multimodal_vlm_modelslim_v1 配置说明](../config/task/multimodal_vlm_modelslim_v1.md)》 |
 | `--config` | `multimodal_sd_modelslim_v1` | 多模态生成模型量化 YAML | 《[multimodal_sd_modelslim_v1 配置说明](../config/task/multimodal_sd_modelslim_v1.md)》 |
-| `--config` | `modelslim_convert` | 纯权重转换协议 YAML，可省略 `--model_type` | 《[modelslim_convert 配置说明](../config/task/modelslim_convert.md)》 |
+| `--config` | `modelslim_convert` | 权重转换 YAML；不需要 `--model_type` | 《[modelslim_convert 配置说明](../config/task/modelslim_convert.md)》 |
 | `--quant_type` | `lab_practice` 最佳实践 YAML | 按模型与量化类型匹配 | 《[一键量化完整指南](../../user_guide/usage_quick_quantization.md)》 |
 
 ## 6. 环境变量
@@ -104,7 +104,7 @@ msmodelslim quant \
   --device_id 0 1 2 3
 ```
 
-`--quant_type w8a8c8` 表示权重8bit、激活8bit、KVCache 8bit 量化；`--device_id 0 1 2 3` 使用4个 NPU 设备（索引列表形式在 `apiversion: modelslim_v1` 配置下受支持）。
+`--quant_type w8a8c8` 表示权重8bit、激活8bit、KVCache 8bit 量化；`--device_id 0 1 2 3` 使用 4 个 NPU 设备。权重转换的命令见 [7.6](#76-权重转换不需要-model_type)。
 
 ### 7.4 使用自定义配置文件
 
@@ -116,7 +116,7 @@ msmodelslim quant \
   --config "${CONFIG_PATH}"
 ```
 
-`${CONFIG_PATH}` 指向符合 V1 等协议的量化 YAML；指定后直接采用该配置，不再做最佳实践匹配。字段说明见引用的配置文档。
+`${CONFIG_PATH}` 指向符合 V1 等协议的量化 YAML；指定后直接采用该配置，不再做最佳实践匹配。字段说明见引用的配置文档。权重转换示例见 [7.6](#76-权重转换不需要-model_type)。
 
 ### 7.5 使用场景标签匹配最佳实践
 
@@ -130,6 +130,32 @@ msmodelslim quant \
 ```
 
 `--tags` 后的多个标签须同时出现在同一已验证场景中；未精确匹配时命令会给出提示并等待确认（输入 `y` 继续，否则退出）；命中备用（standby）配置时提示改用备用配置，仍需用户确认。
+
+<a id="76-权重转换不需要-model_type"></a>
+
+### 7.6 权重转换（不需要 `--model_type`）
+
+`--config` 使用 `apiversion: modelslim_convert` 的 YAML。不需要 `--model_type` 和 `--quant_type`：
+
+```bash
+msmodelslim quant \
+  --model_path "${MODEL_PATH}" \
+  --save_path "${SAVE_PATH}" \
+  --config "${CONFIG_PATH}"
+```
+
+`${MODEL_PATH}` 为源权重目录，`${SAVE_PATH}` 为转换输出目录，`${CONFIG_PATH}` 为转换 YAML。配置协议与字段见《[modelslim_convert 配置说明](../config/task/modelslim_convert.md)》，操作步骤与示例 YAML 见《[权重转换使用指南](../../knowledge_base/ptq/convert/usage_weight_conversion.md)》。
+
+NPU 多卡时加上 `--device npu` 和 `--device_id`：
+
+```bash
+msmodelslim quant \
+  --model_path "${MODEL_PATH}" \
+  --save_path "${SAVE_PATH}" \
+  --config "${CONFIG_PATH}" \
+  --device npu \
+  --device_id 0 1 2 3
+```
 
 ## 8. 退出码与异常处理
 

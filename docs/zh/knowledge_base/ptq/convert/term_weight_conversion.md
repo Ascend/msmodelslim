@@ -45,13 +45,14 @@ $$ \hat{x} = \text{round}\left(\frac{x}{\Delta_{\text{block}}}\right) $$
 - **Data-free 特性**：无需校准数据集，无需加载模型代码，纯权重离线计算。
 - **无损转换**：`FP8_BLOCK → FLOAT` 和 `INT4_PACKED → FLOAT` 为无损转换（仅反量化）。
 - **有损转换**：`FLOAT → W8A8_MXFP8` 为有损转换（重新量化引入量化误差）。
-- **自动路由**：`route: auto` 时自动推断源 IR 并选择最短转换路径，支持多步串联。
+- **自动路由**：`route: auto` 时自动推断源 IR 并选择转换路径，支持多步串联。
 - **7 阶段流水线**：从读 catalog 到落盘，全流程无需模型 forward。
-- **多种保存格式**：`ascend_v1`（MXFP8 部署）、`huggingface` / `compressed_tensors`（HF 生态）。
+- **多种保存格式**：`ascend_v1`（MXFP8 部署）、`huggingface`（HF 生态）。
+- **NPU / CPU**：NPU 用 `--device npu --device_id`；CPU 用 `parallel.workers`。
 
 ## 4. 流程示意
 
-> 详细算法步骤与代码级解析，请参阅 [《权重转换完整指南》](./usage_weight_conversion.md)。
+> 详细算法步骤与代码级解析，请参阅《[权重转换使用指南](./usage_weight_conversion.md)》。
 
 ### 4.1 处理流程
 
@@ -73,7 +74,7 @@ flowchart LR
 
 ### 4.2 配置示例
 
-以下为最小可用的 YAML 配置片段（以 FP8 block 转 BF16 为例）。各字段的详细含义与取值范围，请参阅 [《权重转换完整指南》](./usage_weight_conversion.md)。
+以下为最小可用的 YAML 配置片段（以 FP8 block 转 BF16 为例）。各字段的详细含义与取值范围，请参阅《[权重转换使用指南](./usage_weight_conversion.md)》。
 
 ```yaml
 apiversion: modelslim_convert
@@ -114,8 +115,9 @@ spec:
 
 ## 6. 关联流程
 
-- [《权重转换完整指南》](./usage_weight_conversion.md)：权重转换完整的操作流程、命令说明与详细配置协议。
-- [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)：常规一键量化（含校准）的完整流程，权重转换常作为其后续步骤。
+- 《[权重转换使用指南](./usage_weight_conversion.md)》：权重转换完整的操作流程、命令说明与详细配置协议。
+- 《[msmodelslim quant 命令行](../../../api_reference/cli/msmodelslim_quant.md)》：含可复制的权重转换命令。
+- 《[一键量化完整指南](../../../user_guide/usage_one_click_quantization.md)》：常规一键量化（含校准）的完整流程。
 
 ## 7. 关联词条
 
@@ -126,6 +128,6 @@ spec:
 
 ## 8. 参考文档
 
-1. [《权重转换完整指南》](./usage_weight_conversion.md)：msModelSlim 权重转换详细文档。
-2. [《msModelSlim 一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)：一键量化总体流程。
-3. [《格式支持矩阵》](../../quantization_format/README.md)：量化格式与存储格式说明。
+1. 《[权重转换使用指南](./usage_weight_conversion.md)》：msModelSlim 权重转换详细文档。
+2. 《[msModelSlim 一键量化完整指南](../../../user_guide/usage_one_click_quantization.md)》：一键量化总体流程。
+3. 《[格式支持矩阵](../../quantization_format/README.md)》：量化格式与存储格式说明。
