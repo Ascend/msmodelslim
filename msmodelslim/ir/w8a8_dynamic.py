@@ -18,8 +18,9 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import torch
-from torch import nn as nn
+from torch import nn
 from torch.nn import functional as F
 
 from msmodelslim.ir import int8_per_token_sym, int8_per_channel_sym, AutoFakeQuantLinear, int8_per_group_sym
@@ -33,7 +34,7 @@ from msmodelslim.utils.logging import logger_setter
     dispatch_key=[
         (int8_per_token_sym, int8_per_channel_sym),
     ],
-    abc_type=AutoFakeQuantLinear
+    abc_type=AutoFakeQuantLinear,
 )
 class W8A8DynamicPerChannelFakeQuantLinear(AutoFakeQuantLinear):
     """
@@ -45,13 +46,7 @@ class W8A8DynamicPerChannelFakeQuantLinear(AutoFakeQuantLinear):
         bias: 偏置张量，类型为torch.Tensor, dtype为torch.float32
     """
 
-    def __init__(
-            self,
-            x_q_param: QParam,
-            w_q_param: QParam,
-            w_q: QStorage,
-            bias: torch.Tensor
-    ):
+    def __init__(self, x_q_param: QParam, w_q_param: QParam, w_q: QStorage, bias: torch.Tensor):
         super().__init__()
         self.weight_scale = nn.Parameter(w_q_param.ext["scale"].detach(), requires_grad=False)
         self.weight = nn.Parameter(w_q.value.detach().to(torch.int8), requires_grad=False)
@@ -60,12 +55,14 @@ class W8A8DynamicPerChannelFakeQuantLinear(AutoFakeQuantLinear):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_shape = x.shape
         x_reshape = x.reshape(-1, x_shape[-1])
-        x_token_min = torch.amin(x_reshape, dim=0)
-        x_token_max = torch.amax(x_reshape, dim=0)
+        x_token_min = torch.amin(x_reshape, dim=1, keepdim=True)
+        x_token_max = torch.amax(x_reshape, dim=1, keepdim=True)
         x_q_param = calculate_qparam(x_token_min, x_token_max, QDType.INT8, QScope.PER_TOKEN, True)
         x_q_dq = fake_quantize(QStorage(QDType.FLOAT, x_reshape), x_q_param)
-        w_q_param = QParam(scheme=QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.INT8, symmetric=True),
-                           ext={"scale": self.weight_scale.data})
+        w_q_param = QParam(
+            scheme=QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.INT8, symmetric=True),
+            ext={"scale": self.weight_scale.data},
+        )
         weight_q_dq = dequantize(QStorage(dtype=QDType.INT8, value=self.weight.data).T, w_q_param).T
         return F.linear(x_q_dq.value.reshape(x_shape), weight_q_dq.value, self.bias)
 
@@ -75,18 +72,11 @@ class W8A8DynamicPerChannelFakeQuantLinear(AutoFakeQuantLinear):
         (int8_per_token_sym, int8_per_group_sym),
         (int8_per_token_sym, int8_per_group_asym),
     ],
-    abc_type=AutoFakeQuantLinear
+    abc_type=AutoFakeQuantLinear,
 )
 @logger_setter()
 class W8A8DynamicPerGroupFakeQuantLinear(AutoFakeQuantLinear):
-
-    def __init__(
-            self,
-            x_q_param: QParam,
-            w_q_param: QParam,
-            w_q: QStorage,
-            bias: torch.Tensor
-    ):
+    def __init__(self, x_q_param: QParam, w_q_param: QParam, w_q: QStorage, bias: torch.Tensor):
         super().__init__()
         self.group_size = w_q_param.ext.pop("group_size")
         self.w_scheme = w_q_param.scheme
@@ -107,11 +97,7 @@ class W8A8DynamicPerGroupFakeQuantLinear(AutoFakeQuantLinear):
         x_q_dq = fake_quantize(QStorage(QDType.FLOAT, x_reshape), x_q_param)
         w_q_param = QParam(
             scheme=self.w_scheme,
-            ext={
-                "scale": self.weight_scale,
-                "offset": self.weight_offset,
-                "group_size": self.group_size
-            }
+            ext={"scale": self.weight_scale, "offset": self.weight_offset, "group_size": self.group_size},
         )
         w_q_storage = QStorage(dtype=QDType.INT8, value=self.weight)
         weight_q_dq = dequantize(w_q_storage, w_q_param)
