@@ -48,6 +48,23 @@ class TestDpShardingFunctions:
         assert shard_samples_by_rank([0, 1, 2], rank=0, world_size=2) == [0, 2]
         assert shard_samples_by_rank([0, 1, 2], rank=1, world_size=2) == [1, 0]
 
+    def test_shard_samples_by_rank_cycles_when_more_padding_than_samples(self):
+        """样本数 < 卡数/2 时补齐需重复多轮，曾因切片被 num_samples 截断而 IndexError。"""
+        assert shard_samples_by_rank([0], rank=0, world_size=4) == [0]
+        assert shard_samples_by_rank([0], rank=3, world_size=4) == [0]
+        assert shard_samples_by_rank([0, 1], rank=2, world_size=4) == [0]
+        assert shard_samples_by_rank([0, 1], rank=3, world_size=4) == [1]
+
+    def test_shard_samples_by_rank_gives_every_rank_one_sample_when_fewer_samples_than_ranks(self):
+        for world_size in (3, 4, 8):
+            shards = [shard_samples_by_rank(["a"], rank=rank, world_size=world_size) for rank in range(world_size)]
+
+            assert all(shard == ["a"] for shard in shards)
+
+    def test_shard_samples_by_rank_returns_empty_when_no_samples(self):
+        assert shard_samples_by_rank([], rank=0, world_size=4) == []
+        assert shard_samples_by_rank([], rank=0, world_size=1) == []
+
     def test_shard_samples_by_rank_raises_when_world_size_zero(self):
         with pytest.raises(ValueError):
             shard_samples_by_rank([0], rank=0, world_size=0)
@@ -69,6 +86,16 @@ class TestDpShardingFunctions:
 
         assert merged.generated_token_ids == [[0], [1], [2], [3]]
         assert merged.generated_texts == ["a", "b", "c", "d"]
+
+    def test_merge_inference_results_discards_padded_when_samples_fewer_than_ranks(self):
+        partials = {
+            rank: InferenceResult(generated_token_ids=[[rank]], generated_texts=[f"r{rank}"]) for rank in range(4)
+        }
+
+        merged = merge_inference_results(partials, num_samples=1, world_size=4)
+
+        assert merged.generated_token_ids == [[0]]
+        assert merged.generated_texts == ["r0"]
 
     def test_merge_inference_results_keeps_blank_when_rank_missing(self):
         partials = {0: InferenceResult(generated_token_ids=[[0]], generated_texts=["a"])}

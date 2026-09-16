@@ -41,17 +41,23 @@ def shard_samples_by_rank(samples: Sequence[T], rank: int, world_size: int) -> L
 
     Uses the same round-robin rule as ``torch.utils.data.DistributedSampler`` with
     ``drop_last=False``: when ``len(samples)`` is not divisible by ``world_size``, the list
-    is padded by duplicating from the beginning so every rank gets at least one sample.
-    Padded entries are discarded during merge (see ``global_indices_for_rank``).
+    is padded by cycling the samples from the beginning so every rank gets at least one
+    sample. Padded entries are discarded during merge (see ``global_indices_for_rank``).
     """
     if world_size <= 0:
         raise ValueError(f"world_size must be positive, got {world_size}")
     if rank < 0 or rank >= world_size:
         raise ValueError(f"rank must be in [0, {world_size}), got {rank}")
     num_samples = len(samples)
+    if num_samples == 0:
+        return []
     num_per_rank = math.ceil(num_samples / world_size)
     total_size = num_per_rank * world_size
-    padded = list(samples) + list(samples[: total_size - num_samples])
+    # Cycle the samples instead of slicing ``samples[: total_size - num_samples]``: the slice
+    # is bounded by ``num_samples``, so it cannot pad ``total_size`` entries whenever more than
+    # ``num_samples`` repeats are needed (i.e. ``num_samples < world_size / 2``), which left
+    # ``padded`` shorter than ``total_size`` and made ``padded[i]`` raise IndexError.
+    padded = [samples[i % num_samples] for i in range(total_size)]
     return [padded[i] for i in range(rank, total_size, world_size)]
 
 
