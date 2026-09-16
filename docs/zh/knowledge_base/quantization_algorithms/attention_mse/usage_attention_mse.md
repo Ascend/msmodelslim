@@ -2,100 +2,168 @@
 
 ## 1. 适用范围
 
-Attention MSE（`mse`）敏感层分析算法。Attention MSE 作为 `msmodelslim analyze attn` 的 metrics 指标，用于注意力模块粒度的敏感度排序。
+本指南面向需要使用[Attention MSE 敏感层分析算法](./term_attention_mse.md)的用户。Attention MSE（`mse`）作为 `msmodelslim analyze attn` 的 metrics 指标，从 Attention 模块输出视角评估各 Attention 模块量化敏感度，辅助 Attention 结构的回退或保护决策。
 
-本指南面向首次配置 Attention MSE 的用户，重点不是展开完整执行命令，而是说明推荐配置为什么适合作为起点、哪些参数真正需要调，以及出现精度或资源问题时应优先改哪一项。这类算法的输出主要用于指导哪些层、模块或注意力头需要重点保护，而不是直接生成量化权重。配置时应先固定待分析模型、分析范围和指标口径；如果指标依赖校准数据或量化结果，还应保持数据集和量化基线一致。排序或分数用于形成候选集合，最终策略仍应结合实际量化或压缩效果验证。
+适用场景：
 
-如果目标是直接生成量化权重而不是筛选敏感对象，本指南不能替代正式量化流程；分析分数也不应被当作无需验证的硬回退阈值。
+- Attention 结构参与权重量化前，需要定位输出漂移更大的 Attention 模块，形成回退或重点保护候选集合；
+- 需要以 Attention 子系统实际输出误差复核权重类指标（如 `std`）的敏感度结论。
+
+模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
 
 ## 2. 输入和交付件
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 待分析模型与量化基线 | 待分析模型、计划用于正式量化的配置 | 固定模型版本、目标量化范围和量化基线；分析范围应与后续实际量化对象一致 | 能明确本轮分析要比较的模型状态与候选范围 |
-| 输入 | 校准数据与分析参数约束 | 代表性校准数据、敏感层分析指南及相关配置 | 数据分布尽量覆盖真实输入；指标、`patterns`/范围和候选数量使用当前版本支持的取值 | 同一轮比较使用一致的数据、指标定义和分析范围 |
-| 交付件 | Attention MSE 分析配置方案 | 敏感层分析命令/配置或评审记录 | 记录指标、分析范围、候选数量及选择依据；结果作为后续回退或混合精度的候选输入 | 能稳定复现同一分析条件，并说明候选如何用于后续量化决策 |
+| 输入 | 浮点模型权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` 分片 | 可被目标 Transformers 版本正常加载 |
+| 输入 | 模型适配器 | 用户适配代码，通过 `--model_type` 调用 | 实现 `PipelineInterface` 及 `AttentionAnalysisInterface` 专用接口 | 能被调度器（Runner）与处理器（Processor）正常驱动 |
+| 输入 | 校准数据集 | 工具内置 `lab_calib/` 或用户自定义路径 | JSONL 或 JSON 格式文本 Prompt，推荐 50 条 | 可被适配器 `handle_dataset` 成功编码为前向张量 |
+| 交付件 | Attention 敏感度分析结果 | `--save_path` 指定路径（YAML），未指定时仅打印到控制台 | 各 Attention 模块量化扰动对应的 MSE score 与 Top-K 排序 | 结果稳定可复现，可作为 Attention 回退或保护候选输入 |
 
 ## 3. 流程总览
 
-入门时建议先用一组稳定配置建立基线，再围绕影响最大的参数做单变量调整。下面的流程强调“先选参数、再看效果”，不展开量化命令本身。
+Attention MSE 的整体使用流程如下：
 
 ```mermaid
 flowchart LR
-    A[确定 Attention 分析范围] --> B[固定 metrics=mse]
-    B[固定 metrics=mse] --> C[完成浮点/量化双路前向]
-    C[完成浮点/量化双路前向] --> D[计算 Attention 输出 MSE]
-    D[计算 Attention 输出 MSE] --> E[按 score 选择回退候选]
+    A[适配模型<br/>流水线/算法接口] --> B[固定校准数据<br/>与 Attention 范围]
+    B --> C[逐模块执行<br/>浮点/量化双路前向]
+    C --> D[采集 Attention 输出<br/>并计算 MSE]
+    D --> E[按模块形成<br/>敏感度排序]
+    E --> F[验证精度<br/>并收敛候选]
 ```
 
-实际使用时建议把流程理解为“固定分析条件—计算指标—形成排序或筛选结果—验证保护候选”的闭环。前半段最重要的是保持模型和分析范围一致；若指标依赖量化结果或校准数据，还需要同步固定量化基线和数据集。如果结果波动较大，应先检查分析对象与输入条件，再调整 `top_k`、筛选比例等展示或决策参数。不要在同一轮同时更换指标和它依赖的基线条件，否则很难判断排序变化来自哪里。
+各阶段的关键细节如下：
+
+- **适配模型流水线/算法接口**：适配器需实现 `PipelineInterface` 基础流水线接口；实现 `AttentionAnalysisInterface` 提供 Attention 模块匹配与输出提取逻辑，是后续所有分析步骤的前提。
+- **固定校准数据与 Attention 范围**：`attn` 范围默认覆盖模型中全部 Attention 模块；校准数据（推荐 50 条）应覆盖真实输入分布，分析期间不更换数据与量化基线，否则排序无法归因。
+- **逐模块执行浮点/量化双路前向**：Processor 对每个 Attention 模块分别执行浮点路径与量化路径前向，其余条件保持一致，形成受控干预。
+- **采集 Attention 输出并计算 MSE**：通过 hook 采集两路 Attention 输出，逐样本计算均方误差后取平均，Q/K/V 误差经点积与 softmax 非线性的放大或抑制被完整纳入评价。
+- **按模块形成敏感度排序**：按 `mse` score 排序取 Top-K 候选，作为回退或重点保护的候选集合，而不是硬阈值。
+- **验证精度并收敛候选**：候选须经实际量化精度或模型任务指标验证后才固化到最终策略。
 
 ## 4. 操作步骤
 
-### 步骤 1：确认目标与约束
+### 步骤 1：适配模型流水线与算法接口
 
-**操作**：固定待分析模型、正式量化基线、校准数据和分析范围。先确认本次分析是为了筛选线性层、Decoder 层、Attention 结构或其他候选对象，并让分析范围与后续实际量化范围一致。如果模型、校准数据、量化基线或候选范围同时变化，分数排序将难以归因，因此这些条件应先固定，再调整指标或候选数量。
+**目标**：量化工具不能直接操作任意结构的模型，它要求每个模型先套一层“适配器”，把模型的各种操作翻译成框架能统一调用的标准方法。本步骤即确认并完成这层适配器与 Attention MSE 专用接口。**模型适配必须先完成，才能执行 Attention MSE 敏感度分析。**
 
-**输出**：一份固定的分析上下文：模型版本、量化基线、校准数据、分析范围以及要解决的回退/混合精度问题。
+**操作**：模型适配代码需实现以下接口：
 
-### 步骤 2：建立推荐基线
+1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。
+2. **`AttentionAnalysisInterface`**（由 `msmodelslim.model.interface_hub` 汇总导出，实现位于 `msmodelslim.processor.analysis.binary_operator.metrics.attention_mse.interface`）：Attention MSE 分析专用接口。
+
+```python
+from abc import ABC, abstractmethod
+from typing import Callable, Union
+
+import torch
+
+class AttentionAnalysisInterface(ABC):
+    @abstractmethod
+    def get_attention_module_cls(self) -> str:
+        """返回用于匹配注意力层的模块类（即需要挂 hook 的 attention 子模块）的字符串表示。"""
+        ...
+
+    @abstractmethod
+    def get_attention_output_extractor(self) -> Callable[[Union[tuple, torch.Tensor]], torch.Tensor]:
+        """返回一个提取函数，用于从 attention 模块的 forward 输出中取出用于敏感度分析的张量部分。"""
+        ...
+```
+
+- **`get_attention_module_cls`**：返回 Attention 模块的类名字符串。Processor 按 `module.__class__.__name__` 精确匹配并挂载输出 hook，例如 `"DeepseekV3Attention"`、`"MLA"`。
+- **`get_attention_output_extractor`**：从 Attention 模块 `forward` 返回值（Tensor、tuple 等）中提取用于敏感度分析的主 tensor。例如 DeepSeek-V3 的 `forward` 返回 `(attn_output, ...)` 的 tuple，返回 `lambda x: x[0]`；GLM 系列直接返回输出张量时，返回 `lambda x: x`。
+
+对于基于 HuggingFace Transformers 实现的标准开源 LLM，建议通过组合继承快速构建适配器：
+
+```python
+from msmodelslim.model.interface_hub import (
+    IModel,
+    ModelInfoInterface,
+    ModelSlimPipelineInterfaceV1 as PipelineInterface,
+    # ---- Attention MSE 算法适配接口（本步骤重点）----
+    AttentionAnalysisInterface,  # 算法适配：定位需挂 hook 的 attention 子模块并提取注意力输出
+)
+
+class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
+                     AttentionAnalysisInterface):
+    def get_attention_module_cls(self) -> str:
+        return "MyModelAttention"  # 需要挂 hook 的 attention 子模块类名
+
+    def get_attention_output_extractor(self):
+        return lambda x: x[0]  # 从 forward 输出中提取注意力输出张量
+```
+
+之后分析命令中通过 `--model_type MyModelAdapter` 引用该适配器。仓库内可参考的适配实现包括 `msmodelslim/model/deepseek_v3/model_adapter.py` 与 `msmodelslim/model/glm_5/model_adapter.py`。
+
+如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。
+
+**输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
+
+### 步骤 2：建立推荐配置
 
 **操作**：
 
+下面参数用于建立**第一版可比较基线**。
+
 - 分析范围：`attn`；
 - `--metrics`：`mse`；
-- `--top_k`：先用 `15`；
+- `--topk`：先用 `15`；
+- 校准数据：推荐 50 条，与后续正式量化相同或同分布。
 
-上面的推荐值用于建立第一版可复现分析基线，其中最值得关注的配置包括 `attn`, `--metrics`, `--top_k`。这些值优先选择较容易解释、结果规模适中且不会改变指标定义的起点，目的是先得到稳定排序，再决定是否扩大候选范围。对于新模型，建议先保持模型、分析范围和指标固定完成一次完整分析；若指标依赖量化结果或数据，再同步固定量化基线和校准集。只有当候选过多、过少或排序不稳定时，再按照下一节说明调整候选数量、分析范围或相关输入条件。
-
-**输出**：一组可复现的敏感性分析基线参数，用于生成第一版候选排序。
+**输出**：一组可复现的 Attention 敏感度分析基线参数，用于生成第一版候选排序。
 
 ### 步骤 3：选择并调整参数
 
 **操作**：
 
-ModelSlim 实现入口：
-[查看对应实现目录](../../../../../msmodelslim/processor/analysis/binary_operator/metrics/attention_mse)
+每轮只调一个变量，并保持同一校准集和量化基线。
 
-本节只解释会影响分析对象、统计结果或候选输出的参数。对敏感性分析而言，最重要的不是把 `top_k` 调到某个固定值，而是保证**分析范围、校准数据和后续实际量化范围一致**：否则得到的排序即使数值稳定，也可能无法指导最终配置。推荐值用于建立第一版可比较基线；修改参数时应保持模型版本、校准集和量化基线固定，以便判断排序变化来自哪个参数。
-
-| 配置项 | 含义（原理） | 推荐配置 | 什么时候调整 |
+| 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |
-| 分析范围 `attn` | 按 Attention 模块比较浮点路径与量化路径的 Attention 输出，score 为对应输出的 MSE 均值。 | 固定 `attn`。 | 当前 Attention MSE 就使用 `attn`；如果目标是 Decoder block 或单个 Linear 的敏感度，应改用对应分析算法，而不是改变本指标的解释。 |
-| `--metrics` | 选择本指南对应的分析指标 `mse`；指标决定 score 的定义和排序含义。 | 固定 `mse`。 | 保持 `mse`。它衡量的是实际量化干预后的输出差异，分数越大表示当前量化基线下该 Attention 模块的输出更容易被扰动。换成其他指标后不应继续沿用 MSE 的排序解释。 |
-| `--calibration_dataset` / `--calib_dataset` | 用于前向收集激活或浮点/量化输出的校准数据，**JSON/JSONL 格式**（LLM 文本样本文件，如 `mix_calib.jsonl`；VLM 为多模态目录）。数据分布直接决定统计量、MSE 或 Head 分数，因此它是影响分析有效性的核心输入，而不是普通文件路径。 | 优先使用**与后续正式量化相同或同分布**的校准集；快速验证才使用内置示例。 | 如果排序在不同数据上明显变化，先判断校准集是否覆盖真实长度、主题和输入形态，再考虑扩大 `top_k`。正式回退决策应尽量在代表性数据上完成。 |
-| `--top_k` / `--topk` | 控制最终展示/导出的高分候选数量，默认 `15`。它不改变底层 score 计算，也不会让算法重新分析更多数据。 | 从 `15` 开始。 | 候选只是后续验证集合：需要更多回退候选时增大，需要快速人工审查时减小。不要把 `top_k` 当作敏感度阈值；不同模型、不同指标的绝对 score 尺度并不统一。 |
+| 分析范围 `attn` | 固定为 `attn` 子命令，分析对象默认覆盖模型中全部 Attention 模块，不支持通过 `--patterns`/`--quant_modules` 收窄。 | 固定 `attn`。 | 需要注意力头粒度（induction/echo head）分析时使用 `attn_head` 的 `ra_compress` 指标，与本指标的排序含义不同，不应混用。 |
+| `--metrics` | 指定本指南对应的分析指标 `mse`，决定 score 的定义和排序含义。 | 固定 `mse`。 | 高分说明该 Attention 模块的量化扰动更容易体现在自身输出端；与其他指标的数值尺度/排序不同，不应混用阈值。 |
+| `--calib_dataset`（`--calibration_dataset`） | 用于双路前向采集 Attention 输出的校准数据，JSON/JSONL 格式文本样本文件，推荐 50 条，默认 `mix_calib.jsonl`。 | 与后续正式量化相同或同分布的校准集。 | 排序在不同数据上明显变化时，先检查校准集是否覆盖真实长度与主题。 |
+| `--topk` | 控制最终展示/导出的高分候选数量，默认 `15`；不改变 score 计算。 | 从 `15` 开始。 | 需要更多回退候选时增大，需要快速人工审查时减小；不要把 `topk` 当作敏感度阈值。 |
+| `--device_id` | 分析设备索引；传入多个索引（如 `0 1 2 3`）时自动启用分布式分析 Runner。 | 单卡不传；模型较大时多卡并行。 | 本指标支持分布式执行；多卡与单卡的排序应一致，差异明显时优先排查校准数据切分。 |
 
-### 参数组合与结果解释
+> 历史兼容：旧用法 `msmodelslim analyze --metrics attention_mse` 已废弃，CLI 会自动转换为 `attn --metrics mse` 并打印告警；新脚本应直接使用 `analyze attn` 写法。
 
-- **先固定校准集和量化基线，再比较排序**。如果同时换了数据、量化配置和分析范围，score 的变化无法归因。
-- **高分表示“按 `mse` 定义更值得关注”，不等价于一定要回退**。应把 Top-K 当作候选集，再用实际量化精度或模型任务指标验证。
-- **`top_k` 只改变输出规模**。真正影响“谁排在前面”的通常是校准数据、候选范围以及本指标自身的统计定义。
+**输出**：一份完成单变量调整的分析参数方案，关键字段均有明确的选择依据和调整方向。
 
-Attention MSE 依赖“当前量化配置”。如果 FA3/KV/线性量化位宽或粒度改变，应重新分析；旧排序只能说明旧量化基线下的敏感性。
+### 步骤 4：执行分析命令
 
-**输出**：一份参数含义和调整方向明确的分析配置；修改项能够与排序变化建立对应关系。
+**目标**：整合上述步骤，通过 CLI 启动 Attention MSE 敏感度分析流程。
 
-### 步骤 4：解释结果并收敛候选方案
+#### 完整示例：Attention MSE 敏感度分析
 
-**操作**：
+##### 执行命令（单卡分析）
 
-使用分析结果时建议保留一份完整基线，包括模型版本、分析范围、指标类型和候选数量；若指标依赖数据或量化结果，还应记录对应校准集与量化基线。每轮只改变一个分析条件，并观察高敏感或高优先级对象是否仍然稳定出现在结果前部；如果结果稳定，再把候选用于局部回退、提位宽或重点保留实验。只有实际量化或压缩效果确实改善时，才把候选固化到最终策略中，避免把一次分析分数直接当成硬阈值。
+```bash
+msmodelslim analyze attn \
+  --model_path <浮点模型目录> \
+  --model_type <模型适配器名称> \
+  --metrics mse \
+  --topk 15 \
+  --calib_dataset ./mix_calib.jsonl \
+  --device npu
+```
 
-- Score 较高的对象优先进入“回退/提位宽候选池”，但最终是否回退仍应结合端到端精度验证。
-- `top_k` 只是候选展示数量，不是精度阈值；不要把第15名等位置机械当成回退边界。
-- 分析范围（`patterns`/`quant_modules`）应尽量与实际量化范围一致，否则得到的排序无法准确指导最终 YAML。
+多卡分析时追加 `--device_id 0 1 2 3`；需要留存结果文件时追加 `--save_path <结果目录>`（YAML 格式），否则结果仅打印到控制台。
 
-**输出**：一份经过实际量化或任务指标验证的敏感对象候选，以及对应的局部回退、提位宽或保护建议。
+**输出**：命令行输出各 Attention 模块 `mse` score 与 Top-K 排序，保存于指定 `--save_path` 文件，作为后续 Attention 回退或重点保护的候选输入。
 
 ## 5. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| Attention MSE 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[Attention MSE 敏感层分析算法 量化术语百科词条](./term_attention_mse.md)》 |
+| Attention MSE 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《Attention MSE 敏感层分析算法 量化术语百科词条》](./term_attention_mse.md) |
 
-## 6. 接口文档列表
+## 6. 相关文档
 
-| 接口或能力 | 简述 | 链接 |
+| 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | 《[敏感层分析使用指南](../../../user_guide/usage_sensitive_attn_analysis.md)》 |
+| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | [《LLM 量化使用指南·步骤 1》](../../ptq/llm/usage_large_language_model_quantization.md) |
+| `AttentionAnalysisInterface` | Attention MSE 分析模型适配接口，由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
+| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | [《敏感层分析使用指南》](../../../user_guide/usage_sensitive_layer_analysis.md) |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |

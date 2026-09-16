@@ -90,8 +90,8 @@ nav:
   - 六、开发者指南:
       - 架构说明: "zh/contributing/development_guide/architecture.md"
       - 编码规范: "zh/contributing/development_guide/coding_standards.md"
-      - LLM大模型接入指南: "zh/knowledge_base/model/integrating_models.md"
-      - 多模态理解模型接入: "zh/knowledge_base/model/integrating_multimodal_understanding_model.md"
+      - LLM大模型接入指南: "zh/knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md"
+      - 多模态理解模型接入: "zh/knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md"
       - 量化格式接入指南: "zh/knowledge_base/quantization_format/iformat_integration_guide.md"
       - 多卡量化适配指南: "zh/knowledge_base/parallel/multi-card_quantization_adaptation.md"
       - 项目目录结构: "zh/contributing/development_guide/dir_structure.md"

@@ -245,6 +245,6 @@ spec:
 ### 相关资源
 
 - [Wan2.2模型仓库](https://modelers.cn/models/MindIE/Wan2.2)
-- [《多模态生成模型接入指南（开发者）》](../../../docs/zh/knowledge_base/model/integrating_multimodal_generation_model.md)
+- [《DiT 模型接入量化流程指南（开发者）》](../../../docs/zh/knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)
 - [一键量化配置协议说明](../../../docs/zh/user_guide/usage_quick_quantization.md#5-量化配置协议详解)
 - [逐层量化特性说明](../../../docs/zh/user_guide/usage_quick_quantization.md#41-逐层量化及分布式逐层量化)

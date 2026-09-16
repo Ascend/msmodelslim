@@ -16,8 +16,6 @@ Flex Smooth Quant 是 [SmoothQuant](../smooth_quant/term_smooth_quant.md) 的可
 
 传统 [SmoothQuant](../smooth_quant/term_smooth_quant.md) 使用固定的 `alpha` 且仅支持 `norm-linear` 子图，对复杂结构适配不足。Flex Smooth Quant 将缩放公式推广为激活与权重分别使用 `alpha` 与 `beta` 两个指数，并通过网格搜索自动寻找最优参数，避免了人工调参，同时扩展了对多子图类型的支持。
 
-从量化流程中的定位看，该算法更接近量化前的分布整形步骤：先降低离群值对量化尺度的支配，再由后续量化算法完成真正的离散化。这种思路的价值在于不必简单扩大位宽，而是通过重分配、旋转或平滑数值幅度，提高有限量化区间对主体数据分布的利用率。
-
 ### 2.1 核心思想
 
 Flex Smooth Quant 的核心思想是把平滑缩放从受约束的单指数关系扩展为 $\alpha$ 与 $\beta$ 两个相对独立的指数，使激活峰值和权重峰值对最终尺度的影响可以分别调节。算法通过两阶段候选搜索寻找联合量化输出误差较小的组合，从而适应不同层、不同计算子图中不一致的激活/权重离群程度。
@@ -77,8 +75,6 @@ $$
 - 需要自动搜索最优平滑参数、减少人工调参的量化场景。
 - 需要同时对注意力 `ov`、MLP `up-down`、连续线性层等多种结构做离群值抑制的场景。
 
-更具体地说，这类算法适合“量化误差主要由少数大幅值通道或 token 拉高尺度”的情况。若问题来源并不是离群值，而是模型本身对低比特表示普遍敏感，则单独增加平滑或旋转强度通常收益有限，应结合更高精度量化或敏感层回退。
-
 ### 2.6 使用限制
 
 - 目标结构需要能够识别为 `norm-linear`、`linear-linear`、`ov`、`up-down` 等可保持计算等价的子图。
@@ -90,8 +86,6 @@ $$
 
 ## 3. 关联词条
 
-可以从“同类方法、前后处理关系和应用对象”三个方向理解本词条与其他算法的关系。下面的关联项既用于横向比较不同技术路线，也用于帮助定位该算法在完整量化方案中的位置。
-
 - [SmoothQuant](../smooth_quant/term_smooth_quant.md)：上位概念，本算法是 SmoothQuant 的灵活扩展。
 - [Iterative Smooth](../iterative_smooth/term_iterative_smooth.md)：同类算法，同样支持多子图类型的平滑。
 - [OASQ](../oasq/term_oasq.md)：同类算法，按通道离群分流尺度，而非搜索 alpha/beta。
@@ -102,8 +96,6 @@ $$
 ---
 
 ## 4. 参考文档
-
-参考文档优先列出算法原始论文或权威出处，并补充仓库内对应使用指南。需要进一步理解参数选择时，可先阅读使用指南，再回到原论文核对算法假设和推导。
 
 1. Xiao G et al. SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models. ICML 2023. https://arxiv.org/abs/2211.10438
 2. 《[Flex Smooth Quant 参数配置流程指南](./usage_flex_smooth_quant.md)》

@@ -1,132 +1,225 @@
-# 视觉语言模型（VLM）量化使用指南
+# 多模态理解模型（VLM）量化使用指南
 
 ## 1. 适用范围
 
-本指南面向首次对多模态视觉语言模型（如 Qwen3-VL、GLM-4.6V、InternVL3.5 等）执行[训练后量化（PTQ）](../term_ptq.md)的用户。**重点不是展开完整执行命令，而是给出可上手的推荐配置，并说明每个配置项的含义（原理）以及何时需要调整、怎么选。**
+本指南面向对多模态视觉语言模型（如 Qwen2.5-VL、Qwen3-VL、GLM-4.6V、InternVL3.5 等）执行[训练后量化（PTQ）](../term_ptq.md)的用户。文档提供规范的量化使用流程，系统阐明模型适配接口、多模态校准集配置、保存格式、算法选型与视觉组件排除策略、调度器（Runner）机制，并提供完整的开箱即用示例。
 
 适用场景：
 
-- 将浮点 VLM 量化为 W8A8 等低比特格式并部署
-- 对 MoE 架构 VLM 执行混合量化（dense 层静态 + expert 层动态）
-- 为多模态在线推理服务准备量化权重
+- 将浮点 VLM 权重高效量化为 W8/W4 等低比特格式并导出；
+- 对 MoE 架构多模态模型执行混合量化（Dense 层静态量化 + Expert 层动态量化）；
+- 为多模态在线推理服务（如基于昇腾 NPU 的 MindIE 或 vLLM-Ascend）准备部署权重。
 
-模型是否支持、命令行怎么写不在此展开：支持矩阵见[《大模型支持矩阵》](../../model/README.md)，完整执行命令见[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
 
 ## 2. 输入和交付件
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 浮点 VLM 权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` | 可被目标 Transformers 版本加载 |
-| 输入 | 多模态校准数据集 | 工具默认 `lab_calib/calibImages/` 或用户指定 | 图像目录 / index.jsonl，含图像路径与文本 prompt | 至少包含 128 张校准图像 |
-| 输入 | 默认文本 prompt | YAML 配置 `default_text` 字段 | 非空字符串 | 与校准图像语义匹配 |
-| 交付件 | 量化权重目录 | `--save_path` 指定路径 | 含 `quant_model_description.json` 及 `*.safetensors` | 推理冒烟通过 |
+| 输入 | 浮点 VLM 权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` 分片 | 可被目标 Transformers 版本正常加载 |
+| 输入 | 多模态校准数据集 | 工具内置 `lab_calib/calibImages/` 或用户自定义路径 | 包含图像文件及可选配对 Prompt 的目录或 JSONL，推荐 50 条 | 可被适配器 `handle_dataset` 成功编码为多模态输入张量 |
+| 输入 | 量化配置文件 | 本地 YAML 文件 | 符合 `multimodal_vlm_modelslim_v1` 协议规范 | 通过模式校验（Schema Validation） |
+| 交付件 | 量化权重目录 | `--save_path` 指定路径 | 含 `quant_model_description.json` 及 `*.safetensors` 分片 | 导出完整且推理冒烟测试通过 |
 
 ## 3. 流程总览
 
-入门时建议先用一组**稳定推荐配置**建立基线，再围绕影响最大的参数做单变量调整。
+VLM 量化的整体使用流程如下：
 
 ```mermaid
 flowchart LR
-    A[确定目标位宽与多模态校准集] --> B[复用/编写基线配置]
-    B --> C[执行 VLM 量化]
-    C --> D[精度对比]
-    D --> E{精度达标?}
-    E -- 否 --> F[单变量调参]
-    F --> C
-    E -- 是 --> G[部署]
+    A[适配模型<br/>流水线接口] --> B[配置多模态<br/>校准数据集]
+    B --> C[选择权重保存格式]
+    C --> D[选型与编排<br/>量化算法]
+    D --> E[选择执行调度器]
+    E --> F[编写配置<br/>并执行量化]
 ```
+
+各阶段的关键细节如下：
+
+前置条件：模型适配：量化前需先完成模型适配，适配器实现 PipelineInterface（基础流水线接口）等接口，详见[《VLM 模型接入量化流程指南》](./integration_guide_vision_transformer_quantization.md)。若目标模型已在官方预验证列表中，无需编写适配代码，直接指定对应 `--model_type` 即可。模型适配必须先完成，才能执行量化流程。
+
+- **适配模型流水线接口**：确保待量化 VLM 模型具备符合 `multimodal_vlm_modelslim_v1` 规范的适配器接口，能够驱动视觉特征提取与文本解码的联合前向。
+- **配置多模态校准数据集**：通过 `spec.dataset` 与 `spec.default_text` 指定图文校准数据，推荐 50 条图像样本及配对 Prompt，稳定覆盖通用视觉特征分布。
+- **选择权重保存格式**：在 `spec.save` 中声明保存处理器，昇腾部署场景首选 `ascendv1_saver`，务必与部署框架版本对齐。
+- **选型与编排量化算法**：通过 `include`/`exclude` 控制量化范围，重点将视觉敏感投影层（如 `*merger*`、`*linear_fc2`）排除在量化之外，抑制跨模态对齐误差。
+- **选择执行调度器（Runner）**：在 `spec.runner` 中指定调度策略，推荐 `auto`：单卡自动逐层调度，多卡自动数据并行；不支持 `model_wise`。
+- **编写配置并执行量化**：整合上述配置生成完整 YAML，通过 `msmodelslim quant` 命令启动量化，导出量化权重与描述文件。
 
 ## 4. 操作步骤
 
-### 步骤 1：确认目标与约束
+### 步骤 1：适配模型流水线接口（V1 Interface）
 
-**操作**：先固定三件事——目标量化格式/位宽（决定 `qconfig`）、部署推理框架（决定 `save` 格式）、可用设备数（决定 `runner`）。VLM 量化**不支持** `MODEL_WISE` runner，仅支持 `LAYER_WISE` 与 `DP_LAYER_WISE`。目标模型已有 `lab_practice/` 下已验证配方时，**优先复用该配方**，再参考下文理解每个参数为什么这样选。
+**目标**：确保待量化 VLM 模型具备符合 `multimodal_vlm_modelslim_v1` 规范的适配器接口，能够驱动视觉特征提取与文本解码的联合前向。
 
-### 步骤 2：建立推荐基线
+**操作**：
 
-**操作**：下面给出 VLM 最常用的 W8A8 推荐基线。如果目标模型已有 `lab_practice` 配方，直接使用已验证配方；没有配方时从这里的推荐起点开始。
+若目标模型已在官方支持列表中，无需编写适配代码，直接指定对应 `--model_type` 即可；若需接入新 VLM 模型，请参见[《VLM 模型接入量化流程指南》](./integration_guide_vision_transformer_quantization.md)。
+
+该指南详细说明了 `PipelineInterface` 规范、核心方法说明（`handle_dataset`、`init_model`、`generate_model_visit`、`generate_model_forward`、`enable_kv_cache`）以及视觉组件封装与适配器注册开发步骤。
+
+**输出**：已在框架中注册可用的 VLM 适配器（通过 `--model_type` 调用）。
+
+### 步骤 2：配置校准数据集
+
+**目标**：选取代表性多模态样本，准确统计视觉与文本跨模态前向中的激活分布。
+
+**操作**：
+
+1. **配置方式与解析机制**：
+   在 YAML 配置中通过 `spec.dataset` 和 `spec.default_text` 指定：
+
+   ```yaml
+   spec:
+     dataset: calibImages                            # 相对目录名或绝对路径
+     default_text: "Describe this image in detail." # 图像样本缺省文本时的默认 Prompt
+   ```
+
+   若配置为相对文件名 `calibImages`，框架自动寻址内置的 `lab_calib/calibImages/` 图像目录；若为自定义绝对路径或指定 `index.jsonl`，则直接载入对应数据源。
+
+2. **校准集选择指南与推荐配置**：
+   - **通用多模态量化（推荐）**：默认采用内置的 `calibImages`。图像涵盖通用自然场景、图表与图文排版，配合默认描述 Prompt 可稳定覆盖通用视觉特征分布。
+   - **垂直场景定制**：若模型面向工业缺陷检测、医疗影像问答或自动驾驶场景，应替换为真实业务图像，并在 `default_text` 或索引文件中对齐领域专用指令（如“请分析图中异常区域”）。
+   - **校准样本量**：**推荐 50 条**（50 张图像及其配对 Prompt）。多模态前向中视觉编码器计算开销相对纯文本较大，50 条样本能够在充分覆盖特征分布的同时避免显著延长校准耗时。
+
+**输出**：在 YAML 中确认的 `dataset` 与 `default_text` 配置。
+
+### 步骤 3：选择权重保存格式
+
+**目标**：根据下游推理部署框架的要求，选择匹配的量化权重导出格式。
+
+**操作**：
+
+1. **配置接口**：
+   在 YAML 的 `spec.save` 列表中声明保存处理器：
+
+   ```yaml
+   spec:
+     save:
+       - type: ascendv1_saver       # 昇腾 NPU 部署推荐格式
+   ```
+
+2. **格式选型与文档链接**：
+   - **[ascendv1_saver 配置说明](../../../api_reference/config/format/ascendv1_saver.md)**：**昇腾 NPU 部署推荐格式**。适配 MindIE 及 vLLM-Ascend 推理引擎，导出包含多模态模型量化参数的 `quant_model_description.json` 及分片量化权重 `*.safetensors`。
+   - **[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：面向 MindIE-SD/MindIE 生态的统一部署格式。
+
+3. **选型指南**：
+   - 昇腾部署场景首选 `ascendv1_saver`。
+   - 务必与部署框架版本对齐，保存格式不匹配会导致加载权重报错。
+
+**输出**：在 YAML 中配置完成的 `save` 格式。
+
+### 步骤 4：选型与编排量化算法
+
+**目标**：确定量化位宽与范围，重点通过针对性的模块排除策略保障跨模态对齐精度。
+
+**操作**：
+
+1. **典型量化算法**：
+   量化流程通过处理器链（`spec.process`）按声明顺序串行调度。常用算法如下：
+
+   | 算法 | 简述 | 适用场景 | 链接 |
+   | --- | --- | --- | --- |
+   | MinMax | 统计张量极值直接计算 scale 与 zero-point，开销低 | W8A8 量化的基础估计算法 | [《MinMax》](../../quantization_algorithms/minmax/usage_minmax.md) |
+   | SmoothQuant | 将激活离群值按通道缩放迁移到权重 | 降低全网静态量化难度 | [《SmoothQuant》](../../quantization_algorithms/smooth_quant/usage_smooth_quant.md) |
+   | QuaRot | 引入正交 Walsh-Hadamard 旋转矩阵打散激活离群特征 | 改善低比特多模态模型的分布偏移 | [《QuaRot》](../../quantization_algorithms/quarot/usage_quarot.md) |
+   | KVCache Quant | 对多轮图文对话中的 Key/Value 缓存张量量化 | 多轮图文对话的显存优化 | [《KVCache Quant》](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md) |
+
+   > 完整算法列表请参阅[《量化算法总览》](../../quantization_algorithms/README.md)。
+
+2. **算法选型与调优**：
+   - **视觉敏感投影层排除（关键策略）**：视觉特征投影层（如 `*merger*`、`*linear_fc2`、`*deepstack_merger_list*` 等）负责将图像 patch 特征映射至文本 token 空间，对数值精度高度敏感。在 `exclude` 列表中显式排除，保留浮点权重，可抑制跨模态对齐误差导致的图文理解崩塌。
+   - **W8A8 基础量化（推荐起点）**：权重 `per_channel` 对称量化，激活按精度诉求选择 `per_tensor` 或 `per_token`，配合投影层排除，作为大多数 VLM 的首选基线。
+   - **MoE 混合量化**：带 MoE 架构的 VLM 通常对 Shared/Dense 层静态量化、Router/Expert 层动态量化，兼顾吞吐与路由精度。
+   - **单变量调参**：优先围绕 `exclude` 调整敏感层排除范围，避免盲目叠加多种算法。
+
+**输出**：在 YAML 中编排完毕的 `process` 算法链与模块过滤规则。
+
+### 步骤 5：选择执行调度器（Runner）
+
+**目标**：结合 VLM 视觉编码器与多卡并行环境，选择最佳调度引擎。
+
+**操作**：
+
+1. **接口原理与调度机制**：
+   在 YAML 的 `spec.runner` 中指定（源码位于 `msmodelslim/core/runner/`）：
+
+   ```yaml
+   spec:
+     runner: auto   # auto | layer_wise | dp_layer_wise
+   ```
+
+   - **`LayerWiseRunner`（逐层量化调度器）**：仅在当前网络层前向时加载权重，执行完毕立刻卸载释放。
+   - **`DPLayerWiseRunner`（数据并行逐层调度器）**：多卡并行切分多模态校准数据，分布式前向聚合激活统计量，成倍缩减量化耗时。
+   - **`auto`（自适应调度，推荐）**：单卡自动调度 `layer_wise`；检测到多设备（`device_indices > 1`）时自动调度 `dp_layer_wise`。
+   - **约束说明**：VLM 量化**不支持** `model_wise` 调度器。若配置为 `model_wise`，框架将告警并自动回退为 `layer_wise`。
+
+2. **配置指南**：
+   - **推荐默认填写 `runner: auto`**：单卡与多卡环境自动兼容。
+   - 多卡并行加速：在命令行传入多个设备（如 `--device npu:0,1,2,3`），配合 `auto` 即可自动启用多卡分布式逐层调度。
+
+**输出**：YAML 中确认的 `runner` 调度策略。
+
+### 步骤 6：编写量化配置并执行命令
+
+**目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。有关量化命令参数的完整说明，请参阅[《权重量化使用指南》](../../../user_guide/usage_weight_quantization.md)。
+
+**操作**：
+
+#### 完整示例：VLM W8A8 量化（含视觉投影层排除）
+
+##### 配置文件：`vlm_w8a8.yaml`
 
 ```yaml
 apiversion: multimodal_vlm_modelslim_v1
 spec:
-  runner: auto                    # 单卡 layer_wise，多卡 dp_layer_wise
+  runner: auto                    # 单卡自动使用 layer_wise，多卡自动使用 dp_layer_wise
   process:
     - type: linear_quant
       qconfig:
         act:
           dtype: int8
-          scope: per_tensor       # VLM 视觉模态激活分布稳定，per_tensor 即可满足精度
-          symmetric: false
+          scope: per_tensor       # 激活静态量化
+          symmetric: true
           method: minmax
         weight:
           dtype: int8
-          scope: per_channel
+          scope: per_channel      # 权重通道级量化
           symmetric: true
           method: minmax
-      include: ["*"]
+      include: ["*"]              # 匹配全网线性算子
       exclude:
-        - "*merger*"              # 视觉特征投影层排除量化
-        - "*linear_fc2"
+        - "*merger*"              # 排除视觉投影层保留浮点
+        - "*linear_fc2*"
         - "*deepstack_merger_list*"
   save:
-    - type: ascendv1_saver
-  dataset: calibImages
+    - type: ascendv1_saver        # 昇腾推理标准保存格式
+  dataset: calibImages            # 多模态校准图像目录
   default_text: "Describe this image in detail."
 ```
 
-> Visual 组件排除（`exclude` 中的 `*merger*`、`*linear_fc2` 等）是 VLM 量化区别于纯 LLM 量化的关键。这些投影层对视觉特征精度敏感，排除量化可以大幅降低精度损失。具体排除哪些层取决于模型架构，建议优先复用 `lab_practice` 中已验证的排除列表。
+##### 执行命令（单卡量化）
 
-**参考配置示例**（已有 `lab_practice` 配方时优先复用）：
+```bash
+msmodelslim quant \
+  --model_path <浮点模型目录> \
+  --save_path <量化权重输出目录> \
+  --model_type <模型适配器名称> \
+  --config_path ./vlm_w8a8.yaml \
+  --device npu:0
+```
 
-| 模型 | 量化方案 | 配置路径 |
-|------|---------|---------|
-| Qwen3-VL-32B | W8A8 | `lab_practice/qwen3_vl/qwen3_vl_w8a8.yaml` |
-| Qwen3-VL-MoE | W8A8 hybrid | `lab_practice/qwen3_vl_moe/qwen3_vl_moe_w8a8.yaml` |
-| Qwen2.5-VL | W8A8 MXFP8 | `lab_practice/qwen2_5_vl/qwen2.5-vl-*-w8a8-mxfp.yaml` |
-| GLM-4.6V | W8A8 hybrid | `lab_practice/glm4_6v/glm4_6v_w8a8.yaml` |
-| InternVL3.5 | W8A8 | `lab_practice/internvl3_5/internvl_w8a8.yaml` |
-
-### 步骤 3：选择并调整参数
-
-**操作**：参数选择按三个层次理解：先确认 `dtype/scope/symmetric/method` 组合是否被工具支持；其次确定 `include/exclude` 等作用范围；最后再调整会改变精度与开销的数值参数。VLM 量化与 LLM 量化共享大部分参数（`runner`、`process`、`linear_quant.qconfig` 等），详细说明见 [LLM 量化使用指南](../llm/usage_large_language_model_quantization.md#步骤-3选择并调整参数)，以下仅列出 VLM 特有或差异较大的配置项。
-
-| 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
-| --- | --- | --- | --- |
-| `runner` | 流水线执行方式。VLM 量化中视觉编码器需**整体加载**到显存（无法逐层），因此显存消耗高于纯 LLM 量化，大模型建议使用多卡 `dp_layer_wise`。**不支持** `model_wise`。 | `auto`（默认）。单卡 `layer_wise`，多卡 `dp_layer_wise`。 | 显存不足时优先增加 NPU 卡数，而不是尝试 `model_wise`（不支持）。多卡时框架自动使用 `dp_layer_wise` 加速。 |
-| `exclude`（视觉组件排除） | 将视觉特征投影层（如 `*merger*`、`*linear_fc2`、`*deepstack_merger_list*`）从量化范围中排除，保持浮点精度。这些层负责将图像 patch 特征映射到文本嵌入空间，量化误差会直接破坏视觉语义对齐。 | 优先复用 `lab_practice` 中已验证的排除列表；常见模式：`*merger*`、`*linear_fc2`、`*deepstack_merger_list*`。 | 精度调优时，若视觉质量下降明显，优先检查排除列表是否遗漏了敏感投影层。反之，若排除列表过大导致压缩率低，可尝试逐步缩小排除范围，每次只排除一个层模式。 |
-| `dataset` | 校准数据集名称或路径。VLM 量化需使用**多模态校准数据**（图像 + 文本 prompt），而非纯文本，才能统计视觉模态的激活分布。 | `calibImages`（工具默认提供 COCO 校准图像）。 | 如果业务图像分布特殊（如医疗影像、卫星图），应替换为与真实输入同分布的数据。校准图像数量建议 128~512 张。 |
-| `default_text` | 图像校准数据缺省文本 prompt 时的默认输入。当校准数据只包含图像路径、没有文本 prompt 时，使用此默认文本作为语言解码器的输入。 | `"Describe this image in detail."`（默认）。 | 应与业务场景匹配：Caption 任务用描述性 prompt，VQA 任务用问答式 prompt。更换 `default_text` 会影响量化参数的统计分布，更换后应重新量化。 |
-| `process`（VLM 特有处理器链） | VLM 量化中，除 `linear_quant` 外，常配合 `quarot`（离线旋转对齐）和 `iter_smooth`（迭代平滑）等处理器提升量化精度。旋转对齐使视觉特征进入与文本嵌入相同的旋转空间，平滑处理可抑制离群值。 | 入门只用 `linear_quant` + 视觉组件 `exclude`；精度不足时再叠加 `quarot` + `iter_smooth`。 | 参考 `lab_practice/qwen3_vl/qwen3_vl_w8a8.yaml` 的处理器链顺序：`quarot` → `iter_smooth` → `linear_quant`。不要一上来就堆处理器，先建立基线。 |
-
-> 其余参数（`linear_quant.qconfig` 中的 `act.dtype`/`scope`、`weight.dtype`/`scope`、`symmetric`、`method`、`include`/`exclude` 通用模式、`save` 等）的选择逻辑与 LLM 量化一致，详见 [LLM 量化使用指南](../llm/usage_large_language_model_quantization.md#步骤-3选择并调整参数)。
-
-### 参数组合与选择顺序
-
-1. **先锁定部署目标与支持组合**：确定最终位宽/数值格式，VLM 量化不支持 `model_wise` runner，多卡时自动使用 `dp_layer_wise`。
-2. **再固定视觉组件排除列表**：视觉投影层排除是 VLM 量化的核心，优先复用 `lab_practice` 中已验证的排除模式。
-3. **最后只调一个旋钮**：位宽、粒度、排除范围、处理器链一次只改一项，保持同一校准集和评测集。
-
-### 步骤 4：根据结果收敛参数方案
-
-**操作**：调参时先记录一份完整基线（数据集、量化范围、关键参数、端到端指标），每轮只改一个变量并与基线比较。
-
-- **先跑推荐基线，再调单变量。** 不要同时修改位宽、粒度、排除范围和处理器链。
-- **视觉精度优先排查排除列表。** 若生成结果视觉质量下降，优先检查 `exclude` 是否遗漏了视觉敏感层，这通常比整体升位宽更划算。
-- **最终以模型实践配置和部署能力为准。** 目标模型已有 `lab_practice` 配方时，应优先复用已验证组合。
+**输出**：在指定的 `--save_path` 目录下生成完整的量化权重文件与描述文件。
 
 ## 5. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| VLM 量化 | 多模态视觉语言模型训练后量化 | [VLM 量化词条](./term_vision_transformer_quantization.md) |
-| PTQ | 训练后量化 | [PTQ 词条](../term_ptq.md) |
+| PTQ | 训练后量化（Post-Training Quantization） | [《训练后量化词条》](../term_ptq.md) |
+| VLM 量化 | 多模态视觉语言模型训练后量化 | [《VLM 量化词条》](./term_vision_transformer_quantization.md) |
 
 ## 6. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `msmodelslim quant` | 一键量化 CLI 入口与完整命令说明 | [一键量化完整指南](../../../user_guide/usage_one_click_quantization.md) |
-| multimodal_vlm_modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset`/`default_text` 等任务级配置的字段类型、默认值与完整约束 | [multimodal_vlm_modelslim_v1 配置说明](../../../api_reference/config/task/multimodal_vlm_modelslim_v1.md) |
-| linear_quant 配置说明 | `linear_quant` 处理器及其 `qconfig` 各字段的完整取值说明 | [linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md) |
-
-> **高阶功能**：如需深度探索 prepare 阶段、敏感层分析、混合精度、QuaRot 旋转对齐等高级处理器组合，可查阅 [api_reference/config/task 高阶配置文档](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/api_reference/config/task)。入门阶段无需使用这些能力。
+| `msmodelslim quant` | 一键量化 CLI 入口与完整命令说明 | [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md) |
+| multimodal_vlm_modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset`/`default_text` 等任务级配置的字段说明 | [《multimodal_vlm_modelslim_v1 配置说明》](../../../api_reference/config/task/multimodal_vlm_modelslim_v1.md) |

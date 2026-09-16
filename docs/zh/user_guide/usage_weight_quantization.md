@@ -119,9 +119,9 @@ msmodelslim quant \
 
    | 模型类别 | 接入指南 |
    | --- | --- |
-   | 大语言模型 | 《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》 |
-   | 多模态理解 | 《[多模态理解模型接入指南](../knowledge_base/model/integrating_multimodal_understanding_model.md)》 |
-   | 多模态生成 | 《[多模态生成模型接入指南](../knowledge_base/model/integrating_multimodal_generation_model.md)》 |
+   | 大语言模型 | 《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》 |
+   | 多模态理解 | 《[多模态理解模型接入指南](../knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md)》 |
+   | 多模态生成 | 《[多模态生成模型接入指南](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)》 |
 
 2. 完成适配器开发与注册后，在仓库根目录重新执行 `bash install.sh`，将适配器 entry point 安装进当前环境，使 CLI 能按 `${MODEL_TYPE}` 命中该模型适配器。
 
@@ -277,9 +277,9 @@ msmodelslim quant \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 模型适配（大语言模型） | 为特定模型实现并注册适配器，使 CLI 可通过 `--model_type` 命中加载与量化能力 | 《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》 |
-| 模型适配（多模态理解） | 为特定模型实现并注册适配器，使 CLI 可通过 `--model_type` 命中加载与量化能力 | 《[多模态理解模型接入指南](../knowledge_base/model/integrating_multimodal_understanding_model.md)》 |
-| 模型适配（多模态生成） | 为特定模型实现并注册适配器，使 CLI 可通过 `--model_type` 命中加载与量化能力 | 《[多模态生成模型接入指南](../knowledge_base/model/integrating_multimodal_generation_model.md)》 |
+| 模型适配（大语言模型） | 为特定模型实现并注册适配器，使 CLI 可通过 `--model_type` 命中加载与量化能力 | 《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》 |
+| 模型适配（多模态理解） | 为特定模型实现并注册适配器，使 CLI 可通过 `--model_type` 命中加载与量化能力 | 《[多模态理解模型接入指南](../knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md)》 |
+| 模型适配（多模态生成） | 为特定模型实现并注册适配器，使 CLI 可通过 `--model_type` 命中加载与量化能力 | 《[多模态生成模型接入指南](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)》 |
 | 量化算法 | 离群值抑制、线性量化、敏感层分析等算法说明 | 《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》 |
 | 量化模式 | 如 w8a8、w4a8 等比特组合策略的命名与约定 | 《[量化模式命名规范](../knowledge_base/model/README.md#量化模式命名规范)》 |
 | 量化格式 | 量化权重导出格式及其与推理框架的对应关系 | 《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》 |

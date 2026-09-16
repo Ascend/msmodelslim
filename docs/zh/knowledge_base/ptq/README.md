@@ -25,9 +25,9 @@
 
 | 分类 | 说明 | 入口 |
 |------|------|------|
-| LLM 量化 | 大语言模型一键量化流程 | [《LLM 量化使用指南》](llm/usage_large_language_model_quantization.md) |
-| VLM 量化 | 多模态理解模型量化流程 | [《VLM 量化使用指南》](vlm/usage_vision_transformer_quantization.md) |
-| DiT 量化 | 多模态生成模型量化流程 | [《DiT 量化使用指南》](dit/usage_diffusion_transformer_quantization.md) |
+| LLM 量化 | 大语言模型一键量化流程 | [《大语言模型（LLM）量化使用指南》](llm/usage_large_language_model_quantization.md) |
+| VLM 量化 | 多模态理解模型量化流程 | [《多模态理解模型（VLM）量化使用指南》](vlm/usage_vision_transformer_quantization.md) |
+| DiT 量化 | 多模态生成模型量化流程 | [《多模态生成模型（DiT）量化使用指南》](dit/usage_diffusion_transformer_quantization.md) |
 | 权重转换 | 已有权重的格式 / 精度转换流程 | [《权重转换使用指南》](convert/usage_weight_conversion.md) |
 
 ## 模型接入指南

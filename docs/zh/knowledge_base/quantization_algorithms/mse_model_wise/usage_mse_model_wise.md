@@ -1,53 +1,109 @@
-﻿# 模型级 MSE 分析配置流程指南
+# 模型级 MSE 分析配置使用指南
 
 ## 1. 适用范围
 
-模型级 MSE（`mse_model_wise`）敏感层分析算法。模型级 MSE 作为 `msmodelslim analyze layer` 的 metrics 指标，用于以模型最终输出视角评估各层量化敏感度，辅助整层或整块回退决策。
+本指南面向需要使用[模型级 MSE 敏感层分析算法](./term_mse_model_wise.md) 的用户。模型级 MSE（`mse_model_wise`）作为 `msmodelslim analyze layer` 的 metrics 指标，从模型最终输出视角评估各层量化敏感度，辅助整层或整块回退决策。
 
-本指南面向首次配置模型级 MSE的用户，重点不是展开完整执行命令，而是说明推荐配置为什么适合作为起点、哪些参数真正需要调，以及出现精度或资源问题时应优先改哪一项。这类算法的输出主要用于指导哪些层、模块或注意力头需要重点保护，而不是直接生成量化权重。配置时应先固定待分析模型、分析范围和指标口径；如果指标依赖校准数据或量化结果，还应保持数据集和量化基线一致。排序或分数用于形成候选集合，最终策略仍应结合实际量化或压缩效果验证。
+适用场景：
 
-如果目标是直接生成量化权重而不是筛选敏感对象，本指南不能替代正式量化流程；分析分数也不应被当作无需验证的硬回退阈值。
+- W8/W4 等低比特量化前，需要从端到端输出误差视角定位敏感层，形成回退或混合精度候选集合；
+- layer-wise 等局部指标排序不稳定，需要以模型最终输出 MSE 复核敏感层结论。
+
+模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
 
 ## 2. 输入和交付件
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 待分析模型与量化基线 | 待分析模型、计划用于正式量化的配置 | 固定模型版本、目标量化范围和量化基线；分析范围应与后续实际量化对象一致 | 能明确本轮分析要比较的模型状态与候选范围 |
-| 输入 | 校准数据与分析参数约束 | 代表性校准数据、敏感层分析指南及相关配置 | 数据分布尽量覆盖真实输入；指标、`patterns`/范围和候选数量使用当前版本支持的取值 | 同一轮比较使用一致的数据、指标定义和分析范围 |
-| 交付件 | 模型级 MSE 分析配置方案 | 敏感层分析命令/配置或评审记录 | 记录指标、分析范围、候选数量及选择依据；结果作为后续回退或混合精度的候选输入 | 能稳定复现同一分析条件，并说明候选如何用于后续量化决策 |
+| 输入 | 浮点模型权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` 分片 | 可被目标 Transformers 版本正常加载 |
+| 输入 | 模型适配器 | 用户适配代码，通过 `--model_type` 调用 | 实现 `PipelineInterface` 及对应的 `MSEModelWiseAnalysisInterface` 专用接口 | 能被调度器（Runner）与处理器（Processor）正常驱动 |
+| 输入 | 校准数据集 | 工具内置 `lab_calib/` 或用户自定义路径 | JSONL 或 JSON 格式文本 Prompt，推荐 50 条 | 可被适配器 `handle_dataset` 成功编码为前向张量 |
+| 输入 | 量化配置文件 | 本地 YAML 文件 | 符合 `modelslim_v1` 协议规范 | 通过模式校验（Schema Validation） |
+| 交付件 | 敏感层分析结果 | `--save_path` 指定路径 | 各层量化扰动对应的模型级 MSE score 与 Top-K 排序 | 结果稳定可复现，可作为回退或混合精度候选输入 |
 
 ## 3. 流程总览
 
-入门时建议先用一组稳定配置建立基线，再围绕影响最大的参数做单变量调整。下面的流程强调“先选参数、再看效果”，不展开量化命令本身。
+模型级 MSE 的整体使用流程如下：
 
 ```mermaid
 flowchart LR
-    A[确定 Decoder 块范围] --> B[固定 metrics=mse_model_wise]
-    B[固定 metrics=mse_model_wise] --> C[逐层注入量化扰动]
-    C[逐层注入量化扰动] --> D[比较模型最终输出 MSE]
-    D[比较模型最终输出 MSE] --> E[按层选择回退候选]
+    A[适配模型<br/>流水线/算法接口] --> B[固定分析范围<br/>与校准数据]
+    B --> C[逐层注入量化扰动]
+    C --> D[比较模型<br/>最终输出 MSE]
+    D --> E[按层形成回退候选]
+    E --> F[验证精度<br/>并收敛候选]
 ```
 
-实际使用时建议把流程理解为“固定分析条件—计算指标—形成排序或筛选结果—验证保护候选”的闭环。前半段最重要的是保持模型和分析范围一致；若指标依赖量化结果或校准数据，还需要同步固定量化基线和数据集。如果结果波动较大，应先检查分析对象与输入条件，再调整 `top_k`、筛选比例等展示或决策参数。不要在同一轮同时更换指标和它依赖的基线条件，否则很难判断排序变化来自哪里。
+各阶段的关键细节如下：
+
+- **适配模型流水线/算法接口**：适配器需实现 `PipelineInterface` 基础流水线接口；可选实现 `MSEModelWiseAnalysisInterface` 提供块 I/O 的 hidden states 提取逻辑，是后续所有分析步骤的前提。
+- **固定分析范围与校准数据**：分析范围与后续实际量化范围保持一致，校准数据（推荐 50 条）应覆盖真实输入分布；分析期间不更换数据与量化基线，否则排序无法归因。
+- **逐层注入量化扰动**：Processor 对候选 Decoder 块逐层制造量化路径，复刻正式量化计划中的 `quant_modules` 范围。
+- **比较模型最终输出 MSE**：从模型最终输出端与浮点基线计算 MSE，误差传播到输出后的影响被完整纳入评价。
+- **按层形成回退候选**：按 `mse_model_wise` score 排序取 Top-K 候选，作为回退或混合精度的候选集合，而不是硬阈值。
+- **验证精度并收敛候选**：候选须经实际量化精度或模型任务指标验证后才固化到最终策略。
 
 ## 4. 操作步骤
 
-### 步骤 1：确认目标与约束
+### 步骤 1：适配模型流水线与算法接口
 
-**操作**：固定待分析模型、正式量化基线、校准数据和分析范围。先确认本次分析是为了筛选线性层、Decoder 层、Attention 结构或其他候选对象，并让分析范围与后续实际量化范围一致。如果模型、校准数据、量化基线或候选范围同时变化，分数排序将难以归因，因此这些条件应先固定，再调整指标或候选数量。
+**目标**：量化工具不能直接操作任意结构的模型，它要求每个模型先套一层“适配器”，把模型的各种操作翻译成框架能统一调用的标准方法。本步骤即确认并完成这层适配器与模型级 MSE 专用接口。**模型适配必须先完成，才能执行模型级 MSE 敏感层分析。**
 
-**输出**：一份固定的分析上下文：模型版本、量化基线、校准数据、分析范围以及要解决的回退/混合精度问题。
+**操作**：模型适配代码需实现以下接口，相关接口均由 `msmodelslim.model.interface_hub` 汇总导出：
 
-### 步骤 2：建立推荐基线
+1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。
+2. **`MSEModelWiseAnalysisInterface`**（位于 `msmodelslim.processor.analysis.binary_operator_model_wise.metrics.mse_model_wise.interface`）：模型级 MSE 分析专用接口（可选）。
+
+```python
+from abc import ABC, abstractmethod
+from typing import Any
+
+import torch
+
+class MSEModelWiseAnalysisInterface(ABC):
+    @abstractmethod
+    def extract_hidden_states(self, value: Any) -> torch.Tensor:
+        """从 block 相关数据中提取用于 MSE 比较 / 层间链式传播的主 tensor。"""
+        ...
+```
+
+- **`extract_hidden_states`**：从 block `forward` 返回值（Tensor、tuple、ModelOutput、dict 等）中提取主 tensor；层间链式传播时，Processor 将其返回值作为下一层 `forward` 的首个 positional arg。
+- 未实现该接口时，Processor 使用 `DefaultMSEModelWiseBlockData` 处理常见 LLM block I/O；VLM 等默认逻辑不足的结构需在适配器中实现。
+
+对于基于 HuggingFace Transformers 实现的标准开源 LLM，建议通过组合继承快速构建适配器：
+
+```python
+from msmodelslim.model.interface_hub import (
+    IModel,
+    ModelInfoInterface,
+    ModelSlimPipelineInterfaceV1 as PipelineInterface,
+    # ---- MSE Model Wise 算法适配接口（本步骤重点）----
+    MSEModelWiseAnalysisInterface,  # 算法适配：提取 block 输入/输出 hidden states，供块级 MSE 比较
+)
+
+class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
+                     MSEModelWiseAnalysisInterface):
+    def extract_hidden_states(self, value):
+        # 从 block 输出中提取用于 MSE 比较的主 tensor
+        ...
+```
+
+之后分析命令中通过 `--model_type MyModelAdapter` 引用该适配器。
+
+如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。
+
+**输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
+
+### 步骤 2：建立推荐配置
 
 **操作**：
+
+下面参数用于建立**第一版可比较基线**。
 
 - 分析范围：`layer`；
 - `--metrics`：`mse_model_wise`；
 - `--top_k`：先用 `15`；
-- `--quant_modules`：先与实际量化计划保持一致；不确定时从 `"*"` 开始。
-
-上面的推荐值用于建立第一版可复现分析基线，其中最值得关注的配置包括 `layer`, `--metrics`, `--quant_modules`, `--top_k`。这些值优先选择较容易解释、结果规模适中且不会改变指标定义的起点，目的是先得到稳定排序，再决定是否扩大候选范围。对于新模型，建议先保持模型、分析范围和指标固定完成一次完整分析；若指标依赖量化结果或数据，再同步固定量化基线和校准集。只有当候选过多、过少或排序不稳定时，再按照下一节说明调整候选数量、分析范围或相关输入条件。
+- `--quant_modules`：与实际量化计划保持一致，不确定时从 `"*"` 开始。
 
 **输出**：一组可复现的敏感性分析基线参数，用于生成第一版候选排序。
 
@@ -55,46 +111,63 @@ flowchart LR
 
 **操作**：
 
-本节只解释会影响分析对象、统计结果或候选输出的参数。对敏感性分析而言，最重要的不是把 `top_k` 调到某个固定值，而是保证**分析范围、校准数据和后续实际量化范围一致**：否则得到的排序即使数值稳定，也可能无法指导最终配置。推荐值用于建立第一版可比较基线；修改参数时应保持模型版本、校准集和量化基线固定，以便判断排序变化来自哪个参数。
+每轮只调一个变量，并保持同一校准集和量化基线。
 
-| 配置项 | 含义（原理） | 推荐配置 | 什么时候调整 |
+| 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |
-| 分析范围 `layer` | 逐层制造候选量化路径，再从模型最终输出端与浮点基线计算 MSE。相比 layer-wise，它测到的是误差传播到模型输出后的影响。 | 固定 `layer`。 | 固定 layer。它更接近端到端影响，但执行/存储成本通常高于只比较 block 输出。 |
-| `--metrics` | 选择本指南对应的分析指标 `mse_model_wise`；指标决定 score 的定义和排序含义。 | 固定 `mse_model_wise`。 | 固定 `mse_model_wise`。高分说明该层量化扰动更容易传播到最终模型输出；它与 layer-wise MSE 的数值尺度/排序可能不同，不应混用阈值。 |
-| `--quant_modules` | 定义每个候选 Decoder block 内实际被量化的模块范围，必须尽量复刻正式量化计划。 | 不确定时 `["*"]`；正式决策时对齐实际量化模块。 | 第一次分析应覆盖与实际量化计划一致的候选范围；只有确认某类模块不会量化时才收窄。范围变化会改变候选集合，因此不同范围下的排名不要直接当成同一次实验比较。 |
-| `--calibration_dataset` / `--calib_dataset` | 用于前向收集激活或浮点/量化输出的校准数据，**JSON/JSONL 格式**（LLM 文本样本文件，如 `mix_calib.jsonl`；VLM 为多模态目录）。数据分布直接决定统计量、MSE 或 Head 分数，因此它是影响分析有效性的核心输入，而不是普通文件路径。 | 优先使用**与后续正式量化相同或同分布**的校准集；快速验证才使用内置示例。 | 如果排序在不同数据上明显变化，先判断校准集是否覆盖真实长度、主题和输入形态，再考虑扩大 `top_k`。正式回退决策应尽量在代表性数据上完成。 |
-| `--top_k` / `--topk` | 控制最终展示/导出的高分候选数量，默认 `15`。它不改变底层 score 计算，也不会让算法重新分析更多数据。 | 从 `15` 开始。 | 候选只是后续验证集合：需要更多回退候选时增大，需要快速人工审查时减小。不要把 `top_k` 当作敏感度阈值；不同模型、不同指标的绝对 score 尺度并不统一。 |
+| 分析范围 `layer` | 逐层制造候选量化路径，再从模型最终输出端与浮点基线计算 MSE。 | 固定 `layer`。 | 更接近端到端影响，但执行/存储成本通常高于只比较 block 输出。 |
+| `--metrics` | 指定本指南对应的分析指标 `mse_model_wise`，决定 score 的定义和排序含义。 | 固定 `mse_model_wise`。 | 高分说明该层量化扰动更容易传播到模型最终输出；与其他指标的数值尺度/排序不同，不应混用阈值。 |
+| `--quant_modules` | 每个候选 Decoder block 内实际被量化的模块范围，须尽量复刻正式量化计划。 | 不确定时 `["*"]`；正式决策时对齐实际量化模块。 | 只有确认某类模块不会量化时才收窄；不同范围下的排名不要直接比较。 |
+| `--calibration_dataset` | 用于前向收集输出的校准数据，JSON/JSONL 格式（LLM 文本样本文件，推荐 50 条）。 | 与后续正式量化相同或同分布的校准集。 | 排序在不同数据上明显变化时，先检查校准集是否覆盖真实长度与主题。 |
+| `--top_k` | 控制最终展示/导出的高分候选数量，默认 `15`；不改变 score 计算。 | 从 `15` 开始。 | 需要更多回退候选时增大，需要快速人工审查时减小；不要把 `top_k` 当作敏感度阈值。 |
 
-### 参数组合与结果解释
+**输出**：一份完成单变量调整的分析参数方案，关键字段均有明确的选择依据和调整方向。
 
-- **先固定校准集和量化基线，再比较排序**。如果同时换了数据、量化配置和分析范围，score 的变化无法归因。
-- **高分表示“按 `mse_model_wise` 定义更值得关注”，不等价于一定要回退**。应把 Top-K 当作候选集，再用实际量化精度或模型任务指标验证。
-- **`top_k` 只改变输出规模**。真正影响“谁排在前面”的通常是校准数据、候选范围以及本指标自身的统计定义。
+### 步骤 4：编写量化配置并执行命令
 
-Model-wise MSE 的价值是把后续层的误差传播也纳入评价。若资源允许，可用它复核 layer-wise Top-K，而不是直接要求两种排序完全一致。
+**目标**：整合上述步骤生成完整的 YAML 分析配置文件，并通过 CLI 启动敏感层分析流程。
 
-**输出**：一份参数含义和调整方向明确的分析配置；修改项能够与排序变化建立对应关系。
+#### 完整示例：模型级 MSE 敏感层分析
 
-### 步骤 4：解释结果并收敛候选方案
+##### 配置文件：`mse_model_wise_analysis.yaml`
 
-**操作**：
+```yaml
+apiversion: modelslim_v1
+spec:
+  runner: auto                  # 单卡自动使用 layer_wise，多卡自动使用 dp_layer_wise
+  process:
+    - type: load                # 加载浮点模型
+  dataset: mix_calib.jsonl      # 校准数据集，推荐 50 条
+```
 
-使用分析结果时建议保留一份完整基线，包括模型版本、分析范围、指标类型和候选数量；若指标依赖数据或量化结果，还应记录对应校准集与量化基线。每轮只改变一个分析条件，并观察高敏感或高优先级对象是否仍然稳定出现在结果前部；如果结果稳定，再把候选用于局部回退、提位宽或重点保留实验。只有实际量化或压缩效果确实改善时，才把候选固化到最终策略中，避免把一次分析分数直接当成硬阈值。
+##### 执行命令（单卡分析）
 
-- Score 较高的对象优先进入“回退/提位宽候选池”，但最终是否回退仍应结合端到端精度验证。
-- `top_k` 只是候选展示数量，不是精度阈值；不要把第15名等位置机械当成回退边界。
-- 分析范围（`patterns`/`quant_modules`）应尽量与实际量化范围一致，否则得到的排序无法准确指导最终 YAML。
+```bash
+msmodelslim analyze layer \
+  --model_path <浮点模型目录> \
+  --model_type <模型适配器名称> \
+  --metrics mse_model_wise \
+  --top_k 15 \
+  --quant_modules "*" \
+  --calibration_dataset ./mix_calib.jsonl \
+  --config_path ./mse_model_wise_analysis.yaml \
+  --device npu:0
+```
 
-**输出**：一份经过实际量化或任务指标验证的敏感对象候选，以及对应的局部回退、提位宽或保护建议。
+**输出**：命令行输出各层 `mse_model_wise` score 与 Top-K 排序，保存于指定 `--save_path` 目录，作为后续回退或混合精度的候选输入。
 
 ## 5. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 模型级 MSE 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[模型级 MSE 敏感层分析算法 量化术语百科词条](./term_mse_model_wise.md)》 |
+| 模型级 MSE 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《模型级 MSE 敏感层分析算法 量化术语百科词条》](./term_mse_model_wise.md) |
 
-## 6. 接口文档列表
+## 6. 相关文档
 
-| 接口或能力 | 简述 | 链接 |
+| 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | 《[敏感层分析使用指南](../../../user_guide/usage_sensitive_layer_analysis.md)》 |
+| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | [《LLM 量化使用指南·步骤 1》](../../ptq/llm/usage_large_language_model_quantization.md) |
+| `MSEModelWiseAnalysisInterface` | 模型级 MSE 分析模型适配接口，由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
+| binary_operator_model_wise 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《binary_operator_model_wise 配置说明》](../../../api_reference/config/processor/binary_operator_model_wise.md) |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/task/modelslim_v1.md) |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |

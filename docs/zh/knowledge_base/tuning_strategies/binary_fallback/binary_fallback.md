@@ -102,4 +102,4 @@ rollback_candidates:
 | 已配置非空 `rollback_candidates` | 无额外模型协议要求（跳过敏感层分析） |
 | 未配置或为空 `rollback_candidates` | 须实现 **`ModelSlimPipelineInterfaceV1`**（即敏感层分析服务 `PipelineAnalysisService` 的模型协议，与 `PipelineInterface` 相同）；校准集由调优层注入的 `DatasetLoaderInfra` 经分析服务加载 |
 
-与 [Standing High](../standing_high/standing_high.md#适用要求) 的自动敏感层分析要求一致。模型接入见 [LLM 大模型接入指南 — 自动调优与敏感层分析](../../model/integrating_models.md#自动调优与敏感层分析)。
+与 [Standing High](../standing_high/standing_high.md#适用要求) 的自动敏感层分析要求一致。模型接入见 [LLM 大模型接入指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)。

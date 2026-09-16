@@ -6,7 +6,7 @@
 
 **覆盖流程**：模型接入适配 → 量化方案设计 → 权重量化 → 精度评测
 
-**关联流程**：《[多模态生成模型接入指南](../knowledge_base/model/integrating_multimodal_generation_model.md)》、《[一键量化使用说明](../user_guide/usage_quick_quantization.md)》
+**关联流程**：《[多模态生成模型接入指南](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)》、《[一键量化使用说明](../user_guide/usage_quick_quantization.md)》
 
 ## 2. 模型相关信息
 
@@ -36,7 +36,7 @@
 | PyTorch     | 2.9.0 |
 | TorchNPU    | 2.9.0 |
 | MindIE-SD   | 3.1.0 |
-| 测评工具     | [AISBench](https://github.com/AISBench/benchmark) |
+| 评测工具     | [AISBench](https://github.com/AISBench/benchmark) |
 | 其他依赖     | Wan2.2-T2V-A14B 模型权重、[VBench-1.0-mini 评测数据集](https://modelers.cn/datasets/AISBench/VBench-1.0-mini) |
 
 **本案例前置条件**：
@@ -148,10 +148,10 @@ Wan2.2 适配器基类 `Wan2_2BaseModelAdapter` 实现公共逻辑，场景子�
     >
     > 完成模型适配与注册后，需在源代码目录执行 `bash install.sh` 重新安装 msmodelslim，使适配器代码生效；否则 `--model_type Wan2.2-T2V-A14B` 无法命中适配器。
 
-**输出**：适配器代码编写完成，模型名注册完成，msModelSlim 可识别 `Wan2.2-T2V-A14B`。  
-**记录**：适配器代码文件列表（`base_model_adapter.py`、`expert_sub_adapter.py`、`constants.py`、`t2v/model_adapter.py`、`t2v/loader.py`）、`config.ini` 注册配置。  
+**输出**：适配器代码编写完成，模型名注册完成，msModelSlim 可识别 `Wan2.2-T2V-A14B`。
+**记录**：适配器代码文件列表（`base_model_adapter.py`、`expert_sub_adapter.py`、`constants.py`、`t2v/model_adapter.py`、`t2v/loader.py`）、`config.ini` 注册配置。
 
-**参考**：《[多模态生成模型接入指南](../knowledge_base/model/integrating_multimodal_generation_model.md)》
+**参考**：《[多模态生成模型接入指南](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)》
 
 ### 步骤 2：量化方案设计
 
@@ -164,7 +164,7 @@ Wan2.2 适配器基类 `Wan2_2BaseModelAdapter` 实现公共逻辑，场景子�
 1. 确定整体量化策略。
 
     Wan2.2 双专家 DiT 主干采用 W4A4F4 混合量化方案，要点如下：
- 
+
     - 根据经验前五层一般比较敏感，因此将前5层（blocks.0 ~ blocks.4）回退为 W8A8 量化（激活/权重均 mxfp8），降低浅层特征量化误差对生成质量的冲击。
     - 主干绝大多数层（`blocks.5` 及之后）进行 W4A4 量化：激活与权重均按 `per_block` 粒度对称量化为 mxfp4（激活 `minmax`、权重 `ceil_x` 并开启 `enable_search` 搜索），在保证生成质量的同时取得显存与带宽收益。
     - 注意力（`self_attn`）使能在线 QuaRot（`online_quarot`）：attention 激活通常存在离群值，直接低比特量化易产生精度损失，因此通过 Hadamard 旋转改善激活分布，降低量化的精度损失。
@@ -191,9 +191,9 @@ Wan2.2 适配器基类 `Wan2_2BaseModelAdapter` 实现公共逻辑，场景子�
 
 ### 步骤 3：环境准备与路径配置
 
-**目标**：设置环境变量，核对依赖版本，确认模型和数据路径正确。  
-**输入**：模型路径、数据路径、输出路径。  
-**操作**：配置环境变量，执行版本核对命令。  
+**目标**：设置环境变量，核对依赖版本，确认模型和数据路径正确。
+**输入**：模型路径、数据路径、输出路径。
+**操作**：配置环境变量，执行版本核对命令。
 
 ```bash
 # 设置环境变量（替换为实际路径）
@@ -211,14 +211,14 @@ python -c "import torch_npu; print('TorchNPU:', torch_npu.__version__)"
 pip show msmodelslim mindiesd
 ```
 
-**输出**：环境变量配置完成，所有依赖版本核对记录在案。  
-**记录**：CANN版本、PyTorch/TorchNPU版本、msmodelslim版本、NPU型号与驱动。  
+**输出**：环境变量配置完成，所有依赖版本核对记录在案。
+**记录**：CANN版本、PyTorch/TorchNPU版本、msmodelslim版本、NPU型号与驱动。
 
 ### 步骤 4：执行Wan2.2 W4A4F4量化
 
-**目标**：运行msModelSlim量化流程，完成双专家逐层量化，导出量化权重。  
-**输入**：浮点模型、校准数据集、量化配置（`${YAML_PATH}`）。  
-**操作**：使用对应model_type执行W4A4F4量化。  
+**目标**：运行msModelSlim量化流程，完成双专家逐层量化，导出量化权重。
+**输入**：浮点模型、校准数据集、量化配置（`${YAML_PATH}`）。
+**操作**：使用对应model_type执行W4A4F4量化。
 
 ```bash
 # 浮点模型权重路径：${MODEL_PATH}
@@ -234,14 +234,14 @@ msmodelslim quant \
     --trust_remote_code true
 ```
 
-**输出**：量化权重保存至`${SAVE_PATH}`目录，包含双专家量化权重与描述文件。  
-**记录**：量化过程完整日志、量化总时长、各层量化状态。  
+**输出**：量化权重保存至`${SAVE_PATH}`目录，包含双专家量化权重与描述文件。
+**记录**：量化过程完整日志、量化总时长、各层量化状态。
 
 ### 步骤 5：准备VBench-1.0-mini评测子集
 
-**目标**：从VBench-1.0-mini原始数据集中整理出0.01子集，供推理脚本使用。  
-**输入**：已下载的VBench-1.0-mini原始数据集。  
-**操作**：目录结构调整与文件重命名。  
+**目标**：从VBench-1.0-mini原始数据集中整理出0.01子集，供推理脚本使用。
+**输入**：已下载的VBench-1.0-mini原始数据集。
+**操作**：目录结构调整与文件重命名。
 
 VBench-1.0-mini原始目录结构如下：
 
@@ -275,14 +275,14 @@ cp VBench-1.0-mini/VBench_kmeans_info_0.01.json \
 
 完成后推理传参 `--vbench_mini_root ./final_mini_dataset_0_01` 即可使用0.01子集。该子集包含11条prompt，覆盖11个维度；按每条prompt生成1个视频计算，共11个视频。
 
-**输出**：`final_mini_dataset_0_01/` 目录准备完毕，可直接传入 `--vbench_mini_root`。  
-**记录**：整理后的目录结构、`VBench_kmeans_info.json` 文件内容（11条prompt列表）。  
+**输出**：`final_mini_dataset_0_01/` 目录准备完毕，可直接传入 `--vbench_mini_root`。
+**记录**：整理后的目录结构、`VBench_kmeans_info.json` 文件内容（11条prompt列表）。
 
 ### 步骤 6：执行Wan2.2浮点模型VBench评测推理
 
-**目标**：运行浮点模型推理，在VBench-mini数据集上生成评测结果作为精度对比基线，该步骤只生成视频。  
-**输入**：浮点模型权重、VBench-mini评测数据集、推理超参配置。  
-**操作**：本案例中具体取值为：`ulysses_size=2`、`dit_fsdp + t5_fsdp`、`cfg_size=2`、`vae_parallel` 启用。FP16 与 W4A4F4 两组使用完全相同的并行约定。其中 `ALGO` 为推理仓用于选择 FA 计算方式的环境变量，需按设备与推理方式取值（取值说明详见推理仓文档 [开始前必读-ALGO配置说明](https://modelers.cn/models/MindIE/wan2.2#31-%E5%BC%80%E5%A7%8B%E5%89%8D%E5%BF%85%E8%AF%BB)）。本案例产品形态为Ascend 950PR&950DT 系列产品：浮点推理取 `ALGO=0`；量化推理因使能 attention FP8，取 `ALGO=3`。此为两侧唯一的非模型路径差异。
+**目标**：运行浮点模型推理，在VBench-mini数据集上生成评测结果作为精度对比基线，该步骤只生成视频。
+**输入**：浮点模型权重、VBench-mini评测数据集、推理超参配置。
+**操作**：本案例中具体取值为：`ulysses_size=2`、`dit_fsdp + t5_fsdp`、`cfg_size=2`、`vae_parallel` 启用。FP16 与 W4A4F4 两组使用完全相同的并行约定。其中 `ALGO` 为推理仓用于选择 FA 计算方式的环境变量，需按设备与推理方式取值（取值说明详见推理仓文档 [开始前必读-ALGO配置说明](https://modelers.cn/models/MindIE/wan2.2#31-%E5%BC%80%E5%A7%8B%E5%89%8D%E5%BF%85%E8%AF%BB)）。本案例产品形态为 Ascend 950PR&950DT 系列产品：浮点推理取 `ALGO=0`；量化推理因使能 attention FP8，取 `ALGO=3`。此为两侧唯一的非模型路径差异。
 
 ```bash
 # Wan2.2浮点模型推理
@@ -315,14 +315,14 @@ torchrun --nproc_per_node=4 --master_port=23459 vbench.py \
 --temporal_flickering_samples 1
 ```
 
-**输出**：推理正常完成，所有评测视频生成完毕，结果保存至`${OUTPUT_DIR}/vbench_fp_output/`目录，生成视频无画质崩坏。  
-**记录**：推理完整运行日志。  
+**输出**：推理正常完成，所有评测视频生成完毕，结果保存至`${OUTPUT_DIR}/vbench_fp_output/`目录，生成视频无画质崩坏。
+**记录**：推理完整运行日志。
 
 ### 步骤 7：执行Wan2.2量化模型VBench评测推理
 
-**目标**：运行 W4A4F4 量化模型推理，生成评测视频，用于与浮点基线对比。  
-**输入**：W4A4F4量化权重、与浮点相同的VBench-mini评测数据集、W4A4F4的推理超参配置。  
-**操作**：仅将 `ALGO` 由 0 改为 3、增加 `--quant_dit_path` 参数指向量化权重路径，其余推理参数与浮点完全相同，执行推理生成评测视频。  
+**目标**：运行 W4A4F4 量化模型推理，生成评测视频，用于与浮点基线对比。
+**输入**：W4A4F4量化权重、与浮点相同的VBench-mini评测数据集、W4A4F4的推理超参配置。
+**操作**：仅将 `ALGO` 由 0 改为 3、增加 `--quant_dit_path` 参数指向量化权重路径，其余推理参数与浮点完全相同，执行推理生成评测视频。
 
 ```bash
 # Wan2.2量化模型推理与VBench评测命令
@@ -357,8 +357,8 @@ torchrun --nproc_per_node=4 --master_port=23459 vbench.py \
 --temporal_flickering_samples 1
 ```
 
-**输出**：推理正常完成，所有评测视频生成完毕，结果保存至`${OUTPUT_DIR}/vbench_quant_output/`目录，生成视频无画质崩坏。  
-**记录**：量化推理完整运行日志。  
+**输出**：推理正常完成，所有评测视频生成完毕，结果保存至`${OUTPUT_DIR}/vbench_quant_output/`目录，生成视频无画质崩坏。
+**记录**：量化推理完整运行日志。
 
 ## 6. 精度测试
 
@@ -368,7 +368,7 @@ torchrun --nproc_per_node=4 --master_port=23459 vbench.py \
 
 | 项          | 内容                           |
 | ---------- | ---------------------------- |
-| 测评工具       | AISBench |
+| 评测工具       | AISBench |
 | 对比对象       | Wan2.2 FP16浮点推理生成结果 vs Wan2.2 W4A4F4量化推理生成结果 |
 | 数据集与任务     | Vbench-1.0-mini 1%子集 |
 | 样本数 / 子集策略 | VBench-1.0-mini 1%子集共11条prompt，每条prompt生成1个视频，共11个视频样本 |

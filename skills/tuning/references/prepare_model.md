@@ -4,7 +4,7 @@
 
 **模型准备阶段**是端到端自动量化与调优流程编排的第 3 阶段。在本阶段，你需要确保目标模型已被 msModelSlim 支持并完成适配，使后续量化配置调优阶段可以正常调用。
 
-> 适配实现细节（Model Adapter 编写、`config.ini` 注册、接口约定等）以 docs 为准：《[LLM 大模型接入指南](../../../docs/zh/knowledge_base/model/integrating_models.md)》、《[LLM 量化集成指南](../../../docs/zh/knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》；本文只定义编排层的委派契约与判定标准。
+> 适配实现细节（Model Adapter 编写、`config.ini` 注册、接口约定等）以 docs 为准：《[LLM 量化集成指南](../../../docs/zh/knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》；本文只定义编排层的委派契约与判定标准。
 
 ## 执行依赖项
 

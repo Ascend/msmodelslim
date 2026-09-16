@@ -10,7 +10,7 @@
 
 **覆盖流程**：分析 `${MODEL_PATH}/config.json` 中的新模型结构 → 设计 `lab_practice/deepseek_v4/deepseek_v4_pro_w4a8.yaml` 量化方案 → 完成 `msmodelslim/model/deepseek_v4/` 模型适配器及 `lab_practice/deepseek_v4/` 量化 YAML 开发 → 环境准备与工具安装 → 执行一键量化命令 → 检查 `${SAVE_PATH}` 量化权重完整性 → 使用 `${SAVE_PATH}` 推理部署与精度评测 → 量化调优（可选）。
 
-**关联流程**：[《权重量化使用指南》](../user_guide/usage_weight_quantization.md)、[《一键量化完整指南》](../user_guide/usage_quick_quantization.md)、[《LLM 大模型接入指南》](../knowledge_base/model/integrating_models.md)、[《量化算法总览》](../knowledge_base/quantization_algorithms/README.md)
+**关联流程**：[《权重量化使用指南》](../user_guide/usage_weight_quantization.md)、[《一键量化完整指南》](../user_guide/usage_quick_quantization.md)、[《LLM 大模型接入指南》](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)、[《量化算法总览》](../knowledge_base/quantization_algorithms/README.md)
 
 **模型相关信息**
 

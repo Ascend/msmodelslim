@@ -68,14 +68,14 @@ $$
 
 ```mermaid
 flowchart LR
-    A[calib_dummy.jsonl 合成校准集] --> B[Q_proj / K_proj hook 采集输出]
-    B --> C[逐段计算 Q @ K^T]
-    C --> D[段间偏移位置取注意力]
-    D --> E[逐段平均得到 head 得分]
-    E --> F[GQA 分组取 max]
-    F --> G[按 ratio 选 top heads]
-    G --> H[写入 layer_scores (enrich)]
-    H --> I[保存 head.pt]
+    A[calib_dummy.jsonl<br/>合成校准集] --> B[Q_proj / K_proj hook<br/>采集输出]
+    B --> C[逐段计算<br/>Q @ K^T]
+    C --> D[段间偏移<br/>位置取注意力]
+    D --> E[逐段平均<br/>得到 head 得分]
+    E --> F[GQA 分组<br/>取 max]
+    F --> G[按 ratio<br/>选 top heads]
+    G --> H[写入 layer_scores<br/>(enrich)]
+    H --> I[保存<br/>head.pt]
 ```
 
 ---

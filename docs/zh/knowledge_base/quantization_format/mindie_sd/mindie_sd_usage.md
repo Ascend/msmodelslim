@@ -10,7 +10,7 @@
 
 ## 2. 流程关系与前置条件
 
-**上级流程**：《[权重量化使用指南](../../../user_guide/usage_weight_quantization.md)》；模型侧接入细节见《[多模态生成模型接入指南](../../model/integrating_multimodal_generation_model.md)》；配置协议与最佳实践入口见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》。
+**上级流程**：《[权重量化使用指南](../../../user_guide/usage_weight_quantization.md)》；模型侧接入细节见《[多模态生成模型接入指南](../../ptq/dit/integration_guide_diffusion_transformer_quantization.md)》；配置协议与最佳实践入口见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》。
 
 **前置条件**：
 
@@ -135,7 +135,7 @@ spec:
 3. 核对 `${SAVE_PATH}` 中至少存在：
    - `quant_model_description.json`（或带量化类型后缀的变体）
    - `quant_model_weight.safetensors`（或分片 + index / 带量化类型后缀的变体）
-   - 自源模型复制的 `.json` / `.py` 配置与代码文件  
+   - 自源模型复制的 `.json` / `.py` 配置与代码文件
    目录树与字段细则见《[MindIE-SD](term_mindie_sd.md#export-artifacts)》导出产物及各量化模式交付件格式。
 4. 按 MindIE 部署文档加载该目录，完成一次生成验证（分辨率 / 帧数等与 `inference_config` 一致）。该步骤为部署前的快速验证，不要求完整画质评测。
 

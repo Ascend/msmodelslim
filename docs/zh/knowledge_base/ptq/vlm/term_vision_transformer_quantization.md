@@ -1,4 +1,4 @@
-# 视觉语言模型（VLM）量化术语百科词条
+# 视觉语言模型量化
 
 > **词条类别**：[量化基础概念](../README.md)<br>
 > **英文名称**：Vision-Language Model Quantization<br>
@@ -9,43 +9,51 @@
 
 ## 1. 概述
 
-视觉语言模型（VLM）量化是指对"视觉编码器 + 语言解码器"的多模态理解模型（如 Qwen-VL、GLM-4V 等）进行[训练后量化（PTQ）](../term_ptq.md)的过程，将视觉编码器与文本解码器的权重和激活值映射到低比特表示，从而降低多模态推理的显存占用与延迟。与[LLM 量化](../llm/term_large_language_model_quantization.md)不同，VLM 量化需同时处理视觉与文本两种模态，视觉编码器全量加载、视觉组件需排除量化是其核心特征。
+视觉语言模型量化（[Vision-Language Model Quantization](./term_vision_transformer_quantization.md)）是指针对由“视觉编码器（ViT）+ 跨模态投影层 + 语言解码器（LLM）”构成的多模态理解模型（如 Qwen-VL、GLM-4V 等），应用[训练后量化（PTQ）](../term_ptq.md)将多模态组件的参数和特征激活压缩为低比特表示的技术。该技术需协同处理图文双模态分布，并重点针对视觉对齐投影层实施误差抑制或敏感度保护。
 
-## 2. 模型特点
+---
 
-VLM 采用「视觉编码器 + 语言解码器」的双模态异构架构，视觉侧负责将图像转化为特征序列，语言侧负责跨模态理解与生成，两部分在结构、参数规模与数据流上均有明显差异。这种异构性意味着 VLM 既不能简单沿用 LLM 的量化假设，也不能将两个模态割裂处理，是理解 VLM 量化特殊性的出发点。具体而言：
+## 2. 词条介绍
 
-- **双模态异构架构**：由视觉编码器（ViT）与语言解码器（LLM）两部分构成，视觉编码器负责图像特征提取，语言解码器负责跨模态推理生成。
-- **视觉编码器参数可观**：如 Qwen3-VL 的视觉编码器约 675M 参数，在多模态模型显存占用中占比显著。
-- **视觉编码器需整体加载**：视觉编码器一次性全量加载到显存，无法像文本解码器那样逐层按需加载，显存压力较高。
-- **存在视觉特征投影层**：如 merger、linear_fc2、deepstack_merger_list 等，负责将图像 patch 特征映射到文本嵌入空间，对量化误差敏感。
-- **视觉-语言特征空间耦合**：图像特征需与文本嵌入对齐，量化时需保持两个模态特征空间的几何一致性。
+### 2.1 模型架构特征
 
-## 3. 量化特点
+视觉语言模型（VLM）采用跨模态异构拓扑，主要包含三大组件：
 
-VLM 的量化方案围绕上述异构架构展开：语言解码器部分可以复用成熟的 LLM 逐层量化方案，而视觉编码器则因其全量加载方式、参数占比与对量化误差的敏感性，需要专门的量化策略。两个模态不是独立处理，而是在同一流程中协同校准、耦合量化，并保持视觉与文本特征空间的对齐。整体来看，VLM 量化呈现出以下特点：
+- **视觉编码器（Vision Encoder）**：通常为高分辨率 Vision Transformer（ViT），负责将二维图像切片（Patches）编码为视觉特征 Token 序列，计算以非自回归前向为主。
+- **跨模态投影/对齐层（Projector/Merger）**：如 MLP、Cross-Attention 或像素重组层，将高维视觉 Token 映射并对齐到文本 Token 嵌入空间。
+- **自回归语言模型（LLM Decoder）**：接收图像与文本混合 Token 序列，通过自回归解码生成答案。
 
-- **多模态校准数据**：需使用图像校准数据（含图像与文本 prompt）而非纯文本统计视觉模态的激活分布。
-- **视觉编码器整体量化**：ViT 编码器作为整体模块参与量化处理（而非逐层），其量化参数基于图像校准数据独立统计。
-- **视觉组件排除量化**：视觉特征投影层（`*merger*`、`*linear_fc2`、`*deepstack_merger_list*`）通常从量化范围中排除，以保持视觉特征精度。
-- **旋转对齐**：采用 QuaRot 旋转量化时，视觉输出投影层需左旋转（$W_{\text{new}} = R^T W$），使视觉特征进入与文本嵌入相同的旋转空间。
-- **与文本解码器耦合量化**：ViT 量化通常与语言解码器量化作为同一 VLM 量化流程执行，而非独立量化。
-- **逐层 + 全量混合**：文本解码器沿用 LLM 的逐层量化策略，视觉编码器采用全量加载策略，两种策略共存于同一流程。
+### 2.2 量化核心特点
 
-## 4. 关联流程
+相较于纯语言模型，VLM 量化具有以下显著特点：
 
-- [《VLM 量化使用指南》](./usage_vision_transformer_quantization.md)：VLM 量化完整流程，含视觉编码器量化与视觉组件排除。
-- [《VLM 模型接入量化流程指南》](./integration_guide_vision_transformer_quantization.md)：将新 VLM 模型接入量化流程，包含视觉编码器的适配说明。
-- [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)：涵盖 VLM 与多模态模型的一键量化流程，默认集成 VLM 量化方案。
+- **双模态分布差异显著**：视觉激活值与文本激活值的动态范围和通道方差特征截然不同，量化校准必须依赖图文混合（包含多样性图像和配对指令文本）的真实多模态数据集。
+- **投影对齐层对量化误差高度敏感**：投影层承担视觉到语言空间的几何坐标转换，细微的数值截断都会导致多模态语义对齐漂移。工程中常将投影层保留为高精度（FP16/BF16）或采用极细粒度量化。
+- **模态间空间几何对齐**：当使用旋转类算法（如 [QuaRot](../../quantization_algorithms/quarot/term_quarot.md)）消除文本侧激活离群值时，视觉侧输出特征必须同步施加相应的正交变换，以确保送入语言解码器前两者的特征空间依然严格对齐。
+- **组件分级量化策略**：视觉编码器多为密集前向计算（受限于计算吞吐），语言解码器长序列生成受限于访存带宽，需针对性配置不同的量化比特与算法策略。
 
-## 5. 关联词条
+---
 
-- [PTQ](../term_ptq.md)：上位概念，VLM 量化属于训练后量化的一种具体应用。
-- [LLM 量化](../llm/term_large_language_model_quantization.md)：配套术语，VLM 的语言解码器部分采用与 LLM 相同的逐层量化方案。
-- [DiT 量化](../dit/term_diffusion_transformer_quantization.md)：同类概念，多模态生成模型的量化，同样涉及视觉 Transformer 编码器。
-- [权重转换](../convert/term_weight_conversion.md)：应用对象，VLM 量化权重可通过该工具调整格式/精度。
+## 3. 关联流程
 
-## 6. 参考文档
+- [《多模态理解模型（VLM）量化使用指南》](./usage_vision_transformer_quantization.md)：VLM 量化的完整操作流程。
+- [《VLM 模型接入量化流程指南》](./integration_guide_vision_transformer_quantization.md)：将新视觉语言模型接入量化流程的开发指导。
+- [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)：涵盖各类模型的一键量化流程。
+
+---
+
+## 4. 关联词条
+
+- [PTQ](../term_ptq.md)：上位概念，视觉语言模型量化属于训练后量化的具体应用。
+- [LLM 量化](../llm/term_large_language_model_quantization.md)：配套概念，VLM 的语言解码部分沿用 LLM 量化方案。
+- [DiT 量化](../dit/term_diffusion_transformer_quantization.md)：同类概念，多模态生成模型的量化。
+- [QuaRot](../../quantization_algorithms/quarot/term_quarot.md)：配套算法，涉及模态对齐投影层的旋转变换。
+- [权重转换](../convert/term_weight_conversion.md)：配套术语，量化权重的离线重构与格式转换。
+
+---
+
+## 5. 参考文档
 
 1. Dosovitskiy A, et al. "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale." ICLR 2021. https://arxiv.org/abs/2010.11929
 2. Xiao G, et al. "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models." arXiv:2211.10438, 2022. https://arxiv.org/abs/2211.10438
+3. Liu H, et al. "Visual Instruction Tuning (LLaVA)." NeurIPS 2023. https://arxiv.org/abs/2304.08485

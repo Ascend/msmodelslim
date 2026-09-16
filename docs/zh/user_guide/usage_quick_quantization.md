@@ -553,7 +553,7 @@ multimodal_sd_modelslim_v1 面向文生视频 / 图生视频等多模态**生成
 
 | 编排 | 典型 `model_type` | 说明 |
 |------|-------------------|------|
-| 重构 | `Wan2.2-T2V-A14B`、`Wan2.2-I2V-A14B`、`Wan2.2-TI2V-5B`、`HunyuanVideo` | 使用 `inference_config`；详见[《多模态生成模型接入指南》](../knowledge_base/model/integrating_multimodal_generation_model.md) |
+| 重构 | `Wan2.2-T2V-A14B`、`Wan2.2-I2V-A14B`、`Wan2.2-TI2V-5B`、`HunyuanVideo` | 使用 `inference_config`；详见[《多模态生成模型接入指南》](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md) |
 | Legacy | `Wan2_1` / `Wan2.1`、`Wan2_2` / `Wan2.2`（单体）、`flux1`、`qwen_image_edit` 等 | 使用迁移期 `model_config`；行为与主仓历史版本兼容 |
 
 **配置特点**:

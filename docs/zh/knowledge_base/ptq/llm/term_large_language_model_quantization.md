@@ -1,4 +1,4 @@
-# 大语言模型（LLM）量化术语百科词条
+# 大语言模型量化
 
 > **词条类别**：[量化基础概念](../README.md)<br>
 > **英文名称**：Large Language Model Quantization<br>
@@ -9,43 +9,52 @@
 
 ## 1. 概述
 
-大语言模型（LLM）量化是指对 Decoder-only 架构的自回归语言模型（如 LLaMA、Qwen、GLM、DeepSeek 等）进行[训练后量化（PTQ）](../term_ptq.md)的过程，将模型权重和激活值从浮点表示映射到低比特整数（如 INT8、INT4）或低精度浮点格式（如 FP8、MXFP8），从而降低模型部署时的显存占用与推理延迟。LLM 量化以逐层量化和离群值抑制为主要特征，是 PTQ 中技术最成熟的形态。
+大语言模型量化（[Large Language Model Quantization](./term_large_language_model_quantization.md)）是指针对以 Transformer Decoder-only 为主流架构的自回归文本生成模型（如 LLaMA、Qwen、DeepSeek 等），应用[训练后量化（PTQ）](../term_ptq.md)将权重和激活值从高精度浮点格式（FP16/BF16）转换为低比特格式（如 INT8、INT4、FP8）的技术。该技术以激活离群值抑制、低开销校准和权重-激活灵活配比为核心特征，旨在大幅降低模型显存占用并突破自回归解码阶段的内存带宽瓶颈。
 
-## 2. 模型特点
+---
 
-主流 LLM（如 LLaMA、Qwen、GLM、DeepSeek 等）虽然在注意力实现、位置编码、激活函数等细节上各有差异，但整体架构高度一致：均为 Transformer Decoder-only 结构，依靠逐 token 的自回归方式生成文本。这类模型参数规模庞大、层结构规整、推理过程高度串行，这些特性共同决定了 LLM 量化方案的走向。具体而言：
+## 2. 词条介绍
 
-- **Decoder-only 自回归架构**：逐 token 生成，每个位置的预测依赖前序已生成 token，与编码器-解码器架构相比结构更简洁。
-- **参数规模大**：从数十亿到数千亿参数，以 FP16/BF16 存储时显存需求极高（70B 权重约 140GB）。
-- **结构高度同质化**：由大量结构相同的 DecoderLayer 堆叠而成（self-attention 的 QKV/O 投影 + MLP 的 gate/up/down 投影），量化逻辑可复用。
-- **带 KV cache**：推理时缓存历史 token 的键值对，显存占用随序列长度增长，但 KV cache 不参与静态权重量化。
-- **动态自回归推理**：前向传播高度串行（逐 token），计算密集，对低比特整数加速敏感。
+### 2.1 模型与推理特点
 
-## 3. 量化特点
+主流大语言模型具有以下主要架构与运行时特征：
 
-LLM 的量化方案与上述模型特点紧密对应：DecoderLayer 结构同质化使量化逻辑可以逐层复用，超大参数规模带来的显存压力推动了逐层加载与分布式量化，激活值中的离群分布则决定了离群值抑制是精度关键，而自回归推理对算力的持续需求使权重与激活的低比特表示成为加速收益的主要来源。在长期的工程实践中，LLM 量化形成了以下鲜明特点：
+- **Decoder-only 深度堆叠**：由多层同质的 Transformer 解码块（包含自注意力机制与前馈网络 MLP）级联而成，网络结构规整统一。
+- **两阶段自回归推理**：包含预填充（Prefill）与逐 Token 生成的解码（Decode）阶段。Decode 阶段受限于访存带宽（Memory-bound），每生成一个 Token 均需完整读取全量权重。
+- **KV Cache 显存膨胀**：历史 Token 的 Key/Value 状态需缓存在显存中，随着批大小（Batch Size）和上下文长度增长，KV Cache 显存占用甚至会超过权重本身。
 
-- **逐层量化**：按 DecoderLayer 逐层加载、逐层量化、逐层落盘，显存压力小，且天然支持 DP 并行分布式量化。
-- **权重量化 + 激活量化可解耦**：权重视显存压缩（W4A16 仅量化权重），激活视推理加速（W8A8 权重与激活同时量化），两者可独立配置。
-- **离群值抑制是精度关键**：激活值中存在显著离群特征，直接量化精度损失大，需配合 SmoothQuant 等预处理算法；也可采用旋转量化（QuaRot）从几何上消除离群值。
-- **校准数据轻量**：仅需 128~512 条文本样本即可完成校准，校准集质量直接决定量化精度。
-- **量化粒度多样**：权重支持 per_channel / per_group，激活支持 per_tensor / per_token，可按精度-效率权衡灵活选择。
-- **支持多种 runner 模式**：MODEL_WISE、LAYER_WISE、DP_LAYER_WISE，满足不同显存与并行的部署约束。
+### 2.2 量化核心特点
 
-## 4. 关联流程
+针对 LLM 的架构与运行时瓶颈，其量化方案具备以下关键特征：
 
-- [《LLM 量化使用指南》](./usage_large_language_model_quantization.md)：LLM 量化完整的操作流程与命令行说明。
-- [《LLM 模型接入量化流程指南》](./integration_guide_large_language_model_quantization.md)：将新 Decoder-only 模型接入量化流程的完整开发指南。
-- [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)：涵盖 LLM 与多模态模型的一键量化流程，默认集成 LLM 量化方案。
+- **权重量化解决访存瓶颈**：在小 Batch 场景下，通过 Weight-only 量化显著减少单步前向传播的权重搬运量，实现显存占用大幅降低与生成速度提升。
+- **特定通道离群值（Outliers）显著**：深层网络激活值中，极少部分通道的幅值远高于其他通道（高达数百倍）。直接量化会导致巨大精度衰减，通常需结合 [SmoothQuant](../../quantization_algorithms/smooth_quant/term_smooth_quant.md)（权重-激活平滑缩放）或 [QuaRot](../../quantization_algorithms/quarot/term_quarot.md)（正交旋转消除离群值）进行分布整形。
+- **轻量校准与无数据适配**：校准过程无需海量语料，通常仅需数十至数百条具有通用代表性的文本序列即可统计稳定的量化 Scale 参数。
+- **KV Cache 量化协同**：除常规 Linear 层（QKV、Dense、MLP）外，将 KV Cache 压缩至 INT8/FP8 格式可提升长文本推理的吞吐量。
 
-## 5. 关联词条
+---
 
-- [PTQ](../term_ptq.md)：上位概念，LLM 量化属于训练后量化的一种具体应用。
-- [VLM 量化](../vlm/term_vision_transformer_quantization.md)：同类概念，多模态理解模型的量化，文本解码器部分采用与 LLM 相同的逐层量化方案。
-- [DiT 量化](../dit/term_diffusion_transformer_quantization.md)：对比算法，去噪式生成模型的量化，校准策略与 LLM 完全不同。
-- [权重转换](../convert/term_weight_conversion.md)：后续术语，对已有 LLM 量化权重做格式/精度变换。
+## 3. 关联流程
 
-## 6. 参考文档
+- [《LLM 量化使用指南》](./usage_large_language_model_quantization.md)：LLM 量化的完整操作流程。
+- [《LLM 模型接入量化流程指南》](./integration_guide_large_language_model_quantization.md)：将新语言模型接入量化流程的开发指导。
+- [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)：涵盖各类模型的一键量化流程。
+
+---
+
+## 4. 关联词条
+
+- [PTQ](../term_ptq.md)：上位概念，大语言模型量化属于训练后量化的具体应用。
+- [VLM 量化](../vlm/term_vision_transformer_quantization.md)：同类概念，多模态理解模型的量化（其文本端沿用 LLM 量化原理）。
+- [DiT 量化](../dit/term_diffusion_transformer_quantization.md)：对比算法，扩散生成模型的量化（非自回归去噪范式）。
+- [SmoothQuant](../../quantization_algorithms/smooth_quant/term_smooth_quant.md)：配套算法，解决 LLM 激活离群值的经典平滑算法。
+- [QuaRot](../../quantization_algorithms/quarot/term_quarot.md)：配套算法，通过正交旋转矩阵消除激活离群值的算法。
+- [权重转换](../convert/term_weight_conversion.md)：配套术语，量化权重的离线重构与格式转换。
+
+---
+
+## 5. 参考文档
 
 1. Xiao G, et al. "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models." arXiv:2211.10438, 2022. https://arxiv.org/abs/2211.10438
 2. Frantar E, et al. "GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers." arXiv:2210.17323, 2022. https://arxiv.org/abs/2210.17323
+3. Ashkboos S, et al. "QuaRot: Outlier-Free 4-Bit Inference in Large Language Models." arXiv:2404.00456, 2024. https://arxiv.org/abs/2404.00456

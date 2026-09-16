@@ -1,45 +1,78 @@
-﻿# KVCache Quant 参数配置流程指南
+# KVCache Quant 参数配置流程指南
 
 ## 1. 适用范围
 
-KVCache Quant 缓存量化算法。KVCache Quant 作为缓存量化处理器，对写入 KV Cache 的 Key/Value 状态进行 INT8 量化，用于降低缓存显存占用、提升长序列推理效率。
+本指南面向需要使用 [KVCache Quant 缓存量化算法](./term_kvcache_quant.md) 的用户。KVCache Quant 作为缓存量化处理器（`dynamic_cache`），对写入 KV Cache 的 Key/Value 状态进行 INT8 量化，用于降低缓存显存占用、提升长序列推理效率。
 
-本指南面向首次配置 KVCache Quant 的用户，重点不是展开完整执行命令，而是说明推荐配置为什么适合作为起点、哪些参数真正需要调，以及出现精度或资源问题时应优先改哪一项。这类算法通常直接影响量化尺度、舍入方式、量化粒度或低比特表示，因此参数选择会同时影响精度、压缩率以及部署兼容性。第一次使用时建议先固定目标位宽、校准集和评测方式，只采用本指南给出的推荐起点；确认基线稳定后，再围绕真正影响算法行为的参数逐项调整。
+适用场景：
 
-如果目标模型已经有完整且已验证的量化配方，应优先复用该配方；若当前算法与目标模型结构、数值格式或部署后端不兼容，不应通过增大搜索强度或扩大作用范围来绕过支持约束。
+- 长序列推理中 KV Cache 显存占用成为瓶颈，需要将 K/V 状态从浮点降为 INT8；
+- 需要按通道统计 K/V 范围并保留 per-channel 量化粒度，以适配部署端的缓存量化算子。
+
+模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
 
 ## 2. 输入和交付件
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
 | 输入 | 目标模型与量化目标 | 待量化模型及部署/评测方案 | 明确目标数值格式或位宽、作用模块、精度/性能目标以及部署约束 | 能说明为什么选择本算法以及它在整体量化方案中的位置 |
+| 输入 | 模型适配器 | 用户适配代码，通过 `--model_type` 调用 | 实现 `PipelineInterface` 接口 | 能被调度器（Runner）与处理器（Processor）正常驱动 |
 | 输入 | 配置约束与实践基线 | 本算法配置说明、目标模型已有 `lab_practice` 配方（如有） | 字段名、支持组合、作用范围和模型适配与当前版本一致 | 推荐起点能够追溯到当前配置定义或已验证实践 |
 | 输入 | 校准数据（算法需要时） | 任务 `dataset`、校准集或模型实践配方 | 数据应能代表真实输入分布；多阶段算法尽量保持各阶段数据分布一致 | 能被当前量化流程正常读取，并覆盖主要输入形态 |
 | 交付件 | KVCache Quant 参数配置方案 | 用户量化 YAML 或任务配置 | 参数取值合法、作用范围明确；关键参数说明选择依据 | 可作为后续量化流程的算法配置输入，并可复现本指南中的基线选择 |
 
 ## 3. 流程总览
 
-入门时建议先用一组稳定配置建立基线，再围绕影响最大的参数做单变量调整。下面的流程强调“先选参数、再看效果”，不展开量化命令本身。
+KVCache Quant 的整体使用流程如下：
 
 ```mermaid
 flowchart LR
-    A[确定 C8/KV Cache 目标] --> B[按通道统计 Key/Value 范围]
-    B[按通道统计 Key/Value 范围] --> C[生成 INT8 尺度]
-    C[生成 INT8 尺度] --> D[量化写入缓存的数据]
-    D[量化写入缓存的数据] --> E[验证长序列精度/显存]
+    A[适配模型<br/>流水线接口] --> B[确定 C8/KV Cache<br/>目标]
+    B --> C[按通道统计<br/>Key/Value 范围]
+    C --> D[生成<br/>INT8 尺度]
+    D --> E[量化写入<br/>缓存的数据]
+    E --> F[验证<br/>长序列精度/显存]
 ```
 
-实际使用时建议把流程理解为“建立基线—观察结果—单变量调整—再次验证”的闭环。流程图中的前几个节点用于固定量化对象、统计信息或初始参数，后几个节点用于应用算法并检查结果；如果效果不理想，应优先回到最近一次修改的参数，而不是同时更换位宽、粒度、作用范围和算法强度。这样可以明确每次变化的因果关系，也便于把有效配置沉淀为后续模型配方。
+各阶段的关键细节如下：
+
+- **适配模型流水线接口**：适配器需实现 `PipelineInterface`（基础流水线接口），量化调度器（Runner）与处理器（Processor）只通过标准流水线方法驱动模型。模型适配必须先完成，才能执行 KVCache Quant。
+- **确定 C8/KV Cache 目标**：锁定 `dtype + scope + symmetric + method` 组合；当前 `dynamic_cache` 处理器只接受 `per_channel` 粒度。
+- **按通道统计 Key/Value 范围**：通过校准数据（推荐 50 条）前向运行，重排 KV 张量后按通道统计范围。
+- **生成 INT8 尺度**：根据对称/非对称选择生成量化参数，INT8 是仓库实践的主流 KV Cache 位宽。
+- **量化写入缓存的数据**：按 `include/exclude` 圈定的作用范围逐层写入量化 K/V，作用范围决定哪些模块进入缓存量化。
+- **验证长序列精度/显存**：在长序列输入下比较精度与显存收益，必要时通过 KV Smooth 或层范围回退缓解精度损失。
 
 ## 4. 操作步骤
 
-### 步骤 1：确认目标与约束
+### 步骤 1：适配模型流水线接口
 
-**操作**：先固定目标模型、最终量化格式/位宽、作用对象和评测基线，再确认当前版本支持的参数组合。目标模型已有 `lab_practice` 配方时，优先把该配方作为实践基线；没有模型专用配方时，再使用本指南给出的通用推荐起点。若算法依赖校准统计或优化数据，还应在调参前固定代表性数据，避免把数据分布变化误判为参数收益。
+**目标**：量化工具不能直接操作任意结构的模型，需要适配器将模型操作转换为标准方法。`dynamic_cache` 处理器对 KV Cache 的校准与伪量化通过标准流水线方法驱动，模型适配器实现基础流水线接口即可。模型适配必须先完成，才能执行 KVCache Quant。
 
-**输出**：一份明确的配置目标：目标位宽/格式、处理范围、校准条件、评测基线和部署约束。
+**操作**：模型适配代码需实现以下接口，相关接口由 `msmodelslim.model.interface_hub` 汇总提供：
 
-### 步骤 2：建立推荐基线
+1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。量化调度器（Runner）与处理器（Processor）只通过这些标准方法驱动模型，与模型内部结构无关。
+
+对于基于 HuggingFace Transformers 实现的标准开源 LLM，建议通过组合继承构建适配器：
+
+```python
+from msmodelslim.model.interface_hub import (
+    IModel,
+    ModelInfoInterface,
+    ModelSlimPipelineInterfaceV1 as PipelineInterface,
+)
+
+class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
+    pass
+```
+
+之后量化命令中通过 `--model_type MyModelAdapter` 引用该适配器。
+
+如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。请注意：模型适配必须先完成，才能执行后续量化流程。
+
+**输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
+
+### 步骤 2：建立推荐配置
 
 **操作**：
 
@@ -58,15 +91,11 @@ spec:
       exclude: []
 ```
 
-上面的推荐值用于建立第一版可复现基线，其中最值得关注的配置包括 `type`, `qconfig`, `scope`, `dtype`。推荐值并不表示所有模型都只能使用该组合，而是优先选择仓库默认值、已验证实践或较稳健的中间取值，以降低第一次使用时同时遇到精度和兼容性问题的概率。如果目标模型已经有 `lab_practice` 配方，应优先复用该配方；只有在基线精度、显存或吞吐不满足目标时，再按照下一节的参数说明逐项调整。
-
-**输出**：一份可复现的推荐基线配置，后续所有参数调整均以此为比较对象。
+**输出**：一份可复现的推荐配置，后续所有参数调整均以此为比较对象。
 
 ### 步骤 3：选择并调整参数
 
 **操作**：
-
-参数选择建议按三个层次理解：首先确认 `dtype/scope/method` 等**算法支持约束**，这类字段不是任意可调；其次确定 `include/exclude`、子图类型等**作用范围**；最后再调整会改变误差与开销的数值参数。下面的推荐值区分了代码默认值、仓库 `lab_practice` 中已验证的实践值和适合首次使用的推荐起点。如果目标模型已有实践配置，优先沿用实践配置，再根据本节说明做单变量调整。
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |
@@ -78,37 +107,74 @@ spec:
 | `include` | 作用范围白名单，使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
 | `exclude` | 作用范围黑名单，命中后从 `include` 的候选中排除，优先级高于 `include`。适合保护敏感层、首尾层或模型专用不兼容结构。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。每次增加排除项后应确认通配符没有误伤相邻模块。 |
 
-### 参数组合与选择顺序
+#### 参数组合与选择顺序
 
-1. **先锁定部署目标与支持组合**：先确定最终位宽/数值格式，再确认当前量化器实际注册了对应的 `dtype + scope + symmetric + method` 组合；不要为了追求某个参数值而越过支持约束。
-2. **再固定作用范围**：使用已有模型配方时，先复用其 `include/exclude` 或子图类型；没有配方时先建立覆盖范围明确的基线，确认算法确实作用到了预期模块。
-3. **最后只调一个主要旋钮**：数值搜索步数、平滑强度、分组大小等一次只改一项，并保持同一校准集和评测集。若调整后没有稳定收益，回到上一个基线，而不是继续叠加多个变化。
-
-当前 DynamicCache 的自由度其实不大：**per-channel 是硬约束，仓库基线是 INT8 + symmetric + MinMax**。精度问题优先通过 KV Smooth、层范围回退或更合适的数据校准解决，而不是随意改成未验证粒度。
+当前 DynamicCache 的自由度其实不大：**per-channel 是硬约束，仓库基线是 INT8 + symmetric + MinMax**。精度问题优先通过 KV Smooth、层范围回退或更合适的数据校准解决，而不是随意改成未验证粒度。每轮只改一个变量，并保持同一校准集和评测集；若调整后没有稳定收益，回到上一个基线。
 
 **输出**：一份完成单变量调整的算法参数方案，关键字段均有明确的选择依据和调整方向。
 
-### 步骤 4：根据结果收敛参数方案
+### 步骤 4：编写量化配置并执行命令
 
-**操作**：
+**目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。
 
-调参时建议先记录一份完整基线，包括使用的数据集、量化范围、关键参数和端到端指标。每轮只改变一个变量，并把变化结果与基线直接比较；如果某项调整带来收益，再继续小步搜索其邻近取值。对于只有少数层或模块异常的情况，优先采用局部排除、局部回退或混合精度，而不是直接提高全模型精度配置，这通常更容易保留压缩和性能收益。
+#### 完整示例：KVCache Quant C8 + W8A8 动态量化（推荐起点）
 
-- **先跑推荐基线，再调单变量。** 不要同时修改位宽、粒度、算法参数和层范围，否则很难判断精度变化来自哪一项。
-- **优先回退局部，而不是整体提高精度。** 如果只有少数层敏感，优先通过 `exclude` 或混合策略保留高精度，通常比整体升位宽更划算。
-- **最终以模型实践配置和部署能力为准。** 入门推荐用于建立稳定起点；目标模型已有 `lab_practice` 配方时，应优先复用已验证组合。
+##### 配置文件：`kvcache_c8_w8a8.yaml`
 
-**输出**：一份可进入后续量化流程的最终参数方案，并保留相对于推荐基线的调整记录。
+```yaml
+apiversion: modelslim_v1
+spec:
+  runner: auto
+  process:
+    - type: dynamic_cache           # KV Cache INT8 per-channel 量化
+      qconfig:
+        scope: per_channel
+        dtype: int8
+        symmetric: true
+        method: minmax
+      include: ["*"]
+    - type: linear_quant            # 衔接 W8A8 动态量化
+      qconfig:
+        act:
+          dtype: int8
+          scope: per_token
+          symmetric: true
+          method: minmax
+        weight:
+          dtype: int8
+          scope: per_channel
+          symmetric: true
+          method: minmax
+      include: ["*"]
+  save:
+    - type: ascendv1_saver          # 昇腾推理标准保存格式
+  dataset: mix_calib.jsonl          # 内置混合校准集
+```
+
+##### 执行命令（单卡量化）
+
+```bash
+msmodelslim quant \
+  --model_path <浮点模型目录> \
+  --save_path <量化权重输出目录> \
+  --model_type <模型适配器名称> \
+  --config_path ./kvcache_c8_w8a8.yaml \
+  --device npu:0
+```
+
+**输出**：在指定的 `--save_path` 目录下生成完整的量化权重文件与描述文件。
 
 ## 5. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| KVCache Quant 缓存量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[KVCache Quant 缓存量化算法 量化术语百科词条](./term_kvcache_quant.md)》 |
+| KVCache Quant 缓存量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《KVCache Quant 缓存量化算法 量化术语百科词条》](./term_kvcache_quant.md) |
 
-## 6. 接口文档列表
+## 6. 相关文档
 
-| 接口或能力 | 简述 | 链接 |
+| 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| dynamic_cache 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[dynamic_cache 配置说明](../../../api_reference/config/processor/dynamic_cache.md)》 |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/task/modelslim_v1.md)》 |
+| `PipelineInterface` | 模型流水线接口，由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
+| dynamic_cache 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《dynamic_cache 配置说明》](../../../api_reference/config/processor/dynamic_cache.md) |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/task/modelslim_v1.md) |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |

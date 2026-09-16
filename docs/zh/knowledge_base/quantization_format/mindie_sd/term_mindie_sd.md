@@ -306,7 +306,7 @@ calib_data_<task_config>_high_noise_model.pth
 
 - 《[MindIE-SD 使用指南](mindie_sd_usage.md)》：确认模式支持、配置与执行。
 - 《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》：multimodal_sd 配置详解。
-- 《[多模态生成模型接入](../../model/integrating_multimodal_generation_model.md)》：模型接入与示例。
+- 《[多模态生成模型接入](../../ptq/dit/integration_guide_diffusion_transformer_quantization.md)》：模型接入与示例。
 - 《[量化格式接入指南](../iformat_integration_guide.md)》：新格式开发对照。
 
 ---

@@ -58,7 +58,7 @@ evaluation:
 | `standing_high_with_experience` | **`ModelSlimPipelineInterfaceV1`** + **`StandingHighWithExperienceInterface`**（`load_model`，离群值抑制能力探测） |
 | `binary_fallback` | **`ModelSlimPipelineInterfaceV1`** (实现V1架构) |
 
-详见各策略文档「适用要求 / 模型适配」章节及 《[LLM 大模型接入指南](../../knowledge_base/model/integrating_models.md#自动调优与敏感层分析)》。
+详见各策略文档「适用要求 / 模型适配」章节及 《[LLM 大模型接入指南](../../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 **策略特有配置字段**
 

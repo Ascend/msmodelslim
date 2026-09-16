@@ -27,7 +27,7 @@
 
 遵循我们的 Pull Request《[模板与规范](../../../.gitcode/PULL_REQUEST_TEMPLATE.md)》。
 
-参考开发者文档 《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》。
+参考开发者文档 《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 参考开发者文档 《[编码规范](development_guide/coding_standards.md)》。
 

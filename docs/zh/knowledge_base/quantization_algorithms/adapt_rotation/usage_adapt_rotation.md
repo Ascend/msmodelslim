@@ -1,49 +1,85 @@
-# Adapt Rotation 参数配置流程指南
+# Adapt Rotation 自适应旋转量化算法使用指南
 
 ## 1. 适用范围
 
-Adapt Rotation（自适应旋转优化）离群值抑制算法。Adapt Rotation 作为 `type: "adapt_rotation"` 处理器，在 [QuaRot](../quarot/term_quarot.md) 基础上通过数据驱动优化旋转矩阵，用于提升低比特（如 W4A4）量化精度。
+本指南面向需要使用 [Adapt Rotation 自适应旋转量化算法](./term_adapt_rotation.md) 的用户。Adapt Rotation 作为离群值抑制算法，在 [QuaRot](../quarot/term_quarot.md) 的基础上通过校准数据驱动优化正交旋转矩阵，用于进一步平滑激活离群值，提升低比特量化精度。
 
-本指南面向首次配置 Adapt Rotation 的用户，重点不是展开完整执行命令，而是说明推荐配置为什么适合作为起点、哪些参数真正需要调，以及出现精度或资源问题时应优先改哪一项。这类算法的主要作用是先改善待量化张量的数值分布，再交给后续量化步骤处理，本身通常不是最终的量化格式。因此判断配置是否合适时，不仅要看平滑或旋转后的张量范围，还要看与后续量化组合后的端到端精度；建议保持后续量化配置不变，只调整当前算法参数。
+适用场景：
 
-如果目标模型已经有完整且已验证的量化配方，应优先复用该配方；若当前算法与目标模型结构、数值格式或部署后端不兼容，不应通过增大搜索强度或扩大作用范围来绕过支持约束。
+- 低比特（如 W4A4、W8A8 等）量化精度要求极高，基础正交旋转难以完全消除激活长尾离群；
+- 需要基于校准样本学习更优的正交旋转变换，使激活与权重分布更加均匀。
+
+模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
 
 ## 2. 输入和交付件
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 目标模型与量化目标 | 待量化模型及部署/评测方案 | 明确目标数值格式或位宽、作用模块、精度/性能目标以及部署约束 | 能说明为什么选择本算法以及它在整体量化方案中的位置 |
-| 输入 | 配置约束与实践基线 | 本算法配置说明、目标模型已有 `lab_practice` 配方（如有） | 字段名、支持组合、作用范围和模型适配与当前版本一致 | 推荐起点能够追溯到当前配置定义或已验证实践 |
-| 输入 | 校准数据（算法需要时） | 任务 `dataset`、校准集或模型实践配方 | 数据应能代表真实输入分布；多阶段算法尽量保持各阶段数据分布一致 | 能被当前量化流程正常读取，并覆盖主要输入形态 |
-| 交付件 | Adapt Rotation 参数配置方案 | 用户量化 YAML 或任务配置 | 参数取值合法、作用范围明确；关键参数说明选择依据 | 可作为后续量化流程的算法配置输入，并可复现本指南中的基线选择 |
+| 输入 | 浮点模型权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` 分片 | 可被目标 Transformers 版本正常加载 |
+| 输入 | 模型适配器 | 用户适配代码，通过 `--model_type` 调用 | 实现 `PipelineInterface`、`AdaptRotationInterface` 及 QuaRot 相关接口 | 能被调度器（Runner）与处理器（Processor）正常驱动 |
+| 输入 | 校准数据集 | 工具内置 `lab_calib/` 或用户自定义路径 | JSONL 或 JSON 格式文本 Prompt，推荐 50 条 | 可被适配器 `handle_dataset` 成功编码为前向张量 |
+| 输入 | 量化配置文件 | 本地 YAML 文件 | 符合 `modelslim_v1` 协议规范 | 通过模式校验（Schema Validation） |
+| 交付件 | 量化权重目录 | `--save_path` 指定路径 | 含 `quant_model_description.json` 及 `*.safetensors` 分片 | 导出完整且推理冒烟测试通过 |
 
 ## 3. 流程总览
 
-入门时建议先用一组稳定配置建立基线，再围绕影响最大的参数做单变量调整。下面的流程强调“先选参数、再看效果”，不展开量化命令本身。
+Adapt Rotation 的整体使用流程如下：
 
 ```mermaid
 flowchart LR
-    A[确定目标位宽与校准集] --> B[Stage1 优化旋转矩阵]
-    B[Stage1 优化旋转矩阵] --> C[Stage2 应用旋转]
-    C[Stage2 应用旋转] --> D[衔接低比特量化]
-    D[衔接低比特量化] --> E[对比精度]
+    A[适配模型旋转接口] --> B[Stage1<br/>数据驱动优化旋转]
+    B --> C[Stage2<br/>应用旋转融合]
+    C --> D[衔接低比特量化]
+    D --> E[验证精度<br/>与部署信息]
 ```
 
-实际使用时建议把流程理解为“建立基线—观察结果—单变量调整—再次验证”的闭环。流程图中的前几个节点用于固定量化对象、统计信息或初始参数，后几个节点用于应用算法并检查结果；如果效果不理想，应优先回到最近一次修改的参数，而不是同时更换位宽、粒度、作用范围和算法强度。这样可以明确每次变化的因果关系，也便于把有效配置沉淀为后续模型配方。
+各阶段的关键细节如下：
+
+- **适配模型旋转接口**：适配器需实现 `AdaptRotationInterface`、`QuaRotInterface` 与 `OnlineQuaRotInterface`，提供两阶段旋转、网络映射与 Norm 融合支持，是后续算法执行的前置条件。
+- **Stage1 数据驱动优化旋转**：在 `prior` 阶段基于校准数据采集指定投影层激活，通过梯度优化最小化模拟量化误差，得到优化旋转矩阵。
+- **Stage2 应用旋转融合**：在 `process` 阶段将优化得到的旋转矩阵逐层作用到权重与激活中，支持离线融合或在线旋转。
+- **衔接低比特量化**：旋转后激活分布更加平滑均匀，衔接低比特 `linear_quant` 即可大幅提升精度表现。
+- **验证精度与部署信息**：评估量化精度并在导出时生成对应的模型描述与权重分片。
 
 ## 4. 操作步骤
 
-### 步骤 1：确认目标与约束
+### 步骤 1：适配模型流水线与旋转接口
 
-**操作**：先固定目标模型、最终量化格式/位宽、作用对象和评测基线，再确认当前版本支持的参数组合。目标模型已有 `lab_practice` 配方时，优先把该配方作为实践基线；没有模型专用配方时，再使用本指南给出的通用推荐起点。若算法依赖校准统计或优化数据，还应在调参前固定代表性数据，避免把数据分布变化误判为参数收益。
+**目标**：量化工具不能直接操作任意结构的模型，需要通过适配器将模型操作标准化。Adapt Rotation 包含 Stage1（数据优化）与 Stage2（旋转应用），必须在适配器中实现流水线与旋转接口后才能执行。
 
-**输出**：一份明确的配置目标：目标位宽/格式、处理范围、校准条件、评测基线和部署约束。
+**操作**：模型适配代码需实现以下接口，相关接口均由 `msmodelslim.model.interface_hub` 汇总提供：
 
-### 步骤 2：建立推荐基线
+1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。
+2. **`AdaptRotationInterface`**（位于 `msmodelslim.processor.adapt_rotation`）：自适应旋转专用接口，定义 Stage1 与 Stage2 所需的模型子图与旋转映射。
+3. **`QuaRotInterface`** / **`OnlineQuaRotInterface`**：旋转量化基础接口，提供 LayerNorm 融合映射（`get_ln_fuse_map`）与旋转对（`get_rotate_map`）。
+
+对于基于 HuggingFace Transformers 实现的标准开源 LLM，建议通过组合继承构建适配器：
+
+```python
+from msmodelslim.model.interface_hub import (
+    IModel,
+    ModelInfoInterface,
+    ModelSlimPipelineInterfaceV1 as PipelineInterface,
+    # ---- 旋转算法适配接口（本步骤重点）----
+    QuaRotInterface,          # 算法适配：提供 LayerNorm 融合映射（get_ln_fuse_map）与旋转对（get_rotate_map）
+    OnlineQuaRotInterface,    # 算法适配：提供在线旋转能力
+    AdaptRotationInterface,   # 算法适配：定义 Stage1/Stage2 所需的模型子图与旋转映射
+)
+
+class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
+                     QuaRotInterface, OnlineQuaRotInterface, AdaptRotationInterface):
+    pass
+```
+
+如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。
+
+**输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
+
+### 步骤 2：建立推荐配置
 
 **操作**：
 
-下面配置用于建立**第一版可比较基线**。如果目标模型已有 `lab_practice` 配方，优先使用已验证配方，再参考本节理解每个参数为什么这样选。
+下面配置用于建立**第一版可比较基线**。如果目标模型已有 `lab_practice` 配方，优先使用已验证配方。
 
 ```yaml
 spec:
@@ -66,9 +102,7 @@ spec:
       max_tp_size: 1
 ```
 
-上面的推荐值用于建立第一版可复现基线，其中最值得关注的配置包括 `stage`, `steps`, `quant_dtype`, `layer_type`。推荐值并不表示所有模型都只能使用该组合，而是优先选择仓库默认值、已验证实践或较稳健的中间取值，以降低第一次使用时同时遇到精度和兼容性问题的概率。如果目标模型已经有 `lab_practice` 配方，应优先复用该配方；只有在基线精度、显存或吞吐不满足目标时，再按照下一节的参数说明逐项调整。
-
-**输出**：一份可复现的推荐基线配置，后续所有参数调整均以此为比较对象。
+**输出**：一份可复现的推荐配置，后续所有参数调整均以此为比较对象。
 
 ### 步骤 3：选择并调整参数
 
@@ -77,53 +111,96 @@ spec:
 ModelSlim 实现入口：
 [查看对应实现目录](../../../../../msmodelslim/processor/adapt_rotation)
 
-参数选择建议按三个层次理解：首先确认 `dtype/scope/method` 等**算法支持约束**，这类字段不是任意可调；其次确定 `include/exclude`、子图类型等**作用范围**；最后再调整会改变误差与开销的数值参数。下面的推荐值区分了代码默认值、仓库 `lab_practice` 中已验证的实践值和适合首次使用的推荐起点。如果目标模型已有实践配置，优先沿用实践配置，再根据本节说明做单变量调整。
-
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |
-| `type` | 处理器类型标识，固定为 `adapt_rotation`。它只负责选择处理器，不参与旋转优化。 | 固定 `adapt_rotation`。 | 不要把 `type` 当作调参项；如果改成其他处理器，相当于切换算法，应重新选择整组配置。 |
-| `stage` | 决定当前是 Stage 1“基于校准数据学习/优化旋转”还是 Stage 2“把已学习旋转应用到模型”。Stage 1/2 允许的字段不同，配置会按阶段进行严格校验。 | 先执行 `stage: 1`，随后执行 `stage: 2`；两阶段使用同一套旋转目标。 | 两阶段不能省略或交换职责。最终量化目标、旋转块设置等发生变化后，应重新执行 Stage 1，而不是只改 Stage 2。 |
-| `steps` | Stage 1 的优化迭代次数。更多步数意味着旋转参数有更多机会降低模拟量化误差，但校准耗时近似随迭代增加；达到平台期后继续增加通常只增加时间。 | 默认值和 Qwen3 W4A4 实践均为 `20`，推荐先保持 `20`。 | 只有在相同校准集上看到旋转目标仍在明显下降、且最终量化精度仍受旋转不足影响时才增加。若 20 步后已经收敛或增加步数没有改善下游评测，保持默认即可。 |
-| `quant_dtype` | Stage 1 用来模拟下游激活量化误差的目标类型，当前支持 `int4`/`int8`。旋转优化会针对这个误差模型学习，因此它必须代表真正的下游 A 位宽。 | W4A4 用 `int4`，W8A8 用 `int8`；Qwen3 W4A4 实践依赖默认 `int4`。 | 这是“目标定义”而非微调旋钮。最终激活从 INT4 改成 INT8 时必须同步修改并重跑 Stage 1；否则学到的旋转针对的是另一套量化噪声。 |
-| `layer_type` | Stage 1 收集激活的层名子串列表，决定哪些投影层的数据参与自适应旋转优化。列表越宽，观测范围越大，但也更依赖模型命名和结构一致性。 | 默认/实践起点为 `["up_proj"]`。 | 先用模型适配中已验证的投影类型。只有确认其他投影同样属于该旋转路径、且当前采样不能代表最终误差时才扩展；如果填写的名称没有稳定匹配模块，先修正匹配而不是增加 `steps`。 |
-| `block_size` | 旋转块大小；`-1` 表示按 `hidden_dim` 做整块旋转，正值必须为 2 的幂。块化会把全维旋转限制在局部块内，通常用于并行、算子或内存约束。 | 精度基线优先 `-1`；只有明确的部署/并行要求时再使用合法的 2 的幂。 | 较小块会减少跨块混合能力，可能削弱离群值扩散效果，但更容易匹配部分并行/运行时约束。改块大小后应重新完成 Stage 1/Stage 2，并重新验证量化精度。 |
-| `max_samples` | Stage 1 每层用于优化的最大样本数，默认 `2048`。它控制估计旋转目标时的数据覆盖度，同时影响显存与校准时间。 | 先用 `2048`。 | 当不同校准批次得到的旋转收益波动较大，或业务分布明显更复杂时再增加；资源紧张时可降低，但样本过少会使优化更依赖少量校准样本。优先改善校准集代表性，再盲目堆样本数。 |
-| `dataset`（Stage 1 校准数据） | Stage 1 需要用校准样本收集目标投影的激活并优化旋转，因此数据分布会直接影响学到的旋转矩阵。它虽属于任务级数据配置而不是 `AdaptRotationProcessorConfig` 字段，但对该算法的参数选择具有决定性影响。 | 优先使用与最终量化校准、真实业务输入同分布的数据；示例 `boolq.jsonl` 只适合作为可运行起点。 | 如果模型主要处理长上下文、代码、多轮对话或其他特殊分布，应让校准集覆盖这些输入特征。更换数据集后应重新执行 Stage 1；不要把在一种分布上学到的旋转直接视为另一种分布的固定参数。 |
-| `online` | Stage 2 是否保留在线旋转。`false` 尽量把旋转离线融合到权重；`true` 则在运行时保留部分旋转逻辑。 | 默认 `false`，仓库实践也使用离线模式。 | 只有目标部署明确支持在线旋转、且确实需要在线/混合旋转时才开启。打开后应同时检查 `block_size`、`down_proj_online_layers`、`max_tp_size` 与实际并行配置。 |
-| `down_proj_online_layers` | Stage 2 指定哪些 Decoder 层的 `down_proj` 使用在线旋转，元素必须为非负层索引。它用于混合离线/在线策略。 | 默认 `[]`。 | 离线基线不需要设置。只有特定 `down_proj` 无法离线融合，或模型实践明确要求这些层在线旋转时再逐层加入；列表越大，运行时旋转开销越高。 |
-| `max_tp_size` | Stage 2 在线旋转使用的最大 Tensor Parallel 并行度，必须为 1 或 2 的幂。它参与在线旋转的分块/兼容约束。 | 离线模式保持默认即可；在线时设为**实际需要支持的最大 TP**。Qwen3 W4A4 实践使用 `1`。 | 不要为了“预留余量”随意放大。部署从 TP=1 改到更高 TP 时才同步修改，并确认旋转块与分片维度可兼容。 |
+| `type` | 处理器类型标识，固定为 `adapt_rotation`。 | 固定 `adapt_rotation`。 | 不建议调整。 |
+| `stage` | 区分 Stage 1（优化学习）与 Stage 2（应用旋转）。 | 先 `1` 后 `2` 组合执行。 | 两阶段不能省略或交换顺序。 |
+| `steps` | Stage 1 的优化迭代步数。 | 推荐先保持 `20`。 | 观察 loss 收敛情况，收敛后继续增加仅增加校准时间。 |
+| `quant_dtype` | Stage 1 模拟激活量化误差的目标位宽。 | W4A4 用 `int4`，W8A8 用 `int8`。 | 必须与下游最终激活量化位宽对齐。 |
+| `layer_type` | Stage 1 采集激活参与旋转优化的目标投影层。 | 推荐 `["up_proj"]`。 | 只有确认其他投影属于旋转优化路径时才扩展。 |
+| `block_size` | 旋转块大小；`-1` 为整块旋转，正值须为 2 的幂。 | 优先 `-1`。 | 块越小跨维度扩散越弱，但更适配特定并行限制。 |
+| `max_samples` | Stage 1 每层用于优化的最大样本数。 | 先用 `2048`。 | 样本量过少易过拟合，过多增加耗时。 |
+| `online` | Stage 2 是否启用运行时在线旋转。 | 默认 `false`（离线融合）。 | 目标部署链明确支持并需要在线旋转时开启。 |
+| `down_proj_online_layers` | Stage 2 指定哪些 Decoder 层的 down_proj 在线旋转。 | 默认 `[]`。 | 仅当特定层无法离线融合时加入。 |
+| `max_tp_size` | Stage 2 在线旋转支持的最大 TP 规模。 | 离线保持默认；在线设为实际部署 TP。 | 与部署并行配置一致。 |
 
-### 参数组合与选择顺序
+#### 参数组合与选择顺序
 
-1. **先锁定部署目标与支持组合**：先确定最终位宽/数值格式，再确认当前量化器实际注册了对应的 `dtype + scope + symmetric + method` 组合；不要为了追求某个参数值而越过支持约束。
-2. **再固定作用范围**：使用已有模型配方时，先复用其 `include/exclude` 或子图类型；没有配方时先建立覆盖范围明确的基线，确认算法确实作用到了预期模块。
-3. **最后只调一个主要旋钮**：数值搜索步数、平滑强度、分组大小等一次只改一项，并保持同一校准集和评测集。若调整后没有稳定收益，回到上一个基线，而不是继续叠加多个变化。
-
-对 Adapt Rotation 来说，`quant_dtype` 和 Stage1/Stage2 的一致性优先级高于 `steps`。第一次调参时先固定最终位宽和两阶段范围，再判断是否真的需要增加优化步数或改块大小。
+**最后只调一个主要旋钮**：优化步数 `steps` 保持 20，若指标波动再小幅调整。
 
 **输出**：一份完成单变量调整的算法参数方案，关键字段均有明确的选择依据和调整方向。
 
-### 步骤 4：根据结果收敛参数方案
+### 步骤 4：编写量化配置并执行命令
 
-**操作**：
+**目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。
 
-调参时建议先记录一份完整基线，包括使用的数据集、量化范围、关键参数和端到端指标。每轮只改变一个变量，并把变化结果与基线直接比较；如果某项调整带来收益，再继续小步搜索其邻近取值。对于只有少数层或模块异常的情况，优先采用局部排除、局部回退或混合精度，而不是直接提高全模型精度配置，这通常更容易保留压缩和性能收益。
+#### 完整示例：Adapt Rotation + W4A4 离线量化
 
-- **先跑推荐基线，再调单变量。** 不要同时修改位宽、粒度、算法参数和层范围，否则很难判断精度变化来自哪一项。
-- **优先回退局部，而不是整体提高精度。** 如果只有少数层敏感，优先通过 `exclude` 或混合策略保留高精度，通常比整体升位宽更划算。
-- **最终以模型实践配置和部署能力为准。** 入门推荐用于建立稳定起点；目标模型已有 `lab_practice` 配方时，应优先复用已验证组合。
+##### 配置文件：`adapt_rotation_w4a4.yaml`
 
-**输出**：一份可进入后续量化流程的最终参数方案，并保留相对于推荐基线的调整记录。
+```yaml
+apiversion: modelslim_v1
+spec:
+  runner: auto
+  prior:
+    - process:
+        - type: adapt_rotation
+          stage: 1
+          layer_type: ["up_proj"]
+          steps: 20
+          quant_dtype: int4
+          block_size: -1
+          max_samples: 2048
+      dataset: mix_calib.jsonl
+  process:
+    - type: adapt_rotation
+      stage: 2
+      online: false
+      block_size: -1
+      max_tp_size: 1
+    - type: linear_quant
+      qconfig:
+        act:
+          dtype: int4
+          scope: per_token
+          symmetric: true
+          method: minmax
+        weight:
+          dtype: int4
+          scope: per_channel
+          symmetric: true
+          method: minmax
+      include: ["*"]
+  save:
+    - type: ascendv1_saver
+  dataset: mix_calib.jsonl
+```
+
+##### 执行命令（单卡量化）
+
+```bash
+msmodelslim quant \
+  --model_path <浮点模型目录> \
+  --save_path <量化权重输出目录> \
+  --model_type <模型适配器名称> \
+  --config_path ./adapt_rotation_w4a4.yaml \
+  --device npu:0
+```
+
+**输出**：在指定的 `--save_path` 目录下生成完整的量化权重文件与描述文件。
 
 ## 5. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| Adapt Rotation 自适应旋转优化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[Adapt Rotation 自适应旋转优化算法 量化术语百科词条](./term_adapt_rotation.md)》 |
+| Adapt Rotation 自适应旋转优化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《Adapt Rotation 自适应旋转优化算法 量化术语百科词条》](./term_adapt_rotation.md) |
 
-## 6. 接口文档列表
+## 6. 相关文档
 
-| 接口或能力 | 简述 | 链接 |
+| 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| adapt_rotation 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[adapt_rotation 配置说明](../../../api_reference/config/processor/adapt_rotation.md)》 |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/task/modelslim_v1.md)》 |
+| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | [《LLM 量化使用指南·步骤 1》](../../ptq/llm/usage_large_language_model_quantization.md) |
+| `AdaptRotationInterface` / `QuaRotInterface` | 自适应旋转模型适配接口，由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
+| adapt_rotation 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《adapt_rotation 配置说明》](../../../api_reference/config/processor/adapt_rotation.md) |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/task/modelslim_v1.md) |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |

@@ -2,44 +2,77 @@
 
 ## 1. 适用范围
 
-线性量化算法。线性量化通过 `linear_quant` 处理器对模型的线性层（`nn.Linear`）权重与激活进行量化，是大多数量化方案的基础。
+本指南面向需要使用[线性量化算法](./term_linear_quant.md)的用户。线性量化通过 `linear_quant` 处理器对模型的线性层（`nn.Linear`）权重与激活进行量化，是大多数量化方案的基础。
 
-本指南面向首次配置线性量化的用户，重点不是展开完整执行命令，而是说明推荐配置为什么适合作为起点、哪些参数真正需要调，以及出现精度或资源问题时应优先改哪一项。这类算法通常直接影响量化尺度、舍入方式、量化粒度或低比特表示，因此参数选择会同时影响精度、压缩率以及部署兼容性。第一次使用时建议先固定目标位宽、校准集和评测方式，只采用本指南给出的推荐起点；确认基线稳定后，再围绕真正影响算法行为的参数逐项调整。
+适用场景：
 
-如果目标模型已经有完整且已验证的量化配方，应优先复用该配方；若当前算法与目标模型结构、数值格式或部署后端不兼容，不应通过增大搜索强度或扩大作用范围来绕过支持约束。
+- 需要对模型线性层权重与激活执行基础量化，建立可比较的量化基线；
+- 需要在基线之上通过调整激活/权重的位宽、粒度与参数估计算法定位精度或压缩率收益。
+
+模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
 
 ## 2. 输入和交付件
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
 | 输入 | 目标模型与量化目标 | 待量化模型及部署/评测方案 | 明确目标数值格式或位宽、作用模块、精度/性能目标以及部署约束 | 能说明为什么选择本算法以及它在整体量化方案中的位置 |
+| 输入 | 模型适配器 | 用户适配代码，通过 `--model_type` 调用 | 实现 `PipelineInterface` 接口 | 能被调度器（Runner）与处理器（Processor）正常驱动 |
 | 输入 | 配置约束与实践基线 | 本算法配置说明、目标模型已有 `lab_practice` 配方（如有） | 字段名、支持组合、作用范围和模型适配与当前版本一致 | 推荐起点能够追溯到当前配置定义或已验证实践 |
 | 输入 | 校准数据（算法需要时） | 任务 `dataset`、校准集或模型实践配方 | 数据应能代表真实输入分布；多阶段算法尽量保持各阶段数据分布一致 | 能被当前量化流程正常读取，并覆盖主要输入形态 |
 | 交付件 | 线性量化参数配置方案 | 用户量化 YAML 或任务配置 | 参数取值合法、作用范围明确；关键参数说明选择依据 | 可作为后续量化流程的算法配置输入，并可复现本指南中的基线选择 |
 
 ## 3. 流程总览
 
-入门时建议先用一组稳定配置建立基线，再围绕影响最大的参数做单变量调整。下面的流程强调“先选参数、再看效果”，不展开量化命令本身。
+线性量化的整体使用流程如下：
 
 ```mermaid
 flowchart LR
-    A[确定 W/A 位宽] --> B[选择激活与权重量化粒度]
-    B[选择激活与权重量化粒度] --> C[选择参数估计算法]
-    C[选择参数估计算法] --> D[圈定处理层]
-    D[圈定处理层] --> E[比较精度/性能]
+    A[适配模型<br/>流水线接口] --> B[确定<br/>W/A 位宽]
+    B --> C[选择激活<br/>与权重量化粒度]
+    C --> D[选择参数估计算法]
+    D --> E[圈定处理层]
+    E --> F[比较精度/性能]
 ```
 
-实际使用时建议把流程理解为“建立基线—观察结果—单变量调整—再次验证”的闭环。流程图中的前几个节点用于固定量化对象、统计信息或初始参数，后几个节点用于应用算法并检查结果；如果效果不理想，应优先回到最近一次修改的参数，而不是同时更换位宽、粒度、作用范围和算法强度。这样可以明确每次变化的因果关系，也便于把有效配置沉淀为后续模型配方。
+各阶段的关键细节如下：
+
+- **适配模型流水线接口**：适配器需实现 `PipelineInterface`（基础流水线接口），量化调度器（Runner）与处理器（Processor）只通过标准流水线方法驱动模型。模型适配必须先完成，才能执行线性量化。
+- **确定 W/A 位宽**：先固定目标位宽，再确认当前版本支持的参数组合；位宽由产品和后端目标决定，不作为小幅调参。
+- **选择激活与权重量化粒度**：粒度越局部越能适应动态范围变化，但运行时尺度计算与元数据通常更多；必须与 dtype/symmetric/method 存在已注册量化器。
+- **选择参数估计算法**：先让 method 与 dtype/scope 匹配，再考虑复杂度；不要因为某算法“更高级”就替换已满足精度的方法。
+- **圈定处理层**：通过 `include/exclude` 控制作用范围，范围过宽会放大不兼容或敏感层风险，过窄则可能让算法收益看不出来。
+- **比较精度/性能**：每轮只调一个变量，与基线直接比较；效果不理想时优先回到最近一次修改的参数。
 
 ## 4. 操作步骤
 
-### 步骤 1：确认目标与约束
+### 步骤 1：适配模型流水线接口
 
-**操作**：先固定目标模型、最终量化格式/位宽、作用对象和评测基线，再确认当前版本支持的参数组合。目标模型已有 `lab_practice` 配方时，优先把该配方作为实践基线；没有模型专用配方时，再使用本指南给出的通用推荐起点。若算法依赖校准统计或优化数据，还应在调参前固定代表性数据，避免把数据分布变化误判为参数收益。
+**目标**：量化工具不能直接操作任意结构的模型，需要适配器将模型操作转换为标准方法。`linear_quant` 处理器通过标准流水线方法驱动模型，模型适配器实现基础流水线接口即可。模型适配必须先完成，才能执行线性量化。
 
-**输出**：一份明确的配置目标：目标位宽/格式、处理范围、校准条件、评测基线和部署约束。
+**操作**：模型适配代码需实现以下接口，相关接口由 `msmodelslim.model.interface_hub` 汇总提供：
 
-### 步骤 2：建立推荐基线
+1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。量化调度器（Runner）与处理器（Processor）只通过这些标准方法驱动模型，与模型内部结构无关。
+
+对于基于 HuggingFace Transformers 实现的标准开源 LLM，建议通过组合继承构建适配器：
+
+```python
+from msmodelslim.model.interface_hub import (
+    IModel,
+    ModelInfoInterface,
+    ModelSlimPipelineInterfaceV1 as PipelineInterface,
+)
+
+class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
+    pass
+```
+
+之后量化命令中通过 `--model_type MyModelAdapter` 引用该适配器。
+
+如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。请注意：模型适配必须先完成，才能执行后续量化流程。
+
+**输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
+
+### 步骤 2：建立推荐配置
 
 **操作**：
 
@@ -64,9 +97,7 @@ spec:
       exclude: []
 ```
 
-上面的推荐值用于建立第一版可复现基线，其中最值得关注的配置包括 `type`, `qconfig.act.scope`, `qconfig.act.dtype`, `qconfig.act.symmetric`。推荐值并不表示所有模型都只能使用该组合，而是优先选择仓库默认值、已验证实践或较稳健的中间取值，以降低第一次使用时同时遇到精度和兼容性问题的概率。如果目标模型已经有 `lab_practice` 配方，应优先复用该配方；只有在基线精度、显存或吞吐不满足目标时，再按照下一节的参数说明逐项调整。
-
-**输出**：一份可复现的推荐基线配置，后续所有参数调整均以此为比较对象。
+**输出**：一份可复现的推荐配置，后续所有参数调整均以此为比较对象。
 
 ### 步骤 3：选择并调整参数
 
@@ -75,12 +106,10 @@ spec:
 ModelSlim 实现入口：
 [查看对应实现目录](../../../../../msmodelslim/processor/quant/linear.py)
 
-参数选择建议按三个层次理解：首先确认 `dtype/scope/method` 等**算法支持约束**，这类字段不是任意可调；其次确定 `include/exclude`、子图类型等**作用范围**；最后再调整会改变误差与开销的数值参数。下面的推荐值区分了代码默认值、仓库 `lab_practice` 中已验证的实践值和适合首次使用的推荐起点。如果目标模型已有实践配置，优先沿用实践配置，再根据本节说明做单变量调整。
-
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |
 | `type` | 处理器标识，固定 `linear_quant`。 | 固定。 | 不调。 |
-| `qconfig.act.dtype` | 激活数值格式。`float` 表示不量化激活；当前通用 QConfig 还支持 INT8/INT4/MXFP8/MXFP4/FP8 E4M3，但能否用于 Linear 取决于实际注册组合。 | 通用 LLM W8A8 从 `int8` 开始；只做 W8A16 则用 `float`；MX/FP8 只按已验证模型/后端配方选择。 | dtype 由产品和后端目标决定，不作为小幅调参。位宽降低会直接增大量化噪声，应重新选择 scope/method 并完整评测。 |
+| `qconfig.act.dtype` | 激活数值格式。`float` 表示不量化激活；当前通用 QConfig 还支持 INT8/INT4/MXFP8/MXFP4/FP8 E4M3，但能否用于 Linear 取决于实际注册组合。 | 通用 LLM W8A8 从 `int8` 开始；只做权重量化则用 `float`；MX/FP8 只按已验证模型/后端配方选择。 | dtype 由产品和后端目标决定，不作为小幅调参。位宽降低会直接增大量化噪声，应重新选择 scope/method 并完整评测。 |
 | `qconfig.act.scope` | 激活尺度粒度。仓库最常见 W8A8 配方是 `per_token`；也存在 INT8 per-tensor 非对称、PDMIX、MX per-block、DualScale 等专用组合。粒度越局部越能适应动态范围变化，但运行时尺度计算/元数据通常更多。 | 普通 INT8 LLM 首选 `per_token`；有模型实践时按其 per-tensor/PDMIX/per-block 等组合。 | 不要从 QConfig 枚举里任意挑 scope，必须与 dtype/symmetric/method 有已注册量化器。若 per-token 精度已满足，不必为了“更细”切到更复杂的专用 scope。 |
 | `qconfig.act.symmetric` | 决定激活是否使用 zero-point。对称量化围绕 0，计算简单；非对称可以适应明显偏移分布。 | INT8 per-token 基线用 `true`；仓库也有 per-tensor 非对称和 PDMIX `false` 实践。 | 以量化器支持和后端为前提。激活分布有明显偏移且 per-tensor 对称损失高时可考虑非对称；per-token 对称已经能局部适应时通常先保持简单方案。 |
 | `qconfig.act.method` | 激活尺度/裁剪估计方法。MinMax 是仓库最常用基线；Histogram 目前专用于 INT8 per-tensor 激活，通过直方图搜索 clipping。某些特殊格式的 method 由专用量化器定义。 | 先 `minmax`；只有明确存在长尾 clipping 问题且组合受支持时再考虑 `histogram` 或专用方法。 | 方法改变会改变校准需求和量化误差定义。MinMax 已满足精度时没必要增加复杂算法；长尾明显时再引入 Histogram。 |
@@ -97,36 +126,69 @@ ModelSlim 实现入口：
 | 目标 | 激活建议 | 权重建议 | 说明 |
 | --- | --- | --- | --- |
 | 通用 W8A8 基线 | `int8 / per_token / symmetric / minmax` | `int8 / per_channel / symmetric / minmax` | 仓库 `lab_practice` 中出现最频繁，适合先建立稳定基线。 |
-| W8A16 | `float` | `int8 / per_channel / symmetric / minmax` | 不量化激活，适合先验证权重量化风险。 |
+| 仅权重量化 | `float` | `int8 / per_channel / symmetric / minmax` | 不量化激活，适合先验证权重量化风险。 |
 | W4A8 | `int8 / per_token / symmetric / minmax` | `int4 / per_channel / symmetric / ssz` | 仓库已有 DeepSeek/GLM 类实践；SSZ 细节见对应指南。 |
 | MXFP8 | `mxfp8 / per_block / symmetric / minmax` | `mxfp8 / per_block / symmetric / minmax` 或 `mse_round` | 只有目标后端支持 MX 格式时使用。 |
 
-选择时先确定“最终部署格式”，再确定“量化粒度”，最后选择“参数估计算法”。`include/exclude` 用于局部回退，不建议通过随意混搭未注册的 QConfig 组合来试错。
+选择时先确定“最终部署格式”，再确定“量化粒度”，最后选择“参数估计算法”。`include/exclude` 用于局部回退，不建议通过随意混搭未注册的 QConfig 组合来试错。每轮只改一个变量，并保持同一校准集和评测集；若调整后没有稳定收益，回到上一个基线。
 
 **输出**：一份完成单变量调整的算法参数方案，关键字段均有明确的选择依据和调整方向。
 
-### 步骤 4：根据结果收敛参数方案
+### 步骤 4：编写量化配置并执行命令
 
-**操作**：
+**目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。
 
-调参时建议先记录一份完整基线，包括使用的数据集、量化范围、关键参数和端到端指标。每轮只改变一个变量，并把变化结果与基线直接比较；如果某项调整带来收益，再继续小步搜索其邻近取值。对于只有少数层或模块异常的情况，优先采用局部排除、局部回退或混合精度，而不是直接提高全模型精度配置，这通常更容易保留压缩和性能收益。
+#### 完整示例：线性量化 W8A8 动态量化（推荐起点）
 
-- 选择顺序建议是：先定目标位宽 → 再定粒度 → 再选 `method` → 最后用敏感层回退。不要一开始就堆叠多个高级算法。
-- **先跑推荐基线，再调单变量。** 不要同时修改位宽、粒度、算法参数和层范围，否则很难判断精度变化来自哪一项。
-- **优先回退局部，而不是整体提高精度。** 如果只有少数层敏感，优先通过 `exclude` 或混合策略保留高精度，通常比整体升位宽更划算。
-- **最终以模型实践配置和部署能力为准。** 入门推荐用于建立稳定起点；目标模型已有 `lab_practice` 配方时，应优先复用已验证组合。
+##### 配置文件：`linear_quant_w8a8.yaml`
 
-**输出**：一份可进入后续量化流程的最终参数方案，并保留相对于推荐基线的调整记录。
+```yaml
+apiversion: modelslim_v1
+spec:
+  runner: auto
+  process:
+    - type: linear_quant            # 线性层 W8A8 动态量化
+      qconfig:
+        act:
+          dtype: int8
+          scope: per_token          # 动态激活量化，精度表现好
+          symmetric: true
+          method: minmax
+        weight:
+          dtype: int8
+          scope: per_channel
+          symmetric: true
+          method: minmax
+      include: ["*"]
+  save:
+    - type: ascendv1_saver          # 昇腾推理标准保存格式
+  dataset: mix_calib.jsonl          # 内置混合校准集
+```
+
+##### 执行命令（单卡量化）
+
+```bash
+msmodelslim quant \
+  --model_path <浮点模型目录> \
+  --save_path <量化权重输出目录> \
+  --model_type <模型适配器名称> \
+  --config_path ./linear_quant_w8a8.yaml \
+  --device npu:0
+```
+
+**输出**：在指定的 `--save_path` 目录下生成完整的量化权重文件与描述文件。
 
 ## 5. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 线性量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[线性量化算法 量化术语百科词条](./term_linear_quant.md)》 |
+| 线性量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《线性量化算法 量化术语百科词条》](./term_linear_quant.md) |
 
-## 6. 接口文档列表
+## 6. 相关文档
 
-| 接口或能力 | 简述 | 链接 |
+| 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/task/modelslim_v1.md)》 |
+| `PipelineInterface` | 模型流水线接口，由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
+| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/task/modelslim_v1.md) |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |

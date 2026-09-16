@@ -105,7 +105,7 @@ msmodelslim analyze attn_head \
 
 **操作**：
 
-- **尚未接入的模型**：须先完成适配器开发与注册，再进入步骤 4。通用适配要求见《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》。
+- **尚未接入的模型**：须先完成适配器开发与注册，再进入步骤 4。通用适配要求见《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》。
 - **支持矩阵中已接入的模型**：可跳过通用适配，确认所用 `--model_type` 名称即可。
 - **算法侧额外接口**：`ra_compress` 要求适配器实现 `RaCompressAnalysisInterface` 接口，提供 Q、K、QKV 投影层名称模式。若适配器未实现该接口，将使用默认模式（`q_proj`、`k_proj`、`qkv_proj`）。若模型投影层命名与默认模式不同，须按接口文档补齐。接口定义见 [ra_compress/interface.py](../../../msmodelslim/processor/analysis/unary_operator/metrics/ra_compress/interface.py)。
 
@@ -186,7 +186,7 @@ msmodelslim analyze attn_head \
        "copying": {0: [3], 12: [2]},
    }
    ```
-   
+
    - `prefix_matching` 的 key 为 layer 索引（int），value 为该层被选中的 KV head 索引列表。
    - `copying` 的 key 为 layer 索引（int），value 为该层被选中的 KV head 索引列表。
 
@@ -220,7 +220,7 @@ msmodelslim analyze attn_head \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 模型适配 | 新模型接入与注册 | 《[LLM 大模型接入指南](../knowledge_base/model/integrating_models.md)》 |
+| 模型适配 | 新模型接入与注册 | 《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》 |
 | RA Compress | 基于注意力头筛选的 KV Cache 压缩算法 | 本指南 [步骤 1](#步骤-1确认推荐指标) |
 | Induction Head | 具有 prefix matching 能力的注意力头，擅长捕获跨段重复模式 | 本指南 [步骤 5](#步骤-5解读分析结果并用于配置) |
 | Echo Head | 具有 copying matching 能力的注意力头，倾向于复制前一段对应位置信息 | 本指南 [步骤 5](#步骤-5解读分析结果并用于配置) |

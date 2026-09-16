@@ -19,7 +19,7 @@ metadata:
 
 本 Skill 是模型适配（`adaptation`）中的**校准适配**环节：指导如何为新模型创建基础适配器，使其跑通 W8A8/W4A16 校准量化流程。它是「模型适配」的一个子类，另一子类（EP 并行适配）见 [`adaptation/ep`](../ep/SKILL.md)；适配顺序见 [`adaptation` 决策树](../SKILL.md)。
 
-资料：《[ModelSlimPipelineInterfaceV1 / PTQ](../../../docs/zh/knowledge_base/ptq/README.md)》、《[LLM 接入](../../../docs/zh/knowledge_base/model/integrating_models.md)》。
+资料：《[ModelSlimPipelineInterfaceV1 / PTQ](../../../docs/zh/knowledge_base/ptq/README.md)》、《[LLM 接入指南](../../../docs/zh/knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 > 说明：逐层量化（按层加载/懒加载）属于高阶可选特性，不是基础适配必需项。
 > 仅当 CPU 内存无法全量加载权重，或用户明确要求时，再在基础适配和四步验证（由 `adaptation/calibration/verify` 执行）完成后启用。
@@ -98,7 +98,7 @@ metadata:
 
 ## 参考资料
 
-- 权威文档：《[ModelSlimPipelineInterfaceV1 / PTQ](../../../docs/zh/knowledge_base/ptq/README.md)》、《[LLM 大模型接入指南](../../../docs/zh/knowledge_base/model/integrating_models.md)》、《[LLM 量化集成指南](../../../docs/zh/knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》
+- 权威文档：《[ModelSlimPipelineInterfaceV1 / PTQ](../../../docs/zh/knowledge_base/ptq/README.md)》、《[LLM 量化集成指南](../../../docs/zh/knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》
 - [模型结构分析指南](references/model_analysis.md)
 - [适配器实现指南](references/implementation_guide.md)
 - [适配器注册指南](references/registration_guide.md)

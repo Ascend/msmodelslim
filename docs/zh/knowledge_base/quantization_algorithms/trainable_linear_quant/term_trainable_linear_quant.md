@@ -16,8 +16,6 @@ Trainable Linear Quant（TLQ）是面向线性层的块级训练式量化优化�
 
 传统一次标定的 [MinMax](../minmax/term_minmax.md) 或固定舍入往往在 4bit 及以下引入较大重构误差。[AutoRound](../autoround/term_autoround.md) 证明可学习舍入能显著改善低比特权重，但实现与配置相对固定。TLQ 把同类思路抽象为“块级 Trainer + OP 插件 + 策略 qconfig”：用户可按策略为不同模块指定位宽/粒度，并按需选用可训练 OP，在统一训练循环中最小化块输出重构损失。
 
-从量化流程中的定位看，该算法解决的是“如何在受限数值集合上为线性层选择更优离散表示，同时尽量保留块输出”的问题。与只按极值直接计算尺度的基础方法相比，它利用校准前向与优化目标控制误差，因此更适合对精度有明确要求的低比特场景。
-
 ### 2.1 核心思想
 
 TLQ 的核心思想是“把量化参数变成可训练变量，并在块级重构目标下联合优化”。对每个 decoder 块：先采集浮点教师输出；再用伪量化前向得到学生输出；按 `train_config` 指定的损失（如 L1）与最优快照策略更新各 OP 参数；训练结束后把学习结果折叠回量化 IR / 权重表示，推理阶段不再继续训练。
@@ -74,16 +72,12 @@ $$
 - 需要在同一流水线中组合舍入优化、范围调参，甚至可训练平滑的场景。
 - INT 与 MXFP 等 TLQ 内核已注册支持的数值格式。
 
-更具体地说，是否适用主要取决于目标位宽、已注册 kernel 组合和算力预算。校准数据应能覆盖主要业务分布；资源紧张时可先缩小低比特策略覆盖范围，而不是关闭核心 OP。
-
 ### 2.6 使用限制
 
 - 仅面向线性层；`strategies` 中的 dtype/method 组合必须有对应 TLQ kernel，否则配置校验失败。
 - 包含块级训练，量化耗时与显存显著高于一次标定算法；当前实现不声明分布式训练支持。
 - `trainable_smooth` 依赖适配器可识别的子图类型；子图不匹配时不应强行扩大 `enable_subgraph_type`。
 - 低比特场景仍强烈依赖良好的前置离群值抑制，建议配合 [OASQ](../oasq/term_oasq.md)、[QuaRot](../quarot/term_quarot.md) 或 [Iterative Smooth](../iterative_smooth/term_iterative_smooth.md) 使用。
-
-这些限制应在调参前确认。尤其是 dtype/scope/method 硬约束一旦不满足，继续增大 `iters` 通常无法解决问题。
 
 ---
 
@@ -94,8 +88,6 @@ $$
 ---
 
 ## 4. 关联词条
-
-可以从“同类方法、前后处理关系和应用对象”三个方向理解本词条与其他算法的关系。下面的关联项既用于横向比较不同技术路线，也用于帮助定位该算法在完整量化方案中的位置。
 
 - [AutoRound](../autoround/term_autoround.md)：同类算法，同为基于 SignSGD 的可学习舍入优化；TLQ 将其思路扩展为可组合 OP 管线。
 - [MinMax](../minmax/term_minmax.md)：对比算法，本算法在 MinMax 初值基础上进一步学习范围与舍入。
@@ -108,7 +100,5 @@ $$
 
 ## 5. 参考文档
 
-参考文档优先列出算法原始论文或权威出处，并补充仓库内对应使用指南。需要进一步理解参数选择时，可先阅读使用指南，再回到原论文核对算法假设和推导。
-
-1. Cheng W, Zhang W, Shen H, et al. "Optimize Weight Rounding via Signed Gradient Descent for the Quantization of LLMs." Findings of EMNLP 2024. https://arxiv.org/abs/2309.05516
+1. Cheng W, Zhang W, Shen H, et al. “Optimize Weight Rounding via Signed Gradient Descent for the Quantization of LLMs.” Findings of EMNLP 2024. https://arxiv.org/abs/2309.05516
 2. 《[Trainable Linear Quant 参数配置流程指南](./usage_trainable_linear_quant.md)》
