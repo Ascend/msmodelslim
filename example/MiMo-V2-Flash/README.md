@@ -16,7 +16,7 @@
   ```
 
 - 请准备 Hugging Face 格式的 MiMo-V2-Flash BF16 权重。模型目录中应包含 `config.json`、Safetensors 权重文件及对应的权重索引文件。
-- MiMo-V2-Flash 使用自定义模型代码，量化命令中需设置 `--trust_remote_code True`。启用该选项前，请确认模型代码来源可信。
+- MiMo-V2-Flash 使用自定义模型代码，量化命令中需设置 `--trust_remote_code true`。启用该选项前，请确认模型代码来源可信。
 - MiMo-V2-Flash 参数量较大，请在内存和显存充足的 NPU 环境中执行量化。
 
 ## 支持的模型版本与量化策略
@@ -48,7 +48,7 @@ msmodelslim quant \
   --save_path ${save_path} \
   --model_type MiMo-V2-Flash \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 使用实际目录时，命令示例如下：
@@ -60,7 +60,7 @@ msmodelslim quant \
   --save_path ./MiMo-V2-Flash-w8a8/ \
   --model_type MiMo-V2-Flash \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 若需调试或验证指定配置文件，也可以显式传入配置路径：
@@ -72,7 +72,7 @@ msmodelslim quant \
   --save_path ./MiMo-V2-Flash-w8a8/ \
   --model_type MiMo-V2-Flash \
   --config lab_practice/mimo_v2/mimo-v2-flash-w8a8.yaml \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 其中：
@@ -81,7 +81,7 @@ msmodelslim quant \
 - `--save_path`：量化权重保存目录。
 - `--model_type`：需填写 `MiMo-V2-Flash`，区分大小写。
 - `--quant_type w8a8`：启用 W8A8 一键量化，并自动推荐 MiMo-V2-Flash 最佳实践配置。
-- `--trust_remote_code True`：允许加载模型目录中的自定义模型代码，请确保代码来源可信。
+- `--trust_remote_code true`：允许加载模型目录中的自定义模型代码，请确保代码来源可信。
 
 ## 量化策略说明
 

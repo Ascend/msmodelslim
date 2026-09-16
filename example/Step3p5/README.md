@@ -44,7 +44,7 @@ msmodelslim quant \
   --device npu \
   --model_type Step-3.5-Flash \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 该一键量化命令匹配使用的量化配置文件为[step3_5_moe_w8a8.yaml](../../lab_practice/step_3_5_flash/step3_5_moe_w8a8.yaml)，可以在其中查看具体的量化策略。

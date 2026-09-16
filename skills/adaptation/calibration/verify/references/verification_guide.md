@@ -79,7 +79,7 @@ msmodelslim quant \
   --save_path /tmp/quantized_w8a8_static \
   --device cpu \
   --config references/llm/w8a8_static_full_model.yaml \
-  --trust_remote_code True
+  --trust_remote_code true
 
 # 验证描述文件
 python scripts/step4_verify_quant_description.py \
@@ -98,7 +98,7 @@ msmodelslim quant \
   --save_path /tmp/quantized_w8a8_dynamic \
   --device cpu \
   --config references/llm/w8a8_dynamic_full_model.yaml \
-  --trust_remote_code True
+  --trust_remote_code true
 
 # 验证描述文件
 python scripts/step4_verify_quant_description.py \

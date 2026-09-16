@@ -62,7 +62,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5 \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -77,7 +77,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5 \
   --quant_type w4a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -94,7 +94,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.1 \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -109,7 +109,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.1 \
   --quant_type w4a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -124,7 +124,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.1 \
   --quant_type w8a8c8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -139,7 +139,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.1 \
   --quant_type w4a8c8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -154,7 +154,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.1 \
   --quant_type w4a4c8 \
-  --trust_remote_code True \
+  --trust_remote_code true \
   --tags vLLM_Ascend Ascend_950
 ```
 
@@ -172,7 +172,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.2 \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.2模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -187,7 +187,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.2 \
   --quant_type w8a8c8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.2模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -202,7 +202,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.2 \
   --quant_type w4a4 \
-  --trust_remote_code True \
+  --trust_remote_code true \
   --tags vLLM_Ascend Atlas_350
 ```
 
@@ -218,7 +218,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.2 \
   --quant_type w4a4c8 \
-  --trust_remote_code True \
+  --trust_remote_code true \
   --tags vLLM_Ascend Atlas_350
 ```
 
@@ -236,7 +236,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.3 \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.3模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -252,7 +252,7 @@ msmodelslim quant \
   --model_type GLM-5.3 \
   --quant_type w8a8 \
   --tags Atlas_350 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.3模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -267,7 +267,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.3 \
   --quant_type w8a8c8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.3模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -283,7 +283,7 @@ msmodelslim quant \
   --model_type GLM-5.3 \
   --quant_type w8a8c8 \
   --tags Atlas_350 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.3模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -300,7 +300,7 @@ msmodelslim quant \
   --device npu \
   --model_type GLM-5.3-Flash \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.3-Flash模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -311,11 +311,11 @@ msmodelslim quant \
 针对发布的 GLM-5.3-Flash BF16、FP8 浮点权重，可使用离线权重转换命令将其重排为 MXFP8(W8A8_MXFP8) 格式并落盘为 AscendV1（FP8 权重会先经适配器转换为 BF16 再做重排）：
 
 ```bash
-msmodelslim convert \
+msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --config_path ${CONFIG_PATH}/glm_5_next_convert_mxfp8.yaml \
-  --trust_remote_code True
+  --config ${CONFIG_PATH}/glm_5_next_convert_mxfp8.yaml \
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-5.3-Flash模型的路径，`SAVE_PATH`为转换后的权重保存路径，`CONFIG_PATH`为 msModelSlim 安装目录下的 `lab_practice` 路径。

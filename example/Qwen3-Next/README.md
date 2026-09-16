@@ -35,5 +35,5 @@
 该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3-Next-80B-A3B-Instruct --quant_type w8a8 --trust_remote_code True
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3-Next-80B-A3B-Instruct --quant_type w8a8 --trust_remote_code true
   ```

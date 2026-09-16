@@ -55,7 +55,7 @@ body:
     attributes:
       label: MsModelSlim 执行命令
       description: 请附上执行命令文本
-      placeholder: "例: msmodelslim quant --model_path /home/Qwen3-8B --save_path /home/Qwen3-8B-W8A8 --device npu --config_path /home/qwen3-w8a8.yaml --trust_remote_code True --model_type Qwen3-8B"
+      placeholder: "例: msmodelslim quant --model_path /home/Qwen3-8B --save_path /home/Qwen3-8B-W8A8 --device npu --config /home/qwen3-w8a8.yaml --trust_remote_code true --model_type Qwen3-8B"
     validations:
       required: true
   - type: textarea

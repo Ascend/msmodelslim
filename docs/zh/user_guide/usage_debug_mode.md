@@ -47,7 +47,8 @@ msmodelslim quant \
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --device npu --device_id 0 1 2 3 \
+  --device npu \
+  --device_id 0 1 2 3 \
   --model_type Qwen2.5-7B-Instruct \
   --quant_type w8a8 \
   --trust_remote_code true \

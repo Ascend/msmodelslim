@@ -186,7 +186,7 @@ msmodelslim quant \
     --device npu \
     --model_type FLUX.1-dev \
     --quant_type w8a8f8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 #### 脚本量化启动命令

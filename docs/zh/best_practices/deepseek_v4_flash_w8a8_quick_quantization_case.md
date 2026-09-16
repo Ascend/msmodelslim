@@ -147,7 +147,8 @@ msmodelslim quant \
     --save_path ${SAVE_PATH} \
     --model_type DeepSeek-V4-Flash \
     --quant_type w8a8 \
-    --device npu --device_id 0 \
+    --device npu \
+    --device_id 0 \
     --trust_remote_code true
 ```
 

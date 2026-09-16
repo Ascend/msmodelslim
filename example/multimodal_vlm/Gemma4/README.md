@@ -13,7 +13,7 @@ Gemma4 是多模态视觉语言模型，支持图像与文本联合输入。msMo
   pip install "transformers==5.5.3"
   ```
 
-- 若使用 `--trust_remote_code True`，请确保加载的自定义代码文件来源可靠，避免潜在的安全风险。
+- 若使用 `--trust_remote_code true`，请确保加载的自定义代码文件来源可靠，避免潜在的安全风险。
 
 ## Gemma4 模型当前已验证的量化方法
 
@@ -37,10 +37,10 @@ msmodelslim quant \
     --device npu \
     --model_type gemma-4-31B-it \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
-若需指定自定义配置文件，可通过 `config_path` 指定 [gemma4_w8a8.yaml](../../../lab_practice/gemma4/gemma4_w8a8.yaml)。
+若需指定自定义配置文件，可通过 `--config` 指定 [gemma4_w8a8.yaml](../../../lab_practice/gemma4/gemma4_w8a8.yaml)。
 
 ```shell
 msmodelslim quant \
@@ -49,7 +49,7 @@ msmodelslim quant \
     --device npu \
     --model_type gemma-4-31B-it \
     --config lab_practice/gemma4/gemma4_w8a8.yaml \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="gemma4-31b-dense-mxfp8mxfp4-混合量化">gemma-4-31B-it MXFP8/MXFP4 混合量化</span>
@@ -63,7 +63,7 @@ msmodelslim quant \
     --device npu \
     --model_type gemma-4-31B-it \
     --quant_type w4a4 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 > [!NOTE]

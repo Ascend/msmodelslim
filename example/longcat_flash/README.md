@@ -38,7 +38,7 @@ msmodelslim quant \
   --model_type LongCat-Flash-Chat \
   --quant_type w4a4 \
   --tags Ascend_950 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 该一键量化命令匹配使用的量化配置文件为[longcat_flash_w4a4_mxfp4.yaml](../../lab_practice/longcat_flash/longcat_flash_w4a4_mxfp4.yaml)，可以在其中查看具体的量化策略。

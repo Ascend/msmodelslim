@@ -43,7 +43,7 @@
 该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-397B-A17B --quant_type w8a8 --trust_remote_code True
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-397B-A17B --quant_type w8a8 --trust_remote_code true
   ```
 
 ##### <span id="Qwen3.5-397B-A17B-w4a8">Qwen3.5-397B-A17B W4A8量化</span>
@@ -51,7 +51,7 @@
 该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-397B-A17B --quant_type w4a8 --trust_remote_code True
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-397B-A17B --quant_type w4a8 --trust_remote_code true
   ```
 
 #### 2. Qwen3.5-122B-A10B
@@ -61,7 +61,7 @@
 该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-122B-A10B --quant_type w8a8 --trust_remote_code True
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-122B-A10B --quant_type w8a8 --trust_remote_code true
   ```
 
 #### 3. Qwen3.5-35B-A3B
@@ -71,7 +71,7 @@
 该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-35B-A3B --quant_type w8a8 --trust_remote_code True
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-35B-A3B --quant_type w8a8 --trust_remote_code true
   ```
 
 #### 4. Qwen3.5-27B
@@ -81,7 +81,7 @@
 该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-27B --quant_type w8a8 --trust_remote_code True
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-27B --quant_type w8a8 --trust_remote_code true
   ```
 
 #### 5. Qwen3.5-4B
@@ -91,7 +91,7 @@
 该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-4B --quant_type w8a8 --trust_remote_code True
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-4B --quant_type w8a8 --trust_remote_code true
   ```
 
 #### 6. Qwen3.6-27B
@@ -101,7 +101,7 @@
 该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-27B --quant_type w8a8 --trust_remote_code True
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-27B --quant_type w8a8 --trust_remote_code true
   ```
 
 #### 7. Qwen3.6-35B-A3B
@@ -111,5 +111,5 @@
 该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-35B-A3B --quant_type w8a8c8 --trust_remote_code True --tags vLLM_Ascend Ascend_950
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-35B-A3B --quant_type w8a8c8 --trust_remote_code true --tags vLLM_Ascend Ascend_950
   ```

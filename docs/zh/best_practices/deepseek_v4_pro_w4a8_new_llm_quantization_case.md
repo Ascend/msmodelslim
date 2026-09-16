@@ -257,7 +257,8 @@ msmodelslim quant \
     --save_path ${SAVE_PATH} \
     --model_type DeepSeek-V4-Pro \
     --config ${CONFIG_PATH} \
-    --device npu --device_id 0 1 2 3 4 5 6 7 \
+    --device npu \
+    --device_id 0 1 2 3 4 5 6 7 \
     --trust_remote_code true
 ```
 

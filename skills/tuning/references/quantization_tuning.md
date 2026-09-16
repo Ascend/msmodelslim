@@ -376,7 +376,7 @@ python skills/tuning/scripts/finalize_practice_repo.py \
 | `model_type` | string | ✓ | 模型类型名 |
 | `model_path` | string | ✓ | 模型路径 |
 | `save_path` | string | ✓ | 工作目录，Practice YAML 写入此目录 |
-| `device` | string | ✓ | 如 `npu:2,3` |
+| `device` | string | ✓ | 如 `npu`；多卡配合 `--device_id 2 3` |
 | `strategy` | string | ✓ | 搜索算法：`standing_high` 或 `standing_high_with_experience`； |
 | `calib_dataset` | string | ✓ | 已确定并经用户确认的校准数据集 |
 | `max_iterations` | int | ✓ | 最大迭代轮次 |
@@ -475,7 +475,7 @@ python skills/tuning/scripts/finalize_practice_repo.py \
 | `model_path` | string | ✓ | 原始模型路径 |
 | `save_path` | string | ✓ | 量化产物目录，如 `.../round_N/quantized` |
 | `model_type` | string | ✓ | msModelSlim 注册的模型适配器名称，用于 `msmodelslim quant --model_type` |
-| `device` | string | ✓ | 如 `npu:2,3` |
+| `device` | string | ✓ | 如 `npu`；多卡配合 `--device_id 2 3` |
 | `trust_remote_code` | bool | | 默认 `true` |
 | `round` | int | | 建议填写当前轮次 |
 

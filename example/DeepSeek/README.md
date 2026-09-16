@@ -268,7 +268,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V3.1 \
    --quant_type w4a8c8 \
-   --trust_remote_code True
+   --trust_remote_code true
   ```
 
 #### <span id="deepseek-v31-terminus-w8a8c8量化">DeepSeek-V3.1-Terminus W8A8C8 量化</span>
@@ -281,7 +281,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V3.1-Terminus \
    --quant_type w8a8c8 \
-   --trust_remote_code True
+   --trust_remote_code true
   ```
 
 该一键量化命令匹配使用的量化配置文件为[deepseekv31_terminus_w8a8c8.yaml](../../lab_practice/deepseek_v3/deepseekv31_terminus_w8a8c8.yaml)，可以在其中查看具体的量化策略。
@@ -296,7 +296,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V3.1-Terminus \
    --quant_type w4a4c8 \
-   --trust_remote_code True
+   --trust_remote_code true
   ```
 
 该一键量化命令匹配使用的量化配置文件为[deepseekv31_terminus_w4a4c8.yaml](../../lab_practice/deepseek_v3/deepseekv31_terminus_w4a4c8.yaml)，可以在其中查看具体的量化策略。
@@ -309,7 +309,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V3.2-Exp \
    --quant_type w8a8 \
-   --trust_remote_code True
+   --trust_remote_code true
   ```
 
 #### <span id="deepseek-v32-w4a8">DeepSeek-V3.2-Exp(含MTP层) W4A8 混合量化</span>
@@ -320,7 +320,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V3.2-Exp \
    --quant_type w4a8 \
-   --trust_remote_code True
+   --trust_remote_code true
   ```
 
 #### <span id="deepseek-v32-w8a8-quarot">DeepSeek-V3.2(含MTP层) W8A8 混合量化</span>
@@ -331,7 +331,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V3.2 \
    --quant_type w8a8 \
-   --trust_remote_code True
+   --trust_remote_code true
   ```
 
 ### DeepSeek-V4系列
@@ -352,7 +352,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V4-Flash \
    --quant_type w8a8 \
-   --trust_remote_code True
+   --trust_remote_code true
   ```
 
 #### <span id="deepseek-v4-pro-w8a8-quarot">DeepSeek-V4-Pro(含MTP层) W8A8 动态量化</span>
@@ -363,8 +363,9 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V4-Pro \
    --quant_type w8a8 \
-   --device npu --device_id 0 1 2 3 4 5 6 7 \
-   --trust_remote_code True
+   --device npu \
+   --device_id 0 1 2 3 4 5 6 7 \
+   --trust_remote_code true
   ```
 
 #### <span id="deepseek-v4-pro-w4a8-quarot">DeepSeek-V4-Pro(含MTP层) W4A8 动态量化</span>
@@ -375,8 +376,9 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --save_path ${save_path} \
    --model_type DeepSeek-V4-Pro \
    --quant_type w4a8 \
-   --device npu --device_id 0 1 2 3 4 5 6 7 \
-   --trust_remote_code True
+   --device npu \
+   --device_id 0 1 2 3 4 5 6 7 \
+   --trust_remote_code true
   ```
 
 ### DeepSeek-R1系列
@@ -452,7 +454,7 @@ python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_pat
    --save_path ${save_path} \
    --model_type DeepSeek-R1-0528 \
    --quant_type w4a8 \
-   --trust_remote_code True
+   --trust_remote_code true
   ```
 
 #### <span id="deepseek-r1-0528-w4a8c8-per-channel量化">DeepSeek-R1-0528(含MTP层) W4A8C8 per-channel量化</span>
@@ -463,7 +465,7 @@ python3 quant_deepseek_w8a8.py --model_path ${model_path} --save_path ${save_pat
    --save_path ${save_path} \
    --model_type DeepSeek-R1-0528 \
    --quant_type w4a8c8 \
-   --trust_remote_code True
+   --trust_remote_code true
   ```
 
 #### <span id="deepseek-r1-0528-w8a8-混合量化--mtp-量化">DeepSeek-R1 0528 W8A8 混合量化 + MTP 量化</span>

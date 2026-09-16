@@ -127,7 +127,8 @@
    msmodelslim quant \
        --model_path ${MODEL_PATH} \
        --save_path ${SAVE_PATH} \
-       --device npu --device_id 0 1 2 3 4 5 6 7 \
+       --device npu \
+       --device_id 0 1 2 3 4 5 6 7 \
        --model_type Kimi-K3 \
        --config ${YAML_PATH} \
        --trust_remote_code true

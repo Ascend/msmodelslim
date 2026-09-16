@@ -190,7 +190,7 @@ msmodelslim quant \
     --device npu \
     --model_type HunyuanVideo \
     --quant_type w8a8f8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 完整 lab 配置见 [`lab_practice/hunyuan_video/hunyuan_video_w8a8f8_mxfp.yaml`](../../../lab_practice/hunyuan_video/hunyuan_video_w8a8f8_mxfp.yaml)。

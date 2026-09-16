@@ -66,7 +66,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen2.5-Omni-7B \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ## 附录

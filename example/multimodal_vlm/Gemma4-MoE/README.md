@@ -51,7 +51,7 @@ msmodelslim quant \
     --device npu \
     --model_type gemma-4-26B-A4B-it \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="gemma-4-26b-a4b-it-mxfp8mxfp4-混合量化">gemma-4-26B-A4B-it MXFP8/MXFP4 混合量化</span>
@@ -65,7 +65,7 @@ msmodelslim quant \
     --device npu \
     --model_type gemma-4-26B-A4B-it \
     --quant_type w4a4 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 > [!NOTE]

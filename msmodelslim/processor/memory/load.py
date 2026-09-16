@@ -48,7 +48,7 @@ class LoadProcessorConfig(AutoProcessorConfig):
     """
 
     type: Literal["load"] = Field(default="load", description="处理器类型，固定为 `load`。")
-    device: str = Field(default="cpu", description="目标设备，如 `cpu`、`npu:0`")
+    device: str = Field(default="cpu", description="目标设备，如 `cpu`、`npu`")
     non_blocking: bool = Field(default=False, description="是否非阻塞加载")
     mode: Literal['load', 'offload'] = Field(
         default="load", description="加载模式：`load` 加载到目标设备，`offload` 卸载到 CPU"

@@ -82,7 +82,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen3-VL-235B-A22B \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 Qwen3-VL-235B-A22B W8A8 MXFP8 混合量化：
@@ -97,7 +97,7 @@ msmodelslim quant \
     --model_type Qwen3-VL-235B-A22B \
     --quant_type w8a8 \
     --tags vLLM_Ascend Ascend_950 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="qwen3-vl-moe-30b-A3b-w8a8-mxfp8">Qwen3-VL-30B-A3B W8A8 混合量化</span>
@@ -112,7 +112,7 @@ msmodelslim quant \
     --model_type Qwen3-VL-30B-A3B \
     --quant_type w8a8 \
     --tags vLLM_Ascend Ascend_950 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ## FAQ
