@@ -44,7 +44,7 @@ msmodelslim quant \
     --device npu \
     --model_type Kimi-K2.6 \
     --quant_type w4a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="Kimi-K2.6-w4a4c8">Kimi-K2.6 W4A4C8 量化</span>
@@ -62,7 +62,7 @@ msmodelslim quant \
     --device npu \
     --model_type Kimi-K2.6 \
     --quant_type w4a4c8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ## 附录

@@ -88,7 +88,7 @@ python -c "from importlib.metadata import entry_points; print('Hy3' in {e.name f
     --device npu \
     --model_type Hy3 \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
   ```
 
 - 其中`${model_path}`为 Hy3 浮点权重路径，`${save_path}`为量化后的权重保存路径。
@@ -118,7 +118,7 @@ python -c "from importlib.metadata import entry_points; print('Hy3' in {e.name f
     --device npu \
     --model_type Hy3 \
     --config lab_practice/hy3/hy3_w8a8.yaml \
-    --trust_remote_code True
+    --trust_remote_code true
   ```
 
 ## FAQ

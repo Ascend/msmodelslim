@@ -84,7 +84,7 @@ metadata:
 | `model_type` | string | ✓ | msModelSlim 注册的模型适配器名称 |
 | `model_path` | string | ✓ | 模型路径 |
 | `save_path` | string | ✓ | 工作目录；分析报告写入 `{save_path}/analysis_result.yaml` |
-| `device` | string | ✓ | 设备，如 `npu:0`；EP 多卡场景按编排层给定列表 |
+| `device` | string | ✓ | 设备类型，如 `npu`、`cpu`；多卡配合 `--device_id`，EP 多卡场景按编排层给定列表 |
 | `calib_dataset` | string \| null | | 校准数据集覆盖值；缺省时按闭环约定解析（见下） |
 | `practice_path` | string \| null | | 基准 Practice YAML 路径；提供时从中读取 `include` 作为分析范围 |
 

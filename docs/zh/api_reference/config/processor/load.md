@@ -17,7 +17,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `load` | `load` | 处理器类型，固定为 `load`。 | 无 |
-| `device` | `string` | 可选 | `cpu` | — | 目标设备，如 `cpu`、`npu:0` | 无 |
+| `device` | `string` | 可选 | `cpu` | — | 目标设备，如 `cpu`、`npu` | 无 |
 | `non_blocking` | `bool` | 可选 | `false` | — | 是否非阻塞加载 | 无 |
 | `mode` | `string` | 可选 | `load` | `load`、`offload` | 加载模式：`load` 加载到目标设备，`offload` 卸载到 CPU | 无 |
 | `cleanup` | `bool` | 可选 | `false` | — | 是否清理缓存 | 无 |

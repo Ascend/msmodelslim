@@ -37,7 +37,7 @@ msmodelslim quant \
     --device npu \
     --model_type InternVL3_5-38B \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ## 附录

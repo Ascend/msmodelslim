@@ -60,7 +60,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen3-Omni-30B-A3B-Thinking \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 **Qwen3-Omni-30B-A3B-Instruct：**
@@ -72,7 +72,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen3-Omni-30B-A3B-Instruct \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ## 附录

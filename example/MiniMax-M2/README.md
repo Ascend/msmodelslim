@@ -38,7 +38,7 @@ msmodelslim quant \
   --device npu \
   --model_type MiniMax-M2.7 \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 该一键量化命令匹配使用的量化配置文件为[minimax_m27_w8a8.yaml](../../lab_practice/minimax_m2/minimax_m27_w8a8.yaml)，可以在其中查看具体的量化策略。
@@ -53,7 +53,7 @@ msmodelslim quant \
   --model_type MiniMax-M2.7 \
   --quant_type w8a8 \
   --tags Ascend_950 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 该一键量化命令匹配使用的量化配置文件为[minimax_m27_w8a8_mxfp8.yaml](../../lab_practice/minimax_m2/minimax_m27_w8a8_mxfp8.yaml)，可以在其中查看具体的量化策略。
@@ -69,7 +69,7 @@ msmodelslim quant \
   --device npu \
   --model_type MiniMax-M2.7 \
   --quant_type w8a8c8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 该一键量化命令匹配使用的量化配置文件为[minimax_m27_w8a8c8.yaml](../../lab_practice/minimax_m2/minimax_m27_w8a8c8.yaml)，可以在其中查看具体的量化策略。

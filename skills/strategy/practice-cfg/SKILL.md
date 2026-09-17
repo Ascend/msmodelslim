@@ -61,7 +61,7 @@ metadata:
 | `model_type` | `str` | 模型类型名 |
 | `model_path` | `str` | 模型路径 |
 | `save_path` | `str` | 工作目录，Practice YAML 写入此目录下 |
-| `device` | `str` | 分析设备，如 `"npu"`、`"npu:0"`、`"gpu:0,1"` |
+| `device` | `str` | 分析设备类型，如 `"npu"`、`"cpu"`；多卡配合 `--device_id` |
 | `strategy` | `str` | 调优策略：`"standing_high"` 或 `"standing_high_with_experience"` |
 | `calib_dataset` | `str \| None` | 可选的校准数据集覆盖值；默认值见 [敏感层分析](../../sensitive-layer-analysis/SKILL.md) |
 | `max_iterations` | `int` | 最大迭代轮次，由用户指定 |
@@ -259,7 +259,7 @@ python skills/strategy/practice-cfg/scripts/validate_practice_yaml.py --practice
 - 回退层选择时拆分同分同退组（应整体回退或整体保留）
 - `metadata.label` 写成字符串而非 dict
 - `valid=false` 仍继续后续步骤
-- 命令行参数 `--device` 未使用 `npu:0` 这种格式，错误地使用了 `DeviceType.NPU`
+- 命令行 `--device` 未写成 `npu`/`cpu`（多卡应再加 `--device_id`），误用了 `npu:0` 或 `DeviceType.NPU`
 
 ## 经验条目（Experiences，追加制）
 

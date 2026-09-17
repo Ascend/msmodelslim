@@ -35,10 +35,11 @@
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
-  --device npu --device_id 0 1 2 3 4 5 6 7 \
+  --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-4.7 \
   --quant_type w8a8 \
-  --trust_remote_code True
+  --trust_remote_code true
 ```
 
 - 其中`MODEL_PATH`为GLM-4.7模型的路径，`SAVE_PATH`为量化后的权重保存路径。

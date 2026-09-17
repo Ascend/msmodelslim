@@ -11,7 +11,7 @@ metadata:
 
 # 用途：对 GLM5.3-Flash 模型做离线权重转换，重排为 MXFP8(W8A8_MXFP8) 并落盘为 AscendV1。
 #       支持 BF16/FP8 输入；输入为 HF FP8 checkpoint 时，先经适配器转换为 BF16 再做重排（FP8 -> BF16 -> MXFP8）。
-#       配置文件位于 msmodelslim 仓的 lab_practice/glm_5_next/glm_5_next_convert_mxfp8.yaml，通过 --config_path 指定。
+#       配置文件位于 msmodelslim 仓的 lab_practice/glm_5_next/glm_5_next_convert_mxfp8.yaml，通过 --config 指定。
 
 spec:
   linears:

@@ -37,8 +37,8 @@ msmodelslim analyze attn_head --model_type <model_type> --model_path <model_path
 | `--model_path` | 无 | `string` | 单值 | 必选 | 无 | 原始模型权重目录（需存在且可读） | 待分析模型的权重目录。 |
 | `--device` | 无 | `string` | 单值 | 可选 | `npu` | `npu`、`cpu`；兼容遗留写法 `npu:0,1,...` | 运行设备类型。推荐写法为 `--device npu` 再配合 `--device_id`；遗留 `npu:0,1` 会自动拆分为 `--device npu --device_id 0 1`。 |
 | `--device_id` | 无 | `list[int]` | 一次接收多个值，空格分隔 | 可选 | 无 | 非负整数索引，如 `0 1 2 3` | 分析所用 NPU 索引；长度 > 1 时启用多卡 DP（`DPLayerWiseRunner`）。CPU 场景不可指定多个索引。 |
-| `--calibration_dataset` | 无 | `string` | 单值 | 可选 | `mix_calib.jsonl` | LLM：`.json` / `.jsonl`；VLM：图文目录名（如 `calibImages`）或路径 | 校准数据集。 |
-| `--top_k` | 无 | `int` | 单值 | 可选 | `15` | 大于0的整数 | 输出到 `disable_names` 的最高敏感层数（经验值，仅供参考；`attn_head` 无此参数）。 |
+| `--calibration_dataset` | `--calib_dataset`（遗留别名） | `string` | 单值 | 可选 | `mix_calib.jsonl` | LLM：`.json` / `.jsonl`；VLM：图文目录名（如 `calibImages`）或路径 | 校准数据集。 |
+| `--top_k` | `--topk`（遗留别名） | `int` | 单值 | 可选 | `15` | 大于0的整数 | 输出到 `disable_names` 的最高敏感层数（经验值，仅供参考；`attn_head` 无此参数）。 |
 | `--trust_remote_code` | 无 | `bool` | 可选值（不带值传入即开启，或跟 `true`/`false`） | 可选 | `false` | `true`/`false`（大小写不敏感；兼容 `True`/`False`、`yes`/`no`、`on`/`off`） | 是否信任并执行模型目录中的自定义 Python 代码；仅在确认代码来源可信时开启。 |
 | `--log_level` | 无 | `string` | 单值 | 可选 | `info` | `debug`、`info`、`warning`、`error` | 日志级别。 |
 | `-v` / `--verbose` | 无 | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 提高输出详细程度（等价 `--log_level debug`）。 |
@@ -56,7 +56,7 @@ msmodelslim analyze attn_head --model_type <model_type> --model_path <model_path
 | 参数 | 别名 | 类型 | 传入形式 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 |
 |------|------|------|----------|-----------|--------|----------------|------|
 | `--metrics` | 无 | `string` | 单值 | 可选 | `kurtosis` | `std`、`quantile`、`kurtosis` | 线性层敏感度指标：标准差、分位数、峰度。 |
-| `--patterns` | 无 | `list` | 一次接收多个值，空格分隔 | 可选 | `['*']` | 通配符模式列表 | 过滤要展示的线性层；`*` 表示全部。 |
+| `--patterns` | `--pattern`（遗留别名） | `list` | 一次接收多个值，空格分隔 | 可选 | `['*']` | 通配符模式列表 | 过滤要展示的线性层；`*` 表示全部。 |
 
 `layer` 专有参数：
 
@@ -101,7 +101,7 @@ msmodelslim analyze \
 
 `${MODEL_TYPE}` 为模型类型名称，`${MODEL_PATH}` 为权重目录。省略 `scope` 时默认按 `linear` 分析，使用默认指标 `kurtosis`、默认 `--top_k 15` 与默认校准集 `mix_calib.jsonl`，输出敏感度最高的15个层名（`disable_names`），可写入量化 YAML 的 `exclude`。
 
-### 5.2 指定 linear 指标与 topk
+### 5.2 指定 linear 指标与 top_k
 
 ```bash
 msmodelslim analyze linear \

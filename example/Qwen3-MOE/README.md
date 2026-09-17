@@ -57,7 +57,7 @@
 生成Qwen3-30B-A3B模型W4A8混合量化权重（Attention:w8a8 dynamic量化，MoE:w4a8 dynamic量化）
 
   ```shell
-  msmodelslim quant --model_type Qwen3-30B --model_path {浮点权重路径} --save_path {W4A8量化权重路径} --quant_type w4a8 --trust_remote_code True
+  msmodelslim quant --model_type Qwen3-30B --model_path {浮点权重路径} --save_path {W4A8量化权重路径} --quant_type w4a8 --trust_remote_code true
   ```
 
 ### Qwen3-235B-A22B
@@ -80,7 +80,7 @@
 生成Qwen3-235B-A22B模型W4A8混合量化权重（Attention:w8a8 dynamic量化，MoE:w4a8 dynamic量化）
 
   ```shell
-  msmodelslim quant --model_type Qwen3-235B --model_path {浮点权重路径} --save_path {W4A8量化权重路径} --quant_type w4a8 --trust_remote_code True
+  msmodelslim quant --model_type Qwen3-235B --model_path {浮点权重路径} --save_path {W4A8量化权重路径} --quant_type w4a8 --trust_remote_code true
   ```
 
 ### Qwen3-Coder-480B-A35B
@@ -90,7 +90,7 @@
 生成Qwen3-Coder-480B-A35B模型W4A8混合量化权重（Attention:w8a8 量化，MoE:w4a8 dynamic量化）
 
   ```shell
-  msmodelslim quant --model_type  Qwen3-Coder-480B-A35B --model_path {浮点权重路径} --save_path {W4A8量化权重路径} --quant_type w4a8 --trust_remote_code True
+  msmodelslim quant --model_type  Qwen3-Coder-480B-A35B --model_path {浮点权重路径} --save_path {W4A8量化权重路径} --quant_type w4a8 --trust_remote_code true
   ```
 
 ## 附录

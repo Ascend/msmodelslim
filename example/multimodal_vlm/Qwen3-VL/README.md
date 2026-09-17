@@ -101,7 +101,7 @@ Atlas 推理系列产品使用以下方法稀疏量化
 
 ##### <span id="qwen3-vl-4b-w8a8">1.2 Qwen3-VL-4B-Instruct W8A8量化</span>
 
-该模型的量化已经集成至[一键量化](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)。使用 `model_type=Qwen3-VL-4B-Instruct`、`quant_type=w8a8` 即可。若需使用自定义配置（如指定保存选项），可通过 `config_path` 指定 [qwen3_vl_4b_w8a8.yaml](../../../lab_practice/qwen3_vl/qwen3_vl_4b_w8a8.yaml)。
+该模型的量化已经集成至[一键量化](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)。使用 `model_type=Qwen3-VL-4B-Instruct`、`quant_type=w8a8` 即可。若需使用自定义配置（如指定保存选项），可通过 `--config` 指定 [qwen3_vl_4b_w8a8.yaml](../../../lab_practice/qwen3_vl/qwen3_vl_4b_w8a8.yaml)。
 
 ```shell
 msmodelslim quant \
@@ -110,7 +110,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen3-VL-4B-Instruct \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 使用自定义配置文件时：
@@ -122,7 +122,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen3-VL-4B-Instruct \
     --config lab_practice/qwen3_vl/qwen3_vl_4b_w8a8.yaml \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 **说明：**
@@ -141,5 +141,5 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen3-VL-32B-Instruct \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```

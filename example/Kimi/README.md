@@ -50,5 +50,5 @@ Kimi-K2-Instruct-0905模型较大，且存在需要手动适配的点，为了�
 - 生成Kimi-K2-Instruct-0905模型W8A8量化权重，使用自动混合min-max和histogram的激活值量化方式，SmoothQuant加强版算法，在NPU上进行运算
 
   ```shell
-  msmodelslim quant --model_path ${model_path} --save_path ${save_path} --device npu --model_type Kimi-K2-Instruct-0905 --quant_type w8a8 --trust_remote_code True
+  msmodelslim quant --model_path ${model_path} --save_path ${save_path} --device npu --model_type Kimi-K2-Instruct-0905 --quant_type w8a8 --trust_remote_code true
   ```

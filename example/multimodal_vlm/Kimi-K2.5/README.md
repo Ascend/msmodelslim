@@ -38,7 +38,7 @@ msmodelslim quant \
     --device npu \
     --model_type Kimi-K2.5 \
     --quant_type w4a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ## 附录

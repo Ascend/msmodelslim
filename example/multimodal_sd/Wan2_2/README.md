@@ -55,7 +55,7 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2.2-T2V-A14B \
     --quant_type w8a8f8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="wan22-t2v-fa3w4a4f4混合量化">Wan2.2-T2V-A14B FA3+W4A4F4混合量化</span>
@@ -71,7 +71,7 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2.2-T2V-A14B \
     --quant_type w4a4f4 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="wan22-i2v-fa3w8a8动态量化">Wan2.2-I2V-A14B FA3+W8A8动态量化</span>
@@ -87,7 +87,7 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2.2-I2V-A14B \
     --quant_type w8a8f8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="wan22-ti2v-fa3w8a8动态量化">Wan2.2-TI2V-5B FA3+W8A8动态量化</span>
@@ -103,7 +103,7 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2.2-TI2V-5B \
     --quant_type w8a8f8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="wan22-t2v-w4a4f8_mxfp动态量化">Wan2.2-T2V-A14B W4A4F8 MXFP动态量化</span>
@@ -119,7 +119,7 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2.2-T2V-A14B \
     --quant_type w4a4f8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ## 配置文件说明

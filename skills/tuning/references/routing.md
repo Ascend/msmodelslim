@@ -12,8 +12,8 @@
 
 | 条件 | 路由去向 |
 |------|----------|
-| 设备卡号数量 ≥ 2（如 `npu:0,1`、`npu:2,3`、`[0,1,2,3]`） | 主流程留在本 Skill；量化前委派 `adaptation/ep` |
-| 设备为单卡（如 `npu:0`、`npu:3`） | 保持本 Skill 普通单卡流程，不委派 EP 适配 |
+| 设备卡号数量 ≥ 2（如 `--device npu --device_id 0 1`、`--device_id 2 3`、`[0,1,2,3]`） | 主流程留在本 Skill；量化前委派 `adaptation/ep` |
+| 设备为单卡（如 `--device npu`、`--device_id 3`） | 保持本 Skill 普通单卡流程，不委派 EP 适配 |
 | 用户明确说明「不用多卡 / 不用 EP / 只用单卡」 | 保持本 Skill 普通单卡流程（即便环境存在多卡） |
 
 ## 路由动作
@@ -27,7 +27,7 @@
    - 工作目录（save_path）
 2. 由 EP 适配 Skill 完成「MoE 检查 + EP 就绪检查与适配 + `[EP_CHECK]` 验证」，回传 `EP_ADAPT_RESULT` 与 `requires_ep`。
 3. 本 Skill 据回传决定后续调优方式：
-   - `requires_ep=true` → **后续调优全程开启 EP 并行**：每一轮量化命令固定使用多卡（`--device npu:0,1,...`），每轮量化日志须含 `[EP_CHECK]`，评测服务保持多卡，中途不得退回单卡 / DP；
+   - `requires_ep=true` → **后续调优全程开启 EP 并行**：每一轮量化命令固定使用多卡（`--device npu --device_id 0 1 ...`），每轮量化日志须含 `[EP_CHECK]`，评测服务保持多卡，中途不得退回单卡 / DP；
    - `requires_ep=false` → 退回本 Skill 普通多卡 / 单卡流程，不涉及专家分片。
 4. 透传协议与 subagent 委派仍遵守 `subagent_io_protocol.md`（SUBAGENT_IO v1）。
 

@@ -54,10 +54,10 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2_1 \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
-#### 方式二：使用config_path参数指定配置文件进行一键量化
+#### 方式二：使用 `--config` 指定配置文件进行一键量化
 
 ```bash
 msmodelslim quant \
@@ -66,7 +66,7 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2_1 \
     --config /path/to/wan2_1_w8a8_dynamic.yaml \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="wan21-13b-w8a8动态量化">Wan2.1-1.3B W8A8动态量化</span>
@@ -80,10 +80,10 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2_1 \
     --quant_type w8a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
-#### 方式二：使用config_path参数指定配置文件进行一键量化
+#### 方式二：使用 `--config` 指定配置文件进行一键量化
 
 ```bash
 msmodelslim quant \
@@ -92,7 +92,7 @@ msmodelslim quant \
     --device npu \
     --model_type Wan2_1 \
     --config /path/to/wan2_1_w8a8_dynamic.yaml \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### 一键量化命令参数说明
@@ -107,9 +107,9 @@ msmodelslim quant \
 |save_path|Wan2.1量化权重保存路径|必选| 类型：Str                                                                                |
 |device|量化设备|必选| 1. 类型：Str <br>2. 仅支持"npu"                                     |
 |model_type|模型名称|必选| 1. 类型：Str <br>2. 大小写敏感，需要配置为"Wan2_1"                                         |
-|config_path|指定配置路径|与"quant_type"二选一| 1. 类型：Str <br>2. 配置文件格式为yaml <br>3. 当前只支持最佳实践库中已验证的配置[wan2_1_w8a8_dynamic.yaml](../../../lab_practice/wan2_1/wan2_1_w8a8_dynamic.yaml)，若自定义配置，msmodelslim不为量化结果负责 <br> |
-|quant_type|量化类型|与"config_path"二选一| 1. 类型：Str <br>2. 当前仅支持配置为"w8a8"
-|trust_remote_code|是否信任自定义代码|可选| 1. 类型：Bool，默认值：False <br>2. 指定`trust_remote_code=True`让修改后的自定义代码文件能够正确地被加载(请确保所加载的自定义代码文件来源可靠，避免潜在的安全风险)。                           |
+|config|指定配置路径|与"quant_type"二选一| 1. 类型：Str <br>2. 配置文件格式为yaml <br>3. 当前只支持最佳实践库中已验证的配置[wan2_1_w8a8_dynamic.yaml](../../../lab_practice/wan2_1/wan2_1_w8a8_dynamic.yaml)，若自定义配置，msmodelslim不为量化结果负责 <br> |
+|quant_type|量化类型|与"config"二选一| 1. 类型：Str <br>2. 当前仅支持配置为"w8a8"
+|trust_remote_code|是否信任自定义代码|可选| 1. 类型：Bool，默认值：false <br>2. 指定 `--trust_remote_code true` 让修改后的自定义代码文件能够正确地被加载(请确保所加载的自定义代码文件来源可靠，避免潜在的安全风险)。                           |
 
 ## 配置文件说明
 

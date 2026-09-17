@@ -49,7 +49,7 @@ msmodelslim quant \
     --device_id 0 1 2 3 4 5 6 7 \
     --model_type Kimi-K3 \
     --quant_type w4a8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="kimi-k3-w4a8c8">Kimi-K3 W4A8C8（INT + FA3）量化</span>
@@ -66,7 +66,7 @@ msmodelslim quant \
     --device_id 0 1 2 3 4 5 6 7 \
     --model_type Kimi-K3 \
     --quant_type w4a8c8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="kimi-k3-w4a8-mxfp">Kimi-K3 W4A8（MXFP）量化</span>
@@ -86,5 +86,5 @@ msmodelslim quant \
     --model_type Kimi-K3 \
     --quant_type w4a8 \
     --tags vLLM_Ascend Ascend_950 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```

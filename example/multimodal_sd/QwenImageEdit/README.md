@@ -46,7 +46,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen-Image-Edit-2509 \
     --quant_type w8a8f8 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ### <span id="qwen-image-edit-2509-w4a4f4动态量化">Qwen-Image-Edit-2509 W4A4F4 动态量化</span>
@@ -62,7 +62,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen-Image-Edit-2509 \
     --quant_type w4a4f4 \
-    --trust_remote_code True
+    --trust_remote_code true
 ```
 
 ## 配置文件说明
