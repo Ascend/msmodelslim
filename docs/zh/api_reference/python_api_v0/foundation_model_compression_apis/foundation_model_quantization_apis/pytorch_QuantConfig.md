@@ -31,7 +31,7 @@ QuantConfig(a_bit=8, w_bit=8, disable_names=None, dev_type='cpu', dev_id=None, a
 | do_smooth | 输入 | 是否开启smooth功能。<br>启用do_smooth功能后，平滑激活值。|可选。<br>数据类型：bool。默认为False，不开启smooth功能。 |
 | use_sigma | 输入 | 是否启动sigma功能。<br>启用use_sigma功能后，可根据正态分布数值特点进行异常值保护。|可选。<br>数据类型：bool。默认为False，不开启sigma功能。 |
 | sigma_factor | 输入 | 启用sigma功能后sigma_factor的值，用于限制异常值的保护范围。|可选。<br>数据类型：float。<br>默认为3，取值范围为[3, 4]。 |
-| disable_last_linear | 输入 | 是否自动回退至最后线性层linear。<br>当前该参数为True时，会自动回退最后一个线性层linear。例如LLaMA2-13B模型的[lm_head]层，ChatGLM2-6B的[transformer.output_layer]层。|可选。<br>数据类型：bool。<br>默认为True。<br>True：自动回退最后一个线性层linear。False：不会回退最后一个线性层linear。 |
+| disable_last_linear | 输入 | 是否自动回退至最后线性层linear。<br>当该参数为True时，会自动回退最后一个线性层linear。例如LLaMA2-13B模型的[lm_head]层，ChatGLM2-6B的[transformer.output_layer]层。|可选。<br>数据类型：bool。<br>默认为True。<br>True：自动回退最后一个线性层linear。False：不会回退最后一个线性层linear。 |
 | use_kvcache_quant | 输入 | 是否使用kvcache量化功能。|可选。<br>数据类型：bool。<br>默认为False。<br>True：使用kvcache量化功能。False：不使用kvcache量化功能。<br>说明：将此参数设置为true并配置表1 量化配置表里的kv_quant参数后，方可使用kvcache量化功能。 |
 | is_dynamic | 输入 | 是否使用per-token动态量化功能。|可选。<br>数据类型：bool。<br>默认为False。<br>True：使用per-token动态量化。False：不使用per-token动态量化。|
 | open_outlier | 输入 | 是否开启权重异常值划分。|可选。<br>数据类型：bool。<br>默认为True。<br>True：开启权重异常值划分。False：关闭权重异常值划分。<br>说明：(1)仅在lowbit设置为True时生效。(2)per-group量化场景下，需协同设置is_lowbit为True，open_outlier为False。|

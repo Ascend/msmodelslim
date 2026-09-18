@@ -28,7 +28,7 @@ FA MXFP4 动态量化是对送入 Flash Attention 的 Q/K/V 激活统一沿 head
 
 ### 2.2 量化公式
 
-MX 格式按块共享 E8M0 指数，块内每个元素用块级指数缩放后量化为主尾数：
+MX 格式按块共享 E8M0 指数，块内每个元素用块级指数缩放后量化为尾数：
 
 $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \mathrm{round}_{MX}\left(\frac{x_i}{2^e}\right), \qquad \hat{x}_i = q_i \cdot 2^e$$
 
