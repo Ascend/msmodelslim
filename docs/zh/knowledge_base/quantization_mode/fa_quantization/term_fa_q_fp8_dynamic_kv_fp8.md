@@ -31,11 +31,11 @@ Q 分支按 token 对称动态量化：
 
 $$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|x|)}{448}$$
 
-K/V 分支按 head 对称静态量化（scale 离线校准固化，FP8 表示上限 448）：
+K/V 分支按 head 对称静态量化：
 
 $$q = \mathrm{round}(x / s_h), \qquad \hat{x} = q \cdot s_h, \qquad s_h = \frac{\max(|x_h|)}{448}$$
 
-上式中，$x$ 表示待量化的张量，$q$ 表示该张量量化后的数值，$\hat{x}$ 表示该张量经反量化还原后的数值，$s$ 表示 Q 分支按 token 在线统计的动态 scale，$s_h$ 表示第 $h$ 个注意力头的静态 scale，$x_h$ 表示第 $h$ 个头所覆盖的激活子集。与 Q 分支的动态取值不同，K/V 分支的 scale 在离线校准阶段确定并固化。
+上式中，$x$ 表示待量化的张量，$q$ 表示该张量量化后的数值，$\hat{x}$ 表示该张量经反量化还原后的数值，$s$ 表示 Q 分支按 token 在线统计的动态 scale，$s_h$ 表示第 $h$ 个注意力头的静态 scale，$x_h$ 表示第 $h$ 个头所覆盖的激活子集。FP8（E4M3）格式可表示的最大值为 448，因此 $s$ 与 $s_h$ 均按 FP8 的表示上限确定。与 Q 分支的动态取值不同，K/V 分支的 scale 在离线校准阶段确定并固化。
 
 ### 2.3 设计动机与分工
 

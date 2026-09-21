@@ -199,7 +199,7 @@ optional/
 
 | 格式枚举值 | AscendV1 是否支持落盘 | 量化模式词条 | 交付件：量化描述 JSON | 交付件：量化权重文件 |
 | --- | --- | --- | --- | --- |
-| `FLOAT` | 支持 | [量化模式总览](../../quantization_mode/README.md) | [FLOAT 描述键](#desc-float) | [FLOAT 权重张量](#st-float) |
+| `FLOAT` | 支持 | [量化模式总览](../../quantization_mode/README.md#modes) | [FLOAT 描述键](#desc-float) | [FLOAT 权重张量](#st-float) |
 | `W16A16S` | 支持 | [浮点稀疏量化](../../quantization_mode/linear_layer_quantization/term_float_sparse.md) | [W16A16S 描述键](#desc-w16a16s) | [W16A16S 权重张量](#st-w16a16s) |
 | `W8A8` | 支持 | [W8A8 静态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_static.md) | [W8A8 描述键](#desc-w8a8) | [W8A8 权重张量](#st-w8a8) |
 | `W8A8_DYNAMIC` | 支持 | [W8A8 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_dynamic.md) | [W8A8_DYNAMIC 描述键](#desc-w8a8-dynamic) | [W8A8_DYNAMIC 权重张量](#st-w8a8-dynamic) |

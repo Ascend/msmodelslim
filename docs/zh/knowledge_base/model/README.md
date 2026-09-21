@@ -7,6 +7,7 @@
 - \- 表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
 - 标记了“一键量化”的“模型名称-量化模式（w8a8s等）”组合可在[安装](../../install_guide/install_guide.md)后使用如下[一键量化](../../user_guide/usage_quick_quantization.md)命令行执行模型量化。
 - 因 Qwen 系列推出能力更强的新版本，Qwen1.5-14B/32B/72B 模型已超出维护周期，后续将对该系列老模型实施日落处理，其现网版本量化模式不再提供维护支持。
+- **Qwen3.5 / Qwen3.6** 具备原生多模态（Vision）能力，校准模态说明见《[Qwen3.5 量化说明 - 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md#校准模态支持)》。
 
 ```bash
 msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type ${MODEL_TYPE} --quant_type ${QUANT_TYPE} --trust_remote_code true
@@ -991,6 +992,11 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 - <sup>4</sup> 仅MindIE支持采用了PDMIX量化方案的最佳实践。
 
 ## 多模态模型支持列表
+
+> **校准模态**：各模型支持的校准模态（纯文本 / 图文 / 音视频等）及同质约束，以对应 example README 为准。例如：
+>
+> - [Qwen3-Omni — 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen3-Omni/README.md#校准模态支持)：纯文本及 image/audio/video 任意组合，同任务须同质。
+> - [Qwen3.5 — 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md#校准模态支持)：纯文本与文本+图像（Qwen3.5 虽列于大语言模型表，量化走 VLM 路径）。
 
 <div class="custom-table">
 

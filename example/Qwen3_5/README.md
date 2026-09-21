@@ -1,8 +1,25 @@
-﻿# Qwen3.5 量化说明
+# Qwen3.5 量化说明
 
 ## 模型介绍
 
 **Qwen3.5** 是 Qwen 系列最新的旗舰**多模态**模型，采用 **MoE (Mixture of Experts)** 架构，在保持极强模型能力的同时显著降低推理成本。核心架构特点包括：原生多模态能力（Vision Encoder + 图文融合）、混合注意力机制（常规 Attention 与 Linear-Attention 交替）、MTP 多 Token 预测分支、以及高性能 MoE 专家路由与共享专家机制。
+
+## 校准模态支持
+
+Qwen3.5 / Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据（`multimodal_vlm_modelslim_v1`）。推荐使用 `index.jsonl`（见[一键量化 dataset 配置](../../docs/zh/user_guide/usage_quick_quantization.md#dataset---校准数据路径配置)）。
+
+| 有效模态组合 | index.jsonl 字段示意 | 是否支持 |
+|-------------|----------------------|----------|
+| 纯文本 | `{"text":"..."}` | ✅ |
+| 文本 + 图像 | `{"text":"...","image":"xxx.jpg"}` | ✅ |
+| 文本 + 音频 / 视频 | 含 `audio` / `video` | ❌ 当前适配器不消费音频/视频字段 |
+
+约束说明：
+
+- **每条样本必须包含非空 `text`**。
+- **同一量化任务内样本须同质**：不可在同一校准集中混用纯文本与图文样本。
+- 依赖：`transformers==5.2.0`（见 `config.ini` `[ModelAdapterDependencies] qwen3_5_moe`）。纯文本校准的 chat template `content` 须为 list-of-parts 形式（适配器已处理）。
+- **visit（data-free）** 仍会遍历 visual + decoder；**forward（calibration）** 在无 `pixel_values` 时跳过 visual，仅走文本 decoder。
 
 ## 使用前准备
 

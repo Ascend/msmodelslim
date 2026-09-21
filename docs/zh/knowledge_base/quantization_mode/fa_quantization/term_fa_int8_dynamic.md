@@ -40,7 +40,7 @@ $$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|
   - 本模式（per-token 动态）：优势是逐 token 在线算 scale、免校准，量化贴合每个 token 的数值范围；劣势是每次前向多一次按 token 的 min/max 归约，开销与 token 数同量级。
   - PerHead（per-head 静态）：优势是 scale 离线固化、推理零在线开销，参数仅 head 数；劣势是需依赖校准数据、粒度粗，对 token 间分布变化不敏感。
 - **与 [FA FP8 动态量化](term_fa_fp8_dynamic.md)（同为统一 per-token 动态，数据类型不同）**
-  - 本模式为 INT8 整数格式；FP8 动态为 FP8（E4M3）浮点格式，两者均可用于免校准的统一动态模式，按部署算子/精度选择。
+  - 本模式为 INT8 整数格式，FP8 动态为 FP8（E4M3）浮点格式，两者均可用于免校准的统一动态模式，按部署算子/精度选择。
 - **与 [FA Q-INT8 动态 K/V-INT8 静态量化](term_fa_q_int8_dynamic_kv_int8.md)（同为 INT8 家族，分支量化方式不同）**
   - 本模式三分支统一 per-token 动态；混合模式将 K/V 改为 per-head 静态，用 K/V 的校准换取更低的在线开销。
 - **与 [W8A8 动态量化](../linear_layer_quantization/term_w8a8_dynamic.md)（同类 per-token 动态思路）**

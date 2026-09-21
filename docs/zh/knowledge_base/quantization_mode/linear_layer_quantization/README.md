@@ -66,15 +66,15 @@ $$Y = X \cdot W + b$$
 | [W4A4 MX 动态量化](term_w4a4_mx_dynamic.md) | 高 | 最高 | W4A4 类，双 4bit MX |
 | [W4A4 MX 双 Scale 量化](term_w4a4_mx_dualscale.md) | 高 | 高 | 仍属 W4A4 类；双层 scale 只减轻损失，不改变档位 |
 
-> 注：表中"性能"特指量化后的权重/激活访存与计算收益；实际损失与收益取决于目标硬件算子支持与模型分布，详见各模式词条与[量化模式](../README.md)模式索引。
+> 注：表中"性能"特指量化后的权重/激活访存与计算收益；实际损失与收益取决于目标硬件算子支持与模型分布，详见各模式词条与[模式索引](../README.md#modes)。
 
 ---
 
 <a id="modes"></a>
 
-## 3. 该类下的模式清单
+### 2.3 该类下的模式清单
 
-以下为 msModelSlim 支持的线性层量化模式清单（完整规格含承载 IR 类与量化参数，见[量化模式](../README.md)模式索引）：
+以下为 msModelSlim 支持的线性层量化模式清单（完整规格含承载 IR 类与量化参数，见[模式索引](../README.md#modes)）：
 
 | 模式 | 一句话 |
 |------|--------|
@@ -95,7 +95,7 @@ $$Y = X \cdot W + b$$
 
 ---
 
-## 4. 关联流程
+## 3. 关联流程
 
 - 《[一键量化完整指南](../../../user_guide/usage_quick_quantization.md)》：通过 `--quant_type` 或 YAML 配置选择线性层量化模式。
 - 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：量化模式导致的精度劣化可通过该流程逐层回退与调优。
@@ -104,7 +104,7 @@ $$Y = X \cdot W + b$$
 
 <a id="related-terms"></a>
 
-## 5. 关联词条
+## 4. 关联词条
 
 - [量化模式](../README.md)：上位概念，本词条是"线性层量化"类别。
 - [KVCache 量化](../kv_cache_quantization/README.md)：同位概念，作用于注意力 K/V 缓存的量化类别，可与本类叠加。
@@ -116,7 +116,7 @@ $$Y = X \cdot W + b$$
 
 ---
 
-## 6. 参考文档
+## 5. 参考文档
 
 1. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》
