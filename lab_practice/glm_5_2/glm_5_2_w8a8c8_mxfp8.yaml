@@ -1,0 +1,98 @@
+apiversion: modelslim_v1
+metadata:
+  config_id: glm_5_2_w8a8c8_mxfp8
+  score: 90
+  verified_tags:
+    GLM-5.2:
+    - - vLLM_Ascend
+      - Atlas_350
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: True
+
+default_w8a8_mxfp_dynamic:
+  &default_w8a8_mxfp_dynamic
+  act:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+
+spec:
+  process:
+    - type: "quarot"
+      export_extra_info: True
+
+    - type: "flex_smooth_quant"
+      enable_subgraph_type:
+        - 'norm-linear'
+        - 'ov'
+      include:
+        - "*"
+
+    # fa3 quantization for Indexer (fa3_q, fa3_k): per-token fp8 on rotated q/k
+    # Skip the precision-sensitive indexer in GLM5.2
+    - type: "fa3_quant"
+      qconfig:
+        dtype: "fp8_e4m3"
+        scope: "per_token"
+        symmetric: True
+        method: "minmax"
+      include:
+        - "*indexer*"
+      exclude:
+        - "model.layers.0.*"
+        - "model.layers.1.*"
+        - "model.layers.2.*"
+        - "model.layers.70.*"
+        - "model.layers.74.*"
+        - "model.layers.78.*"
+
+    # fa3 quantization for knope (kv_cache compression): per-tile mxfp8 on MLA kv_a_layernorm output
+    # Skip the precision-sensitive layers in GLM5.2
+    - type: "fa3_quant"
+      qconfig:
+        dtype: "mxfp8"
+        scope: "per_block"
+        symmetric: True
+        method: "minmax"
+      include:
+        - "*self_attn"
+      exclude:
+        - "*indexer*"
+        - "model.layers.0.*"
+        - "model.layers.1.*"
+        - "model.layers.2.*"
+        - "model.layers.74.*"
+        - "model.layers.75.*"
+        - "model.layers.76.*"
+        - "model.layers.77.*"
+        - "model.layers.78.*"
+
+    - type: "linear_quant"
+      qconfig: *default_w8a8_mxfp_dynamic
+      include:
+        - "*self_attn*"
+      exclude:
+        - "*kv_b_proj"
+        - "*wk"
+        - "*weights_proj"
+
+    - type: "linear_quant"
+      qconfig: *default_w8a8_mxfp_dynamic
+      include:
+        - "*mlp*"
+      exclude:
+        - "*gate"
+
+  dataset: mix_calib.jsonl
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
