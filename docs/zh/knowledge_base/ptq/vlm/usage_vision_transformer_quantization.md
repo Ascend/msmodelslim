@@ -158,7 +158,7 @@ flowchart LR
 
 2. **配置指南**：
    - **推荐默认填写 `runner: auto`**：单卡与多卡环境自动兼容。
-   - 多卡并行加速：在命令行传入多个设备（如 `--device npu:0,1,2,3`），配合 `auto` 即可自动启用多卡分布式逐层调度。
+   - 多卡并行加速：在命令行传入多个设备（如 `--device npu --device_id 0 1 2 3`），配合 `auto` 即可自动启用多卡分布式逐层调度。
 
 **输出**：YAML 中确认的 `runner` 调度策略。
 
@@ -207,8 +207,9 @@ msmodelslim quant \
   --model_path <浮点模型目录> \
   --save_path <量化权重输出目录> \
   --model_type <模型适配器名称> \
-  --config_path ./vlm_w8a8.yaml \
-  --device npu:0
+  --config ./vlm_w8a8.yaml \
+  --device npu \
+  --device_id 0
 ```
 
 **输出**：在指定的 `--save_path` 目录下生成完整的量化权重文件与描述文件。

@@ -198,8 +198,9 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None
      --model_path <浮点模型目录> \
      --save_path <量化权重输出目录> \
      --model_type <注册的模型适配器名称> \
-     --config_path <量化配置文件路径> \
-     --device npu:0
+     --config <量化配置文件路径> \
+     --device npu \
+     --device_id 0
    ```
 
 **输出**：量化命令执行成功，输出目录包含 `quant_model_description.json` 与分片权重 `*.safetensors`。

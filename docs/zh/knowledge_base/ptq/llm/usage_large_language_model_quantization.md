@@ -153,7 +153,7 @@ flowchart LR
 
 2. **配置指南**：
    - **推荐默认填写 `runner: auto`**：兼顾单卡稳定性与多卡自动并行加速。
-   - **大规模校准提速**：当校准集较大或希望缩短耗时，在命令行传入多卡（如 `--device npu:0,1,2,3`），配合 `auto` 即可自动启用多卡并行。
+   - **大规模校准提速**：当校准集较大或希望缩短耗时，在命令行传入多卡（如 `--device npu --device_id 0 1 2 3`），配合 `auto` 即可自动启用多卡并行。
 
 **输出**：YAML 中确认的 `runner` 调度策略。
 
@@ -197,8 +197,9 @@ msmodelslim quant \
   --model_path <浮点模型目录> \
   --save_path <量化权重输出目录> \
   --model_type <模型适配器名称> \
-  --config_path ./w8a8_dynamic.yaml \
-  --device npu:0
+  --config ./w8a8_dynamic.yaml \
+  --device npu \
+  --device_id 0
 ```
 
 #### 完整示例 2：W8A8 静态量化（推理吞吐优先）
@@ -235,8 +236,9 @@ msmodelslim quant \
   --model_path <浮点模型目录> \
   --save_path <量化权重输出目录> \
   --model_type <模型适配器名称> \
-  --config_path ./w8a8_static.yaml \
-  --device npu:0
+  --config ./w8a8_static.yaml \
+  --device npu \
+  --device_id 0
 ```
 
 **输出**：在指定的 `--save_path` 目录下生成完整的量化权重文件与描述文件。

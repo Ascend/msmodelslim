@@ -216,8 +216,9 @@ msmodelslim quant \
   --model_path <浮点模型目录> \
   --save_path <量化权重输出目录> \
   --model_type <模型适配器名称> \
-  --config_path ./dit_w8a8_mxfp8.yaml \
-  --device npu:0
+  --config ./dit_w8a8_mxfp8.yaml \
+  --device npu \
+  --device_id 0
 ```
 
 #### 完整示例 2：W8A8 INT8 动态量化（轻量起点，无需浮点 dump）
@@ -265,8 +266,9 @@ msmodelslim quant \
   --model_path <浮点模型目录> \
   --save_path <量化权重输出目录> \
   --model_type <模型适配器名称> \
-  --config_path ./dit_w8a8_int8_dynamic.yaml \
-  --device npu:0
+  --config ./dit_w8a8_int8_dynamic.yaml \
+  --device npu \
+  --device_id 0
 ```
 
 **输出**：在指定的 `--save_path` 目录下生成完整的 MindIE-SD 格式量化权重及描述文件（多专家模型自动分专家目录存放）。
