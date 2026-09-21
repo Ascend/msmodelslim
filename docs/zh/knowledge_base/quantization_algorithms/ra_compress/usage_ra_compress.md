@@ -105,7 +105,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
 
 - `--metrics`：`ra_compress`；
 - `--calibration_dataset`：**必须**显式指定为内置合成校准集 `calib_dummy.jsonl`（`attn_head` 子命令不再为此场景设置默认值），使用其他校准集不保证筛选效果；
-- `--ratio`：使用实现默认值；
+- top heads 选取比例（ratio）：使用实现内部默认值（induction head `0.14`、echo head `0.01`），CLI 不提供 `--ratio` 参数；
 - `--save_path`：指定 `head.pt` 与结果文件保存目录。
 
 **输出**：一组可复现的注意力头分析基线参数，用于生成第一版 induction/echo heads 排序。
@@ -142,7 +142,8 @@ msmodelslim analyze attn_head \
   --calibration_dataset calib_dummy.jsonl \
   --trust_remote_code true \
   --save_path ./head_result \
-  --device npu:0
+  --device npu \
+  --device_id 0
 ```
 
 参数说明：

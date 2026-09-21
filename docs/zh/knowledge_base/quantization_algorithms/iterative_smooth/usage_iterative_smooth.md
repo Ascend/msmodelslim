@@ -175,8 +175,9 @@ msmodelslim quant \
   --model_path <浮点模型目录> \
   --save_path <量化权重输出目录> \
   --model_type <模型适配器名称> \
-  --config_path ./iter_smooth_w8a8.yaml \
-  --device npu:0
+  --config ./iter_smooth_w8a8.yaml \
+  --device npu \
+  --device_id 0
 ```
 
 **输出**：在指定的 `--save_path` 目录下生成完整的量化权重文件与描述文件。

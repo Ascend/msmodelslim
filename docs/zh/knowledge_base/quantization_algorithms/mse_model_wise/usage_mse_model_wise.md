@@ -18,8 +18,7 @@
 | 输入 | 浮点模型权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` 分片 | 可被目标 Transformers 版本正常加载 |
 | 输入 | 模型适配器 | 用户适配代码，通过 `--model_type` 调用 | 实现 `PipelineInterface` 及对应的 `MSEModelWiseAnalysisInterface` 专用接口 | 能被调度器（Runner）与处理器（Processor）正常驱动 |
 | 输入 | 校准数据集 | 工具内置 `lab_calib/` 或用户自定义路径 | JSONL 或 JSON 格式文本 Prompt，推荐 50 条 | 可被适配器 `handle_dataset` 成功编码为前向张量 |
-| 输入 | 量化配置文件 | 本地 YAML 文件 | 符合 `modelslim_v1` 协议规范 | 通过模式校验（Schema Validation） |
-| 交付件 | 敏感层分析结果 | `--save_path` 指定路径 | 各层量化扰动对应的模型级 MSE score 与 Top-K 排序 | 结果稳定可复现，可作为回退或混合精度候选输入 |
+| 交付件 | 敏感层分析结果 | `--save_path` 指定路径（YAML），未指定时仅打印到控制台 | 各层量化扰动对应的模型级 MSE score 与 Top-K 排序 | 结果稳定可复现，可作为回退或混合精度候选输入 |
 
 ## 3. 流程总览
 
@@ -123,22 +122,11 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
 
 **输出**：一份完成单变量调整的分析参数方案，关键字段均有明确的选择依据和调整方向。
 
-### 步骤 4：编写量化配置并执行命令
+### 步骤 4：执行分析命令
 
-**目标**：整合上述步骤生成完整的 YAML 分析配置文件，并通过 CLI 启动敏感层分析流程。
+**目标**：整合上述步骤，通过 CLI 启动模型级 MSE 敏感层分析流程。
 
 #### 完整示例：模型级 MSE 敏感层分析
-
-##### 配置文件：`mse_model_wise_analysis.yaml`
-
-```yaml
-apiversion: modelslim_v1
-spec:
-  runner: auto                  # 单卡自动使用 layer_wise，多卡自动使用 dp_layer_wise
-  process:
-    - type: load                # 加载浮点模型
-  dataset: mix_calib.jsonl      # 校准数据集，推荐 50 条
-```
 
 ##### 执行命令（单卡分析）
 
@@ -150,11 +138,13 @@ msmodelslim analyze layer \
   --top_k 15 \
   --quant_modules "*" \
   --calibration_dataset ./mix_calib.jsonl \
-  --config_path ./mse_model_wise_analysis.yaml \
-  --device npu:0
+  --device npu \
+  --device_id 0
 ```
 
-**输出**：命令行输出各层 `mse_model_wise` score 与 Top-K 排序，保存于指定 `--save_path` 目录，作为后续回退或混合精度的候选输入。
+多卡分析时追加 `--device_id 0 1 2 3`；需要留存结果文件时追加 `--save_path <结果目录>`（YAML 格式），否则结果仅打印到控制台。
+
+**输出**：命令行输出各层 `mse_model_wise` score 与 Top-K 排序，作为后续回退或混合精度的候选输入。
 
 ## 5. 术语
 

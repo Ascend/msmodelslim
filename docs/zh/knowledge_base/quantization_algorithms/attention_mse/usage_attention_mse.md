@@ -108,7 +108,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
 
 - 分析范围：`attn`；
 - `--metrics`：`mse`；
-- `--topk`：先用 `15`；
+- `--top_k`：先用 `15`；
 - 校准数据：推荐 50 条，与后续正式量化相同或同分布。
 
 **输出**：一组可复现的 Attention 敏感度分析基线参数，用于生成第一版候选排序。
@@ -123,8 +123,8 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
 | --- | --- | --- | --- |
 | 分析范围 `attn` | 固定为 `attn` 子命令，分析对象默认覆盖模型中全部 Attention 模块，不支持通过 `--patterns`/`--quant_modules` 收窄。 | 固定 `attn`。 | 需要注意力头粒度（induction/echo head）分析时使用 `attn_head` 的 `ra_compress` 指标，与本指标的排序含义不同，不应混用。 |
 | `--metrics` | 指定本指南对应的分析指标 `mse`，决定 score 的定义和排序含义。 | 固定 `mse`。 | 高分说明该 Attention 模块的量化扰动更容易体现在自身输出端；与其他指标的数值尺度/排序不同，不应混用阈值。 |
-| `--calib_dataset`（`--calibration_dataset`） | 用于双路前向采集 Attention 输出的校准数据，JSON/JSONL 格式文本样本文件，推荐 50 条，默认 `mix_calib.jsonl`。 | 与后续正式量化相同或同分布的校准集。 | 排序在不同数据上明显变化时，先检查校准集是否覆盖真实长度与主题。 |
-| `--topk` | 控制最终展示/导出的高分候选数量，默认 `15`；不改变 score 计算。 | 从 `15` 开始。 | 需要更多回退候选时增大，需要快速人工审查时减小；不要把 `topk` 当作敏感度阈值。 |
+| `--calibration_dataset` | 用于双路前向采集 Attention 输出的校准数据，JSON/JSONL 格式文本样本文件，推荐 50 条，默认 `mix_calib.jsonl`。 | 与后续正式量化相同或同分布的校准集。 | 排序在不同数据上明显变化时，先检查校准集是否覆盖真实长度与主题。 |
+| `--top_k` | 控制最终展示/导出的高分候选数量，默认 `15`；不改变 score 计算。 | 从 `15` 开始。 | 需要更多回退候选时增大，需要快速人工审查时减小；不要把 `top_k` 当作敏感度阈值。 |
 | `--device_id` | 分析设备索引；传入多个索引（如 `0 1 2 3`）时自动启用分布式分析 Runner。 | 单卡不传；模型较大时多卡并行。 | 本指标支持分布式执行；多卡与单卡的排序应一致，差异明显时优先排查校准数据切分。 |
 
 > 历史兼容：旧用法 `msmodelslim analyze --metrics attention_mse` 已废弃，CLI 会自动转换为 `attn --metrics mse` 并打印告警；新脚本应直接使用 `analyze attn` 写法。
@@ -144,8 +144,8 @@ msmodelslim analyze attn \
   --model_path <浮点模型目录> \
   --model_type <模型适配器名称> \
   --metrics mse \
-  --topk 15 \
-  --calib_dataset ./mix_calib.jsonl \
+  --top_k 15 \
+  --calibration_dataset ./mix_calib.jsonl \
   --device npu
 ```
 
