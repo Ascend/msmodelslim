@@ -723,6 +723,8 @@ multimodal_vlm_modelslim_v1是专门为多模态视觉语言模型（VLM）设�
 **适用模型类型**:
 
 - Qwen2.5-Omni系列：Qwen2.5-Omni-7B 等多模态端到端模型（文本/图像/音频/视频）
+- Qwen3-Omni系列：Qwen3-Omni-30B-A3B-Thinking / Instruct；校准支持纯文本及 image/audio/video 任意组合，**同一任务内样本须同质**（含视频是否含音轨），详见《[Qwen3-Omni 量化使用说明](../../../example/multimodal_vlm/Qwen3-Omni/README.md#校准模态支持)》
+- Qwen3.5 / Qwen3.6 系列（`qwen3_5_moe`）：校准支持**纯文本**与**文本+图像**；不支持 audio/video，详见《[Qwen3.5 量化说明](../../../example/Qwen3_5/README.md#校准模态支持)》
 - Qwen3-VL-MoE系列：Qwen3-VL-235B-A22B、Qwen3-VL-30B-A3B等多模态模型
 - 其他多模态VLM模型：请参考《[多模态模型支持列表](../knowledge_base/model/README.md#多模态模型支持列表)》
 
@@ -731,6 +733,7 @@ multimodal_vlm_modelslim_v1是专门为多模态视觉语言模型（VLM）设�
 - 支持`dataset`字段配置校准数据集，支持三种使用方式：方式一 index.json/index.jsonl（推荐，支持多模态）、方式二 纯图像目录（后续不再演进）、方式三 图像目录+单个 json/jsonl（后续不再演进），详见下方 [dataset - 校准数据路径配置](#dataset---校准数据路径配置)
 - 支持`default_text`字段配置默认文本 prompt（方式二必填；方式一在条目缺 text 字段时使用）
 - 默认 `runner: auto`：单卡走 layer_wise，多卡（如 `--device npu --device_id 0 1 ...`）自动走 dp_layer_wise，与 modelslim_v1 对齐
+- **同质校准**：部分模型（如 Qwen3-Omni、Qwen3.5）要求同一任务内样本的有效模态组合一致，请勿在同一 `index.jsonl` 中混用异构模态
 
 #### 5.4.2 <span id="runner---量化调度器类型-vlm">runner - 量化调度器类型</span>
 
@@ -789,6 +792,7 @@ spec:
 
 - 每条为 JSON 对象，**至少包含 `text`**（非空字符串）；缺省时使用配置中的 `default_text`。
 - 可选字段（若提供则路径必须存在）：`image`（.jpg/.jpeg/.png）、`audio`（.wav/.mp3）、`video`（.mp4）；路径相对 index 文件所在目录。
+- **模态同质性**：部分模型（Qwen3-Omni、Qwen3.5 等）要求**同一校准集内**各样本的有效模态组合一致（例如不可混用纯文本与图文）。Omni 还会把「视频是否含音轨」计入有效音频；有音轨视频与无声视频不可混用。具体支持范围见各模型 README。
 
 目录示例：
 
@@ -800,14 +804,22 @@ calib_dir/
 └── a.wav
 ```
 
-index.jsonl 示例：
+index.jsonl 示例（同质：均为图文）：
 
 ```json
 {"image": "img1.jpg", "text": "Describe this image."}
-{"image": "img2.jpg", "audio": "a.wav", "text": "What is in this picture?"}
+{"image": "img2.png", "text": "What objects are in this picture?"}
+```
+
+纯文本示例：
+
+```json
+{"text": "What is 1+1? Answer with a single number."}
+{"text": "请用一句话介绍北京。"}
 ```
 
 配置示例：`dataset: "/path/to/calib_dir"` 或 `dataset: "/path/to/index.jsonl"` 或短名称解析到上述路径。
+全模态模型校准集约束：支持部分模态缺失，校准集中要求模态组合一致。
 
 ---
 
@@ -864,6 +876,8 @@ calib_data.jsonl 示例：
 #### 5.4.7 使用示例
 
 - Qwen2.5-Omni模型W8A8量化：[qwen2_5_omni_thinker_w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/master/lab_practice/qwen2_5_omni_thinker/qwen2_5_omni_thinker_w8a8.yaml)
+- Qwen3-Omni模型W8A8量化：[qwen3-omni-moe-w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/master/lab_practice/qwen3_omni_moe/qwen3-omni-moe-w8a8.yaml)（模态说明见《[Qwen3-Omni README](../../../example/multimodal_vlm/Qwen3-Omni/README.md#校准模态支持)》）
+- Qwen3.5 / Qwen3.6 模型W8A8量化：[qwen3_5_moe_w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/master/lab_practice/qwen3_5_moe/qwen3_5_moe_w8a8.yaml)（模态说明见《[Qwen3.5 README](../../../example/Qwen3_5/README.md#校准模态支持)》）
 - Qwen3-VL-MoE模型W8A8混合量化：[qwen3_vl_moe_w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/master/lab_practice/qwen3_vl_moe/qwen3_vl_moe_w8a8.yaml)
 
 ### 5.5 modelslim_v0 配置说明

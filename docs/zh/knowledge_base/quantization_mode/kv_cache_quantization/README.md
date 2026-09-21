@@ -30,9 +30,9 @@ KVCache 量化是对注意力机制中的 **KVCache（缓存的 Key/Value 张量
 
 <a id="modes"></a>
 
-## 3. 该类下的模式清单
+### 2.2 该类下的模式清单
 
-以下为 msModelSlim 支持的 KVCache 量化模式清单（完整规格含承载 IR 类，见[量化模式](../README.md)模式索引）：
+以下为 msModelSlim 支持的 KVCache 量化模式清单（完整规格含承载 IR 类，见[模式索引](../README.md#modes)）：
 
 | 模式 | 一句话 |
 |------|--------|
@@ -40,7 +40,7 @@ KVCache 量化是对注意力机制中的 **KVCache（缓存的 Key/Value 张量
 
 ---
 
-## 4. 关联流程
+## 3. 关联流程
 
 - 《[一键量化完整指南](../../../user_guide/usage_quick_quantization.md)》：通过 `dynamic_cache` 处理器启用本类模式。
 - 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：长序列精度验证与 KV 回退。
@@ -49,7 +49,7 @@ KVCache 量化是对注意力机制中的 **KVCache（缓存的 Key/Value 张量
 
 <a id="related-terms"></a>
 
-## 5. 关联词条
+## 4. 关联词条
 
 - [量化模式](../README.md)：上位概念，本词条是"KVCache 量化"类别。
 - [线性层量化](../linear_layer_quantization/README.md)：同位概念，作用于权重与激活的量化类别，可与本类叠加。
@@ -60,7 +60,7 @@ KVCache 量化是对注意力机制中的 **KVCache（缓存的 Key/Value 张量
 
 ---
 
-## 6. 参考文档
+## 5. 参考文档
 
 1. 《[KVCache Quant 参数配置流程指南](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)》
 2. 《[KV Smooth 参数配置流程指南](../../quantization_algorithms/kv_smooth/usage_kv_smooth.md)》

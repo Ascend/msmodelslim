@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-W4A4 动态量化是对线性层的权重与激活都做 [INT4](../../quantization_basic/term_int4.md) 量化，激活量化参数逐 token 在线计算。它是压缩比最高的一类线性层方案：权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4，但 INT4 有符号仅能表示 −8～7 共 16 个整数档位，必须依赖 per-token 动态量化与 per-channel/per-group 细粒度兜底，才能把精度损失压到可接受范围。
+W4A4 动态量化是对线性层的权重与激活都做 [INT4](../../quantization_basic/term_int4.md) 量化，激活量化参数逐 token 在线计算。它是压缩比最高的一类线性层方案：权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4，但有符号 INT4 仅能表示 −8～7 共 16 个整数档位，必须依赖 per-token 动态量化与 per-channel/per-group 细粒度兜底，才能把精度损失压到可接受范围。
 
 ---
 
@@ -37,7 +37,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 ### 2.3 与其他模式的关系
 
 - **与 [W8A8 静态量化](term_w8a8_static.md)（位宽不同）**
-  - 本模式：优势是权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4，压缩与带宽收益最大化；劣势是 INT4 有符号仅能表示 −8～7 共 16 个整数档位，精度风险高，需动态量化 + per-group 粒度 + 离群值抑制兜底。
+  - 本模式：优势是权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4，压缩与带宽收益最大化；劣势是有符号 INT4 仅能表示 −8～7 共 16 个整数档位，精度风险高，需动态量化 + per-group 粒度 + 离群值抑制兜底。
   - W8A8：优势是 8bit 分辨率高、精度更稳，是通用部署基线；劣势是权重访存仅减半。
 
 - **与 [W8A8 动态量化](term_w8a8_dynamic.md)（同为动态家族，位宽不同）**

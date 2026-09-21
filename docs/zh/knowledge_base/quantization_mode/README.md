@@ -48,11 +48,11 @@
 
 <a id="modes"></a>
 
-## 3. 模式索引
+### 2.3 模式索引
 
 以下为 msModelSlim 支持的量化模式全量清单（按量化对象分类），也是各具体量化模式词条的总览入口。表中"承载 IR 类"为 [`msmodelslim/ir/`](../../../../msmodelslim/ir/) 中的类名，类名里的 **FakeQuant**（伪量化）指量化后立即反量化的占位层，用于在浮点计算中模拟真实量化的数值效果：
 
-### 3.1 线性层量化
+#### 2.3.1 线性层量化
 
 | 模式 | 承载 IR 类 | 权重/激活量化 |
 |------|-----------|---------------|
@@ -73,13 +73,13 @@
 
 > 注：prefill 与 decode 是 LLM 推理的两个阶段——prefill 一次处理整个输入 prompt（计算密集），decode 逐个生成 token（访存密集），详见[线性层量化](linear_layer_quantization/README.md)。
 
-### 3.2 KVCache 量化
+#### 2.3.2 KVCache 量化
 
 | 模式 | 承载 IR 类 | 量化参数 |
 |------|-----------|----------|
 | [KVCache-PerChannel 量化](kv_cache_quantization/term_kv_cache_perchannel.md) | `FakeQuantDynamicCache` | INT8 per-channel（对称/非对称） |
 
-### 3.3 FA 量化（KVCache 量化的进阶）
+#### 2.3.3 FA 量化（KVCache 量化的进阶）
 
 FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V 三分支**，各分支选择一种激活值量化模式，三分支的组合构成**整体方案**（见 [FA 量化](fa_quantization/README.md)）。下表为已实践验证的整体方案，每个方案对应一个词条。
 
@@ -97,7 +97,7 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 
 ---
 
-## 4. 关联流程
+## 3. 关联流程
 
 - 《[一键量化完整指南](../../user_guide/usage_quick_quantization.md)》：通过 `--quant_type` 或 YAML 配置选择并执行量化模式。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：量化模式导致的精度劣化可通过该流程逐层回退与调优。
@@ -106,7 +106,7 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 
 <a id="related-terms"></a>
 
-## 5. 关联词条
+## 4. 关联词条
 
 - [线性层量化](linear_layer_quantization/README.md)：下位概念，本词条下量化模式的主体类别。
 - [KVCache 量化](kv_cache_quantization/README.md)：下位概念，针对 KVCache 的量化类别。
@@ -118,7 +118,7 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 
 ---
 
-## 6. 参考文档
+## 5. 参考文档
 
 1. Jacob B et al. Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference. CVPR 2018. https://arxiv.org/abs/1712.05877
 2. Yao Z et al. ZeroQuant: Efficient and Affordable Post-Training Quantization for Large-Scale Transformers. NeurIPS 2022. https://arxiv.org/abs/2206.01861

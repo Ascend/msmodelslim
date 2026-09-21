@@ -37,8 +37,8 @@ $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \ma
 ### 2.3 与其他模式的关系
 
 - **与 [FA FP8 动态量化](term_fa_fp8_dynamic.md) / [FA INT8 动态量化](term_fa_int8_dynamic.md)（同为统一动态，格式与粒度不同）**
-  - 本模式（MXFP4 per-block）：优势是 4bit 带宽收益最大，块级共享指数对离群值更耐受、粒度沿 head_dim 更细；劣势是依赖硬件 MX 支持、head_dim 需32对齐、MXFP4 尾数仅1bit（emax=2、max 6）。
-  - FP8/INT8 动态：优势是 8bit 每元素格式、硬件生态更成熟；劣势是位宽更高、粒度行级。
+  - 本模式（MXFP4 per-block）：优势是 4bit 带宽收益最大，块级共享指数对离群值更耐受、粒度沿 head_dim 更细；劣势是依赖硬件 MX 支持、head_dim 需能被 32 整除、MXFP4 尾数仅1bit（emax=2、max 6）。
+  - FP8/INT8 动态：优势是 8bit 每元素独立数值格式、硬件生态更成熟；劣势是位宽更高、粒度为 per-token（逐 token）。
 - **与 [W8A8 MX 动态量化](../linear_layer_quantization/term_w8a8_mx_dynamic.md)（同类 MX per-block 动态思路）**
   - 本模式把同一思路应用于注意力 Q/K/V 激活；W8A8 MX 应用于线性层权重与激活。
 - **与 [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md)（同为 MX 家族，位宽与分支量化方式不同）**
@@ -55,7 +55,7 @@ $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \ma
 #### 2.4.2 使用限制
 
 - **依赖硬件 MX 支持**：MXFP4 注意力计算需目标硬件算子库支持。
-- **块粒度对齐**：head_dim 需能被32整除，否则需 padding。
+- **块粒度对齐**：head_dim 需能被 32 整除，否则需 padding。
 - **在线归约开销**：per-block 统计增加少量延迟，短序列下占比更明显。
 - **MXFP4 精度有限**：尾数仅1bit、emax=2、max 6，精度敏感场景需权衡。
 - **注意力精度敏感**：Q/K 的量化误差直接影响注意力得分，需验证极端长序列下的精度。

@@ -64,9 +64,9 @@ FA 量化的一个"模式"是指 **Q/K/V 三分支量化方式的整体组合**�
 
 <a id="modes"></a>
 
-## 3. 该类下的模式清单
+### 2.4 该类下的模式清单
 
-以下为 FA 量化模式清单（完整规格含承载 IR 类，见[量化模式](../README.md)模式索引）：
+以下为 FA 量化模式清单（完整规格含承载 IR 类，见[模式索引](../README.md#modes)）：
 
 | 模式 | 一句话 |
 | --- | --- |
@@ -80,7 +80,7 @@ FA 量化的一个"模式"是指 **Q/K/V 三分支量化方式的整体组合**�
 
 ---
 
-## 4. 关联流程
+## 3. 关联流程
 
 - 《[一键量化完整指南](../../../user_guide/usage_quick_quantization.md)》：通过 `fa3_quant` 处理器启用本类模式。
 - 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：注意力激活量化精度验证。
@@ -89,7 +89,7 @@ FA 量化的一个"模式"是指 **Q/K/V 三分支量化方式的整体组合**�
 
 <a id="related-terms"></a>
 
-## 5. 关联词条
+## 4. 关联词条
 
 - [量化模式](../README.md)：上位概念，本词条属于"FA 量化"类别。
 - [KVCache 量化](../kv_cache_quantization/README.md)：上位概念（基础），本类在其基础上追加 Q 量化。
@@ -99,7 +99,7 @@ FA 量化的一个"模式"是指 **Q/K/V 三分支量化方式的整体组合**�
 
 ---
 
-## 6. 参考文档
+## 5. 参考文档
 
 1. Dao T et al. FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. NeurIPS 2022. https://arxiv.org/abs/2205.14135
 2. 《[FA3 Quant 参数配置流程指南](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》
