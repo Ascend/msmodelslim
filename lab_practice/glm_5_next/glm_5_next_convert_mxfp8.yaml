@@ -11,7 +11,7 @@ metadata:
 
 # 用途：对 GLM5.3-Flash 模型做离线权重转换，重排为 MXFP8(W8A8_MXFP8) 并落盘为 AscendV1。
 #       支持 BF16/FP8 输入；输入为 HF FP8 checkpoint 时，先经适配器转换为 BF16 再做重排（FP8 -> BF16 -> MXFP8）。
-#       配置文件位于 msmodelslim 仓的 lab_practice/glm_5_next/glm_5_next_convert_mxfp8.yaml，通过 --config 指定。
+#       配置文件位于 msmodelslim 仓的 lab_practice/glm_5_next/glm_5_next_convert_mxfp8.yaml，通过 --config_path 指定。
 
 spec:
   linears:
@@ -28,6 +28,21 @@ spec:
         - "model.language_model.layers.*.self_attn.q_a_proj"
         - "model.language_model.layers.*.self_attn.q_b_proj"
         - "model.language_model.layers.*.self_attn.kv_a_proj_with_mqa"
+        # o_proj 仅限 DSA(deepseek_sparse_attention) 型层：full_attn 层 3,7,...,43 与 MTP 层 45，
+        # 源模型中这 12 个为 FP8 blockwise，需统一转为 MXFP8；
+        # KDA(linear_attention) 层的 o_proj 源模型为 BF16，须保持不动，故不能用通配符。
+        - "model.language_model.layers.3.self_attn.o_proj"
+        - "model.language_model.layers.7.self_attn.o_proj"
+        - "model.language_model.layers.11.self_attn.o_proj"
+        - "model.language_model.layers.15.self_attn.o_proj"
+        - "model.language_model.layers.19.self_attn.o_proj"
+        - "model.language_model.layers.23.self_attn.o_proj"
+        - "model.language_model.layers.27.self_attn.o_proj"
+        - "model.language_model.layers.31.self_attn.o_proj"
+        - "model.language_model.layers.35.self_attn.o_proj"
+        - "model.language_model.layers.39.self_attn.o_proj"
+        - "model.language_model.layers.43.self_attn.o_proj"
+        - "model.language_model.layers.45.self_attn.o_proj"
       target: W8A8_MXFP8
       route: auto
 
