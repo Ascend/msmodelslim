@@ -30,7 +30,7 @@ from msmodelslim.utils.exception import SchemaValidateError
 
 class QuantSpec(BaseModel):
     # anti
-    anti_cfg: dict = Field(default_factory=dict)  # anti-outlier config
+    anti_cfg: dict = None  # anti-outlier config
     anti_params: dict = Field(default_factory=dict)  # anti-outlier params
 
     # calib
@@ -41,7 +41,7 @@ class QuantSpec(BaseModel):
     # quantization parameters
     batch_size: int = 4  # batch size
     anti_dataset: str = None  # anti-outlier dataset
-    calib_dataset: str = None  # calib dataset
+    calib_dataset: str = "teacher_qualification.jsonl"  # calib dataset
 
 
 class ModelslimV0QuantConfig(BaseQuantConfig):
