@@ -437,7 +437,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>√(一键量化)</td>
       <td>-</td>
       <td>-</td>
-      <td>-</td>
+      <td>√(一键量化)</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
