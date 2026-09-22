@@ -101,11 +101,23 @@ cd ~ && curl -fLO --retry 3 https://inst.obs.cn-north-4.myhuaweicloud.com/env/ct
 
 **预期结果**：
 
-等待约 10 秒，终端显示如下 root Shell 提示符，表示容器已成功启动：
+等待约 10 秒，终端显示容器启动成功日志和 root Shell 提示符，表示容器已成功启动：
+
+成功启动日志：
+
+```text
+Container 'xxxxxx' started successfully.
+```
+
+root Shell 提示符：
 
 ```text
 [root@xxxxxx ~]#
 ```
+
+> [!NOTE]说明
+>
+> 上述示例中的 `xxxxxx` 表示容器名，实际名称由容器启动脚本自动生成，请以终端实际输出为准。
 
 #### 2.1.6 容器内：安装 msModelSlim
 
