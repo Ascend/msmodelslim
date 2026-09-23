@@ -194,6 +194,25 @@ class TestMxfpPerBlockQuantize(unittest.TestCase):
 
         self.assertTrue(torch.equal(result.value[x == 0], torch.zeros_like(result.value[x == 0])))
 
+    def test_should_stay_finite_when_shared_exp_is_scale_emin(self):
+        """shared_exp=-127（scale 下界）时量化结果应为有限值，且 0 仍为 0。
+
+        旧实现 inp/(2**shared_exp) 会物化 fp32 次正规数；在 flush-to-zero 环境下会变成 /0 → Inf/NaN。
+        """
+        x = torch.tensor([7.8e-38, 1.2e-38, 0.0, 0.05], dtype=torch.float32)
+        shared_exp = torch.tensor([-127.0], dtype=torch.bfloat16)
+
+        q_param = QParam(
+            scheme=QScheme(dtype=QDType.MXFP8, scope=QScope.PER_BLOCK, symmetric=True),
+            ext={"scale": shared_exp, "offset": torch.zeros_like(shared_exp)},
+        )
+
+        result = mxfp_per_block_quantize(QStorage(QDType.FLOAT, x), q_param)
+
+        self.assertTrue(torch.isfinite(result.value).all())
+        self.assertEqual(float(result.value[2]), 0.0)
+        self.assertTrue((result.value[[0, 1, 3]] != 0).all())
+
 
 class TestMxfpPerBlockDequantize(unittest.TestCase):
     """测试 mxfp_per_block_dequantize 函数"""
