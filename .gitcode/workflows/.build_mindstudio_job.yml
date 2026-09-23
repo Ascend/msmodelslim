@@ -1,0 +1,76 @@
+name: Build MindStudio-CI Job
+
+on:
+  workflow_call:
+    inputs:
+      REMOTE_URL:
+        required: false
+        type: string
+        default: ${{ atomgit.repositoryurl }}
+      pr_id:
+        required: false
+        type: string
+        default: ${{ atomgit.event.pull_request.number }}
+      IMAGE_FLAG:
+        required: true
+        type: string
+      TARGET_BRANCH:
+        required: false
+        type: string
+        default: ${{ atomgit.event.pull_request.base.ref }}
+      runs_on_arch:
+        required: true
+        type: string
+      ARTIFACT_NAME:
+        required: true
+        type: string
+
+jobs:
+  JOB_build_mindstudio:
+    name: JOB_build_mindstudio
+    env:
+      ARTIFACT_NAME: ${{ format('{0}-{1}', inputs.ARTIFACT_NAME, atomgit.run_number) }}
+    select: selected_by_default
+    runs-on: [ dedicate-hosted, "${{ inputs.runs_on_arch }}", large ]
+    container:
+      image: swr.cn-north-4.myhuaweicloud.com/mindstudio-image/${{ inputs.IMAGE_FLAG }}
+      options: --user root
+    steps:
+      - name: build msmodelslim via MindStudio-CI toolkit
+        run: |
+          set -e
+          export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && export LANGUAGE=C.UTF-8
+          set +x
+          curl -fLO --retry 3 https://inst.obs.cn-north-4.myhuaweicloud.com/env/build/source/master/mindstudio_ci.tar.gz
+          tar xf mindstudio_ci.tar.gz && rm -f mindstudio_ci.tar.gz
+          set -x
+          # 让 MindStudio-CI 工具包执行真实 PR 构建（PR 构建不要求 OBS 凭据，制品留在本地）
+          export CI_DRY_RUN=0
+          export BUILD_WORKSPACE=${ATOMGIT_WORKSPACE}
+          export CI_PR=1
+          export CI_PR_ID=${{ inputs.pr_id }}
+          export REMOTE_URL=${{ inputs.REMOTE_URL }}
+          export TARGET_BRANCH=${{ inputs.TARGET_BRANCH }}
+          export COMMIT_ID=${{ atomgit.event.pull_request.head.sha }}
+          cd MindStudio-CI && bash build.sh msmodelslim
+          if [ -d ${ATOMGIT_WORKSPACE}/code ]; then
+            cd ${ATOMGIT_WORKSPACE}/code
+            git clone https://gitcode.com/A1streomeria/ci_test.git || true
+            if [ -f /tmp/modify_files.txt ]; then
+              cp /tmp/modify_files.txt ci_test/codecheck/change.txt
+            else
+              git diff-tree -r --name-only --no-commit-id origin/${{ inputs.TARGET_BRANCH }} HEAD > ci_test/codecheck/change.txt
+            fi
+            cp build/compile_commands.json compile_commands.json || true
+            cd ci_test/codecheck/
+            sed -i 's/\r$//' ctidy.sh
+            chmod +x ctidy.sh
+            ./ctidy.sh ${ATOMGIT_WORKSPACE}/code/
+          else
+            echo "WARN: MindStudio-CI did not produce code/ under workspace; skipping ctidy"
+          fi
+      - name: Upload artifacts
+        uses: upload-artifact
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: "code/artifacts/*"

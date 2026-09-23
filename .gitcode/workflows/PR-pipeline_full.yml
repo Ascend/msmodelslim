@@ -1,0 +1,216 @@
+name: PR-pipeline_msmodelslim
+
+on:
+  # PR 流水线通过 PR 评论 /compile 触发 ，不在 PR 打开/更新时自动运行
+  # pull_request:
+  #   types: [open, update]
+  #   branches: [ '*' ]
+  pr_comment:
+    types: [created]
+    keyword: '^compile$'
+  pull_request_comment:
+    types: [created]
+    branches: [ '*' ]
+    comments: [ '^compile$' ]
+
+env:
+  org_name: Ascend
+  REPO_NAME: msmodelslim
+  REMOTE_URL: ${{ atomgit.repositoryurl }}
+  PR_ID: ${{ atomgit.event.pull_request.number }}
+
+permissions:
+  project: read
+  repository: read
+  id-token: write
+  pr: write
+  note: write
+  action: read
+
+stages:
+  stage_0:
+    name: CodeCheck
+    select: selected_by_default
+    jobs:
+      Detect_file_changes:
+        name: Detect_file_changes
+        runs-on: [ self-hosted, x86, cpu=2 ]
+        container:
+          image: swr.cn-north-4.myhuaweicloud.com/pytorch_images_x86/pytorchx86:v_03
+        outputs:
+          need_build: ${{ steps.set-skip.outputs.need_build }}
+        steps:
+          - name: checkout
+            uses: checkout
+            with:
+              ref: refs/merge-requests/${{ env.PR_ID }}/merge
+              fetch-depth: 0
+          - name: Only_doc_commit
+            id: filter
+            uses: paths-changes-filter
+            with:
+              event-name: 'pull_request'
+              base: ${{ atomgit.event.pull_request.base.ref }}
+              repo: ${{ atomgit.repository }}
+              number: ${{ env.PR_ID }}
+              token: ${{ secrets.GIT_TOKEN }}
+              list-files: json
+              predicate-quantifier: every
+              filters: |
+                changed:
+                  - '**'
+                non-doc:
+                  - '!**/*.md'
+                  - '!**/*.rst'
+                  - '!**/*.log'
+                  - '!**/*.png'
+                  - '!**/*.jpg'
+                  - '!**/*.doc'
+                  - '!**/*.eddx'
+                  - '!**/*.svg'
+
+          - name: set build skip flag
+            id: set-skip
+            run: |
+              echo "changed: ${{ steps.filter.outputs.changed_files }}"
+              echo "non-doc: ${{ steps.filter.outputs.non-doc }}"
+              if [ "${{ steps.filter.outputs.non-doc }}" = "true" ]; then
+                echo "need_build=yes" >> "$ATOMGIT_OUTPUT"
+              else
+                echo "need_build=no" >> "$ATOMGIT_OUTPUT"
+              fi
+              echo "${{ steps.filter.outputs.changed_files }}" | tr -d '[]" ' | tr ',' '\n' > modify_files.txt
+              cat modify_files.txt
+
+      associate_pr_comment:
+        name: associate_pr_comment
+        select: selected_by_default
+        runs-on: [ self-hosted, x86, cpu=2 ]
+        steps:
+          - name: associate-pr-comment
+            uses: associate-pr-comment
+          - name: pre_pipeline
+            id: pre_pipeline
+            uses: cann/.gitcode/actions/pre-pipeline@689551d6b29a77d8c2a005b8f1b3883db24820ef
+            with:
+              owner: ${{ env.org_name }}
+              repo: ${{ env.REPO_NAME }}
+              pr_number: ${{ atomgit.event.pull_request.number }}
+              token: ${{ secrets.GIT_TOKEN }}
+              apply_label: 'true'
+              run_url: https://gitcode.com/${{ env.org_name }}/${{ atomgit.event.repository.name }}/actions/runs/${{ atomgit.workflow_run_id }}
+
+  stage_1:
+    name: CodeCheck_Build_Test
+    select: selected_by_default
+    jobs:
+      pre-commit:
+        name: pre-commit
+        runs-on: [ self-hosted, x86, cpu=2 ]
+        container:
+          image: swr.cn-north-4.myhuaweicloud.com/mindspore/mindspore_python3.11:v0.1
+          options: --user root
+        steps:
+          - name: checkout
+            uses: checkout
+            with:
+              ref: ${{ atomgit.event.pull_request.merge_commit_sha || '' }}
+          - name: gitleaks install
+            run: |
+              wget -q --no-host-directories -c --no-check-certificate https://pytorch-package.obs.cn-north-4.myhuaweicloud.com/pta-codecheck/gitleaks
+              chmod +x gitleaks
+              cp gitleaks /usr/local/bin/
+              gitleaks version
+          - name: setup-python311
+            run: |
+              ln -sf /usr/local/bin/python3.11 /usr/bin/python
+              python --version
+          - name: run pre-commit
+            uses: openlibing/pre-commit-action@v1.0.0
+
+      SCA:
+        name: SCA
+        runs-on: [ self-hosted, x86, cpu=2 ]
+        container:
+          image: swr.cn-north-4.myhuaweicloud.com/mindspore/mindspore_python3.11:v0.1
+          options: --user root
+        steps:
+          - name: checkout
+            uses: checkout
+          - name: Run SCA PR scan
+            uses: openlibing/sca-action/sca-pr-action@v1.0.0
+            with:
+              project-name: MindStudio
+
+      malicious-scan:
+        name: antipoison
+        runs-on: [ self-hosted, x86, cpu=2 ]
+        container:
+          image: swr.cn-north-4.myhuaweicloud.com/mindspore/mindspore_python3.11:v0.1
+          options: --user root
+        steps:
+          - name: Checkout
+            uses: checkout
+          - name: Run malicious code scan
+            uses: openlibing/malicious-code-scan-action/malicious-code-pr-scan-action@v1.0.0
+            with:
+              project-name: MindStudio
+
+  stage_2:
+    name: build
+    select: selected_by_default
+    jobs:
+      Build_msmodelslim_x86:
+        name: Build_msmodelslim_x86
+        if: ${{ jobs.Detect_file_changes.outputs.need_build == 'yes' }}
+        uses: .gitcode/workflows/.build_mindstudio_job.yml
+        with:
+          IMAGE_FLAG: "mindstudio-build:26.1.0"
+          runs_on_arch: "x64"
+          ARTIFACT_NAME: "msmodelslim-run-x86-test"
+
+      Build_msmodelslim_arm:
+        name: Build_msmodelslim_arm
+        if: ${{ jobs.Detect_file_changes.outputs.need_build == 'yes' }}
+        uses: .gitcode/workflows/.build_mindstudio_job.yml
+        with:
+          IMAGE_FLAG: "mindstudio-build:26.1.0"
+          runs_on_arch: "arm64"
+          ARTIFACT_NAME: "msmodelslim-run-arm-test"
+
+  stage_3:
+    name: UT
+    select: selected_by_default
+    jobs:
+      UT_msmodelslim:
+        name: UT_msmodelslim
+        if: ${{ jobs.Detect_file_changes.outputs.need_build == 'yes' }}
+        uses: .gitcode/workflows/.ut_mindstudio_job.yml
+        with:
+          IMAGE_FLAG: "mindstudio-build:26.1.0"
+          runs_on_arch: "x64"
+
+      PreSmoke_msmodelslim:
+        name: PreSmoke_msmodelslim
+        continue-on-error: true
+        if: ${{ jobs.Detect_file_changes.outputs.need_build == 'yes' }}
+        uses: .gitcode/workflows/.presmoke.yml
+        with:
+          IMAGE_FLAG: "mindie:3.0.0-800I-A2-py311-openeuler24.03-lts"
+          runs_on_arch: "arm64"
+          ARTIFACT_NAME: "msmodelslim-run-arm"
+
+post:
+  jobs:
+    query_pipeline:
+      steps:
+        - name: query_pipeline
+          id: query_pipeline
+          uses: cann/.gitcode/actions/query-pipeline@689551d6b29a77d8c2a005b8f1b3883db24820ef
+          with:
+            owner: ${{ env.org_name }}
+            repo: ${{ env.REPO_NAME }}
+            run_id: ${{ atomgit.workflow_run_id }}
+            token: ${{ secrets.GIT_TOKEN }}
+            pr_number: ${{ atomgit.event.pull_request.number }}
+            apply_label: 'true'

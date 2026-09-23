@@ -1,0 +1,51 @@
+name: UT MindStudio Job
+
+on:
+  workflow_call:
+    inputs:
+      REMOTE_URL:
+        required: false
+        type: string
+        default: ${{ atomgit.repositoryurl }}
+      pr_id:
+        required: false
+        type: string
+        default: ${{ atomgit.event.pull_request.number }}
+      IMAGE_FLAG:
+        required: true
+        type: string
+      TARGET_BRANCH:
+        required: false
+        type: string
+        default: ${{ atomgit.event.pull_request.base.ref }}
+      runs_on_arch:
+        required: true
+        type: string
+
+jobs:
+  JOB_UT_mindstudio:
+    name: JOB_UT_mindstudio
+    select: selected_by_default
+    runs-on: [ self-hosted, npu=2 ]
+    container:
+      image: swr.cn-north-4.myhuaweicloud.com/mindstudio-image/${{ inputs.IMAGE_FLAG }}
+      options: --user root
+    steps:
+      - name: run UT via MindStudio-CI toolkit
+        run: |
+          set -e
+          export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && export LANGUAGE=C.UTF-8
+          set +x
+          curl -fLO --retry 3 https://inst.obs.cn-north-4.myhuaweicloud.com/env/build/source/master/mindstudio_ci.tar.gz
+          tar xf mindstudio_ci.tar.gz && rm -f mindstudio_ci.tar.gz
+          set -x
+          # 让 MindStudio-CI 工具包执行真实 PR 构建（PR 构建不要求 OBS 凭据）
+          export CI_DRY_RUN=0
+          export BUILD_WORKSPACE=${ATOMGIT_WORKSPACE}
+          export CI_PR=1
+          export CI_PR_UT=1
+          export CI_PR_ID=${{ inputs.pr_id }}
+          export REMOTE_URL=${{ inputs.REMOTE_URL }}
+          export TARGET_BRANCH=${{ inputs.TARGET_BRANCH }}
+          export COMMIT_ID=${{ atomgit.event.pull_request.head.sha }}
+          cd MindStudio-CI && bash build.sh msmodelslim
