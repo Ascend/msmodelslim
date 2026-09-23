@@ -77,7 +77,9 @@ def mxfp_per_block_quantize(tensor: QStorage, q_param: QParam) -> QStorage:
 
     # 0 值保持为 0（shared_exp 含 NaN/±Inf 时 0/scale 会产生非有限值）。
     # 用 0 维标量广播替代 torch.zeros_like 的整份分配，避免一个全量 fp32 临时。
-    inp = torch.where(inp == 0, torch.zeros((), dtype=inp.dtype, device=inp.device), inp / (2**shared_exp))
+    # 用 ldexp 按整数指数缩放，避免 2**shared_exp 在 shared_exp=-127 时物化 fp32 次正规数。
+    scaled = torch.ldexp(inp, (-shared_exp).to(torch.int32))
+    inp = torch.where(inp == 0, torch.zeros((), dtype=inp.dtype, device=inp.device), scaled)
 
     # 用 1B/elem 的布尔掩码记录非有限值位置（与原实现此处整份 fp32 clone 语义一致，
     # 但显存占用降到 1/4），供 clamp 后恢复 ±Inf。
