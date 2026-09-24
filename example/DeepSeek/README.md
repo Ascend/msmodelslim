@@ -16,6 +16,10 @@
 
 - [DeepSeek-V3.1-Terminus](https://huggingface.co/deepseek-ai/DeepSeek-V3.1-Terminus) 是 DeepSeek-V3.1 系列更新模型，模型结构与 DeepSeek-V3 保持一致，在保持原有能力基础上改善语言一致性、异常字符等问题，并优化 Code Agent 与 Search Agent 能力。msModelSlim 已适配 DeepSeek-V3.1-Terminus 面向 vLLM Ascend 推理的 W8A8C8 与 W4A4C8 一键量化最佳实践。
 
+- [DeepSeek-V4-Flash-0731](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731) 是 DeepSeek-V4-Flash 官方正式版，结构与 DeepSeek-V4-Flash-DSpark 一致（含 DSpark 投机解码模块）。msModelSlim 已适配面向 vLLM Ascend 的 W4A4C8 一键量化最佳实践。
+
+- [DeepSeek-V4-Pro-0813](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813) 是 DeepSeek-V4-Pro 官方正式版，在 preview 结构上附带 DSpark 投机解码模块。msModelSlim 已适配面向 vLLM Ascend 的 W4A4C8 一键量化最佳实践。
+
 - [DeepSeek-R1](https://github.com/deepseek-ai/DeepSeek-R1) 通过纯强化学习、真实奖励机制和 GRPO
   算法，展示了在无需人类干预的情况下实现复杂任务的能力。具体来说，DeepSeek-R1 通过大规模强化学习技术，仅需少量标注数据即可显著提升模型性能。
 
@@ -39,7 +43,9 @@
 |                    | DeepSeek-V3.2-Exp          | [DeepSeek-V3.2-Exp](https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp)            | ✅    |       | ✅    |        |        |        |      |          |           |       |       | [W8A8](#deepseek-v32-w8a8) / [W4A8](#deepseek-v32-w4a8)                                                                                                                                                                                                                |
 |                    | DeepSeek-V3.2              | [DeepSeek-V3.2](https://huggingface.co/deepseek-ai/DeepSeek-V3.2)                      | ✅    |       |      |        |        |        |      |          |           |       |       | [W8A8](#deepseek-v32-w8a8-quarot)                                                                                                                                                                                                                                             |
 | **DeepSeek-V4** | DeepSeek-V4-Flash         | [DeepSeek-V4-Flash](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash)   | ✅    |       |      |        |        |        |      |          |           |       |       | [W8A8](#deepseek-v4-w8a8-quarot) |
+|                    | DeepSeek-V4-Flash-0731    | [DeepSeek-V4-Flash-0731](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731) |      |       |      |        |        | ✅      |      |          |           |       |       | [W4A4C8](#deepseek-v4-flash-0731-w4a4c8量化) |
 |                    | DeepSeek-V4-Pro           | [DeepSeek-V4-Pro](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro)     | ✅    |       | ✅    |        |        |        |      |          |           |       |       | [W8A8](#deepseek-v4-pro-w8a8-quarot) / [W4A8](#deepseek-v4-pro-w4a8-quarot) |
+|                    | DeepSeek-V4-Pro-0813      | [DeepSeek-V4-Pro-0813](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813)     |      |       |      |        |        | ✅      |      |          |           |       |       | [W4A4C8](#deepseek-v4-pro-0813-w4a4c8量化) |
 | **DeepSeek-R1**    | DeepSeek-R1                | [DeepSeek-R1](https://huggingface.co/deepseek-ai/DeepSeek-R1)                          | ✅    |       | ✅    |        |        |        |      |          |           | ✅     | ✅     | [W8A8](#deepseek-r1-w8a8-混合量化) / [W4A8](#deepseek-r1-w4a8-混合量化) / [W8A8动态](#deepseek-r1-w8a8-动态量化) / [FA3](#deepseek-r1-w8a8-fa3-混合量化) / [MTP量化](#deepseek-r1-w8a8-混合量化--mtp-量化)                                                          |
 |                    | DeepSeek-R1-0528           | [DeepSeek-R1-0528](https://huggingface.co/deepseek-ai/DeepSeek-R1-0528)                | ✅    |       | ✅    | ✅      | ✅      |        |      |          |           | ✅     | ✅     | [W8A8](#deepseek-r1-0528-w8a8-混合量化--mtp-量化) / [W4A8](#deepseek-r1-0528-w4a8-per-channel量化) / [W8A8C8](#deepseek-r1-0528-w8a8c8-混合量化--mtp-量化) / [W4A8C8](#deepseek-r1-0528-w4a8c8-per-channel量化) / [MTP量化](#deepseek-r1-0528-w8a8-混合量化--mtp-量化) |
 
@@ -344,6 +350,8 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
   pip install transformers==4.48.2
   ```
 
+- DeepSeek-V4-Flash-0731 / DeepSeek-V4-Pro-0813 为官方正式版，结构与 DSpark 一致（投机解码模块键名为 `mtp.0/1/2`），与 preview 版 DeepSeek-V4-Flash / DeepSeek-V4-Pro 的 MTP 布局不同。请使用对应 `--model_type`，不可混用量化配置。
+
 #### <span id="deepseek-v4-w8a8-quarot">DeepSeek-V4-Flash(含MTP层) W8A8 动态量化</span>
 
   ```shell
@@ -380,6 +388,40 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --device_id 0 1 2 3 4 5 6 7 \
    --trust_remote_code true
   ```
+
+#### <span id="deepseek-v4-flash-0731-w4a4c8量化">DeepSeek-V4-Flash-0731 W4A4C8 量化</span>
+
+- 生成 DeepSeek-V4-Flash-0731 模型 W4A4C8 量化权重（路由专家 MXFP4，Attention/共享专家 MXFP8；MTP 与 `wo_a`/`wo_b` 保持浮点）
+
+  ```shell
+  msmodelslim quant \
+   --model_path ${model_path} \
+   --save_path ${save_path} \
+   --model_type DeepSeek-V4-Flash-0731 \
+   --quant_type w4a4c8 \
+   --device npu \
+   --device_id 0 1 2 3 4 5 6 7 \
+   --trust_remote_code true
+  ```
+
+该一键量化命令匹配使用的量化配置文件为[deepseek_v4_flash_w4a4c8.yaml](../../lab_practice/deepseek_v4/deepseek_v4_flash_w4a4c8.yaml)，可以在其中查看具体的量化策略。已验证场景为 vLLM_Ascend + Ascend_950 与 vLLM_Ascend + Atlas_350，如需指定场景可增加 `--tags vLLM_Ascend Ascend_950` 或 `--tags vLLM_Ascend Atlas_350`。
+
+#### <span id="deepseek-v4-pro-0813-w4a4c8量化">DeepSeek-V4-Pro-0813 W4A4C8 量化</span>
+
+- 生成 DeepSeek-V4-Pro-0813 模型 W4A4C8 量化权重（路由专家 MXFP4，Attention/共享专家 MXFP8；MTP 与 `wo_a`/`wo_b` 保持浮点）
+
+  ```shell
+  msmodelslim quant \
+   --model_path ${model_path} \
+   --save_path ${save_path} \
+   --model_type DeepSeek-V4-Pro-0813 \
+   --quant_type w4a4c8 \
+   --device npu \
+   --device_id 0 1 2 3 4 5 6 7 \
+   --trust_remote_code true
+  ```
+
+该一键量化命令匹配使用的量化配置文件为[deepseek_v4_pro_w4a4c8.yaml](../../lab_practice/deepseek_v4/deepseek_v4_pro_w4a4c8.yaml)，可以在其中查看具体的量化策略。已验证场景为 vLLM_Ascend + Ascend_950 与 vLLM_Ascend + Atlas_350，如需指定场景可增加 `--tags vLLM_Ascend Ascend_950` 或 `--tags vLLM_Ascend Atlas_350`。
 
 ### DeepSeek-R1系列
 

@@ -46,15 +46,17 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <th>w8a8s (Sparse Quantization)<sup>3</sup></th>
       <th>w16a16s (Floating-point Sparse Quantization)<sup>3</sup></th>
       <th>w4a4</th>
+      <th>w4a4c8</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td rowspan="12"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/DeepSeek/README.md">DeepSeek series</a></strong></td>
+      <td rowspan="14"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/DeepSeek/README.md">DeepSeek series</a></strong></td>
       <td>DeepSeek-V2-16B</td>
       <td>-</td>
       <td>√</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -75,6 +77,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>DeepSeek-Coder-33B</td>
@@ -88,12 +91,14 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>DeepSeek-V3</td>
       <td>transformers==4.48.2</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -114,8 +119,9 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
-      <tr>
+    <tr>
       <td>DeepSeek-V3.1-Terminus</td>
       <td>transformers==4.48.2</td>
       <td>-</td>
@@ -127,6 +133,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√(quick quantization)</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>DeepSeek-V3.2-Exp</td>
@@ -140,12 +147,14 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>DeepSeek-V3.2</td>
       <td>transformers==4.48.2</td>
       <td>-</td>
       <td>√ (quick quantization)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -166,6 +175,21 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>DeepSeek-V4-Flash-0731</td>
+      <td>transformers==4.48.2</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>√(quick quantization)<sup>5</sup></td>
     </tr>
     <tr>
       <td>DeepSeek-V4-Pro</td>
@@ -179,6 +203,21 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td>DeepSeek-V4-Pro-0813</td>
+      <td>transformers==4.48.2</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>√(quick quantization)<sup>5</sup></td>
     </tr>
     <tr>
       <td>DeepSeek-R1</td>
@@ -188,6 +227,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -205,6 +245,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td rowspan="6"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/DeepSeek/DeepSeek-R1-Distill/README.md">DeepSeek-R1-Distill series</a></strong></td>
@@ -219,12 +260,14 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>DeepSeek-R1-Distill-Llama-70B</td>
       <td>-</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -245,6 +288,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>DeepSeek-R1-Distill-Qwen-7B</td>
@@ -256,6 +300,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
     </tr>
@@ -271,6 +316,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>DeepSeek-R1-Distill-Qwen-32B</td>
@@ -282,6 +328,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
     </tr>
@@ -298,6 +345,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√ (quick quantization)</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen3-14B</td>
@@ -309,6 +357,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√ (quick quantization)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
     </tr>
@@ -324,6 +373,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√ (quick quantization)</td>
       <td>√ (quick quantization)</td>
       <td>√</td>
+      <td>-</td>
     </tr>
     <tr>
       <td rowspan="3"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3-MOE/README.md">Qwen3-MOE series</a></strong></td>
@@ -332,6 +382,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>√ (quick quantization)</td>
       <td>√ (quick quantization)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -351,6 +402,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen3-Coder-480B-A35B</td>
@@ -358,6 +410,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√ (quick quantization)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -378,12 +431,14 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen3.5-122B-A10B</td>
       <td>transformers==5.2.0</td>
       <td>-</td>
       <td>√ (quick quantization)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -404,12 +459,14 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen3.5-27B</td>
       <td>transformers==5.2.0</td>
       <td>-</td>
       <td>√ (quick quantization)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -430,6 +487,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen3.6-35B-A3B</td>
@@ -443,6 +501,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3-Next/README.md">Qwen3-Next series</a></strong></td>
@@ -450,6 +509,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>transformers>=4.57.0</td>
       <td>-</td>
       <td>√ (quick quantization, supported only by vLLM Ascend)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -471,6 +531,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen2.5-14B-Instruct</td>
@@ -484,12 +545,14 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen2.5-32B-Instruct</td>
       <td>-</td>
       <td>-</td>
       <td>√ (quick quantization)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -510,6 +573,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen2.5-Coder-7B-Instruct</td>
@@ -521,6 +585,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√ (quick quantization)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
     </tr>
@@ -537,6 +602,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen2-72B</td>
@@ -550,6 +616,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td rowspan="7"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen/README.md">Qwen series</a></strong></td>
@@ -557,6 +624,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -577,11 +645,13 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen-72B</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -603,12 +673,14 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen1.5-32B</td>
       <td>-</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -629,11 +701,13 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>Qwen1.5-110B</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -656,6 +730,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√ (quick quantization)</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/GLM-5/README.md">GLM5-MOE series</a></strong></td>
@@ -664,6 +739,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>√</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -683,6 +759,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
     </tr>
     <tr>
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/GLM/README.md">GLM series</a></strong></td>
@@ -697,6 +774,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td rowspan="3"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/GLM4-MOE/README.md">GLM4-MOE series</a></strong></td>
@@ -704,6 +782,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>transformers==4.57.3</td>
       <td>-</td>
       <td>√ (quick quantization, supported only by vLLM Ascend)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -729,6 +808,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td rowspan="1"><strong><a href="../../../../example/MiniMax-M2/README.md">MiniMax-M2 series</a></strong></td>
@@ -739,6 +819,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√(quick quantization)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -757,6 +838,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√(quick quantization)</td>
+      <td>-</td>
     </tr>
     <tr>
       <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Step3p5/README.md">stepfun series</a></strong></td>
@@ -764,6 +846,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√(quick quantization)</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -785,6 +868,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td rowspan="8"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Llama/README.md">Llama series</a></strong></td>
@@ -799,11 +883,13 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>LLaMA-65B</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -825,6 +911,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>LLaMA2-7B</td>
@@ -836,6 +923,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
     </tr>
@@ -851,11 +939,13 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>LLaMA3-70B</td>
       <td>-</td>
       <td>√</td>
+      <td>-</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>
@@ -877,6 +967,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>-</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
     <tr>
       <td>LLaMA3.1-70B</td>
@@ -890,6 +981,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>√</td>
       <td>-</td>
       <td>-</td>
+      <td>-</td>
     </tr>
   </tbody>
 </table>
@@ -901,6 +993,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
 - <sup>2</sup> Both KVCache and FA3 quantization are categorized under c8, as both methods quantize the K and V caches within the LLM. Only MindIE supports c8 quantization modes, such as w8a8c8 and w4a8c8.
 - <sup>3</sup> For optimal performance, use the decompression features of the Atlas 300I Duo products after compression. Only MindIE supports sparse quantization modes, including w8a8s and w16a16s.
 - <sup>4</sup> Only MindIE supports best practices that employ the PDMIX quantization scheme.
+- <sup>5</sup> For DeepSeek-V4-Flash-0731 and DeepSeek-V4-Pro-0813, the w4a4c8 column is a W4A4C8 mixed-precision scheme: MXFP4 for routed experts, MXFP8 for attention and shared experts, and official FP8 reused for KV. Use `--quant_type w4a4c8`. Verified scenarios are vLLM_Ascend + Ascend_950 and vLLM_Ascend + Atlas_350. See the [DeepSeek quantization guide](https://gitcode.com/Ascend/msmodelslim/blob/master/example/DeepSeek/README.md).
 
 ## Supported MLLMs
 

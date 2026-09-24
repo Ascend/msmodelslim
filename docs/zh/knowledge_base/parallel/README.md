@@ -43,6 +43,7 @@ msModelSlim 量化侧的并行机制以数据并行（Data Parallel, DP）为基
 | `DeepSeekV3ModelAdapter` | `DeepSeek-V3`、`DeepSeek-V3-0324`、`DeepSeek-R1`、`DeepSeek-R1-0528`、`DeepSeek-V3.1`、`DeepSeek-V3.1-Terminus` |
 | `DeepSeekV32ModelAdapter` | `DeepSeek-V3.2-Exp`、`DeepSeek-V3.2` |
 | `DeepSeekV4ModelAdapter` | `DeepSeek-V4-Flash`、`DeepSeek-V4-Pro` |
+| `DeepSeekV4DSparkModelAdapter` | `DeepSeek-V4-Flash-DSpark`、`DeepSeek-V4-Pro-DSpark`、`DeepSeek-V4-Flash-0731`、`DeepSeek-V4-Pro-0813` |
 | `GLM5ModelAdapter` | `GLM-5`、`GLM-5.1` |
 | `GLM52ModelAdapter` | `GLM-5.2`、`GLM-5.3` |
 | `GLM5NextModelAdapter` | `GLM-5.3-Flash` |

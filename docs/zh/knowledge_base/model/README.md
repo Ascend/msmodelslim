@@ -50,7 +50,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
   </thead>
   <tbody>
     <tr>
-      <td rowspan="12"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/DeepSeek/README.md">DeepSeek系列</a></strong></td>
+      <td rowspan="14"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/DeepSeek/README.md">DeepSeek系列</a></strong></td>
       <td>DeepSeek-V2-16B</td>
       <td>-</td>
       <td>√</td>
@@ -177,6 +177,20 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>√(一键量化)</td>
     </tr>
     <tr>
+      <td>DeepSeek-V4-Flash-0731</td>
+      <td>transformers==4.48.2</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>√(一键量化)<sup>5</sup></td>
+    </tr>
+    <tr>
       <td>DeepSeek-V4-Pro</td>
       <td>transformers==4.48.2</td>
       <td>-</td>
@@ -189,6 +203,20 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>-</td>
       <td>√(一键量化)</td>
+    </tr>
+    <tr>
+      <td>DeepSeek-V4-Pro-0813</td>
+      <td>transformers==4.48.2</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>√(一键量化)<sup>5</sup></td>
     </tr>
     <tr>
       <td>DeepSeek-R1</td>
@@ -1061,6 +1089,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 - <sup>2</sup> kvcache量化和fa3量化都纳入c8，两者均量化LLM中的k和v缓存；仅MindIE支持c8量化模式，包括w8a8c8、w4a8c8和w4a4c8。
 - <sup>3</sup> 压缩后配合Atlas 推理系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式，包括w8a8s和w16a16s。
 - <sup>4</sup> 仅MindIE支持采用了PDMIX量化方案的最佳实践。
+- <sup>5</sup> DeepSeek-V4-Flash-0731、DeepSeek-V4-Pro-0813 的 w4a4c8 列为 W4A4C8 混合精度方案：路由专家 MXFP4、Attention/共享专家 MXFP8、KV 复用官方 FP8；量化时使用 `--quant_type w4a4c8`。已验证场景为 vLLM_Ascend + Ascend_950 与 vLLM_Ascend + Atlas_350，详见[DeepSeek 量化说明](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/DeepSeek/README.md)。
 
 ## 多模态模型支持列表
 
