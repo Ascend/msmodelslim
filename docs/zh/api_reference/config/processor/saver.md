@@ -17,7 +17,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `saver` | `saver` | 处理器类型，固定为 `saver`。 | 无 |
-| `format` | `object` | 必选 | 无 | — | 导出格式配置（单对象），见《QuantFormatConfig 配置说明》；由保存处理器自动注入。 | QuantFormatConfig |
+| `format` | `object` | 必选 | 无 | — | 导出格式配置（单对象），由保存处理器自动注入。 | [`QuantFormatConfig`](../../../../../msmodelslim/format/base.py) |
 
 **配置约束**
 

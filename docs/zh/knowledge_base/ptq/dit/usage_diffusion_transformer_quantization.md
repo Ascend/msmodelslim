@@ -285,6 +285,6 @@ msmodelslim quant \
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
 | `msmodelslim quant` | 一键量化 CLI 入口与完整命令说明 | [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md) |
-| multimodal_sd_modelslim_v1 配置说明 | `runner`/`process`/`per_expert`/`save`/`dataset`/`multimodal_sd_config` 等任务级配置的字段说明 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/task/multimodal_sd_modelslim_v1.md) |
+| multimodal_sd_modelslim_v1 配置说明 | `runner`/`process`/`per_expert`/`save`/`dataset`/`multimodal_sd_config` 等任务级配置的字段说明 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md) |
 | linear_quant 配置说明 | `linear_quant` 处理器及其 `qconfig` 各字段的完整取值说明 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
 | 多模态生成模型接入 | DiT 模型接入与适配器开发 | [《多模态生成模型接入》](./integration_guide_diffusion_transformer_quantization.md) |

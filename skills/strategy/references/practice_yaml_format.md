@@ -6,12 +6,12 @@ Practice YAML 的完整字段 schema、处理器类型、QConfig 取值与保存
 
 | 内容 | docs 位置 |
 |------|-----------|
-| 配置类与字段总览（`PracticeConfig` / `metadata`） | 《[PracticeConfig 配置说明](../../../docs/zh/api_reference/config/task/practice_config.md)》 |
-| 任务规格 `spec`（按 `apiversion`） | 《[modelslim_v1](../../../docs/zh/api_reference/config/task/modelslim_v1.md)》、《[multimodal_vlm_modelslim_v1](../../../docs/zh/api_reference/config/task/multimodal_vlm_modelslim_v1.md)》、《[multimodal_sd_modelslim_v1](../../../docs/zh/api_reference/config/task/multimodal_sd_modelslim_v1.md)》 |
+| 配置类与字段总览（`PracticeConfig` / `metadata`） | 《[PracticeConfig 配置说明](../../../docs/zh/api_reference/config/quant/practice_config.md)》 |
+| 任务规格 `spec`（按 `apiversion`） | 《[modelslim_v1](../../../docs/zh/api_reference/config/quant/modelslim_v1.md)》、《[multimodal_vlm_modelslim_v1](../../../docs/zh/api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》、《[multimodal_sd_modelslim_v1](../../../docs/zh/api_reference/config/quant/multimodal_sd_modelslim_v1.md)》 |
 | 处理器类型（`linear_quant` / `flex_smooth_quant` / `iter_smooth` / `flex_awq_ssz` / `quarot` 等） | 《[config/processor/ 目录](../../../docs/zh/api_reference/config/processor/)》 |
 | QConfig 字段取值（`dtype` / `scope` / `symmetric` / `method` / `ext`） | 《[linear_quant](../../../docs/zh/api_reference/config/processor/linear_quant.md)》 等 |
 | 保存配置（`ascendv1_saver`） | 《[ascendv1_saver](../../../docs/zh/api_reference/config/format/ascendv1_saver.md)》 |
-| 完整配置示例与协议详解 | 《[权重量化使用指南](../../../docs/zh/user_guide/usage_weight_quantization.md)》、《[modelslim_v1](../../../docs/zh/api_reference/config/task/modelslim_v1.md)》、《[multimodal_vlm_modelslim_v1](../../../docs/zh/api_reference/config/task/multimodal_vlm_modelslim_v1.md)》、《[multimodal_sd_modelslim_v1](../../../docs/zh/api_reference/config/task/multimodal_sd_modelslim_v1.md)》 |
+| 完整配置示例与协议详解 | 《[权重量化使用指南](../../../docs/zh/user_guide/usage_weight_quantization.md)》、《[modelslim_v1](../../../docs/zh/api_reference/config/quant/modelslim_v1.md)》、《[multimodal_vlm_modelslim_v1](../../../docs/zh/api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》、《[multimodal_sd_modelslim_v1](../../../docs/zh/api_reference/config/quant/multimodal_sd_modelslim_v1.md)》 |
 
 ## 调优闭环特有约束
 

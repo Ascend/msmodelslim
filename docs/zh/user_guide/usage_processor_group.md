@@ -1,4 +1,4 @@
-﻿# 组合处理器 (Group Processor)
+# 组合处理器 (Group Processor)
 
 ## 1. 简介
 
@@ -8,7 +8,7 @@
 
 ## 2. 使用前准备
 
-安装 msModelSlim 工具，详情请参见《[msModelSlim工具安装指南](../../install_guide/install_guide.md)》。
+安装 msModelSlim 工具，详情请参见《[msModelSlim工具安装指南](../install_guide/install_guide.md)》。
 
 ## 3. 原理和实现
 
@@ -28,7 +28,7 @@
 
 ### 3.2 实现
 
-组合处理器在 [msmodelslim/processor/container/group.py](../../../../msmodelslim/processor/container/group.py) 中实现。它作为一个容器，顺序调度其 `configs` 列表中的子处理器。
+组合处理器在 [msmodelslim/processor/container/group.py](../../../msmodelslim/processor/container/group.py) 中实现。它作为一个容器，顺序调度其 `configs` 列表中的子处理器。
 
 ## 4. 功能介绍
 
@@ -43,6 +43,7 @@
 以下示例展示了如何使用组合处理器实现 **W8A8 静态+动态混合量化**：
 
 ```yaml
+apiversion: modelslim_v1
 # 1. 定义静态量化模板 (Anchor)
 default_w8a8_static: &w8a8_static
   act:
@@ -83,12 +84,9 @@ spec:
           exclude: ["*gate*"]  # 排除门控层进行更精细控制
 ```
 
-### 4.3 YAML配置字段详解
+### 4.3 YAML 配置字段
 
-| 字段名 | 作用 | 类型 | 说明 |
-|--------|------|------|------|
-| type | 处理器类型标识 | `string` | 固定值 `"group"`。 |
-| configs | 子处理器配置列表 | `list[object]` | 包含多个子处理器的配置。每个子处理器的字段（如 `type`, `qconfig`, `include`）与其独立使用时一致。 |
+`group` 处理器的字段定义（`type`、`configs`）与取值范围以配置文档为准，见《[group 配置说明](../api_reference/config/processor/group.md)》的「参数列表」与「完整配置参考」。各子处理器的字段与其独立使用时完全一致，按 `type` 查阅对应配置文档即可。
 
 ## 5. FAQ
 

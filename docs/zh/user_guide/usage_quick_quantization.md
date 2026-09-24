@@ -352,7 +352,7 @@ modelslim_v1是量化工具推出的新一代量化处理框架，目前正在�
 | QuaRot | 离群值抑制 | [QuaRot 使用指南](../knowledge_base/quantization_algorithms/quarot/usage_quarot.md) |
 | Adapt Rotation | 离群值抑制 | [Adapt Rotation 使用指南](../knowledge_base/quantization_algorithms/adapt_rotation/usage_adapt_rotation.md) |
 | linear_quant | 量化 | [线性量化使用指南](../knowledge_base/quantization_algorithms/linear_quant/usage_linear_quant.md) |
-| group | 量化 | [group 使用指南](../api_reference/config/processor_group.md) |
+| group | 量化 | [group 使用指南](usage_processor_group.md) |
 | KVCache Quant | 量化 | [KVCache Quant 使用指南](../knowledge_base/quantization_algorithms/kvcache_quant/usage_kvcache_quant.md) |
 | FA3 Quant | 量化 | [FA3 Quant 使用指南](../knowledge_base/quantization_algorithms/fa3_quant/usage_fa3_quant.md) |
 | Float Sparse | 量化 | [Float Sparse 使用指南](../knowledge_base/quantization_algorithms/float_sparse/usage_float_sparse.md) |

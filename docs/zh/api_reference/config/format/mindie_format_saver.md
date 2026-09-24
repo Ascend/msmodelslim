@@ -27,10 +27,15 @@ MindIE 保存格式配置，导出 MindIE 落盘格式的权重文件。
 ## 3. 完整配置参考
 
 ```yaml
-apiversion: modelslim_v1
+apiversion: multimodal_sd_modelslim_v1
 spec:
   save:
   - type: mindie_format_saver
     part_file_size: 4
     ext: {}
+  multimodal_sd_config:
+    dump_config:
+      enable_dump: true
+      capture_mode: args
+      dump_data_dir: ''
 ```

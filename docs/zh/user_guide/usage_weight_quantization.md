@@ -171,9 +171,9 @@ msmodelslim quant \
 
    | 模型类别 | 配置协议 | 权威说明 |
    | --- | --- | --- |
-   | 大语言模型 | `modelslim_v1` | 《[modelslim_v1 配置说明](../api_reference/config/task/modelslim_v1.md)》 |
-   | 多模态理解 | `multimodal_vlm_modelslim_v1` | 《[multimodal_vlm_modelslim_v1 配置说明](../api_reference/config/task/multimodal_vlm_modelslim_v1.md)》 |
-   | 多模态生成 | `multimodal_sd_modelslim_v1` | 《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/task/multimodal_sd_modelslim_v1.md)》 |
+   | 大语言模型 | `modelslim_v1` | 《[modelslim_v1 配置说明](../api_reference/config/quant/modelslim_v1.md)》 |
+   | 多模态理解 | `multimodal_vlm_modelslim_v1` | 《[multimodal_vlm_modelslim_v1 配置说明](../api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》 |
+   | 多模态生成 | `multimodal_sd_modelslim_v1` | 《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》 |
 
 **输出**：量化配置 YAML 文件 `${CONFIG_PATH}`。
 
@@ -289,9 +289,9 @@ msmodelslim quant \
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
 | `msmodelslim quant` | 权重量化统一命令行入口 | 《[msmodelslim quant 命令行 API](../api_reference/cli/msmodelslim_quant.md)》 |
-| `modelslim_v1`  | 大语言模型量化配置协议 | 《[modelslim_v1 配置说明](../api_reference/config/task/modelslim_v1.md)》 |
-| `multimodal_vlm_modelslim_v1` | 多模态理解模型量化配置协议 | 《[multimodal_vlm_modelslim_v1 配置说明](../api_reference/config/task/multimodal_vlm_modelslim_v1.md)》 |
-| `multimodal_sd_modelslim_v1` | 多模态生成模型量化配置协议 | 《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/task/multimodal_sd_modelslim_v1.md)》 |
+| `modelslim_v1`  | 大语言模型量化配置协议 | 《[modelslim_v1 配置说明](../api_reference/config/quant/modelslim_v1.md)》 |
+| `multimodal_vlm_modelslim_v1` | 多模态理解模型量化配置协议 | 《[multimodal_vlm_modelslim_v1 配置说明](../api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》 |
+| `multimodal_sd_modelslim_v1` | 多模态生成模型量化配置协议 | 《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》 |
 
 ## 11. 安全说明
 

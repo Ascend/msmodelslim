@@ -18,20 +18,22 @@
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `adapt_rotation` | `adapt_rotation` | 处理器类型，固定为 `adapt_rotation`。 | 无 |
 | `stage` | `int` | 必选 | 无 | `1`、`2` | 旋转适配阶段：1 或 2，决定使用哪个阶段配置。 | 无 |
-| `stage_config` | `object` | 必选 | 无 | — | 阶段配置对象（内部自动组装字段，必选但由 before-validator 根据 `stage` 自动生成，用户无需在 YAML 中配置）；YAML 中不要直接配置该字段，请把阶段字段（如 steps、quant_dtype）平铺在处理器下，见《AdaptRotationStage1ProcessorConfig 配置说明》/《AdaptRotationStage2ProcessorConfig 配置说明》。 | 本页 <a href="#2-2-processorconfig">§2.2</a> |
+| `stage_config` | `object` | 必选 | 无 | — | 阶段配置对象（内部自动组装字段，必选但由 before-validator 根据 `stage` 自动生成，用户无需在 YAML 中配置）；YAML 中不要直接配置该字段，请把阶段字段（如 steps、quant_dtype）平铺在处理器下，见<a href="#2-2-1-adapt-rotation-stage1">《AdaptRotationStage1ProcessorConfig 配置说明》</a>/<a href="#2-2-2-adapt-rotation-stage2">《AdaptRotationStage2ProcessorConfig 配置说明》</a>。 | 本页 <a href="#2-2-processorconfig">§2.2</a> |
 
 **配置约束**
 
 - 按 stage 把扁平字段组装为 stage_config：仅允许对应阶段字段，多余字段报错。
 
-<h3 id="2-2-processorconfig">2.2 ProcessorConfig</h3>
+<h3 id="2-2-processorconfig">2.2 《<a href="linear_quant.md">ProcessorConfig</a>》</h3>
 
 **派生类**
 
-- `AdaptRotationStage1ProcessorConfig` — adapt_rotation 阶段1的配置。 本页 <a href="#2-3-adapt-rotation-stage1">§2.3</a>
-- `AdaptRotationStage2ProcessorConfig` — adapt_rotation 阶段2的配置。 本页 <a href="#2-4-adapt-rotation-stage2">§2.4</a>
+| 配置类 | 说明 | 文档 |
+|--------|------|------|
+| `AdaptRotationStage1ProcessorConfig` | adapt_rotation 阶段1的配置。 | 本页 <a href="#2-2-1-adapt-rotation-stage1">§2.2.1</a> |
+| `AdaptRotationStage2ProcessorConfig` | adapt_rotation 阶段2的配置。 | 本页 <a href="#2-2-2-adapt-rotation-stage2">§2.2.2</a> |
 
-<h4 id="2-3-adapt-rotation-stage1">2.3 AdaptRotationStage1ProcessorConfig</h4>
+<h4 id="2-2-1-adapt-rotation-stage1">2.2.1 AdaptRotationStage1ProcessorConfig</h4>
 
 adapt_rotation 阶段1的配置。
 
@@ -49,7 +51,7 @@ adapt_rotation 阶段1的配置。
 - 校验 layer_type：每个元素为非空字符串且长度 <= 128
 - 校验 block_size：取值范围为-1或2的非负整数次幂
 
-<h4 id="2-4-adapt-rotation-stage2">2.4 AdaptRotationStage2ProcessorConfig</h4>
+<h4 id="2-2-2-adapt-rotation-stage2">2.2.2 AdaptRotationStage2ProcessorConfig</h4>
 
 adapt_rotation 阶段2的配置。
 
@@ -72,13 +74,20 @@ adapt_rotation 阶段2的配置。
 ```yaml
 apiversion: modelslim_v1
 spec:
+  prior:
+  - process:
+    - type: adapt_rotation
+      stage: 1
+      steps: 20
+      quant_dtype: int4
+      layer_type:
+      - up_proj
+      block_size: -1
+      max_samples: 2048
   process:
   - type: adapt_rotation
-    stage: 1
-    steps: 20
-    quant_dtype: int4
-    layer_type:
-    - up_proj
+    stage: 2
+    online: false
     block_size: -1
-    max_samples: 2048
+    max_tp_size: 1
 ```

@@ -31,6 +31,7 @@ msmodelslim eval --model_type <model_type> --model_path <model_path> --prompt_fi
 | `-v` / `--verbose` | 无 | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 提高输出详细程度（等价 `--log_level debug`）。 |
 | `-q` / `--quiet` | 无 | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 抑制非错误输出（等价 `--log_level error`）。 |
 | `-V` / `--version` | 无 | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 显示版本信息后退出（顶层全局参数，可在任意子命令后使用，如 `msmodelslim eval --version`）。 |
+| `-h` / `--help` | 无 | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 显示本命令帮助信息后退出（如 `msmodelslim eval -h` 或 `msmodelslim eval --help`）。 |
 
 ## 4. 参数关系
 
@@ -67,10 +68,7 @@ msmodelslim eval \
 
 ## 6. 退出码与异常处理
 
-| 退出码或异常 | 含义 | 处理建议 |
-|--------------|------|----------|
-| `0` | 推理成功 | 检查日志中的 `token_ids` 与 `generated_text` 是否符合预期。 |
-| 非 `0` | 失败 | 查看错误日志。常见原因：`--model_type`/`--model_path`/`--prompt_file` 缺失或路径不可读、样本文件为空或格式不符合对应模型的约定、`--device_id` 索引非法或超出可用设备。 |
+正常运行则无异常，可在日志中查看 `token_ids` 与 `generated_text`。失败时抛出异常。常见原因：`--model_type`/`--model_path`/`--prompt_file` 缺失或路径不可读、样本文件为空或格式不符合对应模型的约定、`--device_id` 索引非法或超出可用设备。
 
 ## 7. 安全说明
 

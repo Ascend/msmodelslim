@@ -67,14 +67,14 @@ nav:
       - 一键量化 (V1):
           - 使用指南: "zh/user_guide/usage_quick_quantization.md"
           - 调试模式: "zh/user_guide/usage_debug_mode.md"
-          - 组合处理器: "zh/api_reference/config/processor_group.md"
+          - 组合处理器: "zh/user_guide/usage_processor_group.md"
       - 敏感层分析:
           - 线性层敏感层分析: "zh/user_guide/usage_sensitive_linear_analysis.md"
           - 层级敏感层分析: "zh/user_guide/usage_sensitive_layer_analysis.md"
           - Attention 敏感层分析: "zh/user_guide/usage_sensitive_attn_analysis.md"
       - 自动调优策略:
           - 使用指南: "zh/user_guide/usage_auto_precision_tuning.md"
-          - 配置协议详解: "zh/api_reference/config/auto_precision_tuning.md"
+          - 配置协议详解: "zh/api_reference/config/tuning/README.md"
       - V0框架与传统模型（已停止演进）:
           - 概览: "zh/user_guide/traditional_quantization_v0/README.md"
           - 传统模型量化与校准: "zh/user_guide/traditional_quantization_v0/traditional_model_quantization_and_calibration.md"

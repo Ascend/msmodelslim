@@ -18,8 +18,8 @@
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `service_oriented` | — | 评估服务类型，固定为 `service_oriented` | 无 |
 | `demand` | `object` | 必选 | 无 | — | 评估需求（数据集精度期望） | 本页 <a href="#2-2-evaluate-demand">§2.2</a> |
-| `evaluation` | `object` | 必选 | 无 | — | AISBench 评测服务配置 | 本页 <a href="#2-4-aisbench">§2.4</a> |
-| `inference_engine` | `object` | 必选 | 无 | — | vLLM-Ascend 推理引擎配置 | 本页 <a href="#2-9-vllm-ascend">§2.9</a> |
+| `evaluation` | `object` | 必选 | 无 | — | AISBench 评测服务配置 | 本页 <a href="#2-3-aisbench">§2.3</a> |
+| `inference_engine` | `object` | 必选 | 无 | — | vLLM-Ascend 推理引擎配置 | 本页 <a href="#2-4-vllm-ascend">§2.4</a> |
 
 **配置约束**
 
@@ -31,45 +31,45 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `expectations` | `list[object]` | 必选 | 无 | — | 精度期望列表，至少1个；每项声明数据集与目标精度（含容差） | 本页 <a href="#2-3-accuracy-expectation">§2.3</a> |
+| `expectations` | `list[object]` | 必选 | 无 | — | 精度期望列表，至少1个；每项声明数据集与目标精度（含容差） | 本页 <a href="#2-2-1-accuracy-expectation">§2.2.1</a> |
 
 **配置约束**
 
 - 无。
 
-<h3 id="2-3-accuracy-expectation">2.3 AccuracyExpectation</h3>
+<h4 id="2-2-1-accuracy-expectation">2.2.1 AccuracyExpectation</h4>
 
 精度期望：要求模型在指定数据集上达到的目标精度（含容差）。
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `dataset` | `string` | 必选 | 无 | — | 数据集名称 | 无 |
-| `target` | `string` | 必选 | 无 | — | 目标精度，必须 > 0 | 无 |
-| `tolerance` | `string` | 必选 | 无 | — | 相对目标精度可容忍的偏差，必须 >= 0 | 无 |
+| `target` | `string` | 必选 | 无 | `^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$` | 目标精度，必须 > 0 | 无 |
+| `tolerance` | `string` | 必选 | 无 | `^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$` | 相对目标精度可容忍的偏差，必须 >= 0 | 无 |
 
 **配置约束**
 
 - 无。
 
-<h3 id="2-4-aisbench">2.4 AisbenchServerConfig</h3>
+<h3 id="2-3-aisbench">2.3 AisbenchServerConfig</h3>
 
 AISBench 评测服务配置
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `aisbench` | `aisbench` | 评测服务类型，固定为 `aisbench` | 无 |
-| `aisbench` | `object` | 可选 | 见嵌套配置默认值 | — | AISBench 评测配置 | 本页 <a href="#2-5-aisbench-config">§2.5</a> |
-| `datasets` | `object` | 可选 | `{}` | — | 数据集配置字典，键为数据集名称 | 本页 <a href="#2-7-dataset-config">§2.7</a> |
+| `aisbench` | `object` | 可选 | 见嵌套配置默认值 | — | AISBench 评测配置 | 本页 <a href="#2-3-1-aisbench-config">§2.3.1</a> |
+| `datasets` | `object` | 可选 | `{}` | — | 数据集配置字典，键为数据集名称 | 本页 <a href="#2-3-3-dataset-config">§2.3.3</a> |
 | `host` | `string` | 可选 | `localhost` | — | 评测服务监听地址，须为合法主机名/IP | 无 |
 | `port` | `int` | 可选 | `1234` | — | 评测服务监听端口，须为合法端口号 | 无 |
 | `served_model_name` | `string` | 可选 | `served_model_name` | — | 已部署的模型名称 | 无 |
-| `precheck` | `list[object]` | 可选 | `[]` | — | 模型预检配置列表，每个元素是一个字典，包含 'type' 字段（'garbled_text' 或 'expected_answer'） | 本页 <a href="#2-8-base-precheck-config">§2.8</a> |
+| `precheck` | `list[object]` | 可选 | `[]` | — | 模型预检配置列表，每个元素是一个字典，包含 'type' 字段（'garbled_text' 或 'expected_answer'） | 本页 <a href="#2-3-4-base-precheck-config">§2.3.4</a> |
 
 **配置约束**
 
 - 无。
 
-<h3 id="2-5-aisbench-config">2.5 AisbenchConfig</h3>
+<h4 id="2-3-1-aisbench-config">2.3.1 AisbenchConfig</h4>
 
 AISBench 评测配置
 
@@ -79,7 +79,7 @@ AISBench 评测配置
 | `mode` | `string` | 可选 | `all` | — | 评测模式 | 无 |
 | `timeout` | `int` | 可选 | `7200` | — | 命令执行超时时间（秒），默认2小时 | 无 |
 | `cleanup_model_config` | `bool` | 可选 | `true` | — | 是否清理生成的模型配置文件 | 无 |
-| `model_meta` | `object` | 可选 | 见嵌套配置默认值 | — | 模型配置元数据 | 本页 <a href="#2-6-model-config-meta">§2.6</a> |
+| `model_meta` | `object` | 可选 | 见嵌套配置默认值 | — | 模型配置元数据 | 本页 <a href="#2-3-2-model-config-meta">§2.3.2</a> |
 | `request_rate` | `float` | 可选 | `1.0` | — | 默认请求速率，必须 > 0 | 无 |
 | `pred_postprocessor` | `string` | 可选 | `extract_non_reasoning_content` | — | 预测后处理器名称 | 无 |
 | `retry` | `int` | 可选 | `2` | ≥0 | 请求重试次数，必须 >= 0 | 无 |
@@ -94,7 +94,7 @@ AISBench 评测配置
 
 - 无。
 
-<h3 id="2-6-model-config-meta">2.6 ModelConfigMeta</h3>
+<h4 id="2-3-2-model-config-meta">2.3.2 ModelConfigMeta</h4>
 
 模型配置元数据
 
@@ -111,7 +111,7 @@ AISBench 评测配置
 
 - 无。
 
-<h3 id="2-7-dataset-config">2.7 DatasetConfig</h3>
+<h4 id="2-3-3-dataset-config">2.3.3 DatasetConfig</h4>
 
 单个数据集的评测配置
 
@@ -123,14 +123,14 @@ AISBench 评测配置
 | `max_out_len` | `int / null` | 可选 | `null` | — | 该数据集的最大输出长度，None 表示使用全局默认值 | 无 |
 | `returns_tool_calls` | `bool / null` | 可选 | `null` | — | 是否返回工具调用，None 表示不写入该字段 | 无 |
 | `api_chat_type` | `string` | 可选 | `VLLMCustomAPIChat` | — | 该数据集使用的 API Chat 类型 | 无 |
-| `chat_template_kwargs` | `object` | 可选 | `{}` | — | chat_template 的额外参数，例如 aime25 需要 {"thinking": True} | 无 |
+| `chat_template_kwargs` | `object` | 可选 | `{}` | — | chat_template 的额外参数，具体参数请参考 AISBench 文档 | 无 |
 | `extra_args` | `list[string]` | 可选 | `[]` | — | 该数据集额外的命令行参数列表，默认为空列表 | 无 |
 
 **配置约束**
 
 - 无。
 
-<h3 id="2-8-base-precheck-config">2.8 BasePrecheckConfig</h3>
+<h4 id="2-3-4-base-precheck-config">2.3.4 BasePrecheckConfig</h4>
 
 预检查配置基类
 
@@ -144,7 +144,7 @@ AISBench 评测配置
 
 - 无。
 
-<h3 id="2-9-vllm-ascend">2.9 VllmAscendConfig</h3>
+<h3 id="2-4-vllm-ascend">2.4 VllmAscendConfig</h3>
 
 vLLM-Ascend 推理引擎配置：用于拉起 OpenAI 兼容的服务端并做健康检查。
 
@@ -152,13 +152,13 @@ vLLM-Ascend 推理引擎配置：用于拉起 OpenAI 兼容的服务端并做健
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `vllm-ascend` | `vllm-ascend` | 推理引擎类型，固定为 `vllm-ascend` | 无 |
 | `entrypoint` | `string` | 可选 | `vllm.entrypoints.openai.api_server` | — | vLLM 服务启动入口，默认 OpenAI API server | 无 |
-| `env_vars` | `object` | 可选 | `{}` | — | 传递给 vLLM 进程的额外环境变量字典 | 无 |
+| `env_vars` | `object` | 可选 | `{}` | — | 传递给 vLLM 进程的额外环境变量字典（键值对），具体参数请参考 vLLM-Ascend 文档 | 无 |
 | `served_model_name` | `string` | 可选 | `served_model_name` | — | 已部署/对外暴露的模型名称 | 无 |
 | `host` | `string` | 可选 | `localhost` | — | 服务监听地址 | 无 |
 | `port` | `int` | 可选 | `1234` | — | 服务监听端口 | 无 |
 | `health_check_endpoint` | `string` | 可选 | `/v1/models` | — | 健康检查接口路径（vLLM OpenAI 兼容） | 无 |
 | `startup_timeout` | `int` | 可选 | `600` | — | 服务启动超时（秒），必须 > 0 | 无 |
-| `args` | `object` | 可选 | `{}` | — | 追加的 vLLM 启动命令行参数（键值对） | 无 |
+| `args` | `object` | 可选 | `{}` | — | 追加的 vLLM 启动命令行参数（键值对），具体参数请参考 vLLM-Ascend 文档 | 无 |
 
 **配置约束**
 

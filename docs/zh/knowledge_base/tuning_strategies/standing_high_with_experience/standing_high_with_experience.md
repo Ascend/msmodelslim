@@ -31,7 +31,7 @@ Standing High With Experience 的核心思想是**配置简化 + 专家经验填
 
 - 须实现 **`ModelSlimPipelineInterfaceV1`**（自动敏感层分析，委托 Standing High 执行）及 **`StandingHighWithExperienceInterface`**（仅 `load_model`，用于过滤当前模型不支持的离群值抑制策略）。
 - 常见写法：模型适配器同时继承 **`StandingHighWithExperienceInterface`**（`load_model` 探测）与 **`ModelSlimPipelineInterfaceV1`**（敏感层分析与量化 pipeline）。
-- 敏感层分析不会在策略侧预先 `load_model`；详见《[自动调优配置协议说明](../../../api_reference/config/auto_precision_tuning.md#21-strategy---调优策略配置)》与《[LLM 大模型接入指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。
+- 敏感层分析不会在策略侧预先 `load_model`；详见《[自动调优配置说明导航](../../../api_reference/config/tuning/README.md)》与《[LLM 大模型接入指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 ## 功能介绍
 

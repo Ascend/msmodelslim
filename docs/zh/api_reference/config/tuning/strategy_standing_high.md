@@ -18,42 +18,44 @@
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `standing_high` | `standing_high` | 策略类型，固定为 `standing_high` | 无 |
 | `anti_outlier_strategies` | `list[list[object]]` | 必选 | 无 | — | 离群值抑制处理器链列表，至少1个；每个元素是一条处理器链，链内每个处理器是 `type` 分派的处理器配置（如 smooth_quant 等） | 本页 <a href="#2-2-autoprocessorconfig">§2.2</a> |
-| `template` | `object` | 可选 | 由工厂函数生成 | — | 完整的PracticeConfig模板，用于提取所有配置（包括线性层量化）。如果未提供，将使用默认的V1模板 | 《[modelslim_v1_spec 配置说明](../task/modelslim_v1.md#2-2-modelslim-v1-spec)》 |
+| `template` | `object` | 可选 | 由工厂函数生成 | — | 完整的PracticeConfig模板，用于提取所有配置（包括线性层量化）。如果未提供，将使用默认的V1模板 | 《[modelslim_v1_spec 配置说明](../quant/modelslim_v1.md#2-2-modelslim-v1-spec)》 |
 | `metadata` | `object` | 可选 | 见嵌套配置默认值 | — | 量化配置元数据（config_id / label 等） | 本页 <a href="#2-3-metadata">§2.3</a> |
 
 **配置约束**
 
 - 校验template中至少有一个linear_quant配置
 
-<h3 id="2-2-autoprocessorconfig">2.2 AutoProcessorConfig</h3>
+<h3 id="2-2-autoprocessorconfig">2.2 《<a href="../processor/linear_quant.md">AutoProcessorConfig</a>》</h3>
 
 **派生类**
 
-- `AdaptRotationProcessorConfig`（`type: adapt_rotation`） — 自适应旋转（adapt_rotation）处理器配置。 《[adapt_rotation 配置说明](../processor/adapt_rotation.md)》
-- `AutoroundProcessorConfig`（`type: autoround_quant`） — autoround 量化处理器配置。 《[autoround_quant 配置说明](../processor/autoround_quant.md)》
-- `AWQProcessorConfig`（`type: awq`） — AWQ（Activation-aware Weight Quantization）处理器配置。 《[awq 配置说明](../processor/awq.md)》
-- `BinaryAnalysisProcessorConfig`（`type: binary_analysis`） — 二值（有/无量化）敏感度分析处理器配置。 《[binary_analysis 配置说明](../processor/binary_analysis.md)》
-- `BinaryOperatorLayerWiseProcessorConfig`（`type: binary_operator_layer_wise`） — 逐层敏感度分析处理器配置（对比逐块浮点与量化输出）。 《[binary_operator_layer_wise 配置说明](../processor/binary_operator_layer_wise.md)》
-- `BinaryOperatorModelWiseProcessorConfig`（`type: binary_operator_model_wise`） — 模型级敏感度分析配置（对比模型最终输出，使用 MSE 指标） 《[binary_operator_model_wise 配置说明](../processor/binary_operator_model_wise.md)》
-- `DynamicCacheProcessorConfig`（`type: dynamic_cache`） — KV cache 量化处理器配置。 《[dynamic_cache 配置说明](../processor/dynamic_cache.md)》
-- `FA3QuantProcessorConfig`（`type: fa3_quant`） — FA3（FlashAttention-3）量化处理器配置。 《[fa3_quant 配置说明](../processor/fa3_quant.md)》
-- `FlatQuantProcessorConfig`（`type: flatquant`） — FlatQuant处理器配置：定义量化训练参数、策略、混合精度等 《[flatquant 配置说明](../processor/flatquant.md)》
-- `FlexAWQSSZProcessorConfig`（`type: flex_awq_ssz`） — FlexAWQSSZ 平滑+AWQ 处理器配置。 《[flex_awq_ssz 配置说明](../processor/flex_awq_ssz.md)》
-- `FlexSmoothQuantProcessorConfig`（`type: flex_smooth_quant`） — FlexSmoothQuant 平滑量化处理器配置。 《[flex_smooth_quant 配置说明](../processor/flex_smooth_quant.md)》
-- `FloatSparseProcessorConfig`（`type: float_sparse`） — 浮点稀疏处理器配置。 《[float_sparse 配置说明](../processor/float_sparse.md)》
-- `GroupProcessorConfig`（`type: group`） — 处理器合并器配置。 《[group 配置说明](../processor/group.md)》
-- `IterSmoothProcessorConfig`（`type: iter_smooth`） — 迭代平滑（IterativeSmooth）处理器配置。 《[iter_smooth 配置说明](../processor/iter_smooth.md)》
-- `KVSmoothProcessorConfig`（`type: kv_smooth`） — KV cache 平滑处理器配置。 《[kv_smooth 配置说明](../processor/kv_smooth.md)》
-- `LinearProcessorConfig`（`type: linear_quant`） — 线性层（Linear）量化处理器配置。 《[linear_quant 配置说明](../processor/linear_quant.md)》
-- `LoadProcessorConfig`（`type: load`） — 模块加载/卸载处理器配置。 《[load 配置说明](../processor/load.md)》
-- `OASQProcessorConfig`（`type: oasq`） — OASQ（Outlier-Aware Smooth Quantization）处理器配置。 《[oasq 配置说明](../processor/oasq.md)》
-- `OnlineQuaRotProcessorConfig`（`type: online_quarot`） — 在线 QuaRot 旋转处理器配置。 《[online_quarot 配置说明](../processor/online_quarot.md)》
-- `QuaRotProcessorConfig`（`type: quarot`） — QuaRot（离线旋转）处理器配置。 《[quarot 配置说明](../processor/quarot.md)》
-- `QuantSaveProcessorConfig`（`type: saver`） — 统一保存处理器配置。 《[saver 配置说明](../processor/saver.md)》
-- `SmoothQuantProcessorConfig`（`type: smooth_quant`） — SmoothQuant 平滑量化处理器配置。 《[smooth_quant 配置说明](../processor/smooth_quant.md)》
-- `SVDResidualProcessorConfig`（`type: svd_res`） — SVD 残差（低秩补偿）处理器配置。 《[svd_res 配置说明](../processor/svd_res.md)》
-- `TrainableLinearQuantProcessorConfig`（`type: trainable_linear_quant`） — 可训练线性量化（TLQ）处理器配置。 《[trainable_linear_quant 配置说明](../processor/trainable_linear_quant.md)》
-- `UnaryAnalysisProcessorConfig`（`type: unary_analysis`） — 一元（无量化）敏感度分析处理器配置。 《[unary_analysis 配置说明](../processor/unary_analysis.md)》
+| 配置类 | `type` | 说明 | 文档 |
+|--------|----------|------|------|
+| `AdaptRotationProcessorConfig` | `adapt_rotation` | 自适应旋转（adapt_rotation）处理器配置。 | 《[adapt_rotation 配置说明](../processor/adapt_rotation.md)》 |
+| `AutoroundProcessorConfig` | `autoround_quant` | autoround 量化处理器配置。 | 《[autoround_quant 配置说明](../processor/autoround_quant.md)》 |
+| `AWQProcessorConfig` | `awq` | AWQ（Activation-aware Weight Quantization）处理器配置。 | 《[awq 配置说明](../processor/awq.md)》 |
+| `BinaryAnalysisProcessorConfig` | `binary_analysis` | 二值（有/无量化）敏感度分析处理器配置。 | 《[binary_analysis 配置说明](../processor/binary_analysis.md)》 |
+| `BinaryOperatorLayerWiseProcessorConfig` | `binary_operator_layer_wise` | 逐层敏感度分析处理器配置（对比逐块浮点与量化输出）。 | 《[binary_operator_layer_wise 配置说明](../processor/binary_operator_layer_wise.md)》 |
+| `BinaryOperatorModelWiseProcessorConfig` | `binary_operator_model_wise` | 模型级敏感度分析配置（对比模型最终输出，使用 MSE 指标） | 《[binary_operator_model_wise 配置说明](../processor/binary_operator_model_wise.md)》 |
+| `DynamicCacheProcessorConfig` | `dynamic_cache` | KV cache 量化处理器配置。 | 《[dynamic_cache 配置说明](../processor/dynamic_cache.md)》 |
+| `FA3QuantProcessorConfig` | `fa3_quant` | FA3（FlashAttention-3）量化处理器配置。 | 《[fa3_quant 配置说明](../processor/fa3_quant.md)》 |
+| `FlatQuantProcessorConfig` | `flatquant` | FlatQuant处理器配置：定义量化训练参数、策略、混合精度等 | 《[flatquant 配置说明](../processor/flatquant.md)》 |
+| `FlexAWQSSZProcessorConfig` | `flex_awq_ssz` | Flex AWQ SSZ 离群值抑制处理器配置。 | 《[flex_awq_ssz 配置说明](../processor/flex_awq_ssz.md)》 |
+| `FlexSmoothQuantProcessorConfig` | `flex_smooth_quant` | FlexSmoothQuant 平滑量化处理器配置。 | 《[flex_smooth_quant 配置说明](../processor/flex_smooth_quant.md)》 |
+| `FloatSparseProcessorConfig` | `float_sparse` | 浮点稀疏处理器配置。 | 《[float_sparse 配置说明](../processor/float_sparse.md)》 |
+| `GroupProcessorConfig` | `group` | 处理器合并器配置。 | 《[group 配置说明](../processor/group.md)》 |
+| `IterSmoothProcessorConfig` | `iter_smooth` | 迭代平滑（IterativeSmooth）处理器配置。 | 《[iter_smooth 配置说明](../processor/iter_smooth.md)》 |
+| `KVSmoothProcessorConfig` | `kv_smooth` | KV cache 平滑处理器配置。 | 《[kv_smooth 配置说明](../processor/kv_smooth.md)》 |
+| `LinearProcessorConfig` | `linear_quant` | 线性层（Linear）量化处理器配置。 | 《[linear_quant 配置说明](../processor/linear_quant.md)》 |
+| `LoadProcessorConfig` | `load` | 模块加载/卸载处理器配置。 | 《[load 配置说明](../processor/load.md)》 |
+| `OASQProcessorConfig` | `oasq` | OASQ（Outlier-Aware Smooth Quantization）处理器配置。 | 《[oasq 配置说明](../processor/oasq.md)》 |
+| `OnlineQuaRotProcessorConfig` | `online_quarot` | 在线 QuaRot 旋转处理器配置。 | 《[online_quarot 配置说明](../processor/online_quarot.md)》 |
+| `QuaRotProcessorConfig` | `quarot` | QuaRot（离线旋转）处理器配置。 | 《[quarot 配置说明](../processor/quarot.md)》 |
+| `QuantSaveProcessorConfig` | `saver` | 统一保存处理器配置。 | 《[saver 配置说明](../processor/saver.md)》 |
+| `SmoothQuantProcessorConfig` | `smooth_quant` | SmoothQuant 平滑量化处理器配置。 | 《[smooth_quant 配置说明](../processor/smooth_quant.md)》 |
+| `SVDResidualProcessorConfig` | `svd_res` | SVD 残差（低秩补偿）处理器配置。 | 《[svd_res 配置说明](../processor/svd_res.md)》 |
+| `TrainableLinearQuantProcessorConfig` | `trainable_linear_quant` | 可训练线性量化（TLQ）处理器配置。 | 《[trainable_linear_quant 配置说明](../processor/trainable_linear_quant.md)》 |
+| `UnaryAnalysisProcessorConfig` | `unary_analysis` | 一元（无量化）敏感度分析处理器配置。 | 《[unary_analysis 配置说明](../processor/unary_analysis.md)》 |
 
 <h3 id="2-3-metadata">2.3 Metadata</h3>
 

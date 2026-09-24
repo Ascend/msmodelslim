@@ -255,4 +255,4 @@ msmodelslim quant \
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
 | `msmodelslim quant` | 一键量化 CLI 入口与完整命令说明 | [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md) |
-| modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset` 等任务级配置的字段说明 | [《modelslim_v1 配置说明》](../../../api_reference/config/task/modelslim_v1.md) |
+| modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset` 等任务级配置的字段说明 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |

@@ -17,7 +17,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `binary_fallback` | `binary_fallback` | 策略类型，固定为 `binary_fallback` | 无 |
-| `template` | `object` | 必选 | 无 | — | 完整最佳实践 PracticeConfig，apiversion 须为 modelslim_v1 | 《[PracticeConfig 配置说明](../task/practice_config.md)》 |
+| `template` | `object` | 必选 | 无 | — | 完整最佳实践 PracticeConfig，apiversion 须为 modelslim_v1 | 《[PracticeConfig 配置说明](../quant/practice_config.md)》 |
 | `rollback_path` | `string` | 必选 | 无 | — | 点分路径，指向 template 内必须为 list 的回退字段 | 无 |
 | `rollback_candidates` | `list[string] / null` | 可选 | `null` | — | 有序回退候选；非空则跳过敏感层分析 | 无 |
 | `analysis_dataset` | `string / null` | 可选 | `null` | — | 敏感层分析校准集名称；未填则使用 template.spec.dataset | 无 |
@@ -33,6 +33,7 @@ strategy:
   type: binary_fallback
   rollback_path: spec.process.1.exclude
   rollback_candidates: []
+  analysis_dataset: mix_calib.jsonl
   template:
     apiversion: modelslim_v1
     metadata:

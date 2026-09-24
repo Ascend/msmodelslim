@@ -3,7 +3,7 @@
 
 ## 1. 配置概述
 
-完整最佳实践量化任务配置：apiversion + spec + metadata。
+完整最佳实践量化任务配置：metadata + task（task ≡ apiversion + spec）。
 
 | 项目 | 内容 |
 |------|------|
@@ -16,13 +16,13 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `apiversion` | `string` | 可选 | Unknown（代码占位；YAML 中须按任务类型显式指定） | `modelslim_v1`、`multimodal_vlm_modelslim_v1`、`multimodal_sd_modelslim_v1`、`modelslim_convert` | API 版本（任务类型），决定 spec 的结构：`modelslim_v1`、`multimodal_vlm_modelslim_v1`、`multimodal_sd_modelslim_v1`、`modelslim_convert`；YAML 中必须显式指定，默认值 `Unknown` 仅为代码内部占位，不可直接使用。 | 无 |
-| `spec` | `any` | 可选 | `{}` | — | 任务规格，结构随 apiversion 而定。 | 无 |
 | `metadata` | `object` | 可选 | 见嵌套配置默认值 | — | 量化配置元数据（config_id/score/label/verified_*） | 本页 <a href="#2-2-metadata">§2.2</a> |
+| `task` | `object` | 可选 | 见嵌套配置默认值 | — | 量化任务描述（apiversion + spec） | 本页 <a href="#2-3-basequantconfig">§2.3</a> |
 
 **配置约束**
 
-- 无。
+- 预处理：旧格式 {apiversion, metadata, spec, ...} → {metadata, task:{apiversion, spec, ...}}。
+- 剥除聚合后 task. 前缀，使错误路径与 yaml 的 spec. 一致。
 
 <h3 id="2-2-metadata">2.2 Metadata</h3>
 
@@ -39,3 +39,49 @@
 **配置约束**
 
 - 无。
+
+<h3 id="2-3-basequantconfig">2.3 BaseQuantConfig</h3>
+
+**派生类**
+
+| 配置类 | 说明 | 文档 |
+|--------|------|------|
+| `ModelslimV1QuantConfig` | `modelslim_v1` 量化任务配置，位于 YAML 根节点。 | 《[modelslim_v1 配置说明](modelslim_v1.md)》 |
+| `ModelslimConvertQuantConfig` | `modelslim_convert` 量化（权重转换）任务配置，位于 YAML 根节点。 | 《[modelslim_convert 配置说明](modelslim_convert.md)》 |
+
+## 3. 完整配置参考
+
+```yaml
+metadata:
+  config_id: Qwen3-32B W8A8
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: false
+    kv_cache: false
+  verified_model_types:
+  - Qwen3-32B
+task:
+  apiversion: modelslim_v1
+  spec:
+    process:
+    - type: linear_quant
+      qconfig:
+        act:
+          dtype: int8
+          scope: per_tensor
+          symmetric: false
+          method: minmax
+        weight:
+          dtype: int8
+          scope: per_channel
+          symmetric: true
+          method: minmax
+      include:
+      - '*'
+      exclude: []
+    save:
+    - type: ascendv1_saver
+      part_file_size: 4
+    dataset: mix_calib.jsonl
+```

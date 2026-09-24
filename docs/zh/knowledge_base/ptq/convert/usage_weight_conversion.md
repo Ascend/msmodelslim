@@ -13,7 +13,7 @@
 | 是否需要 `quant_type` | 方式 1 需要 | **不需要**（须通过 `--config` 指定转换配置） |
 | 典型场景 | 浮点模型 → W8A8 等 | FP8 → BF16、BF16 → MXFP8、FP8 → MXFP8 等 |
 
-命令行书写规范见 [步骤 3](#步骤-3执行转换命令)，参数总表见《[msmodelslim quant 命令行](../../../api_reference/cli/msmodelslim_quant.md)》，字段说明见《[modelslim_convert 配置说明](../../../api_reference/config/task/modelslim_convert.md)》。
+命令行书写规范见 [步骤 3](#步骤-3执行转换命令)，参数总表见《[msmodelslim quant 命令行](../../../api_reference/cli/msmodelslim_quant.md)》，字段说明见《[modelslim_convert 配置说明](../../../api_reference/config/quant/modelslim_convert.md)》。
 
 ## 2. 输入和交付件
 
@@ -203,6 +203,6 @@ msmodelslim quant \
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
 | `msmodelslim quant` | 命令行入口、参数与权重转换示例 | [msmodelslim quant 命令行](../../../api_reference/cli/msmodelslim_quant.md) |
-| modelslim_convert 配置说明 | `linears` / `save` / `parallel` 等字段说明 | [modelslim_convert 配置说明](../../../api_reference/config/task/modelslim_convert.md) |
+| modelslim_convert 配置说明 | `linears` / `save` / `parallel` 等字段说明 | [modelslim_convert 配置说明](../../../api_reference/config/quant/modelslim_convert.md) |
 | 格式支持矩阵 | 量化格式与存储格式说明 | [格式支持矩阵](../../quantization_format/README.md) |
 | AscendV1 量化结果 | AscendV1 落盘结果说明 | [一键量化生成结果](../../quantization_format/ascendv1/ascendv1_usage.md) |
