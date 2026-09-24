@@ -27,7 +27,7 @@ from typing import List, Optional
 from msmodelslim.core.quant_service import DatasetLoaderInfra
 from msmodelslim.utils.exception import InvalidDatasetError
 from msmodelslim.utils.logging import get_logger, logger_setter
-from msmodelslim.utils.security import get_valid_read_path
+from msmodelslim.utils.security import get_valid_read_path, check_read_permission
 
 
 @dataclass
@@ -71,7 +71,7 @@ def _resolve_dataset_path(dataset_name: str, dataset_dir: Optional[Path]) -> Pat
     if resolved_path.exists():
         get_logger().info("Resolved short name: %s -> %s", dataset_name, resolved_path)
         return resolved_path
-    
+
     fallback_resolved = dataset_path.resolve()
     if fallback_resolved.exists():
         get_logger().info("Resolved fallback path: %s -> %s", dataset_name, fallback_resolved)
@@ -113,7 +113,7 @@ class VLMDatasetLoader(DatasetLoaderInfra):
         self.dataset_dir = dataset_dir
         self.default_text = self.DEFAULT_TEXT
 
-    def get_dataset_by_name(self, dataset_name: str) -> List[VlmCalibSample]:
+    def get_dataset_by_name(self, dataset_name: str) -> List[VlmCalibSample]:  # pylint: disable=arguments-renamed
         resolved_path = _resolve_dataset_path(dataset_name, self.dataset_dir)
 
         if not resolved_path.exists():
@@ -123,6 +123,7 @@ class VLMDatasetLoader(DatasetLoaderInfra):
             )
 
         # Validate existence via security layer (file/dir)
+        check_read_permission(str(resolved_path))
         resolved_path = Path(
             get_valid_read_path(str(resolved_path), is_dir=resolved_path.is_dir(), check_user_stat=True)
         )

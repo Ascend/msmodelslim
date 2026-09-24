@@ -34,7 +34,7 @@ from msmodelslim.model import IModelFactory, IModel
 from msmodelslim.utils.exception import SchemaValidateError, ToDoError, UnsupportedError
 from msmodelslim.utils.exception_decorator import exception_catcher
 from msmodelslim.utils.logging import logger_setter, get_logger
-from msmodelslim.utils.security import yaml_safe_load
+from msmodelslim.utils.security import yaml_safe_load, check_read_permission, check_write_permission
 from msmodelslim.utils.validation.conversion import (
     convert_to_readable_file,
     convert_to_writable_dir,
@@ -411,6 +411,8 @@ class NaiveQuantizationApplication:
         model_path = convert_to_readable_dir(model_path)
         if not isinstance(model_path, Path):
             raise SchemaValidateError(f"model_path must be a Path, but got {type(model_path)}")
+        check_read_permission(model_path)
+        check_write_permission(save_path)
         save_path = convert_to_writable_dir(save_path)
         if not isinstance(save_path, Path):
             raise SchemaValidateError(f"save_path must be a Path, but got {type(save_path)}")
@@ -421,6 +423,7 @@ class NaiveQuantizationApplication:
         if config_path is not None:
             validate_str_length(input_str=config_path, str_name='config_path')
             config_path = convert_to_readable_file(config_path)
+            check_read_permission(config_path)
         # 允许quant_type和config_path均为空的场景
         if quant_type is not None and config_path is not None:
             raise SchemaValidateError("quant_type and config_path only one can be provided")

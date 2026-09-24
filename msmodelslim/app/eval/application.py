@@ -44,6 +44,7 @@ from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
 from msmodelslim.utils.exception import InvalidModelError, SchemaValidateError, UnsupportedError
 from msmodelslim.utils.exception_decorator import exception_catcher
 from msmodelslim.utils.logging import get_logger, logger_setter
+from msmodelslim.utils.security import check_read_permission
 from msmodelslim.utils.validation.conversion import convert_to_readable_dir
 from msmodelslim.utils.validation.value import validate_str_length
 
@@ -82,6 +83,7 @@ class InferenceApplication:
             raise SchemaValidateError(f"model_type must be a string, but got {type(model_type)}")
         validate_str_length(input_str=model_type, str_name="model_type", max_len=256)
         model_path_obj = convert_to_readable_dir(model_path)
+        check_read_permission(model_path_obj)
         model_path = str(model_path_obj)
         if max_new_tokens <= 0:
             raise SchemaValidateError(

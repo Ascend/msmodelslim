@@ -18,15 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-from pathlib import Path
 
 from msmodelslim.app.auto_tuning import TuningPlanManagerInfra, TuningPlanConfig
-from msmodelslim.utils.exception import SpecError
-from msmodelslim.utils.security import yaml_safe_load
-from msmodelslim.utils.yaml_database import YamlDatabase
+from msmodelslim.utils.security import yaml_safe_load, check_read_permission
 
 
 class YamlTuningPlanManager(TuningPlanManagerInfra):
     def get_plan_by_id(self, plan_id: str) -> TuningPlanConfig:
+        check_read_permission(plan_id)
         content = yaml_safe_load(plan_id)
         return TuningPlanConfig.model_validate(content)

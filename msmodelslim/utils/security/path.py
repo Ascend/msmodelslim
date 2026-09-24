@@ -103,6 +103,48 @@ def is_belong_to_user_or_group(file_stat):
     return True  # Disabled: return True to bypass st_uid/st_gid ownership checks
 
 
+def check_read_permission(path):
+    """Check the read permission of an input path explicitly."""
+    real_path = os.path.realpath(path)
+    if not os.path.exists(real_path) or sys.platform.startswith("win"):
+        return real_path
+
+    if not os.access(real_path, os.R_OK):
+        raise SecurityError(
+            "Current user doesn't have read permission to {}.".format(path),
+            action='Please make sure the current user has read permission to the path.',
+        )
+    return real_path
+
+
+def check_write_permission(path):
+    """Check the read/write permission of an output path explicitly."""
+    real_path = os.path.realpath(path)
+    if sys.platform.startswith("win"):
+        return real_path
+
+    if os.path.exists(real_path):
+        if not os.access(real_path, os.R_OK | os.W_OK):
+            raise SecurityError(
+                "Current user doesn't have read and write permission to output path {}.".format(path),
+                action='Please make sure the current user has read and write permission to the output path.',
+            )
+        return real_path
+
+    ancestor = os.path.dirname(real_path)
+    while ancestor and not os.path.exists(ancestor):
+        parent = os.path.dirname(ancestor)
+        if parent == ancestor:  # Reached the filesystem root.
+            break
+        ancestor = parent
+    if not ancestor or not os.access(ancestor, os.W_OK):
+        raise SecurityError(
+            "Current user doesn't have write permission to the parent directory of {}.".format(path),
+            action='Please make sure the parent directory is writable by the current user.',
+        )
+    return real_path
+
+
 def check_dirpath_before_read(path):
     path = os.path.realpath(path)
     dirpath = os.path.dirname(path)
