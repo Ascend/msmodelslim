@@ -584,3 +584,263 @@ class TestSafeWriteUmask:
             assert after == before
         finally:
             os.umask(before)
+
+
+# os.access always reports True for root, so permission checks can only be
+# exercised on POSIX systems running as a non-root user.
+_POSIX_NON_ROOT = pytest.mark.skipif(
+    sys.platform.startswith("win") or getattr(os, "geteuid", lambda: 0)() == 0,
+    reason="requires POSIX permissions and a non-root user",
+)
+
+
+class TestCheckReadPermission:
+    """check_read_permission: 仅校验读权限（R_OK）。"""
+
+    @_POSIX_NON_ROOT
+    def test_pass_when_file_readable(self, tmp_path):
+        """可读文件应通过并返回 realpath"""
+        from msmodelslim.utils.security.path import check_read_permission
+
+        file_path = tmp_path / "readable.txt"
+        file_path.write_text("data", encoding="utf-8")
+        assert check_read_permission(str(file_path)) == os.path.realpath(str(file_path))
+
+    @_POSIX_NON_ROOT
+    def test_pass_when_path_not_exists(self, tmp_path):
+        """路径不存在时应直接返回，不抛异常（存续性由 get_valid_read_path 负责）"""
+        from msmodelslim.utils.security.path import check_read_permission
+
+        check_read_permission(str(tmp_path / "no_such_path"))
+
+    @_POSIX_NON_ROOT
+    def test_pass_when_dir_readable_but_without_execute_bit(self, tmp_path):
+        """444 目录具备读权限，不校验 x 位，应通过"""
+        from msmodelslim.utils.security.path import check_read_permission
+
+        dir_path = tmp_path / "readonly_dir"
+        dir_path.mkdir()
+        os.chmod(str(dir_path), 0o444)
+        try:
+            check_read_permission(str(dir_path))
+        finally:
+            os.chmod(str(dir_path), 0o700)
+
+    @_POSIX_NON_ROOT
+    def test_raise_when_file_not_readable(self, tmp_path):
+        """000 文件应抛 SecurityError"""
+        from msmodelslim.utils.security.path import check_read_permission
+
+        file_path = tmp_path / "no_read.txt"
+        file_path.write_text("data", encoding="utf-8")
+        os.chmod(str(file_path), 0o000)
+        try:
+            with pytest.raises(SecurityError):
+                check_read_permission(str(file_path))
+        finally:
+            os.chmod(str(file_path), 0o600)
+
+    @_POSIX_NON_ROOT
+    def test_raise_when_dir_not_readable(self, tmp_path):
+        """000 目录应抛 SecurityError"""
+        from msmodelslim.utils.security.path import check_read_permission
+
+        dir_path = tmp_path / "no_read_dir"
+        dir_path.mkdir()
+        os.chmod(str(dir_path), 0o000)
+        try:
+            with pytest.raises(SecurityError):
+                check_read_permission(str(dir_path))
+        finally:
+            os.chmod(str(dir_path), 0o700)
+
+
+class TestCheckWritePermission:
+    """check_write_permission: 校验输出路径的读+写权限。"""
+
+    @_POSIX_NON_ROOT
+    def test_pass_when_existing_dir_writable(self, tmp_path):
+        """已存在且可写目录应通过"""
+        from msmodelslim.utils.security.path import check_write_permission
+
+        dir_path = tmp_path / "writable_dir"
+        dir_path.mkdir()
+        assert check_write_permission(str(dir_path)) == os.path.realpath(str(dir_path))
+
+    @_POSIX_NON_ROOT
+    def test_pass_when_target_missing_but_parent_writable(self, tmp_path):
+        """目标不存在但父目录可写时应通过（允许后续创建）"""
+        from msmodelslim.utils.security.path import check_write_permission
+
+        check_write_permission(str(tmp_path / "new_dir" / "nested"))
+
+    @_POSIX_NON_ROOT
+    def test_raise_when_existing_path_not_writable(self, tmp_path):
+        """已存在但只读（444）的路径应抛 SecurityError"""
+        from msmodelslim.utils.security.path import check_write_permission
+
+        file_path = tmp_path / "readonly.txt"
+        file_path.write_text("data", encoding="utf-8")
+        os.chmod(str(file_path), 0o444)
+        try:
+            with pytest.raises(SecurityError):
+                check_write_permission(str(file_path))
+        finally:
+            os.chmod(str(file_path), 0o600)
+
+    @_POSIX_NON_ROOT
+    def test_raise_when_missing_target_under_readonly_parent(self, tmp_path):
+        """目标不存在且最近存在祖先目录只读时应抛 SecurityError"""
+        from msmodelslim.utils.security.path import check_write_permission
+
+        parent = tmp_path / "readonly_parent"
+        parent.mkdir()
+        os.chmod(str(parent), 0o555)
+        try:
+            with pytest.raises(SecurityError):
+                check_write_permission(str(parent / "save"))
+        finally:
+            os.chmod(str(parent), 0o700)
+
+
+class TestPermissionChecksWithMockedPlatform:
+    """用 mock 固定平台与 os.access 结果，使权限分支逻辑在任意平台都可验证。"""
+
+    @staticmethod
+    def _patch(access_result):
+        """把平台置为 linux，并把 os.access 结果折叠成单个布尔值。"""
+        return (
+            patch("sys.platform", "linux"),
+            patch("os.access", return_value=access_result),
+        )
+
+    def test_check_read_permission_raise_when_not_readable(self):
+        from msmodelslim.utils.security.path import check_read_permission
+
+        platform_patch, access_patch = self._patch(False)
+        with platform_patch, access_patch, patch("os.path.exists", return_value=True):
+            with pytest.raises(SecurityError):
+                check_read_permission("/fake/dir/model")
+
+    def test_check_read_permission_pass_when_readable(self):
+        from msmodelslim.utils.security.path import check_read_permission
+
+        platform_patch, access_patch = self._patch(True)
+        target = "/fake/dir/model"
+        with platform_patch, access_patch, patch("os.path.exists", return_value=True):
+            assert check_read_permission(target) == os.path.realpath(target)
+
+    def test_check_read_permission_skip_access_when_not_exists(self):
+        from msmodelslim.utils.security.path import check_read_permission
+
+        platform_patch, access_patch = self._patch(False)
+        with platform_patch, access_patch as mock_access, patch("os.path.exists", return_value=False):
+            check_read_permission("/fake/dir/no_such_model")
+        mock_access.assert_not_called()
+
+    def test_check_read_permission_skip_when_windows(self):
+        from msmodelslim.utils.security.path import check_read_permission
+
+        with (
+            patch("sys.platform", "win32"),
+            patch("os.access", return_value=False),
+            patch("os.path.exists", return_value=True),
+        ):
+            check_read_permission("/fake/dir/model")
+
+    def test_check_write_permission_raise_when_existing_path_not_accessible(self):
+        """既不可读也不可写时应抛 SecurityError。"""
+        from msmodelslim.utils.security.path import check_write_permission
+
+        platform_patch, access_patch = self._patch(False)
+        with platform_patch, access_patch, patch("os.path.exists", return_value=True):
+            with pytest.raises(SecurityError):
+                check_write_permission("/fake/dir/save")
+
+    def test_check_write_permission_raise_when_existing_path_readable_only(self):
+        """可读但不可写（如 444 文件）也应抛 SecurityError，需同时具备读写权限。"""
+        from msmodelslim.utils.security.path import check_write_permission
+
+        with (
+            patch("sys.platform", "linux"),
+            patch("os.access", side_effect=lambda path, mode: mode == os.R_OK),
+            patch("os.path.exists", return_value=True),
+        ):
+            with pytest.raises(SecurityError) as cm:
+                check_write_permission("/fake/dir/save")
+
+        assert "read and write permission" in str(cm.value)
+
+    def test_check_write_permission_checks_read_and_write_together(self):
+        """读写权限必须以合并掩码一次校验。"""
+        from msmodelslim.utils.security.path import check_write_permission
+
+        checked_modes = []
+
+        def _access(path, mode):
+            checked_modes.append(mode)
+            return True
+
+        with (
+            patch("sys.platform", "linux"),
+            patch("os.access", side_effect=_access),
+            patch("os.path.exists", return_value=True),
+        ):
+            check_write_permission("/fake/dir/save")
+
+        assert checked_modes == [os.R_OK | os.W_OK]
+
+    def test_check_write_permission_pass_when_existing_path_rw(self):
+        from msmodelslim.utils.security.path import check_write_permission
+
+        target = "/fake/dir/save"
+        platform_patch, access_patch = self._patch(True)
+        with platform_patch, access_patch, patch("os.path.exists", return_value=True):
+            assert check_write_permission(target) == os.path.realpath(target)
+
+    def test_check_write_permission_probe_ancestor_when_target_missing(self):
+        """目标不存在时应向上找到最近存在的祖先目录并校验其可写性。"""
+        from msmodelslim.utils.security.path import check_write_permission
+
+        target = "/fake/not_exist_dir/nested/save"
+        real = os.path.realpath(target)
+        ancestor = os.path.dirname(os.path.dirname(os.path.realpath(target)))
+
+        checked_paths = []
+
+        def _access(path, mode):
+            checked_paths.append(path)
+            return path == ancestor
+
+        with (
+            patch("sys.platform", "linux"),
+            patch("os.access", side_effect=_access),
+            patch("os.path.exists", side_effect=lambda p: p == ancestor),
+        ):
+            assert check_write_permission(target) == real
+
+        assert checked_paths == [ancestor]
+
+    def test_check_write_permission_raise_when_ancestor_not_writable(self):
+        from msmodelslim.utils.security.path import check_write_permission
+
+        target = "/fake/not_exist_dir/save"
+        root = os.path.dirname(os.path.realpath(target))
+
+        with (
+            patch("sys.platform", "linux"),
+            patch("os.access", return_value=False),
+            patch("os.path.exists", side_effect=lambda p: p == root),
+        ):
+            with pytest.raises(SecurityError):
+                check_write_permission(target)
+
+    def test_check_write_permission_skip_when_windows(self):
+        from msmodelslim.utils.security.path import check_write_permission
+
+        with (
+            patch("sys.platform", "win32"),
+            patch("os.access", return_value=False),
+            patch("os.path.exists", return_value=False),
+        ):
+            check_write_permission("/fake/dir/save")

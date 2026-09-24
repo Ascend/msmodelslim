@@ -37,6 +37,7 @@ from msmodelslim.utils.exception_decorator import exception_catcher
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.validation.conversion import convert_to_readable_dir
 from msmodelslim.utils.validation.value import validate_str_length
+from msmodelslim.utils.security import check_read_permission, check_write_permission
 from .result_displayer_infra import AnalysisResultDisplayerInfra
 
 
@@ -210,6 +211,7 @@ class LayerAnalysisApplication:
         model_path = convert_to_readable_dir(model_path)
         if not isinstance(model_path, Path):
             raise SchemaValidateError(f"model_path must be a Path, but got {type(model_path)}")
+        check_read_permission(model_path)
         if not isinstance(device, DeviceType):
             raise SchemaValidateError("device must be a DeviceType")
         if not isinstance(calib_dataset, str):
@@ -221,6 +223,10 @@ class LayerAnalysisApplication:
             raise SchemaValidateError(f"topk must be a integer greater than 0, but got {topk}")
         if not isinstance(trust_remote_code, bool):
             raise SchemaValidateError("trust_remote_code must be a bool")
+        if save_path is not None:
+            if not isinstance(save_path, str):
+                raise SchemaValidateError(f"save_path must be a string, but got {type(save_path)}")
+            check_write_permission(save_path)
 
         log = get_logger()
         log.info('Layer analysis with following parameters:')

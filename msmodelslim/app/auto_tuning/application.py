@@ -27,7 +27,9 @@ from msmodelslim.core.quant_service import IQuantService
 from msmodelslim.core.tune_strategy import ITuningStrategyFactory
 from msmodelslim.core.const import DeviceType
 from msmodelslim.model import IModelFactory, IModel
+from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.logging import logger_setter, get_logger
+from msmodelslim.utils.security import check_read_permission, check_write_permission
 from msmodelslim.utils.validation.conversion import (
     convert_to_readable_dir,
     convert_to_writable_dir,
@@ -92,6 +94,13 @@ class AutoTuningApplication:
         """
         check_type(model_type, str, param_name="model_type")
         model_path = convert_to_readable_dir(model_path, param_name="model_path")
+        check_read_permission(model_path)
+        if not isinstance(save_path, (str, Path)):
+            raise SchemaValidateError(
+                f"save_path must be a string or Path, but got {type(save_path)}",
+                action="Please ensure the input is a string or Path",
+            )
+        check_write_permission(save_path)
         save_path = convert_to_writable_dir(save_path, param_name="save_path")
         check_type(plan_id, str, param_name="plan_id")
         check_type(device, DeviceType, param_name="device")
