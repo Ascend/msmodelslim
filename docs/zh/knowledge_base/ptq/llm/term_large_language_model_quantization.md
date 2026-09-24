@@ -55,6 +55,6 @@
 
 ## 5. 参考文档
 
-1. Xiao G, et al. "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models." arXiv:2211.10438, 2022. https://arxiv.org/abs/2211.10438
-2. Frantar E, et al. "GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers." arXiv:2210.17323, 2022. https://arxiv.org/abs/2210.17323
-3. Ashkboos S, et al. "QuaRot: Outlier-Free 4-Bit Inference in Large Language Models." arXiv:2404.00456, 2024. https://arxiv.org/abs/2404.00456
+1. Xiao G, et al. "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models." arXiv:2211.10438, 2022. <https://arxiv.org/abs/2211.10438>
+2. Frantar E, et al. "GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers." arXiv:2210.17323, 2022. <https://arxiv.org/abs/2210.17323>
+3. Ashkboos S, et al. "QuaRot: Outlier-Free 4-Bit Inference in Large Language Models." arXiv:2404.00456, 2024. <https://arxiv.org/abs/2404.00456>

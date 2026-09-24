@@ -41,7 +41,7 @@ flowchart LR
 
 **操作**：
 
-1. 确认模型为 MoE 结构且路由专家数可被 `world_size` 整除。框架统一的分片工具 [`utils.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/common/utils.py)行为如下：
+1. 确认模型为 MoE 结构且路由专家数可被 `world_size` 整除。框架统一的分片工具 [`utils.py`](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/common/utils.py)行为如下：
 
    - `world_size ≤ 1`（未初始化分布式 / 单进程）：返回全量范围 `[0, num_experts)`，EP 不生效；
    - `world_size > 1`：按 `n_local = num_experts // world_size` 连续分片，rank `r` 的范围为 `[r * n_local, (r+1) * n_local)`；
@@ -57,7 +57,7 @@ flowchart LR
 
 **操作**：对建模文件中的 MoE 类的 `__init__` 与 `forward` 方法进行重写。
 
-- **形态 A：monkey-patch 建模类**（案例：[Kimi-K3 `ep_patches.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/kimi_k3/ep_patches.py)）：
+- **形态 A：monkey-patch 建模类**（案例：[Kimi-K3 `ep_patches.py`](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/kimi_k3/ep_patches.py)）：
 
   1. 定位权重目录中的 MoE 块类（Kimi-K3 为 `KimiSparseMoeBlock`）；
   2. 补丁改造 `__init__` 方法，按 `resolve_expert_ep_range(config.num_experts)` 构建**全长度 `ModuleList`**，非本地专家使用 `None` 填充：
@@ -72,7 +72,7 @@ flowchart LR
   3. 补丁改造 `forward` 方法，按 `use_dp_ep = dist.is_initialized() and dist.get_world_size() > 1` 分支：多进程时先做 DP token 收集（seq_len `all_gather` + `DistHelper.gather_variable_shapes`），本 rank 只计算本地专家（`moe_infer_local_experts` 遍历 `[start, end)`），对局部输出 `all_reduce` 后再计算 latent 投影与共享专家，最后切回本 rank 序列段；单进程时走全量本地路径；
   4. 在适配器 `init_model` 中调用补丁函数。
 
-- **形态 B：仓库内原生建模**（案例：[DeepSeek-V4 `model.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/deepseek_v4/model.py)）：
+- **形态 B：仓库内原生建模**（案例：[DeepSeek-V4 `model.py`](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/deepseek_v4/model.py)）：
 
   1. 在 MoE 块构造中直接按 `world_size` 只创建本地专家：
 
@@ -141,8 +141,8 @@ for expert in range(expert_start, expert_end):
 
 | 案例 | 简述 | 链接 |
 | --- | --- | --- |
-| Kimi-K3 EP 接入 | monkey-patch 权重目录的建模文件 | [ep_patches.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/kimi_k3/ep_patches.py) |
-| DeepSeek-V4 EP 接入 | 仓库内原生建模 | [model.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/deepseek_v4/model.py) |
+| Kimi-K3 EP 接入 | monkey-patch 权重目录的建模文件 | [ep_patches.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/kimi_k3/ep_patches.py) |
+| DeepSeek-V4 EP 接入 | 仓库内原生建模 | [model.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/deepseek_v4/model.py) |
 
 ## 8. 术语
 
@@ -156,9 +156,9 @@ for expert in range(expert_start, expert_end):
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `resolve_expert_ep_range` / `_get_expert_range` | 本地专家范围解析：单进程返回全量，多进程按 `world_size` 连续分片，不可整除时报错 | [common/utils.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/common/utils.py) |
-| `DistHelper` | 模块拓扑分类：`is_shared` / `is_local_only` / `get_shared_modules_slice` | [dist_helper.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_helper.py) |
-| `DistributedAscendV1Saver` | 分布式保存：`local_only` 独占写出、共享模块分工、rank 0 合并 | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
+| `resolve_expert_ep_range` / `_get_expert_range` | 本地专家范围解析：单进程返回全量，多进程按 `world_size` 连续分片，不可整除时报错 | [common/utils.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/common/utils.py) |
+| `DistHelper` | 模块拓扑分类：`is_shared` / `is_local_only` / `get_shared_modules_slice` | [dist_helper.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/utils/distributed/dist_helper.py) |
+| `DistributedAscendV1Saver` | 分布式保存：`local_only` 独占写出、共享模块分工、rank 0 合并 | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
 | `--device npu --device_id 0 1 ...` | 多卡量化入口（EP 在分布式初始化后生效） | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
 
 ## 10. 产品形态与资源限制

@@ -48,5 +48,5 @@ E4M3 的位分配为：1位符号 + 4位指数 + 3位尾数，共 8位。4位指
 
 ## 5. 参考文档
 
-1. Kuzmin A et al. FP8 Formats for Deep Learning. arXiv:2209.05433. https://arxiv.org/abs/2209.05433
+1. Kuzmin A et al. FP8 Formats for Deep Learning. arXiv:2209.05433. <https://arxiv.org/abs/2209.05433>
 2. 《[量化模式](../quantization_mode/README.md)》

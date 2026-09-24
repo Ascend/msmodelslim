@@ -101,4 +101,4 @@ $$
 ## 4. 参考文档
 
 1. 《[FouroverSix 参数配置流程指南](./usage_fouroversix.md)》
-2. Cook J, Guo J, Xiao G, Lin Y, Han S. “Four Over Six: More Accurate NVFP4 Quantization with Adaptive Block Scaling.” arXiv preprint arXiv:2512.02010, 2025. https://arxiv.org/abs/2512.02010
+2. Cook J, Guo J, Xiao G, Lin Y, Han S. “Four Over Six: More Accurate NVFP4 Quantization with Adaptive Block Scaling.” arXiv preprint arXiv:2512.02010, 2025. <https://arxiv.org/abs/2512.02010>

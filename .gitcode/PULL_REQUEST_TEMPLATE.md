@@ -1,6 +1,6 @@
 # PR 提交说明
 
-提交前请阅读 [贡献指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/contributing/contributing_guide.md)，开发者文档：[模型接入指南](../docs/zh/knowledge_base/model/integrating_models.md)
+提交前请阅读 [贡献指南](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/docs/zh/contributing/contributing_guide.md)，开发者文档：[模型接入指南](../docs/zh/knowledge_base/ptq/README.md#模型接入指南)
 
 PR 标题前缀：[Feature]、[Bugfix]、[Doc]、[Test]（与 CONTRIBUTING 一致）
 

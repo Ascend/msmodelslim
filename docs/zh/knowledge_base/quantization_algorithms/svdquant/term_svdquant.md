@@ -116,5 +116,5 @@ $$
 
 ## 4. 参考文档
 
-1. Li M et al. SVDQuant: Absorbing Outliers by Low-Rank Components for 4-Bit Diffusion Models. NeurIPS 2024. https://arxiv.org/abs/2411.05007
+1. Li M et al. SVDQuant: Absorbing Outliers by Low-Rank Components for 4-Bit Diffusion Models. NeurIPS 2024. <https://arxiv.org/abs/2411.05007>
 2. 《[SVDQuant 参数配置流程指南](./usage_svdquant.md)》

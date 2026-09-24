@@ -46,5 +46,5 @@ INT4 占 4位，可表示 $-8\sim7$ 共 16个整数档位。按[量化公式](te
 
 ## 5. 参考文档
 
-1. Frantar E et al. GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers. arXiv:2210.17323. https://arxiv.org/abs/2210.17323
+1. Frantar E et al. GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers. arXiv:2210.17323. <https://arxiv.org/abs/2210.17323>
 2. 《[量化模式](../quantization_mode/README.md)》

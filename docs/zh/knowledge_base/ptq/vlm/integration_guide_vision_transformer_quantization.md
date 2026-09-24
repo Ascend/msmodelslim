@@ -50,7 +50,7 @@ msmodelslim/model/{model_name}/
 
 **操作**：
 
-在 `loader.py` 中继承 [BaseModelAdapterLoader](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/plugin_factory/base_loader.py)，并通过 `ADAPTER_CLASS_PATH` 指定适配器类的导入路径：
+在 `loader.py` 中继承 [BaseModelAdapterLoader](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/plugin_factory/base_loader.py)，并通过 `ADAPTER_CLASS_PATH` 指定适配器类的导入路径：
 
 ```python
 # msmodelslim/model/{model_name}/loader.py
@@ -70,13 +70,13 @@ class {ModelName}AdapterLoader(BaseModelAdapterLoader):
 **操作**：
 
 1. **基础模型类选型**：
-   - 推荐继承 [VLMBaseModelAdapter](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/common/vlm_base.py)（已内置 `_load_config`、`_collect_inputs_to_device`、权重分片读取等多模态通用实现）。
-   - 若模型结构高度自定义无法复用基类，需继承 [BaseModelAdapter](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/base.py) 并自行实现 config 加载与数据收集逻辑。
+   - 推荐继承 [VLMBaseModelAdapter](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/common/vlm_base.py)（已内置 `_load_config`、`_collect_inputs_to_device`、权重分片读取等多模态通用实现）。
+   - 若模型结构高度自定义无法复用基类，需继承 [BaseModelAdapter](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/base.py) 并自行实现 config 加载与数据收集逻辑。
 
 2. **核心量化接口**：
-   - **[`ModelSlimPipelineInterfaceV1`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/runner/pipeline_interface.py)（必须实现）**：模型流水线核心接口，供调度器驱动多模态量化。
+   - **[`ModelSlimPipelineInterfaceV1`](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/runner/pipeline_interface.py)（必须实现）**：模型流水线核心接口，供调度器驱动多模态量化。
 
-3. **可选算法扩展接口**（均定义于 [Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py)）：
+3. **可选算法扩展接口**（均定义于 [Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/interface_hub.py)）：
    - **`IterSmoothInterface` / `FlexSmoothQuantInterface`**：若方案需开启离群值平滑抑制，需继承对应接口并在语言 Decoder 上配置算子映射。
    - **`QuaRotInterface`**：若方案需使用旋转矩阵平滑离群值，需继承此接口（仅作用于语言部分）。
 
@@ -103,7 +103,7 @@ class {ModelName}ModelAdapter(
 
 ### 步骤 4：实现流水线核心接口方法
 
-**目标**：实现 [ModelSlimPipelineInterfaceV1](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/runner/pipeline_interface.py) 中声明的方法，使调度器（Runner）能够统筹驱动多模态数据处理、加载与逐层量化。
+**目标**：实现 [ModelSlimPipelineInterfaceV1](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/runner/pipeline_interface.py) 中声明的方法，使调度器（Runner）能够统筹驱动多模态数据处理、加载与逐层量化。
 
 **操作**：
 
@@ -231,7 +231,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | [《Interface Hub》](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py) |
+| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | [《Interface Hub》](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/interface_hub.py) |
 | VLM 量化使用指南 | 标准多模态理解模型量化全流程、配置协议与开箱即用示例 | [《VLM 量化使用指南》](usage_vision_transformer_quantization.md) |
 | multimodal_vlm_modelslim_v1 配置说明 | `process`/`save`/`dataset` 等多模态理解配置的字段说明 | [《multimodal_vlm_modelslim_v1 配置说明》](../../../api_reference/config/task/multimodal_vlm_modelslim_v1.md) |
 | 一键量化完整指南 | 一键量化 CLI 入口与完整命令参数说明 | [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md) |

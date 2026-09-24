@@ -211,7 +211,7 @@ flowchart TD
 
 **操作**：
 
-1. **安装并检查 msprobe**：安装 msprobe（昇腾算子/张量 dump 与比对分析工具，详见《[msprobe安装文档](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/install_guide/msprobe_install_guide.md)》），安装完成后执行 `msprobe --help` 确认命令可用。
+1. **安装并检查 msprobe**：安装 msprobe（昇腾算子/张量 dump 与比对分析工具，详见《[msprobe安装文档](https://gitcode.com/Ascend/msprobe/blob/26.2.0/docs/zh/install_guide/msprobe_install_guide.md)》），安装完成后执行 `msprobe --help` 确认命令可用。
 2. **创建 msprobe dump 配置文件**：
 
    ```json
@@ -259,7 +259,7 @@ flowchart TD
    tensorboard --logdir /path/to/compare_output --bind_all   # 与 -o 相同的实际输出目录
    ```
 
-   `-tp` 为待调试侧（如量化模型），`-gp` 为基准侧（如浮点模型，双图比对必选），输出 `compare_{timestamp}.vis.db`。比对与可视化的详细说明参见《[msprobe 精度比对可视化指南](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/user_guide/accuracy_compare/pytorch_visualization_instruct.md)》。
+   `-tp` 为待调试侧（如量化模型），`-gp` 为基准侧（如浮点模型，双图比对必选），输出 `compare_{timestamp}.vis.db`。比对与可视化的详细说明参见《[msprobe 精度比对可视化指南](https://gitcode.com/Ascend/msprobe/blob/26.2.0/docs/zh/user_guide/accuracy_compare/pytorch_visualization_instruct.md)》。
 6. **定位分析**：在 TensorBoard 中观察各层 cosine similarity（节点颜色越深偏差越大）：
    - 输入偏差大 → 问题在前面的层；输出偏差大 → 问题在当前层；
    - 乱码场景 cosine 整体偏低时，关注**相对排名**（找 top-10 偏差层）、**模式识别**（偏差是否集中于特定模块类型如全部 MLP）、**拐点层**（逐层偏差曲线中 cosine 突然下降的拐点，问题可能源于量化对该层权重影响最大，或前一层输出偏差在该层被放大）。

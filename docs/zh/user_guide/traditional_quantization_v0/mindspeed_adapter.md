@@ -21,7 +21,7 @@ pip3 install accelerate==0.21.0  #若需要使用NPU多卡并行方式对模型�
 pip3 install tqdm==4.66.1
 ```
 
-- 安装MindSpeed-LLM库，详情请参见[《安装指导》](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/zh/mindspore/install_guide.md)。
+- 安装MindSpeed-LLM库，详情请参见《[MindSpeed LLM软件安装](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/zh/pytorch/training/install_guide.md)》。
 
 ## 3. 功能介绍
 
@@ -31,7 +31,7 @@ pip3 install tqdm==4.66.1
 
 ## 5. 量化步骤（以llama2-7b legacy为例）
 
-1.获取开源权重，转化为MindSpeed-LLM支持的模型，可以使用MindSpeed-LLM的权重[转化脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/mindspore/convert_ckpt.py)，[此处有转化脚本使用教程](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/zh/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)
+1.获取开源权重，转化为MindSpeed-LLM支持的模型，可以使用MindSpeed-LLM的权重[转化脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/convert_ckpt_v2.py)，[此处有转化脚本使用教程](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/zh/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)
 
 ```bash
 python convert_ckpt.py \

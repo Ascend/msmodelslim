@@ -28,7 +28,7 @@ templates:
 - 格式词条 `term_<format_name>.md`：套 《[01 词条模板](../../../docs/zh/contributing/development_guide/docs_standards/01_term_glossary_template.md)》，词条类别为**量化数据格式**；须含量化模式支持情况与交付件说明；H2 建议对齐 `## 1. 概述` / `## 2. 词条介绍` / `## 3. 关联流程` / `## 4. 关联词条`（格式专属内容放在「2. 词条介绍」下）。
 - 使用指南 `<format_name>_usage.md`：套 《[02 流程模板](../../../docs/zh/contributing/development_guide/docs_standards/02_process_guide_template.md)》；操作步骤须覆盖**确认模式支持（或适配）、配置、执行**。
 
-并在《[量化格式](../../../docs/zh/knowledge_base/quantization_format/README.md)》总词条中登记该格式（格式地图、关联词条 / 关联流程）。目录约定见资料规范 《[§3.3](../../../docs/zh/contributing/development_guide/docs_standards/README.md#quantization-format-docs)》。
+并在《[量化格式](../../../docs/zh/knowledge_base/quantization_format/README.md)》总词条中登记该格式（格式地图、关联词条 / 关联流程）。目录约定见资料规范 《[§3.3](../../../docs/zh/contributing/development_guide/docs_standards/README.md#31-docs-目录结构)》。
 
 ## 命名规则
 

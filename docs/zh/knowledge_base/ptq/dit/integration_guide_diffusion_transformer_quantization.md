@@ -53,7 +53,7 @@ msmodelslim/model/{model_name}/
 
 **操作**：
 
-在 `loader.py` 中继承 [BaseModelAdapterLoader](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/plugin_factory/base_loader.py)，并通过 `ADAPTER_CLASS_PATH` 指定适配器类的导入路径：
+在 `loader.py` 中继承 [BaseModelAdapterLoader](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/plugin_factory/base_loader.py)，并通过 `ADAPTER_CLASS_PATH` 指定适配器类的导入路径：
 
 ```python
 # msmodelslim/model/{model_name}/loader.py
@@ -72,9 +72,9 @@ class {ModelName}AdapterLoader(BaseModelAdapterLoader):
 
 **操作**：
 
-1. **基础适配基类**：DiT 依赖官方推理管线加载，需继承 [BaseModelAdapter](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/base.py)（不继承 `TransformersModel`）。
-2. **核心流水线接口**：必须继承 [MultimodalPipelineInterface](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py)（重构路径）。
-3. **可选算法扩展接口**：根据量化算法需求继承 `OnlineQuaRotInterface`、`FA3QuantAdapterInterface`、`IterSmoothInterface` 等（均定义于 [Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py)）。
+1. **基础适配基类**：DiT 依赖官方推理管线加载，需继承 [BaseModelAdapter](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/base.py)（不继承 `TransformersModel`）。
+2. **核心流水线接口**：必须继承 [MultimodalPipelineInterface](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py)（重构路径）。
+3. **可选算法扩展接口**：根据量化算法需求继承 `OnlineQuaRotInterface`、`FA3QuantAdapterInterface`、`IterSmoothInterface` 等（均定义于 [Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/interface_hub.py)）。
 
 ```python
 from msmodelslim.model.base import BaseModelAdapter
@@ -102,7 +102,7 @@ class {ModelName}ModelAdapter(
 
 ### 步骤 4：实现流水线核心接口方法
 
-**目标**：实现 [MultimodalPipelineInterface](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py) 中声明的方法，支持推理参数校验、运行时配置、浮点推理校准 dump 及逐块调度。
+**目标**：实现 [MultimodalPipelineInterface](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py) 中声明的方法，支持推理参数校验、运行时配置、浮点推理校准 dump 及逐块调度。
 
 **操作**：
 
@@ -248,8 +248,8 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | [《Interface Hub》](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py) |
-| Pipeline 接口 | 多模态生成量化服务的流水线接口定义 | [《pipeline_interface.py》](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py) |
+| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | [《Interface Hub》](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/interface_hub.py) |
+| Pipeline 接口 | 多模态生成量化服务的流水线接口定义 | [《pipeline_interface.py》](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py) |
 | DiT 量化使用指南 | 标准 DiT 模型量化全流程、配置协议与开箱即用示例 | [《DiT 量化使用指南》](usage_diffusion_transformer_quantization.md) |
 | multimodal_sd_modelslim_v1 配置说明 | `process`/`save`/`multimodal_sd_config` 等多模态生成配置字段说明 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/task/multimodal_sd_modelslim_v1.md) |
 | mindie_format_saver 配置说明 | MindIE-SD 保存格式与多专家落盘说明 | [《mindie_format_saver 配置说明》](../../../api_reference/config/format/mindie_format_saver.md) |

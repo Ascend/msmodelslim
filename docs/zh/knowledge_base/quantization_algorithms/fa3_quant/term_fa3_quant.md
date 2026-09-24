@@ -98,5 +98,5 @@ $$
 
 ## 4. 参考文档
 
-1. Dao T et al. FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision. 2024. https://arxiv.org/abs/2407.08608
+1. Dao T et al. FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision. 2024. <https://arxiv.org/abs/2407.08608>
 2. 《[FA3 Quant 参数配置流程指南](./usage_fa3_quant.md)》

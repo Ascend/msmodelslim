@@ -40,7 +40,7 @@ b.QuantConfig配置
 per_channel和per_group的参数配置是有差异的。
 (1)per_group需要配置这三个参数：is_lowbit=True, open_outlier=False, group_size=128。
 (2)per_channel场景下，如下的三个参数不需要配置，注释掉：is_lowbit=True, open_outlier=False, group_size=128。
-(3)如果是AutoGPTQ需要更改w_method为='GPTQ', 另外开启GPTQ跑量化时间相对较长。
+(3)如果是AutoGPTQ需要更改w_method为'GPTQ', 另外开启GPTQ跑量化时间相对较长。
 如下为AutoAWQ的per_group配置：
 
 ```python
@@ -69,7 +69,7 @@ calibrator.save(output_path, safetensors_name=None, json_name=None, save_type=No
 
 ### 转换脚本使用说明
 
-转换脚本路径位于：[ms_to_vllm.py](https://gitcode.com/Ascend/msmodelslim/blob/master/example/ms_to_vllm.py)
+转换脚本路径位于：[ms_to_vllm.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/ms_to_vllm.py)
 
 经过上一步1.1使用msModelSlim对权重进行量化，生成quant_model_description_w4a16.json和quant_model_weight_w4a16.safetensors，再使用转换脚本ms_to_vllm.py进行权重格式转换，生成转换后的safetensors文件，用法如下：
 

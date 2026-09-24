@@ -108,5 +108,5 @@ $$
 
 ## 4. 参考文档
 
-1. Cheng W, Zhang W, Shen H, et al. “Optimize Weight Rounding via Signed Gradient Descent for the Quantization of LLMs.” Findings of EMNLP 2024. https://arxiv.org/abs/2309.05516
+1. Cheng W, Zhang W, Shen H, et al. “Optimize Weight Rounding via Signed Gradient Descent for the Quantization of LLMs.” Findings of EMNLP 2024. <https://arxiv.org/abs/2309.05516>
 2. 《[AutoRound 参数配置流程指南](./usage_autoround.md)》

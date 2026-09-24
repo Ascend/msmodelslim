@@ -97,5 +97,5 @@ $$
 
 ## 4. 参考文档
 
-1. Xiao G et al. SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models. ICML 2023. https://arxiv.org/abs/2211.10438
+1. Xiao G et al. SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models. ICML 2023. <https://arxiv.org/abs/2211.10438>
 2. 《[Flex Smooth Quant 参数配置流程指南](./usage_flex_smooth_quant.md)》

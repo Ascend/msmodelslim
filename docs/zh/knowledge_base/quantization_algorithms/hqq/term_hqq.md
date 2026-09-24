@@ -113,5 +113,5 @@ $$
 
 参考文档优先列出算法原始论文或权威出处，并补充仓库内对应使用指南。需要进一步理解参数选择时，可先阅读使用指南，再回到原论文核对算法假设和推导。
 
-1. Badri H, Shaji A. Half-Quadratic Quantization of Large Machine Learning Models. https://dropbox.github.io/hqq_blog/
+1. Badri H, Shaji A. Half-Quadratic Quantization of Large Machine Learning Models. <https://dropbox.github.io/hqq_blog/>
 2. 《[HQQ 参数配置流程指南](./usage_hqq.md)》

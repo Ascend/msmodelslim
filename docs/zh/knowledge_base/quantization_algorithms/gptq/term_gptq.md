@@ -106,5 +106,5 @@ $$
 
 ## 4. 参考文档
 
-1. Frantar E et al. GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers. ICLR 2023. https://arxiv.org/abs/2210.17323
+1. Frantar E et al. GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers. ICLR 2023. <https://arxiv.org/abs/2210.17323>
 2. 《[GPTQ 参数配置流程指南](./usage_gptq.md)》

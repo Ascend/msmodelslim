@@ -117,5 +117,5 @@ $$
 
 ## 4. 参考文档
 
-1. Lin J et al. AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration. MLSys 2024. https://arxiv.org/abs/2306.00978
+1. Lin J et al. AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration. MLSys 2024. <https://arxiv.org/abs/2306.00978>
 2. 《[Flex AWQ SSZ 参数配置流程指南](./usage_flex_awq_ssz.md)》

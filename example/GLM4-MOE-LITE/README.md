@@ -17,7 +17,7 @@
 
 | 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A16 | W4A8 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
 |---------|---------|---------------------------------------------------------------|-----|-----|-----|--------|------|---------|----------|-----------|-----------------------------------------------|
-| **GLM4-MOE-LITE** | GLM-4.7-Flash | https://huggingface.co/zai-org/GLM-4.7-Flash | ✅(仅sglang支持) |  |  |        |   |  |   |   | [W8A8](#glm-47-flash-w8a8量化)       |
+| **GLM4-MOE-LITE** | GLM-4.7-Flash | <https://huggingface.co/zai-org/GLM-4.7-Flash> | ✅(仅sglang支持) |  |  |        |   |  |   |   | [W8A8](#glm-47-flash-w8a8量化)       |
 
 **说明：**
 

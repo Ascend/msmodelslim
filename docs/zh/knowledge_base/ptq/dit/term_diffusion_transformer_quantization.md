@@ -52,5 +52,5 @@ Diffusion Transformer（DiT）使用 Transformer 结构完全替代传统扩散�
 
 ## 5. 参考文档
 
-1. Peebles W, Xie S. "Scalable Diffusion Models with Transformers." ICCV 2023. https://arxiv.org/abs/2212.09748
-2. Esser P, et al. "Scaling Rectified Flow Transformers for High-Resolution Image Synthesis." arXiv:2403.03206, 2024. https://arxiv.org/abs/2403.03206
+1. Peebles W, Xie S. "Scalable Diffusion Models with Transformers." ICCV 2023. <https://arxiv.org/abs/2212.09748>
+2. Esser P, et al. "Scaling Rectified Flow Transformers for High-Resolution Image Synthesis." arXiv:2403.03206, 2024. <https://arxiv.org/abs/2403.03206>

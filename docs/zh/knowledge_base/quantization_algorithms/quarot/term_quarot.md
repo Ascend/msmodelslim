@@ -94,5 +94,5 @@ $$
 
 ## 4. 参考文档
 
-1. Ashkboos S et al. QuaRot: Outlier-Free 4-Bit Inference in Rotated LLMs. NeurIPS 2024. https://arxiv.org/abs/2404.00456
+1. Ashkboos S et al. QuaRot: Outlier-Free 4-Bit Inference in Rotated LLMs. NeurIPS 2024. <https://arxiv.org/abs/2404.00456>
 2. 《[QuaRot 参数配置流程指南](./usage_quarot.md)》

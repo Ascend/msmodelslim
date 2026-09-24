@@ -59,8 +59,8 @@ flowchart LR
 
 1. 将任务逻辑封装为 Processor 实例方法，签名保持简单（如 `def _worker_fn(self, idx) -> None`）。
 2. **业务参数只经 `args` / `kwargs` 传入可序列化值**，不得作为 `submit` 的第二个位置参数。常用模式：
-   - 传**整数索引**，执行时回查本 rank 上内容一致的任务表，以[FlexAWQSSZProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py)）为例，`submit(fn=self._worker_fn, args=(idx,), ...)`，`_worker_fn` 内 `adapter_config = self.sorted_configs[idx - 1]`；
-   - 传**模块名**，以[LinearQuant](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/linear.py)为例，`submit(fn=self._dts_calibrate_forward, args=(name,), ...)`，`_dts_calibrate_forward` 内 `self.model.get_submodule(module_name)` 后执行本地逻辑。
+   - 传**整数索引**，执行时回查本 rank 上内容一致的任务表，以[FlexAWQSSZProcessor](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/processor/anti_outlier/flex_smooth/processor.py)）为例，`submit(fn=self._worker_fn, args=(idx,), ...)`，`_worker_fn` 内 `adapter_config = self.sorted_configs[idx - 1]`；
+   - 传**模块名**，以[LinearQuant](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/processor/quant/linear.py)为例，`submit(fn=self._dts_calibrate_forward, args=(name,), ...)`，`_dts_calibrate_forward` 内 `self.model.get_submodule(module_name)` 后执行本地逻辑。
 
 **输出**：可提交的子任务函数。
 
@@ -153,9 +153,9 @@ flowchart LR
 
 | 案例 | 简述 | 链接 |
 | --- | --- | --- |
-| FlexAWQSSZ 接入 | 逐子图平滑任务化：`submit(args=(idx,))` 回查任务表，`parallel=not (is_non_fusion or has_non_shared_module)`（本指南步骤 4 含完整判定代码） | [FlexAWQSSZProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) |
-| LinearQuant 接入 | 逐模块校准任务化：`submit(fn=_dts_calibrate_forward, args=(name,), dependencies=[name + ".weight_quantizer"], parallel=True)` | [processor/quant/linear.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/linear.py) |
-| FlexSmoothQuant 接入 | 与 FlexAWQSSZ 同族，基于子图优先级的任务化平滑 | [processor/anti_outlier/flex_smooth/processor.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) |
+| FlexAWQSSZ 接入 | 逐子图平滑任务化：`submit(args=(idx,))` 回查任务表，`parallel=not (is_non_fusion or has_non_shared_module)`（本指南步骤 4 含完整判定代码） | [FlexAWQSSZProcessor](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) |
+| LinearQuant 接入 | 逐模块校准任务化：`submit(fn=_dts_calibrate_forward, args=(name,), dependencies=[name + ".weight_quantizer"], parallel=True)` | [processor/quant/linear.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/processor/quant/linear.py) |
+| FlexSmoothQuant 接入 | 与 FlexAWQSSZ 同族，基于子图优先级的任务化平滑 | [processor/anti_outlier/flex_smooth/processor.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) |
 
 ## 9. 术语
 
@@ -169,6 +169,6 @@ flowchart LR
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `DistributedTaskScheduler` | DTS 核心类 | [scheduler.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/task_scheduler/scheduler.py) |
-| `WaveDTSBackend` | 默认分波后端：依赖前缀 / `parallel` 语义冲突自动分波，共享队列 / 静态轮询分发，collective 拦截与性能日志 | [backend/wave.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/task_scheduler/backend/wave.py) |
-| `DTSMixin` / `default_module_state_sync` | 模块级同步：`distributed_sync` 自定义同步；默认参数 / buffer 广播 | [sync.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/task_scheduler/sync.py) |
+| `DistributedTaskScheduler` | DTS 核心类 | [scheduler.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/utils/distributed/task_scheduler/scheduler.py) |
+| `WaveDTSBackend` | 默认分波后端：依赖前缀 / `parallel` 语义冲突自动分波，共享队列 / 静态轮询分发，collective 拦截与性能日志 | [backend/wave.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/utils/distributed/task_scheduler/backend/wave.py) |
+| `DTSMixin` / `default_module_state_sync` | 模块级同步：`distributed_sync` 自定义同步；默认参数 / buffer 广播 | [sync.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/utils/distributed/task_scheduler/sync.py) |

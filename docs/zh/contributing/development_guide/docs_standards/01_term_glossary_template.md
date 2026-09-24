@@ -99,4 +99,4 @@
 >
 > 示例：
 >
-> 1. Xiao G, et al. "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models." arXiv preprint arXiv:2211.10438, 2022. https://arxiv.org/abs/2211.10438
+> 1. Xiao G, et al. "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models." arXiv preprint arXiv:2211.10438, 2022. <https://arxiv.org/abs/2211.10438>

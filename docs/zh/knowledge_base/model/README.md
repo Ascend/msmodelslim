@@ -7,13 +7,13 @@
 - \- 表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
 - 标记了“一键量化”的“模型名称-量化模式（w8a8s等）”组合可在[安装](../../install_guide/install_guide.md)后使用如下[一键量化](../../user_guide/usage_quick_quantization.md)命令行执行模型量化。
 - 因 Qwen 系列推出能力更强的新版本，Qwen1.5-14B/32B/72B 模型已超出维护周期，后续将对该系列老模型实施日落处理，其现网版本量化模式不再提供维护支持。
-- **Qwen3.5 / Qwen3.6** 具备原生多模态（Vision）能力，校准模态说明见《[Qwen3.5 量化说明 - 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md#校准模态支持)》。
+- **Qwen3.5 / Qwen3.6** 具备原生多模态（Vision）能力，校准模态说明见《[Qwen3.5 量化说明 - 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen3_5/README.md#校准模态支持)》。
 
 ```bash
 msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type ${MODEL_TYPE} --quant_type ${QUANT_TYPE} --trust_remote_code true
 ```
 
-- 未标记“一键量化”的最佳实践请阅读对应模型类别的最佳实践页面并在 [example](https://gitcode.com/Ascend/msmodelslim/tree/master/example) 目录下对应模型类别的子目录中执行命令，如 [DeepSeek](https://gitcode.com/Ascend/msmodelslim/tree/master/example/DeepSeek)、[Qwen3](https://gitcode.com/Ascend/msmodelslim/tree/master/example/Qwen)。
+- 未标记“一键量化”的最佳实践请阅读对应模型类别的最佳实践页面并在 [example](https://gitcode.com/Ascend/msmodelslim/tree/26.2.0/example) 目录下对应模型类别的子目录中执行命令，如 [DeepSeek](https://gitcode.com/Ascend/msmodelslim/tree/26.2.0/example/DeepSeek)、[Qwen3](https://gitcode.com/Ascend/msmodelslim/tree/26.2.0/example/Qwen)。
 
 ## 量化模式命名规范
 
@@ -49,7 +49,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
   </thead>
   <tbody>
     <tr>
-      <td rowspan="12"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/DeepSeek/README.md">DeepSeek系列</a></strong></td>
+      <td rowspan="12"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/DeepSeek/README.md">DeepSeek系列</a></strong></td>
       <td>DeepSeek-V2-16B</td>
       <td>-</td>
       <td>√</td>
@@ -206,7 +206,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="6"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/DeepSeek/DeepSeek-R1-Distill/README.md">DeepSeek-R1-Distill系列</a></strong></td>
+      <td rowspan="6"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/DeepSeek/DeepSeek-R1-Distill/README.md">DeepSeek-R1-Distill系列</a></strong></td>
       <td>DeepSeek-R1-Distill-Llama-8B</td>
       <td>-</td>
       <td>-</td>
@@ -285,7 +285,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="3"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen/README.md">Qwen3系列</a></strong></td>
+      <td rowspan="3"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen/README.md">Qwen3系列</a></strong></td>
       <td>Qwen3-8B</td>
       <td>transformers==4.51.0</td>
       <td>-</td>
@@ -325,7 +325,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>√</td>
     </tr>
     <tr>
-      <td rowspan="3"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3-MOE/README.md">Qwen3-MOE系列</a></strong></td>
+      <td rowspan="3"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen3-MOE/README.md">Qwen3-MOE系列</a></strong></td>
       <td>Qwen3-30B-A3B</td>
       <td>transformers==4.57.6</td>
       <td>-</td>
@@ -365,7 +365,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="7"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md">Qwen3.5系列</a></strong></td>
+      <td rowspan="7"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen3_5/README.md">Qwen3.5系列</a></strong></td>
       <td>Qwen3.5-397B-A17B</td>
       <td>transformers==5.2.0</td>
       <td>-</td>
@@ -457,7 +457,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3-Next/README.md">Qwen3-Next系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen3-Next/README.md">Qwen3-Next系列</a></strong></td>
       <td>Qwen3-Next-80B-A3B-Instruct</td>
       <td>transformers>=4.57.0</td>
       <td>-</td>
@@ -471,7 +471,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="5"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen/README.md">Qwen2.5系列</a></strong></td>
+      <td rowspan="5"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen/README.md">Qwen2.5系列</a></strong></td>
       <td>Qwen2.5-7B-Instruct</td>
       <td>-</td>
       <td>-</td>
@@ -537,7 +537,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen/README.md">Qwen2系列</a></strong></td>
+      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen/README.md">Qwen2系列</a></strong></td>
       <td>Qwen2-7B</td>
       <td>-</td>
       <td>-</td>
@@ -564,7 +564,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="7"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen/README.md">Qwen系列</a></strong></td>
+      <td rowspan="7"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen/README.md">Qwen系列</a></strong></td>
       <td>Qwen-7B</td>
       <td>-</td>
       <td>-</td>
@@ -656,7 +656,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen/README.md">QwQ系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen/README.md">QwQ系列</a></strong></td>
       <td>QwQ-32B</td>
       <td>-</td>
       <td>-</td>
@@ -670,7 +670,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="4"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/GLM-5/README.md">GLM5-MOE系列</a></strong></td>
+      <td rowspan="4"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/GLM-5/README.md">GLM5-MOE系列</a></strong></td>
       <td>GLM-5</td>
       <td>transformers==5.4.0</td>
       <td>-</td>
@@ -736,7 +736,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/GLM/README.md">GLM系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/GLM/README.md">GLM系列</a></strong></td>
       <td>GLM-4-9B</td>
       <td>-</td>
       <td>-</td>
@@ -750,7 +750,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/GLM4-MOE/README.md">GLM4-MOE系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/GLM4-MOE/README.md">GLM4-MOE系列</a></strong></td>
       <td>GLM-4.7</td>
       <td>transformers==4.57.3</td>
       <td>-</td>
@@ -764,7 +764,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/GLM4-MOE-LITE/README.md">GLM4-MOE-LITE系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/GLM4-MOE-LITE/README.md">GLM4-MOE-LITE系列</a></strong></td>
       <td>GLM-4.7-Flash</td>
       <td>transformers==5.3.0</td>
       <td>-</td>
@@ -792,7 +792,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/HunYuan/README.md">HunYuan系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/HunYuan/README.md">HunYuan系列</a></strong></td>
       <td>Hunyuan-A52B-Instruct</td>
       <td>transformers>=4.48.2</td>
       <td>-</td>
@@ -848,7 +848,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>√(一键量化)</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Step3p5/README.md">stepfun系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Step3p5/README.md">stepfun系列</a></strong></td>
       <td>Step-3.5-Flash</td>
       <td>-</td>
       <td>-</td>
@@ -862,7 +862,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/InternLM2/README.md">InternLM系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/InternLM2/README.md">InternLM系列</a></strong></td>
       <td>InternLM2-20B</td>
       <td>-</td>
       <td>√</td>
@@ -876,7 +876,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="8"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Llama/README.md">LLaMA系列</a></strong></td>
+      <td rowspan="8"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Llama/README.md">LLaMA系列</a></strong></td>
       <td>LLaMA-33B</td>
       <td>-</td>
       <td>-</td>
@@ -995,8 +995,8 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 
 > **校准模态**：各模型支持的校准模态（纯文本 / 图文 / 音视频等）及同质约束，以对应 example README 为准。例如：
 >
-> - [Qwen3-Omni — 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen3-Omni/README.md#校准模态支持)：纯文本及 image/audio/video 任意组合，同任务须同质。
-> - [Qwen3.5 — 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md#校准模态支持)：纯文本与文本+图像（Qwen3.5 虽列于大语言模型表，量化走 VLM 路径）。
+> - [Qwen3-Omni — 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Qwen3-Omni/README.md#校准模态支持)：纯文本及 image/audio/video 任意组合，同任务须同质。
+> - [Qwen3.5 — 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen3_5/README.md#校准模态支持)：纯文本与文本+图像（Qwen3.5 虽列于大语言模型表，量化走 VLM 路径）。
 
 <div class="custom-table">
 
@@ -1017,7 +1017,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
   </thead>
   <tbody>
     <tr>
-      <td rowspan="3"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen3-VL/README.md">Qwen3-VL系列</a></strong></td>
+      <td rowspan="3"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Qwen3-VL/README.md">Qwen3-VL系列</a></strong></td>
       <td>Qwen3-VL-4B-Instruct</td>
       <td>transformers==4.57.1</td>
       <td>√</td>
@@ -1051,7 +1051,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="4"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen3-VL-Embedding/README.md">Qwen3-VL-Embedding&Reranker系列</a></strong></td>
+      <td rowspan="4"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Qwen3-VL-Embedding/README.md">Qwen3-VL-Embedding&Reranker系列</a></strong></td>
       <td>Qwen3-VL-Embedding-2B</td>
       <td>transformers==4.57.1</td>
       <td>√</td>
@@ -1096,7 +1096,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen3-VL-MoE/README.md">Qwen3-VL-MoE系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Qwen3-VL-MoE/README.md">Qwen3-VL-MoE系列</a></strong></td>
       <td>Qwen3-VL-235B-A22B</td>
       <td>transformers==4.57.1, flax</td>
       <td>√(一键量化)</td>
@@ -1108,7 +1108,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen3-Omni/README.md">Qwen3-Omni系列</a></strong></td>
+      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Qwen3-Omni/README.md">Qwen3-Omni系列</a></strong></td>
       <td>Qwen3-Omni-30B-A3B-Thinking</td>
       <td>transformers==4.57.3</td>
       <td>√</td>
@@ -1131,7 +1131,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Gemma4/README.md">Gemma4系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Gemma4/README.md">Gemma4系列</a></strong></td>
       <td>gemma-4-31B-it</td>
       <td>transformers==5.5.3</td>
       <td>√(一键量化，仅vLLM Ascend支持；另见 README：MXFP8/MXFP4 混合，一键量化 w4a4)</td>
@@ -1143,7 +1143,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen2.5-VL/README.md">Qwen2.5-VL系列</a></strong></td>
+      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Qwen2.5-VL/README.md">Qwen2.5-VL系列</a></strong></td>
       <td>Qwen2.5-VL-7B</td>
       <td>transformers==4.49.0, qwen_vl_utils</td>
       <td>√</td>
@@ -1166,7 +1166,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen2.5-Omni/README.md">Qwen2.5-Omni系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Qwen2.5-Omni/README.md">Qwen2.5-Omni系列</a></strong></td>
       <td>Qwen2.5-Omni-7B</td>
       <td>transformers==4.57.3</td>
       <td>√</td>
@@ -1178,7 +1178,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen2-VL/README.md">Qwen2-VL系列</a></strong></td>
+      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Qwen2-VL/README.md">Qwen2-VL系列</a></strong></td>
       <td>Qwen2-VL-7B</td>
       <td>transformers==4.46.0, qwen_vl_utils</td>
       <td>√</td>
@@ -1201,7 +1201,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Qwen-VL/README.md">Qwen-VL系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Qwen-VL/README.md">Qwen-VL系列</a></strong></td>
       <td>Qwen-VL</td>
       <td>transformers-stream-generator</td>
       <td>√</td>
@@ -1213,7 +1213,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/InternVL2/README.md">InternVL2系列</a></strong></td>
+      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/InternVL2/README.md">InternVL2系列</a></strong></td>
       <td>InternVL2-8B</td>
       <td>transformers==4.46.0, timm, fastchat</td>
       <td>√</td>
@@ -1236,7 +1236,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/LLaVA/README.md">LLaVA系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/LLaVA/README.md">LLaVA系列</a></strong></td>
       <td>LLaVA-1.5-7B</td>
       <td>transformers==4.37.2</td>
       <td>√</td>
@@ -1248,7 +1248,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/GLM-4.1V/README.md">GLM-4.1V系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/GLM-4.1V/README.md">GLM-4.1V系列</a></strong></td>
       <td>GLM-4.1V-9B-Thinking</td>
       <td>transformers==4.53.0</td>
       <td>-</td>
@@ -1260,7 +1260,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/GLM-4.6V/README.md">GLM-4.6V</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/GLM-4.6V/README.md">GLM-4.6V</a></strong></td>
       <td>GLM-4.6V</td>
       <td>transformers==5.0.0rc0</td>
       <td>√</td>
@@ -1272,7 +1272,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Kimi-K2.5/README.md">Kimi-K2.5</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Kimi-K2.5/README.md">Kimi-K2.5</a></strong></td>
       <td>Kimi-K2.5</td>
       <td>transformers==4.57.6, compressed-tensors==0.13.0</td>
       <td>-</td>
@@ -1284,7 +1284,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Kimi-K2.6/README.md">Kimi-K2.6</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Kimi-K2.6/README.md">Kimi-K2.6</a></strong></td>
       <td>Kimi-K2.6</td>
       <td>transformers==4.57.6, compressed-tensors==0.13.0</td>
       <td>-</td>
@@ -1296,7 +1296,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Kimi-K3/README.md">Kimi-K3</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Kimi-K3/README.md">Kimi-K3</a></strong></td>
       <td>Kimi-K3</td>
       <td>transformers==4.57.6, compressed-tensors==0.13.0, fla-core</td>
       <td>-</td>
@@ -1308,7 +1308,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/InternVL3_5/README.md">InternVL3_5系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/InternVL3_5/README.md">InternVL3_5系列</a></strong></td>
       <td>InternVL3_5-38B</td>
       <td>transformers==4.57.6</td>
       <td>√</td>
@@ -1320,7 +1320,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/InternVL3_5-MoE/README.md">InternVL3_5-MoE系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/InternVL3_5-MoE/README.md">InternVL3_5-MoE系列</a></strong></td>
       <td>InternVL3_5-241B-A28B</td>
       <td>transformers==4.57.6</td>
       <td>√</td>
@@ -1332,7 +1332,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Gemma4-MoE/README.md">Gemma4-MoE系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Gemma4-MoE/README.md">Gemma4-MoE系列</a></strong></td>
       <td>gemma-4-26B-A4B-it</td>
       <td>transformers==5.5.3</td>
       <td>√（另见 README：MXFP8/MXFP4 混合，一键量化 w4a4）</td>
@@ -1344,7 +1344,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/MiniMax-M3/README.md">MiniMax-M3系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/MiniMax-M3/README.md">MiniMax-M3系列</a></strong></td>
       <td>MiniMax-M3-preview</td>
       <td>transformers==5.12.0</td>
       <td>√(一键量化)</td>
@@ -1356,7 +1356,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     <td>-</td>
     </tr>
     <tr>
-      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Step-3.7-Flash/README.md">Step-3.7-Flash系列</a></strong></td>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Step-3.7-Flash/README.md">Step-3.7-Flash系列</a></strong></td>
       <td>Step-3.7-Flash</td>
       <td>transformers>=4.57.1,&lt;5.0.0</td>
       <td>√(一键量化，仅vLLM Ascend支持)</td>
@@ -1367,7 +1367,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="7"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_sd/README.md">多模态生成模型</a></strong></td>
+      <td rowspan="7"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_sd/README.md">多模态生成模型</a></strong></td>
       <td>SD3-Medium</td>
       <td>diffusers</td>
       <td>√</td>
@@ -1452,5 +1452,5 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 
 - <sup>1</sup> 压缩后配合Atlas 推理系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式。
 - <sup>2</sup> 其中FLUX.1-dev、HunyuanVideo、Wan2.2、Qwen-Image-Edit-2509支持[MXFP量化](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf)。
-- <sup>3</sup> Kimi-K3 的 w4a8 含 INT 与 MXFP 两套实践（共用 `quant_type=w4a8`）；MXFP 需额外指定 `--tags vLLM_Ascend Ascend_950`，详见[Kimi-K3 量化案例](https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Kimi-K3/README.md)。
-- <sup>4</sup> Qwen3.6-35B-A3B 的 w8a8c8 为混合精度方案：线性层 MXFP8（W8A8）、路由专家 MXFP4（W4A4）、Attention 采用 FA3 量化（Q/K MXFP8 per-block 动态 + V MXFP8 per-channel 静态），并含 KV Cache 量化；当前仅适配 vLLM_Ascend + Ascend_950，量化时需指定 `--tags vLLM_Ascend Ascend_950`，详见[Qwen3.5 量化说明](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md)。
+- <sup>3</sup> Kimi-K3 的 w4a8 含 INT 与 MXFP 两套实践（共用 `quant_type=w4a8`）；MXFP 需额外指定 `--tags vLLM_Ascend Ascend_950`，详见[Kimi-K3 量化案例](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/multimodal_vlm/Kimi-K3/README.md)。
+- <sup>4</sup> Qwen3.6-35B-A3B 的 w8a8c8 为混合精度方案：线性层 MXFP8（W8A8）、路由专家 MXFP4（W4A4）、Attention 采用 FA3 量化（Q/K MXFP8 per-block 动态 + V MXFP8 per-channel 静态），并含 KV Cache 量化；当前仅适配 vLLM_Ascend + Ascend_950，量化时需指定 `--tags vLLM_Ascend Ascend_950`，详见[Qwen3.5 量化说明](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/example/Qwen3_5/README.md)。

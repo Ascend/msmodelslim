@@ -23,7 +23,7 @@
 | 2. 身份与缓存 | `initialize.sh` 生成 `.host-gitconfig`、预建 pip/pre-commit 缓存目录 | 宿主 `~/.cache/{pip,pre-commit}` bind mount |
 | 3. 初始化 | `post-create.sh` 建 `.venv`、拷贝数据目录、`pip install .`、装 pre-commit 钩子并**后台预热** Hook 环境 | `/workspace/.venv` 随仓库 bind mount 持久 |
 
-镜像为华为云 SWR 上的 MindStudio 标准构建镜像（`swr.cn-north-4.myhuaweicloud.com/mindstudio-image/mindstudio-build:26.2.0-0801`）。镜像制作细节见《[MindStudio 统一构建镜像制作指南](https://gitcode.com/Ascend/msot/blob/master/docs/zh/common/docker_image_build_guide.md)》；无镜像权限的外部贡献者可走《[安装指南](../docs/zh/install_guide/install_guide.md)》源码安装。
+镜像为华为云 SWR 上的 MindStudio 标准构建镜像（`swr.cn-north-4.myhuaweicloud.com/mindstudio-image/mindstudio-build:26.2.0-0801`）。镜像制作细节见《[MindStudio 统一构建镜像制作指南](https://gitcode.com/Ascend/msot/blob/26.2.0/docs/zh/common/docker_image_build_guide.md)》；无镜像权限的外部贡献者可走《[安装指南](../docs/zh/install_guide/install_guide.md)》源码安装。
 
 ## 🔨 编译与单元测试
 

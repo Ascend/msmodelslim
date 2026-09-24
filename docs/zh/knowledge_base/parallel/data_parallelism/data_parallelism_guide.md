@@ -42,7 +42,7 @@ flowchart LR
 
 **操作**：
 
-1. 在 Processor 类中重写 `support_distributed()`（基类 [`BaseSessionProcessor`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/base.py) 默认返回 `False`）：
+1. 在 Processor 类中重写 `support_distributed()`（基类 [`BaseSessionProcessor`](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/processor/base.py) 默认返回 `False`）：
 
    ```python
    def support_distributed(self) -> bool:
@@ -114,7 +114,7 @@ flowchart LR
 
 **输入**：步骤 3 的待同步变量清单、步骤 2 注入的 `DistHelper`。
 
-**操作**：按算法形态选择以下一种或组合实现，优先复用 [`dist_ops.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_ops.py) 存量工具：
+**操作**：按算法形态选择以下一种或组合实现，优先复用 [`dist_ops.py`](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/utils/distributed/dist_ops.py) 存量工具：
 
 | 工具函数 | 主要入参 | 功能与典型场景 |
 | --- | --- | --- |
@@ -123,7 +123,7 @@ flowchart LR
 | `sync_gather_tensor_lists` | `tensor_list`；`on_cpu`；`group` | 收集各 rank 的张量列表并展平为一条大列表。适用于校准阶段按 batch 缓存的激活张量在 `postprocess` 一次性合并 |
 
 - **形态 A：Observer 内同步**（统计量累计在 Observer 中）。
-  以 [FA3PerHeadObserver](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/fa3/processor.py)为例, Observer 前向时按共享模块判定传入同步开关 `sync`：
+  以 [FA3PerHeadObserver](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/processor/quant/fa3/processor.py)为例, Observer 前向时按共享模块判定传入同步开关 `sync`：
 
   ```python
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -133,7 +133,7 @@ flowchart LR
         return x
   ```
 
-  [RecallWindowObserver](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/observer/recall_window.py)内部更新激活统计量时按同步开关调用 `sync_base_operation` 归约：
+  [RecallWindowObserver](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/observer/recall_window.py)内部更新激活统计量时按同步开关调用 `sync_base_operation` 归约：
 
   ```python
     if sync and dist.is_initialized():
@@ -142,7 +142,7 @@ flowchart LR
   ```
 
 - **形态 B：Processor 内同步**（校准期仅本地缓存激活）。
-  以 [FlexSmoothQuant](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) 为例，hook 仅本地追加激活张量：
+  以 [FlexSmoothQuant](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) 为例，hook 仅本地追加激活张量：
 
   ```python
   # FlexStatsCollector.create_hook：校准前向只做本地采集
@@ -198,7 +198,7 @@ flowchart LR
 
    `--device_id 0 1 2 3 4 5 6 7` 指定参与量化的设备索引列表。
 
-3. 确认 runner 实际选择。`modelslim_v1` 的 `_choose_runner_type` 按以下规则决定执行管线（对应 [`quant_service.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/quant_service.py)）：
+3. 确认 runner 实际选择。`modelslim_v1` 的 `_choose_runner_type` 按以下规则决定执行管线（对应 [`quant_service.py`](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/quant_service/modelslim_v1/quant_service.py)）：
 
    | `spec.runner` 取值 | 设备列表 | 选择的 runner |
    | --- | --- | --- |
@@ -208,7 +208,7 @@ flowchart LR
    | `auto` | 多卡（> 1） | `DPLayerWiseRunner` |
    | `auto`（或未配置） | 单卡 / 未指定 | `LayerWiseRunner` |
 
-   `DPLayerWiseRunner.run()` 中设备数 ≤ 1 时会回退到单卡 `LayerWiseRunner` 执行并打印告警（[`dp_layer_wise_runner.py`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/runner/dp_layer_wise_runner.py)）。
+   `DPLayerWiseRunner.run()` 中设备数 ≤ 1 时会回退到单卡 `LayerWiseRunner` 执行并打印告警（[`dp_layer_wise_runner.py`](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/runner/dp_layer_wise_runner.py)）。
 
 **输出**：确认以 `DPLayerWiseRunner` 执行多卡量化的配置（YAML + 命令）。
 
@@ -224,7 +224,7 @@ flowchart LR
 
 | 案例 | 简述 | 链接 |
 | --- | --- | --- |
-| FA3Quant 多卡适配 | Observer 内 `sync_base_operation` 归约 per-head min/max，完备性支持完整示例（本指南步骤 4 含代码片段） | [FA3QuantProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/fa3/processor.py) |
+| FA3Quant 多卡适配 | Observer 内 `sync_base_operation` 归约 per-head min/max，完备性支持完整示例（本指南步骤 4 含代码片段） | [FA3QuantProcessor](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/processor/quant/fa3/processor.py) |
 
 ## 8. 术语
 
@@ -237,10 +237,10 @@ flowchart LR
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `DistHelper` | 模块拓扑分类工具：`is_shared` / `is_local_only` | [dist_helper.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_helper.py) |
-| `sync_base_operation` 等 | 跨 rank 统计量归约工具函数 | [dist_ops.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_ops.py) |
-| `support_distributed()` | Processor 分布式支持声明（基类默认 `False`） | [processor/base.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/base.py) |
-| `ascendv1_saver_distributed` | 分布式保存器（由 `ascendv1_saver` 自动转换） | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
+| `DistHelper` | 模块拓扑分类工具：`is_shared` / `is_local_only` | [dist_helper.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/utils/distributed/dist_helper.py) |
+| `sync_base_operation` 等 | 跨 rank 统计量归约工具函数 | [dist_ops.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/utils/distributed/dist_ops.py) |
+| `support_distributed()` | Processor 分布式支持声明（基类默认 `False`） | [processor/base.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/processor/base.py) |
+| `ascendv1_saver_distributed` | 分布式保存器（由 `ascendv1_saver` 自动转换） | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
 | `--device npu --device_id 0 1 ...` | 多卡量化入口配置 | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
 
 ## 10. 产品形态与资源限制

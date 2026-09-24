@@ -28,7 +28,7 @@ RA Compress 的核心思想是“利用重复段结构定位跨段关键头”�
 
 ### 3.2 数学描述
 
-设 $A \in \mathbb{R}^{L \times L}$ 为某一层在重复段校准数据上的注意力矩阵（对 Q 与 K 的 out product 做 softmax 后）。对所有满足 $i \in [(k+1) \cdot SEG, (k+2) \cdot SEG]$ 的位置 $i$（第 $k+1$ 段），分别考察以下两个偏移量位置：
+设 $A \in \mathbb{R}^{L \times L}$ 为某一层在重复段校准数据上的注意力矩阵（对 Q 与 K 的 outer product 做 softmax 后）。对所有满足 $i \in [(k+1) \cdot SEG, (k+2) \cdot SEG]$ 的位置 $i$（第 $k+1$ 段），分别考察以下两个偏移量位置：
 
 **Prefix matching 得分（归纳头）**：
 $$

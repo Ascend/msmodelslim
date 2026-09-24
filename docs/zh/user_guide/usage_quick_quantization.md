@@ -875,10 +875,10 @@ calib_data.jsonl 示例：
 
 #### 5.4.7 使用示例
 
-- Qwen2.5-Omni模型W8A8量化：[qwen2_5_omni_thinker_w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/master/lab_practice/qwen2_5_omni_thinker/qwen2_5_omni_thinker_w8a8.yaml)
-- Qwen3-Omni模型W8A8量化：[qwen3-omni-moe-w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/master/lab_practice/qwen3_omni_moe/qwen3-omni-moe-w8a8.yaml)（模态说明见《[Qwen3-Omni README](../../../example/multimodal_vlm/Qwen3-Omni/README.md#校准模态支持)》）
-- Qwen3.5 / Qwen3.6 模型W8A8量化：[qwen3_5_moe_w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/master/lab_practice/qwen3_5_moe/qwen3_5_moe_w8a8.yaml)（模态说明见《[Qwen3.5 README](../../../example/Qwen3_5/README.md#校准模态支持)》）
-- Qwen3-VL-MoE模型W8A8混合量化：[qwen3_vl_moe_w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/master/lab_practice/qwen3_vl_moe/qwen3_vl_moe_w8a8.yaml)
+- Qwen2.5-Omni模型W8A8量化：[qwen2_5_omni_thinker_w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/lab_practice/qwen2_5_omni_thinker/qwen2_5_omni_thinker_w8a8.yaml)
+- Qwen3-Omni模型W8A8量化：[qwen3-omni-moe-w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/lab_practice/qwen3_omni_moe/qwen3-omni-moe-w8a8.yaml)（模态说明见《[Qwen3-Omni README](../../../example/multimodal_vlm/Qwen3-Omni/README.md#校准模态支持)》）
+- Qwen3.5 / Qwen3.6 模型W8A8量化：[qwen3_5_moe_w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/lab_practice/qwen3_5_moe/qwen3_5_moe_w8a8.yaml)（模态说明见《[Qwen3.5 README](../../../example/Qwen3_5/README.md#校准模态支持)》）
+- Qwen3-VL-MoE模型W8A8混合量化：[qwen3_vl_moe_w8a8.yaml](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/lab_practice/qwen3_vl_moe/qwen3_vl_moe_w8a8.yaml)
 
 ### 5.5 modelslim_v0 配置说明
 

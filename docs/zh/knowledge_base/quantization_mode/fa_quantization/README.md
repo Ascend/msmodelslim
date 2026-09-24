@@ -101,6 +101,6 @@ FA 量化的一个"模式"是指 **Q/K/V 三分支量化方式的整体组合**�
 
 ## 5. 参考文档
 
-1. Dao T et al. FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. NeurIPS 2022. https://arxiv.org/abs/2205.14135
+1. Dao T et al. FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. NeurIPS 2022. <https://arxiv.org/abs/2205.14135>
 2. 《[FA3 Quant 参数配置流程指南](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》
 3. 《[量化模式](../README.md)》

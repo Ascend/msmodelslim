@@ -49,7 +49,7 @@ msmodelslim/model/{model_name}/
 
 **操作**：
 
-在 `loader.py` 中继承 [BaseModelAdapterLoader](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/plugin_factory/base_loader.py)，并通过 `ADAPTER_CLASS_PATH` 指定适配器类的导入路径：
+在 `loader.py` 中继承 [BaseModelAdapterLoader](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/plugin_factory/base_loader.py)，并通过 `ADAPTER_CLASS_PATH` 指定适配器类的导入路径：
 
 ```python
 # msmodelslim/model/{model_name}/loader.py
@@ -69,13 +69,13 @@ class {ModelName}AdapterLoader(BaseModelAdapterLoader):
 **操作**：
 
 1. **基础模型类选型**：
-   - 若模型基于 HuggingFace Transformers 实现，推荐继承 [TransformersModel](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/common/transformers.py)（已内置分词批处理、基础模型加载与 KVCache 控制的通用实现）。
-   - 若模型结构高度自定义，无法基于 Transformers 加载，需直接继承 [BaseModelAdapter](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/base.py)。
+   - 若模型基于 HuggingFace Transformers 实现，推荐继承 [TransformersModel](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/common/transformers.py)（已内置分词批处理、基础模型加载与 KVCache 控制的通用实现）。
+   - 若模型结构高度自定义，无法基于 Transformers 加载，需直接继承 [BaseModelAdapter](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/base.py)。
 
 2. **核心量化接口**：
-   - **[`ModelSlimPipelineInterfaceV1`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/runner/pipeline_interface.py)（必须实现）**：模型流水线核心接口（等价于 `PipelineInterface`），供调度器驱动量化。
+   - **[`ModelSlimPipelineInterfaceV1`](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/runner/pipeline_interface.py)（必须实现）**：模型流水线核心接口（等价于 `PipelineInterface`），供调度器驱动量化。
 
-3. **可选算法扩展接口**（均定义于 [Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py)）：
+3. **可选算法扩展接口**（均定义于 [Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/interface_hub.py)）：
    - **`IterSmoothInterface` / `FlexSmoothQuantInterface`**：若量化方案需开启离群值平滑抑制（如 IterSmooth / FlexSmoothQuant），需继承此接口并声明网络中可平滑的 Norm-Linear、Up-Down 子图算子对。
    - **`QuaRotInterface`**：若方案需使用旋转矩阵平滑离群值，需继承此接口。
    - **`StandingHighWithExperienceInterface`**：使用自动精度调优中的“专家经验摸高策略”时需继承。
@@ -98,7 +98,7 @@ class {ModelName}ModelAdapter(
 
 ### 步骤 4：实现流水线核心接口方法
 
-**目标**：实现 [ModelSlimPipelineInterfaceV1](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/runner/pipeline_interface.py) 中声明的方法，使调度器（Runner）能够统筹驱动模型的数据预处理、加载与逐层量化。
+**目标**：实现 [ModelSlimPipelineInterfaceV1](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/runner/pipeline_interface.py) 中声明的方法，使调度器（Runner）能够统筹驱动模型的数据预处理、加载与逐层量化。
 
 **操作**：
 
@@ -223,7 +223,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | [《Interface Hub》](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py) |
+| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | [《Interface Hub》](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/interface_hub.py) |
 | LLM 量化使用指南 | 标准 LLM 量化全流程、配置协议与开箱即用示例 | [《LLM 量化使用指南》](usage_large_language_model_quantization.md) |
 | modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset` 等任务级配置的字段说明 | [《modelslim_v1 配置说明》](../../../api_reference/config/task/modelslim_v1.md) |
 | 一键量化完整指南 | 一键量化 CLI 入口与完整命令参数说明 | [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md) |
