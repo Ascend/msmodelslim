@@ -31,6 +31,10 @@ from msmodelslim.core.analysis_service import AnalysisResult, AnalysisScope
 from msmodelslim.utils.logging import get_logger, clean_output
 
 
+#: YAML 结果允许的后缀，写入校验与目录拼接共用同一份规则，避免两处不一致。
+_YAML_EXTENSIONS = ('.yaml', '.yml')
+
+
 def _yaml_disable_entry_name(layer_name: str, scope: Optional[AnalysisScope]) -> str:
     """layer scope 下整块回退需匹配子模块，YAML 中为 ``block.*``；其它 scope 保持原名。"""
     if scope == AnalysisScope.LAYER:
@@ -44,14 +48,14 @@ def _save_yaml(yaml_content: str, save_path: str, model_type: Optional[str], met
     """保存 YAML 文件，返回实际输出路径。"""
     from ascend_utils.common.security import SafeWriteUmask, get_valid_write_path
 
-    if not save_path.endswith(('.yaml', '.yml')):
+    if not save_path.endswith(_YAML_EXTENSIONS):
         mt = model_type or 'model'
         m = method or 'analysis'
         safe_mt = mt.lower().replace('/', '-').replace('\\', '-').replace(' ', '-')
         save_path = os.path.join(save_path, f'{safe_mt}-{m}.yaml')
     save_dir = os.path.dirname(os.path.abspath(save_path))
     os.makedirs(save_dir, exist_ok=True)
-    output_path = get_valid_write_path(save_path, extensions=".yaml")
+    output_path = get_valid_write_path(save_path, extensions=_YAML_EXTENSIONS)
     with SafeWriteUmask():
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(yaml_content)
