@@ -124,5 +124,5 @@ flowchart LR
 | oasq 配置说明 | 字段类型、默认值与约束。 | [《oasq 配置说明》](../../../api_reference/config/processor/oasq.md) |
 | trainable_linear_quant 配置说明 | 字段类型、默认值与约束。 | [《trainable_linear_quant 配置说明》](../../../api_reference/config/processor/trainable_linear_quant.md) |
 | fa3_quant 配置说明 | 字段类型、默认值与约束。 | [《fa3_quant 配置说明》](../../../api_reference/config/processor/fa3_quant.md) |
-| multimodal_sd_modelslim_v1 | 多模态生成任务级配置。 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/task/multimodal_sd_modelslim_v1.md) |
+| multimodal_sd_modelslim_v1 | 多模态生成任务级配置。 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md) |
 | 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/docs/zh/user_guide/usage_weight_quantization.md) |

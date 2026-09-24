@@ -109,7 +109,7 @@ msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${
 |-------------------|-----------|-------------------|--------------------------------------------------------------------------------------|
 | model_path        | 模型路径      | 必选                | 类型：Str                                                                               |
 | save_path         | 调优结果保存路径  | 必选                | 类型：Str                                                                               |
-| config            | 调优配置文件路径  | 必选                | 1. 类型：Str <br>2. 配置文件路径，必须为完整的文件路径 <br>3. 配置文件格式为 YAML，配置协议说明见 《[自动调优配置协议说明](usage_auto_precision_tuning.md)》，示例配置见各策略目录（如 《[Standing High 示例](../knowledge_base/tuning_strategies/standing_high/standing_high.yaml)》） |
+| config            | 调优配置文件路径  | 必选                | 1. 类型：Str <br>2. 配置文件路径，必须为完整的文件路径 <br>3. 配置文件格式为 YAML，配置协议说明见 《[自动调优配置说明导航](../api_reference/config/tuning/README.md)》，示例配置见各策略目录（如 《[Standing High 示例](../knowledge_base/tuning_strategies/standing_high/standing_high.yaml)》） |
 | device            | 量化设备类型    | 可选                | 1. 类型：Str <br>2. 参考值：'npu','cpu' <br>3. 默认值为"npu"。多卡索引请配合 device_id 指定 |
 | device_id         | 量化设备索引    | 可选                | 1. 类型：int列表，用空格分割，如：0 1 2 3 <br>2. 指定多个设备索引时（如：0 1 2 3），系统可启动分布式逐层量化（DP）。算法支持范围与配置方式详见《[一键量化使用说明](usage_quick_quantization.md#41-逐层量化及分布式逐层量化)》 |
 | model_type        | 模型名称      | 可选                | 1. 类型：Str <br>2. 默认值为"default" <br>3. 大小写敏感，请参考《[大模型支持矩阵](../knowledge_base/model/README.md)》 |
@@ -156,7 +156,7 @@ ${SAVE_PATH}/
 
 ### 4.1 相关资料
 
-- **配置协议**：调优配置文件的详细说明，可以参考 《[自动调优配置协议说明](usage_auto_precision_tuning.md)》。完整的配置文件示例见各策略目录，例如 《[Standing High 示例](../knowledge_base/tuning_strategies/standing_high/standing_high.yaml)》、《[Standing High With Experience 示例](../knowledge_base/tuning_strategies/standing_high_with_experience/standing_high_with_experience.yaml)》、《[Binary Fallback 示例](../knowledge_base/tuning_strategies/binary_fallback/binary_fallback.yaml)》。
+- **配置协议**：调优配置文件的详细说明，可以参考 《[自动调优配置说明导航](../api_reference/config/tuning/README.md)》。完整的配置文件示例见各策略目录，例如 《[Standing High 示例](../knowledge_base/tuning_strategies/standing_high/standing_high.yaml)》、《[Standing High With Experience 示例](../knowledge_base/tuning_strategies/standing_high_with_experience/standing_high_with_experience.yaml)》、《[Binary Fallback 示例](../knowledge_base/tuning_strategies/binary_fallback/binary_fallback.yaml)》。
 - **调优算法**：策略总览见《[自动调优策略总览](../knowledge_base/tuning_strategies/README.md)》。各策略详情：
   - 《[Standing High 调优算法](../knowledge_base/tuning_strategies/standing_high/standing_high.md)》：基于量化回退层选择和离群值抑制策略的自动调优算法
   - 《[Standing High With Experience 调优算法](../knowledge_base/tuning_strategies/standing_high_with_experience/standing_high_with_experience.md)》：基于专家经验的摸高算法策略

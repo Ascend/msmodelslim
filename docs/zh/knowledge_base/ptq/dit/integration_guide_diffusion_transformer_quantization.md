@@ -251,7 +251,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 | Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | [《Interface Hub》](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/model/interface_hub.py) |
 | Pipeline 接口 | 多模态生成量化服务的流水线接口定义 | [《pipeline_interface.py》](https://gitcode.com/Ascend/msmodelslim/blob/26.2.0/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py) |
 | DiT 量化使用指南 | 标准 DiT 模型量化全流程、配置协议与开箱即用示例 | [《DiT 量化使用指南》](usage_diffusion_transformer_quantization.md) |
-| multimodal_sd_modelslim_v1 配置说明 | `process`/`save`/`multimodal_sd_config` 等多模态生成配置字段说明 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/task/multimodal_sd_modelslim_v1.md) |
+| multimodal_sd_modelslim_v1 配置说明 | `process`/`save`/`multimodal_sd_config` 等多模态生成配置字段说明 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md) |
 | mindie_format_saver 配置说明 | MindIE-SD 保存格式与多专家落盘说明 | [《mindie_format_saver 配置说明》](../../../api_reference/config/format/mindie_format_saver.md) |
 | 一键量化完整指南 | 一键量化 CLI 入口与完整命令参数说明 | [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md) |
 | 量化算法总览 | 微缩浮点、在线旋转与各类量化算法详述 | [《量化算法总览》](../../quantization_algorithms/README.md) |

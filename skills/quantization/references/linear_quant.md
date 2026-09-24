@@ -1,6 +1,6 @@
 # linear_quant 参数参考
 
-`linear_quant` 处理器的**完整字段 schema、类型与取值以 docs 为准**：《[linear_quant 处理器配置](../../../docs/zh/api_reference/config/processor/linear_quant.md)》、《[modelslim_v1 任务规格](../../../docs/zh/api_reference/config/task/modelslim_v1.md)》。本文只保留 Practice YAML 编写时的常用建议。
+`linear_quant` 处理器的**完整字段 schema、类型与取值以 docs 为准**：《[linear_quant 处理器配置](../../../docs/zh/api_reference/config/processor/linear_quant.md)》、《[modelslim_v1 任务规格](../../../docs/zh/api_reference/config/quant/modelslim_v1.md)》。本文只保留 Practice YAML 编写时的常用建议。
 
 ## 常用取值速查（非权威，取值集合以 docs 为准）
 

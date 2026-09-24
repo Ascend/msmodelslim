@@ -77,7 +77,7 @@ Pydantic 配置类
 
 CLI 文档不在本生成器范围内，也不使用 `generated-by` 标记。
 
-手写保留：`processor_group.md`、`auto_precision_tuning.md`。生成器写入前跳过这两个文件名。
+手写保留：`README.md`（配置说明导航）、`auto_precision_tuning.md`、`processor_group.md`（已迁至 `user_guide/usage_processor_group.md`）。生成器写入与清理前跳过这些文件名。
 
 ## 4. 量化配置生成器
 
@@ -97,14 +97,14 @@ CLI 文档不在本生成器范围内，也不使用 `generated-by` 标记。
 
 | 分类 | 子目录 |
 |------|--------|
-| 任务配置 | `task/` |
-| 服务规格 | 默认不单独成页：展开进对应 task 页的「参数列表」；基础脚本独立成文时放 `spec/` |
+| 任务配置 | `quant/` |
+| 服务规格 | 默认不单独成页：展开进对应任务（quant）页的「参数列表」；基础脚本独立成文时放 `spec/` |
 | 处理器 | `processor/` |
 | 保存格式 | `format/` |
 | 自动调优 | `tuning/` |
 | 嵌套配置（仅基础脚本独立成文时） | `nested/` |
 
-不再生成 `config/README.md` 索引页；入口文档（使用指南）直接链接到各分类下的具体页面。
+不生成 `config/README.md` 的**内容**（该页为手写导航页，`MANUAL_KEEP` 保护）：协议选择、`type` 索引与分组由人工维护，生成器只负责各配置页；入口文档（使用指南）同时直接链接到各分类下的具体页面。
 
 ### 4.2 为什么这样切
 
@@ -112,7 +112,7 @@ YAML 是「根配置 → spec → process[] / save[] → 嵌套对象」的树�
 
 因此采用 **一模型一文档 + 引用图（正向）**：每份文档只回答「本类字段指向哪些配置」，`type` 分派字段（`process`、`save`、`strategy`、`evaluation`、`select_best`、`operations`、`preprocess` 等）用「基础类块 + 派生类列表 + 派生类子块」表达：基础类块说明该字段按 `type`/`mode` 分派并列出全部公开子类型，而不是只写基类名。被引用信息收敛到参数表的「引用配置」列，不再单设「引用的配置 / 被引用的配置」小节。
 
-内部配置按[第2.1节](#21-内部类格式)判定，不把内部 `type` 写进公开分派索引。驱动脚本默认把嵌套内部配置展开进上级文档「参数列表」内对应类名子块，减少跳转；task 根配置同时把对应的 spec（服务规格）展开进「参数列表」，task 与 spec 合并为一页，不再单独生成 `spec/` 页面。`PracticeConfig` 是 `BaseQuantConfig` 子类（任务配置），虽然会被调优策略引用，仍独立成 `task/practice_config.md` 页，在任务侧集中展示 `apiversion + spec + metadata`（`Metadata`）的完整实践配置结构。
+内部配置按[第2.1节](#21-内部类格式)判定，不把内部 `type` 写进公开分派索引。驱动脚本默认把嵌套内部配置展开进上级文档「参数列表」内对应类名子块，减少跳转；任务根配置同时把对应的 spec（服务规格）展开进「参数列表」，任务与 spec 合并为一页，不再单独生成 `spec/` 页面。`PracticeConfig` 是 `BaseQuantConfig` 子类（任务配置），虽然会被调优策略引用，仍独立成 `quant/practice_config.md` 页，在任务侧集中展示 `apiversion + spec + metadata`（`Metadata`）的完整实践配置结构。
 
 ### 4.3 如何实现
 
@@ -180,9 +180,9 @@ YAML 是「根配置 → spec → process[] / save[] → 嵌套对象」的树�
 - `ModelslimConvertServiceConfig.preprocess`：`rename` / `convert` 两类预处理步骤，关系为 `type 分派`，分派基础类名合成 `PreprocessConfig`。
 - 普通嵌套 BaseModel：一条 `嵌套对象`。处理器 / 保存器子类在这条路径上跳过，避免与分派展开重复。
 
-不再渲染「被引用的配置」小节（内部仍保留 `parents` 反查表供示例 YAML 上溯宿主）。展开嵌套时，BFS 从 `nested_refs` 出发，把可达的嵌套配置按引用处上下文路径渲染进「参数列表」内对应类名子块；task 页把 spec 一并展开。对未独立成页的 spec 的引用（如调优策略的 `template` 指向 `ModelslimV1ServiceConfig`）重定向到所属 task 页的 2.2 小节锚点（task 页块序固定：根块 §2.1，spec 为首个嵌套块 §2.2）；跨目录链接按输出子目录计算相对路径。
+不再渲染「被引用的配置」小节（内部仍保留 `parents` 反查表供示例 YAML 上溯宿主）。展开嵌套时，BFS 从 `nested_refs` 出发，把可达的嵌套配置按引用处上下文路径渲染进「参数列表」内对应类名子块；任务（quant）页把 spec 一并展开。对未独立成页的 spec 的引用（如调优策略的 `template` 指向 `ModelslimV1ServiceConfig`）重定向到所属任务页的 2.2 小节锚点（任务页块序固定：根块 §2.1，spec 为首个嵌套块 §2.2）；配置块编号最多 3 段（`2.x.y` / `<h4>`），再深则提升为祖父同级续号；跨目录链接按输出子目录计算相对路径。
 
-**type 分派渲染**：同一字段路径下引用数 ≥2 或含 `type 分派` 即判为分派组。渲染成一个 `<h3 id="…">2.x 基础类名（按 type 分派）</h3>` 块：块内含基础类参数表（基础类本身是真实模型时）与「派生类」列表（每项 = 类名、`type` 值、一行说明、本页子块锚点或独立页相对链接），各派生类参数表 + 配置约束作为 `<h4 id="…">2.x 派生类名</h4>` 子块排在其后。同一页面同一基础类只渲染一次，后续分派字段的「引用配置」列别名指向该块锚点（例如 task 页的 `spec.process[]` 与 `spec.prior[].process` 共用同一个 `AutoProcessorConfig` 块）。「引用配置」列对分派字段统一写`「本页 <a href="#anchor">§x.y</a>」`指向基础类块锚点，不再逐个子类型平铺、也不再写「按 `type` 分派，见对应配置文档」汇总文案。配置块标题带可见编号，且标题与页内跳转统一用 HTML 标签（`<h3 id>` / `<h4 id>` / `<a href="#…">`），不用 Markdown 的 `{#anchor}` 属性语法。
+**type 分派渲染**：同一字段路径下引用数 ≥2 或含 `type 分派` 即判为分派组。渲染成一个 `<h3 id="…">2.x 基础类名（按 type 分派）</h3>` 块：块内含基础类参数表（基础类本身是真实模型时）与「派生类」列表（每项 = 类名、`type` 值、一行说明、本页子块锚点或独立页相对链接），各派生类参数表 + 配置约束作为同级或下层编号子块排在其后（仍受 3 段编号上限约束）。同一页面同一基础类只渲染一次，后续分派字段的「引用配置」列别名指向该块锚点（例如任务页的 `spec.process[]` 与 `spec.prior[].process` 共用同一个 `AutoProcessorConfig` 块）。「引用配置」列对分派字段统一写`「本页 <a href="#anchor">§x.y</a>」`指向基础类块锚点，不再逐个子类型平铺、也不再写「按 `type` 分派，见对应配置文档」汇总文案。配置块标题带可见编号，且标题与页内跳转统一用 HTML 标签（`<h3 id>` / `<h4 id>` / `<a href="#…">`），不用 Markdown 的 `{#anchor}` 属性语法。
 
 #### 4.3.6 示例 YAML
 
@@ -198,7 +198,7 @@ YAML 是「根配置 → spec → process[] / save[] → 嵌套对象」的树�
 
 #### 4.3.7 导航
 
-默认不改 `mkdocs.yml`。仅当显式传入 `--update-mkdocs` 时，才替换 `# BEGIN GENERATED QUANT CONFIG NAV` … `# END GENERATED QUANT CONFIG NAV`。分组顺序固定为：任务配置、服务规格、处理器、保存格式、自动调优、嵌套配置。手写的组合处理器与自动调优条目接在生成块末尾。不再生成 `config/README.md` 索引页。
+默认不改 `mkdocs.yml`。仅当显式传入 `--update-mkdocs` 时，才替换 `# BEGIN GENERATED QUANT CONFIG NAV` … `# END GENERATED QUANT CONFIG NAV`。分组顺序固定为：任务配置、服务规格、处理器、保存格式、自动调优、嵌套配置。手写的组合处理器与自动调优条目接在生成块末尾；`config/README.md` 为手写导航页，不参与生成与清理。
 
 开发树里 `config.ini` 在仓库根 `config/`，包代码期望 `msmodelslim/config`。生成前若缺失则建临时 symlink，结束后删除，避免导入失败。
 

@@ -8,7 +8,7 @@
 
 ## 量化配置（模板 04）
 
-从 Pydantic `model_json_schema()` 生成 `docs/zh/api_reference/config/`，并按类型放入 `task/`、`processor/`、`format/`、`tuning/` 等子目录。服务规格（spec）不再单独成页，而是随对应 task 页展开。字段类型、枚举、边界以 JSON Schema 为准。
+从 Pydantic `model_json_schema()` 生成 `docs/zh/api_reference/config/`，并按类型放入 `quant/`、`processor/`、`format/`、`tuning/` 等子目录。服务规格（spec）不再单独成页，而是随对应任务（quant）页展开。字段类型、枚举、边界以 JSON Schema 为准。
 
 日常重新生成使用驱动脚本（默认目标 + 展开嵌套 + 清理过期文档）：
 
@@ -37,13 +37,14 @@ python3 skills/docs-management/scripts/gen_quant_config_docs.py --check
 生成规则：
 
 - 每个对外 Pydantic 配置类生成一份 Markdown；`type` 以 `_` 开头的内部配置不生成。
-- 文档按类型子目录组织：任务配置 `task/`、处理器 `processor/`、保存格式 `format/`、自动调优 `tuning/`；服务规格随 task 页展开，不单独生成 `spec/` 页面。
+- 文档按类型子目录组织：任务配置 `quant/`、处理器 `processor/`、保存格式 `format/`、自动调优 `tuning/`；服务规格随任务页展开，不单独生成 `spec/` 页面。
 - 参数表「字段路径」为相对当前配置的字段名；子标题不显示 YAML 路径后缀。
-- 参数列表按配置类名分块组织，块标题带可见编号（如 `<h3 id="2-1-...">2.1类名</h3>`、`<h4 id="...">2.x 派生类名</h4>`）；每个块含自身参数表与「配置约束」子项；嵌套配置（含 task 的 spec）展开进对应子块；嵌套块若类 docstring 首段非空，标题后先输出该句类概述。
-- `PracticeConfig`（`BaseQuantConfig` 子类，含 `metadata` → `Metadata`）作为任务基类配置独立成 `task/practice_config.md` 页，被调优策略引用时链接到该页。
-- type/mode 分派字段（`process`、`save`、`strategy`、`evaluation`、`select_best`、`operations`、`preprocess` 等）渲染为基础类块（`<h3 id="…">基础类名（按 type 分派）</h3>`，含基础类参数表与「派生类」列表）+ 各派生类 `<h4 id="…">` 子块；同一页面同一基础类只渲染一次，分派字段的「引用配置」列统一指向基础类块锚点。
+- 参数列表按配置类名分块组织，块标题带可见编号（如 `<h3 id="2-1-...">2.1类名</h3>`、`<h4 id="...">2.x 派生类名</h4>`）；每个块含自身参数表与「配置约束」子项；嵌套配置（含任务页的 spec）展开进对应子块；嵌套块若类 docstring 首段非空，标题后先输出该句类概述。
+- `PracticeConfig`（`BaseQuantConfig` 子类，含 `metadata` → `Metadata`）作为任务基类配置独立成 `quant/practice_config.md` 页，被调优策略引用时链接到该页。
+- type/mode 分派字段（`process`、`save`、`strategy`、`evaluation`、`select_best`、`operations`、`preprocess` 等）渲染为基础类块（`<h3 id="…">基础类名（按 type 分派）</h3>`，含基础类参数表与「派生类」表格）+ 各派生类 `<h4 id="…">` 子块；同一页面同一基础类只渲染一次，分派字段的「引用配置」列统一指向基础类块锚点。
 - 配置块标题与页内跳转统一用 HTML 标签（`<h3 id>` / `<h4 id>` / `<a href="#…">`），不使用 Markdown 的 `{#anchor}` 属性语法。
-- 不再生成 `config/README.md` 索引页。
+- 配置块标题的可见编号与标题层级一致：页根 `<h3>` 为 `2.1`；直接挂在页根下的嵌套/分派块与页根同级续号（`2.2`、`2.3`…），再往下的子块编号为 `<父编号>.<序号>`（如 `2.2.1`），**最多 3 段**（`2.x.y`，对应最大 `<h4>`）；若再深则提升为祖父同级续号，避免出现 `2.2.1.1` / `<h5>` 及更深层。
+- 手写页 `README.md`（配置说明导航）不参与生成与清理；不再生成 `config/README.md` 的正文内容。
 - 文件名优先使用公开 `type`（如 `linear_quant.md`），否则使用类名的 snake_case。
 - 顶层任务配置保留稳定文件名：`modelslim_v1.md`、`multimodal_vlm_modelslim_v1.md`、`multimodal_sd_modelslim_v1.md`、`modelslim_convert.md`、`practice_config.md`。
 - 手写文档 `processor_group.md`、`auto_precision_tuning.md` 不会被覆盖。
