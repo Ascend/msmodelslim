@@ -19,7 +19,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from typing import List, Any, Generator
+from typing import List, Any, Dict, Generator
 
 from torch import nn
 from transformers import PreTrainedTokenizerBase
@@ -40,6 +40,7 @@ from ..interface_hub import (
     ModelSlimPipelineInterfaceV1,
     StandingHighWithExperienceInterface,
     KVSmoothFusedInterface,
+    RaCompressAnalysisInterface,
 )
 
 
@@ -52,12 +53,23 @@ class Qwen2ModelAdapter(  # pylint: disable=too-many-ancestors
     StandingHighWithExperienceInterface,
     KVSmoothFusedInterface,
     AWQInterface,
+    RaCompressAnalysisInterface,
 ):
     def get_model_type(self) -> str:
         return self.model_type
 
     def get_model_pedigree(self) -> str:
         return 'qwen2'
+
+    def get_proj_names(self) -> Dict[str, str]:
+        return {
+            "q": "q_proj",
+            "k": "k_proj",
+            "qkv": "qkv_proj",
+        }
+
+    def get_tokenizer(self) -> PreTrainedTokenizerBase:
+        return self._load_tokenizer()
 
     def load_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
         return self._load_model(device)

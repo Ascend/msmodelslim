@@ -20,9 +20,10 @@ See the Mulan PSL v2 for more details.
 """
 
 import functools
-from typing import Annotated, Any, Dict, List, Literal, Optional
+import inspect
+from typing import Annotated, Any, Callable, Dict, List, Literal, Optional
 
-from pydantic import Field, AfterValidator
+from pydantic import Field, AfterValidator, model_validator
 from torch import nn
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
@@ -37,8 +38,25 @@ from msmodelslim.processor.analysis.distributed_utils import (
     write_layer_analysis_result,
 )
 from msmodelslim.processor.analysis.unary_operator.metrics.factory import UnaryAnalysisMethodFactory
+from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress import (
+    RA_COMPRESS_METRIC,
+    validate_metric_params,
+)
 from msmodelslim.utils.logging import get_logger
-from msmodelslim.utils.exception import UnexpectedError
+from msmodelslim.utils.exception import SchemaValidateError, UnexpectedError
+
+# 各指标专属超参的校验器：参数白名单与取值约束由指标自身声明，processor 只按 metrics 分派
+_METRIC_PARAMS_VALIDATORS: Dict[str, Callable[[Dict[str, Any]], None]] = {
+    RA_COMPRESS_METRIC: validate_metric_params,
+}
+
+
+def _accepts_block_name(setter: Callable) -> bool:
+    """判断 set_forward_kwargs 实现是否接受第二个入参（当前块名）。"""
+    try:
+        return len(inspect.signature(setter).parameters) >= 2
+    except (TypeError, ValueError):  # 内建函数等无法取签名时按不支持处理
+        return False
 
 
 class UnaryAnalysisProcessorConfig(AutoProcessorConfig):
@@ -53,12 +71,37 @@ class UnaryAnalysisProcessorConfig(AutoProcessorConfig):
     )
     metrics: str = Field(
         default="kurtosis",
-        description="分析指标：`quantile`（分位数）、`std`（标准差）、`kurtosis`（峰度）",
+        description="分析指标：`quantile`（分位数）、`std`（标准差）、`kurtosis`（峰度）、"
+        "`ra_compress`（RA Compress 长序列压缩头筛选）",
     )
     patterns: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=lambda: ["*"],
         description="待分析的层名模式列表，默认 `*` 匹配全部",
     )
+    metric_params: Dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "指标专属超参，仅由 `metrics` 指定的分析方法解析。当前仅 `metrics=ra_compress` 支持："
+            "`induction_head_ratio`（默认 0.14）、`echo_head_ratio`（默认 0.01），取值范围均为 [0, 1]。"
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _validate_metric_params(self) -> "UnaryAnalysisProcessorConfig":
+        """校验指标专属超参，非法使用直接报错。"""
+        params = self.metric_params or {}
+        if not params:
+            return self
+
+        validate = _METRIC_PARAMS_VALIDATORS.get(self.metrics)
+        if validate is None:
+            raise SchemaValidateError(
+                f"metrics={self.metrics!r} does not accept metric_params, but got {sorted(params)}",
+                action="Please remove metric_params, or use a metrics that supports it "
+                f"(supported: {sorted(_METRIC_PARAMS_VALIDATORS)}).",
+            )
+        validate(params)
+        return self
 
 
 @QABCRegistry.register(dispatch_key=UnaryAnalysisProcessorConfig, abc_class=AutoSessionProcessor)
@@ -78,7 +121,11 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
     ):
         super().__init__(model)
         self.config = config
-        self._analysis_method = UnaryAnalysisMethodFactory.create_method(config.metrics, adapter=adapter)
+        self._analysis_method = UnaryAnalysisMethodFactory.create_method(
+            config.metrics,
+            adapter=adapter,
+            **dict(config.metric_params or {}),
+        )
         self._target_layers: List[str] = []
         self._layer_stats: Dict[str, Any] = {}
         self._pending_packed_stats: Dict[str, Any] = {}
@@ -97,9 +144,35 @@ class UnaryAnalysisProcessor(AutoSessionProcessor):
             self._analysis_method.name,
         )
 
+    def _forward_method_kwargs(self, request: BatchProcessRequest) -> None:
+        """把当前层的 forward kwargs 透传给分析方法（如 ra_compress 需要 RoPE）。
+
+        可选回调：方法实现 ``set_forward_kwargs`` 才会被调用，其它指标不受影响。
+        回调可选地接收第二个入参（当前块名，如 ``model.layers.0``），用于按块缓存
+        模型下发的位置编码等信息；只接收 kwargs 的实现仍然兼容。
+        多样本时各样本的层 kwargs 相同，取第一份即可。
+        """
+        setter = getattr(self._analysis_method, 'set_forward_kwargs', None)
+        if not callable(setter):
+            return
+        if not request.datas:
+            return
+        try:
+            if _accepts_block_name(setter):
+                setter(request.datas[0][1], request.name)
+            else:
+                setter(request.datas[0][1])
+        except Exception as error:  # pylint: disable=broad-except
+            get_logger().warning(
+                "Failed to forward layer kwargs to analysis method %s: %s",
+                self._analysis_method.name,
+                error,
+            )
+
     def preprocess(self, request: BatchProcessRequest) -> None:
         all_layers = self._analysis_method.get_target_layers(request.module, request.name)
         self._target_layers = self._analysis_method.filter_layers_by_patterns(all_layers, self.config.patterns)
+        self._forward_method_kwargs(request)
         get_logger().debug(
             "UnaryAnalysisProcessor preprocess: %d target layers (metrics=%s)",
             len(self._target_layers),

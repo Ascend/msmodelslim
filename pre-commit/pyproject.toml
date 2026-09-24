@@ -84,6 +84,8 @@
  	   "consider-using-f-string",
  	   "superfluous-parens",
  	   "unnecessary-pass",
+ 	   # 抽象方法允许用 ... 作为函数体
+ 	   "unnecessary-ellipsis",
  	   "len-as-condition",
  	   "global-statement",
  	   "import-outside-toplevel",

@@ -52,7 +52,7 @@ from msmodelslim.processor.analysis.binary_operator_model_wise.metrics.mse_model
     MSEModelWiseAnalysisInterface as mmseai,
 )
 from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.interface import (
-    RaCompressAnalysisInterface as rcai,
+    RaCompressAnalysisInterface,
 )
 from msmodelslim.processor.anti_outlier.flex_smooth.interface import FlexSmoothQuantInterface
 from msmodelslim.processor.anti_outlier.iter_smooth.interface import IterSmoothInterface
@@ -74,9 +74,6 @@ class AttentionAnalysisInterface(amseai): ...
 class MSEModelWiseAnalysisInterface(mmseai): ...
 
 
-class RACompressAnalysisInterface(rcai): ...
-
-
 # 迁移期兼容
 MultimodalSDPipelineInterface = LegacyMultimodalPipelineInterface
 
@@ -89,7 +86,7 @@ __all__ = [
     # analysis_method interface
     'AttentionAnalysisInterface',  # For Attention Analysis (attn_mse); required when using attn_mse metric.
     'MSEModelWiseAnalysisInterface',  # For mse_model_wise sensitive layer analysis block I/O; optional.
-    'RACompressAnalysisInterface',  # For RA Compress Analysis, describing Q/K/QKV projection names.
+    'RaCompressAnalysisInterface',  # For RA Compress Analysis; required: Q/K/QKV projection names and tokenizer.
     # algorithm interface
     'KVSmoothFusedInterface',  # For KV Smooth, describing the architecture of model.
     'SmoothQuantInterface',  # For Smooth Quant, describing the architecture of model.

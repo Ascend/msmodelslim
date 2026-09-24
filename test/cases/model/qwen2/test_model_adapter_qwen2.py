@@ -29,6 +29,7 @@ from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph.adapter_types import AdapterConfig, MappingConfig
 from msmodelslim.model.qwen2.model_adapter import Qwen2ModelAdapter
+from msmodelslim.model.interface_hub import RaCompressAnalysisInterface
 from msmodelslim.processor.kv_smooth import KVSmoothFusedType, KVSmoothFusedUnit
 from msmodelslim.utils.exception import InvalidModelError
 
@@ -609,3 +610,41 @@ class TestQwen2ModelAdapterGetAdapterConfigForSubgraph(unittest.TestCase):
             self.assertEqual(len(result), 3)
             subgraph_types = [cfg.subgraph_type for cfg in result]
             self.assertEqual(subgraph_types, ["norm-linear", "norm-linear", "up-down"])
+
+
+class TestQwen2ModelAdapterRaCompressInterface(unittest.TestCase):
+    """测试Qwen2ModelAdapter实现的RA Compress分析接口"""
+
+    def setUp(self):
+        self.model_type = 'Qwen2-7B-Instruct'
+        self.model_path = Path('.')
+
+    def test_get_proj_names_when_called_then_return_qkv_projection_names(self):
+        """正常：应返回 q/k/qkv 三路投影层名，供指标侧按层名匹配"""
+        with patch('msmodelslim.model.qwen2.model_adapter.DefaultModelAdapter.__init__', return_value=None):
+            adapter = Qwen2ModelAdapter(model_type=self.model_type, model_path=self.model_path)
+
+            result = adapter.get_proj_names()
+
+        self.assertEqual(result, {"q": "q_proj", "k": "k_proj", "qkv": "qkv_proj"})
+        # 与指标侧空串语义约定一致：每个模式都必须非空，否则会命中全部 nn.Linear
+        self.assertTrue(all(result.values()))
+
+    def test_get_proj_names_when_called_then_adapter_is_ra_compress_interface(self):
+        """正常：适配器应实现 RaCompressAnalysisInterface，使指标侧 isinstance 判定成立"""
+        with patch('msmodelslim.model.qwen2.model_adapter.DefaultModelAdapter.__init__', return_value=None):
+            adapter = Qwen2ModelAdapter(model_type=self.model_type, model_path=self.model_path)
+
+        self.assertIsInstance(adapter, RaCompressAnalysisInterface)
+
+    def test_get_tokenizer_when_called_then_delegate_to_load_tokenizer(self):
+        """正常：get_tokenizer 应委托 _load_tokenizer 并返回同一对象"""
+        with patch('msmodelslim.model.qwen2.model_adapter.DefaultModelAdapter.__init__', return_value=None):
+            adapter = Qwen2ModelAdapter(model_type=self.model_type, model_path=self.model_path)
+            mock_tokenizer = MagicMock()
+
+            with patch.object(adapter, '_load_tokenizer', return_value=mock_tokenizer) as mock_load:
+                result = adapter.get_tokenizer()
+
+        self.assertIs(result, mock_tokenizer)
+        mock_load.assert_called_once_with()

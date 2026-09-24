@@ -34,7 +34,7 @@ from testing_utils.mock import mock_init_config
 
 from msmodelslim.core.analysis_service import AnalysisResult
 from msmodelslim.core.const import DeviceType
-from msmodelslim.utils.exception import SchemaValidateError
+from msmodelslim.utils.exception import SchemaValidateError, SecurityError
 
 mock_init_config()
 
@@ -369,6 +369,91 @@ class TestAppAnalysisModule(TestComprehensiveAnalysisCoverage):
 
         self.assertIsNone(result)
         mock_result_manager.display_result.assert_not_called()
+
+    def test_validate_save_path_skips_none(self):
+        """边界：save_path 为 None（仅打印到控制台）时应跳过校验，不触碰安全校验"""
+        from msmodelslim.app.analysis.application import _validate_save_path
+
+        with patch("msmodelslim.app.analysis.application.get_valid_path") as mock_valid_path:
+            _validate_save_path(None)
+
+        mock_valid_path.assert_not_called()
+
+    def test_validate_save_path_accepts_string_and_calls_security_check(self):
+        """正常：save_path 为字符串时应做长度校验并交由 get_valid_path 做安全校验"""
+        from msmodelslim.app.analysis.application import _validate_save_path
+
+        with patch("msmodelslim.app.analysis.application.get_valid_path") as mock_valid_path:
+            _validate_save_path("output/analysis.yaml")
+
+        mock_valid_path.assert_called_once_with("output/analysis.yaml")
+
+    def test_validate_save_path_rejects_non_string(self):
+        """异常：save_path 非字符串应报 SchemaValidateError"""
+        from msmodelslim.app.analysis.application import _validate_save_path
+
+        with self.assertRaises(SchemaValidateError):
+            _validate_save_path(123)  # type: ignore[arg-type]
+
+    def test_validate_save_path_rejects_overlong_string(self):
+        """异常：save_path 超长应报 SecurityError"""
+        from msmodelslim.app.analysis.application import _validate_save_path
+
+        with self.assertRaises(SecurityError):
+            _validate_save_path("a" * 201)
+
+    def test_validate_save_path_propagates_security_check_failure(self):
+        """异常：save_path 未通过安全校验时应把 SecurityError 透出"""
+        from msmodelslim.app.analysis.application import _validate_save_path
+
+        with patch(
+            "msmodelslim.app.analysis.application.get_valid_path",
+            side_effect=SecurityError("Input path contains invalid characters."),
+        ):
+            with self.assertRaises(SecurityError):
+                _validate_save_path("invalid;save_path")
+
+    def test_validate_calib_dataset_name_propagates_security_check_failure(self):
+        """异常：calib_dataset 未通过安全校验时应把 SecurityError 透出"""
+        from msmodelslim.app.analysis.application import _validate_calib_dataset_name
+
+        with patch(
+            "msmodelslim.app.analysis.application.get_valid_path",
+            side_effect=SecurityError("Input path contains invalid characters."),
+        ):
+            with self.assertRaises(SecurityError):
+                _validate_calib_dataset_name("bad;name.jsonl")
+
+    @patch('msmodelslim.app.analysis.application.get_logger')
+    def test_analyze_validates_save_path_before_running_analysis(self, mock_get_logger):
+        """前置校验：save_path 非法时应在调用分析服务前即报错，避免分析跑完才失败"""
+        from msmodelslim.app.analysis.application import (
+            AnalysisMetrics,
+            LayerAnalysisApplication,
+            LinearArgs,
+        )
+
+        mock_get_logger.return_value = MagicMock()
+        mock_service = MagicMock()
+        app = LayerAnalysisApplication(mock_service, MagicMock(), MagicMock())
+
+        with patch(
+            "msmodelslim.app.analysis.application.get_valid_path",
+            side_effect=SecurityError("Input path contains invalid characters."),
+        ):
+            with self.assertRaises(SecurityError):
+                app.analyze(
+                    model_type="Qwen2.5-7B-Instruct",
+                    model_path=str(self.model_path),
+                    scope_args=LinearArgs(pattern=["*"], metrics=AnalysisMetrics.STD),
+                    device=DeviceType.NPU,
+                    calib_dataset="boolq.jsonl",
+                    topk=15,
+                    trust_remote_code=False,
+                    save_path="invalid;save_path",
+                )
+
+        mock_service.analyze.assert_not_called()
 
 
 def create_mock_analysis_result(layer_scores: list) -> AnalysisResult:
