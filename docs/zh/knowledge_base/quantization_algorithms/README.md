@@ -83,9 +83,9 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 
 ### 4.3 敏感层分析
 
-当前敏感层分析支持按不同范围（`linear` / `layer` / `attn` / `attn_head`）度量敏感度，并据此做对应粒度的回退、混精调参或 KV Cache 压缩配置。使用指南：《[线性层](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级](../../user_guide/usage_sensitive_layer_analysis.md)》、《[Attention](../../user_guide/usage_sensitive_attn_analysis.md)》、《[Attention Head](../../user_guide/usage_sensitive_attn_head_analysis.md)》。
+当前敏感层分析支持按不同范围（`linear` / `layer` / `attn` / `attn_head`）度量敏感度，并据此做对应粒度的回退、混精调参；其中 `attn_head` 范围产出的是交付给后续 MindIE 推理框架用于长序列 KV Cache 压缩的关键头清单（`head.pt`），不写入量化配置。使用指南：《[线性层](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级](../../user_guide/usage_sensitive_layer_analysis.md)》、《[Attention](../../user_guide/usage_sensitive_attn_analysis.md)》、《[Attention Head](../../user_guide/usage_sensitive_attn_head_analysis.md)》。
 
 - **linear**（线性层）：首选 **Kurtosis**，用激活峰度刻画尖峰与尾部影响，辅助识别需回退或提升位宽的线性层。
 - **layer**（Decoder 块）：首选 **mse_layer_wise**，适合整层 / 整块（如 MLP、Attention 段）回退。
 - **attn**（Attention 结构）：首选 **Attention MSE（mse）**，主要用于配合 **FA3 Quant** 识别需回退的 Attention 模块（需适配器接口）。
-- **attn_head**（注意力头）：首选 **RA Compress**，基于重复段结构筛选归纳头 / 回声头，用于长序列 KV Cache 压缩配置（仅支持 LLM，须使用 `calib_dummy.jsonl`）。
+- **attn_head**（注意力头）：首选 **RA Compress**，基于重复段结构筛选归纳头 / 回声头，产出交付给后续 MindIE 推理框架的 `head.pt` 关键头清单，供 MindIE 做长序列 KV Cache 压缩（仅支持 LLM，校准输入由算法在运行时自行构造，无需 `--calibration_dataset`）。
