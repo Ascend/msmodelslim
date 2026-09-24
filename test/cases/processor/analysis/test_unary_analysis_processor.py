@@ -30,7 +30,7 @@ from msmodelslim.processor.analysis.unary_operator.processor import (
     UnaryAnalysisProcessor,
     UnaryAnalysisProcessorConfig,
 )
-from msmodelslim.utils.exception import UnexpectedError
+from msmodelslim.utils.exception import SchemaValidateError, UnexpectedError
 
 
 class TinyBlock(nn.Module):
@@ -67,7 +67,10 @@ class TestUnaryAnalysisProcessor(unittest.TestCase):
 
         processor = UnaryAnalysisProcessor(self.model, self.config)
 
-        mock_create_method.assert_called_once_with("std", adapter=None)
+        mock_create_method.assert_called_once_with(
+            "std",
+            adapter=None,
+        )
         self.assertEqual(processor.config, self.config)
         self.assertIs(processor._analysis_method, fake_method)
         self.assertEqual(processor._target_layers, [])
@@ -75,6 +78,44 @@ class TestUnaryAnalysisProcessor(unittest.TestCase):
         self.assertEqual(processor._pending_packed_stats, {})
         self.assertEqual(processor._layer_scores, [])
         self.assertEqual(processor._hook_handles, {})
+
+    @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
+    def test_init_forward_metric_params_when_metrics_ra_compress(self, mock_create_method):
+        """metric_params 作为关键字参数透传给 ra_compress 分析方法。"""
+        fake_method = self._build_fake_method()
+        mock_create_method.return_value = fake_method
+        config = UnaryAnalysisProcessorConfig(
+            metrics="ra_compress",
+            patterns=["*.linear1"],
+            metric_params={"induction_head_ratio": 0.2, "echo_head_ratio": 0.05},
+        )
+
+        UnaryAnalysisProcessor(self.model, config)
+
+        mock_create_method.assert_called_once_with(
+            "ra_compress",
+            adapter=None,
+            induction_head_ratio=0.2,
+            echo_head_ratio=0.05,
+        )
+
+    def test_config_raise_error_when_metric_params_used_by_other_metrics(self):
+        """非 ra_compress 指标不接受 metric_params。"""
+        with self.assertRaises(SchemaValidateError) as ctx:
+            UnaryAnalysisProcessorConfig(metrics="std", metric_params={"induction_head_ratio": 0.2})
+        self.assertIn("does not accept metric_params", str(ctx.exception))
+
+    def test_config_raise_error_when_metric_params_key_unknown(self):
+        """ra_compress 的 metric_params 出现未知 key 时报错。"""
+        with self.assertRaises(SchemaValidateError) as ctx:
+            UnaryAnalysisProcessorConfig(metrics="ra_compress", metric_params={"head_ratio": 0.2})
+        self.assertIn("Unsupported metric_params", str(ctx.exception))
+
+    def test_config_raise_error_when_ratio_out_of_range(self):
+        """比例类 metric_params 的取值必须在 [0, 1] 内。"""
+        with self.assertRaises(SchemaValidateError) as ctx:
+            UnaryAnalysisProcessorConfig(metrics="ra_compress", metric_params={"induction_head_ratio": 1.5})
+        self.assertIn("must be a number in [0, 1]", str(ctx.exception))
 
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
     def test_preprocess_return_hook_handles_when_target_linear_layers_matched(self, mock_create_method):

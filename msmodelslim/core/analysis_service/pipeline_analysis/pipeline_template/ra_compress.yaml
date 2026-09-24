@@ -2,3 +2,6 @@ process:
   - type: unary_analysis
     metrics: ra_compress
     patterns: ${patterns}
+    metric_params:
+      induction_head_ratio: 0.14
+      echo_head_ratio: 0.01

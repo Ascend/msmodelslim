@@ -27,8 +27,12 @@ import torch
 
 from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress import (
     DUMMY_INPUT_LENGTH,
+    PREFIX_TOKEN_ID,
     REPET_TIMES,
     RaCompressAnalysisMethod,
+    resolve_model_tokenizer,
+    resolve_prefix_token_id,
+    resolve_v0_prefix_token_id,
 )
 from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.interface import (
     RaCompressAnalysisInterface,
@@ -36,10 +40,49 @@ from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.interface
 
 
 class FakeAdapter(RaCompressAnalysisInterface):
-    """实现 RaCompressAnalysisInterface 的测试用 adapter。"""
+    """实现 RaCompressAnalysisInterface 的测试用 adapter（不提供 tokenizer）。"""
 
-    def get_ra_compress_proj_patterns(self) -> Dict[str, str]:
+    def get_proj_names(self) -> Dict[str, str]:
         return {"q": "q_proj", "k": "k_proj", "qkv": "qkv_proj"}
+
+    def get_tokenizer(self):
+        return None
+
+
+class _FakeTokenizer:
+    """按文本返回预设 input_ids 的假 tokenizer。"""
+
+    def __init__(self, mapping: Dict[str, object]):
+        self._mapping = mapping
+
+    def __call__(self, text: str, **kwargs) -> Dict[str, torch.Tensor]:
+        return {"input_ids": torch.tensor([self._mapping[text]])}
+
+
+class TestResolveV0PrefixTokenId(unittest.TestCase):
+    """测试 resolve_v0_prefix_token_id — 复现 V0 的首 token 口径。"""
+
+    def test_uses_last_token_of_empty_input_when_not_empty(self):
+        """场景：tokenizer('') 带 BOS。预期：取该末位 token 即 BOS。"""
+        tokenizer = _FakeTokenizer({"": [128000], "A": [128000, 32]})
+        self.assertEqual(resolve_v0_prefix_token_id(tokenizer), 128000)
+
+    def test_falls_back_to_text_token_when_empty_input_is_empty(self):
+        """场景：tokenizer('') 为空（Qwen2 系列）。预期：取 tokenizer('A') 的末位 token。"""
+        tokenizer = _FakeTokenizer({"": [], "A": [32]})
+        self.assertEqual(resolve_v0_prefix_token_id(tokenizer), 32)
+
+    def test_returns_none_when_tokenizer_missing(self):
+        """异常：未提供 tokenizer。预期：返回 None，由调用方回落兜底值。"""
+        self.assertIsNone(resolve_v0_prefix_token_id(None))
+
+    def test_returns_none_when_tokenizer_raises(self):
+        """异常：tokenizer 调用失败。预期：返回 None，不向上抛异常。"""
+
+        def _boom(text, **kwargs):
+            raise RuntimeError("tokenizer unavailable")
+
+        self.assertIsNone(resolve_v0_prefix_token_id(_boom))
 
 
 class TestRaCompressPrefixScore(unittest.TestCase):
@@ -495,8 +538,11 @@ class TestRaCompressInterfaceIntegration(unittest.TestCase):
         """adapter 提供自定义名称模式。"""
 
         class CustomAdapter(RaCompressAnalysisInterface):
-            def get_ra_compress_proj_patterns(self) -> Dict[str, str]:
+            def get_proj_names(self) -> Dict[str, str]:
                 return {"q": "query", "k": "key", "qkv": "qkv_fused"}
+
+            def get_tokenizer(self):
+                return None
 
         method = RaCompressAnalysisMethod(adapter=CustomAdapter())
         self.assertEqual(method._q_name_pattern, "query")
@@ -621,6 +667,282 @@ class TestRaCompressEndToEnd(unittest.TestCase):
         head_dict = method.get_compress_heads()
         self.assertIn("prefix_matching", head_dict)
         self.assertIn("copying", head_dict)
+
+
+_CALIB_INPUT_LOGGER = "msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.calib_input.get_logger"
+_IMPL_LOGGER = "msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.impl.logger"
+
+
+class _FakeInterfaceAdapter(RaCompressAnalysisInterface):
+    """可注入 tokenizer 的假 adapter，用于覆盖首 token 取值的各类分支。"""
+
+    def __init__(self, tokenizer=None):
+        self._tokenizer = tokenizer
+        self.tokenizer_calls = 0
+
+    def get_proj_names(self) -> Dict[str, str]:
+        return {"q": "q_proj", "k": "k_proj", "qkv": "qkv_proj"}
+
+    def get_tokenizer(self):
+        self.tokenizer_calls += 1
+        return self._tokenizer
+
+
+class _RaisingTokenizerAdapter(_FakeInterfaceAdapter):
+    """get_tokenizer 抛异常的假 adapter。"""
+
+    def get_tokenizer(self):
+        raise RuntimeError("tokenizer unavailable")
+
+
+class TestRaCompressPrefixTokenOnModelSide(unittest.TestCase):
+    """测试首 token 归属：模型侧只提供 tokenizer，V0 配方留在指标侧。"""
+
+    def test_uses_v0_token_when_adapter_provides_tokenizer(self):
+        """场景：适配器实现接口并给出 tokenizer。预期：按 V0 口径取 'A' 的末位 token。"""
+        adapter = _FakeInterfaceAdapter(tokenizer=_FakeTokenizer({"": [], "A": [32]}))
+        self.assertEqual(resolve_prefix_token_id(adapter), 32)
+
+    def test_uses_last_token_of_empty_input_when_not_empty(self):
+        """场景：tokenizer('') 带 BOS。预期：直接取该末位 token，不走 'A' 兜底。"""
+        adapter = _FakeInterfaceAdapter(tokenizer=_FakeTokenizer({"": [1]}))
+        self.assertEqual(resolve_prefix_token_id(adapter), 1)
+
+    def test_falls_back_and_warns_when_tokenizer_not_provided(self):
+        """场景：实现了接口但 get_tokenizer 返回 None。预期：告警并回落兜底值。"""
+        adapter = _FakeInterfaceAdapter()
+        with patch(_CALIB_INPUT_LOGGER) as mock_logger:
+            self.assertEqual(resolve_prefix_token_id(adapter), PREFIX_TOKEN_ID)
+        self.assertEqual(adapter.tokenizer_calls, 1)
+        self.assertTrue(mock_logger.return_value.warning.called)
+
+    def test_falls_back_and_warns_when_interface_not_implemented(self):
+        """场景：适配器未实现本接口。预期：不询问 tokenizer，告警并回落兜底值。"""
+        with patch(_CALIB_INPUT_LOGGER) as mock_logger:
+            self.assertEqual(resolve_prefix_token_id(object()), PREFIX_TOKEN_ID)
+        self.assertTrue(mock_logger.return_value.warning.called)
+
+    def test_falls_back_and_warns_when_get_tokenizer_raises(self):
+        """场景：适配器的 get_tokenizer 抛异常。预期：告警并回落兜底值，不抛给上层。"""
+        with patch(_CALIB_INPUT_LOGGER) as mock_logger:
+            self.assertEqual(resolve_prefix_token_id(_RaisingTokenizerAdapter()), PREFIX_TOKEN_ID)
+        self.assertTrue(mock_logger.return_value.warning.called)
+
+    def test_falls_back_when_tokenizer_call_raises(self):
+        """场景：tokenizer 自身解析失败。预期：回落兜底值。"""
+
+        class _BadTokenizer:
+            def __call__(self, text, **kwargs):
+                raise RuntimeError("bad tokenizer")
+
+        adapter = _FakeInterfaceAdapter(tokenizer=_BadTokenizer())
+        self.assertEqual(resolve_prefix_token_id(adapter), PREFIX_TOKEN_ID)
+
+    def test_resolve_model_tokenizer_returns_none_without_interface(self):
+        """场景：非接口对象。预期：返回 None，不尝试取值。"""
+        self.assertIsNone(resolve_model_tokenizer(object()))
+
+
+class TestRaCompressEmptyPatternSemantics(unittest.TestCase):
+    """测试名称模式的空串语义：空串表示该投影层不存在，不参与匹配。"""
+
+    @staticmethod
+    def _adapter(patterns: Dict[str, str]) -> RaCompressAnalysisInterface:
+        class _Adapter(RaCompressAnalysisInterface):
+            def get_proj_names(self) -> Dict[str, str]:
+                return patterns
+
+            def get_tokenizer(self):
+                return None
+
+        return _Adapter()
+
+    def test_empty_qkv_pattern_does_not_match_any_layer(self):
+        """场景：无 QKV 融合时按文档示例留空 qkv=""。预期：不命中任何层名。"""
+        method = RaCompressAnalysisMethod(adapter=self._adapter({"q": "q_proj", "k": "k_proj", "qkv": ""}))
+        self.assertEqual(method._qkv_name_pattern, "")
+        self.assertFalse(method._is_target_layer("model.layers.0.self_attn.qkv_proj"))
+        self.assertFalse(method._is_target_layer("lm_head"))
+        self.assertTrue(method._is_target_layer("model.layers.0.self_attn.q_proj"))
+
+    def test_empty_patterns_skip_hook_and_return_zero_score(self):
+        """场景：三个模式都留空。预期：hook 不存输出、算分返回 0（空串不再命中所有 Linear）。"""
+        method = RaCompressAnalysisMethod(adapter=self._adapter({"q": "", "k": "", "qkv": ""}))
+        method._num_attention_heads = 2
+        method._num_key_value_heads = 2
+        method._head_dim = 4
+        method.get_hook()(None, None, torch.randn(6, 8), "model.layers.0.self_attn.q_proj", {})
+        self.assertEqual(method._q_outputs, {})
+        self.assertEqual(method._k_outputs, {})
+        self.assertEqual(method.compute_score({"layer_name": "model.layers.0.self_attn.q_proj", "outputs": []}), 0.0)
+
+    def test_warns_when_all_patterns_empty(self):
+        """场景：适配器把三个模式都留空。预期：初始化时告警提示不会有层被分析。"""
+        with patch(_IMPL_LOGGER) as mock_logger:
+            RaCompressAnalysisMethod(adapter=self._adapter({"q": "", "k": "", "qkv": ""}))
+        self.assertTrue(mock_logger.warning.called)
+
+
+def _make_cos_sin(seq_len: int, head_dim: int, offset: float = 0.0) -> tuple:
+    """构造显式的 [seq_len, head_dim] cos/sin（前后半维配对布局）。"""
+    steps = torch.arange(seq_len, dtype=torch.float32).unsqueeze(1) * 0.1 + offset
+    freqs = torch.arange(1, head_dim // 2 + 1, dtype=torch.float32).unsqueeze(0)
+    angles = steps * freqs
+    return torch.cos(angles).repeat(1, 2), torch.sin(angles).repeat(1, 2)
+
+
+def _manual_cos_sin(seq_len: int, head_dim: int, rope_theta: float) -> tuple:
+    """按实现的 config 推算分支同一公式显式构造 cos/sin。"""
+    inv_freq = 1.0 / (rope_theta ** (torch.arange(0, head_dim, 2, dtype=torch.float32) / head_dim))
+    freqs = torch.outer(torch.arange(seq_len, dtype=inv_freq.dtype), inv_freq)
+    emb = torch.cat((freqs, freqs), dim=-1)
+    return emb.cos(), emb.sin()
+
+
+def _expected_roped(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, seq_len: int) -> torch.Tensor:
+    """显式构造 rotate_half 旋转结果，作为施加 RoPE 后的期望值。"""
+    cos_b = cos[:seq_len].to(dtype=x.dtype).unsqueeze(1)
+    sin_b = sin[:seq_len].to(dtype=x.dtype).unsqueeze(1)
+    half = x.shape[-1] // 2
+    x1, x2 = x[..., :half], x[..., half:]
+    return x * cos_b + torch.cat((-x2, x1), dim=-1) * sin_b
+
+
+class _FakeRotaryEmb:
+    """假 rotary_emb：记录调用入参，可模拟"调用失败但 cos/sin 缓存可用"。"""
+
+    def __init__(self, cos: torch.Tensor, sin: torch.Tensor, raise_on_call: bool = False, with_cache: bool = False):
+        self._cos = cos
+        self._sin = sin
+        self._raise_on_call = raise_on_call
+        self.calls = []
+        if with_cache:
+            self.cos_cached = cos
+            self.sin_cached = sin
+
+    def __call__(self, x, **kwargs):
+        self.calls.append(kwargs)
+        if self._raise_on_call:
+            raise RuntimeError("unsupported rotary signature")
+        return self._cos.to(x.device), self._sin.to(x.device)
+
+
+class _FakeRopeConfig:
+    """假 config：只提供内置兜底推算需要的 rope 字段。"""
+
+    def __init__(self, rope_theta: float, partial_rotary_factor: float = 1.0):
+        self.rope_theta = rope_theta
+        self.partial_rotary_factor = partial_rotary_factor
+
+
+class _FakeAttentionModule:
+    """假 self_attn：只承载内置兜底解析 RoPE 需要的属性。"""
+
+    def __init__(self, rotary_emb=None, rope_theta=None, partial_rotary_factor: float = 1.0):
+        if rotary_emb is not None:
+            self.rotary_emb = rotary_emb
+        if rope_theta is not None:
+            self.config = _FakeRopeConfig(rope_theta, partial_rotary_factor)
+
+
+class TestRaCompressRopeResolution(unittest.TestCase):
+    """测试 RoPE 取值与施加：position_embeddings、rotary 模块、config 推算三条路径。"""
+
+    LAYER = "model.layers.0.self_attn.q_proj"
+    BLOCK = "model.layers.0"
+
+    def setUp(self):
+        torch.manual_seed(0)
+        self.seq_len = 4
+        self.head_dim = 4
+        self.q = torch.randn(self.seq_len, 2, self.head_dim)
+        self.k = torch.randn(self.seq_len, 2, self.head_dim)
+
+    def _apply(self, method):
+        return method._apply_rope(self.LAYER, self.q, self.k, self.seq_len, torch.device("cpu"))
+
+    def _assert_roped(self, method, cos, sin):
+        """断言施加 RoPE 后的 Q/K 与显式构造的旋转结果一致。"""
+        q_out, k_out = self._apply(method)
+        self.assertTrue(torch.allclose(q_out, _expected_roped(self.q, cos, sin, self.seq_len), atol=1e-6))
+        self.assertTrue(torch.allclose(k_out, _expected_roped(self.k, cos, sin, self.seq_len), atol=1e-6))
+
+    def test_applies_position_embeddings_from_forward_kwargs(self):
+        """取值路径 2：新版布局由模型算好后随 forward kwargs 下发 position_embeddings。"""
+        cos, sin = _make_cos_sin(self.seq_len, self.head_dim)
+        method = RaCompressAnalysisMethod(adapter=None)
+        method.set_forward_kwargs({"position_embeddings": (cos, sin)}, layer_name=self.BLOCK)
+        self._assert_roped(method, cos, sin)
+
+    def test_applies_cos_sin_from_attention_rotary_module(self):
+        """取值路径 3：旧版布局 attention 内自带 rotary_emb，等距生成 position_ids 调用。"""
+        cos, sin = _make_cos_sin(self.seq_len, self.head_dim)
+        rotary_emb = _FakeRotaryEmb(cos, sin)
+        method = RaCompressAnalysisMethod(adapter=None)
+        method._layer_attn_modules[self.LAYER] = _FakeAttentionModule(rotary_emb=rotary_emb)
+        self._assert_roped(method, cos, sin)
+        self.assertEqual(rotary_emb.calls[0]["position_ids"].tolist(), [[0, 1, 2, 3]])
+
+    def test_reuses_position_ids_from_forward_kwargs(self):
+        """取值路径 3：模型下发的 position_ids 优先复用（分段输入等场景不从头编号）。"""
+        cos, sin = _make_cos_sin(self.seq_len, self.head_dim)
+        rotary_emb = _FakeRotaryEmb(cos, sin)
+        method = RaCompressAnalysisMethod(adapter=None)
+        method._layer_attn_modules[self.LAYER] = _FakeAttentionModule(rotary_emb=rotary_emb)
+        method.set_forward_kwargs({"position_ids": torch.tensor([[7, 8, 9, 10]])}, layer_name=self.BLOCK)
+        self._assert_roped(method, cos, sin)
+        self.assertEqual(rotary_emb.calls[0]["position_ids"].tolist(), [[7, 8, 9, 10]])
+
+    def test_applies_cached_cos_sin_when_rotary_module_call_fails(self):
+        """取值路径 3 的兜底：rotary_emb 三种签名都不可用时退到 cos_cached/sin_cached。"""
+        cos, sin = _make_cos_sin(self.seq_len, self.head_dim)
+        rotary_emb = _FakeRotaryEmb(cos, sin, raise_on_call=True, with_cache=True)
+        method = RaCompressAnalysisMethod(adapter=None)
+        method._layer_attn_modules[self.LAYER] = _FakeAttentionModule(rotary_emb=rotary_emb)
+        self._assert_roped(method, cos, sin)
+        self.assertEqual(len(rotary_emb.calls), 3)
+
+    def test_applies_manual_cos_sin_from_config_rope_theta(self):
+        """取值路径 4：前三条都取不到时按 config 的 rope_theta 推算，并告警说明未含 rope_scaling。"""
+        method = RaCompressAnalysisMethod(adapter=None)
+        method._layer_attn_modules[self.LAYER] = _FakeAttentionModule(rope_theta=10000.0)
+        self._assert_roped(method, *_manual_cos_sin(self.seq_len, self.head_dim, 10000.0))
+        self.assertIn("manual_fallback", method._rope_warning_keys)
+
+    def test_skips_rope_when_no_source_available(self):
+        """兜底分支：无 kwargs、无 attention 模块 → 保留原 Q/K 并告警。"""
+        method = RaCompressAnalysisMethod(adapter=None)
+        q_out, k_out = self._apply(method)
+        self.assertTrue(torch.equal(q_out, self.q))
+        self.assertTrue(torch.equal(k_out, self.k))
+        self.assertIn("unavailable", method._rope_warning_keys)
+
+    def test_skips_rope_when_cos_sin_dim_mismatch(self):
+        """兜底分支：模型下发的 cos/sin 维度与 head_dim 不一致 → 宁可不加也不加错。"""
+        cos, sin = _make_cos_sin(self.seq_len, 2)
+        method = RaCompressAnalysisMethod(adapter=None)
+        method.set_forward_kwargs({"position_embeddings": (cos, sin)}, layer_name=self.BLOCK)
+        q_out, _ = self._apply(method)
+        self.assertTrue(torch.equal(q_out, self.q))
+        self.assertIn("dim_mismatch", method._rope_warning_keys)
+
+    def test_skips_rope_when_cos_sin_covers_fewer_positions(self):
+        """兜底分支：cos/sin 覆盖的位置数不足 seq_len → 跳过 RoPE。"""
+        cos, sin = _make_cos_sin(self.seq_len - 2, self.head_dim)
+        method = RaCompressAnalysisMethod(adapter=None)
+        method.set_forward_kwargs({"position_embeddings": (cos, sin)}, layer_name=self.BLOCK)
+        q_out, _ = self._apply(method)
+        self.assertTrue(torch.equal(q_out, self.q))
+        self.assertIn("seq_short", method._rope_warning_keys)
+
+    def test_warns_once_per_reason(self):
+        """告警去重：同类原因逐层触发也只记录一次。"""
+        method = RaCompressAnalysisMethod(adapter=None)
+        for layer_name in ("model.layers.0.self_attn.q_proj", "model.layers.1.self_attn.q_proj"):
+            method._apply_rope(layer_name, self.q, self.k, self.seq_len, torch.device("cpu"))
+        with patch(_IMPL_LOGGER) as mock_logger:
+            method._apply_rope("model.layers.2.self_attn.q_proj", self.q, self.k, self.seq_len, torch.device("cpu"))
+        self.assertFalse(mock_logger.warning.called)
 
 
 if __name__ == "__main__":

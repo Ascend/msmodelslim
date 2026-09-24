@@ -901,7 +901,7 @@ def main():
         metavar='<PATH>',
         type=str,
         default=None,
-        help='Path to save result file (YAML for linear/layer/attn). '
+        help='Path to save result file (YAML for linear/layer/attn, head.pt for attn_head). '
         'If not specified, results are printed to console only.',
     )
     analyze_common_parser.add_argument(

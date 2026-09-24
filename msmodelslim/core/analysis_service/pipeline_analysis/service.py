@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
+from contextlib import nullcontext
 from typing import Any, List, Optional
 
 import torch
@@ -30,6 +31,10 @@ from msmodelslim.core.quant_service.dataset_loader_infra import DatasetLoaderInf
 from msmodelslim.core.context import ContextManager
 from msmodelslim.core.context.interface import IContextFactory
 from msmodelslim.processor.analysis.distributed_utils import read_layer_analysis_result
+from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress import (
+    build_random_token_calib,
+    is_random_token_metric,
+)
 from msmodelslim.utils.exception import InvalidDatasetError, MisbehaviorError
 from msmodelslim.utils.logging import logger_setter, get_logger
 
@@ -140,7 +145,14 @@ class PipelineAnalysisService(IAnalysisService):
         if device is DeviceType.NPU:
             torch.npu.set_compile_mode(jit_compile=False)
 
-        calib_data = self._load_calib_dataset(analysis_config.calib_dataset)
+        if is_random_token_metric(analysis_config.metrics):
+            # ra_compress 自带随机重复段校准输入：token id 由 ra_compress 组件直接构造，并在运行期
+            # 于模型前向口顶替（见 ra_compress.calib_input）；此处只取占位样本驱动
+            # 「数据集 → 模型输入」流程，不读 --calib_dataset
+            calib_data, forward_override = build_random_token_calib(model_adapter)
+        else:
+            calib_data = self._load_calib_dataset(analysis_config.calib_dataset)
+            forward_override = nullcontext()
 
         use_dp = device_indices is not None and len(device_indices) > 1
         if use_dp:
@@ -156,7 +168,7 @@ class PipelineAnalysisService(IAnalysisService):
 
         ctx = self.context_factory.create(is_distributed=use_dp)
 
-        with ContextManager(ctx=ctx):
+        with ContextManager(ctx=ctx), forward_override:
             builder = self.pipeline_loader.get_pipeline_builder(analysis_config.metrics)
             processor_configs = builder.template_modules(analysis_config.template_substitute_list()).create()
             for cfg in processor_configs:

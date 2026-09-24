@@ -35,6 +35,7 @@ from msmodelslim.model import IModelFactory
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.exception_decorator import exception_catcher
 from msmodelslim.utils.logging import logger_setter, get_logger
+from msmodelslim.utils.security.path import get_valid_path
 from msmodelslim.utils.validation.conversion import convert_to_readable_dir
 from msmodelslim.utils.validation.value import validate_str_length
 from msmodelslim.utils.security import check_read_permission, check_write_permission
@@ -106,6 +107,7 @@ def _reject_multimodal_generation_adapter(model_adapter: PipelineInterface) -> N
 
 def _validate_calib_dataset_name(calib_dataset: str) -> None:
     """Accept LLM json/jsonl files and VLM directory-style dataset names (e.g. calibImages)."""
+    get_valid_path(calib_dataset)
     path = Path(calib_dataset)
     suffix = path.suffix.lower()
     if suffix in {'.json', '.jsonl'}:
@@ -118,6 +120,22 @@ def _validate_calib_dataset_name(calib_dataset: str) -> None:
         '(e.g. calibImages under lab_calib) for VLM multimodal calib.',
         action='Please provide a .json/.jsonl file or a VLM calib directory name',
     )
+
+
+def _validate_save_path(save_path: Optional[str]) -> None:
+    """在分析开始前校验 save_path，避免跑完整个分析才在保存阶段报错。
+
+    校验类型、长度与字符白名单；非法路径统一由 ``get_valid_path`` 抛出
+    SchemaValidateError（Code 204）。``save_path`` 为 None（仅打印到控制台）时跳过。
+    另由 ``check_write_permission`` 校验输出路径的写权限。
+    """
+    if save_path is None:
+        return
+    if not isinstance(save_path, str):
+        raise SchemaValidateError(f"save_path must be a string, but got {type(save_path)}")
+    validate_str_length(input_str=save_path, str_name="save_path")
+    get_valid_path(save_path)
+    check_write_permission(save_path)
 
 
 def _analysis_config_from_scope_args(scope_args: ScopeAnalysisArgs, calib_dataset: str) -> AnalysisConfig:
@@ -223,10 +241,7 @@ class LayerAnalysisApplication:
             raise SchemaValidateError(f"topk must be a integer greater than 0, but got {topk}")
         if not isinstance(trust_remote_code, bool):
             raise SchemaValidateError("trust_remote_code must be a bool")
-        if save_path is not None:
-            if not isinstance(save_path, str):
-                raise SchemaValidateError(f"save_path must be a string, but got {type(save_path)}")
-            check_write_permission(save_path)
+        _validate_save_path(save_path)
 
         log = get_logger()
         log.info('Layer analysis with following parameters:')

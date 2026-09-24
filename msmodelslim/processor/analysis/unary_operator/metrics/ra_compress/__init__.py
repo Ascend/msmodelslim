@@ -21,10 +21,33 @@ See the Mulan PSL v2 for more details.
 
 __all__ = [
     "DUMMY_INPUT_LENGTH",
+    "PREFIX_TOKEN_ID",
+    "PLACEHOLDER_DATASET",
+    "RA_COMPRESS_METRIC",
     "REPET_TIMES",
     "RaCompressAnalysisInterface",
     "RaCompressAnalysisMethod",
+    "build_ra_compress_dummy_dataset",
+    "build_random_token_calib",
+    "is_random_token_metric",
+    "resolve_model_tokenizer",
+    "resolve_prefix_token_id",
+    "resolve_v0_prefix_token_id",
+    "validate_metric_params",
 ]
 
-from .impl import DUMMY_INPUT_LENGTH, REPET_TIMES, RaCompressAnalysisMethod
+from .calib_input import (
+    DUMMY_INPUT_LENGTH,
+    PREFIX_TOKEN_ID,
+    PLACEHOLDER_DATASET,
+    RA_COMPRESS_METRIC,
+    REPET_TIMES,
+    build_ra_compress_dummy_dataset,
+    build_random_token_calib,
+    is_random_token_metric,
+    resolve_model_tokenizer,
+    resolve_prefix_token_id,
+    resolve_v0_prefix_token_id,
+)
+from .impl import RaCompressAnalysisMethod, validate_metric_params
 from .interface import RaCompressAnalysisInterface
