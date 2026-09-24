@@ -1,0 +1,77 @@
+# Qwen3.6 量化说明
+
+## 模型介绍
+
+**Qwen3.6** 是 Qwen 系列最新的旗舰**多模态**模型，采用 **MoE (Mixture of Experts)** 架构，在保持极强模型能力的同时显著降低推理成本。核心架构特点包括：原生多模态能力（Vision Encoder + 图文融合）、混合注意力机制（常规 Attention 与 Linear-Attention 交替）、MTP 多 Token 预测分支、以及高性能 MoE 专家路由与共享专家机制。
+
+## 校准模态支持
+
+Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据（`multimodal_vlm_modelslim_v1`）。推荐使用 `index.jsonl`（见[一键量化 dataset 配置](../../docs/zh/user_guide/usage_quick_quantization.md#dataset---校准数据路径配置)）。
+
+| 有效模态组合 | index.jsonl 字段示意 | 是否支持 |
+|-------------|----------------------|----------|
+| 纯文本 | `{"text":"..."}` | ✅ |
+| 文本 + 图像 | `{"text":"...","image":"xxx.jpg"}` | ✅ |
+| 文本 + 音频 / 视频 | 含 `audio` / `video` | ❌ 当前适配器不消费音频/视频字段 |
+
+约束说明：
+
+- **每条样本必须包含非空 `text`**。
+- **同一量化任务内样本须同质**：不可在同一校准集中混用纯文本与图文样本。
+- 依赖：`transformers==5.2.0`（见 `config.ini` `[ModelAdapterDependencies] qwen3_5_moe`）。纯文本校准的 chat template `content` 须为 list-of-parts 形式（适配器已处理）。
+- **visit（data-free）** 仍会遍历 visual + decoder；**forward（calibration）** 在无 `pixel_values` 时跳过 visual，仅走文本 decoder。
+
+## 使用前准备
+
+- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](../../docs/zh/install_guide/install_guide.md)。
+
+- transformers 版本需要配置安装 5.2.0 版本。
+  - pip install transformers==5.2.0
+
+## 支持的模型版本与量化策略
+
+| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A16 | W4A8 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
+|---------|---------|---------------------------------------------------------------|-----|-----|-----|--------|------|---------|----------|-----------|-----------------------------------------------|
+| **Qwen3.6-Dense** | Qwen3.6-27B | [Qwen3.6-27B](https://modelscope.cn/models/Qwen/Qwen3.6-27B)   | ✅ |  |    |        |   |  |   | ✅ | [W8A8](#Qwen3.6-27B-w8a8)/[W8A8C8](#Qwen3.6-27B-w8a8c8) |
+| **Qwen3.6-MoE** | Qwen3.6-35B-A3B | [Qwen3.6-35B-A3B](https://modelscope.cn/models/Qwen/Qwen3.6-35B-A3B)   | ✅ |  |    |        |   |  | ✅ | ✅ | [W8A8C8](#Qwen3.6-35B-A3B-w8a8c8)|
+
+**说明：**
+
+- ✅ 表示该量化策略已通过 msModelSlim 官方验证，功能完整、性能稳定，建议优先采用。
+- 空格表示该量化策略暂未通过 msModelSlim 官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- 点击量化命令列中的链接可跳转到对应的具体量化命令。
+- Qwen3.6-35B-A3B 的 W8A8 与 KV Cache、Attention（FA3）量化在同一种混合精度方案中一并生效，对应一键量化参数为 `--quant_type w8a8c8`。
+
+## 量化权重生成
+
+### 使用示例
+
+- 请将{MODEL_PATH}替换为用户实际浮点权重路径，{SAVE_PATH}替换为量化权重保存路径。
+
+#### 1. Qwen3.6-27B
+
+##### <span id="Qwen3.6-27B-w8a8">Qwen3.6-27B W8A8量化</span>
+
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+
+  ```shell
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-27B --quant_type w8a8 --trust_remote_code true
+  ```
+
+##### <span id="Qwen3.6-27B-w8a8c8">Qwen3.6-27B W8A8C8量化</span>
+
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+
+  ```shell
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-27B --quant_type w8a8c8 --trust_remote_code true --tags vLLM_Ascend Ascend_950
+  ```
+
+#### 2. Qwen3.6-35B-A3B
+
+##### <span id="Qwen3.6-35B-A3B-w8a8c8">Qwen3.6-35B-A3B W8A8C8量化</span>
+
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+
+  ```shell
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-35B-A3B --quant_type w8a8c8 --trust_remote_code true --tags vLLM_Ascend Ascend_950
+  ```
