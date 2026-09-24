@@ -30,7 +30,7 @@
 
 > [!NOTE]
 >
-> 本案例使用的浮点权重为非 0731 版本，0731 版本的支持将随后续版本更新。
+> 本案例使用的浮点权重为 DeepSeek-V4-Flash preview（非 0731）。官方正式版 DeepSeek-V4-Flash-0731 结构与 DSpark 一致，请使用 `--model_type DeepSeek-V4-Flash-0731 --quant_type w4a4c8`，详见[DeepSeek 量化说明](../../../example/DeepSeek/README.md#deepseek-v4-flash-0731-w4a4c8量化)。
 
 ## 3. 输入和交付件
 
@@ -362,7 +362,7 @@ msmodelslim quant \
 ## 6. 异常处理
 
 - **量化命令执行失败（OOM）**：DeepSeek-V4-Flash W8A8 量化单卡即可完成，一般不会出现 OOM；若遇显存不足，请确认 `--device npu --device_id 0` 指定的 NPU 未被其他任务占用。
-- **Transformers 加载模型报错**：确认是否安装了 `transformers==4.48.2`，且模型权重路径正确。注意使用非 0731 版本的权重。
+- **Transformers 加载模型报错**：确认是否安装了 `transformers==4.48.2`，且模型权重路径正确。本案例需使用 preview 版权重；若为 DeepSeek-V4-Flash-0731，请改用 `--model_type DeepSeek-V4-Flash-0731 --quant_type w4a4c8`。
 - **vLLM 服务启动失败**：本次实际排查动作依次为：检查 CANN 环境变量（`env | grep ASCEND`）、NPU 状态（`npu-smi info`），并确认 `--tensor-parallel-size 8` 与实际卡数一致。
 
 ## 7. 附录
