@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from msmodelslim.core.const import DeviceType
 from msmodelslim.core.convert.config import (
     ConvertConfig,
     ConvertDefaults,
@@ -27,6 +28,10 @@ from msmodelslim.core.convert.config import (
     WeightOpConfig,
 )
 from msmodelslim.core.convert.types import IRKind
+from msmodelslim.utils.exception import SchemaValidateError
+from msmodelslim.utils.logging import get_logger
+
+logger = get_logger()
 
 
 class RenamePattern(BaseModel):
@@ -101,19 +106,17 @@ class ParallelSpecConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    # workers=1：单进程组内线程（可配 NPU）；workers>1：组间多进程 + 组内线程（CPU，突破 GIL）
-    workers: int = Field(
-        default=1,
-        description="并行 worker 数：1 表示单进程组内线程（可配 NPU）；大于1 表示组间多进程 + 组内线程（CPU）。",
+    # 设备只由 CLI --device/--device_id 决定，YAML 不配置设备：
+    # NPU 路径固定每卡一个子进程（进程数=卡数），cpu_workers 不参与；
+    # CPU 路径（--device cpu）下 cpu_workers=1 单进程、>1 组间多进程并行（突破 GIL）；默认 8 多进程
+    cpu_workers: int = Field(
+        default=8,
+        description="CPU 转换的并行 worker 数：1 单进程；大于1 组间多进程 + 组内线程，默认 8。仅 --device cpu 时生效；"
+        "NPU 转换固定每卡一个子进程，由 --device_id 决定，无需设置。",
     )
     # 单组最大任务数；超过则拆成多个子组分散到不同进程，缓解 MoE 大组拖尾
     max_group_size: Optional[int] = Field(
         default=None, description="单个依赖组的最大任务数，超过则拆成多个子组分散到不同进程；不设置表示不拆分。"
-    )
-    # 仅 workers=1 且 worker_device 指向 NPU 时生效
-    worker_device: str = Field(default="cpu", description="worker 运行设备：`cpu` 或 `npu`。")
-    npu_max_workers: int = Field(
-        default=1, description="仅 `workers=1` 且 `worker_device=npu` 时生效，限制组内并发以防显存溢出。"
     )
 
 
@@ -300,23 +303,39 @@ def spec_to_convert_config(
     model_path: str,
     save_path: str,
     model_family: Optional[str] = None,
+    device: DeviceType = DeviceType.NPU,
     device_indices: Optional[List[int]] = None,
 ) -> ConvertConfig:
-    """将 quant spec 转为可执行的 ``ConvertConfig``。"""
+    """将 quant spec 转为可执行的 ``ConvertConfig``。
+
+    设备语义对齐 quant 命令：``--device`` 决定 NPU/CPU；``--device_id`` 仅在
+    ``device=npu`` 下生效（未传时默认卡 0）；``device=cpu`` 时忽略 ``device_id``
+    且不允许配置多卡（对齐 quant 的 CPU 单设备约束）。
+    """
     if not isinstance(spec, ModelslimConvertServiceConfig):
         spec = ModelslimConvertServiceConfig.model_validate(spec)
 
+    if device == DeviceType.CPU:
+        if device_indices and len(device_indices) > 1:
+            raise SchemaValidateError(
+                f"CPU does not support multi-device configuration. Got device indices: {device_indices}. "
+                "Please use NPU for multi-device parallel, or use single CPU device."
+            )
+        if device_indices:
+            logger.warning("device=cpu; ignore device_indices=%s", device_indices)
+        effective_device_indices: List[int] = []
+    else:
+        effective_device_indices = list(device_indices) if device_indices else [0]
+
     module_rules, convert_rules = _linears_to_module_and_convert_rules(spec.linears)
     parallel = ParallelConfig(
-        max_workers=spec.parallel.workers,
+        max_workers=spec.parallel.cpu_workers,
         task_granularity=_DEFAULT_TASK_GRANULARITY,
-        worker_backend="process" if spec.parallel.workers > 1 else "thread",
+        worker_backend="process" if spec.parallel.cpu_workers > 1 else "thread",
         worker_threads=_DEFAULT_WORKER_THREADS,
         max_group_size=spec.parallel.max_group_size,
         shard_cache_size=_DEFAULT_SHARD_CACHE_SIZE,
-        worker_device=spec.parallel.worker_device,
-        npu_max_workers=spec.parallel.npu_max_workers,
-        device_indices=device_indices or [],
+        device_indices=effective_device_indices,
     )
 
     return ConvertConfig(

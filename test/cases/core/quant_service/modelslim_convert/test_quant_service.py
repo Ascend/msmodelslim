@@ -84,3 +84,53 @@ class TestModelslimConvertQuantService:
         assert convert_cfg.model_path == "/data/model"
         assert convert_cfg.save_path == "/data/out"
         assert convert_cfg.model_family == "qwen3_5_moe"
+        # --device cpu：忽略 device_id 并清空卡号，走 CPU 路径
+        assert convert_cfg.parallel.device_indices == []
+
+    @patch("msmodelslim.core.quant_service.modelslim_convert.quant_service.create_convert_application")
+    def test_quantize_default_card_zero_when_device_npu_and_no_indices(self, mock_factory):
+        """场景：device=npu（CLI 默认）且未传 --device_id。
+        预期：对齐 quant 语义，默认卡 0 走 NPU 路径。
+        """
+        mock_app = MagicMock()
+        mock_factory.return_value = mock_app
+        service = ModelslimConvertQuantService(ModelslimConvertQuantServiceConfig())
+        model_adapter = MagicMock()
+        model_adapter.model_path = Path("/data/model")
+        model_adapter.model_type = "qwen3_5_moe"
+        quant_config = BaseQuantConfig.model_validate(
+            {
+                "apiversion": "modelslim_convert",
+                "spec": {"linears": [], "save": [{"type": "ascend_v1"}]},
+            }
+        )
+        service.quantize(quant_config, model_adapter, save_path=Path("/data/out"), device=DeviceType.NPU)
+        convert_cfg = mock_app.run.call_args[0][0]
+        assert convert_cfg.parallel.device_indices == [0]
+
+    @patch("msmodelslim.core.quant_service.modelslim_convert.quant_service.create_convert_application")
+    def test_quantize_pass_indices_when_device_npu_and_indices_given(self, mock_factory):
+        """场景：device=npu 且显式传卡号。
+        预期：卡号原样透传。
+        """
+        mock_app = MagicMock()
+        mock_factory.return_value = mock_app
+        service = ModelslimConvertQuantService(ModelslimConvertQuantServiceConfig())
+        model_adapter = MagicMock()
+        model_adapter.model_path = Path("/data/model")
+        model_adapter.model_type = "qwen3_5_moe"
+        quant_config = BaseQuantConfig.model_validate(
+            {
+                "apiversion": "modelslim_convert",
+                "spec": {"linears": [], "save": [{"type": "ascend_v1"}]},
+            }
+        )
+        service.quantize(
+            quant_config,
+            model_adapter,
+            save_path=Path("/data/out"),
+            device=DeviceType.NPU,
+            device_indices=[1, 3],
+        )
+        convert_cfg = mock_app.run.call_args[0][0]
+        assert convert_cfg.parallel.device_indices == [1, 3]

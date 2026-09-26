@@ -7,11 +7,13 @@ msmodelslim.core.quant_service.modelslim_convert.config_mapper 模块的单元�
 
 import pytest
 
+from msmodelslim.core.const import DeviceType
 from msmodelslim.core.convert.types import IRKind
 from msmodelslim.core.quant_service.modelslim_convert.config_mapper import (
     ModelslimConvertServiceConfig,
     spec_to_convert_config,
 )
+from msmodelslim.utils.exception import SchemaValidateError
 
 
 class TestSpecToConvertConfig:
@@ -66,7 +68,7 @@ class TestSpecToConvertConfig:
                     },
                 ],
                 "save": [{"type": "ascend_v1", "part_file_size": 4}],
-                "parallel": {"workers": 8},
+                "parallel": {"cpu_workers": 8},
             }
         )
         cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o", model_family="qwen3_5_moe")
@@ -93,6 +95,9 @@ class TestSpecToConvertConfig:
         spec = ModelslimConvertServiceConfig.model_validate({"linears": []})
         cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o")
         assert cfg.part_file_size == 4
+        # YAML 未写 parallel 时默认 cpu_workers=8 → CPU 路径多进程
+        assert cfg.parallel.max_workers == 8
+        assert cfg.parallel.worker_backend == "process"
 
     def test_spec_to_convert_config_auto_route_infer_source_ir_from_catalog_later(self):
         spec = ModelslimConvertServiceConfig.model_validate(
@@ -115,22 +120,79 @@ class TestSpecToConvertConfig:
         assert rule.tensor_map["weight_scale_inv"] == "{module}.weight_scale_inv"
         assert cfg.convert_rules[0].route == "auto"
 
-    def test_spec_to_convert_config_map_workers_gt_one_to_process_backend(self):
+    def test_spec_to_convert_config_map_cpu_workers_gt_one_to_process_backend(self):
         spec = ModelslimConvertServiceConfig.model_validate(
             {
                 "linears": [],
-                "parallel": {"workers": 8},
+                "parallel": {"cpu_workers": 8},
             }
         )
         cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o", device_indices=[0, 1])
         assert cfg.parallel.worker_backend == "process"
         assert cfg.parallel.device_indices == [0, 1]
 
-    def test_spec_to_convert_config_map_workers_one_to_thread_backend(self):
+    def test_spec_to_convert_config_pass_device_indices_when_given(self):
+        """场景：device=npu 且显式传卡号。
+        预期：卡号原样透传。
+        """
+        spec = ModelslimConvertServiceConfig.model_validate({"linears": []})
+        cfg = spec_to_convert_config(
+            spec,
+            model_path="/m",
+            save_path="/o",
+            device=DeviceType.NPU,
+            device_indices=[0, 1, 2],
+        )
+        assert cfg.parallel.device_indices == [0, 1, 2]
+
+    def test_spec_to_convert_config_default_card_zero_when_npu_without_indices(self):
+        """场景：device=npu（CLI 默认）且未传 --device_id。
+        预期：对齐 quant 语义，默认卡 0 走 NPU 路径。
+        """
+        spec = ModelslimConvertServiceConfig.model_validate({"linears": []})
+        cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o", device=DeviceType.NPU)
+        assert cfg.parallel.device_indices == [0]
+
+    def test_spec_to_convert_config_empty_indices_when_device_cpu(self):
+        """场景：device=cpu（可传单个卡号）。
+        预期：忽略 device_id 并清空卡号，走 CPU 路径。
+        """
+        spec = ModelslimConvertServiceConfig.model_validate({"linears": []})
+        cfg = spec_to_convert_config(
+            spec,
+            model_path="/m",
+            save_path="/o",
+            device=DeviceType.CPU,
+            device_indices=[0],
+        )
+        assert cfg.parallel.device_indices == []
+
+    def test_spec_to_convert_config_raise_when_device_cpu_with_multi_indices(self):
+        """场景：device=cpu 且传多个卡号。
+        预期：对齐 quant 语义直接报错（CPU 不支持多设备）。
+        """
+        spec = ModelslimConvertServiceConfig.model_validate({"linears": []})
+        with pytest.raises(SchemaValidateError, match="CPU does not support multi-device"):
+            spec_to_convert_config(
+                spec,
+                model_path="/m",
+                save_path="/o",
+                device=DeviceType.CPU,
+                device_indices=[0, 1],
+            )
+
+    def test_spec_to_convert_config_raise_when_parallel_has_removed_device_fields(self):
+        """场景：YAML parallel 显式写已删除的 worker_device。
+        预期：extra=forbid 校验失败（设备只由 CLI 决定）。
+        """
+        with pytest.raises(Exception, match="worker_device"):
+            ModelslimConvertServiceConfig.model_validate({"linears": [], "parallel": {"worker_device": "npu"}})
+
+    def test_spec_to_convert_config_map_cpu_workers_one_to_thread_backend(self):
         spec = ModelslimConvertServiceConfig.model_validate(
             {
                 "linears": [],
-                "parallel": {"workers": 1},
+                "parallel": {"cpu_workers": 1},
             }
         )
         cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o")
@@ -140,7 +202,7 @@ class TestSpecToConvertConfig:
         spec = ModelslimConvertServiceConfig.model_validate(
             {
                 "linears": [],
-                "parallel": {"workers": 8},
+                "parallel": {"cpu_workers": 8},
             }
         )
         cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o")
@@ -152,7 +214,7 @@ class TestSpecToConvertConfig:
         spec = ModelslimConvertServiceConfig.model_validate(
             {
                 "linears": [],
-                "parallel": {"workers": 8},
+                "parallel": {"cpu_workers": 8},
             }
         )
         cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o")

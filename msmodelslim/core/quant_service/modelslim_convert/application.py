@@ -22,10 +22,7 @@ from tqdm import tqdm
 from torch import nn
 
 from msmodelslim.core.convert.config import ConvertConfig
-from msmodelslim.core.convert.device import (
-    resolve_multi_worker_devices,
-    resolve_worker_device,
-)
+from msmodelslim.core.convert.device import resolve_multi_worker_devices
 from msmodelslim.core.convert.protocol import ConvertContext
 from msmodelslim.core.convert.router import IRRouter
 from msmodelslim.core.convert.tasks import RoutedTask
@@ -71,28 +68,33 @@ class ConvertApplication:
         """执行一次完整 convert 任务。"""
         pipeline_t0 = time.perf_counter()
         context = ConvertContext(config=config)
-        # NPU 路径：CLI 给出卡号且设备可用 → npu_multi（进程数=卡数）。
-        # CPU 路径：否则按 YAML worker_backend 走 process / thread。
+        # NPU 路径：--device npu（CLI 默认）解析出非空卡号 → npu_multi（进程数=卡数）。
+        # CPU 路径：--device cpu 或未给卡号 → 按 YAML worker_backend 走 process / thread。
+        # 卡号非法或 NPU 不可用时 resolve_multi_worker_devices 直接抛错（对齐 quant 语义，不静默回落）。
         devices = config.parallel.device_indices
         resolved_multi = resolve_multi_worker_devices(devices) if devices else []
         if resolved_multi:
             context.parallel_mode = "npu_multi"
             context.resolved_worker_devices = resolved_multi
             # 主进程仍 CPU：streaming 落盘与队列回传均在 CPU 侧完成。
+            # 子进程内 bootstrap_convert_worker 会把 resolved_worker_device 改成 npu:i。
             context.resolved_worker_device = "cpu"
         elif config.parallel.worker_backend == "process":
             context.parallel_mode = "process"
             context.resolved_worker_device = "cpu"
         else:
             context.parallel_mode = "thread"
-            context.resolved_worker_device = resolve_worker_device(config.parallel.worker_device)
+            # 设备由 CLI 决定（YAML 无设备字段）；thread 后端仅 CPU 并行
+            context.resolved_worker_device = "cpu"
         reader = self._reader_factory(config.model_path)
         context.reader = reader
+        # 日志 device 对齐 CLI --device（npu/cpu），不要打印主进程落盘用的 cpu。
+        compute_device = "npu" if resolved_multi else "cpu"
         logger.info(
             "Convert parallel_mode=%s, backend=%s, device=%s, devices=%s",
             context.parallel_mode,
             config.parallel.worker_backend,
-            context.resolved_worker_device,
+            compute_device,
             context.resolved_worker_devices or None,
         )
 

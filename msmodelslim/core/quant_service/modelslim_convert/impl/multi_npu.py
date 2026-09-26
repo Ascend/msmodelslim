@@ -9,7 +9,7 @@ NPU 多卡并行转换：每张 NPU 卡一个子进程，组间动态负载均�
     ``world_size`` 个子进程，每进程 ``torch.npu.set_device(f"npu:card")`` 绑卡；
   - 动态任务队列（spawn ``ctx.Queue``，无界）：主进程把所有 dependency group
     依序入队 + ``world_size`` 个 None 哨兵，空转进程自动多取，缓解 MoE 大组拖尾；
-  - 子进程组内串行（``max_workers=1``，等价现有 ``npu_max_workers=1`` 语义，防同卡 OOM）；
+  - 子进程组内串行（``max_workers=1``，防同卡显存 OOM）；
   - 结果默认经 ``result_queue`` 逐条流式回传；npu_multi 且 AscendV1 时 worker 直接写盘，
     队列只回传轻量 ``saved`` 进度与 ``worker_meta``，主进程收尾 merge staging；
   - 出错经 ``error_queue`` 回传并中止。

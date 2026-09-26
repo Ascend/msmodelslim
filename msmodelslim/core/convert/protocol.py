@@ -66,8 +66,8 @@ class ConvertContext:
         self.virtual_tree: nn.Module | None = None
         self.preprocess_result: PreprocessResult | None = None
         self.catalog: TensorCatalog | None = None
-        # resolve_worker_device(config.parallel.worker_device) 的结果；executor / processor 共用。
-        # worker_backend=process 时固定为 "cpu"。
+        # 设备由 CLI --device/--device_id 决定（YAML 无设备字段）；主进程/worker 共用。
+        # 主进程恒 "cpu"（streaming 落盘与队列回传均在 CPU 侧）；npu_multi 子进程内为绑卡设备串。
         self.resolved_worker_device: str = "cpu"
         # 并行模式。npu_multi = 每张 NPU 卡一个子进程（torch.npu.set_device 绑卡）。
         # AscendV1 时 worker 直接写盘，主进程只写 passthrough 并 merge staging。

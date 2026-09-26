@@ -48,7 +48,7 @@ $$ \hat{x} = \text{round}\left(\frac{x}{\Delta_{\text{block}}}\right) $$
 - **自动路由**：`route: auto` 时自动推断源 IR 并选择转换路径，支持多步串联。
 - **7 阶段流水线**：从读 catalog 到落盘，全流程无需模型 forward。
 - **多种保存格式**：`ascend_v1`（MXFP8 部署）、`huggingface`（HF 生态）。
-- **NPU / CPU**：NPU 用 `--device npu --device_id`；CPU 用 `parallel.workers`。
+- **NPU / CPU**：NPU 用 `--device npu --device_id`；CPU 用 `parallel.cpu_workers`。
 
 ## 4. 流程示意
 
@@ -94,7 +94,7 @@ spec:
     - type: huggingface
       part_file_size: 4
   parallel:
-    workers: 8
+    cpu_workers: 8
 ```
 
 ## 5. 适用场景与限制

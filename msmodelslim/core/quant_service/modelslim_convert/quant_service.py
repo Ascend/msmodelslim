@@ -59,13 +59,15 @@ class ModelslimConvertQuantService(IQuantService):
             model_path=str(model_adapter.model_path),
             save_path=str(save_path),
             model_family=getattr(model_adapter, "model_type", None),
+            device=device,
             device_indices=device_indices,
         )
 
         logger.info(
-            "==========CONVERT: model_path=%s save_path=%s device_indices=%s==========",
+            "==========CONVERT: model_path=%s save_path=%s device=%s device_indices=%s==========",
             convert_config.model_path,
             convert_config.save_path,
+            device.value,
             device_indices,
         )
         # 数据安全：禁止 save_path 指向源模型目录或其子目录，避免清理逻辑误删源权重。

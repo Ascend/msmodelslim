@@ -1,6 +1,6 @@
 # 多卡量化并行
 
-> **范围说明**：本目录实际内容仅包含多卡量化机制（DP / EP / DTS）。**多卡量化机制不覆盖权重转换（Convert），权重转换走自身独立的转换并行方案**（NPU 多卡使用 `--device npu --device_id` 启动每卡独立计算进程，CPU 并行使用 `parallel.workers`），具体请参阅《[权重转换使用指南](../ptq/convert/usage_weight_conversion.md)》。
+> **范围说明**：本目录实际内容仅包含多卡量化机制（DP / EP / DTS）。**多卡量化机制不覆盖权重转换（Convert），权重转换走自身独立的转换并行方案**（NPU 多卡使用 `--device npu --device_id` 启动每卡独立计算进程，CPU 并行使用 `parallel.cpu_workers`），具体请参阅《[权重转换使用指南](../ptq/convert/usage_weight_conversion.md)》。
 
 ## 1. 并行机制简述
 

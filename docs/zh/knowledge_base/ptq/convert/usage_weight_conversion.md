@@ -10,7 +10,7 @@
 |--------|--------------|-------------------------------|
 | 是否需要校准集 | 是（激活值统计等） | **否** |
 | 是否需要 `model_type` | 必选 | **不需要** |
-| 是否需要 `quant_type` | 方式 1 需要 | **不需要**（须通过 `--config` 指定转换配置） |
+| 是否需要 `quant_type` | 使用 `--quant_type` 匹配最佳实践时需要；使用 `--config` 时不需要 | **不需要**（须通过 `--config` 指定转换配置） |
 | 典型场景 | 浮点模型 → W8A8 等 | FP8 → BF16、BF16 → MXFP8、FP8 → MXFP8 等 |
 
 命令行书写规范见 [步骤 3](#步骤-3执行转换命令)，参数总表见《[msmodelslim quant 命令行](../../../api_reference/cli/msmodelslim_quant.md)》，字段说明见《[modelslim_convert 配置说明](../../../api_reference/config/quant/modelslim_convert.md)》。
@@ -99,7 +99,7 @@ spec:
     - type: ascend_v1
       part_file_size: 4
   parallel:
-    workers: 8
+    cpu_workers: 8
 ```
 
 **场景 C：FP8 block → W8A8_MXFP8**
@@ -117,7 +117,8 @@ spec:
         - "model.layers.*.mlp.up_proj"
         - "model.layers.*.mlp.down_proj"
       target: W8A8_MXFP8
-      route: auto
+      # 显式路径：先反量化再量化。不写或写 auto 时工具选同一条最短路径。
+      route: [FP8_BLOCK, FLOAT, W8A8_MXFP8]
   save:
     - type: ascend_v1
       part_file_size: 4
@@ -160,7 +161,7 @@ msmodelslim quant \
   --device_id 0 1 2 3
 ```
 
-`--device_id` 指定使用哪些 NPU。CPU 运行时再设 `parallel.workers`。
+`--device_id` 指定使用哪些 NPU。CPU 运行时再设 `parallel.cpu_workers`。
 
 ### 步骤 4：选择并调整参数
 
@@ -170,18 +171,24 @@ msmodelslim quant \
 
 | 配置项 | 含义 | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |
-| `linears.match` | 待转换的线性层路径，支持 `*` 通配符。未匹配的权重（Norm、Embedding、Head 等）原样保留。 | 列出目标模型中的 Linear 投影层，如 `q_proj` / `k_proj` / `v_proj` / `o_proj` / `gate_proj` / `up_proj` / `down_proj`。 | 过宽会把 Norm 等也算进去，过窄则部分 Linear 保持原格式。层名以 `model.safetensors.index.json` 为准。 |
-| `linears.target` | 转换目标。常用 `FLOAT`、`W8A8_MXFP8`。 | FP8 / INT4 反量化 → `FLOAT`；昇腾 MXFP8 → `W8A8_MXFP8`。 | `W8A8_MXFP8` 必须配 `ascend_v1`。 |
-| `save.type` | 保存格式：`ascend_v1`（昇腾）、`huggingface`（HF）。 | `ascend_v1`（MXFP8）；`huggingface`（BF16）。 | 与 `target` 对齐即可。 |
-| `save.part_file_size` | 分片大小，单位 GB；`0` 表示不分片。 | 默认 `4`。 | 小模型可设 `0`。 |
-| `parallel.workers` | CPU 并行 worker 数。NPU 多卡不使用此项。 | 小模型（8B dense）用 `4~8`。 | 越大越快，受内存和磁盘限制。 |
-| `parallel.max_group_size` | 单个依赖组的最大任务数，超过则拆成多个子组分散到不同进程/卡并行。 | 默认 `null`（不拆分）；MoE 模型可设为约「每层专家任务数 / 卡数」（如 8 卡设为 96 左右）。 | 仅在 MoE 等含大量专家任务的场景下设置，用于缓解大组单进程/单卡计算导致的拖尾与空闲。 |
+| `linears.match` | 待转换的线性层模块路径模式，支持 `*` 通配符。仅匹配到的 Linear 权重参与 IR 转换；**未匹配的权重（如 Norm、Embedding、Head 等）会原样拷贝**到输出目录。 | 列出目标模型中所有 Linear 投影层：`q_proj`/`k_proj`/`v_proj`/`o_proj`/`gate_proj`/`up_proj`/`down_proj`。 | 匹配范围过大会尝试转换非 Linear 层（可能失败），过小则某些 Linear 权重保持原格式。建议先查看 checkpoint 的 `model.safetensors.index.json` 确认 key 名，再按层名前缀与投影名写通配符。 |
+| `linears.target` | 转换目标 IR 类型，决定输出权重的数值格式。当前支持：`FLOAT`（BF16 浮点）、`W8A8_MXFP8`（昇腾 MXFP8）。 | FP8 反量化 → `FLOAT`；昇腾部署 → `W8A8_MXFP8`。 | `target` 必须与 `save.type` 匹配：`W8A8_MXFP8` 必须用 `ascend_v1` 落盘，`FLOAT` 用 `huggingface`。配置校验会检查此项。 |
+| `linears.route` | 源到目标的 IR 转换路径。`auto` 按权重推断源 IR 并走最短路径；也可写成 IR 列表，首元素为源 IR、末元素为 `target`。 | 默认 `auto`。需要固定路径时写列表，例如只反量化 `[FP8_BLOCK, FLOAT]`，或 FP8 转到 MXFP8 `[FP8_BLOCK, FLOAT, W8A8_MXFP8]`。 | 列表中相邻 IR 必须有已注册的转换边。见场景 C。 |
+| `save.type` | 保存格式：`ascend_v1`（昇腾，对应 MXFP8）、`huggingface`/`hf`/`compressed_tensors`（HF 生态，对应 BF16 浮点）。 | `ascend_v1`（目标 IR 为 `W8A8_MXFP8`）；`huggingface`（目标 IR 为 `FLOAT`）。 | 格式与目标 IR 必须严格匹配，配错会导致权重无法被目标框架加载。 |
+| `save.part_file_size` | 权重分片文件大小，单位 GB；`0` 表示不分片。 | 默认 `4`（4GB 分片）。 | 小模型可设 `0` 不分片，大模型保持 `4` 便于管理超大 checkpoint。 |
+| `parallel.cpu_workers` | CPU 转换的并行 worker 数：`1` 单进程；`>1` 多进程并行（突破 GIL），默认 `8`。NPU 转换固定每卡一个子进程、组内串行（进程数=卡数），此字段不参与。 | 默认 `8` 适合多数场景；超大模型或 MoE 可适当增大。 | 仅 `--device cpu` 时生效。`cpu_workers` 越大，CPU 并行度越高，但受内存带宽和磁盘 I/O 限制；NPU 多卡并行由 `--device_id` 控制，无需设置。 |
+| `preprocess` | 权重图预处理，在构建虚拟模块树之前对 checkpoint key 做结构性变换。支持 `rename`（重命名 key）和 `convert`（chunk 拆分 fused 权重 / merge 合并权重）。 | 一般不需要；MoE 模型 fused gate_up_proj 拆分时需配置。 | 仅当 checkpoint 中有 fused 权重（如 `gate_up_proj`）需要拆分为独立投影时才需要。参考 `convert/` 目录下的 MoE 示例。 |
+| `defaults.src_format` | 源权重格式；`auto` 由模型适配器/权重目录自动推断。 | 默认 `auto`。 | 一般不需要改。工具会从 checkpoint 中权重 dtype 自动推断。 |
+| `defaults.dst_format` | 目标保存格式；与 `save.type` 同义，`save` 为空时回退到此值。代码默认值是 `ascendv1`（无下划线），对应 `save.type` 的 `ascend_v1`。 | 默认 `ascendv1`。 | 一般不需要改，直接通过 `save.type` 控制。 |
+| `defaults.dst_ir` | 目标 IR 类型；不设置时由目标格式决定。 | 默认 `null`。 | 一般不需要改，直接通过 `linears.target` 控制。 |
+
+> 设备由命令行 `--device`/`--device_id` 决定（YAML 不配置设备，语义与量化命令一致）：`--device npu`（默认）走 NPU 转换，未传 `--device_id` 时默认卡 0，多卡传 `--device_id 0 1 2 3`；`--device cpu` 强制 CPU 转换并忽略 `--device_id`。指定 NPU 但环境无可用卡（或卡号非法）时任务直接报错退出，不会静默回落 CPU。
 
 ### 参数组合与选择顺序
 
-1. **先确定源格式与目标**：反量化到 `FLOAT`，还是转到 `W8A8_MXFP8`。
-2. **再写 `linears.match` 和 `save.type`**：层名对齐 checkpoint；MXFP8 用 `ascend_v1`。
-3. **最后选设备与并行**：NPU 加 `--device npu --device_id ...`；CPU 调 `parallel.workers`；MoE 大模型按需配置 `parallel.max_group_size`。
+1. **先确定源格式与目标 IR**：`FP8_BLOCK → FLOAT`（无损反量化）还是 `FLOAT → W8A8_MXFP8`（有损量化）或 `FP8_BLOCK → W8A8_MXFP8`（自动路由）。
+2. **再固定 `linears.match` 匹配范围**：参考同模型族示例 YAML 的层名模式，通配符写法保持一致。
+3. **最后调整并行度和分片大小**：`parallel.cpu_workers` 影响转换速度，`part_file_size` 影响输出文件管理。
 
 ### 步骤 5：根据结果收敛参数方案
 

@@ -32,7 +32,7 @@
 | `preprocess` | `list[object]` | 可选 | `[]` | — | 预处理步骤列表，每项 `type` 为 `rename` 或 `convert`。 | 本页 <a href="#2-2-1-preprocessconfig">§2.2.1</a> |
 | `linears` | `list[object]` | 可选 | `[]` | — | 线性层转换规则列表。 | 本页 <a href="#2-2-6-linear-convert-config">§2.2.6</a> |
 | `save` | `list[object]` | 可选 | `[]` | — | 保存格式配置列表，取首个生效。 | 本页 <a href="#2-2-7-save-config">§2.2.7</a> |
-| `parallel` | `object` | 可选 | 见嵌套配置默认值 | — | 并行执行配置。 | 本页 <a href="#2-2-8-parallel-spec-config">§2.2.8</a> |
+| `parallel` | `object` | 可选 | 见嵌套配置默认值 | — | CPU 并行配置。NPU 多卡用命令行 `--device_id`。 | 本页 <a href="#2-2-8-parallel-spec-config">§2.2.8</a> |
 | `defaults` | `object` | 可选 | 见嵌套配置默认值 | — | 字段缺省时的全局默认值。 | 本页 <a href="#2-2-9-convert-defaults">§2.2.9</a> |
 
 **配置约束**
@@ -132,18 +132,17 @@
 
 <h4 id="2-2-8-parallel-spec-config">2.2.8 ParallelSpecConfig</h4>
 
-`modelslim_convert` 的并行执行配置。
+`modelslim_convert` 的并行执行配置。设备（NPU/CPU 与卡号）由 CLI `--device` / `--device_id` 决定，YAML 不含设备字段。
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `workers` | `int` | 可选 | `1` | — | 并行 worker 数：1 表示单进程组内线程（可配 NPU）；大于1 表示组间多进程 + 组内线程（CPU）。 | 无 |
+| `cpu_workers` | `int` | 可选 | `8` | — | CPU 转换的并行 worker 数：1 表示单进程；大于1 表示组间多进程 + 组内线程。仅 `--device cpu` 时生效；NPU 转换固定每卡一个子进程（由 `--device_id` 决定），无需设置。 | 无 |
 | `max_group_size` | `int / null` | 可选 | `null` | — | 单个依赖组的最大任务数，超过则拆成多个子组分散到不同进程；不设置表示不拆分。 | 无 |
-| `worker_device` | `string` | 可选 | `cpu` | — | worker 运行设备：`cpu` 或 `npu`。 | 无 |
-| `npu_max_workers` | `int` | 可选 | `1` | — | 仅 `workers=1` 且 `worker_device=npu` 时生效，限制组内并发以防显存溢出。 | 无 |
 
 **配置约束**
 
-- 无。
+- `cpu_workers` 仅 `--device cpu` 时生效。NPU 用 `--device npu --device_id ...`。
+- `max_group_size`：MoE 等含有大量专家任务的模型，可设置为约「每层专家任务数 / 卡数」（如 8 卡设为 96），防止大组单进程/单卡长尾等待。
 
 <h4 id="2-2-9-convert-defaults">2.2.9 ConvertDefaults</h4>
 
@@ -184,10 +183,8 @@ spec:
   - type: ascend_v1
     part_file_size: 4
   parallel:
-    workers: 1
+    cpu_workers: 8
     max_group_size: null
-    worker_device: cpu
-    npu_max_workers: 1
   defaults:
     src_format: auto
     dst_format: ascendv1

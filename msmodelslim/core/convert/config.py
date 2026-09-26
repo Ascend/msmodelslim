@@ -99,19 +99,17 @@ class ParallelConfig(BaseModel):
     max_inflight_bytes: Optional[int] = None
     max_tensor_bytes_per_task: Optional[int] = None
     shard_cache_size: int = 1
-    worker_device: str = "cpu"
     # thread: 组内 ThreadPoolExecutor（受 GIL 限制）；process: 组间 ProcessPoolExecutor，纯 CPU 计算并行
     worker_backend: Literal["thread", "process"] = "process"
     # 每个 worker 进程内的线程数（YAML 层固定为 4，不经配置暴露）
     worker_threads: int = 4
-    # 仅 worker_backend=thread 且 worker_device 指向 NPU 时生效，限制组内并发以防显存 OOM
-    npu_max_workers: int = 1
     task_granularity: Literal["ir_task", "dependency_group"] = "dependency_group"
     # 单个 dependency group 的最大任务数；超过则按任务切成多个子组分散到不同进程并行，
     # 缓解 MoE 大组（一层 512 个 expert 任务）只能单进程承包导致的收尾拖尾、多核空闲。
     # None 或 <=0 表示不拆分（保持整组，fused 缓存复用率最高）。
     max_group_size: Optional[int] = None
-    # CLI --device npu --device_id；非空且 NPU 可用走 NPU 路径，否则 CPU 路径。
+    # CLI --device npu --device_id；--device npu 未传卡号时默认 [0]（对齐 quant 语义）。
+    # 空列表表示 CPU 路径（--device cpu 或显式清空）。
     device_indices: List[int] = Field(default_factory=list)
 
 

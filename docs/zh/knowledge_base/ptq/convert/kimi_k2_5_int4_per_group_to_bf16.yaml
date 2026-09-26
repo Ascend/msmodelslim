@@ -16,4 +16,4 @@ spec:
       part_file_size: 4
 
   parallel:
-    workers: 8
+    cpu_workers: 8

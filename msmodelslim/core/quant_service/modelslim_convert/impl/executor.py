@@ -29,7 +29,6 @@ from typing import Iterator
 from tqdm import tqdm
 
 from msmodelslim.core.convert.catalog import DependencyMap, TensorCatalog
-from msmodelslim.core.convert.device import effective_convert_workers
 from msmodelslim.core.convert.protocol import ConvertContext, IConvertExecutor
 from msmodelslim.core.convert.router import IRRouter
 from msmodelslim.core.convert.tasks import IRResult, IRTask, RoutedTask
@@ -247,14 +246,8 @@ class ConvertExecutor(IConvertExecutor):
 
         backend = parallel.worker_backend
         process_workers = max(1, parallel.max_workers)
-        if backend == "process":
-            worker_threads = max(1, parallel.worker_threads or parallel.max_workers)
-        else:
-            worker_threads = effective_convert_workers(
-                parallel.worker_threads or parallel.max_workers,
-                context.resolved_worker_device,
-                parallel.npu_max_workers,
-            )
+        # 设备由 CLI 决定（YAML 无设备字段）；thread 后端仅 CPU 并行，两个后端公式一致
+        worker_threads = max(1, parallel.worker_threads or parallel.max_workers)
         logger.info(
             "Convert schedule: %d IR tasks, %d groups, backend=%s, process_workers=%d, worker_threads=%d",
             len(routed_tasks),
@@ -288,11 +281,7 @@ class ConvertExecutor(IConvertExecutor):
                 run_stats,
             )
         else:
-            thread_workers = effective_convert_workers(
-                process_workers,
-                context.resolved_worker_device,
-                parallel.npu_max_workers,
-            )
+            thread_workers = max(1, process_workers)
             for group in groups:
                 yield from self._run_group_inprocess(
                     context,
