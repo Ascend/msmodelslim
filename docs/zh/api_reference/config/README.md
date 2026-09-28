@@ -17,7 +17,7 @@
 
 | 配置 | `apiversion` | 说明 |
 |------|--------------|------|
-| [modelslim_v1](quant/modelslim_v1.md) | `modelslim_v1` | 大语言模型量化与权重转换的默认协议，含 `runner`/`process`/`save`/`dataset`。 |
+| [modelslim_v1](quant/modelslim_v1.md) | `modelslim_v1` | 大语言模型量化默认协议，含 `runner`/`process`/`save`/`dataset`。 |
 | [multimodal_vlm_modelslim_v1](quant/multimodal_vlm_modelslim_v1.md) | `multimodal_vlm_modelslim_v1` | 多模态理解（VLM）模型量化协议。 |
 | [multimodal_sd_modelslim_v1](quant/multimodal_sd_modelslim_v1.md) | `multimodal_sd_modelslim_v1` | 多模态生成（DiT/SD）模型量化协议，含 dump 与推理参数。 |
 | [modelslim_convert](quant/modelslim_convert.md) | `modelslim_convert` | 纯权重转换协议，用于权重重命名、结构替换与格式转换。 |

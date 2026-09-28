@@ -29,7 +29,7 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `runner` | `string` | 可选 | `layer_wise` | `auto`、`model_wise`、`layer_wise`、`dp_layer_wise` | 流水线执行方式：`layer_wise` 逐层计算（默认）、`auto` 按设备数量自动选择、`model_wise` 整模型计算、`dp_layer_wise` 数据并行逐层计算。 | 无 |
+| `runner` | `string` | 可选 | `layer_wise` | `auto`、`model_wise`、`layer_wise`、`dp_layer_wise` | 流水线执行方式：`layer_wise` 逐层计算（默认）、`auto` 按设备数量自动选择、`model_wise` 整模型计算、`dp_layer_wise` 数据并行逐层计算。目前本服务仅支持 `layer_wise`，配置为 `auto`、`model_wise` 或 `dp_layer_wise` 时会警告并回退为 `layer_wise`。 | 无 |
 | `prior` | `list[object]` | 可选 | `[]` | — | 前置阶段列表，每阶段含 process 与 dataset | 本页 <a href="#2-2-1-prior-stage-config">§2.2.1</a> |
 | `process` | `list[object]` | 可选 | `[]` | — | 量化处理器链，按顺序执行；每个元素是 `type` 分派的处理器配置。 | 本页 <a href="#2-2-2-autoprocessorconfig">§2.2.2</a> |
 | `per_expert` | `object / null` | 可选 | `null` | — | 按专家覆盖 process 的字典；值为该专家的 Processor 列表。某专家在此出现则整链替换，否则回退 process | 本页 <a href="#2-2-2-autoprocessorconfig">§2.2.2</a> |

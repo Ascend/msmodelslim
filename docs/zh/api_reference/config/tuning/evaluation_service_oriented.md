@@ -136,9 +136,43 @@ AISBench 评测配置
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `type` | `string` | 必选 | 无 | — | 预检查类型，按 `type` 字段分派，如 `garbled_text`、`expected_answer` | 无 |
+| `type` | `string` | 必选 | 无 | — | 预检查类型，按 `type` 字段分派，如 `expected_answer` | 无 |
 | `max_tokens` | `int` | 可选 | `512` | — | 最大生成 token 数，必须大于 0 | 无 |
 | `timeout` | `float` | 可选 | `60.0` | — | API 调用超时时间（秒），必须大于 0 | 无 |
+
+**配置约束**
+
+- 无。
+
+**派生类**
+
+| 配置类 | `type` | 说明 | 文档 |
+|--------|----------|------|------|
+| `ExpectedAnswerPrecheckConfig` | `expected_answer` | 期望答案验证预检查配置 | 本页 <a href="#2-3-5-expected-answer">§2.3.5</a> |
+
+<h4 id="2-3-5-expected-answer">2.3.5 ExpectedAnswerPrecheckConfig</h4>
+
+期望答案验证预检查配置
+
+| 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
+|----------|------|-----------|--------|----------------|------|----------|
+| `type` | `string` | 可选 | `expected_answer` | `expected_answer` | — | 无 |
+| `max_tokens` | `int` | 可选 | `512` | — | 最大生成 token 数，必须大于 0 | 无 |
+| `timeout` | `float` | 可选 | `60.0` | — | API 调用超时时间（秒），必须大于 0 | 无 |
+| `test_cases` | `list[object]` | 可选 | `[TestCase(message='What is 2+2?', expected_answer='4')]` | 最少1项 | 测试用例列表，字典（键值对）格式，内容须为英文，至少包含 1 条 | 本页 <a href="#2-3-6-test-case">§2.3.6</a> |
+
+**配置约束**
+
+- 无。
+
+<h4 id="2-3-6-test-case">2.3.6 TestCase</h4>
+
+预检查测试用例
+
+| 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
+|----------|------|-----------|--------|----------------|------|----------|
+| `message` | `string` | 必选 | 无 | — | 测试消息，须为非空字符串 | 无 |
+| `expected_answer` | `string / list[string] / null` | 可选 | `null` | — | 期望模型回复中包含的内容，可为字符串或字符串列表 | 无 |
 
 **配置约束**
 
