@@ -39,7 +39,7 @@
 | **GLM5-MOE** | GLM-5.1 | <https://huggingface.co/zai-org/GLM-5.1> | ✅ | ✅ |  | ✅ | ✅ |        | ✅ |  |   |   | [W8A8](#glm-51-w8a8量化) / [W4A8](#glm-51-w4a8量化) / [W8A8C8](#glm-51-w8a8c8量化) / [W4A8C8](#glm-51-w4a8c8量化) / [W4A4C8](#glm-51-w4a4c8-mxfp4量化) |
 | **GLM5-MOE** | GLM-5.2 | <https://huggingface.co/zai-org/GLM-5.2> | ✅ | ✅ |  |  |  |        | ✅ |  |   |   | [W8A8](#glm-52-w8a8量化) / [W8A8C8](#glm-52-w8a8c8量化) / [W8A8C8 MXFP8](#glm-52-w8a8c8-mxfp8量化) / [W4A4](#glm-52-w4a4-mxfp4量化) / [W4A4C8](#glm-52-w4a4c8-mxfp4量化) |
 | **GLM5-MOE** | GLM-5.3 | <https://huggingface.co/zai-org/GLM-5.3> | ✅ | ✅ |  |  |  |        | ✅ |  |   |   | [W8A8](#glm-53-w8a8量化) / [W8A8 MXFP8](#glm-53-w8a8-mxfp8量化) / [W8A8C8](#glm-53-w8a8c8量化) / [W8A8C8 MXFP8](#glm-53-w8a8c8-mxfp8量化) / [W4A4C8](#glm-53-w4a4c8-mxfp4量化) |
-| **GLM5-MOE** | GLM-5.3-Flash | <https://huggingface.co/zai-org/GLM-5.3-Flash> | ✅ |  |  |  |  |        |   |  |   |   | [W8A8](#glm-53-flash-w8a8量化) / [浮点权重 转 MXFP8](#glm-53-flash-浮点权重-转-mxfp8) |
+| **GLM5-MOE** | GLM-5.3-Flash | <https://huggingface.co/zai-org/GLM-5.3-Flash> | ✅ | ✅ |  |  |  |        |   |  |   |   | [W8A8](#glm-53-flash-w8a8量化) / [W8A8C8](#glm-53-flash-w8a8量化) / [浮点权重 转 MXFP8](#glm-53-flash-浮点权重-转-mxfp8) |
 
 **说明：**
 
@@ -60,6 +60,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5 \
   --quant_type w8a8 \
   --trust_remote_code true
@@ -75,6 +76,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5 \
   --quant_type w4a8 \
   --trust_remote_code true
@@ -92,6 +94,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.1 \
   --quant_type w8a8 \
   --trust_remote_code true
@@ -107,6 +110,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.1 \
   --quant_type w4a8 \
   --trust_remote_code true
@@ -122,6 +126,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.1 \
   --quant_type w8a8c8 \
   --trust_remote_code true
@@ -137,6 +142,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.1 \
   --quant_type w4a8c8 \
   --trust_remote_code true
@@ -152,6 +158,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.1 \
   --quant_type w4a4c8 \
   --trust_remote_code true \
@@ -170,6 +177,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.2 \
   --quant_type w8a8 \
   --trust_remote_code true
@@ -185,6 +193,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.2 \
   --quant_type w8a8c8 \
   --trust_remote_code true
@@ -200,6 +209,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.2 \
   --quant_type w8a8c8 \
   --tags Atlas_350 \
@@ -216,6 +226,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.2 \
   --quant_type w4a4 \
   --trust_remote_code true \
@@ -232,6 +243,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.2 \
   --quant_type w4a4c8 \
   --trust_remote_code true \
@@ -250,6 +262,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.3 \
   --quant_type w8a8 \
   --trust_remote_code true
@@ -265,6 +278,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.3 \
   --quant_type w8a8 \
   --tags Atlas_350 \
@@ -281,6 +295,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.3 \
   --quant_type w8a8c8 \
   --trust_remote_code true
@@ -296,6 +311,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.3 \
   --quant_type w8a8c8 \
   --tags Atlas_350 \
@@ -312,6 +328,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.3 \
   --quant_type w4a4c8 \
   --trust_remote_code true \
@@ -330,6 +347,7 @@ msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
   --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --model_type GLM-5.3-Flash \
   --quant_type w8a8 \
   --trust_remote_code true
@@ -337,6 +355,8 @@ msmodelslim quant \
 
 - 其中`MODEL_PATH`为GLM-5.3-Flash模型的路径，`SAVE_PATH`为量化后的权重保存路径。
 - 该一键量化命令匹配使用的量化配置文件为[glm_5_next_w8a8.yaml](../../lab_practice/glm_5_next/glm_5_next_w8a8.yaml)，可以在其中查看具体的量化策略。
+
+**说明：** GLM-5.3-Flash 同样支持 W8A8C8 量化。由于 C8（KV Cache INT8）由框架侧在部署时使能，精度损失相对较小，权重侧无需做额外弥补（如针对 KV Cache 的校准选层），因此在不需要选层的情况下，W8A8C8 与 W8A8 的量化方式一致，可直接复用上述同一份量化命令与配置文件。
 
 #### GLM-5.3-Flash 浮点权重 转 MXFP8
 
@@ -346,6 +366,8 @@ msmodelslim quant \
 msmodelslim quant \
   --model_path ${MODEL_PATH} \
   --save_path ${SAVE_PATH} \
+  --device npu \
+  --device_id 0 1 2 3 4 5 6 7 \
   --config ${CONFIG_PATH}/glm_5_next_convert_mxfp8.yaml \
   --trust_remote_code true
 ```
