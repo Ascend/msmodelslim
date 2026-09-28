@@ -282,8 +282,8 @@ class TestRaCompressGetCompressHeads(unittest.TestCase):
         copying_map = result["copying"]
         self.assertIn(0, copying_map)
 
-    def test_get_compress_heads_removes_empty_lists_when_layer_scores_zero(self):
-        """空列表的层被移除。"""
+    def test_get_compress_heads_keeps_empty_lists_when_layer_scores_zero(self):
+        """未被选中 head 的层保留空列表（不再被剔除）。"""
         self.method._prefix_scores = {
             0: [0.0, 0.0, 0.0, 0.0],
             1: [0.9, 0.1, 0.8, 0.2],
@@ -293,8 +293,9 @@ class TestRaCompressGetCompressHeads(unittest.TestCase):
             1: [0.0, 0.0, 0.0, 0.0],
         }
         result = self.method.get_compress_heads()
-        # layer 0 的所有分数都是 0，不应出现在 prefix_matching 中
-        self.assertNotIn(0, result["prefix_matching"])
+        # layer 0 的所有分数都是 0，仍保留该层键，value 为空列表
+        self.assertIn(0, result["prefix_matching"])
+        self.assertEqual(result["prefix_matching"][0], [])
 
     def test_get_compress_heads_returns_heads_when_no_gqa(self):
         """num_kv_heads == num_attention_heads（无 GQA）时分组 n=1 原样选择（边界）。"""

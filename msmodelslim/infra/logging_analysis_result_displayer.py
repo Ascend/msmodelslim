@@ -156,15 +156,27 @@ class RaCompressAnalysisResultDisplayer(AnalysisResultDisplayerInfra):
 
         prefix_map: Dict[int, List[int]] = {}
         copying_map: Dict[int, List[int]] = {}
+        unmatched_names: List[str] = []
         for entry in result.layer_scores:
             name = entry['name']
             layer_idx = _extract_layer_idx(name)
-            ind_heads = entry.get('induction_heads', [])
-            echo_heads = entry.get('echo_heads', [])
-            if ind_heads:
+            if layer_idx < 0:
+                unmatched_names.append(name)
+                continue
+            ind_heads = list(entry.get('induction_heads') or [])
+            echo_heads = list(entry.get('echo_heads') or [])
+            # 未被选中 head 的层保留空列表，保证 head.pt 覆盖全部已分析层；
+            # 同一层可能有多条记录（如 q_proj / k_proj），空列表不覆盖已有的选中结果
+            if ind_heads or layer_idx not in prefix_map:
                 prefix_map[layer_idx] = ind_heads
-            if echo_heads:
+            if echo_heads or layer_idx not in copying_map:
                 copying_map[layer_idx] = echo_heads
+        if unmatched_names:
+            get_logger().warning(
+                "RA compress: %d layer name(s) without 'layers.<idx>' pattern are excluded from head.pt, e.g. %s",
+                len(unmatched_names),
+                unmatched_names[0],
+            )
         head_dict = {
             'prefix_matching': prefix_map,
             'copying': copying_map,
@@ -176,17 +188,30 @@ class RaCompressAnalysisResultDisplayer(AnalysisResultDisplayerInfra):
         get_logger().info("-" * 80)
 
         get_logger().info("=== Induction Heads (prefix matching) ===")
-        get_logger().info("Selected %d layers with induction heads:", len(prefix_map))
+        get_logger().info(
+            "Induction head dict covers %d layers, %d with selected heads:",
+            len(prefix_map),
+            sum(1 for heads in prefix_map.values() if heads),
+        )
+        # 逐层只打印有入选 head 的层，避免空列表层刷屏；空列表层仍完整写入 head.pt
         for layer_idx in sorted(prefix_map.keys()):
             heads = prefix_map[layer_idx]
+            if not heads:
+                continue
             get_logger().info("  Layer %3d: KV heads %s", layer_idx, heads)
 
         get_logger().info("-" * 80)
 
         get_logger().info("=== Echo Heads (copying matching) ===")
-        get_logger().info("Selected %d layers with echo heads:", len(copying_map))
+        get_logger().info(
+            "Echo head dict covers %d layers, %d with selected heads:",
+            len(copying_map),
+            sum(1 for heads in copying_map.values() if heads),
+        )
         for layer_idx in sorted(copying_map.keys()):
             heads = copying_map[layer_idx]
+            if not heads:
+                continue
             get_logger().info("  Layer %3d: KV heads %s", layer_idx, heads)
 
         get_logger().info("-" * 80)

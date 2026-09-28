@@ -1,6 +1,6 @@
 # RA Compress 长序列压缩算法 量化术语百科词条
 
-> **词条类别**：[敏感层分析算法](../README.md#3-敏感层分析算法)<br>
+> **词条类别**：[注意力头分析算法](../README.md#4-注意力头分析算法)<br>
 > **英文名称**：RazorAttention Compress（`ra_compress`）<br>
 > **应用领域**：长序列推理、KV cache 压缩、注意力头筛选<br>
 
@@ -8,7 +8,7 @@
 
 ## 1. 概述
 
-RA Compress（`ra_compress`）是一种注意力头（KV head）粒度的长序列压缩筛选算法。它基于 Transformer 中注意力头的跨段（segment-spanning）注意力行为，识别具备 prefix matching（归纳头）与 copying matching（回声头）能力的关键 KV head，作为长序列推理时 KV cache 压缩的保留依据；核心特征是用等长重复段构造受控输入，把“跨段检索能力”本身变成可度量的分数，可与同样位于 attn 范围的 [Attention MSE](../attention_mse/term_attention_mse.md) 等敏感层分析指标互补。
+RA Compress（`ra_compress`）是一种注意力头（KV head）粒度的长序列压缩筛选算法。它基于 Transformer 中注意力头的跨段（segment-spanning）注意力行为，识别具备 prefix matching（归纳头）与 copying matching（回声头）能力的关键 KV head，作为长序列推理时 KV cache 压缩的保留依据；核心特征是用等长重复段构造受控输入，把“跨段检索能力”本身变成可度量的分数，可与 [Attention MSE](../attention_mse/term_attention_mse.md) 等 attn 范围的敏感层分析指标配合使用：后者度量量化敏感度以支持回退决策，前者筛选长序列推理需保留的关键头，二者不属同一类指标。
 
 ---
 
@@ -99,7 +99,7 @@ $$
 
 - [KVCache Quant](../kvcache_quant/term_kvcache_quant.md)：配套术语，KV cache 的量化方案，与 RA Compress 同属长序列显存优化范畴。
 - [KV Smooth](../kv_smooth/term_kv_smooth.md)：配套术语，针对 KV cache 的离群值抑制算法。
-- [Attention MSE](../attention_mse/term_attention_mse.md)：同类术语，同为 attn 范围敏感层分析指标（但用于 FA 回退决策而非 head 选择）。
+- [Attention MSE](../attention_mse/term_attention_mse.md)：关联术语，属 attn 范围的敏感层分析指标（用于 FA 回退决策，与 RA Compress 的 head 选择用途不同）。
 - [MSE Layer Wise](../mse_layer_wise/term_mse_layer_wise.md)：配套术语，层级敏感层分析指标。
 
 ---
