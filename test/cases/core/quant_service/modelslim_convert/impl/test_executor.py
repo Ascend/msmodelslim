@@ -219,9 +219,9 @@ class TestConvertExecutor:
         assert mock_cls.call_args.kwargs["save_path"] == "/o"
         assert mock_cls.call_args.kwargs["return_mode"] == "module"
 
-    def test_run_multinpu_skip_direct_write_when_dst_format_is_hf(self):
-        """场景：npu_multi 但 dst_format 不是 AscendV1。
-        预期：不打开 worker 直写，结果仍走 state_dict 回传。
+    def test_run_multinpu_direct_write_when_dst_format_is_hf(self):
+        """场景：npu_multi + huggingface。
+        预期：与 AscendV1 一样打开 worker 直写，结果走 module 回传。
         """
         task = IRTask(
             module_path="layers.0.q_proj",
@@ -235,6 +235,38 @@ class TestConvertExecutor:
             model_path="/m",
             save_path="/o",
             dst_format="huggingface",
+            parallel=ParallelConfig(max_workers=1, device_indices=[0, 1]),
+        )
+        context = ConvertContext(config=config)
+        context.parallel_mode = "npu_multi"
+        mock_scheduler = MagicMock()
+        mock_scheduler.run.return_value = iter([])
+        mock_scheduler.summaries = []
+        mock_scheduler.worker_metas = []
+        with patch(
+            "msmodelslim.core.quant_service.modelslim_convert.impl.executor.MultiNpuConvertScheduler",
+            return_value=mock_scheduler,
+        ) as mock_cls:
+            list(ConvertExecutor(router=IRRouter()).run(context, routed))
+        assert mock_cls.call_args.kwargs["save_path"] == "/o"
+        assert mock_cls.call_args.kwargs["return_mode"] == "module"
+
+    def test_run_multinpu_skip_direct_write_when_dst_format_unsupported(self):
+        """场景：npu_multi 但 dst_format 不在 AscendV1 / HuggingFace。
+        预期：不打开 worker 直写，结果仍走 state_dict 回传。
+        """
+        task = IRTask(
+            module_path="layers.0.q_proj",
+            source_ir=SourceIR(kind=IRKind.FLOAT),
+            target_ir=IRKind.FLOAT,
+            tensor_bindings={"weight": TensorRef("weight", "k", "s", "bf16", (2, 2))},
+            inverse_weight_map={},
+        )
+        routed = [RoutedTask(task=task, route=[], route_ir_names=[])]
+        config = ConvertConfig(
+            model_path="/m",
+            save_path="/o",
+            dst_format="mindie",
             parallel=ParallelConfig(max_workers=1, device_indices=[0, 1]),
         )
         context = ConvertContext(config=config)

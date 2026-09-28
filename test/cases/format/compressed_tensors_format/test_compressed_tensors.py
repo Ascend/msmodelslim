@@ -317,10 +317,13 @@ class TestCompressedTensorsQuantFormatFinalizeExport:
             json.dump({"model_type": "test"}, f)
 
         writer = quant_format.safetensors_writer
+        assert quant_format.written_safetensors_writer() is writer
         quant_format.finalize_export(QuantizedModel())
 
         assert writer.closed is True
         assert quant_format.safetensors_writer is None
+        assert quant_format._closed_writer is writer
+        assert quant_format.written_safetensors_writer() is writer
 
     def test_finalize_export_close_writer_when_update_config_raises(self, quant_format):
         writer = quant_format.safetensors_writer
@@ -330,6 +333,7 @@ class TestCompressedTensorsQuantFormatFinalizeExport:
 
         assert writer.closed is True
         assert quant_format.safetensors_writer is None
+        assert quant_format._closed_writer is writer
 
 
 class TestCompressedTensorsQuantFormatBuildModuleHandlerMap:
@@ -381,6 +385,87 @@ class TestCompressedTensorsQuantFormatSweepUnprocessedModules:
 
         keys = quant_format.safetensors_writer.tensors
         assert any("1.weight" in k for k in keys)
+
+    def test_sweep_skip_path_when_module_ref_released(self, quant_format):
+        linear = nn.Linear(8, 4, bias=False)
+        model = nn.Sequential(linear)
+        quant_format.process_module_tensors("0", linear)
+        quant_format.release_module_refs()
+        before = set(quant_format.safetensors_writer.tensors)
+
+        quant_format._sweep_unprocessed_modules(model)
+
+        assert quant_format.safetensors_writer.tensors.keys() == before
+
+    def test_on_float_module_write_passthrough_checkpoint_key(self, quant_format):
+        from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
+        from msmodelslim.core.quant_service.modelslim_convert.virtual_module import PassthroughModule
+
+        ref = TensorRef(
+            logical_name="weight",
+            key="model.norm.weight",
+            shard="model.safetensors",
+            dtype="bfloat16",
+            shape=(8,),
+        )
+        module = PassthroughModule(
+            full_name="model.norm",
+            tensor_bindings={"weight": ref},
+            source_ir=SourceIR(kind=IRKind.FLOAT),
+        )
+        module.register_parameter("weight", nn.Parameter(torch.ones(8), requires_grad=False))
+
+        quant_format.on_float_module("model.norm", module)
+
+        assert "model.norm.weight" in quant_format.safetensors_writer.tensors
+
+    def test_sweep_unprocessed_modules_export_passthrough_when_not_visited(self, quant_format):
+        """与 AscendV1 相同：补扫时 named_parameters 给出 checkpoint key。"""
+        from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
+        from msmodelslim.core.quant_service.modelslim_convert.virtual_module import PassthroughModule
+
+        ref = TensorRef(
+            logical_name="weight",
+            key="norm.weight",
+            shard="model.safetensors",
+            dtype="bfloat16",
+            shape=(8,),
+        )
+        module = PassthroughModule(
+            full_name="norm",
+            tensor_bindings={"weight": ref},
+            source_ir=SourceIR(kind=IRKind.FLOAT),
+        )
+        module.register_parameter("weight", nn.Parameter(torch.ones(8), requires_grad=False))
+        model = nn.Module()
+        model.add_module("norm", module)
+
+        quant_format._sweep_unprocessed_modules(model)
+
+        assert "norm.weight" in quant_format.safetensors_writer.tensors
+
+    def test_on_float_module_write_prefix_when_passthrough_key_equals_full_name(self, quant_format):
+        from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
+        from msmodelslim.core.quant_service.modelslim_convert.virtual_module import PassthroughModule
+
+        ref = TensorRef(
+            logical_name="down_proj",
+            key="model.experts.down_proj",
+            shard="model.safetensors",
+            dtype="bfloat16",
+            shape=(2, 2),
+        )
+        module = PassthroughModule(
+            full_name="model.experts.down_proj",
+            tensor_bindings={"down_proj": ref},
+            source_ir=SourceIR(kind=IRKind.FLOAT),
+        )
+        module.register_parameter("down_proj", nn.Parameter(torch.ones(2, 2), requires_grad=False))
+
+        quant_format.on_float_module("model.experts.down_proj", module)
+
+        assert "model.experts.down_proj" in quant_format.safetensors_writer.tensors
+        assert "model.experts.down_proj.down_proj" not in quant_format.safetensors_writer.tensors
 
 
 class TestCompressedTensorsQuantFormatProcessModuleTensorsE2E:

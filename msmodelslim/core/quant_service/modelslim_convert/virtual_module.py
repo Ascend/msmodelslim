@@ -97,7 +97,11 @@ class ModelFreeLinear(ModelFreeModule):  # pylint: disable=abstract-method
 
 
 class PassthroughModule(ModelFreeModule):  # pylint: disable=abstract-method
-    """Norm / embedding / catalog 余量：原样 FLOAT 落盘，走 AscendV1 ``on_float_module``。"""
+    """Norm / embedding / catalog 余量：原样 FLOAT 落盘。
+
+    全部挂 Parameter，供 AscendV1 与 HuggingFace 的 ``on_float_module`` 共用
+    ``named_parameters(recurse=False, prefix=...)`` 写出 checkpoint key。
+    """
 
     def _register_logical(self, logical: str, tensor: torch.Tensor) -> None:
         # AscendV1 仅遍历 named_parameters；非 weight/bias 的 A_log 等也注册为 Parameter
