@@ -22,7 +22,7 @@
 | --- | --- | --- | --- | --- |
 | 输入 | 浮点模型权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` 分片 | 可被目标 Transformers 版本正常加载 |
 | 输入 | 模型适配器 | 用户适配代码，通过 `--model_type` 调用 | 实现 `PipelineInterface` 及 `RaCompressAnalysisInterface`（`get_proj_names`、`get_tokenizer` 均需实现） | 能被调度器（Runner）与处理器（Processor）正常驱动 |
-| 输入 | 校准输入 | 算法在运行时自行构造的受控输入 | 首 token + 2500 个随机 token × 4 段重复，总长 `1 + 2500 × 4` | 无需用户指定；不受 `--calibration_dataset` 影响 |
+| 输入 | 校准输入 | 算法在运行时自行构造的受控输入 | 首 token + 2500 个随机 token × 4 段重复，总长 `1 + 2500 × 4` | 无需用户指定；`attn_head` 不提供 `--calibration_dataset` |
 | 输入 | 量化配置文件 | 本地 YAML 文件 | 符合 `modelslim_v1` 协议规范 | 通过模式校验（Schema Validation） |
 | 交付件 | `head.pt` | `--save_path` 指定路径 | dict 序列化 `.pt` 文件，含 `prefix_matching` 与 `copying` 字段 | 文件存在且可被 `torch.load` 读取，交付给 MindIE 推理框架用于长序列 KV Cache 压缩，不写入量化配置 |
 
@@ -115,7 +115,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
 下面参数用于建立**第一版可比较基线**。
 
 - `--metrics`：`ra_compress`；
-- 校准输入：无需指定 `--calibration_dataset`，`ra_compress` 的校准输入由算法在运行时自行构造；
+- 校准输入：`attn_head` 不提供 `--calibration_dataset`，`ra_compress` 的校准输入由算法在运行时自行构造；
 - top heads 选取比例（ratio）：使用实现内部默认值（induction head `0.14`、echo head `0.01`），CLI 不提供相关参数，保持默认即可；确需调整时，请参见《[unary_analysis 配置说明](../../../api_reference/config/processor/unary_analysis.md)》；
 - `--save_path`：指定 `head.pt` 保存目录。
 
@@ -167,7 +167,7 @@ msmodelslim analyze attn_head \
 | `--device_id` | 卡号，如 `0`；多卡传入多个卡号（如 `0 1 2 3`）时启用多卡分析 |
 | `--save_path` | `head.pt` 保存目录 |
 
-> 无需指定 `--calibration_dataset`：`ra_compress` 的校准输入（首 token + 随机重复段）由算法在运行时自行构造，该参数不参与计算。
+> `attn_head` 不提供 `--calibration_dataset`（`--top_k` 同样不提供，传入会报 `unrecognized arguments`）：`ra_compress` 的校准输入（首 token + 随机重复段）由算法在运行时自行构造。
 
 **输出**：命令行打印入选的 induction heads / echo heads 列表；`--save_path` 目录下生成 `head.pt`（含 `prefix_matching` 与 `copying` 字段），交付给 MindIE 推理框架用于长序列 KV Cache 压缩，不写入量化配置。
 

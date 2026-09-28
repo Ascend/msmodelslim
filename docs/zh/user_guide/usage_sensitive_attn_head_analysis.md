@@ -95,7 +95,7 @@ msmodelslim analyze attn_head \
 1. 从 [ModelScope](https://www.modelscope.cn/)、[Hugging Face](https://huggingface.co/) 或团队内部模型存放位置获取完整权重到本地目录；具体下载方式以对应社区或仓库文档为准。
 2. 核对目录含配置、权重分片及 tokenizer 等附属文件。若官方页面提供文件校验值（如 MD5/SHA256）或明确的版本号/提交号，与本地下载结果比对一致即可。
 
-> `ra_compress` 不需要用户提供校准集：校准输入是算法内建的受控输入，由算法在运行时自动构造（首 token + 2500 个随机 token × 4 段重复，总长 `1 + 2500 × 4`）。命令行的 `--calibration_dataset` 对该场景不参与计算；模型目录中的 tokenizer 会被用于解析首 token，若缺失则回落到兜底 token id 并告警。
+> `ra_compress` 不需要用户提供校准集：校准输入是算法内建的受控输入，由算法在运行时自动构造（首 token + 2500 个随机 token × 4 段重复，总长 `1 + 2500 × 4`）。命令行的 `--calibration_dataset`、`--top_k` 在 `attn_head` 下不提供（传入会报 `unrecognized arguments`）；模型目录中的 tokenizer 会被用于解析首 token，若缺失则回落到兜底 token id 并告警。
 
 **输出**：可加载的浮点模型目录。
 
@@ -124,7 +124,7 @@ msmodelslim analyze attn_head \
 
 - 已完成步骤 1～3 的指标、权重与模型适配确认。
 - `trust_remote_code` 默认 `false`；仅当模型必须执行仓库内自定义代码且来源可信时设为 `true`。
-- 无需指定 `--calibration_dataset`：`ra_compress` 的校准输入由算法在运行时自行构造（见步骤 2），该参数不参与计算。
+- 不提供 `--calibration_dataset` 与 `--top_k`：`ra_compress` 的校准输入由算法在运行时自行构造（见步骤 2），这两个参数在 `attn_head` 下均不接受。
 
 **操作**：
 

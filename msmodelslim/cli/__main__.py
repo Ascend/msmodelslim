@@ -886,18 +886,6 @@ def main():
         help='Device indices for analysis; length > 1 enables DPLayerWiseRunner, e.g. 0 1 2 3',
     )
     analyze_common_parser.add_argument(
-        '--calibration_dataset',
-        '--calib_dataset',
-        dest='calib_dataset',
-        metavar='<PATH>',
-        type=str,
-        default='mix_calib.jsonl',
-        help='Calibration dataset. LLM: a .json/.jsonl file — the filename under lab_calib '
-        '[default: mix_calib.jsonl] or a path to that file, not the parent directory. '
-        'VLM: a multimodal dataset directory name under lab_calib '
-        '[default: calibImages] or a path to that directory.',
-    )
-    analyze_common_parser.add_argument(
         '--save_path',
         dest='save_path',
         metavar='<PATH>',
@@ -905,15 +893,6 @@ def main():
         default=None,
         help='Path to save result file (YAML for linear/layer/attn, head.pt for attn_head). '
         'If not specified, results are printed to console only.',
-    )
-    analyze_common_parser.add_argument(
-        '--top_k',
-        '--topk',
-        dest='topk',
-        metavar='<N>',
-        type=int,
-        default=15,
-        help='Number of top layers to output for disable_names [default: 15]',
     )
     analyze_common_parser.add_argument(
         '--trust_remote_code',
@@ -929,12 +908,42 @@ def main():
     )
     _add_log_level_args(analyze_common_parser)
 
+    # `--top_k` 只对输出 `disable_names` 的 scope（linear/layer/attn）生效；
+    # `--calibration_dataset` 只被这几个 scope 的指标计算消费。attn_head（ra_compress）
+    # 两者都不用：不输出 disable_names，且校准输入在运行期由算法自行构造
+    # （见 analysis_service 的 build_random_token_calib，不读 --calibration_dataset）。
+    # 因此这两个参数不挂在公共 parser 上，只作为 linear/layer/attn 子命令的 parents。
+    analyze_topk_parser = argparse.ArgumentParser(add_help=False)
+    analyze_topk_parser.add_argument(
+        '--top_k',
+        '--topk',
+        dest='topk',
+        metavar='<N>',
+        type=int,
+        default=15,
+        help='Number of top layers to output for disable_names [default: 15]',
+    )
+
+    analyze_calib_parser = argparse.ArgumentParser(add_help=False)
+    analyze_calib_parser.add_argument(
+        '--calibration_dataset',
+        '--calib_dataset',
+        dest='calib_dataset',
+        metavar='<PATH>',
+        type=str,
+        default='mix_calib.jsonl',
+        help='Calibration dataset. LLM: a .json/.jsonl file — the filename under lab_calib '
+        '[default: mix_calib.jsonl] or a path to that file, not the parent directory. '
+        'VLM: a multimodal dataset directory name under lab_calib '
+        '[default: calibImages] or a path to that directory.',
+    )
+
     analysis_subparsers = analysis_parser.add_subparsers(dest='scope', help='Analyze scopes')
     analysis_subparsers.required = True
 
     analysis_linear_parser = analysis_subparsers.add_parser(
         'linear',
-        parents=[analyze_common_parser],
+        parents=[analyze_common_parser, analyze_topk_parser, analyze_calib_parser],
         help='Analyze individual linear layers; use --patterns to filter what gets listed',
         formatter_class=_UnifiedHelpFormatter,
         description='Analyze individual linear layers. Use --patterns to filter what gets listed.',
@@ -963,7 +972,7 @@ def main():
 
     analysis_layer_parser = analysis_subparsers.add_parser(
         'layer',
-        parents=[analyze_common_parser],
+        parents=[analyze_common_parser, analyze_topk_parser, analyze_calib_parser],
         help='Analyze layer/block as a group; --quant_modules selects modules to include in pipeline config',
         formatter_class=_UnifiedHelpFormatter,
         description='Analyze layer/block as a group. '
@@ -993,7 +1002,7 @@ def main():
 
     analysis_attn_parser = analysis_subparsers.add_parser(
         'attn',
-        parents=[analyze_common_parser],
+        parents=[analyze_common_parser, analyze_topk_parser, analyze_calib_parser],
         help='Analyze attention modules with mse metric (scope defaults to all attention modules)',
         formatter_class=_UnifiedHelpFormatter,
         description='Analyze attention modules with the mse metric (scope defaults to all attention modules).',

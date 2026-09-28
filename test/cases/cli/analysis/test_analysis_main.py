@@ -113,6 +113,30 @@ class TestAnalysisMain:
 
         mock_app_instance.analyze.assert_called_once()
 
+    @patch("msmodelslim.cli.analysis.__main__.LayerAnalysisApplication")
+    @patch("msmodelslim.cli.analysis.__main__.AnalysisResultDisplayerFactory")
+    @patch("msmodelslim.cli.analysis.__main__.YamlAnalysisPipelineLoader")
+    def test_main_uses_default_topk_and_calib_dataset_when_scope_is_attn_head(
+        self, mock_pl_cls, mock_factory, mock_app_cls
+    ):
+        """主路径：scope=attn_head 时 argparse 不提供 topk/calib_dataset，应回落到默认值传给 analyze。"""
+        from unittest.mock import MagicMock
+
+        mock_pl_cls.return_value = MagicMock()
+        mock_factory.create.return_value = MagicMock()
+        mock_app_instance = MagicMock()
+        mock_app_cls.return_value = mock_app_instance
+
+        args = self._make_args(scope="attn_head", metrics="ra_compress")
+        del args.topk
+        del args.calib_dataset
+
+        main(args)
+
+        call_kwargs = mock_app_instance.analyze.call_args.kwargs
+        assert call_kwargs["topk"] == 15
+        assert call_kwargs["calib_dataset"] == "mix_calib.jsonl"
+
     def test_main_raises_value_error_when_scope_unsupported(self):
         """异常：scope 非 linear/layer/attn 时应抛 ValueError。"""
         args = self._make_args(scope="unknown_scope")

@@ -94,8 +94,9 @@ def main(args):
             result_manager=result_manager,
         )
 
-        # topk 仅对 linear/layer/attn 子命令可用，attn_head 无此参数
+        # topk / calib_dataset 仅对 linear/layer/attn 子命令可用，attn_head 无这两个参数
         topk = getattr(args, 'topk', 15)
+        calib_dataset = getattr(args, 'calib_dataset', 'mix_calib.jsonl')
 
         # Canonical: --device_id; legacy npu:0,1 normalized in cli/__main__._normalize_device_argv
         device_indices = getattr(args, 'device_id', None)
@@ -106,7 +107,7 @@ def main(args):
             model_path=args.model_path,
             scope_args=scope_args,
             device=args.device,
-            calib_dataset=args.calib_dataset,
+            calib_dataset=calib_dataset,
             topk=topk,
             trust_remote_code=args.trust_remote_code,
             save_path=save_path,

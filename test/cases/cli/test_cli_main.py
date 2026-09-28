@@ -15,6 +15,8 @@ You may obtain a copy of Mulan PSL v2 at:
 
 from unittest.mock import patch
 
+import pytest
+
 from msmodelslim.cli.__main__ import _normalize_analyze_argv, main
 
 
@@ -211,3 +213,59 @@ class TestMainDispatcher:
 
         # 不应抛错（parser.print_help 内部 stdout 打印）
         main()
+
+
+class TestAnalyzeAttnHeadExcludedParams:
+    """attn_head 不提供 --top_k / --calibration_dataset：帮助信息不列出，显式传入即报错。"""
+
+    EXCLUDED_ARGS = (
+        ["--top_k", "10"],
+        ["--calibration_dataset", "mix_calib.jsonl"],
+    )
+
+    @staticmethod
+    def _help_output(mock_sys, argv, capsys):
+        mock_sys.argv = argv
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 0
+        return capsys.readouterr().out
+
+    @patch("msmodelslim.cli.__main__.sys")
+    def test_attn_head_help_does_not_list_excluded_params(self, mock_sys, capsys):
+        """主路径：attn_head 不支持 --top_k / --calibration_dataset，帮助信息中不应出现。"""
+        out = self._help_output(mock_sys, ["msmodelslim", "analyze", "attn_head", "--help"], capsys)
+
+        assert "--top_k" not in out
+        assert "--topk" not in out
+        assert "--calibration_dataset" not in out
+        assert "--calib_dataset" not in out
+
+    @pytest.mark.parametrize("scope", ["linear", "layer", "attn"])
+    @patch("msmodelslim.cli.__main__.sys")
+    def test_other_scopes_help_lists_excluded_params(self, mock_sys, capsys, scope):
+        """主路径：linear/layer/attn 输出 disable_names 且消费校准集，帮助信息中保留这两个参数。"""
+        out = self._help_output(mock_sys, ["msmodelslim", "analyze", scope, "--help"], capsys)
+
+        assert "--top_k" in out
+        assert "--calibration_dataset" in out
+
+    @pytest.mark.parametrize("extra_argv", EXCLUDED_ARGS)
+    @patch("msmodelslim.cli.__main__.sys")
+    def test_attn_head_rejects_excluded_params(self, mock_sys, capsys, extra_argv):
+        """异常：attn_head 显式传入这两个参数时应被 argparse 拒绝。"""
+        mock_sys.argv = [
+            "msmodelslim",
+            "analyze",
+            "attn_head",
+            "--model_type",
+            "Qwen2.5-7B-Instruct",
+            "--model_path",
+            "/tmp/model",
+        ] + extra_argv
+
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+        assert exc_info.value.code != 0
+        assert "unrecognized arguments" in capsys.readouterr().err
