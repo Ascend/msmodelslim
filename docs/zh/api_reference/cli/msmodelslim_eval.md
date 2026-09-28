@@ -25,7 +25,7 @@ msmodelslim eval --model_type <model_type> --model_path <model_path> --prompt_fi
 | `--model_path` | 无 | `string` | 单值 | 必选 | 无 | 量化导出目录（需存在且可读） | 待验证的量化权重目录 |
 | `--prompt_file` | 无 | `string` | 单值 | 必选 | 无 | 文件绝对/相对路径。LLM 要求样本文件扩展名为 `.json` 或 `.jsonl`；VLM 多模态样本文件须命名为 `index.json` 或 `index.jsonl` | 推理样本文件。 |
 | `--device` | 无 | `string` | 单值 | 可选 | `npu` | `npu`、`cpu`，推荐使用 `npu` | 运行设备类型 |
-| `--device_id` | 无 | `list` | 一次接收多个值，空格分隔 | 可选 | 无 | 非负整数列表，如 `0` 或 `0 1 2 3` | 设备索引；传入多个值时启用多卡样本并行（DP）推理，单值或不传为单卡推理。 |
+| `--device_id` | 无 | `list` | 可接收单个或多个值，空格分隔 | 可选 | 无 | 非负整数列表，如 `0` 或 `0 1 2 3` | 设备索引；传入多个值时启用多卡样本并行（DP）推理，单值或不传为单卡推理。 |
 | `--max_new_tokens` | 无 | `int` | 单值 | 可选 | `1` | 正整数（≥ 1） | 每个样本新生成的 token 数（不含 prompt 部分）。 |
 | `--log_level` | 无 | `string` | 单值 | 可选 | `info` | `debug`、`info`、`warning`、`error` | 日志级别。 |
 | `-v` / `--verbose` | 无 | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 提高输出详细程度（等价 `--log_level debug`）。 |
@@ -45,9 +45,9 @@ msmodelslim eval --model_type <model_type> --model_path <model_path> --prompt_fi
 
 ```bash
 msmodelslim eval \
-  --model_type "${MODEL_TYPE}" \
-  --model_path "${MODEL_PATH}" \
-  --prompt_file "${PROMPT_FILE}"
+  --model_type ${MODEL_TYPE} \
+  --model_path ${MODEL_PATH} \
+  --prompt_file ${PROMPT_FILE}
 ```
 
 `${MODEL_TYPE}` 为模型类型名称（如 `Qwen3-32B`），`${MODEL_PATH}` 为量化导出目录，`${PROMPT_FILE}` 为推理样本文件路径。默认在 `npu` 上运行，`--max_new_tokens` 取默认值 `1`，即每个样本仅生成 1个 token。
@@ -56,9 +56,9 @@ msmodelslim eval \
 
 ```bash
 msmodelslim eval \
-  --model_type "${MODEL_TYPE}" \
-  --model_path "${MODEL_PATH}" \
-  --prompt_file "${PROMPT_FILE}" \
+  --model_type ${MODEL_TYPE} \
+  --model_path ${MODEL_PATH} \
+  --prompt_file ${PROMPT_FILE} \
   --device npu \
   --device_id 0 1 2 3 \
   --max_new_tokens 5

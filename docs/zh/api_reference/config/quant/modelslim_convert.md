@@ -16,7 +16,7 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `apiversion` | `string` | 可选 | `modelslim_convert` | `modelslim_convert` | — | 无 |
+| `apiversion` | `string` | 可选 | `modelslim_convert` | `modelslim_convert` | 权重转换任务类型，固定为 `modelslim_convert`。 | 无 |
 | `spec` | `object` | 必选 | 无 | — | `modelslim_convert` 服务的 spec 结构。<br><br>声明权重名重命名/变换（`preprocess`）、线性层转换规则（`linears`）、<br>保存格式（`save`）、并行执行（`parallel`）与默认值（`defaults`）。 | 本页 <a href="#2-2-modelslim-convert-spec">§2.2</a> |
 
 **配置约束**
@@ -150,7 +150,7 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `src_format` | `string` | 可选 | `auto` | — | 源权重格式；`auto` 由模型适配器/权重目录自动推断。 | 无 |
+| `src_format` | `string` | 可选 | `auto` | `auto` | 源权重格式：`auto` 由模型适配器/权重目录自动推断。 | 无 |
 | `dst_format` | `string` | 可选 | `ascendv1` | `ascendv1`、`ascendv1_saver`、`compressed_tensors`、`huggingface`、`hf` | 目标保存格式：`ascendv1`（昇腾，与 `SaveConfig.type` 的 `ascend_v1` 等价）；`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。 | 无 |
 | `dst_ir` | `string / null` | 可选 | `null` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN` 或 null | 目标 IR 类型；不设置时由目标格式决定。 | 无 |
 

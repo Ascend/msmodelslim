@@ -2,7 +2,7 @@
 
 ## 1. 功能说明
 
-`msmodelslim quant` 是一键量化命令，加载原始模型权重并执行权重/激活量化，导出可部署的量化权重与描述文件。配置来源有两种：通过 `--quant_type` 按模型与量化类型自动匹配 `lab_practice` 中的最佳实践 YAML；或通过 `--config` 直接指定用户 YAML（支持 `modelslim_v1`、多模态以及 `modelslim_convert` 纯权重转换等协议。
+`msmodelslim quant` 是一键量化命令，加载原始模型权重并执行权重/激活量化，导出可部署的量化权重与描述文件。配置来源有两种：通过 `--quant_type` 按模型与量化类型自动匹配 `lab_practice` 中的最佳实践 YAML；或通过 `--config` 直接指定用户 YAML（支持 `modelslim_v1`、多模态以及 `modelslim_convert` 纯权重转换等协议）。
 
 命令边界：设备支持 `npu`、`cpu`，多卡通过 `--device_id` 指定索引列表；还支持场景标签匹配与 `--debug` 调试上下文落盘。校准数据准备与部署等操作步骤见《[一键量化完整指南](../../user_guide/usage_quick_quantization.md)》；量化任务 YAML 字段见《[量化任务配置说明导航](../config/quant/README.md)》，自动调优配置见《[自动调优配置说明导航](../config/tuning/README.md)》。更多关联项见[引用的配置](#5-引用的配置)。
 
@@ -163,7 +163,7 @@ msmodelslim quant \
 
 ## 8. 退出码与异常处理
 
-正常运行则无异常，`${SAVE_PATH}` 下生成量化权重与描述文件。失败时抛出异常。常见原因：`--config` 与 `--quant_type` 同时传入、普通量化路径缺少 `--model_type`、YAML 校验失败、`--device_id` 索引非法或超出可用设备。
+正常运行则无异常，失败时抛出异常。常见原因：`--config` 与 `--quant_type` 同时传入、普通量化路径缺少 `--model_type`、YAML 校验失败、`--device_id` 索引非法或超出可用设备。
 
 ## 9. 安全说明
 

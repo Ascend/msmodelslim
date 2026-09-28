@@ -19,7 +19,7 @@ msmodelslim <command> [<args>]
 | 子命令 | 功能 | 文档 |
 |--------|------|------|
 | `quant` | 一键量化或权重转换，并保存量化权重与描述文件 | 《[msmodelslim quant 命令行 API 文档](msmodelslim_quant.md)》 |
-| `analyze` | 量化前敏感层分析，输出敏感度最高的层名列表 | 《[msmodelslim analyze 命令行 API 文档](msmodelslim_analyze.md)》 |
+| `analyze` | 量化前敏感层分析，按敏感度分数从高到低输出层名列表 | 《[msmodelslim analyze 命令行 API 文档](msmodelslim_analyze.md)》 |
 | `eval` | 基于 AscendV1 导出做伪量化模型精度评估 | 《[msmodelslim eval 命令行 API 文档](msmodelslim_eval.md)》 |
 | `tune` | 自动调优量化配置以达成目标精度 | 《[msmodelslim tune 命令行 API 文档](msmodelslim_tune.md)》 |
 
@@ -29,7 +29,7 @@ msmodelslim <command> [<args>]
 
 | 参数 | 别名 | 类型 | 传入形式 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 |
 |------|------|------|----------|-----------|--------|----------------|------|
-| `--help` | `-h` | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 显示帮助信息后退出。顶层显示子命令清单，子命令后显示该子命令的参数说明。 |
+| `--help` | `-h` | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 显示帮助信息。 |
 | `--version` | `-V` | `bool` | 不带值开关 | 可选 | 关闭 | 传入即启用 | 显示版本信息（版本号、构建信息、仓库地址）后退出。该参数在解析子命令前处理，因此在任意位置传入均生效。 |
 
 ## 4. 公共参数
