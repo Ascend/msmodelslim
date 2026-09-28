@@ -856,6 +856,7 @@ class RaCompressAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
         - echo head: copying matching 分数前 1%
 
         key 为层索引（int），value 为需要保留的 KV 头索引列表。
+        未被选中任何 head 的层同样保留键（value 为空列表），便于按层索引直接取用。
 
         Returns:
             {
@@ -883,10 +884,11 @@ class RaCompressAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
         selected_prefix = self._select_top_heads(prefix_grouped, self._induction_head_ratio)
         selected_copying = self._select_top_heads(copying_grouped, self._echo_head_ratio)
 
-        # key 直接使用 layer_idx（int），value 为 KV 头索引列表
+        # key 直接使用 layer_idx（int），value 为 KV 头索引列表；
+        # 未被选中任何 head 的层保留空列表，保证 head_dict 覆盖全部已分析层
         head_dict = {
-            'prefix_matching': self._remove_empty_list_keys(selected_prefix),
-            'copying': self._remove_empty_list_keys(selected_copying),
+            'prefix_matching': selected_prefix,
+            'copying': selected_copying,
         }
         return head_dict
 
@@ -917,7 +919,3 @@ class RaCompressAnalysisMethod(UnaryAnalysisMethod, AnalysisTargetMatcher):
             indices = [i for i, value in enumerate(data[key]) if value in percent_values]
             result[key] = indices
         return result
-
-    @staticmethod
-    def _remove_empty_list_keys(dictionary: Dict) -> Dict:
-        return {k: v for k, v in dictionary.items() if v}

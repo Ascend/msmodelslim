@@ -58,13 +58,20 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 | **Attention MSE（mse）** | attn（Attention 结构） | 浮点与量化权重下 Attention 输出的 MSE | Attention 权重量化敏感度（需适配器接口） | [Attention MSE 词条](attention_mse/term_attention_mse.md) | [Attention MSE 使用指南](attention_mse/usage_attention_mse.md) |
 | **层级 MSE（mse_layer_wise）** | layer（Decoder 块） | 块内选中子模块输出上 MSE 的块内均值 | 整层或整块（如 MLP / Attention 段）回退 | [层级 MSE 词条](mse_layer_wise/term_mse_layer_wise.md) | [层级 MSE 使用指南](mse_layer_wise/usage_mse_layer_wise.md) |
 | **模型级 MSE（mse_model_wise）** | layer（链式前向） | 逐层量化扰动对**模型最终输出**的 MSE | 从最终隐藏状态视角看层敏感度 | [模型级 MSE 词条](mse_model_wise/term_mse_model_wise.md) | [模型级 MSE 使用指南](mse_model_wise/usage_mse_model_wise.md) |
+
+## 4. 注意力头分析算法
+
+注意力头分析通过 `msmodelslim analyze` 在算法自建的重复段输入上度量注意力头的跨段行为，输出需保留的 KV 头清单（`head.pt`），交付给 MindIE 推理框架用于长序列 KV Cache 压缩。
+
+| 算法名称 | 分析范围 | 核心思想 | 适用场景 | 词条 | 使用指南 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
 | **RA Compress** | attn_head（注意力头） | 基于重复段结构度量归纳头/回声头的跨段注意力强度，筛选关键 KV head | 长序列 KV Cache 压缩前筛选需保留的 KV head | [RA Compress 词条](ra_compress/term_ra_compress.md) | [RA Compress 使用指南](ra_compress/usage_ra_compress.md) |
 
-## 4. 算法选择建议
+## 5. 算法选择建议
 
 初学者可优先使用《[一键量化 (V1)](../../user_guide/usage_quick_quantization.md)》，自动集成已验证的算法组合。需要自动搜索配置时，参见《[自动调优策略总览](../tuning_strategies/README.md)》。实践配置亦可参考 `lab_practice/` 下对应 YAML。
 
-### 4.1 量化算法
+### 5.1 量化算法
 
 - **W8A8**：最常用 **MinMax**——统计最大最小值确定量化范围，计算开销低，适合作为默认起步方案。
 - **W8A16**：可用 **HQQ**——半二次分裂迭代优化 offset，免校准（无需校准数据）即可完成权重量化，适合无校准数据或对量化耗时敏感的场景。
@@ -75,17 +82,18 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 - **多模态生成联合低比特**：**DAOS**（OASQ + TLQ；需要时再配 FA3 做 FA 量化以加速推理）。不要与 LAOS 混用任务协议或校准路径。
 - **长序列 / C8**：产品上将 **KVCache Quant** 与 **FA3 Quant** 都纳入 C8。前者量化写入缓存的 Key/Value，专攻缩小 KV Cache、缓解推理显存压力；后者量化 Attention 路径上的 Q/K/V 激活以加速 Attention 运算（仅支持 MLA）。二者机制不同，实践中一般只开其一，按显存或算力瓶颈选择。
 
-### 4.2 离群值抑制算法
+### 5.2 离群值抑制算法
 
 - 常用 **Flex Smooth Quant** 与 **QuaRot**：可独立使用，也可串联叠加。前者二阶段网格搜索 alpha / beta，适配面广；后者正交旋转平滑激活离群，精度收益往往更明显，但对模型适配要求更高。
 - **OASQ** 适合激活存在明显通道级离群、希望按离群/正常通道分流平滑尺度的场景，可作为后续线性量化或可训练量化的前置步骤。
 - **Flex AWQ SSZ** 在 4bit 低精度场景下效果较好，但搜索相对较慢，适合精度优先、可接受更长量化时间的场景。
 
-### 4.3 敏感层分析
+### 5.3 敏感层分析
 
-当前敏感层分析支持按不同范围（`linear` / `layer` / `attn` / `attn_head`）度量敏感度，并据此做对应粒度的回退、混精调参；其中 `attn_head` 范围产出的是交付给后续 MindIE 推理框架用于长序列 KV Cache 压缩的关键头清单（`head.pt`），不写入量化配置。使用指南：《[线性层](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级](../../user_guide/usage_sensitive_layer_analysis.md)》、《[Attention](../../user_guide/usage_sensitive_attn_analysis.md)》、《[Attention Head](../../user_guide/usage_sensitive_attn_head_analysis.md)》。
+当前敏感层分析支持按 `linear` / `layer` / `attn` 三种范围在校准数据上度量敏感度，并据此做对应粒度的回退、混精调参。使用指南：《[线性层](../../user_guide/usage_sensitive_linear_analysis.md)》、《[层级](../../user_guide/usage_sensitive_layer_analysis.md)》、《[Attention](../../user_guide/usage_sensitive_attn_analysis.md)》。
 
 - **linear**（线性层）：首选 **Kurtosis**，用激活峰度刻画尖峰与尾部影响，辅助识别需回退或提升位宽的线性层。
 - **layer**（Decoder 块）：首选 **mse_layer_wise**，适合整层 / 整块（如 MLP、Attention 段）回退。
 - **attn**（Attention 结构）：首选 **Attention MSE（mse）**，主要用于配合 **FA3 Quant** 识别需回退的 Attention 模块（需适配器接口）。
-- **attn_head**（注意力头）：首选 **RA Compress**，基于重复段结构筛选归纳头 / 回声头，产出交付给后续 MindIE 推理框架的 `head.pt` 关键头清单，供 MindIE 做长序列 KV Cache 压缩（仅支持 LLM，校准输入由算法在运行时自行构造，无需 `--calibration_dataset`）。
+
+若目标是长序列 KV Cache 压缩前的注意力头筛选（`attn_head`），则使用 **RA Compress**：按重复段结构筛选归纳头 / 回声头，产出交付给后续 MindIE 推理框架的 `head.pt` 关键头清单（仅支持 LLM，校准输入由算法在运行时自行构造，无需 `--calibration_dataset`）。该范围产出的是交付件而非敏感度排序，不用于回退或混精调参，算法说明见《[4. 注意力头分析算法](#4-注意力头分析算法)》，使用指南见《[Attention Head](../../user_guide/usage_sensitive_attn_head_analysis.md)》。

@@ -32,11 +32,11 @@ RA Compress 的整体使用流程如下：
 
 ```mermaid
 flowchart LR
-    A[适配模型<br/>流水线/算法接口] --> B[确认投影层命名]
-    B --> C[执行<br/>analyze attn_head 命令]
-    C --> D[Q@K^T 段间偏移<br/>注意力聚合]
-    D --> E[按比例<br/>选 induction/echo heads]
-    E --> F[输出 head.pt<br/>交付 MindIE 推理框架使用]
+    A["适配模型<br/>流水线/算法接口"] --> B["确认投影层命名"]
+    B --> C["执行<br/>analyze attn_head 命令"]
+    C --> D["QK^T 段间偏移<br/>注意力聚合"]
+    D --> E["按比例<br/>选 induction/echo heads"]
+    E --> F["输出 head.pt<br/>交付 MindIE 推理框架使用"]
 ```
 
 各阶段的关键细节如下：
