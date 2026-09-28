@@ -15,6 +15,7 @@ from msmodelslim.core.convert.protocol import ConvertContext
 from msmodelslim.core.quant_service.modelslim_convert.impl.save_adapter import (
     SaveProcessorAdapter,
 )
+from msmodelslim.format.compressed_tensors_format.compressed_tensors import CompressedTensorsQuantFormat
 from msmodelslim.processor.save.processor import QuantSaveProcessor
 
 
@@ -238,6 +239,40 @@ class TestSaveProcessorAdapter:
             args = mock_merge.call_args[0]
             assert args[2] == [(".direct_0", {"b": "g.safetensors"}, {"b": "W8A8_MXFP8"})]
             assert args[3] == ({"a": "f.safetensors"}, {"a": "FLOAT"})
+
+    def test_finalize_keep_hf_passthrough_when_writer_nulled_after_close(self):
+        """场景：npu_multi + huggingface，post_run 把 writer 置空。
+        预期：merge 仍拿到主进程 passthrough 的 weight_map。
+        """
+        tree = nn.Module()
+        context = _context("huggingface")
+        context.parallel_mode = "npu_multi"
+        adapter = SaveProcessorAdapter()
+        closed_writer = MagicMock()
+        closed_writer.saved_keys_map = {"model.norm.weight": "model-00001-of-00001.safetensors"}
+        mock_saver = MagicMock(spec=QuantSaveProcessor)
+        mock_saver._format = MagicMock(spec=CompressedTensorsQuantFormat)
+        mock_saver._format.written_safetensors_writer.return_value = closed_writer
+        with (
+            patch(
+                "msmodelslim.core.quant_service.modelslim_convert.impl.save_adapter.QuantSaveProcessor",
+            ) as mock_cls,
+            patch(
+                "msmodelslim.core.quant_service.modelslim_convert.impl.save_adapter._lazy_init_unsaved_modules",
+            ),
+            patch(
+                "msmodelslim.core.quant_service.modelslim_convert.impl.direct_save.merge_hf_staged_output",
+            ) as mock_merge,
+        ):
+            mock_cls.return_value = mock_saver
+            adapter.begin(context, tree)
+            adapter.set_direct_worker_metas(
+                [(".direct_0", {"experts.0.weight": "model-00001-of-00001.safetensors"}, {})],
+            )
+            adapter.finalize()
+            mock_merge.assert_called_once()
+            main_meta = mock_merge.call_args[0][3]
+            assert main_meta[0] == {"model.norm.weight": "model-00001-of-00001.safetensors"}
 
     def test_abort_skip_post_run_when_session_open(self):
         """场景：begin 后 abort。

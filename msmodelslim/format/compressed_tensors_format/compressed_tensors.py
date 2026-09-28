@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, Literal, Optional, Type
+from typing import Any, Callable, Dict, Literal, Optional, Set, Type
 
 from pydantic import Field
 
@@ -103,6 +103,9 @@ class CompressedTensorsQuantFormat(QuantFormatBase):
         self._json_writer_factory_infra = json_writer_factory_infra
         self._json_reader_factory_infra = json_reader_factory_infra
         self.safetensors_writer: Optional[CompressedTensorSafetensorsWriterInfra] = None
+        self._closed_writer: Optional[CompressedTensorSafetensorsWriterInfra] = None
+        # release_module_refs 会清掉按对象去重的 processed_modules，补扫改按路径跳过已导出前缀。
+        self._exported_paths: Set[str] = set()
 
     def prepare_export(self) -> None:
         part_file_size = int(getattr(self.config, "part_file_size", 4))
@@ -137,11 +140,29 @@ class CompressedTensorsQuantFormat(QuantFormatBase):
         finally:
             if self.safetensors_writer is not None:
                 self.safetensors_writer.close()
+                # close 后 map 才完整；直写 merge 在 post_run 之后读，不能丢掉这份引用。
+                self._closed_writer = self.safetensors_writer
                 self.safetensors_writer = None
+
+    def written_safetensors_writer(self) -> Optional[CompressedTensorSafetensorsWriterInfra]:
+        """写入中返回 live writer；``finalize_export`` close 之后返回已关闭的那个。"""
+        if self.safetensors_writer is not None:
+            return self.safetensors_writer
+        return self._closed_writer
+
+    def release_module_refs(self) -> None:
+        """丢掉已导出模块对象，避免流式保存时 host 内存随模块数上涨。"""
+        self.processed_modules.clear()
+
+    def _process_module(self, prefix: str, module: nn.Module):
+        super()._process_module(prefix, module)
+        self._exported_paths.add(prefix)
 
     def _sweep_unprocessed_modules(self, model: nn.Module) -> None:
         """补扫 LayerWise 未 visit 的模块（如 embed_tokens、norm、lm_head）。"""
         for name, sub_module in model.named_modules(memo=self.processed_modules):
+            if name in self._exported_paths:
+                continue
             logger.debug(
                 "sweep_unprocessed_modules: name=%r, type=%s",
                 name,
@@ -181,6 +202,8 @@ class CompressedTensorsQuantFormat(QuantFormatBase):
         return self.on_float_module(prefix, module)
 
     def on_float_module(self, prefix: str, module: nn.Module) -> None:
+        # 与 AscendV1Saver.on_float_module 同一约定：PassthroughModule 把 checkpoint key
+        # 暴露在 named_parameters 上，FLOAT 拷贝不按 TensorRef 再查一遍。
         for name, param in module.named_parameters(recurse=False, prefix=prefix):
             self.safetensors_writer.write(name, param.detach())
 

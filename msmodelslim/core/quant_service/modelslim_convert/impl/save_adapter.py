@@ -89,8 +89,8 @@ class _SaverBundle:
 
 
 def is_npu_direct_write(parallel_mode: str, dst_format: str) -> bool:
-    """npu_multi + AscendV1：worker 直接写盘，主进程只写 passthrough 到 staging。"""
-    return parallel_mode == "npu_multi" and dst_format.lower() in _ASCEND_DST
+    """npu_multi 时 worker 直接写盘，主进程只写 passthrough 并合并 index。"""
+    return parallel_mode == "npu_multi" and dst_format.lower() in (*_ASCEND_DST, *_HF_DST)
 
 
 def _create_saver(context: ConvertContext, tree: nn.Module, save_dir: str | None = None) -> _SaverBundle:
@@ -197,12 +197,16 @@ class SaveProcessorAdapter:
             if session.direct_write:
                 from msmodelslim.core.quant_service.modelslim_convert.impl.direct_save import (
                     collect_saver_meta,
+                    merge_hf_staged_output,
                     merge_staged_output,
                 )
 
+                # HF 靠 QuantSaveProcessor._closed_writer；AscendV1 不置空 live writer。
                 self.main_meta = collect_saver_meta(session.bundle.saver)
                 if self._direct_worker_metas:
-                    merge_staged_output(
+                    dst = session.context.config.dst_format.lower()
+                    merge = merge_hf_staged_output if dst in _HF_DST else merge_staged_output
+                    merge(
                         str(session.context.save_path),
                         str(session.context.model_path),
                         self._direct_worker_metas,
