@@ -89,7 +89,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen2.5-VL-32B-Instruct \
     --quant_type w8a8 \
-    --tags vLLM_Ascend Ascend_950 \
+    --tags vLLM-Ascend Ascend_950 \
     --trust_remote_code true
 ```
 

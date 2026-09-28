@@ -4,7 +4,7 @@ metadata:
   score: 90
   verified_tags:
     GLM-5.2:
-    - - vLLM_Ascend
+    - - vLLM-Ascend
       - Atlas_350
   label:
     w_bit: 8

@@ -1089,7 +1089,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 - <sup>2</sup> kvcache量化和fa3量化都纳入c8，两者均量化LLM中的k和v缓存；仅MindIE支持c8量化模式，包括w8a8c8和w4a8c8。
 - <sup>3</sup> 压缩后配合Atlas 推理系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式，包括w8a8s和w16a16s。
 - <sup>4</sup> 仅MindIE支持采用了PDMIX量化方案的最佳实践。
-- <sup>5</sup> DeepSeek-V4-Flash-0731、DeepSeek-V4-Pro-0813 的 w4a4c8 列为 W4A4C8 混合精度方案：路由专家 MXFP4、Attention/共享专家 MXFP8、KV 复用官方 FP8；量化时使用 `--quant_type w4a4c8`。已验证场景为 vLLM_Ascend + Ascend_950 与 vLLM_Ascend + Atlas_350，详见[DeepSeek 量化说明](https://gitcode.com/Ascend/msmodelslim/blob/master/example/DeepSeek/README.md)。
+- <sup>5</sup> DeepSeek-V4-Flash-0731、DeepSeek-V4-Pro-0813 的 w4a4c8 列为 W4A4C8 混合精度方案：路由专家 MXFP4、Attention/共享专家 MXFP8、KV 复用官方 FP8；量化时使用 `--quant_type w4a4c8`。已验证场景为 vLLM-Ascend + Ascend_950 与 vLLM-Ascend + Atlas_350，详见[DeepSeek 量化说明](https://gitcode.com/Ascend/msmodelslim/blob/master/example/DeepSeek/README.md)。
 
 ## 多模态模型支持列表
 
@@ -1552,5 +1552,5 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 
 - <sup>1</sup> 压缩后配合Atlas 推理系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式。
 - <sup>2</sup> 其中FLUX.1-dev、HunyuanVideo、Wan2.2、Qwen-Image-Edit-2509支持[MXFP量化](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf)。
-- <sup>3</sup> Kimi-K3 的 w4a8 含 INT 与 MXFP 两套实践（共用 `quant_type=w4a8`）；MXFP 需额外指定 `--tags vLLM_Ascend Ascend_950`，详见[Kimi-K3 量化案例](https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Kimi-K3/README.md)。
-- <sup>4</sup> Qwen3.6-35B-A3B 的 w8a8c8 为混合精度方案：线性层 MXFP8（W8A8）、路由专家 MXFP4（W4A4）、Attention 采用 FA3 量化（Q/K MXFP8 per-block 动态 + V MXFP8 per-channel 静态），并含 KV Cache 量化；当前仅适配 vLLM_Ascend + Ascend_950，量化时需指定 `--tags vLLM_Ascend Ascend_950`，详见[Qwen3.5 量化说明](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md)。
+- <sup>3</sup> Kimi-K3 的 w4a8 含 INT 与 MXFP 两套实践（共用 `quant_type=w4a8`）；MXFP 需额外指定 `--tags vLLM-Ascend Ascend_950`，详见[Kimi-K3 量化案例](https://gitcode.com/Ascend/msmodelslim/blob/master/example/multimodal_vlm/Kimi-K3/README.md)。
+- <sup>4</sup> Qwen3.6-35B-A3B 的 w8a8c8 为混合精度方案：线性层 MXFP8（W8A8）、路由专家 MXFP4（W4A4）、Attention 采用 FA3 量化（Q/K MXFP8 per-block 动态 + V MXFP8 per-channel 静态），并含 KV Cache 量化；当前仅适配 vLLM-Ascend + Ascend_950，量化时需指定 `--tags vLLM-Ascend Ascend_950`，详见[Qwen3.5 量化说明](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md)。

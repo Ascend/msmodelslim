@@ -6,9 +6,9 @@ metadata:
     - DeepSeek-V4-Flash-0731
   verified_tags:
     DeepSeek-V4-Flash-0731:
-      - - vLLM_Ascend
+      - - vLLM-Ascend
         - Ascend_950
-      - - vLLM_Ascend
+      - - vLLM-Ascend
         - Atlas_350
   label:
     w_bit: 4

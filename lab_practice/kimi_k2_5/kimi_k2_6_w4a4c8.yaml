@@ -4,9 +4,9 @@ metadata:
   score: 90
   verified_tags:
     Kimi-K2.6:
-      - - vLLM_Ascend
+      - - vLLM-Ascend
         - Ascend_950
-      - - vLLM_Ascend
+      - - vLLM-Ascend
         - Atlas_350
   label:
     w_bit: 4

@@ -5,7 +5,7 @@ metadata:
   score: 90
   verified_tags:
     Qwen3.6-27B:
-      - - vLLM_Ascend
+      - - vLLM-Ascend
         - Ascend_950
   label:
     w_bit: 8

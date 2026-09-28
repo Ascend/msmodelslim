@@ -4,9 +4,9 @@ metadata:
   score: 90
   verified_tags:
     Kimi-K3:
-      - - vLLM_Ascend
+      - - vLLM-Ascend
         - Atlas_A2_Inference
-      - - vLLM_Ascend
+      - - vLLM-Ascend
         - Atlas_A3_Inference
   label:
     w_bit: 4

@@ -404,7 +404,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --trust_remote_code true
   ```
 
-该一键量化命令匹配使用的量化配置文件为[deepseek_v4_flash_w4a4c8.yaml](../../lab_practice/deepseek_v4/deepseek_v4_flash_w4a4c8.yaml)，可以在其中查看具体的量化策略。已验证场景为 vLLM_Ascend + Ascend_950 与 vLLM_Ascend + Atlas_350，如需指定场景可增加 `--tags vLLM_Ascend Ascend_950` 或 `--tags vLLM_Ascend Atlas_350`。
+该一键量化命令匹配使用的量化配置文件为[deepseek_v4_flash_w4a4c8.yaml](../../lab_practice/deepseek_v4/deepseek_v4_flash_w4a4c8.yaml)，可以在其中查看具体的量化策略。已验证场景为 vLLM-Ascend + Ascend_950 与 vLLM-Ascend + Atlas_350，如需指定场景可增加 `--tags vLLM-Ascend Ascend_950` 或 `--tags vLLM-Ascend Atlas_350`。
 
 #### <span id="deepseek-v4-pro-0813-w4a4c8量化">DeepSeek-V4-Pro-0813 W4A4C8 量化</span>
 
@@ -421,7 +421,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --trust_remote_code true
   ```
 
-该一键量化命令匹配使用的量化配置文件为[deepseek_v4_pro_w4a4c8.yaml](../../lab_practice/deepseek_v4/deepseek_v4_pro_w4a4c8.yaml)，可以在其中查看具体的量化策略。已验证场景为 vLLM_Ascend + Ascend_950 与 vLLM_Ascend + Atlas_350，如需指定场景可增加 `--tags vLLM_Ascend Ascend_950` 或 `--tags vLLM_Ascend Atlas_350`。
+该一键量化命令匹配使用的量化配置文件为[deepseek_v4_pro_w4a4c8.yaml](../../lab_practice/deepseek_v4/deepseek_v4_pro_w4a4c8.yaml)，可以在其中查看具体的量化策略。已验证场景为 vLLM-Ascend + Ascend_950 与 vLLM-Ascend + Atlas_350，如需指定场景可增加 `--tags vLLM-Ascend Ascend_950` 或 `--tags vLLM-Ascend Atlas_350`。
 
 ### DeepSeek-R1系列
 
