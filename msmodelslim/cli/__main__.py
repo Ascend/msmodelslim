@@ -719,7 +719,9 @@ def main():
         "--model_type Qwen2.5-7B-Instruct --quant_type w8a8\n"
         "  msmodelslim analyze linear --model_path ${MODEL_PATH} --model_type Qwen2.5-7B-Instruct\n"
         "  msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${CONFIG} "
-        "--device npu --model_type Qwen3-32B",
+        "--device npu --model_type Qwen3-32B\n"
+        "  msmodelslim eval --model_type ${MODEL_TYPE} --model_path ${MODEL_PATH} "
+        "--prompt_file ${PROMPT_FILE}",
     )
     parser.add_argument(
         '--version',
@@ -1023,15 +1025,27 @@ def main():
     )
 
     # ------------------------------------------------------------------
-    # Eval command (AscendV1 FakeQuant)
+    # Eval command
+    # ------------------------------------------------------------------
     eval_parser = subparsers.add_parser(
         'eval',
-        help='Run fake-quant model evaluation based on AscendV1 export',
+        help='Run fake-quant model evaluation based on quantized model',
+        formatter_class=_UnifiedHelpFormatter,
+        description='Run fake-quant model evaluation on a quantized model.',
+        epilog='Examples:\n'
+        '  msmodelslim eval --model_type ${MODEL_TYPE} --model_path ${MODEL_PATH} '
+        '--prompt_file ${PROMPT_FILE}\n'
+        '  msmodelslim eval --model_type ${MODEL_TYPE} --model_path ${MODEL_PATH} '
+        '--prompt_file ${PROMPT_FILE} --device npu --device_id 0 1 2 3 --max_new_tokens 5\n'
+        'Output:\n'
+        '  Inference results are logged to the console.',
     )
     eval_parser.add_argument(
         '--model_type',
+        dest='model_type',
+        metavar='<MODEL_TYPE>',
         required=True,
-        help="Type of model (e.g. 'Qwen3-32B', 'Qwen3.6-27B')",
+        help="Type of model to evaluate (e.g. 'Qwen3-32B', 'Qwen3.6-27B')",
     )
     eval_parser.add_argument(
         '--model_path',
@@ -1039,13 +1053,23 @@ def main():
         metavar='<PATH>',
         required=True,
         type=str,
-        help='Path to the quantized weight directory (e.g. AscendV1 export)',
+        help='Path to the quantized weight directory',
+    )
+    eval_parser.add_argument(
+        '--prompt_file',
+        dest='prompt_file',
+        metavar='<FILE>',
+        required=True,
+        type=str,
+        help='Path to the inference prompt file',
     )
     eval_parser.add_argument(
         '--device',
+        dest='device',
         type=str,
         default='npu',
-        help="Target device type (e.g. 'npu', 'cpu'). Default: 'npu'",
+        choices=[d.value for d in DeviceType],
+        help='Target device type for evaluation [default: npu]',
     )
     eval_parser.add_argument(
         '--device_id',
@@ -1054,19 +1078,15 @@ def main():
         type=int,
         metavar='<ID>',
         default=None,
-        help='Device index for inference, e.g. 0 or 0 1 2 3 for multi-card sample DP',
-    )
-    eval_parser.add_argument(
-        '--prompt_file',
-        type=str,
-        required=True,
-        help='Prompt file path or filename in lab_calib directory. Supports .json and .jsonl formats.',
+        help='Device index (integer) for inference, e.g. 0 or 0 1 2 3',
     )
     eval_parser.add_argument(
         '--max_new_tokens',
+        dest='max_new_tokens',
+        metavar='<N>',
         type=int,
         default=1,
-        help='Maximum number of new tokens to generate, excluding the prompt tokens (default: 1)',
+        help='Maximum number of new tokens to generate, excluding the prompt tokens [default: 1]',
     )
     _add_log_level_args(eval_parser)
 
