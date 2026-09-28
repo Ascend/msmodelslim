@@ -96,7 +96,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen3-VL-235B-A22B \
     --quant_type w8a8 \
-    --tags vLLM_Ascend Ascend_950 \
+    --tags vLLM-Ascend Ascend_950 \
     --trust_remote_code true
 ```
 
@@ -111,7 +111,7 @@ msmodelslim quant \
     --device npu \
     --model_type Qwen3-VL-30B-A3B \
     --quant_type w8a8 \
-    --tags vLLM_Ascend Ascend_950 \
+    --tags vLLM-Ascend Ascend_950 \
     --trust_remote_code true
 ```
 

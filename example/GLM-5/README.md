@@ -162,7 +162,7 @@ msmodelslim quant \
   --model_type GLM-5.1 \
   --quant_type w4a4c8 \
   --trust_remote_code true \
-  --tags vLLM_Ascend Ascend_950
+  --tags vLLM-Ascend Ascend_950
 ```
 
 - 其中`MODEL_PATH`为GLM-5.1模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -230,7 +230,7 @@ msmodelslim quant \
   --model_type GLM-5.2 \
   --quant_type w4a4 \
   --trust_remote_code true \
-  --tags vLLM_Ascend Atlas_350
+  --tags vLLM-Ascend Atlas_350
 ```
 
 - 其中`MODEL_PATH`为GLM-5.2模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -247,7 +247,7 @@ msmodelslim quant \
   --model_type GLM-5.2 \
   --quant_type w4a4c8 \
   --trust_remote_code true \
-  --tags vLLM_Ascend Atlas_350
+  --tags vLLM-Ascend Atlas_350
 ```
 
 - 其中`MODEL_PATH`为GLM-5.2模型的路径，`SAVE_PATH`为量化后的权重保存路径。
@@ -332,7 +332,7 @@ msmodelslim quant \
   --model_type GLM-5.3 \
   --quant_type w4a4c8 \
   --trust_remote_code true \
-  --tags vLLM_Ascend Atlas_350
+  --tags vLLM-Ascend Atlas_350
 ```
 
 - 其中`MODEL_PATH`为GLM-5.3模型的路径，`SAVE_PATH`为量化后的权重保存路径。

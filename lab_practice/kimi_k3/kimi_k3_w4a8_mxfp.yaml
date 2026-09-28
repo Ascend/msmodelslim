@@ -4,7 +4,7 @@ metadata:
   score: 89
   verified_tags:
     Kimi-K3:
-      - - vLLM_Ascend
+      - - vLLM-Ascend
         - Ascend_950
   label:
     w_bit: 4

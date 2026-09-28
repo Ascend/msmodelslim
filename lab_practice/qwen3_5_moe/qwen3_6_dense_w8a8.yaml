@@ -5,9 +5,9 @@ metadata:
   score: 90
   verified_tags:
     Qwen3.6-27B:
-      - - vLLM_Ascend
+      - - vLLM-Ascend
         - Atlas_A2_Inference
-      - - vLLM_Ascend
+      - - vLLM-Ascend
         - Atlas_A3_Inference
   label:
     w_bit: 8

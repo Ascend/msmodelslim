@@ -63,7 +63,7 @@ Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-27B --quant_type w8a8c8 --trust_remote_code true --tags vLLM_Ascend Ascend_950
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-27B --quant_type w8a8c8 --trust_remote_code true --tags vLLM-Ascend Ascend_950
   ```
 
 #### 2. Qwen3.6-35B-A3B
@@ -73,5 +73,5 @@ Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
 
   ```shell
-  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-35B-A3B --quant_type w8a8c8 --trust_remote_code true --tags vLLM_Ascend Ascend_950
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-35B-A3B --quant_type w8a8c8 --trust_remote_code true --tags vLLM-Ascend Ascend_950
   ```
