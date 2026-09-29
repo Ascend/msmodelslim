@@ -46,7 +46,7 @@ def _yaml_disable_entry_name(layer_name: str, scope: Optional[AnalysisScope]) ->
 
 def _save_yaml(yaml_content: str, save_path: str, model_type: Optional[str], method: Optional[str]) -> str:
     """保存 YAML 文件，返回实际输出路径。"""
-    from ascend_utils.common.security import SafeWriteUmask, get_valid_write_path
+    from msmodelslim.utils.security import SafeWriteUmask, get_valid_write_path
 
     if not save_path.endswith(_YAML_EXTENSIONS):
         mt = model_type or 'model'
@@ -64,7 +64,7 @@ def _save_yaml(yaml_content: str, save_path: str, model_type: Optional[str], met
 
 def _save_head_pt(head_dict: Dict, save_path: str) -> str:
     """保存 head.pt 文件，返回实际输出路径。"""
-    from ascend_utils.common.security import SafeWriteUmask, get_valid_write_path
+    from msmodelslim.utils.security import SafeWriteUmask, get_valid_write_path
 
     if not save_path.endswith('.pt'):
         save_path = os.path.join(save_path, 'head.pt')
