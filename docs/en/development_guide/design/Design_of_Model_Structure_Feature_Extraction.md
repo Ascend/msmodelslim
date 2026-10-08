@@ -4,7 +4,7 @@
 
 | Date | Revision Version | Description | Author | RFC Document |
 | -- | -- | -- | -- | -- |
-| 2026-05-25 | 1.0 | Initial draft completed | @tongl | https://gitcode.com/Ascend/msmodelslim/issues/228 |
+| 2026-05-25 | 1.0 | Initial draft completed | @tongl | <https://gitcode.com/Ascend/msmodelslim/issues/228> |
 
 ## Background
 

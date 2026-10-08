@@ -1,4 +1,4 @@
-﻿# AWQ 激活感知权重量化算法 量化术语百科词条
+# AWQ 激活感知权重量化算法 量化术语百科词条
 
 > **词条类别**：[离群值抑制算法](../README.md#1-离群值抑制算法)<br>
 > **英文名称**：awq_smooth<br>
@@ -102,5 +102,5 @@ $$
 
 ## 4. 参考文档
 
-1. Lin J et al. AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration. MLSys 2024. https://arxiv.org/abs/2306.00978
+1. Lin J et al. AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration. MLSys 2024. <https://arxiv.org/abs/2306.00978>
 2. 《[AWQ 参数配置流程指南](./usage_awq_smooth.md)》

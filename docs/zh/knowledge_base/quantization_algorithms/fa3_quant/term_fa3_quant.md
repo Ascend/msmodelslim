@@ -1,4 +1,4 @@
-﻿# FA3 Quant 注意力激活量化算法 量化术语百科词条
+# FA3 Quant 注意力激活量化算法 量化术语百科词条
 
 > **词条类别**：[量化算法](../README.md#2-量化算法)<br>
 > **英文名称**：fa3_quant<br>
@@ -98,5 +98,5 @@ $$
 
 ## 4. 参考文档
 
-1. Dao T et al. FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision. 2024. https://arxiv.org/abs/2407.08608
+1. Dao T et al. FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision. 2024. <https://arxiv.org/abs/2407.08608>
 2. 《[FA3 Quant 参数配置流程指南](./usage_fa3_quant.md)》

@@ -15,7 +15,7 @@
 | 术语词条 | 《[术语词条校验清单](../../../docs/zh/contributing/development_guide/docs_standards/01_term_glossary_checklist.md)》 |
 | 流程指南 / 使用指南 | 《[流程指南校验清单](../../../docs/zh/contributing/development_guide/docs_standards/02_process_guide_checklist.md)》 |
 | 案例参考 | 《[通用案例校验清单](../../../docs/zh/contributing/development_guide/docs_standards/03_general_case_checklist.md)》 |
-| 量化配置文档 | 《[量化配置文档校验清单](../../../docs/zh/contributing/development_guide/docs_standards/04_quantization_config_document_checklist.md)》 |
+| 量化配置文档 | 《[量化配置文档校验清单](../../../docs/zh/contributing/development_guide/docs_standards/04_config_document_checklist.md)》 |
 | CLI 文档 | 《[命令行 API 文档校验清单](../../../docs/zh/contributing/development_guide/docs_standards/05_cli_api_contract_checklist.md)》 |
 | 模板体系外（安装指南 / 快速入门 / FAQ 等） | 无文档类型清单，以《[公共校验清单](../../../docs/zh/contributing/development_guide/docs_standards/00_common_checklist.md)》的 ERROR 条目（CE-01~CE-04）为兜底 |
 

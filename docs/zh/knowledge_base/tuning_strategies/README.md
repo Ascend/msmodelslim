@@ -1,6 +1,3 @@
----
-toc_depth: 3
----
 # 自动调优策略总览
 
 msModelSlim 通过自动化策略搜索最优量化配置。下表总结了目前支持的调优策略及其主要特性。使用方法请参见《[自动调优使用指南](../../user_guide/usage_auto_precision_tuning.md)》，配置协议请参见《[自动调优配置说明导航](../../api_reference/config/tuning/README.md)》。

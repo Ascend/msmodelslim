@@ -1,4 +1,4 @@
-﻿# AutoRound 低比特量化算法 量化术语百科词条
+# AutoRound 低比特量化算法 量化术语百科词条
 
 > **词条类别**：[量化算法](../README.md#2-量化算法)<br>
 > **英文名称**：autoround<br>
@@ -108,5 +108,5 @@ $$
 
 ## 4. 参考文档
 
-1. Cheng W, Zhang W, Shen H, et al. “Optimize Weight Rounding via Signed Gradient Descent for the Quantization of LLMs.” Findings of EMNLP 2024. https://arxiv.org/abs/2309.05516
+1. Cheng W, Zhang W, Shen H, et al. “Optimize Weight Rounding via Signed Gradient Descent for the Quantization of LLMs.” Findings of EMNLP 2024. <https://arxiv.org/abs/2309.05516>
 2. 《[AutoRound 参数配置流程指南](./usage_autoround.md)》

@@ -1,4 +1,4 @@
-﻿# SmoothQuant 平滑量化算法 量化术语百科词条
+# SmoothQuant 平滑量化算法 量化术语百科词条
 
 > **词条类别**：[离群值抑制算法](../README.md#1-离群值抑制算法)<br>
 > **英文名称**：smooth_quant<br>
@@ -107,5 +107,5 @@ $$
 
 ## 4. 参考文档
 
-1. Xiao G et al. SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models. ICML 2023. https://arxiv.org/abs/2211.10438
+1. Xiao G et al. SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models. ICML 2023. <https://arxiv.org/abs/2211.10438>
 2. 《[SmoothQuant 参数配置流程指南](./usage_smooth_quant.md)》

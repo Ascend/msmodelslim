@@ -1,4 +1,4 @@
-﻿# 线性量化算法 量化术语百科词条
+# 线性量化算法 量化术语百科词条
 
 > **词条类别**：[量化算法](../README.md#2-量化算法)<br>
 > **英文名称**：linear_quant<br>
@@ -106,5 +106,5 @@ $$
 
 ## 4. 参考文档
 
-1. Jacob B et al. Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference. CVPR 2018. https://arxiv.org/abs/1712.05877
+1. Jacob B et al. Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference. CVPR 2018. <https://arxiv.org/abs/1712.05877>
 2. 《[线性量化参数配置流程指南](./usage_linear_quant.md)》

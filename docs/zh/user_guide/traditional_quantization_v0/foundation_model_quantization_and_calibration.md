@@ -514,7 +514,7 @@ from transformers.models.qwen2.configuration_qwen2 import Qwen2Config
 
 - **npy格式**
 
-当save_type设置为['numpy']或不设置时，量化权重会保存为npy文件，npy储存格式为字典，其中key值为各层Linear的名字，例如Qwen2.5-7B模型的transformer.encoder.layers.0.self_attention.query_key_value，value值为第0层query_key_value的Linear权重。
+当save_type设置为['numpy']或不设置时，量化权重会保存为npy文件，npy存储格式为字典，其中key值为各层Linear的名字，例如Qwen2.5-7B模型的transformer.encoder.layers.0.self_attention.query_key_value，value值为第0层query_key_value的Linear权重。
 
 ```bash
 
@@ -535,7 +535,7 @@ from transformers.models.qwen2.configuration_qwen2 import Qwen2Config
 
 当save_type设置为['safe_tensor']时，量化权重会保存为safetensors文件和json描述文件。
 
-- safetensors中储存格式为字典，包含量化权重和量化不修改的浮点权重。其中量化权重的key值为各层Linear的名字加上对应权重的名字，module.weight和module.bias对应anti_fp_norm.npy，weight对应quant_weight.npy，quant_bias对应quant_bias.npy等以此类推。例如Qwen2.5-7B模型的model.layers.0.self_attn.q_proj.deq_scale对应npy格式权重中deq_scale.npy中的model.layers.0.self_attn.q_proj;
+- safetensors中存储格式为字典，包含量化权重和量化不修改的浮点权重。其中量化权重的key值为各层Linear的名字加上对应权重的名字，module.weight和module.bias对应anti_fp_norm.npy，weight对应quant_weight.npy，quant_bias对应quant_bias.npy等以此类推。例如Qwen2.5-7B模型的model.layers.0.self_attn.q_proj.deq_scale对应npy格式权重中deq_scale.npy中的model.layers.0.self_attn.q_proj;
 
 ```json
 # qwen模型量化生成的权重文件部分内容
@@ -558,7 +558,7 @@ from transformers.models.qwen2.configuration_qwen2 import Qwen2Config
 }
 ```
 
-- json描述文件中储存的量化权重的总体类型model_quant_type，是否启用FA3量化fa_quant_type，和其中各个权重的类型，来自原始浮点权重则为FLOAT，来自W8A8量化则为W8A8。
+- json描述文件中存储的量化权重的总体类型model_quant_type，是否启用FA3量化fa_quant_type，和其中各个权重的类型，来自原始浮点权重则为FLOAT，来自W8A8量化则为W8A8。
 
 ```json
 {

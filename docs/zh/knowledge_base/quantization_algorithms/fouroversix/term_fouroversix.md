@@ -1,4 +1,4 @@
-﻿# FouroverSix 自适应块缩放量化算法 量化术语百科词条
+# FouroverSix 自适应块缩放量化算法 量化术语百科词条
 
 > **词条类别**：[量化算法](../README.md#2-量化算法)<br>
 > **英文名称**：fouroversix<br>
@@ -101,4 +101,4 @@ $$
 ## 4. 参考文档
 
 1. 《[FouroverSix 参数配置流程指南](./usage_fouroversix.md)》
-2. Cook J, Guo J, Xiao G, Lin Y, Han S. “Four Over Six: More Accurate NVFP4 Quantization with Adaptive Block Scaling.” arXiv preprint arXiv:2512.02010, 2025. https://arxiv.org/abs/2512.02010
+2. Cook J, Guo J, Xiao G, Lin Y, Han S. “Four Over Six: More Accurate NVFP4 Quantization with Adaptive Block Scaling.” arXiv preprint arXiv:2512.02010, 2025. <https://arxiv.org/abs/2512.02010>

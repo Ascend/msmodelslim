@@ -1,4 +1,4 @@
-﻿# QuaRot 旋转量化算法 量化术语百科词条
+# QuaRot 旋转量化算法 量化术语百科词条
 
 > **词条类别**：[离群值抑制算法](../README.md#1-离群值抑制算法)<br>
 > **英文名称**：quarot<br>
@@ -9,7 +9,7 @@
 
 ## 1. 概述
 
-QuaRot（Quantization with Rotation）是一种通过正交旋转抑制量化离群值的方法。它利用 Hadamard 等正交矩阵把集中在少数通道的大幅值分散到更多维度，在保持线性计算等价关系的同时降低通道间动态范围不均衡；核心特征是正交等价变换、离群值扩散和与后续低比特量化解耦。
+QuaRot（Quantization with Rotation）是一种通过正交旋转抑制量化离群值的方法。它利用 Hadamard 等正交矩阵把集中在少数通道的大幅值分散到更多维度，在保持线性计算等价关系的同时降低通道间动态范围不均衡；核心特征是正交等价变换、离群值分散和与后续低比特量化解耦。
 
 ---
 
@@ -94,5 +94,5 @@ $$
 
 ## 4. 参考文档
 
-1. Ashkboos S et al. QuaRot: Outlier-Free 4-Bit Inference in Rotated LLMs. NeurIPS 2024. https://arxiv.org/abs/2404.00456
+1. Ashkboos S et al. QuaRot: Outlier-Free 4-Bit Inference in Rotated LLMs. NeurIPS 2024. <https://arxiv.org/abs/2404.00456>
 2. 《[QuaRot 参数配置流程指南](./usage_quarot.md)》

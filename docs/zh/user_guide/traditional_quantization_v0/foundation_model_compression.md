@@ -219,7 +219,7 @@ python3 quant.py
 ### 1.7 量化后权重文件
 
 - npy格式
-当[save_type](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save%28%29.md)设置为['numpy']或不设置时，量化权重会保存为npy文件，npy储存格式为字典，其中key值为各层Linear的名字，例如ChatGLM2-6B模型的transformer.encoder.layers.0.self_attention.query_key_value，value值为第0层query_key_value的Linear权重。
+当[save_type](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save%28%29.md)设置为['numpy']或不设置时，量化权重会保存为npy文件，npy存储格式为字典，其中key值为各层Linear的名字，例如ChatGLM2-6B模型的transformer.encoder.layers.0.self_attention.query_key_value，value值为第0层query_key_value的Linear权重。
 
 > 注意：w4a8_dynamic 量化类型不支持 ['numpy'] 格式保存。因此，当 save_type 设置为['numpy']时，会有报错提醒。当 save_type 设置为 ['numpy', 'safe_tensor']时，会保存 `safe_tensor` 格式数据；而对于 `numpy` 格式数据，会跳过保存，并会在日志中输出一个 error 提示。
 
@@ -242,7 +242,7 @@ python3 quant.py
 当[save_type](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save%28%29.md)设置为['safe_tensor']时，量化权重会保存为safetensors文件和json描述文件。
 **说明**：当用户设置的[part_file_size](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save%28%29.md)值大于0时，会使能PyTorch框架的分片保存功能。msModelSlim工具会统计遍历到的权重文件的大小，若权重文件的大小大于part_file_size值，则将统计到的权重作为一个part，然后重新进行统计。统计完成后，将各个权重分片保存，并生成权重索引文件（xxx.safetensors.index.json）。权重和索引的名称可参照开源模型的权重，例如xxx-0000x-of-0000x.safetensors，当part数大于99999时，权重和索引的名称将会被命名为xxx-x-of-x.safetensors。
 
-    - safetensors中储存格式为字典，包含量化权重和量化不修改的浮点权重。其中量化权重的key值为各层Linear的名字加上对应权重的名字，module.weight和module.bias对应anti_fp_norm.npy，weight对应quant_weight.npy，quant_bias对应quant_bias.npy等以此类推。例如ChatGLM2-6B模型的transformer.encoder.layers.0.self_attention.query_key_value.deq_scale对应npy格式权重中deq_scale.npy中的transformer.encoder.layers.0.self_attention.query_key_value。
+    - safetensors中存储格式为字典，包含量化权重和量化不修改的浮点权重。其中量化权重的key值为各层Linear的名字加上对应权重的名字，module.weight和module.bias对应anti_fp_norm.npy，weight对应quant_weight.npy，quant_bias对应quant_bias.npy等以此类推。例如ChatGLM2-6B模型的transformer.encoder.layers.0.self_attention.query_key_value.deq_scale对应npy格式权重中deq_scale.npy中的transformer.encoder.layers.0.self_attention.query_key_value。
 
 ```text
 # llama模型稀疏量化生成的权重文件部分内容
@@ -260,7 +260,7 @@ python3 quant.py
 
 > 注意：当使用 w4a8_dynamic 量化类型时，safe_tensor 的内容会多生成一个 weight_scale_second 和 weight_offset_second 的 key 和对应的 tensor 值。
 
-- json描述文件中储存的量化权重的总体类型model_quant_type，是否启用kvcache量化kv_cache_type，和其中各个权重的类型，来自原始浮点权重则为FLOAT，来自W8A8量化则为W8A8，来自稀疏量化则为W8A8S，来自压缩则为W8A8SC，来自NF4量化则为NF4, 来自W4A4 Flatquant量化方式则为W4A4_FLATQUANT_DYNAMIC。
+- json描述文件中存储的量化权重的总体类型model_quant_type，是否启用kvcache量化kv_cache_type，和其中各个权重的类型，来自原始浮点权重则为FLOAT，来自W8A8量化则为W8A8，来自稀疏量化则为W8A8S，来自压缩则为W8A8SC，来自NF4量化则为NF4, 来自W4A4 Flatquant量化方式则为W4A4_FLATQUANT_DYNAMIC。
 
 ```text
 # llama模型稀疏量化生成的json描述文件部分内容
@@ -319,7 +319,7 @@ python3 quant.py
 
 #### 1.8.2 数据集精度掉点严重，对话乱码或胡言乱语
 
-1. 对于label free校准场景，确认浮点模型使用torch npu推理是否正常。量化校准依赖浮点模型推理，如果浮点推理异常，量化校准时获取到的数据分布信息不对，校准结果自然不对。
+1. 对于label free校准场景，确认浮点模型使用torch_npu推理是否正常。量化校准依赖浮点模型推理，如果浮点推理异常，量化校准时获取到的数据分布信息不对，校准结果自然不对。
 
 2. 适当增加回退层。某些模型中的部分Linear层对精度的影响比较显著。例如ChatGlm2-6B模型W8A8量化时的layers.0.mlp.dense_4h_to_h层，依据调优经验以及相关论文数据，模型靠前和靠后的decoder layer、各个decoder layer的mlp down层对精度的影响一般较大，可以优先考虑回退这些层。如果回退效果不理想的话，可以尝试较为激进的回退策略，例如回退掉1/4或者1/2的Linear层，直到完全回退成浮点模型，模型的精度也完全回退成浮点模型的精度。回退越多，精度越高，性能越差。
 

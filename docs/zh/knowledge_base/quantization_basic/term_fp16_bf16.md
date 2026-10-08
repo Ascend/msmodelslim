@@ -51,5 +51,5 @@
 
 ## 5. 参考文档
 
-1. Kalamkar D et al. A Study of BFLOAT16 for Deep Learning Training. arXiv:1905.12322. https://arxiv.org/abs/1905.12322
+1. Kalamkar D et al. A Study of BFLOAT16 for Deep Learning Training. arXiv:1905.12322. <https://arxiv.org/abs/1905.12322>
 2. 《[量化模式](../quantization_mode/README.md)》

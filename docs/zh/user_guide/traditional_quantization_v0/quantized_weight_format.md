@@ -48,7 +48,7 @@ msmodelslim量化类型说明：
 
 ### 1.2 json描述文件格式
 
-json描述文件内部储存格式为python的字典 dict，字典的key值为权重名称，value为权重对应的量化类型。"model_quant_type"描述整体的量化类型，"kv_cache_type"表示kv_cache是否量化，其余为各个权重的类型，"FLOAT"表示来自浮点权重，"W8A8"表示来自W8A8量化，"W8A16"表示来自W8A16量化，"W8A8S"表示来自稀疏量化
+json描述文件内部存储格式为python的字典 dict，字典的key值为权重名称，value为权重对应的量化类型。"model_quant_type"描述整体的量化类型，"kv_cache_type"表示kv_cache是否量化，其余为各个权重的类型，"FLOAT"表示来自浮点权重，"W8A8"表示来自W8A8量化，"W8A16"表示来自W8A16量化，"W8A8S"表示来自稀疏量化
 示例 ChatGLM2-6B W8A16量化权重的描述文件：
 描述文件字典内容排序不影响实际使用
 

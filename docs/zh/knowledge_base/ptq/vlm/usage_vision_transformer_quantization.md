@@ -71,7 +71,7 @@ flowchart LR
    ```yaml
    spec:
      dataset: calibImages                            # 相对目录名或绝对路径
-     default_text: "Describe this image in detail." # 图像样本缺省文本时的默认 Prompt
+     default_text: "Describe this image in detail." # 图像样本缺少文本时的默认 Prompt
    ```
 
    若配置为相对文件名 `calibImages`，框架自动寻址内置的 `lab_calib/calibImages/` 图像目录；若为自定义绝对路径或指定 `index.jsonl`，则直接载入对应数据源。

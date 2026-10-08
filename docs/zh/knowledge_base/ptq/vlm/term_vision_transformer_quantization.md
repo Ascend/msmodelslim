@@ -54,6 +54,6 @@
 
 ## 5. 参考文档
 
-1. Dosovitskiy A, et al. "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale." ICLR 2021. https://arxiv.org/abs/2010.11929
-2. Xiao G, et al. "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models." arXiv:2211.10438, 2022. https://arxiv.org/abs/2211.10438
-3. Liu H, et al. "Visual Instruction Tuning (LLaVA)." NeurIPS 2023. https://arxiv.org/abs/2304.08485
+1. Dosovitskiy A, et al. "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale." ICLR 2021. <https://arxiv.org/abs/2010.11929>
+2. Xiao G, et al. "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models." arXiv:2211.10438, 2022. <https://arxiv.org/abs/2211.10438>
+3. Liu H, et al. "Visual Instruction Tuning (LLaVA)." NeurIPS 2023. <https://arxiv.org/abs/2304.08485>

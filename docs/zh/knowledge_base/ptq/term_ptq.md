@@ -65,6 +65,6 @@ PTQ 的核心思想是通过离线统计校准集前向传播中的张量极值�
 
 ## 5. 参考文档
 
-1. Gholami A, et al. "A Survey of Quantization Methods for Efficient Neural Network Inference." arXiv:2103.13630, 2021. https://arxiv.org/abs/2103.13630
-2. Nagel M, et al. "A White Paper on Neural Network Quantization." arXiv:2106.08295, 2021. https://arxiv.org/abs/2106.08295
-3. Xiao G, et al. "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models." arXiv:2211.10438, 2022. https://arxiv.org/abs/2211.10438
+1. Gholami A, et al. "A Survey of Quantization Methods for Efficient Neural Network Inference." arXiv:2103.13630, 2021. <https://arxiv.org/abs/2103.13630>
+2. Nagel M, et al. "A White Paper on Neural Network Quantization." arXiv:2106.08295, 2021. <https://arxiv.org/abs/2106.08295>
+3. Xiao G, et al. "SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models." arXiv:2211.10438, 2022. <https://arxiv.org/abs/2211.10438>

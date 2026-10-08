@@ -59,7 +59,7 @@ flowchart LR
 
 1. 将任务逻辑封装为 Processor 实例方法，签名保持简单（如 `def _worker_fn(self, idx) -> None`）。
 2. **业务参数只经 `args` / `kwargs` 传入可序列化值**，不得作为 `submit` 的第二个位置参数。常用模式：
-   - 传**整数索引**，执行时回查本 rank 上内容一致的任务表，以[FlexAWQSSZProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py)）为例，`submit(fn=self._worker_fn, args=(idx,), ...)`，`_worker_fn` 内 `adapter_config = self.sorted_configs[idx - 1]`；
+   - 传**整数索引**，执行时回查本 rank 上内容一致的任务表，以[FlexAWQSSZProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py)为例，`submit(fn=self._worker_fn, args=(idx,), ...)`，`_worker_fn` 内 `adapter_config = self.sorted_configs[idx - 1]`；
    - 传**模块名**，以[LinearQuant](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/linear.py)为例，`submit(fn=self._dts_calibrate_forward, args=(name,), ...)`，`_dts_calibrate_forward` 内 `self.model.get_submodule(module_name)` 后执行本地逻辑。
 
 **输出**：可提交的子任务函数。

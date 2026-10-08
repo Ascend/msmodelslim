@@ -400,13 +400,13 @@ VBench 指标计算通过 aisbench 的 `VBenchEvalTask` 完成，核心配置项
 
 ```bash
 # 1) 浮点结果指标计算：先将配置文件中的 DATA_PATH 改为 .../vbench_fp_output/
-cd /path/to/AIS_BENCH_ROOT  # 进入 AIS_BENCH 测评工具根目录
+cd /path/to/AIS_BENCH_ROOT  # 进入 AIS_BENCH 评测工具根目录
 ais_bench ais_bench/configs/vbench_examples/eval_vbench_standard.py \
     --mode eval \
     --max-num-workers 1
 
 # 2) 量化结果指标计算：将同一配置文件中的 DATA_PATH 改为 .../vbench_quant_output/，其余配置项（full_json_dir、dimension_list、VBENCH_CACHE_DIR 等）保持不变，再次执行相同命令
-cd /path/to/AIS_BENCH_ROOT  # 进入 AIS_BENCH 测评工具根目录
+cd /path/to/AIS_BENCH_ROOT  # 进入 AIS_BENCH 评测工具根目录
 ais_bench ais_bench/configs/vbench_examples/eval_vbench_standard.py \
     --mode eval \
     --max-num-workers 1

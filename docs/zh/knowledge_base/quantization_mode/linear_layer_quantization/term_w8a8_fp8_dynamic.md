@@ -79,6 +79,6 @@ $$q = \mathrm{round}_{FP8}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{
 
 ## 5. 参考文档
 
-1. Kuzmin A et al. FP8 Formats for Deep Learning. arXiv:2209.05433. https://arxiv.org/abs/2209.05433
+1. Kuzmin A et al. FP8 Formats for Deep Learning. arXiv:2209.05433. <https://arxiv.org/abs/2209.05433>
 2. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 3. 《[量化模式](../README.md)》

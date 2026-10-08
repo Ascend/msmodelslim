@@ -235,7 +235,7 @@ core/                     # 领域层，按领域积累和管理量化知识
 infra/                                     # 基础设施，满足其他组件对外部依赖的需求，管理适配知识
 ├── __init__.py
 ├── dataset_loader/                            # 数据集加载类基础设施
-├── evaluation/                                # 测评工具类基础设施
+├── evaluation/                                # 评测工具类基础设施
 ├── analysis_pipeline_loader.py                # 基于YAML的流水线模板加载基础设施
 ├── debug_info_persistence.py                  # 基于JSON和Safetensors的调试信息持久化基础设施
 ├── file_dataset_loader.py                     # 基于文件的LLM数据集加载基础设施

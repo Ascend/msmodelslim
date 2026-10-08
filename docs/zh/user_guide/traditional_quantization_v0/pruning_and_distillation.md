@@ -25,7 +25,7 @@ msModelSlim工具提供了基于重要性评估的模型剪枝调优API，用户
 from msmodelslim.pytorch.prune.prune_torch import PruneTorch
 ```
 
-3.（可选）调整日志输出等级，启动调优任务后，将打印显示设置级别的日志信息。[日志级别说明](../../api_reference/python_api_v0/common_apis.md#参数说明)
+3.（可选）调整日志输出等级，启动调优任务后，将打屏显示设置级别的日志信息。[日志级别说明](../../api_reference/python_api_v0/common_apis.md#参数说明)
 
 ```python
 from msmodelslim import set_logger_level
@@ -65,7 +65,7 @@ msModelSlim工具提供了API方式的Transformer类模型权重剪枝调优，�
 
 - 注意：该功能仅支持 PyTorch 2.0.0 以上版本。
 
-模型剪枝期间，用户可手动配置参数对预训练模型的权重进行裁剪，并将裁剪后的权重加载至小模型中，获取一个权重加载完毕的Transformer模型。剪枝后模型不保障精度，需要进行一定的训练来提升精度，例如通过模型蒸馏进行训练。
+模型剪枝期间，用户可手动配置参数对预训练模型的权重进行裁剪，并将裁剪后的权重加载至小模型中，获取一个权重加载完毕的Transformer模型。剪枝后模型不保证精度，需要进行一定的训练来提升精度，例如通过模型蒸馏进行训练。
 
 ### 2.3 功能介绍
 

@@ -120,8 +120,8 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 
 ## 5. 参考文档
 
-1. Jacob B et al. Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference. CVPR 2018. https://arxiv.org/abs/1712.05877
-2. Yao Z et al. ZeroQuant: Efficient and Affordable Post-Training Quantization for Large-Scale Transformers. NeurIPS 2022. https://arxiv.org/abs/2206.01861
-3. Liu Z et al. KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache. ICML 2024. https://arxiv.org/abs/2402.02750
+1. Jacob B et al. Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference. CVPR 2018. <https://arxiv.org/abs/1712.05877>
+2. Yao Z et al. ZeroQuant: Efficient and Affordable Post-Training Quantization for Large-Scale Transformers. NeurIPS 2022. <https://arxiv.org/abs/2206.01861>
+3. Liu Z et al. KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache. ICML 2024. <https://arxiv.org/abs/2402.02750>
 4. 《[线性量化参数配置流程指南](../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 5. 《[AscendV1 格式说明](../quantization_format/ascendv1/ascendv1_usage.md)》
