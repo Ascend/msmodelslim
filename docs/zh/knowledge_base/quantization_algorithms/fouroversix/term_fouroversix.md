@@ -1,4 +1,4 @@
-﻿# FouroverSix 自适应块缩放量化算法 量化术语百科词条
+# FouroverSix 自适应块缩放量化算法 量化术语百科词条
 
 > **词条类别**：[量化算法](../README.md#2-量化算法)<br>
 > **英文名称**：fouroversix<br>

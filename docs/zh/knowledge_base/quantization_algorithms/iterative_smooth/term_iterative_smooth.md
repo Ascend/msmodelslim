@@ -1,4 +1,4 @@
-﻿# Iterative Smooth 迭代平滑算法 量化术语百科词条
+# Iterative Smooth 迭代平滑算法 量化术语百科词条
 
 > **词条类别**：[离群值抑制算法](../README.md#1-离群值抑制算法)<br>
 > **英文名称**：iterative_smooth<br>

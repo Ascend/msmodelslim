@@ -1,4 +1,4 @@
-﻿# Flex Smooth Quant 灵活平滑量化算法 量化术语百科词条
+# Flex Smooth Quant 灵活平滑量化算法 量化术语百科词条
 
 > **词条类别**：[离群值抑制算法](../README.md#1-离群值抑制算法)<br>
 > **英文名称**：flex_smooth_quant<br>

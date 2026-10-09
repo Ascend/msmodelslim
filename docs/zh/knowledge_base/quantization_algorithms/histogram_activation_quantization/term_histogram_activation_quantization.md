@@ -1,4 +1,4 @@
-﻿# Histogram 直方图激活值量化算法 量化术语百科词条
+# Histogram 直方图激活值量化算法 量化术语百科词条
 
 > **词条类别**：[量化算法](../README.md#2-量化算法)<br>
 > **英文名称**：histogram_activation_quantization<br>

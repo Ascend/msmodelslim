@@ -60,7 +60,7 @@ quant_config = QuantConfig(
 ```
 
 c.关于保存的权重文件
-本脚本仅支持未切片的safetensors权重转换，所以使用保存量化权重文件的时候，不要使用分片保存。
+本脚本仅支持未切片的safetensors权重转换，所以保存量化权重文件的时候，不要使用分片保存。
 参考链接：《[save()接口说明](../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save%28%29.md)》
 
 ```python
@@ -85,7 +85,7 @@ python ms_to_vllm.py --model {weighted_safetensors_path} --json {weighted_json_p
     target_tool，可选参数，string类型，可选值[awq, gptq], 默认值为awq，表示转换的目标工具为AutoAWQ
 
 使用示例：
-首先将权重转换脚本拷贝到量化权重目录下，然后在该目录下执行如下命令，最终在该目录下生成转换后的权重脚本文件res.safetensors：
+首先将权重转换脚本拷贝到量化权重目录下，然后在该目录下执行如下命令，最终在该目录下生成转换后的权重文件res.safetensors：
 python ms_to_vllm.py --model ./quant_model_weight_w4a16.safetensors --json ./quant_model_description_w4a16.json --save_path res.safetensors --target_tool awq
 
 ```

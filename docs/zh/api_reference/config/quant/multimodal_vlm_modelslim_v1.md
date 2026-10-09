@@ -17,7 +17,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `apiversion` | `string` | 可选 | `multimodal_vlm_modelslim_v1` | `multimodal_vlm_modelslim_v1` | — | 无 |
-| `spec` | `object` | 必选 | 无 | — | `multimodal_vlm_modelslim_v1` 服务的 spec 结构。<br><br>面向多模态理解（VLM）模型：在 `ModelslimV1ServiceConfig` 基础上增加<br>`default_text` 提示词，用于图像类校准数据缺省文本时的默认输入。 | 本页 <a href="#2-2-multimodal-vlm-modelslim-v1-spec">§2.2</a> |
+| `spec` | `object` | 必选 | 无 | — | `multimodal_vlm_modelslim_v1` 服务的 spec 结构。<br><br>面向多模态理解（VLM）模型：在 `ModelslimV1ServiceConfig` 基础上增加<br>`default_text` 提示词，用于图像类校准数据缺少文本时的默认输入。 | 本页 <a href="#2-2-multimodal-vlm-modelslim-v1-spec">§2.2</a> |
 
 **配置约束**
 

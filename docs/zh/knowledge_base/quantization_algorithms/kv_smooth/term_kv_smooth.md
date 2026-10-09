@@ -1,4 +1,4 @@
-﻿# KV Smooth 缓存平滑算法 量化术语百科词条
+# KV Smooth 缓存平滑算法 量化术语百科词条
 
 > **词条类别**：[离群值抑制算法](../README.md#1-离群值抑制算法)<br>
 > **英文名称**：kv_smooth<br>
@@ -71,7 +71,7 @@ $$
 ### 2.5 适用场景
 
 - KV Cache 量化（如 [KVCache Quant](../kvcache_quant/term_kvcache_quant.md)）前需要抑制 Key 离群值、提升缓存量化精度的场景。
-- 长序列推理场景下，需要压缩 KV Cache 动态范围以降低显存占用的场景。
+- 长序列推理场景下，需要压缩 KV Cache 动态范围以降低显存占用。
 
 ### 2.6 使用限制
 

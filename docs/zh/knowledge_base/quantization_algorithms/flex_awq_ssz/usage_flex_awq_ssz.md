@@ -1,4 +1,4 @@
-﻿# Flex AWQ SSZ 参数配置流程指南
+# Flex AWQ SSZ 参数配置流程指南
 
 ## 1. 适用范围
 
