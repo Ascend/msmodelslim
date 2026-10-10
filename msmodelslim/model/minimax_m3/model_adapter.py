@@ -56,7 +56,7 @@ from msmodelslim.model.interface_hub import (
     ModelSlimPipelineInterfaceV1,
 )
 from msmodelslim.processor.quarot import QuaRotInterface
-from msmodelslim.utils.exception import InvalidModelError
+from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
 from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.utils.security import (
     MAX_READ_FILE_SIZE_32G,
@@ -468,28 +468,16 @@ class MiniMaxM3ModelAdapter(  # pylint: disable=too-many-ancestors
         pixel_values = sample.get("pixel_values")
         image_grid_thw = sample.get("image_grid_thw")
 
-        # Step 1: Always yield vision_tower first（参考qwen3_vl_moe模式）
-        has_images = pixel_values is not None and image_grid_thw is not None
-        image_embeds = yield ProcessRequest(
-            name="vision_tower",
-            module=model.model.vision_tower,
-            args=(pixel_values, image_grid_thw) if has_images else (),
-            kwargs={},
-        )
-
-        # Step 2: embed_tokens 直接内联调用（不 yield），匹配 visit 无 embed_tokens
-        inputs_embeds = model.model.language_model.embed_tokens(input_ids)
-
-        # Step 3: 有图片时融合视觉嵌入
-        if has_images:
-            if isinstance(image_embeds, (list, tuple)):
-                image_embeds_cat = torch.cat(image_embeds, dim=0)
-            else:
-                image_embeds_cat = image_embeds
-            image_mask = (input_ids == model.config.image_token_id).unsqueeze(-1).expand_as(inputs_embeds)
-            inputs_embeds = inputs_embeds.masked_scatter(
-                image_mask, image_embeds_cat.to(inputs_embeds.device, inputs_embeds.dtype)
+        # MiniMax-M3 当前只支持纯文本校准；带图样本直接抛异常，避免 yield 空参数的
+        # vision_tower 被 BaseProcessor 静默跳过 forward，导致输出数量为 0。
+        if pixel_values is not None or image_grid_thw is not None:
+            raise UnsupportedError(
+                "MiniMax-M3 adapter does not support image calibration yet.",
+                action="Use text-only calibration data without 'pixel_values'/'image_grid_thw'.",
             )
+
+        # embed_tokens 直接内联调用（不 yield），匹配 visit 无 embed_tokens
+        inputs_embeds = model.model.language_model.embed_tokens(input_ids)
 
         from transformers.masking_utils import create_causal_mask
 
