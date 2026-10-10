@@ -6,6 +6,8 @@ import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+import pytest
+
 import torch
 from torch import nn
 
@@ -58,6 +60,7 @@ sys.modules["transformers.models.minimax_m3_vl.configuration_minimax_m3_vl"] = _
 from msmodelslim.core.base.protocol import ProcessRequest  # noqa: E402
 from msmodelslim.model.minimax_m3 import model_adapter as target  # noqa: E402
 from msmodelslim.model.minimax_m3.model_adapter import MiniMaxM3ModelAdapter, _StandardRMSNorm  # noqa: E402
+from msmodelslim.utils.exception import UnsupportedError  # noqa: E402
 
 
 def _adapter(**kwargs):
@@ -616,6 +619,70 @@ def test_should_yield_vision_tower_and_decoder_layers_when_generate_model_visit_
     assert requests[1].name == "model.language_model.layers.0"
     assert requests[2].name == "model.language_model.layers.1"
     assert all(isinstance(r, ProcessRequest) for r in requests)
+
+
+def test_should_skip_vision_tower_when_generate_model_forward_given_text_only(monkeypatch):
+    text_config = _make_text_config(num_hidden_layers=1)
+    config = _make_config(text_config=text_config)
+    adapter = _adapter(config=config, model_path="/tmp/model")
+
+    model = _make_fake_model(num_layers=1)
+    model.model.language_model.embed_tokens = nn.Embedding(8, 2)
+
+    monkeypatch.setattr(
+        adapter, "_load_decoder_if_not_exist", lambda model, name, idx: model.model.language_model.layers[idx]
+    )
+
+    from transformers import masking_utils
+
+    mask_calls = []
+
+    def _fake_create_causal_mask(**kwargs):
+        mask_calls.append(kwargs)
+        return "causal_mask"
+
+    monkeypatch.setattr(masking_utils, "create_causal_mask", _fake_create_causal_mask)
+
+    sample = {
+        "input_ids": torch.tensor([[1, 2, 3]]),
+        "attention_mask": torch.ones((1, 3), dtype=torch.long),
+    }
+
+    generator = adapter.generate_model_forward(model, sample)
+    request = next(generator)
+
+    # Text-only calibration must go straight to the decoder layers instead of
+    # emitting an empty-argument vision_tower step (which has no forward output).
+    assert request.name == "model.language_model.layers.0"
+    assert request.args[0].shape == (1, 3, 2)
+
+    # 纯文本路径下 create_causal_mask 仍应收到文本嵌入。
+    assert len(mask_calls) == 1
+    assert mask_calls[0]["config"] is model.config.text_config
+    assert any(isinstance(value, torch.Tensor) and value.shape == (1, 3, 2) for value in mask_calls[0].values())
+
+    with pytest.raises(StopIteration):
+        generator.send(torch.randn(1, 3, 2))
+
+
+def test_should_raise_when_generate_model_forward_given_images():
+    text_config = _make_text_config(num_hidden_layers=1)
+    config = _make_config(text_config=text_config)
+    adapter = _adapter(config=config, model_path="/tmp/model")
+
+    model = _make_fake_model(num_layers=1)
+
+    sample = {
+        "input_ids": torch.tensor([[1, 2, 3]]),
+        "attention_mask": torch.ones((1, 3), dtype=torch.long),
+        "pixel_values": torch.randn(4, 3),
+        "image_grid_thw": torch.tensor([[1, 2, 2]]),
+    }
+
+    # 图像校准尚未支持，带图样本必须显式报错，不能静默产出空请求。
+    generator = adapter.generate_model_forward(model, sample)
+    with pytest.raises(UnsupportedError, match="does not support image calibration"):
+        next(generator)
 
 
 # ---------------------------------------------------------------------------
