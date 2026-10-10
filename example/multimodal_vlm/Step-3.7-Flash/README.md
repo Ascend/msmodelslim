@@ -25,7 +25,7 @@ Step-3.7-Flash 主要面向需要把感知、检索与推理融合到同一代�
 
 ### <span id="step-37-flash-w8a8-mxfp8-混合量化">Step-3.7-Flash W8A8 MXFP8 混合量化</span>
 
-该模型的量化已集成至一键量化，示例参数详见文档《一键量化完整指南》中的"[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)"章节。实践配置见[step3_7_flash_w8a8_mxfp.yaml](../../../lab_practice/step_3_7_flash/step3_7_flash_w8a8_mxfp.yaml)。
+该模型的量化已集成至一键量化，示例参数详见文档《一键量化使用指南》中的"[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)"章节。实践配置见[step3_7_flash_w8a8_mxfp.yaml](../../../lab_practice/step_3_7_flash/step3_7_flash_w8a8_mxfp.yaml)。
 
 ```shell
 msmodelslim quant \
@@ -41,5 +41,4 @@ msmodelslim quant \
 
 ### 相关资源
 
-- [一键量化配置协议说明](../../../docs/zh/user_guide/usage_quick_quantization.md#5-量化配置协议详解)。
-- [multimodal_vlm_modelslim_v1 量化服务配置详解](../../../docs/zh/user_guide/usage_quick_quantization.md#54-multimodal_vlm_modelslim_v1-配置详解)。
+- 《[multimodal_vlm_modelslim_v1 配置说明](../../../docs/zh/api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》。

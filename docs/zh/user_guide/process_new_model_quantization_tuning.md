@@ -11,7 +11,7 @@
 
 > [!NOTE]
 >
-> - 支持矩阵已标记**一键量化**且目标 `quant_type` 已验证：请直接按《[一键量化完整指南](usage_quick_quantization.md)》执行。
+> - 支持矩阵已标记**一键量化**且目标 `quant_type` 已验证：请直接按《[一键量化使用指南](usage_one_click_quantization.md)》执行。
 > - 调优链路已打通，只查阅调优手段与算法建议：请阅读《[量化精度调优指南](process_quantization_precision_tuning.md)》。
 > - 希望全自动搜索配置：可参考《[自动调优使用指南](usage_auto_precision_tuning.md)》。
 

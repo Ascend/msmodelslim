@@ -9,7 +9,7 @@
 - W4 等低比特权重量化精度不达标，需要通过可学习舍入与 MinMax 联合优化提升精度；
 - 需要按模块混合位宽部署（如大部分模块 W8A8、敏感投影层 W4A4），并通过统一优化流程求解。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

@@ -30,7 +30,7 @@ INT4 占 4位，可表示 $-8\sim7$ 共 16个整数档位。按[量化公式](te
 
 ## 3. 关联流程
 
-- 《[一键量化完整指南](../../user_guide/usage_quick_quantization.md)》：量化任务的执行入口。
+- 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：数据类型与量化方案导致的精度问题可通过该流程排查与调优。
 
 ---

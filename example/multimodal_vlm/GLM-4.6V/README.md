@@ -24,7 +24,7 @@ GLM-4.6V在训练中将上下文窗口扩展到128k个词元，并在相似参�
 
 ## 校准数据说明
 
-校准数据支持的方式，详见 [dataset 配置说明](../../../docs/zh/user_guide/usage_quick_quantization.md#dataset---校准数据路径配置)：
+校准数据支持的方式，详见 [校准数据路径配置（参考）](../../../docs/zh/knowledge_base/ptq/vlm/usage_vision_transformer_quantization.md#dataset---校准数据路径配置)：
 
 对 GLM-4.6V，校准时每条样本需要提供文本提示词 `text` 和对应的图像`image`，当前缺项的样本不支持。
 
@@ -32,7 +32,7 @@ GLM-4.6V在训练中将上下文窗口扩展到128k个词元，并在相似参�
 
 ### <span id="glm-4.6v-w8a8-混合量化">GLM-4.6V W8A8 混合量化</span>
 
-该模型的量化已经集成至[一键量化](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)。
+该模型的量化已经集成至[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)。
 
 ```shell
 msmodelslim quant \
@@ -46,4 +46,4 @@ msmodelslim quant \
 
 ## 附录
 
-- [multimodal_vlm_modelslim_v1 量化服务配置详解](../../../docs/zh/user_guide/usage_quick_quantization.md#54-multimodal_vlm_modelslim_v1-配置详解)
+- 《[multimodal_vlm_modelslim_v1 配置说明](../../../docs/zh/api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》

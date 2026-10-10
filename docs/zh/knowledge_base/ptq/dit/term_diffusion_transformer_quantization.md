@@ -37,7 +37,7 @@ Diffusion Transformer（DiT）使用 Transformer 结构完全替代传统扩散�
 
 - [《多模态生成模型（DiT）量化使用指南》](./usage_diffusion_transformer_quantization.md)：DiT 量化完整的操作流程与命令说明。
 - [《DiT 模型接入量化流程指南》](./integration_guide_diffusion_transformer_quantization.md)：将新扩散生成模型接入量化流程的指导文档。
-- [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)：涵盖各类生成模型的一键量化流程。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：涵盖各类生成模型的一键量化流程。
 
 ---
 

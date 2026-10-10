@@ -8,7 +8,7 @@
 
 **精度验收口径**：以选定的精度基线（本案例采用论文或模型卡片公开基线）作为对比基准，使用 AISBench 获得量化结果分数。当量化结果分数不低于选定的精度基线分数时直接通过；当量化结果分数低于选定的精度基线分数时，要求相对下降比例不超过 1%，否则不通过。
 
-**关联流程**：[《一键量化完整指南》](../user_guide/usage_quick_quantization.md)、[《权重量化使用指南》](../user_guide/usage_weight_quantization.md)、[《msModelSlim 安装指南》](../install_guide/install_guide.md)
+**关联流程**：《[一键量化使用指南](../user_guide/usage_one_click_quantization.md)》、《[权重量化使用指南](../user_guide/usage_weight_quantization.md)》、《[msModelSlim 安装指南](../install_guide/install_guide.md)》
 
 ## 2. 环境与版本
 

@@ -55,7 +55,7 @@ msmodelslim quant --model_path /path/to/Qwen3-VL-Reranker-2B \
 --quant_type w8a8
   ```
 
-- 更多参数配置要求，请参考《[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md)》。
+- 更多参数配置要求，请参考《[一键量化使用指南](../../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
 > [!Note]
 >

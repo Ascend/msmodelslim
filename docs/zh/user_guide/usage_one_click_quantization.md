@@ -168,8 +168,8 @@ msmodelslim quant \
 > 片上内存受限场景中，可指定多张 NPU 卡自动启用分布式逐层量化，将 `--device` 改为多卡即可，如 `--device npu --device_id 0 1 2 3`。
 >
 >
-> **注意**：多卡量化是否支持与具体算法相关，部分最佳实践中的算法可能尚未适配多卡，使用前请确认对应算法已支持多卡。当前已支持的多卡算法列表详见[分布式量化算法适配](usage_quick_quantization.md#417-算法适配)。
-> 多卡量化与逐层量化说明详见[一键量化完整指南](usage_quick_quantization.md#41-逐层量化及分布式逐层量化)。
+> **注意**：多卡量化是否支持与具体算法相关，部分最佳实践中的算法可能尚未适配多卡，使用前请确认对应算法已支持多卡。当前已支持的多卡算法列表详见[并行机制支持列表](../knowledge_base/parallel/README.md#3-并行机制支持列表)。
+> 多卡量化与逐层量化说明详见《[多卡量化并行](../knowledge_base/parallel/README.md)》。
 
 ### 步骤6：执行量化命令
 
@@ -186,7 +186,7 @@ msmodelslim quant \
 
 > **可选：最佳实践匹配逻辑（了解即可）**
 >
-> 指定 `--quant_type` 后，工具在最佳实践库中优先匹配"模型指定量化方式 + 场景标签"均命中的配置；若该模型在目标场景下没有已验证配置（最佳实践库仅收录已验证场景的组合），工具会依次询问是否采用忽略场景标签的配置、模型推荐量化方式的配置，按提示输入 `y` 即可继续。
+> 指定 `--quant_type` 后，工具在最佳实践库中优先匹配"模型指定量化方式 + 场景标签"均命中的配置；若该模型在目标场景下没有已验证配置（最佳实践库仅收录已验证场景的组合），工具会依次询问是否采用忽略场景标签的配置、模型推荐量化方式的配置，按提示输入 `y` 即可继续。完整搜索优先级见[参数关系](../api_reference/cli/msmodelslim_quant.md#4-参数关系)"最佳实践匹配搜索优先级"。
 
 **输出**：日志输出 `===========SUCCESS===========`，生成量化权重目录 `${SAVE_PATH}`。
 
@@ -247,9 +247,28 @@ msmodelslim quant \
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `msmodelslim quant` | 一键量化命令，含全部参数说明与使用示例 | 《[一键量化完整指南](usage_quick_quantization.md)》 |
+| `msmodelslim quant` | 一键量化命令，含全部参数说明与使用示例 | 《[msmodelslim quant 命令行 API 文档](../api_reference/cli/msmodelslim_quant.md)》 |
 
 ## 11. 安全说明
 
 - trust_remote_code 默认保持 false，仅可信模型必要时开启。
 - 测评日志、校准数据、量化产物与 ModelScope 发布内容按业务权限管控。
+
+## 12. 附录
+
+### 12.1 协议版本维护策略
+
+一键量化配置通过 `apiversion` 字段选择后端量化服务的版本。各协议版本的维护策略如下：
+
+| 协议版本 | 维护策略 | 状态 |
+| --- | --- | --- |
+| modelslim_v0 | 即将废弃 | 不推荐 |
+| modelslim_v1 | 逐步完善 | 推荐 |
+| multimodal_vlm_modelslim_v1 | 逐步完善 | 推荐 |
+| multimodal_sd_modelslim_v1 | 逐步完善 | 推荐 |
+
+**说明**：
+
+- `modelslim_v0` 协议版本即将废弃，不推荐使用，建议使用 `modelslim_v1` 或更新的协议版本；
+- `modelslim_v1`、`multimodal_vlm_modelslim_v1`、`multimodal_sd_modelslim_v1` 正在逐步完善，为当前推荐版本；
+- `apiversion` 字段的取值、必选性与 `spec` 结构说明请参阅《[modelslim_v1 配置说明](../api_reference/config/quant/modelslim_v1.md)》、《[multimodal_vlm_modelslim_v1 配置说明](../api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》、《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》。

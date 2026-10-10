@@ -38,7 +38,7 @@
 
 - [《LLM 量化使用指南》](./usage_large_language_model_quantization.md)：LLM 量化的完整操作流程。
 - [《LLM 模型接入量化流程指南》](./integration_guide_large_language_model_quantization.md)：将新语言模型接入量化流程的开发指导。
-- [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)：涵盖各类模型的一键量化流程。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：涵盖各类模型的一键量化流程。
 
 ---
 

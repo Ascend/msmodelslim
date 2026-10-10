@@ -36,6 +36,28 @@ msModelSlim 量化侧的并行机制以数据并行（Data Parallel, DP）为基
 | `OnlineQuaRotProcessor` | ✓ | — |
 | `QuaRotProcessor` | ✓ | — |
 
+以算法名视角汇总，`dp_layer_wise`（分布式逐层量化）当前支持以下算法：
+
+**离群值抑制算法**
+
+| 算法名称 | 处理器类型 | 支持状态 | 说明 |
+|----------|----------|---------|------|
+| Iterative Smooth | iter_smooth | ✅ 支持 | 完全支持分布式执行 |
+| Flex Smooth Quant | flex_smooth | ✅ 支持 | 完全支持分布式执行 |
+| Flex AWQ SSZ | flex_awq_ssz | ✅ 支持 | 完全支持分布式执行 |
+| QuaRot | quarot | ✅ 支持 | 完全支持分布式执行 |
+| Online QuaRot | online_quarot | ✅ 支持 | 完全支持分布式执行 |
+| Adapt Rotation | adapt_rotation | ✅ 支持 | 完全支持分布式执行 |
+
+**量化算法**
+
+| 算法名称 | 量化方法 | 支持状态 | 说明 |
+|----------|---------|---------|------|
+| MinMax | minmax | ✅ 支持 | 完全支持分布式执行 |
+| SSZ | ssz | ✅ 支持 | 完全支持分布式执行 |
+| CeilX | ceil_x | ✅ 支持 | 完全支持分布式执行 |
+| FA3 Quant | fa3_quant | ✅ 支持 | 完全支持分布式执行 |
+
 下表汇总当前已支持 EP 的模型。
 
 | 模型适配器 | 具体模型 |

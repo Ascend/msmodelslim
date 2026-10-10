@@ -57,7 +57,7 @@ W8A8 稀疏量化（导出类型 `W8A8S`）仍是对线性层权重与激活做 
 
 ## 3. 关联流程
 
-- 《[一键量化完整指南](../../../user_guide/usage_quick_quantization.md)》：通过 `--quant_type` 或 YAML 配置选择本模式并执行量化。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：通过 `--quant_type` 或 YAML 配置选择本模式并执行量化。
 - 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：本模式导致的精度劣化可通过该流程逐层回退与调优。
 
 ---

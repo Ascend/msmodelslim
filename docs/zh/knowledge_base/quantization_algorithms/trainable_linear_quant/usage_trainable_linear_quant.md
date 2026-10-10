@@ -17,7 +17,7 @@
 
 > **资源提示**：TLQ 含块级训练，量化耗时与显存显著高于 MinMax / Linear Quant 等一次标定算法；正式跑数前请预留充足 NPU 显存与时间预算。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

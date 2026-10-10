@@ -241,9 +241,11 @@ flowchart LR
 | `sync_base_operation` 等 | 跨 rank 统计量归约工具函数 | [dist_ops.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_ops.py) |
 | `support_distributed()` | Processor 分布式支持声明（基类默认 `False`） | [processor/base.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/base.py) |
 | `ascendv1_saver_distributed` | 分布式保存器（由 `ascendv1_saver` 自动转换） | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
-| `--device npu --device_id 0 1 ...` | 多卡量化入口配置 | 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》 |
+| `--device npu --device_id 0 1 ...` | 多卡量化入口配置 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
 
 ## 10. 产品形态与资源限制
 
 - **限制**：当前仅支持单机多卡；由于多卡量化在各卡上的量化调度流程基本与逐层量化逻辑一致，因而显存要求基本与单卡量化一致。
 - **资源**：多卡加速收益受 I/O 读写、算法计算密度、硬件性能与同步频率影响，加速效果不严格随卡数线性增长。
+- **校准集大小**：校准集较小时，通信开销可能超过并行收益，多卡加速效果不明显，需结合实际校准集规模评估并行收益。
+- **算法支持**：仅支持分布式执行的算法才能在多卡环境下正常工作。

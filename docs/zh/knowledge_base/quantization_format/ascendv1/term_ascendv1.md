@@ -60,7 +60,7 @@ AscendV1 本质上是一套**昇腾推理侧的量化模型落盘约定**：它�
 | `quant_model_weights*.safetensors` | **量化权重文件**；不分片为 `quant_model_weights.safetensors`；分片为 `quant_model_weights-00001-of-0000N.safetensors` 等形式，并由 `quant_model_weights.safetensors.index.json` 索引 |
 | `tokenizer_config.json` | 原始分词器的配置文件，包含特殊 token、词表大小等信息 |
 | `tokenizer.json` | 原始分词器的词汇表文件，定义 token 与 ID 的映射关系 |
-| `{model_type}_best_practice.yaml` | **量化配置协议文件**，记录本次量化所使用的完整配置信息，参考《[量化配置协议详解](../../../user_guide/usage_quick_quantization.md#5-量化配置协议详解)》 |
+| `{model_type}_best_practice.yaml` | **量化配置协议文件**，记录本次量化所使用的完整配置信息，参考《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
 | `vocab.json` | 原始词汇映射文件，部分模型（如 GPT 风格模型）会包含此文件 |
 | `optional/quarot.safetensors` | **可选导出**：QuaRot 全局旋转矩阵（仅在使用 QuaRot 且 `export_extra_info: true` 时生成），见下文可选导出 |
 
@@ -551,7 +551,7 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 ## 8. 关联流程
 
 - 《[AscendV1 使用指南](ascendv1_usage.md)》：确认模式支持、配置与执行。
-- 《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》：命令与配置协议。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：命令与配置协议。
 - 《[量化格式接入指南](../iformat_integration_guide.md)》：新格式开发对照。
 
 ---

@@ -73,7 +73,7 @@ Qwen3-VL-MoE 是阿里云 Qwen 团队推出的大规模多模态视觉语言 Mix
 
 ### <span id="qwen3-vl-moe-w8a8-混合量化">Qwen3-VL-235B-A22B W8A8 混合量化</span>
 
-该模型的量化已经集成至《一键量化》文档中的"[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)"章节内容，具体量化命令参考如下：
+该模型的量化已经集成至《一键量化》文档中的"[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)"章节内容，具体量化命令参考如下：
 
 ```shell
 msmodelslim quant \
@@ -87,7 +87,7 @@ msmodelslim quant \
 
 Qwen3-VL-235B-A22B W8A8 MXFP8 混合量化：
 
-该量化已经集成至《一键量化》文档中的"[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)"章节内容，具体量化命令参考如下：
+该量化已经集成至《一键量化》文档中的"[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)"章节内容，具体量化命令参考如下：
 
 ```shell
 msmodelslim quant \
@@ -102,7 +102,7 @@ msmodelslim quant \
 
 ### <span id="qwen3-vl-moe-30b-A3b-w8a8-mxfp8">Qwen3-VL-30B-A3B W8A8 混合量化</span>
 
- 该量化已经集成至《一键量化》文档中的"[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)"章节内容，具体量化命令参考如下：
+ 该量化已经集成至《一键量化》文档中的"[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)"章节内容，具体量化命令参考如下：
 
 ```shell
 msmodelslim quant \
@@ -131,9 +131,9 @@ msmodelslim quant \
 **A**: 有以下几种方式：
 
 1. 使用 `lab_calib/calibImages/` 目录，并统一自定义所有图像的文本prompt：通过yaml配置文件中default_text字段配置文本prompt；
-2. 使用 `lab_calib/calibImages/` 目录，并自定义每个图像的文本prompt：在图像目录添加一个JSON/JSONL文件，具体示例可参考[dataset - 校准数据路径配置](../../../docs/zh/user_guide/usage_quick_quantization.md#dataset---校准数据路径配置)；
+2. 使用 `lab_calib/calibImages/` 目录，并自定义每个图像的文本prompt：在图像目录添加一个JSON/JSONL文件，具体示例可参考[校准数据路径配置（参考）](../../../docs/zh/knowledge_base/ptq/vlm/usage_vision_transformer_quantization.md#dataset---校准数据路径配置)；
 3. 使用自定义图像目录，并统一自定义所有图像的文本prompt：在yaml配置文件中修改 `dataset` 字段为自定义图像目录，并通过yaml配置文件中default_text字段配置文本prompt；
-4. 使用自定义图像目录，并自定义每个图像的文本prompt：在yaml配置文件中修改 `dataset` 字段为自定义图像目录，在图像目录添加一个JSON/JSONL文件，具体示例可参考[dataset - 校准数据路径配置](../../../docs/zh/user_guide/usage_quick_quantization.md#dataset---校准数据路径配置)。
+4. 使用自定义图像目录，并自定义每个图像的文本prompt：在yaml配置文件中修改 `dataset` 字段为自定义图像目录，在图像目录添加一个JSON/JSONL文件，具体示例可参考[校准数据路径配置（参考）](../../../docs/zh/knowledge_base/ptq/vlm/usage_vision_transformer_quantization.md#dataset---校准数据路径配置)。
 
 建议使用与实际应用场景相似的图像作为校准集，数量一般不超过30张。
 
@@ -141,9 +141,9 @@ msmodelslim quant \
 
 ### 相关资源
 
-- [multimodal_vlm_modelslim_v1 配置详解](../../../docs/zh/user_guide/usage_quick_quantization.md#54-multimodal_vlm_modelslim_v1-配置详解)
-- [一键量化配置协议说明](../../../docs/zh/user_guide/usage_quick_quantization.md#5-量化配置协议详解)
-- [逐层量化特性说明](../../../docs/zh/user_guide/usage_quick_quantization.md#41-逐层量化及分布式逐层量化)
+- [qwen3_vl_moe_w8a8.yaml 配置文件](../../../lab_practice/qwen3_vl_moe/qwen3_vl_moe_w8a8.yaml)
+- 《[multimodal_vlm_modelslim_v1 配置说明](../../../docs/zh/api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》
+- 《[多卡量化并行](../../../docs/zh/knowledge_base/parallel/README.md)》
 - [QuaRot 算法说明](../../../docs/zh/knowledge_base/quantization_algorithms/quarot/term_quarot.md)
 - [Iterative Smooth 算法说明](../../../docs/zh/knowledge_base/quantization_algorithms/iterative_smooth/term_iterative_smooth.md)
 - [LinearQuantProcess 线性层量化处理器说明](../../../docs/zh/knowledge_base/quantization_algorithms/linear_quant/term_linear_quant.md)

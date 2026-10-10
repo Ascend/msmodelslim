@@ -1,4 +1,4 @@
-﻿# Wan2.1 量化使用说明
+﻿﻿# Wan2.1 量化使用说明
 
 ## Wan2.1 模型介绍
 
@@ -97,7 +97,7 @@ msmodelslim quant \
 
 ### 一键量化命令参数说明
 
-一键量化参数基本说明可参考：[一键量化参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)。
+一键量化参数基本说明可参考：[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)。
 
 针对Wan2.1模型，有不同的限制：
 
@@ -212,5 +212,5 @@ export ENABLE_ROPE_BF16=1
 ### 相关资源
 
 - [Wan2.1模型仓库](https://modelers.cn/models/MindIE/Wan2.1)
-- [一键量化配置协议说明](../../../docs/zh/user_guide/usage_quick_quantization.md#5-量化配置协议详解)
-- [逐层量化特性说明](../../../docs/zh/user_guide/usage_quick_quantization.md#41-逐层量化及分布式逐层量化)
+- 《[multimodal_sd_modelslim_v1 配置说明](../../../docs/zh/api_reference/config/quant/multimodal_sd_modelslim_v1.md)》
+- 《[多卡量化并行](../../../docs/zh/knowledge_base/parallel/README.md)》

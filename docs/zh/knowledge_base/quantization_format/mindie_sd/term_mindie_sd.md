@@ -97,7 +97,7 @@ MindIE-SD 本质上是一套**面向多模态生成、供 MindIE-SD 推理引擎
 | `fa_quant_type`    | string | Flash Attention 相关量化类型（启用 FA3 等时写入）              |
 | `{张量名}`            | string | 各张量所属量化类型枚举                                      |
 
-完整多模态配置协议见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md#53-multimodal_sd_modelslim_v1-配置详解)》。
+完整多模态配置协议见《[multimodal_sd_modelslim_v1 配置说明](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》。
 
 ### 3.3 <span id="optional-dump">可选导出：校准 dump 数据</span>
 
@@ -108,7 +108,7 @@ calib_data_<task_config>_low_noise_model.pth
 calib_data_<task_config>_high_noise_model.pth
 ```
 
-字段含义见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md#dump_config---校准数据捕获配置)》。该目录属于量化过程辅助数据，**不一定**随 MindIE 部署目录一并交付。
+字段含义见[DumpConfig](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md#2-2-5-dump-config)。该目录属于量化过程辅助数据，**不一定**随 MindIE 部署目录一并交付。
 
 ---
 
@@ -305,7 +305,7 @@ calib_data_<task_config>_high_noise_model.pth
 ## 8. 关联流程
 
 - 《[MindIE-SD 使用指南](mindie_sd_usage.md)》：确认模式支持、配置与执行。
-- 《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》：multimodal_sd 配置详解。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：multimodal_sd 配置详解。
 - 《[多模态生成模型接入](../../ptq/dit/integration_guide_diffusion_transformer_quantization.md)》：模型接入与示例。
 - 《[量化格式接入指南](../iformat_integration_guide.md)》：新格式开发对照。
 

@@ -9,7 +9,7 @@
 - 长序列推理中 KV Cache 显存占用成为瓶颈，需要将 K/V 状态从浮点降为 INT8；
 - 需要按通道统计 K/V 范围并保留 per-channel 量化粒度，以适配部署端的缓存量化算子。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

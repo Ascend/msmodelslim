@@ -38,7 +38,7 @@
 
 - [《多模态理解模型（VLM）量化使用指南》](./usage_vision_transformer_quantization.md)：VLM 量化的完整操作流程。
 - [《VLM 模型接入量化流程指南》](./integration_guide_vision_transformer_quantization.md)：将新视觉语言模型接入量化流程的开发指导。
-- [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)：涵盖各类模型的一键量化流程。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：涵盖各类模型的一键量化流程。
 
 ---
 

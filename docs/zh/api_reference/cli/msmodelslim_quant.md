@@ -4,7 +4,7 @@
 
 `msmodelslim quant` 是一键量化命令，加载原始模型权重并执行权重/激活量化，导出可部署的量化权重与描述文件。配置来源有两种：通过 `--quant_type` 按模型与量化类型自动匹配 `lab_practice` 中的最佳实践 YAML；或通过 `--config` 直接指定用户 YAML（支持 `modelslim_v1`、多模态以及 `modelslim_convert` 纯权重转换等协议）。
 
-命令边界：设备支持 `npu`、`cpu`，多卡通过 `--device_id` 指定索引列表；还支持场景标签匹配与 `--debug` 调试上下文落盘。校准数据准备与部署等操作步骤见《[一键量化完整指南](../../user_guide/usage_quick_quantization.md)》；量化任务 YAML 字段见《[量化任务配置说明导航](../config/quant/README.md)》，自动调优配置见《[自动调优配置说明导航](../config/tuning/README.md)》。更多关联项见[引用的配置](#5-引用的配置)。
+命令边界：设备支持 `npu`、`cpu`，多卡通过 `--device_id` 指定索引列表；还支持场景标签匹配与 `--debug` 调试上下文落盘。校准数据准备与部署等操作步骤见《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》；量化任务 YAML 字段见《[量化任务配置说明导航](../config/quant/README.md)》，自动调优配置见《[自动调优配置说明导航](../config/tuning/README.md)》。更多关联项见[引用的配置](#5-引用的配置)。
 
 ## 2. 命令格式
 
@@ -52,6 +52,17 @@ msmodelslim quant [--model_type <model_type>] --model_path <model_path> --save_p
 - `--tags` 指定多个值时须同时出现在同一已验证场景；未提供硬件类型标签时自动匹配当前设备类型。
 - `--debug` 启用后量化上下文写入 `${SAVE_PATH}/debug_info/`。
 
+**最佳实践匹配搜索优先级**（通过 `--quant_type` 匹配最佳实践 YAML 时的搜索优先级，从高到低）：
+
+1. 模型指定量化方式 + 指定场景标签（`--tags`）的最佳实践策略 YAML。
+2. 模型指定量化方式 + 忽略场景标签的最佳实践策略 YAML，询问用户是否采用。
+3. 模型指定量化方式 + 忽略场景标签的默认实践策略 YAML（默认实践策略不保证精度正常），询问用户是否采用。
+4. 模型推荐量化方式（W8A8）+ 指定场景标签的最佳实践策略 YAML，询问用户是否采用。
+5. 模型推荐量化方式（W8A8）+ 忽略场景标签的最佳实践策略 YAML，询问用户是否采用。
+6. 模型推荐量化方式（W8A8）+ 忽略场景标签的默认实践策略 YAML（默认实践策略不保证精度正常），询问用户是否采用。
+
+> **说明**：最佳实践库中的配置文件位于 [`msmodelslim/lab_practice`](../../../../lab_practice/) 目录。
+
 ## 5. 引用的配置
 
 协议总览见《[量化任务配置说明导航](../config/quant/README.md)》；若配置用于自动调优模板，另见《[自动调优配置说明导航](../config/tuning/README.md)》。
@@ -62,7 +73,7 @@ msmodelslim quant [--model_type <model_type>] --model_path <model_path> --save_p
 | `--config` | `multimodal_vlm_modelslim_v1` | 多模态理解模型量化 YAML | 《[multimodal_vlm_modelslim_v1 配置说明](../config/quant/multimodal_vlm_modelslim_v1.md)》 |
 | `--config` | `multimodal_sd_modelslim_v1` | 多模态生成模型量化 YAML | 《[multimodal_sd_modelslim_v1 配置说明](../config/quant/multimodal_sd_modelslim_v1.md)》 |
 | `--config` | `modelslim_convert` | 权重转换 YAML；不需要 `--model_type` | 《[modelslim_convert 配置说明](../config/quant/modelslim_convert.md)》 |
-| `--quant_type` | `lab_practice` 最佳实践 YAML | 按模型与量化类型匹配 | 《[一键量化完整指南](../../user_guide/usage_quick_quantization.md)》 |
+| `--quant_type` | `lab_practice` 最佳实践 YAML | 按模型与量化类型匹配 | 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》 |
 
 ## 6. 环境变量
 

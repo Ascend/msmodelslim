@@ -6,7 +6,7 @@
 
 **覆盖流程**：模型接入适配 → 量化方案设计 → 权重量化 → 精度评测
 
-**关联流程**：《[多模态生成模型接入指南](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)》、《[一键量化使用说明](../user_guide/usage_quick_quantization.md)》
+**关联流程**：《[多模态生成模型接入指南](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)》、《[一键量化使用指南](../user_guide/usage_one_click_quantization.md)》
 
 ## 2. 模型相关信息
 
@@ -50,7 +50,7 @@
 | --- | -------------------- | ------------------------ | -------------------------- | --------------------------------- |
 | 输入  | Wan2.2浮点模型权重       | `${MODEL_PATH}`         | 官方开源格式，含DiT双专家权重、VAE、文本编码器、tokenizer、config.json | 可通过官方推理仓正常加载，720P视频生成无异常 |
 | 交付件 | Wan2.2 W4A4F4量化权重 | `${SAVE_PATH}` | msModelSlim量化导出格式，含`quant_model_description.json`、双专家量化权重 | 可被MindIE-SD正常加载，成功生成视频 |
-| 交付件 | 量化最佳实践 | [`lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml`](../../../lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml) | 遵循[量化配置协议](../user_guide/usage_quick_quantization.md#5-量化配置协议详解) | 命令行参数 `--config` 指定量化配置文件 |
+| 交付件 | 量化最佳实践 | [`lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml`](../../../lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml) | 遵循《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》 | 命令行参数 `--config` 指定量化配置文件 |
 | 输入  | 精度评测集       | `${EVAL_DATA_PATH}`         | VBench标准评测集 | 对比双方使用完全相同的数据和随机种子       |
 | 交付件 | 精度报告 | `./outputs/default/{timestamp}/` | 生成视频样例（FP vs 量化对比）、VBench等客观指标结果表 | 满足预设验收阈值，无严重画质问题 |
 

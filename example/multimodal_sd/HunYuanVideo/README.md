@@ -574,5 +574,5 @@ quant_model(model, session_cfg)
 
 - [HunyuanVideo 模型仓库（魔乐）](https://modelers.cn/models/MindIE/hunyuan_video)
 - 《[DiT 模型接入量化流程指南（开发者）](../../../docs/zh/knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)》
-- [一键量化配置协议说明](../../../docs/zh/user_guide/usage_quick_quantization.md#5-量化配置协议详解)
-- [逐层量化特性说明](../../../docs/zh/user_guide/usage_quick_quantization.md#41-逐层量化及分布式逐层量化)
+- 《[multimodal_sd_modelslim_v1 配置说明](../../../docs/zh/api_reference/config/quant/multimodal_sd_modelslim_v1.md)》
+- 《[多卡量化并行](../../../docs/zh/knowledge_base/parallel/README.md)》

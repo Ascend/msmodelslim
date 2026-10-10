@@ -152,7 +152,7 @@ anti_outlier_strategies:
 
 量化基础配置模板，定义了量化处理的基础配置，包括量化调度器、处理器、保存器和数据集配置。该配置是开启调优的起点，基础配置的选择一定程度上会影响调优的迭代次数。
 
-**配置协议**: template 字段的配置协议与一键量化配置协议中的 `spec` 字段保持一致，详细配置说明请参考《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md#5-量化配置协议详解)》。
+**配置协议**: template 字段的配置协议与一键量化配置协议中的 `spec` 字段保持一致，详细配置说明请参考《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》。
 
 **核心字段**:
 

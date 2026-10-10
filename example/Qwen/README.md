@@ -113,7 +113,7 @@
 
 ##### <span id="qwen15-110b-w8a16量化">Qwen1.5-110b W8A16量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A16量化权重路径} --device npu --model_type Qwen1.5-110B --quant_type w8a16 --trust_remote_code true
@@ -123,7 +123,7 @@
 
 #### <span id="qwen2-7b-w8a8量化">Qwen2-7b W8A8量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen2-7B --quant_type w8a8 --trust_remote_code true
@@ -131,7 +131,7 @@
 
 ##### <span id="qwen2-7b-稀疏量化">Qwen2-7b 稀疏量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8S量化权重路径} --device npu --model_type Qwen2-7B --quant_type w8a8s --trust_remote_code true
@@ -139,7 +139,7 @@
 
 ##### <span id="qwen2-72b-w8a8量化">Qwen2-72b W8A8量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen2-72B --quant_type w8a8 --trust_remote_code true
@@ -147,7 +147,7 @@
 
 #### <span id="qwen2-72b-w8a16量化">Qwen2-72b W8A16量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A16量化权重路径} --device npu --model_type Qwen2-72B --quant_type w8a16 --trust_remote_code true
@@ -155,7 +155,7 @@
 
 ##### <span id="qwen2-72b-稀疏量化">Qwen2-72b 稀疏量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8S量化权重路径} --device npu --model_type Qwen2-72B --quant_type w8a8s --trust_remote_code true
@@ -163,7 +163,7 @@
 
 ##### <span id="qwen2-72b-kv-cache-w8a8量化">Qwen2-72b KV Cache W8A8量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8C8量化权重路径} --device npu --model_type Qwen2-72B --quant_type w8a8c8 --trust_remote_code true
@@ -231,7 +231,7 @@
 
 #### <span id="qwen3-32b-w8a8量化">Qwen3-32B W8A8量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8 --trust_remote_code true
@@ -239,7 +239,7 @@
 
 #### <span id="qwen3-32b-w8a8c8量化">Qwen3-32B W8A8C8量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8C8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8c8 --trust_remote_code true
@@ -247,7 +247,7 @@
 
 #### <span id="qwen3-32b-vllm-ascend量化">Qwen3-32B w8a8量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)，因推理引擎 MindIE 和 vLLM-Ascend 支持的量化方案不同，请使用``--scenario``标签指定推理引擎。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》，因推理引擎 MindIE 和 vLLM-Ascend 支持的量化方案不同，请使用``--scenario``标签指定推理引擎。
 
   ```shell
  msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8 --scenario {场景标签} --trust_remote_code true
@@ -255,7 +255,7 @@
 
 #### <span id="qwen3-32b-稀疏量化">Qwen3-32B 稀疏量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-32B --quant_type w8a8s --trust_remote_code true
@@ -263,7 +263,7 @@
 
 #### <span id="qwen3-32b-w16a16s-浮点稀疏量化">Qwen3-32B W16A16S 浮点稀疏量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3-32B --quant_type w16a16s --trust_remote_code true
@@ -283,7 +283,7 @@
 
 #### <span id="qwen3-14b-w8a8量化">Qwen3-14B W8A8量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-14B --quant_type w8a8 --trust_remote_code true
@@ -291,7 +291,7 @@
 
 #### <span id="qwen3-14b-稀疏量化">Qwen3-14B 稀疏量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-14B --quant_type w8a8s --trust_remote_code true
@@ -299,7 +299,7 @@
 
 #### <span id="qwen3-8b-稀疏量化">Qwen3-8B 稀疏量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type Qwen3-8B --quant_type w8a8s --trust_remote_code true
@@ -309,7 +309,7 @@
 
 #### <span id="qwq-32b-w8a8量化">QwQ-32b W8A8量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8量化权重路径} --device npu --model_type QwQ-32B --quant_type w8a8 --trust_remote_code true
@@ -317,7 +317,7 @@
 
 ##### <span id="qwq-32b-稀疏量化">QwQ-32b 稀疏量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path {浮点权重路径} --save_path {W8A8s量化权重路径} --device npu --model_type QwQ-32B --quant_type w8a8s --trust_remote_code true

@@ -1,4 +1,4 @@
-﻿# Qwen2.5-VL 量化说明
+﻿﻿# Qwen2.5-VL 量化说明
 
 ## 模型介绍
 
@@ -80,7 +80,7 @@
 
 ### <span id="4-qwen25-vl-32b-instruct-w8a8-静态量化">4 Qwen2.5-VL-32B-Instruct W8A8 静态量化</span>
 
-该模型的量化已经集成至《一键量化》文档中的"[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)"章节内容，具体量化命令参考如下：
+该模型的量化已经集成至《一键量化》文档中的"[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)"章节内容，具体量化命令参考如下：
 
 ```shell
 msmodelslim quant \

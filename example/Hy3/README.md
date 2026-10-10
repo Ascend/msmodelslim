@@ -48,10 +48,10 @@
 
 ## 量化权重生成
 
-- Hy3 模型的 W8A8 量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》，以下提供 Hy3 模型量化权重生成快速启动命令。
+- Hy3 模型的 W8A8 量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》，以下提供 Hy3 模型量化权重生成快速启动命令。
 - 指定 `--quant_type w8a8` 且 `--model_type Hy3` 时，工具将自动匹配 [hy3_w8a8.yaml](../../lab_practice/hy3/hy3_w8a8.yaml) 最佳实践配置。
 
-一键量化命令参考[《一键量化使用指南》](../../docs/zh/user_guide/usage_quick_quantization.md)。
+一键量化命令参考《[一键量化使用指南](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
 ## 使用示例
 

@@ -5,7 +5,7 @@
 - 点击“模型类别”列中的链接，即可跳转到msModelSlim为您推荐的最佳实践页面，里面详细介绍了量化命令和配置说明。
 - √ 表示该量化策略已通过msModelSlim官方验证，功能完整、性能稳定，建议优先采用。
 - \- 表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
-- 标记了“一键量化”的“模型名称-量化模式（w8a8s等）”组合可在[安装](../../install_guide/install_guide.md)后使用如下[一键量化](../../user_guide/usage_quick_quantization.md)命令行执行模型量化。
+- 标记了“一键量化”的“模型名称-量化模式（w8a8s等）”组合可在《[安装](../../install_guide/install_guide.md)》后使用如下《[一键量化](../../user_guide/usage_one_click_quantization.md)》命令行执行模型量化。
 - 因 Qwen 系列推出能力更强的新版本，Qwen1.5-14B/32B/72B 模型已超出维护周期，后续将对该系列老模型实施日落处理，其现网版本量化模式不再提供维护支持。
 - **Qwen3.5 / Qwen3.6** 具备原生多模态（Vision）能力，校准模态说明见《[Qwen3.5 量化说明 - 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md#校准模态支持)》。
 

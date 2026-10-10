@@ -82,7 +82,7 @@ FA 量化的一个"模式"是指 **Q/K/V 三分支量化方式的整体组合**�
 
 ## 3. 关联流程
 
-- 《[一键量化完整指南](../../../user_guide/usage_quick_quantization.md)》：通过 `fa3_quant` 处理器启用本类模式。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：通过 `fa3_quant` 处理器启用本类模式。
 - 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：注意力激活量化精度验证。
 
 ---

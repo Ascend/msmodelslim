@@ -9,7 +9,7 @@
 - 需要为 `linear_quant` 的激活值或权重量化选择一个简单、稳定、可解释的参数估计算法；
 - 需要在常规量化场景下以最少的配置变量建立可比较的量化基线。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

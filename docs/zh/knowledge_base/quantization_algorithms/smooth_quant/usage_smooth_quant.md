@@ -9,7 +9,7 @@
 - 激活分布存在显著离群通道（outliers），导致直接进行 W8A8 量化时精度下降；
 - 模型具有标准的 `Norm-Linear` 结构（如 LayerNorm/RMSNorm 后接 Linear），可通过数学等价变换将激活动态范围迁移到权重。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

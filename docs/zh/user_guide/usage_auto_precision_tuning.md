@@ -108,7 +108,7 @@ msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${
 | save_path         | 调优结果保存路径  | 必选                | 类型：Str                                                                               |
 | config            | 调优配置文件路径  | 必选                | 1. 类型：Str <br>2. 配置文件路径，必须为完整的文件路径 <br>3. 配置文件格式为 YAML，配置协议说明见 《[自动调优配置说明导航](../api_reference/config/tuning/README.md)》，示例配置见各策略目录（如 《[Standing High 示例](../knowledge_base/tuning_strategies/standing_high/standing_high.yaml)》） |
 | device            | 量化设备类型    | 可选                | 1. 类型：Str <br>2. 参考值：'npu','cpu' <br>3. 默认值为"npu"。多卡索引请配合 device_id 指定 |
-| device_id         | 量化设备索引    | 可选                | 1. 类型：int列表，用空格分割，如：0 1 2 3 <br>2. 指定多个设备索引时（如：0 1 2 3），系统可启动分布式逐层量化（DP）。算法支持范围与配置方式详见《[一键量化使用说明](usage_quick_quantization.md#41-逐层量化及分布式逐层量化)》 |
+| device_id         | 量化设备索引    | 可选                | 1. 类型：int列表，用空格分割，如：0 1 2 3 <br>2. 指定多个设备索引时（如：0 1 2 3），系统可启动分布式逐层量化（DP）。算法支持范围与配置方式详见《[多卡量化并行](../knowledge_base/parallel/README.md)》 |
 | model_type        | 模型名称      | 可选                | 1. 类型：Str <br>2. 默认值为"default" <br>3. 大小写敏感，请参考《[大模型支持矩阵](../knowledge_base/model/README.md)》 |
 | timeout           | 调优超时时间    | 可选                | 1. 类型：Int（秒） <br>2. 示例：'7200'（2小时）、'3600'（1小时） <br>3. 兼容遗留时长字符串：'1D'、'2H'、'3D4H' <br>4. 默认值：None（无超时限制） |
 | trust_remote_code | 是否信任自定义代码 | 可选                | 1. 类型：Bool，默认值：false <br>2. 请确保加载的自定义代码文件的安全性，设置为 true 有安全风险。                          |

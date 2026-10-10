@@ -33,7 +33,7 @@
 
 ## 校准数据说明
 
-校准数据支持的方式，详见《[dataset 配置说明](../../../docs/zh/user_guide/usage_quick_quantization.md#526-dataset---校准数据集配置)》。
+校准数据支持的方式，详见[校准数据路径配置（参考）](../../../docs/zh/knowledge_base/ptq/vlm/usage_vision_transformer_quantization.md#dataset---校准数据路径配置)。
 
 - **当前 W8A8 动态 / MXFP8·MXFP4 实践**：data-free，可不依赖校准前向。
 - **混合/静态激活量化**：每条样本需同时提供 `image` 与 `text`；缺项样本暂不支持。
@@ -42,7 +42,7 @@
 
 ### <span id="gemma-4-26b-a4b-it-w8a8-动态量化">gemma-4-26B-A4B-it W8A8 动态量化</span>
 
-该模型的量化已集成至一键量化，示例参数详见文档《一键量化完整指南》中的“[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)”章节。实践配置见《[gemma4_moe_w8a8.yaml](../../../lab_practice/gemma4_moe/gemma4_moe_w8a8.yaml)》。
+该模型的量化已集成至一键量化，示例参数详见文档《一键量化使用指南》中的“[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)”章节。实践配置见《[gemma4_moe_w8a8.yaml](../../../lab_practice/gemma4_moe/gemma4_moe_w8a8.yaml)》。
 
 ```shell
 msmodelslim quant \
@@ -76,7 +76,6 @@ msmodelslim quant \
 
 ### 相关资源
 
-- 《[一键量化配置协议说明](../../../docs/zh/user_guide/usage_quick_quantization.md#5-量化配置协议详解)》。
-- 《[multimodal_vlm_modelslim_v1 量化服务配置详解](../../../docs/zh/user_guide/usage_quick_quantization.md#54-multimodal_vlm_modelslim_v1-配置详解)》。
+- 《[multimodal_vlm_modelslim_v1 配置说明](../../../docs/zh/api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》。
 - 《[实践配置 gemma4_moe_w8a8.yaml](../../../lab_practice/gemma4_moe/gemma4_moe_w8a8.yaml)》。
 - 《[实践配置 gemma4_moe_mxfp8_mxfp4.yaml](../../../lab_practice/gemma4_moe/gemma4_moe_mxfp8_mxfp4.yaml)》。

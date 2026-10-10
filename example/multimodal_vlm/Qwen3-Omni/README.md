@@ -9,7 +9,7 @@ Qwen3-Omni 是阿里云 Qwen 团队推出的多模态 Omni 模型，支持语音
 
 ## 校准模态支持
 
-量化校准集（推荐 `index.jsonl`，见[一键量化 dataset 配置](../../../docs/zh/user_guide/usage_quick_quantization.md#dataset---校准数据路径配置)）中，**每条样本必须包含非空 `text`**；`image` / `audio` / `video` 为可选路径字段。
+量化校准集（推荐 `index.jsonl`，见[校准数据路径配置（参考）](../../../docs/zh/knowledge_base/ptq/vlm/usage_vision_transformer_quantization.md#dataset---校准数据路径配置)）中，**每条样本必须包含非空 `text`**；`image` / `audio` / `video` 为可选路径字段。
 
 ### 已支持的模态组合
 
@@ -42,7 +42,7 @@ Qwen3-Omni 是阿里云 Qwen 团队推出的多模态 Omni 模型，支持语音
 
 ## 校准数据说明
 
-校准数据支持的方式，详见 [dataset 配置说明](../../../docs/zh/user_guide/usage_quick_quantization.md#dataset---校准数据路径配置)：
+校准数据支持的方式，详见 [校准数据路径配置（参考）](../../../docs/zh/knowledge_base/ptq/vlm/usage_vision_transformer_quantization.md#dataset---校准数据路径配置)：
 
 对 Qwen3-Omni，推荐使用 index.json 或 index.jsonl（文件路径或仅含一个 index.json 或 index.jsonl 的目录），支持多模态字段。校准时每条样本提供非空 `text` 及与推理场景一致的多模态组合（`image`、`audio`、`video`），`text` 缺省时使用配置中的 `default_text`。同一任务内所有样本的模态组合需保持一致（同质约束），否则会报 `InvalidDatasetError`，详见上文「校准模态支持」。
 
@@ -90,7 +90,7 @@ Qwen3-Omni 是阿里云 Qwen 团队推出的多模态 Omni 模型，支持语音
 
 ### <span id="qwen3-omni-w8a8">Qwen3-Omni-30B-A3B-Thinking / Qwen3-Omni-30B-A3B-Instruct W8A8 量化</span>
 
-该系列模型的量化已集成至[一键量化](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)。将 `--model_type` 设为对应模型名称、`--quant_type` 设为 `w8a8` 即可。
+该系列模型的量化已集成至[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)。将 `--model_type` 设为对应模型名称、`--quant_type` 设为 `w8a8` 即可。
 
 **Qwen3-Omni-30B-A3B-Thinking：**
 
@@ -120,5 +120,4 @@ msmodelslim quant \
 
 ### 相关资源
 
-- [一键量化配置协议说明](../../../docs/zh/user_guide/usage_quick_quantization.md#5-量化配置协议详解)
-- [multimodal_vlm_modelslim_v1 量化服务配置详解](../../../docs/zh/user_guide/usage_quick_quantization.md#54-multimodal_vlm_modelslim_v1-配置详解)
+- 《[multimodal_vlm_modelslim_v1 配置说明](../../../docs/zh/api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》
