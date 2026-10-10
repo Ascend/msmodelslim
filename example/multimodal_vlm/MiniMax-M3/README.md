@@ -38,7 +38,7 @@ msModelSlim 已适配 MiniMax-M3 的 W8A8 一键量化实践，量化结果可�
 
 #### <span id="minimax-m3-w8a8量化">MiniMax-M3 W8A8量化</span>
 
-MiniMax-M3 的量化已集成至[一键量化](../../../docs/zh/user_guide/usage_quick_quantization.md)。使用 `model_type=MiniMax-M3`、`quant_type=w8a8` 即可。若需使用自定义配置，可通过 `--config` 指定 [minimax_m3_w8a8.yaml](../../../lab_practice/minimax_m3/minimax_m3_w8a8.yaml)。
+MiniMax-M3 的量化已集成至《[一键量化](../../../docs/zh/user_guide/usage_one_click_quantization.md)》。使用 `model_type=MiniMax-M3`、`quant_type=w8a8` 即可。若需使用自定义配置，可通过 `--config` 指定 [minimax_m3_w8a8.yaml](../../../lab_practice/minimax_m3/minimax_m3_w8a8.yaml)。
 
 ```shell
 msmodelslim quant \

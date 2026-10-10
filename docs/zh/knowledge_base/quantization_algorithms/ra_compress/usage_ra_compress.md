@@ -14,7 +14,7 @@
 - **多模态理解模型（VLM）** 与 **多模态生成模型**（文生图 / 文生视频等）：`ra_compress` / `analyze attn_head` 当前仅支持大语言模型（LLM）；
 - 目标 `model_type` 的适配器既未实现 `RaCompressAnalysisInterface`，Q/K 投影层命名也不符合默认模式（`q_proj` / `k_proj` / `qkv_proj`）。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

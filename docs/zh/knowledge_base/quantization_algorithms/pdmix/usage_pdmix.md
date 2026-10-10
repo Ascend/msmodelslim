@@ -9,7 +9,7 @@
 - Prefill 精度与 Decode 性能需要兼顾，希望 Prefill 使用 per-token 动态量化、Decode 使用 per-tensor 静态量化；
 - 目标部署链支持 PDMIX 的阶段间混合激活量化组合，需要建立 W8A8C8 类量化基线。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

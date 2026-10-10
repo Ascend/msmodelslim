@@ -14,7 +14,7 @@
 - 目标模型结构无法提供可融合子图且默认 hook 探测也不适用；
 - 当前只需一次标定量化、无需离群抑制。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

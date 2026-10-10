@@ -99,7 +99,7 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 
 ## 3. 关联流程
 
-- 《[一键量化完整指南](../../user_guide/usage_quick_quantization.md)》：通过 `--quant_type` 或 YAML 配置选择并执行量化模式。
+- 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：通过 `--quant_type` 或 YAML 配置选择并执行量化模式。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：量化模式导致的精度劣化可通过该流程逐层回退与调优。
 
 ---

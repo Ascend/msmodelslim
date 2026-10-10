@@ -9,7 +9,7 @@
 - KV Cache 量化后精度下降，Key 通道存在显著离群值，动态范围过大；
 - 需要将 Key 的动态范围压力重新分配到 Query 侧，使 KV Cache 更容易被低比特表示。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

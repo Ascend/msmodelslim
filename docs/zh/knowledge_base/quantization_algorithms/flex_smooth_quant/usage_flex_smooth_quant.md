@@ -9,7 +9,7 @@
 - 激活分布存在显著离群通道，直接进行低比特量化时精度下降，且难以手工确定平滑强度；
 - 模型具有 `norm-linear`、`linear-linear`、`ov`、`up-down` 等平滑结构，希望通过自动搜索获得最优 `alpha`/`beta` 组合。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

@@ -9,7 +9,7 @@
 - Attention 结构参与权重量化前，需要定位输出漂移更大的 Attention 模块，形成回退或重点保护候选集合；
 - 需要以 Attention 子系统实际输出误差复核权重类指标（如 `std`）的敏感度结论。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

@@ -1,6 +1,6 @@
 # 量化任务配置说明导航
 
-本目录是 msModelSlim 量化任务配置（YAML）的字段级参考文档，按先选 `apiversion`、再展开 `spec`的方式组织。使用流程与端到端操作步骤见《[一键量化完整指南](../../../user_guide/usage_quick_quantization.md)》；处理器与保存格式总表见《[配置说明导航](../README.md)》；自动调优见《[自动调优配置说明导航](../tuning/README.md)》。
+本目录是 msModelSlim 量化任务配置（YAML）的字段级参考文档，按先选 `apiversion`、再展开 `spec`的方式组织。使用流程与端到端操作步骤见《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》；处理器与保存格式总表见《[配置说明导航](../README.md)》；自动调优见《[自动调优配置说明导航](../tuning/README.md)》。
 
 ## 1. 怎么用这套文档
 

@@ -228,7 +228,7 @@ save_directory/
 
 - 《[compressed-tensors 使用指南](compressed_tensors_usage.md)》：确认模式支持、配置与执行。
 - 《[量化格式接入指南](../iformat_integration_guide.md)》：IFormat 1-shot 参考。
-- 《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》：save 配置总览。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：save 配置总览。
 
 ---
 

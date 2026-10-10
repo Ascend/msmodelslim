@@ -6,7 +6,7 @@
 
 **覆盖流程**：模型适配 → 量化方案设计 → 权重量化 → 精度测评。
 
-**关联流程**：《[多模态理解模型接入指南](../knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md)》、《[一键量化使用说明](../user_guide/usage_quick_quantization.md)》
+**关联流程**：《[多模态理解模型接入指南](../knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md)》、《[一键量化使用指南](../user_guide/usage_one_click_quantization.md)》
 
 ## 2. 环境与版本
 
@@ -34,7 +34,7 @@
 | --- | --- | --- | --- | --- |
 | 输入 | 浮点权重 | [Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3) | 权重文件完整 | 下载完成且哈希值匹配 |
 | 交付件 | 模型适配器代码 | [`msmodelslim/model/kimi_k3/`](../../../msmodelslim/model/kimi_k3/) | 适配器需实现量化流水线所需接口 | 命令行指定 `--model_type Kimi-K3` 可命中适配器 |
-| 交付件 | 量化最佳实践 | [`lab_practice/kimi_k3/kimi_k3_w4a8.yaml`](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | 遵循[量化配置协议](../user_guide/usage_quick_quantization.md#5-量化配置协议详解) | 命令行参数 `--config` 指定量化配置文件 |
+| 交付件 | 量化最佳实践 | [`lab_practice/kimi_k3/kimi_k3_w4a8.yaml`](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | 遵循《[modelslim_v1 配置说明](../api_reference/config/quant/modelslim_v1.md)》 | 命令行参数 `--config` 指定量化配置文件 |
 | 交付件 | 量化权重目录 | 命令行参数 `--save_path` 指定保存位置 | 遵循[AscendV1 格式](../knowledge_base/quantization_format/ascendv1/ascendv1_usage.md) | 量化权重精度测试达标 |
 
 ## 4. 操作步骤
@@ -201,7 +201,7 @@
 | 步骤 | 关键操作 | 指标 | 变化 | 备注 |
 | --- | --- | --- | --- | --- |
 | 步骤 1 | 开发并注册模型适配器 | `--model_type Kimi-K3` 可命中适配器 | 新增模型适配器 | 开发完成后需重新安装以使代码生效 |
-| 步骤 2 | 设计混合量化方案 | [kimi_k3_w4a8.yaml](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | 新增量化实践配置 | 量化实践配置遵循[量化配置协议](../user_guide/usage_quick_quantization.md#5-量化配置协议详解) |
+| 步骤 2 | 设计混合量化方案 | [kimi_k3_w4a8.yaml](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | 新增量化实践配置 | 量化实践配置遵循《[modelslim_v1 配置说明](../api_reference/config/quant/modelslim_v1.md)》 |
 | 步骤 3 | 执行量化命令 | W4A8 量化权重 | 导出量化权重 | 导出件遵循[AscendV1 格式](../knowledge_base/quantization_format/ascendv1/ascendv1_usage.md) |
 | 步骤 4 | vLLM Ascend 部署 + AISBench 精度测评 | [GPQA](https://github.com/AISBench/benchmark/blob/master/ais_bench/benchmark/configs/datasets/gpqa/README.md) / [OCRBench](https://github.com/AISBench/benchmark/blob/master/ais_bench/benchmark/configs/datasets/ocrbench_v2/README.md) | 完成精度验证 | 精度达标 |
 

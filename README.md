@@ -108,7 +108,7 @@ msmodelslim --help
 |---------|--------------|
 | 《[新模型量化调优流程](./docs/zh/user_guide/process_new_model_quantization_tuning.md)》 | [权重量化](./docs/zh/user_guide/usage_weight_quantization.md)、[敏感层分析](./docs/zh/user_guide/usage_sensitive_linear_analysis.md) |
 | 《[精度调优方法](./docs/zh/user_guide/process_quantization_precision_tuning.md)》 | [敏感层分析](./docs/zh/user_guide/usage_sensitive_linear_analysis.md)、[自动调优](./docs/zh/user_guide/usage_auto_precision_tuning.md)、[调试模式](./docs/zh/user_guide/usage_debug_mode.md) |
-| 《[主流模型量化部署](./docs/zh/user_guide/process_mainstream_model_deployment.md)》 | [一键量化](./docs/zh/user_guide/usage_quick_quantization.md) |
+| 《[主流模型量化部署](./docs/zh/user_guide/process_mainstream_model_deployment.md)》 | 《[一键量化](./docs/zh/user_guide/usage_one_click_quantization.md)》 |
 | 《[量化推理精度异常定位](./docs/zh/user_guide/process_quantization_accuracy_anomaly_locating.md)》 | [调试模式](./docs/zh/user_guide/usage_debug_mode.md) |
 
 > 更多使用指南，请参见《[使用指南](./docs/zh/user_guide/README.md)》。

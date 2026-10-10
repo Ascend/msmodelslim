@@ -1,6 +1,6 @@
 # AscendV1 使用指南
 
-本指南说明如何在 msModelSlim 中选用 **AscendV1** 量化格式，按 **确认模式支持 →（可选）适配器适配 save → 配置 → 执行** 完成落盘，并将产物部署到 vLLM Ascend、SGLang、MindIE。格式字段与枚举见《[AscendV1](term_ascendv1.md)》；一键量化命令总览见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》。
+本指南说明如何在 msModelSlim 中选用 **AscendV1** 量化格式，按 **确认模式支持 →（可选）适配器适配 save → 配置 → 执行** 完成落盘，并将产物部署到 vLLM Ascend、SGLang、MindIE。格式字段与枚举见《[AscendV1](term_ascendv1.md)》；一键量化命令总览见《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 1. 适用范围
 
@@ -10,7 +10,7 @@
 
 ## 2. 流程关系与前置条件
 
-**上级流程**：《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》
+**上级流程**：《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》
 
 **前置条件**：
 
@@ -93,7 +93,7 @@ spec:
 | `part_file_size` | int | `4` | 权重分片大小（GB）；`0` 表示不分片 |
 | `ext` | object | `{}` | 可选扩展配置；当前 `AscendV1Saver` 不读取此字段，常规导出可省略 |
 
-也可直接使用官方 `quant_type` 最佳实践（多数 LLM 最佳实践默认已含 `ascendv1_saver`）。完整协议见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md#5251-ascendv1_saver)》中 `ascendv1_saver` 字段说明。
+也可直接使用官方 `quant_type` 最佳实践（多数 LLM 最佳实践默认已含 `ascendv1_saver`）。完整协议见《[ascendv1_saver 配置说明](../../../api_reference/config/format/ascendv1_saver.md)》中 `ascendv1_saver` 字段说明。
 
 **输出**：可用的 YAML 配置文件路径，或确认采用官方 `quant_type` 一键路径。
 
@@ -130,7 +130,7 @@ spec:
          part_file_size: 4
    ```
 
-2. 按《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》执行量化：
+2. 按《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》执行量化：
 
    ```bash
    msmodelslim quant \
@@ -145,7 +145,7 @@ spec:
 3. 核对 `${SAVE_PATH}` 中至少存在：
    - `quant_model_description.json`（含 `model_quant_type` 与各张量类型）
    - `quant_model_weights.safetensors` 或分片权重 + index
-   - 自源模型复制的 `config.json` / tokenizer 等辅助文件  
+   - 自源模型复制的 `config.json` / tokenizer 等辅助文件
    目录树与字段细则见《[AscendV1](term_ascendv1.md#export-artifacts)》导出产物及各量化模式交付件格式。
 4. 使用目标推理框架加载该目录，完成至少 1 条 generate 或 API 请求，确认量化权重可正常加载且推理返回正常。该步骤为部署前的快速验证，不要求完整精度评测。
 

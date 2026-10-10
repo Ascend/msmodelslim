@@ -10,7 +10,7 @@
 - 对 MoE 架构多模态模型执行混合量化（Dense 层静态量化 + Expert 层动态量化）；
 - 为多模态在线推理服务（如基于昇腾 NPU 的 MindIE 或 vLLM-Ascend）准备部署权重。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 
@@ -85,6 +85,84 @@ flowchart LR
    - **校准样本量**：**推荐 50 条**（50 张图像及其配对 Prompt）。多模态前向中视觉编码器计算开销相对纯文本较大，50 条样本能够在充分覆盖特征分布的同时避免显著延长校准耗时。
 
 **输出**：在 YAML 中确认的 `dataset` 与 `default_text` 配置。
+
+#### <span id="dataset---校准数据路径配置">校准数据路径配置（参考）</span>
+
+`dataset` 可配置为**短名称**（在 lab_calib 等 dataset_dir 下查找）、**绝对路径**或**相对路径**，支持以下三种使用方式。
+
+**方式一：index.json / index.jsonl（推荐）**
+
+指向 **index.json** 或 **index.jsonl** 文件，或指向**仅包含一个 index.json 或 index.jsonl** 的目录。支持多模态（图像、音频、视频），格式规范，后续功能会在此方式上演进。
+
+- 每条为 JSON 对象，**至少包含 `text`**（非空字符串）；缺省时使用配置中的 `default_text`。
+- 可选字段（若提供则路径必须存在）：`image`（.jpg/.jpeg/.png）、`audio`（.wav/.mp3）、`video`（.mp4）；路径相对 index 文件所在目录。
+
+目录示例：
+
+```text
+calib_dir/
+├── index.jsonl
+├── img1.jpg
+├── img2.png
+└── a.wav
+```
+
+index.jsonl 示例：
+
+```json
+{"image": "img1.jpg", "text": "Describe this image."}
+{"image": "img2.jpg", "audio": "a.wav", "text": "What is in this picture?"}
+```
+
+配置示例：`dataset: "/path/to/calib_dir"` 或 `dataset: "/path/to/index.jsonl"` 或短名称解析到上述路径。
+
+**方式二：纯图像目录**
+
+目录内仅包含图像文件，无 .json/.jsonl。所有图像使用配置中的 `default_text` 作为统一文本 prompt。
+
+**说明**：此方式后续不再演进，新场景请使用方式一。
+
+目录示例：
+
+```text
+calibImages/
+├── img1.jpg
+├── img2.png
+└── img3.jpeg
+```
+
+配置示例：
+
+```yaml
+spec:
+  dataset: "calibImages"   # 或绝对/相对路径
+  default_text: "Describe this image in detail."
+```
+
+**方式三：图像目录 + 单个 .json/.jsonl（任意文件名）**
+
+目录内包含图像及**一个**任意文件名的 .json 或 .jsonl 文件（文件名不为 index.json/index.jsonl），用于为每张图指定自定义文本。仅支持图像字段，不支持 audio/video。
+
+**说明**：此方式后续不再演进，新场景请使用方式一。
+
+目录示例：
+
+```text
+calibImages/
+├── img1.jpg
+├── img2.png
+├── img3.jpeg
+└── calib_data.jsonl
+```
+
+calib_data.jsonl 示例：
+
+```json
+{"image": "img1.jpg", "text": "What objects are in this image?"}
+{"image": "img2.png", "text": "Describe the scene."}
+```
+
+配置示例：`dataset: "calibImages"` 或对应路径。
 
 ### 步骤 3：选择权重保存格式
 
@@ -225,5 +303,5 @@ msmodelslim quant \
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `msmodelslim quant` | 一键量化 CLI 入口与完整命令说明 | [《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md) |
+| `msmodelslim quant` | 一键量化 CLI 入口与完整命令说明 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
 | multimodal_vlm_modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset`/`default_text` 等任务级配置的字段说明 | [《multimodal_vlm_modelslim_v1 配置说明》](../../../api_reference/config/quant/multimodal_vlm_modelslim_v1.md) |

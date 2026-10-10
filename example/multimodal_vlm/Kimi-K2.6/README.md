@@ -1,4 +1,4 @@
-﻿# Kimi K2.6 量化案例
+# Kimi K2.6 量化案例
 
 ## 模型介绍
 
@@ -35,7 +35,7 @@ Kimi K2.6 是月之暗面（Moonshot AI）研发的原生多模态模型，推�
 
 ### <span id="Kimi-K2.6-w4a8">Kimi-K2.6 W4A8 量化</span>
 
-该模型的量化已集成至一键量化，示例参数详见文档《一键量化完整指南》中的“[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)”章节。
+该模型的量化已集成至一键量化，示例参数详见文档《一键量化使用指南》中的“[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)”章节。
 
 ```shell
 msmodelslim quant \
@@ -49,7 +49,7 @@ msmodelslim quant \
 
 ### <span id="Kimi-K2.6-w4a4c8">Kimi-K2.6 W4A4C8 量化</span>
 
-该模型的量化已集成至一键量化，示例参数详见文档《一键量化完整指南》中的“[参数说明](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)”章节。
+该模型的量化已集成至一键量化，示例参数详见文档《一键量化使用指南》中的“[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)”章节。
 
 > [!note]
 >

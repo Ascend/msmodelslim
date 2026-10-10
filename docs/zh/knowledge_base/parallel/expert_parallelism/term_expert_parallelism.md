@@ -22,56 +22,54 @@
 
 ---
 
-## 2. 背景与动机
+## 2. 词条介绍
+
+### 2.1 背景与动机
 
 MoE 模型通过稀疏激活多个专家，在不显著增加计算量的前提下大幅扩展模型参数规模以增强模型表达能力。若仍按纯 DP 的并行方式在每张卡复制全部专家，则显存容量受到极大挑战。为应对这一问题，EP 对专家进行切分，每个 rank 上仅持有部分专家权重。
 
----
-
 <a id="principle"></a>
 
-## 3. 原理
+### 2.2 原理
 
 <a id="1-core-idea"></a>
 
-### 3.1 核心思想
+#### 2.2.1 核心思想
 
 - **专家分片**：路由专家集合按 rank 进行切分子集，各 rank 仅加载专家子集。
 - **同步边界**：量化所需的统计量 / 参数的集合通信应以共享模块为边界，对仅有局部 rank 持有的路由专家应避免盲目执行集合通信。
 
----
-
 <a id="scenarios-and-limitations"></a>
 
-## 4. 适用场景与限制
+### 2.3 适用场景与限制
 
-### 4.1 适用场景
+#### 2.3.1 适用场景
 
 - MoE 模型的多卡量化。
 
-### 4.2 使用限制
+#### 2.3.2 使用限制
 
 - 仅适用于 MoE 结构的模型。
 - 使用的卡数（除数）须能整除专家数（被除数）。
 
 ---
 
-## 5. 关联流程
+## 3. 关联流程
 
 - 《[专家并行使用指南](expert_parallelism_guide.md)》：阐述 EP 下共享 / 局部模块划分及 DistHelper 使用约束。
-- 《[一键量化使用说明](../../../user_guide/usage_quick_quantization.md)》：多卡量化入口。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：多卡量化入口。
 
 ---
 
 <a id="related-terms"></a>
 
-## 6. 关联词条
+## 4. 关联词条
 
 - [数据并行](../data_parallelism/term_data_parallelism.md)：前置术语，提供校准数据分片与共享模块统计归约的基线范式。
 - [分布式任务调度器](../distributed_task_scheduler/term_distributed_task_scheduler.md)：配套术语，提交并行任务时须避开含 local_only 依赖的不安全并行。
 
 ---
 
-## 7. 参考资料
+## 5. 参考资料
 
 1. 《[专家并行使用指南](expert_parallelism_guide.md)》

@@ -1,6 +1,6 @@
 # MindIE-SD 使用指南
 
-本指南说明如何在 msModelSlim 中选用 **MindIE-SD** 量化格式，按 **确认模式支持 → 配置 save → 执行量化并核对产物** 完成落盘，并将产物部署到 MindIE 多模态生成路径。格式字段与枚举见《[MindIE-SD](term_mindie_sd.md)》；模型适配与 `--config` 执行量化见《[权重量化使用指南](../../../user_guide/usage_weight_quantization.md)》；配置协议与最佳实践入口见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》。
+本指南说明如何在 msModelSlim 中选用 **MindIE-SD** 量化格式，按 **确认模式支持 → 配置 save → 执行量化并核对产物** 完成落盘，并将产物部署到 MindIE 多模态生成路径。格式字段与枚举见《[MindIE-SD](term_mindie_sd.md)》；模型适配与 `--config` 执行量化见《[权重量化使用指南](../../../user_guide/usage_weight_quantization.md)》；配置协议与最佳实践入口见《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 1. 适用范围
 
@@ -10,7 +10,7 @@
 
 ## 2. 流程关系与前置条件
 
-**上级流程**：《[权重量化使用指南](../../../user_guide/usage_weight_quantization.md)》；模型侧接入细节见《[多模态生成模型接入指南](../../ptq/dit/integration_guide_diffusion_transformer_quantization.md)》；配置协议与最佳实践入口见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》。
+**上级流程**：《[权重量化使用指南](../../../user_guide/usage_weight_quantization.md)》；模型侧接入细节见《[多模态生成模型接入指南](../../ptq/dit/integration_guide_diffusion_transformer_quantization.md)》；配置协议与最佳实践入口见《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 **前置条件**：
 
@@ -70,7 +70,7 @@ spec:
 | `part_file_size` | int | `4`（代码默认；多模态示例常写 `0`） | 权重分片大小（GB）；`0` 表示不分片 |
 | `ext` | object | `{}` | 可选扩展配置；常规导出可省略 |
 
-也可直接使用官方 `quant_type` 最佳实践（多模态最佳实践通常已含 `mindie_format_saver`）。完整协议见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md#5341-mindie_format_saver)》及《[multimodal_sd_modelslim_v1 配置详解](../../../user_guide/usage_quick_quantization.md#53-multimodal_sd_modelslim_v1-配置详解)》。
+也可直接使用官方 `quant_type` 最佳实践（多模态最佳实践通常已含 `mindie_format_saver`）。完整协议见《[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)》及《[multimodal_sd_modelslim_v1 配置说明](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》。
 
 **输出**：可用 YAML 配置路径，或确认采用官方 `quant_type` 一键路径。
 

@@ -42,7 +42,7 @@ KVCache 量化是对注意力机制中的 **KVCache（缓存的 Key/Value 张量
 
 ## 3. 关联流程
 
-- 《[一键量化完整指南](../../../user_guide/usage_quick_quantization.md)》：通过 `dynamic_cache` 处理器启用本类模式。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：通过 `dynamic_cache` 处理器启用本类模式。
 - 《[量化精度调优指南](../../../user_guide/process_quantization_precision_tuning.md)》：长序列精度验证与 KV 回退。
 
 ---

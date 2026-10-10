@@ -117,7 +117,7 @@ spec:
 
 - 《[权重转换使用指南](./usage_weight_conversion.md)》：权重转换完整的操作流程、命令说明与详细配置协议。
 - 《[msmodelslim quant 命令行](../../../api_reference/cli/msmodelslim_quant.md)》：含可复制的权重转换命令。
-- 《[一键量化完整指南](../../../user_guide/usage_one_click_quantization.md)》：常规一键量化（含校准）的完整流程。
+- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：常规一键量化（含校准）的完整流程。
 
 ## 7. 关联词条
 
@@ -129,5 +129,5 @@ spec:
 ## 8. 参考文档
 
 1. 《[权重转换使用指南](./usage_weight_conversion.md)》：msModelSlim 权重转换详细文档。
-2. 《[msModelSlim 一键量化完整指南](../../../user_guide/usage_one_click_quantization.md)》：一键量化总体流程。
+2. 《[msModelSlim 一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：一键量化总体流程。
 3. 《[格式支持矩阵](../../quantization_format/README.md)》：量化格式与存储格式说明。

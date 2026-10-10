@@ -1,6 +1,6 @@
 # compressed-tensors 使用指南
 
-本指南说明如何在 msModelSlim 中选用 **compressed-tensors** 量化格式，按 **确认模式支持 → 配置 save → 执行量化并核对产物** 完成落盘，并将产物部署到 vLLM 等支持 HuggingFace `quantization_config` 的推理框架。格式字段与 Preset 见《[compressed-tensors](term_compressed_tensors.md)》；一键量化命令总览见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》。
+本指南说明如何在 msModelSlim 中选用 **compressed-tensors** 量化格式，按 **确认模式支持 → 配置 save → 执行量化并核对产物** 完成落盘，并将产物部署到 vLLM 等支持 HuggingFace `quantization_config` 的推理框架。格式字段与 Preset 见《[compressed-tensors](term_compressed_tensors.md)》；一键量化命令总览见《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 1. 适用范围
 
@@ -10,7 +10,7 @@
 
 ## 2. 流程关系与前置条件
 
-**上级流程**：《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》
+**上级流程**：《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》
 
 **前置条件**：
 
@@ -69,7 +69,7 @@ spec:
 | `type` | string | `"compressed_tensors"` | 保存器类型标识，固定值 |
 | `part_file_size` | int | `4` | 权重分片大小（GB）；`>0` 时分片，`0` 表示不分片 |
 
-量化过程**无需**安装 `compressed-tensors` Python 包；导出时由 msModelSlim 内置 schema 写入元数据。完整协议见《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md#5252-compressed_tensors)》中 `compressed_tensors` 字段说明。
+量化过程**无需**安装 `compressed-tensors` Python 包；导出时由 msModelSlim 内置 schema 写入元数据。完整协议见《[compressed_tensors 配置说明](../../../api_reference/config/format/compressed_tensors.md)》中 `compressed_tensors` 字段说明。
 
 **输出**：可用的 YAML 配置文件路径。
 
@@ -105,7 +105,7 @@ spec:
          part_file_size: 4
    ```
 
-2. 按《[一键量化使用指南](../../../user_guide/usage_quick_quantization.md)》执行量化：
+2. 按《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》执行量化：
 
    ```bash
    msmodelslim quant \
@@ -120,7 +120,7 @@ spec:
 3. 核对 `${SAVE_PATH}` 中至少存在：
    - `config.json` 含 `quantization_config`，且 `quant_method` 为 `"compressed-tensors"`
    - `model.safetensors` 或分片权重 + `model.safetensors.index.json`
-   - 自源模型复制的 HF 辅助文件齐全  
+   - 自源模型复制的 HF 辅助文件齐全
    目录树与字段细则见《[compressed-tensors](term_compressed_tensors.md#export-artifacts)》导出产物及各量化模式交付件格式。
 4. 使用目标推理框架加载该目录，完成至少 1 条 generate 或 API 请求，确认量化权重可正常加载且推理返回正常。该步骤为部署前的快速验证，不要求完整精度评测。
 

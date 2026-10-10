@@ -1,6 +1,6 @@
 # 配置说明导航
 
-本目录是 msModelSlim 配置（YAML）的字段级参考文档，按先选协议、再查 `type`的方式组织。使用流程与端到端操作步骤见《[一键量化完整指南](../../user_guide/usage_quick_quantization.md)》；任务协议总览见《[量化任务配置说明导航](quant/README.md)》；自动调优的协议总览见《[自动调优配置说明导航](tuning/README.md)》。
+本目录是 msModelSlim 配置（YAML）的字段级参考文档，按先选协议、再查 `type`的方式组织。使用流程与端到端操作步骤见《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》；任务协议总览见《[量化任务配置说明导航](quant/README.md)》；自动调优的协议总览见《[自动调优配置说明导航](tuning/README.md)》。
 
 ## 1. 怎么用这套文档
 

@@ -9,7 +9,7 @@
 - 需要在 mxFP4 权重量化场景下逐块比较 Scale-to-4 与 Scale-to-6，按重构 MSE 选择误差更小的方案；
 - 需要在使用 MXFP4 per-block 布局约束的同时，提升低比特权重量化精度。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

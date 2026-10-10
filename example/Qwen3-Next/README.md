@@ -1,4 +1,4 @@
-﻿# Qwen3-Next 量化说明
+﻿﻿# Qwen3-Next 量化说明
 
 ## 模型介绍
 
@@ -32,7 +32,7 @@
 
 ##### <span id="qwen3-next-80b-a3b-instruct-w8a8量">Qwen3-Next-80B-A3B-Instruct W8A8量化</span>
 
-该模型的量化已经集成至[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)。
+该模型的量化已经集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3-Next-80B-A3B-Instruct --quant_type w8a8 --trust_remote_code true

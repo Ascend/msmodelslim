@@ -6,7 +6,7 @@
 
 ## 校准模态支持
 
-Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据（`multimodal_vlm_modelslim_v1`）。推荐使用 `index.jsonl`（见[一键量化 dataset 配置](../../docs/zh/user_guide/usage_quick_quantization.md#dataset---校准数据路径配置)）。
+Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据（`multimodal_vlm_modelslim_v1`）。推荐使用 `index.jsonl`（见[校准数据路径配置（参考）](../../docs/zh/knowledge_base/ptq/vlm/usage_vision_transformer_quantization.md#dataset---校准数据路径配置)）。
 
 | 有效模态组合 | index.jsonl 字段示意 | 是否支持 |
 |-------------|----------------------|----------|
@@ -52,7 +52,7 @@ Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 ##### <span id="Qwen3.6-27B-w8a8">Qwen3.6-27B W8A8量化</span>
 
-该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-27B --quant_type w8a8 --trust_remote_code true
@@ -60,7 +60,7 @@ Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 ##### <span id="Qwen3.6-27B-w8a8c8">Qwen3.6-27B W8A8C8量化</span>
 
-该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-27B --quant_type w8a8c8 --trust_remote_code true --tags vLLM-Ascend Ascend_950
@@ -70,7 +70,7 @@ Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 ##### <span id="Qwen3.6-35B-A3B-w8a8c8">Qwen3.6-35B-A3B W8A8C8量化</span>
 
-该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-35B-A3B --quant_type w8a8c8 --trust_remote_code true --tags vLLM-Ascend Ascend_950

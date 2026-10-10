@@ -118,7 +118,7 @@ msmodelslim quant \
   - `img_paths`：输入图像路径（多图可用逗号分隔等约定，以推理仓为准）。
   - `prompt_file`：提示词文件路径。
 
-更细的协议说明见：[一键量化配置协议说明](../../../docs/zh/user_guide/usage_quick_quantization.md#5-量化配置协议详解)。
+更细的协议说明见：《[multimodal_sd_modelslim_v1 配置说明](../../../docs/zh/api_reference/config/quant/multimodal_sd_modelslim_v1.md)》。
 
 ## FAQ
 
@@ -134,5 +134,5 @@ msmodelslim quant \
 
 - [Qwen-Image-Edit-2509（Hugging Face）](https://huggingface.co/Qwen/Qwen-Image-Edit-2509)
 - [Qwen-Image-Edit-2509模型仓库](https://modelers.cn/models/MindIE/Qwen-Image-Edit-2509)
-- [一键量化配置协议说明](../../../docs/zh/user_guide/usage_quick_quantization.md#5-量化配置协议详解)
-- [逐层量化特性说明](../../../docs/zh/user_guide/usage_quick_quantization.md#41-逐层量化及分布式逐层量化)
+- 《[multimodal_sd_modelslim_v1 配置说明](../../../docs/zh/api_reference/config/quant/multimodal_sd_modelslim_v1.md)》
+- 《[多卡量化并行](../../../docs/zh/knowledge_base/parallel/README.md)》

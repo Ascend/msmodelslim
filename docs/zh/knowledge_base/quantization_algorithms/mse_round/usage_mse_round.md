@@ -9,7 +9,7 @@
 - MXFP8 权重量化精度不达标，需要通过逐 block 舍入选择降低重构误差；
 - 目标部署后端明确支持 MXFP8 per-block 权重格式，且需要更优的 shared exponent 舍入策略。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

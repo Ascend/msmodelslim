@@ -9,7 +9,7 @@
 - W8/W4 等低比特量化前，需要从端到端输出误差视角定位敏感层，形成回退或混合精度候选集合；
 - layer-wise 等局部指标排序不稳定，需要以模型最终输出 MSE 复核敏感层结论。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

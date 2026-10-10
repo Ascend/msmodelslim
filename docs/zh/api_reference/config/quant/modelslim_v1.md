@@ -10,6 +10,12 @@
 | 配置类 | `ModelslimV1QuantConfig` |
 | 源码 | [quant_config.py](../../../../../msmodelslim/core/quant_service/modelslim_v1/quant_config.py) |
 
+`modelslim_v1` 是量化工具推出的新一代量化处理框架，目前正在快速演进中。相较于 `modelslim_v0` 版本，`modelslim_v1` 有以下优势：
+
+- 算法独立实现，配置自由组合。
+- 支持逐层量化，大幅降低资源消耗。
+- 不依赖特定版本的 CANN。
+
 ## 2. 参数列表
 
 <h3 id="2-1-modelslim-v1">2.1 ModelslimV1QuantConfig</h3>

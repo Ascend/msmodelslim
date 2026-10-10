@@ -9,7 +9,7 @@
 - W4 等低比特权重量化精度不达标，需要迭代搜索更优量化尺度；
 - 需要在 `linear_quant` 流水线中替换权重量化方法，以最小改动验证低比特量化收益。
 
-模型是否在官方预验证列表中请参考[《大模型支持矩阵》](../../model/README.md)；如需快速了解 CLI 基础用法可参阅[《一键量化完整指南》](../../../user_guide/usage_one_click_quantization.md)。
+模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 

@@ -33,7 +33,7 @@ pip install -U fla-core
 
 ## 使用示例
 
-请将 `${model_path}`、`${save_path}` 替换为实际路径。一键量化说明见《[一键量化完整指南](../../../docs/zh/user_guide/usage_quick_quantization.md)》。
+请将 `${model_path}`、`${save_path}` 替换为实际路径。一键量化说明见《[一键量化使用指南](../../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
 ### <span id="kimi-k3-w4a8-int">Kimi-K3 W4A8（INT）量化</span>
 

@@ -49,7 +49,7 @@ PTQ 的核心思想是通过离线统计校准集前向传播中的张量极值�
 - [《多模态理解模型（VLM）量化使用指南》](./vlm/usage_vision_transformer_quantization.md)：VLM 量化的完整操作流程。
 - [《多模态生成模型（DiT）量化使用指南》](./dit/usage_diffusion_transformer_quantization.md)：DiT 量化的完整操作流程。
 - [《权重转换使用指南》](./convert/usage_weight_conversion.md)：权重转换的完整操作流程。
-- [《一键量化完整指南》](../../user_guide/usage_one_click_quantization.md)：涵盖各类模型的一键量化总体流程。
+- 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：涵盖各类模型的一键量化总体流程。
 
 ---
 

@@ -69,7 +69,7 @@ msModelSlim 支持多种先进的量化算法，涵盖了从离群值抑制到�
 
 ## 5. 算法选择建议
 
-初学者可优先使用《[一键量化 (V1)](../../user_guide/usage_quick_quantization.md)》，自动集成已验证的算法组合。需要自动搜索配置时，参见《[自动调优策略总览](../tuning_strategies/README.md)》。实践配置亦可参考 `lab_practice/` 下对应 YAML。
+初学者可优先使用《[一键量化 (V1)](../../user_guide/usage_one_click_quantization.md)》，自动集成已验证的算法组合。需要自动搜索配置时，参见《[自动调优策略总览](../tuning_strategies/README.md)》。实践配置亦可参考 `lab_practice/` 下对应 YAML。
 
 ### 5.1 量化算法
 

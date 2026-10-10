@@ -1,4 +1,4 @@
-﻿# Kimi K2.5 量化案例
+﻿﻿# Kimi K2.5 量化案例
 
 ## 模型介绍
 
@@ -29,7 +29,7 @@ Kimi-K2.5 是月之暗面（Moonshot AI）研发的原生多模态模型。基�
 
 ### <span id="Kimi-K2.5-w4a8">Kimi-K2.5 W4A8 量化</span>
 
-该系列模型的量化已集成至[一键量化](../../../docs/zh/user_guide/usage_quick_quantization.md#32-参数说明)。
+该系列模型的量化已集成至[参数列表](../../../docs/zh/api_reference/cli/msmodelslim_quant.md#3-参数列表)。
 
 ```shell
 msmodelslim quant \

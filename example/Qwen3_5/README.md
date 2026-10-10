@@ -6,7 +6,7 @@
 
 ## 校准模态支持
 
-Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据（`multimodal_vlm_modelslim_v1`）。推荐使用 `index.jsonl`（见[一键量化 dataset 配置](../../docs/zh/user_guide/usage_quick_quantization.md#dataset---校准数据路径配置)）。
+Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据（`multimodal_vlm_modelslim_v1`）。推荐使用 `index.jsonl`（见[校准数据路径配置（参考）](../../docs/zh/knowledge_base/ptq/vlm/usage_vision_transformer_quantization.md#dataset---校准数据路径配置)）。
 
 | 有效模态组合 | index.jsonl 字段示意 | 是否支持 |
 |-------------|----------------------|----------|
@@ -23,7 +23,7 @@ Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 ## 使用前准备
 
-- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](../../docs/zh/install_guide/install_guide.md)。
+- 安装 msModelSlim 工具，详情请参见《[msModelSlim 安装指南](../../docs/zh/install_guide/install_guide.md)》。
 
 - transformers 版本需要配置安装 5.2.0 版本。
   - pip install transformers==5.2.0
@@ -54,7 +54,7 @@ Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 ##### <span id="Qwen3.5-397B-A17B-w8a8">Qwen3.5-397B-A17B W8A8量化</span>
 
-该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-397B-A17B --quant_type w8a8 --trust_remote_code true
@@ -62,7 +62,7 @@ Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 ##### <span id="Qwen3.5-397B-A17B-w4a8">Qwen3.5-397B-A17B W4A8量化</span>
 
-该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-397B-A17B --quant_type w4a8 --trust_remote_code true
@@ -72,7 +72,7 @@ Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 ##### <span id="Qwen3.5-122B-A10B-w8a8">Qwen3.5-122B-A10B W8A8量化</span>
 
-该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-122B-A10B --quant_type w8a8 --trust_remote_code true
@@ -82,7 +82,7 @@ Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 ##### <span id="Qwen3.5-35B-A3B-w8a8">Qwen3.5-35B-A3B W8A8量化</span>
 
-该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-35B-A3B --quant_type w8a8 --trust_remote_code true
@@ -92,7 +92,7 @@ Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 ##### <span id="Qwen3.5-27B-w8a8">Qwen3.5-27B W8A8量化</span>
 
-该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-27B --quant_type w8a8 --trust_remote_code true
@@ -102,7 +102,7 @@ Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 ##### <span id="Qwen3.5-4B-w8a8">Qwen3.5-4B W8A8量化</span>
 
-该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_quick_quantization.md)》。
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-4B --quant_type w8a8 --trust_remote_code true
