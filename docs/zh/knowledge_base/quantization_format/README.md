@@ -23,13 +23,13 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | AscendV1 | 昇腾侧 LLM / 多模态理解等通用部署 | vLLM Ascend、SGLang、MindIE | 覆盖 W8A8 / W8A16 / W4A4 / MXFP / KV Cache / FA 等 20+；**Atlas A2 系列产品 / Atlas A3 系列产品推荐优先 W8A8（静/动）**，显存更紧时再选 W4；**Ascend 950PR&950DT 系列产品推荐优先 MXFP（W8A8_MXFP8 / W4A4_MXFP4 等）** | 支持 | 《[AscendV1 量化格式 量化术语百科词条](ascendv1/term_ascendv1.md)》 | 《[AscendV1 使用指南](ascendv1/ascendv1_usage.md)》 |
 | compressed-tensors | 量化权重要在 vLLM 等 HF 生态框架中加载，或需要与 compressed-tensors 规范的 `quantization_config` 对齐 | vLLM 等 HF 生态 | 当前仅 **W8A8 Static / W8A8 Dynamic**；激活 scale 已离线校准选 Static，需免校准或适应动态输入选 Dynamic；不支持 KV Cache | 不支持 | 《[compressed-tensors 量化格式 量化术语百科词条](compressed_tensors/term_compressed_tensors.md)》 | 《[compressed-tensors 使用指南](compressed_tensors/compressed_tensors_usage.md)》 |
-| MindIE-SD | 扩散 / DiT 等多模态**生成**模型交付 MindIE | MindIE（多模态生成） | 面向生成流水线的枚举子集（含 W8A8、MXFP、FAQuant 等）；**推荐按模型最佳实践 `quant_type` 选择**，勿套用 LLM 默认 AscendV1 路径 | 支持 | 《[MindIE-SD 量化格式 量化术语百科词条](mindie_sd/term_mindie_sd.md)》 | 《[MindIE-SD 使用指南](mindie_sd/mindie_sd_usage.md)》 |
+| MindIE SD | 扩散 / DiT 等多模态**生成**模型交付 MindIE | MindIE（多模态生成） | 面向生成流水线的枚举子集（含 W8A8、MXFP、FAQuant 等）；**推荐按模型最佳实践 `quant_type` 选择**，勿套用 LLM 默认 AscendV1 路径 | 支持 | 《[MindIE SD 量化格式 量化术语百科词条](mindie_sd/term_mindie_sd.md)》 | 《[MindIE SD 使用指南](mindie_sd/mindie_sd_usage.md)》 |
 
 ---
 
 ## 3. 三种格式如何区分
 
-| 维度 | AscendV1 | compressed-tensors | MindIE-SD |
+| 维度 | AscendV1 | compressed-tensors | MindIE SD |
 | --- | --- | --- | --- |
 | 定位 | 昇腾推理默认量化落盘协议 | HF 生态兼容的量化格式 | 多模态生成专用 MindIE 落盘协议 |
 | 模型面 | 大语言模型和多模态理解模型 | 线性层量化、HF 风格权重 | 扩散 / DiT 等生成模型（如 Wan2.2） |
@@ -48,7 +48,7 @@
 - 《[量化格式接入指南](iformat_integration_guide.md)》：基于 IFormat 接入新落盘格式。
 - 《[AscendV1 使用指南](ascendv1/ascendv1_usage.md)》：AscendV1 确认模式支持、配置与执行。
 - 《[compressed-tensors 使用指南](compressed_tensors/compressed_tensors_usage.md)》：compressed-tensors 确认模式支持、配置与执行。
-- 《[MindIE-SD 使用指南](mindie_sd/mindie_sd_usage.md)》：MindIE-SD 确认模式支持、配置与执行。
+- 《[MindIE SD 使用指南](mindie_sd/mindie_sd_usage.md)》：MindIE-SD 确认模式支持、配置与执行。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：一键量化命令与配置协议总览。
 
 ---
@@ -57,7 +57,7 @@
 
 - [AscendV1 量化格式 量化术语百科词条](ascendv1/term_ascendv1.md)：下位概念，昇腾侧默认量化落盘格式。
 - [compressed-tensors 量化格式 量化术语百科词条](compressed_tensors/term_compressed_tensors.md)：下位概念，HuggingFace / vLLM 生态兼容的量化落盘格式。
-- [MindIE-SD 量化格式 量化术语百科词条](mindie_sd/term_mindie_sd.md)：下位概念，多模态生成场景的 MindIE 落盘格式。
+- [MindIE SD 量化格式 量化术语百科词条](mindie_sd/term_mindie_sd.md)：下位概念，多模态生成场景的 MindIE 落盘格式。
 - [量化算法](../quantization_algorithms/README.md)：其他，量化计算与校准侧算法族，产出由各量化格式落盘。
 - [量化模式](../quantization_mode/README.md)：配套术语，格式枚举与交付件字段对应各量化模式。
 - [大模型支持矩阵](../model/README.md)：其他，模型 × 模式 × 推理栈的选型与验证口径。

@@ -6,7 +6,7 @@
 
 本流程适用于：需将 msModelSlim 量化结果导出为 **compressed-tensors** 格式，并在 **vLLM** 等支持 HuggingFace `config.json` → `quantization_config` 的推理框架中加载的用户。
 
-不适用：昇腾 MindIE / vLLM Ascend 默认 AscendV1 路径（见《[AscendV1 使用指南](../ascendv1/ascendv1_usage.md)》）；多模态 MindIE-SD（见《[MindIE-SD 使用指南](../mindie_sd/mindie_sd_usage.md)》）。
+不适用：昇腾 MindIE / vLLM Ascend 默认 AscendV1 路径（见《[AscendV1 使用指南](../ascendv1/ascendv1_usage.md)》）；多模态 MindIE SD（见《[MindIE SD 使用指南](../mindie_sd/mindie_sd_usage.md)》）。
 
 ## 2. 流程关系与前置条件
 

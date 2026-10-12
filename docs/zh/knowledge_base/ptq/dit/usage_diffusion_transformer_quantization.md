@@ -9,7 +9,7 @@
 - 文生图模型（FLUX.1、SD3 等）的 W8A8 MXFP8 量化；
 - 文生视频模型（HunyuanVideo、Wan2.2、Wan2.1 等）的低比特量化部署；
 - 图像编辑模型（Qwen-Image-Edit 等）的量化部署；
-- 为基于昇腾 NPU 的 MindIE-SD 等推理引擎准备量化权重。
+- 为基于昇腾 NPU 的 MindIE SD 等推理引擎准备量化权重。
 
 模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
@@ -20,7 +20,7 @@
 | 输入 | 浮点 DiT 模型权重目录 | 模型下载或本地路径 | 含模型权重文件及配置文件 | 可被推理管线正常加载 |
 | 输入 | 校准数据集与任务配置 | YAML 中 `dataset` 与 `multimodal_sd_config.inference_config` | 指定任务类型（如 `t2v`、`i2v`）及推理分辨率、步数等参数，校准样本推荐 50 条 | 适配器成功解析并完成浮点推理 dump |
 | 输入 | 量化配置文件 | 本地 YAML 文件 | 符合 `multimodal_sd_modelslim_v1` 协议规范 | 通过模式校验（Schema Validation） |
-| 交付件 | 量化权重目录 | `--save_path` 指定路径 | MindIE-SD 格式（含描述文件及分片权重；多专家模型包含各专家子目录） | 导出完整且推理冒烟测试通过 |
+| 交付件 | 量化权重目录 | `--save_path` 指定路径 | MindIE SD 格式（含描述文件及分片权重；多专家模型包含各专家子目录） | 导出完整且推理冒烟测试通过 |
 
 ## 3. 流程总览
 
@@ -41,7 +41,7 @@ flowchart LR
 
 - **适配模型流水线接口**：确保待量化模型具备符合 `multimodal_sd_modelslim_v1` 规范的适配器接口，能够驱动浮点推理生成校准数据并被逐层量化调度器统一处理。
 - **配置校准数据集与浮点推理参数**：量化校准依赖运行完整浮点去噪推理管线，通过 `dataset` 与 `multimodal_sd_config` 联合配置，推荐 50 条校准样本，分辨率、帧数与去噪步数对齐生产部署场景。
-- **选择权重保存格式**：统一采用 `mindie_format_saver` 导出 MindIE-SD 格式，多专家模型自动按专家生成独立子目录。
+- **选择权重保存格式**：统一采用 `mindie_format_saver` 导出 MindIE SD 格式，多专家模型自动按专家生成独立子目录。
 - **选型与编排量化算法**：推荐以 W8A8 MXFP8（权重 `mse_round` 估计）为生产基线，低比特场景按需叠加 `online_quarot`、`fa3_quant` 等增强算法。
 - **选择执行调度器（Runner）**：固定 `layer_wise` 逐层调度，不支持跨卡数据并行（`dp_layer_wise`）与整模型常驻（`model_wise`）。
 - **编写配置并执行量化**：整合上述配置生成完整 YAML，通过 `msmodelslim quant` 命令启动量化，导出量化权重与描述文件。
@@ -108,7 +108,7 @@ flowchart LR
    ```
 
 2. **格式选型与文档链接**：
-   - **[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：**DiT 模型部署核心格式**。面向昇腾 MindIE-SD 推理引擎，导出符合 MindIE 规范的量化描述文件及权重。针对多专家模型（如 Wan2.2），会自动在保存目录下生成 `high_noise_model/`、`low_noise_model/` 等各专家的独立子目录。
+   - **[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：**DiT 模型部署核心格式**。面向昇腾 MindIE SD 推理引擎，导出符合 MindIE 规范的量化描述文件及权重。针对多专家模型（如 Wan2.2），会自动在保存目录下生成 `high_noise_model/`、`low_noise_model/` 等各专家的独立子目录。
 
 3. **选型指南**：
    - 当前多模态生成模型在昇腾平台推理部署时，均统一采用 `mindie_format_saver`。
@@ -195,7 +195,7 @@ spec:
           method: mse_round               # 均方误差舍入优化，保真度更高
       include: ["*"]                      # 量化全部主干线性层
   save:
-    - type: mindie_format_saver           # 导出 MindIE-SD 格式
+    - type: mindie_format_saver           # 导出 MindIE SD 格式
   dataset: <task_name>                    # 任务标识（如 t2v 等）
   multimodal_sd_config:
     dump_config:
@@ -244,7 +244,7 @@ spec:
           method: minmax
       include: ["*"]                      # 量化全部主干线性层
   save:
-    - type: mindie_format_saver           # 导出 MindIE-SD 格式
+    - type: mindie_format_saver           # 导出 MindIE SD 格式
       part_file_size: 0
   dataset: <task_name>                    # 任务标识（如 t2v 等）
   multimodal_sd_config:
@@ -271,7 +271,7 @@ msmodelslim quant \
   --device_id 0
 ```
 
-**输出**：在指定的 `--save_path` 目录下生成完整的 MindIE-SD 格式量化权重及描述文件（多专家模型自动分专家目录存放）。
+**输出**：在指定的 `--save_path` 目录下生成完整的 MindIE SD 格式量化权重及描述文件（多专家模型自动分专家目录存放）。
 
 ## 5. 术语
 

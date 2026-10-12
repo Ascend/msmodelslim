@@ -20,7 +20,7 @@
 - ✅ 表示该量化策略已通过 msModelSlim 官方验证，功能完整、性能稳定，建议优先采用。
 - 空格表示该量化策略暂未通过 msModelSlim 官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
 - 点击量化命令列中的链接可跳转到对应的具体量化命令。
-- 推荐使用MindIE-SD [3.0.0版本](https://gitcode.com/Ascend/MindIE-SD)
+- 推荐使用MindIE SD [3.0.0版本](https://gitcode.com/Ascend/MindIE SD)
 
 ## Qwen Image Edit 量化支持
 
@@ -86,7 +86,7 @@ msmodelslim quant \
 
 - **config_id**：配置标识，与 YAML 文件名对应（如 `qwen-image-edit-w8a8f8-mxfp`、`qwen-image-edit-w4a4f4-mxfp`）。
 - **score**：官方验证评分，数值越高表示该配置在验证场景下表现越稳定。
-- **verified_tags**：已验证的模型类型及对接环境标签；当前 `Qwen-Image-Edit-2509` 对应 MindIE-SD 推理与 Ascend_950 设备。
+- **verified_tags**：已验证的模型类型及对接环境标签；当前 `Qwen-Image-Edit-2509` 对应 MindIE SD 推理与 Ascend_950 设备。
 - **label**：量化能力标签，便于检索与对照：
   - `w_bit` / `a_bit`：权重与激活位宽（W8A8 为 8，W4A4 为 4）。
   - `is_sparse`：是否稀疏量化（当前为 `False`）。

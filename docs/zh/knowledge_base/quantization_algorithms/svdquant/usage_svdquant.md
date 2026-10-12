@@ -136,7 +136,7 @@ spec:
       exclude: ["*blocks.0.*"]
   dataset: <扩散模型任务校准集>       # 与训练/推理分布一致的文本或图像 Prompt
   save:
-    - type: mindie_format_saver     # MindIE-SD 扩散模型保存格式
+    - type: mindie_format_saver     # MindIE SD 扩散模型保存格式
       part_file_size: 0
 ```
 

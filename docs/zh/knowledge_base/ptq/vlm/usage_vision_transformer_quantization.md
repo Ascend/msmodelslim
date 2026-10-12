@@ -181,7 +181,7 @@ calib_data.jsonl 示例：
 
 2. **格式选型与文档链接**：
    - **[ascendv1_saver 配置说明](../../../api_reference/config/format/ascendv1_saver.md)**：**昇腾 NPU 部署推荐格式**。适配 MindIE 及 vLLM-Ascend 推理引擎，导出包含多模态模型量化参数的 `quant_model_description.json` 及分片量化权重 `*.safetensors`。
-   - **[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：面向 MindIE-SD/MindIE 生态的统一部署格式。
+   - **[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：面向 MindIE SD/MindIE 生态的统一部署格式。
 
 3. **选型指南**：
    - 昇腾部署场景首选 `ascendv1_saver`。

@@ -76,7 +76,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 PD-Mix 量化](term_w8a8_pdmix.md)：同类模式，激活策略随 Prefill/Decode 阶段切换。
 - [W4A4 动态量化](term_w4a4_dynamic.md)：同类模式，更低比特的权重+激活量化。
 - [FA INT8 动态量化](../fa_quantization/term_fa_int8_dynamic.md)：同类模式，把 per-token 动态量化应用于注意力 Q/K/V 激活。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
 
 ---
 

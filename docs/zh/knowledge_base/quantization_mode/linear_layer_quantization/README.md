@@ -112,7 +112,7 @@ $$Y = X \cdot W + b$$
 - [W8A8 静态量化](term_w8a8_static.md)：下位概念，本类别下最基础的静态模式。
 - [W8A8 稀疏量化](term_w8a8_sparse.md)：下位概念，INT8 收窄码本后再二次压缩。
 - [浮点稀疏量化](term_float_sparse.md)：下位概念，不降位宽的置零稀疏基线。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，描述线性层量化模式的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，描述线性层量化模式的代码实现。
 
 ---
 

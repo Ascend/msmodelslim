@@ -99,7 +99,7 @@ flowchart LR
 
 2. **格式选型与文档链接**：
    - **[ascendv1_saver 配置说明](../../../api_reference/config/format/ascendv1_saver.md)**：**昇腾 NPU 部署推荐格式**。专为昇腾加速库（ATB / Ascend Transformer Boost）与 MindIE 推理引擎设计，生成包含量化元数据描述的 `quant_model_description.json` 及分片量化权重 `*.safetensors`，自动完成硬件指令所要求的权重重排（Pack）与反量化系数预处理。
-   - **[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：面向新版本 MindIE-SD/MindIE 生态的统一部署格式。
+   - **[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：面向新版本 MindIE SD/MindIE 生态的统一部署格式。
 
 3. **选型指南**：
    - 当前在昇腾平台上运行 vLLM-Ascend、ATB-Models 或 MindIE-Service 时，均推荐首选 `ascendv1_saver`。

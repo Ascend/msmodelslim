@@ -22,7 +22,7 @@
 | TorchNPU | {{torch_npu_version_or_link}} |
 | vLLM Ascend | {{vllm_ascend_version_or_link}} |
 | MindIE | {{mindie_version_or_link}} |
-| MindIE-SD | {{mindie_sd_version_or_link}} |
+| MindIE SD | {{mindie_sd_version_or_link}} |
 | 其他依赖 | {{extra_dependencies}} |
 
 > **注释：** 产品形态填写实际硬件形态（如Atlas 800I A2产品），并说明是否限定（限定 / 不限定；限定时写明适用边界）。依赖项按需增删；若多项互为替代方案（如多种推理框架），仅保留本次实际使用的项。版本需求可先填写版本号，待该版本正式上线后替换为文档或发布页链接；其余项给出当前使用的版本链接。
