@@ -75,7 +75,7 @@ $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \ma
 - [W4A4 动态量化](term_w4a4_dynamic.md)：对比模式，INT4 整数方案。
 - [W4A4 MX 双 Scale 量化](term_w4a4_mx_dualscale.md)：同类模式，双层缩放的精度增强版。
 - [W4A8 MX 动态量化](term_w4a8_mx_dynamic.md)：同类模式，激活改用 MXFP8 保精度。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
 
 ---
 

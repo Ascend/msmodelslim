@@ -112,7 +112,7 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 - [KVCache 量化](kv_cache_quantization/README.md)：下位概念，针对 KVCache 的量化类别。
 - [FA 量化](fa_quantization/README.md)：下位概念，KVCache 量化的进阶类别。
 - [W8A8 静态量化](linear_layer_quantization/term_w8a8_static.md)：下位概念，线性层量化中"权重/激活静态"的典型模式。
-- [线性量化算法](../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，描述线性层量化模式的处理器实现。
+- [线性量化算法](../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，描述线性层量化模式的代码实现。
 - [KVCache Quant 缓存量化算法](../quantization_algorithms/kvcache_quant/term_kvcache_quant.md)：配套术语，描述 KVCache 量化算法。
 - [FA3 Quant 注意力激活量化算法](../quantization_algorithms/fa3_quant/term_fa3_quant.md)：配套术语，描述 FA 量化算法。
 

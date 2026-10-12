@@ -236,5 +236,5 @@ save_directory/
 
 - [量化格式 量化术语百科词条](../README.md)：上位概念，本词条所属目录。
 - [AscendV1 量化格式 量化术语百科词条](../ascendv1/term_ascendv1.md)：其他，同属量化格式的并列落盘协议。
-- [MindIE-SD 量化格式 量化术语百科词条](../mindie_sd/term_mindie_sd.md)：其他，同属量化格式的并列落盘协议。
+- [MindIE SD 量化格式 量化术语百科词条](../mindie_sd/term_mindie_sd.md)：其他，同属量化格式的并列落盘协议。
 - [量化模式](../../quantization_mode/README.md)：配套术语，本格式 Preset 与交付件字段对应各量化模式；详见本页[量化模式支持情况](#mode-support)。

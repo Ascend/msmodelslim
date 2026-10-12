@@ -29,7 +29,7 @@
 - 已按模型发布页与对应接入指南准备运行依赖：不同模型常要求特定 `transformers` 等版本；多模态生成还须具备原推理仓及桥接所需依赖。具体版本以模型卡片与接入指南为准，本文不枚举。
 - 已完成 msModelSlim **源码安装**（新模型适配需改代码与注册 entry point，详见《[安装指南](../install_guide/install_guide.md)》）。
 - 已确认量化设备：支持昇腾 NPU 与 CPU；常规量化建议使用 NPU，CPU 仅适合小规模调试。
-- 已确定目标推理框架，并选定 msModelSlim 支持的导出格式（见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》，如 AscendV1、MindIE-SD）。
+- 已确定目标推理框架，并选定 msModelSlim 支持的导出格式（见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》，如 AscendV1、MindIE SD）。
 
 **后续操作**：
 
@@ -45,7 +45,7 @@
 
 ## 4. 流程总览
 
-本流程负责权重量化并交付权重；推理由目标引擎承担（如 MindIE、vLLM Ascend、MindIE-SD）。先完成环境与资源预检，再下载浮点模型；**模型尚未接入**时完成模型适配，**已接入**可跳过适配；随后编写量化配置、执行量化，最后校验量化权重交付件是否完整可用。各阶段顺序如下：
+本流程负责权重量化并交付权重；推理由目标引擎承担（如 MindIE、vLLM Ascend、MindIE SD）。先完成环境与资源预检，再下载浮点模型；**模型尚未接入**时完成模型适配，**已接入**可跳过适配；随后编写量化配置、执行量化，最后校验量化权重交付件是否完整可用。各阶段顺序如下：
 
 ```mermaid
 flowchart LR
@@ -232,7 +232,7 @@ msmodelslim quant \
    | 导出格式 | 说明 |
    | --- | --- |
    | AscendV1 | 《[AscendV1](../knowledge_base/quantization_format/ascendv1/term_ascendv1.md)》 |
-   | MindIE-SD | 《[MindIE-SD](../knowledge_base/quantization_format/mindie_sd/term_mindie_sd.md)》 |
+   | MindIE SD | 《[MindIE SD](../knowledge_base/quantization_format/mindie_sd/term_mindie_sd.md)》 |
    | compressed-tensors | 《[compressed-tensors](../knowledge_base/quantization_format/compressed_tensors/term_compressed_tensors.md)》 |
 
 2. 对比浮点模型目录与量化权重目录的体积（如 `du -sh ${MODEL_PATH} ${SAVE_PATH}`），确认量化产物相对浮点权重有合理缩小；具体幅度随位宽与导出格式而异，不作固定压缩比要求。

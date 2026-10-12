@@ -21,7 +21,7 @@
 | 交付件 | 模型适配器代码 | `msmodelslim/model/{model_name}/` | Python 源码，含 loader、model_adapter 等 | 代码审查通过且导入无报错 |
 | 交付件 | 模型注册配置 | `config/config.ini` | `[ModelAdapter]`、`[ModelAdapterEntryPoints]` 等段落 | key 保持一致，可通过 `--model_type` 命中 |
 | 交付件 | 量化配置文件 | `lab_practice/{model_name}/` | YAML 文件（符合 `multimodal_sd_modelslim_v1` 规范） | 通过量化配置模式校验 |
-| 交付件 | 量化权重目录 | `--save_path` 指定路径 | MindIE-SD 格式，多专家含各专家子目录 | 导出完整且推理冒烟测试通过 |
+| 交付件 | 量化权重目录 | `--save_path` 指定路径 | MindIE SD 格式，多专家含各专家子目录 | 导出完整且推理冒烟测试通过 |
 
 ## 3. 操作步骤
 
@@ -203,7 +203,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
              method: mse_round
          include: ["*"]
      save:
-       - type: mindie_format_saver       # 昇腾 MindIE-SD 部署格式
+       - type: mindie_format_saver       # 昇腾 MindIE SD 部署格式
      dataset: {model_name}_{task}
      multimodal_sd_config:
        dump_config:
@@ -229,7 +229,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
      --device_id 0
    ```
 
-**输出**：量化命令执行成功，输出目录包含 MindIE-SD 权重文件（多专家模型包含各专家独立子目录）。
+**输出**：量化命令执行成功，输出目录包含 MindIE SD 权重文件（多专家模型包含各专家独立子目录）。
 
 ## 4. 案例列表
 
@@ -252,6 +252,6 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 | Pipeline 接口 | 多模态生成量化服务的流水线接口定义 | [《pipeline_interface.py》](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py) |
 | DiT 量化使用指南 | 标准 DiT 模型量化全流程、配置协议与开箱即用示例 | [《DiT 量化使用指南》](usage_diffusion_transformer_quantization.md) |
 | multimodal_sd_modelslim_v1 配置说明 | `process`/`save`/`multimodal_sd_config` 等多模态生成配置字段说明 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md) |
-| mindie_format_saver 配置说明 | MindIE-SD 保存格式与多专家落盘说明 | [《mindie_format_saver 配置说明》](../../../api_reference/config/format/mindie_format_saver.md) |
+| mindie_format_saver 配置说明 | MindIE SD 保存格式与多专家落盘说明 | [《mindie_format_saver 配置说明》](../../../api_reference/config/format/mindie_format_saver.md) |
 | 一键量化使用指南 | 一键量化 CLI 入口与完整命令参数说明 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
 | 量化算法总览 | 微缩浮点、在线旋转与各类量化算法详述 | [《量化算法总览》](../../quantization_algorithms/README.md) |

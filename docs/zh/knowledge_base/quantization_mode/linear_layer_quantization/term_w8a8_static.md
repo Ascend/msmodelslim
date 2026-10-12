@@ -76,7 +76,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 稀疏量化](term_w8a8_sparse.md)：同类模式，在本模式 INT8 静态量化之上收窄码本并二次压缩。
 - [W8A16 静态量化](term_w8a16_static.md)：同类模式，激活保持 16bit。
 - [W4A4 动态量化](term_w4a4_dynamic.md)：同类模式，更低比特的权重+激活量化。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
 - [MinMax 最小最大值量化算法](../../quantization_algorithms/minmax/term_minmax.md)：配套术语，静态量化常用的量化参数统计方法。
 
 ---

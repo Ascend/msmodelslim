@@ -76,7 +76,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 静态量化](term_w8a8_static.md)：对比模式，激活亦量化为 INT8、换取整数 GEMM 加速。
 - [W4A8 动态量化](term_w4a8_dynamic.md)：对比模式，权重压到 4bit 的混合位宽方案。
 - [浮点稀疏量化](term_float_sparse.md)：同类模式，完全不量化的稀疏基线。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
 - [MinMax 最小最大值量化算法](../../quantization_algorithms/minmax/term_minmax.md)：配套术语，静态量化常用的量化参数统计方法。
 
 ---

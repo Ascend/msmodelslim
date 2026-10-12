@@ -73,7 +73,7 @@
 - [W8A16 静态量化](term_w8a16_static.md)：同类模式，位宽维度的精度基线。
 - [W8A8 静态量化](term_w8a8_static.md)：对比模式，可与稀疏叠加构成 W8A8S。
 - [浮点稀疏（ADMM）算法](../../quantization_algorithms/float_sparse/term_float_sparse.md)：配套术语，产出本模式所承载稀疏权重的算法。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，线性层量化的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，线性层量化的代码实现。
 
 ---
 

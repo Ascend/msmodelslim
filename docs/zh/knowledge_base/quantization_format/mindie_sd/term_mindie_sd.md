@@ -1,17 +1,17 @@
-# MindIE-SD 量化格式 量化术语百科词条
+# MindIE SD 量化格式 量化术语百科词条
 
 > **词条类别**：[量化格式](../README.md)<br>
-> **英文名称**：MindIE-SD Quantization Format<br>
-> **应用领域**：多模态生成模型量化压缩、MindIE-SD 部署<br>
+> **英文名称**：MindIE SD Quantization Format<br>
+> **应用领域**：多模态生成模型量化压缩、MindIE SD 部署<br>
 > **msModelSlim 实现**：[`msmodelslim/format/mindie_format/`](../../../../../msmodelslim/format/mindie_format/)
 
 ---
 
 ## 1. 概述
 
-MindIE-SD 是 msModelSlim 面向 **多模态生成** 场景、供 MindIE-SD 消费的[量化格式 量化术语百科词条](../README.md)。一键量化通过保存器类型 `mindie_format_saver` 启用。它解决扩散 / DiT 等多模态生成模型量化权重与 MindIE-SD 加载约定对齐的问题。核心特征是与 `multimodal_sd_modelslim_v1` 配置协议配合，并以 `quant_model_description*.json` + `quant_model_weight*.safetensors` 落盘。
+MindIE SD 是 msModelSlim 面向 **多模态生成** 场景、供 MindIE SD 消费的[量化格式 量化术语百科词条](../README.md)。一键量化通过保存器类型 `mindie_format_saver` 启用。它解决扩散 / DiT 等多模态生成模型量化权重与 MindIE SD 加载约定对齐的问题。核心特征是与 `multimodal_sd_modelslim_v1` 配置协议配合，并以 `quant_model_description*.json` + `quant_model_weight*.safetensors` 落盘。
 
-配置、执行与部署步骤见《[MindIE-SD 使用指南](mindie_sd_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/README.md)》及下文支持表中的词条链接。
+配置、执行与部署步骤见《[MindIE SD 使用指南](mindie_sd_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/README.md)》及下文支持表中的词条链接。
 
 ---
 
@@ -21,9 +21,9 @@ MindIE-SD 是 msModelSlim 面向 **多模态生成** 场景、供 MindIE-SD 消�
 
 **核心思想**
 
-MindIE-SD 本质上是一套**面向多模态生成、供 MindIE-SD 推理引擎消费的量化模型落盘约定**：它不执行校准或伪量化计算，而是在 `multimodal_sd_modelslim_v1` 量化流水线末尾，将已量化完成的模块转换为 MindIE-SD 推理引擎可直接加载的两类交付件——**量化描述文件** `quant_model_description*.json` 与 **量化权重文件** `quant_model_weight*.safetensors`（注意权重文件名为单数 `weight`，与 AscendV1 的 `quant_model_weights` 不同）。前者作为张量级索引，供 MindIE-SD 推理引擎识别各张量名称及其量化模式；后者按相同键名存放对应量化参数。推理侧先读取描述文件，再按键名从 safetensors 取数。
+MindIE SD 本质上是一套**面向多模态生成、供 MindIE SD 推理引擎消费的量化模型落盘约定**：它不执行校准或伪量化计算，而是在 `multimodal_sd_modelslim_v1` 量化流水线末尾，将已量化完成的模块转换为 MindIE SD 推理引擎可直接加载的两类交付件——**量化描述文件** `quant_model_description*.json` 与 **量化权重文件** `quant_model_weight*.safetensors`（注意权重文件名为单数 `weight`，与 AscendV1 的 `quant_model_weights` 不同）。前者作为张量级索引，供 MindIE SD 推理引擎识别各张量名称及其量化模式；后者按相同键名存放对应量化参数。推理侧先读取描述文件，再按键名从 safetensors 取数。
 
-因此，用户可将 MindIE-SD 理解为：**多模态生成量化结果的 MindIE-SD 推理引擎标准导出包**——算法与多模态适配器负责量化与校准编排，MindIE-SD 负责与 MindIE-SD 推理引擎加载路径对齐的落盘与描述。
+因此，用户可将 MindIE SD 理解为：**多模态生成量化结果的 MindIE SD 推理引擎标准导出包**——算法与多模态适配器负责量化与校准编排，MindIE SD 负责与 MindIE SD 推理引擎加载路径对齐的落盘与描述。
 
 **关键性质**
 
@@ -39,7 +39,7 @@ MindIE-SD 本质上是一套**面向多模态生成、供 MindIE-SD 推理引擎
 
 ### 3.1 目录与文件说明
 
-执行一键量化并指定 MindIE-SD 落盘格式（保存器 `type` 为 `mindie_format_saver`）后，交付件位于 `save_path`（分布式场景下可能落在 `rank_*` 子目录）。通用单模型目录示例如下：
+执行一键量化并指定 MindIE SD 落盘格式（保存器 `type` 为 `mindie_format_saver`）后，交付件位于 `save_path`（分布式场景下可能落在 `rank_*` 子目录）。通用单模型目录示例如下：
 
 ```bash
 ├── quant_model_description*.json              # 量化权重描述（可不带或带量化类型后缀）
@@ -114,9 +114,9 @@ calib_data_<task_config>_high_noise_model.pth
 
 ## 4. <span id="engine-support">推理引擎支持情况</span>
 
-下表中的格式枚举**均可被 MindIE-SD 落盘**；下表描述的是产物能否被 **MindIE 多模态生成**路径加载。口径依据《[大模型支持矩阵](../../model/README.md)》与 lab_practice 验证标签；具体模型 × 模式 × MindIE-SD 版本以支持矩阵与官方最佳实践为准。
+下表中的格式枚举**均可被 MindIE SD 落盘**；下表描述的是产物能否被 **MindIE 多模态生成**路径加载。口径依据《[大模型支持矩阵](../../model/README.md)》与 lab_practice 验证标签；具体模型 × 模式 × MindIE SD 版本以支持矩阵与官方最佳实践为准。
 
-| 格式枚举值 | MindIE-SD | 说明 |
+| 格式枚举值 | MindIE SD | 说明 |
 | --- | --- | --- |
 | `FLOAT` | √ | 未量化张量，随模型一并加载 |
 | `W8A8` | √ | 静态 W8A8 |
@@ -134,7 +134,7 @@ calib_data_<task_config>_high_noise_model.pth
 
 > **交付件说明**：表中交付件：量化描述 JSON对应 `quant_model_description*.json`；交付件：量化 safetensors对应 `quant_model_weight*.safetensors`。模式原理见《[量化模式](../../quantization_mode/README.md)》词条（本词条不展开反量化公式与 NPU 算子）。具体模型与 `quant_type` 组合以《[大模型支持矩阵](../../model/README.md)》及 lab_practice / example 为准。
 
-| 格式枚举值                  | MindIE-SD 是否支持落盘 | 量化模式词条 | 交付件：量化描述 JSON                                    | 交付件：量化 safetensors                              |
+| 格式枚举值                  | MindIE SD 是否支持落盘 | 量化模式词条 | 交付件：量化描述 JSON                                    | 交付件：量化 safetensors                              |
 | ---------------------- | ---------------- | ------ | ------------------------------------------------ | ----------------------------------------------- |
 | `FLOAT`                | 支持               | [量化模式总览](../../quantization_mode/README.md#modes) | [FLOAT 描述键](#desc-float)                         | [FLOAT 权重张量](#st-float)                         |
 | `W8A8`                 | 支持               | [W8A8 静态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_static.md) | [W8A8 描述键](#desc-w8a8)                           | [W8A8 权重张量](#st-w8a8)                           |
@@ -304,7 +304,7 @@ calib_data_<task_config>_high_noise_model.pth
 
 ## 8. 关联流程
 
-- 《[MindIE-SD 使用指南](mindie_sd_usage.md)》：确认模式支持、配置与执行。
+- 《[MindIE SD 使用指南](mindie_sd_usage.md)》：确认模式支持、配置与执行。
 - 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：multimodal_sd 配置详解。
 - 《[多模态生成模型接入](../../ptq/dit/integration_guide_diffusion_transformer_quantization.md)》：模型接入与示例。
 - 《[量化格式接入指南](../iformat_integration_guide.md)》：新格式开发对照。

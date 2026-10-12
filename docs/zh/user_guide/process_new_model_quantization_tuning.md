@@ -22,7 +22,7 @@
 - 已核对《[大模型支持矩阵](../knowledge_base/model/README.md)》，确认目标模型未收录，或目标量化模式（`quant_type`）尚未验证。
 - 已明确精度与性能目标（相对浮点的可接受掉点、业务阈值，或性能约束）。
 - 已准备浮点模型目录。
-- 已确定目标推理引擎与导出格式（见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》，如 AscendV1、MindIE-SD）；浮点与量化测评须使用相同测评集、指标与推理引擎配置（引擎版本、并行与采样等保持一致）。
+- 已确定目标推理引擎与导出格式（见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》，如 AscendV1、MindIE SD）；浮点与量化测评须使用相同测评集、指标与推理引擎配置（引擎版本、并行与采样等保持一致）。
 - 若方案依赖新算子或组图能力，已具备对应推理引擎与 CANN 侧开发与合入条件。
 
 **后续操作**：

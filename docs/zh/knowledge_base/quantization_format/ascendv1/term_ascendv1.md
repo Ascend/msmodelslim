@@ -560,5 +560,5 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 
 - [量化格式 量化术语百科词条](../README.md)：上位概念，本词条所属目录。
 - [compressed-tensors 量化格式 量化术语百科词条](../compressed_tensors/term_compressed_tensors.md)：其他，同属量化格式的并列落盘协议。
-- [MindIE-SD 量化格式 量化术语百科词条](../mindie_sd/term_mindie_sd.md)：其他，同属量化格式的并列落盘协议。
+- [MindIE SD 量化格式 量化术语百科词条](../mindie_sd/term_mindie_sd.md)：其他，同属量化格式的并列落盘协议。
 - [量化模式](../../quantization_mode/README.md)：配套术语，本格式交付件枚举对应各量化模式。

@@ -2,7 +2,7 @@
 
 ## 1. 案例背景
 
-**目标**：基于 MindIE-SD 推理栈，对 Wan2.2 系列双专家 DiT 文生视频模型进行 W4A4F4 量化验证，对比原始浮点权重与量化后权重的生成质量。相对原始浮点权重，量化后模型生成视频质量损失控制在可接受范围内，无肉眼可识别的严重画质崩坏；且在 VBench-1.0-mini 的 1% 子集上，VBench Quality 与 VBench Semantic 的绝对得分下降均小于1个百分点（pp），即 `|FP 得分 − 量化得分| < 1pp`。
+**目标**：基于 MindIE SD 推理栈，对 Wan2.2 系列双专家 DiT 文生视频模型进行 W4A4F4 量化验证，对比原始浮点权重与量化后权重的生成质量。相对原始浮点权重，量化后模型生成视频质量损失控制在可接受范围内，无肉眼可识别的严重画质崩坏；且在 VBench-1.0-mini 的 1% 子集上，VBench Quality 与 VBench Semantic 的绝对得分下降均小于1个百分点（pp），即 `|FP 得分 − 量化得分| < 1pp`。
 
 **覆盖流程**：模型接入适配 → 量化方案设计 → 权重量化 → 精度评测
 
@@ -19,7 +19,7 @@
 | 模型结构            | 双专家DiT（low_noise_model + high_noise_model）+ GQA注意力 + 文本编码器 + VAE |
 | 量化类型            | w4a4f4 |
 | 开源权重来源         | [Wan2.2-T2V-A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) 等官方开源地址 |
-| 推理框架与并行 | MindIE-SD；本案例并行策略：DiT/T5 启用 FSDP 切分、序列维度启用 Ulysses Sequence Parallel（SP）、CFG 双卡分离、VAE 启用并行；未启用 Expert Parallel（双专家由框架自动调度）。对比双方使用完全相同的并行约定，具体取值见“操作步骤“章节的步骤 6/7。 |
+| 推理框架与并行 | MindIE SD；本案例并行策略：DiT/T5 启用 FSDP 切分、序列维度启用 Ulysses Sequence Parallel（SP）、CFG 双卡分离、VAE 启用并行；未启用 Expert Parallel（双专家由框架自动调度）。对比双方使用完全相同的并行约定，具体取值见“操作步骤“章节的步骤 6/7。 |
 
 **验证范围声明**：
 
@@ -35,7 +35,7 @@
 | CANN        | 9.1.0 |
 | PyTorch     | 2.9.0 |
 | TorchNPU    | 2.9.0 |
-| MindIE-SD   | 3.1.0 |
+| MindIE SD   | 3.1.0 |
 | 评测工具     | [AISBench](https://github.com/AISBench/benchmark) |
 | 其他依赖     | Wan2.2-T2V-A14B 模型权重、[VBench-1.0-mini 评测数据集](https://modelers.cn/datasets/AISBench/VBench-1.0-mini) |
 
@@ -49,7 +49,7 @@
 | 类型  | 名称                   | 来源或保存位置                  | 格式或约束                      | 验收方式                              |
 | --- | -------------------- | ------------------------ | -------------------------- | --------------------------------- |
 | 输入  | Wan2.2浮点模型权重       | `${MODEL_PATH}`         | 官方开源格式，含DiT双专家权重、VAE、文本编码器、tokenizer、config.json | 可通过官方推理仓正常加载，720P视频生成无异常 |
-| 交付件 | Wan2.2 W4A4F4量化权重 | `${SAVE_PATH}` | msModelSlim量化导出格式，含`quant_model_description.json`、双专家量化权重 | 可被MindIE-SD正常加载，成功生成视频 |
+| 交付件 | Wan2.2 W4A4F4量化权重 | `${SAVE_PATH}` | msModelSlim量化导出格式，含`quant_model_description.json`、双专家量化权重 | 可被MindIE SD正常加载，成功生成视频 |
 | 交付件 | 量化最佳实践 | [`lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml`](../../../lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml) | 遵循《[multimodal_sd_modelslim_v1 配置说明](../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》 | 命令行参数 `--config` 指定量化配置文件 |
 | 输入  | 精度评测集       | `${EVAL_DATA_PATH}`         | VBench标准评测集 | 对比双方使用完全相同的数据和随机种子       |
 | 交付件 | 精度报告 | `./outputs/default/{timestamp}/` | 生成视频样例（FP vs 量化对比）、VBench等客观指标结果表 | 满足预设验收阈值，无严重画质问题 |

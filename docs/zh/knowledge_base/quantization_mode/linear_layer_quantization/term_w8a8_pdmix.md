@@ -77,7 +77,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 静态量化](term_w8a8_static.md)：对比模式，全程静态。
 - [W4A8 动态量化](term_w4a8_dynamic.md)：对比模式，权重 4bit 的混合位宽方案。
 - [PDMIX 阶段间混合量化算法](../../quantization_algorithms/pdmix/term_pdmix.md)：配套术语，本模式对应的算法处理器文档。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，线性层量化的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，线性层量化的代码实现。
 
 ---
 

@@ -6,7 +6,7 @@
 
 本流程适用于：已选定 **AscendV1** 作为落盘格式，需在 msModelSlim 中完成配置、执行一键量化，并将产物部署到 **vLLM Ascend**、**SGLang** 或 **MindIE** 等昇腾推理栈的用户。
 
-不适用：仅导出 HuggingFace / vLLM 通用 `compressed-tensors` 权重（请改用《[compressed-tensors 使用指南](../compressed_tensors/compressed_tensors_usage.md)》）；多模态生成 MindIE-SD 场景（请改用《[MindIE-SD 使用指南](../mindie_sd/mindie_sd_usage.md)》）。
+不适用：仅导出 HuggingFace / vLLM 通用 `compressed-tensors` 权重（请改用《[compressed-tensors 使用指南](../compressed_tensors/compressed_tensors_usage.md)》）；多模态生成 MindIE SD 场景（请改用《[MindIE SD 使用指南](../mindie_sd/mindie_sd_usage.md)》）。
 
 ## 2. 流程关系与前置条件
 

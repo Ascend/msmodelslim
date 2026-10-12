@@ -67,7 +67,7 @@ W8A8 稀疏量化（导出类型 `W8A8S`）仍是对线性层权重与激活做 
 - [量化模式](../README.md)：上位概念，本词条属于[线性层量化](README.md)类别，是该类别下的一种具体模式。
 - [W8A8 静态量化](term_w8a8_static.md)：同类模式，本模式在其 INT8 静态量化之上收窄码本并二次压缩。
 - [浮点稀疏量化](term_float_sparse.md)：对比模式，16bit 浮点上的置零稀疏，压缩路径不同。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的处理器实现。
+- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
 
 ---
 
