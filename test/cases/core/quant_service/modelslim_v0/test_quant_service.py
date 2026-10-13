@@ -97,6 +97,7 @@ class TestModelslimV0QuantService:
         model_adapter = MagicMock(spec=PipelineInterface)
         model_adapter.load_model.return_value = MagicMock()
         model_adapter.handle_dataset.return_value = []
+        model_adapter.uses_image_calib.return_value = False
 
         quant_config = ModelslimV0QuantConfig.from_base(
             BaseQuantConfig.model_validate(
@@ -114,3 +115,127 @@ class TestModelslimV0QuantService:
 
         mock_calibrator.run.assert_called_once()
         mock_save_method.assert_not_called()
+
+    def test_quant_process_keeps_text_calib_data_unchanged(self, service):
+        """场景：现有文本适配器不使用图像校准。预期：保持原校准数据处理行为。"""
+        raw_calib_data = (("text",),)
+        service.dataset_loader.get_dataset_by_name.return_value = []
+        model_adapter = MagicMock(spec=PipelineInterface)
+        model_adapter.handle_dataset.return_value = raw_calib_data
+        model_adapter.load_model.return_value = MagicMock()
+        model_adapter.uses_image_calib.return_value = False
+        quant_config = ModelslimV0QuantConfig.from_base(
+            BaseQuantConfig.model_validate(
+                {
+                    "apiversion": "modelslim_v0",
+                    "spec": {"calib_cfg": {}, "calib_dataset": "calib.jsonl"},
+                }
+            )
+        )
+        import msmodelslim.core.quant_service.modelslim_v0.quant_service as v0_svc
+
+        with (
+            patch.object(v0_svc, "normalize_calib_data_for_calibrator") as mock_normalize,
+            patch.object(v0_svc, "Calibrator") as mock_calibrator,
+        ):
+            service.quant_process(quant_config, model_adapter, save_path=None, device=DeviceType.CPU)
+
+        mock_normalize.assert_not_called()
+        assert mock_calibrator.call_args.kwargs["calib_data"] is raw_calib_data
+
+    def test_quant_process_normalizes_image_calib_data(self, service):
+        """场景：多模态适配器使用图像校准。预期：归一化校准数据后再传给 Calibrator。"""
+        raw_calib_data = [{"input_ids": 1}]
+        normalized_calib_data = [[1]]
+        service.dataset_loader.get_dataset_by_name.return_value = []
+        model_adapter = MagicMock(spec=PipelineInterface)
+        model_adapter.handle_dataset.return_value = raw_calib_data
+        model_adapter.load_model.return_value = MagicMock()
+        model_adapter.uses_image_calib.return_value = True
+        quant_config = ModelslimV0QuantConfig.from_base(
+            BaseQuantConfig.model_validate(
+                {
+                    "apiversion": "modelslim_v0",
+                    "spec": {"calib_cfg": {}, "calib_dataset": "calib.jsonl"},
+                }
+            )
+        )
+        import msmodelslim.core.quant_service.modelslim_v0.quant_service as v0_svc
+
+        with (
+            patch.object(
+                v0_svc, "normalize_calib_data_for_calibrator", return_value=normalized_calib_data
+            ) as mock_normalize,
+            patch.object(v0_svc, "Calibrator") as mock_calibrator,
+        ):
+            service.quant_process(quant_config, model_adapter, save_path=None, device=DeviceType.CPU)
+
+        mock_normalize.assert_called_once_with(raw_calib_data)
+        assert mock_calibrator.call_args.kwargs["calib_data"] is normalized_calib_data
+
+    def test_quant_process_calls_save_postprocess(self, service, tmp_path):
+        """场景：适配器覆盖流水线保存钩子。预期：persist 后按契约调用。"""
+        mock_calibrator = MagicMock()
+        service.dataset_loader = MagicMock()
+        service.dataset_loader.get_dataset_by_name.return_value = []
+
+        class _Adapter(PipelineInterface):
+            model_path = tmp_path
+            model_type = "fake"
+            trust_remote_code = False
+            called_with = None
+
+            def handle_dataset(self, dataset, device=DeviceType.NPU):
+                return []
+
+            def handle_dataset_by_batch(self, dataset, batch_size, device=DeviceType.NPU):
+                return []
+
+            def load_model(self, device=DeviceType.NPU):
+                return MagicMock()
+
+            def modelslim_v0_save_postprocess(self, save_directory: str) -> None:
+                self.called_with = save_directory
+
+        adapter = _Adapter()
+        quant_config = ModelslimV0QuantConfig.from_base(
+            BaseQuantConfig.model_validate(
+                {
+                    "apiversion": "modelslim_v0",
+                    "spec": {"calib_cfg": {}, "calib_dataset": "calib.jsonl"},
+                }
+            )
+        )
+        import msmodelslim.core.quant_service.modelslim_v0.quant_service as v0_svc
+
+        with patch.object(v0_svc, "Calibrator", return_value=mock_calibrator), patch.object(v0_svc, "copy_files"):
+            service.quant_process(quant_config, adapter, save_path=tmp_path, device=DeviceType.CPU)
+
+        assert adapter.called_with == str(tmp_path)
+
+    def test_quant_process_calls_default_save_postprocess(self, service, tmp_path):
+        """场景：适配器使用流水线默认空实现。预期：persist 后仍调用该钩子。"""
+        mock_calibrator = MagicMock()
+        service.dataset_loader = MagicMock()
+        service.dataset_loader.get_dataset_by_name.return_value = []
+
+        model_adapter = MagicMock(spec=PipelineInterface)
+        model_adapter.model_path = tmp_path
+        model_adapter.load_model.return_value = MagicMock()
+        model_adapter.handle_dataset.return_value = []
+        model_adapter.uses_image_calib.return_value = False
+
+        quant_config = ModelslimV0QuantConfig.from_base(
+            BaseQuantConfig.model_validate(
+                {
+                    "apiversion": "modelslim_v0",
+                    "spec": {"calib_cfg": {}, "calib_dataset": "calib.jsonl"},
+                }
+            )
+        )
+        import msmodelslim.core.quant_service.modelslim_v0.quant_service as v0_svc
+
+        with patch.object(v0_svc, "Calibrator", return_value=mock_calibrator), patch.object(v0_svc, "copy_files"):
+            service.quant_process(quant_config, model_adapter, save_path=tmp_path, device=DeviceType.CPU)
+
+        model_adapter.modelslim_v0_save_postprocess.assert_called_once_with(str(tmp_path))

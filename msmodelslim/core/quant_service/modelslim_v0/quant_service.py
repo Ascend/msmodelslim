@@ -15,7 +15,7 @@ You may obtain a copy of Mulan PSL v2 at:
 
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
@@ -35,6 +35,7 @@ from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import safe_copy_file
 from msmodelslim.core.context.interface import IContextFactory
+from .calib_data import normalize_calib_data_for_calibrator
 from .pipeline_interface import PipelineInterface
 from .quant_config import ModelslimV0QuantConfig
 from ..dataset_loader_infra import DatasetLoaderInfra
@@ -133,11 +134,15 @@ class ModelslimV0QuantService(IQuantService):
         batch_size = quant_config.spec.batch_size
 
         calib_data = None
+        uses_image_calib = model_adapter.uses_image_calib()
 
         if calib_dataset is not None:
             get_logger().info("prepare calib_data from %s", calib_dataset)
             dataset = self.dataset_loader.get_dataset_by_name(calib_dataset)
             calib_data = model_adapter.handle_dataset(dataset=dataset, device=device)
+            if uses_image_calib:
+                # AntiOutlier DAG needs positional lists; Calibrator also accepts them.
+                calib_data = normalize_calib_data_for_calibrator(calib_data)
             get_logger().info("prepare calib_data from %s success", calib_dataset)
 
         anti_data = calib_data
@@ -146,6 +151,8 @@ class ModelslimV0QuantService(IQuantService):
             get_logger().info("prepare anti_data from %s", anti_dataset)
             dataset = self.dataset_loader.get_dataset_by_name(anti_dataset)
             anti_data = model_adapter.handle_dataset_by_batch(dataset=dataset, batch_size=batch_size, device=device)
+            if uses_image_calib:
+                anti_data = normalize_calib_data_for_calibrator(anti_data)
             get_logger().info("prepare anti_data from %s success", anti_dataset)
 
         # load model
@@ -193,6 +200,7 @@ class ModelslimV0QuantService(IQuantService):
 
         # copy .json and .py files
         copy_files(str(model_adapter.model_path), str(save_path))
+        model_adapter.modelslim_v0_save_postprocess(str(save_path))
 
         get_logger().info("==========QUANTIZATION: END==========")
 

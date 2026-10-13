@@ -1,0 +1,48 @@
+# Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+#
+# Reference practice for Qwen3.5-27B sparse quantization.
+# One-click quant_type stays w8a8s. The customer-facing artifact is W8A8SC
+# on Atlas inference products (for example 300I DUO).
+#
+# One-click:
+#   msmodelslim quant --model_type Qwen3.5-27B --quant_type w8a8s \
+#     --model_path ... --save_path ... --device npu --trust_remote_code true
+#
+# Runtime: modelslim_v0 Calibrator + is_lowbit via Qwen3_5ModelAdapter.load_model.
+# Float layers are declared ONLY in calib_params.mix_cfg below (fnmatch on Linear).
+# Do NOT put Conv3d patch_embed in disable_names; mix_cfg only matches nn.Linear.
+apiversion: modelslim_v0
+metadata:
+  config_id: qwen3_5_27b_w8a8s
+  score: 80
+  verified_model_types:
+    - Qwen3.5-27B
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: True
+    kv_cache: False
+spec:
+  anti_cfg:
+    anti_method: m2
+  calib_cfg:
+    w_bit: 4
+    a_bit: 8
+    fraction: 0.011
+    use_sigma: True
+    is_lowbit: True
+    co_sparse: False
+    mm_tensor: False
+    act_method: 2
+  calib_params:
+    mix_cfg:
+      # Language: GDN / down_proj stay float (accuracy on hybrid stack).
+      "model.language_model.layers.*.mlp.down_proj": "float"
+      "model.language_model.layers.*.linear_attn.in_proj_b": "float"
+      "model.language_model.layers.*.linear_attn.in_proj_a": "float"
+      "model.language_model.layers.*.linear_attn.out_proj": "float"
+      # Vision Linear tower stays float for OCR/TextVQA (Conv3d never matched).
+      "model.visual.*": "float"
+  calib_dataset: calibImages
+  calib_save_params:
+    part_file_size: 4

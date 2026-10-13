@@ -77,3 +77,15 @@ class PipelineInterface(IModel):
             "This model does not support load model to specified device and torch dtype.",
             action="Please implement load_model in PipelineInterface.",
         )
+
+    def uses_image_calib(self) -> bool:
+        """Whether this adapter needs the VLM-aware dataset loader.
+
+        The loader still determines the actual sample modality from dataset
+        contents; this hook only participates in upper-layer dependency wiring.
+        """
+        return False
+
+    def modelslim_v0_save_postprocess(self, save_directory: str) -> None:
+        """Optional hook after Calibrator.save and copy_files. Default is a no-op."""
+        return

@@ -20,11 +20,12 @@ See the Mulan PSL v2 for more details.
 """
 
 from pathlib import Path
-from typing import Optional, Any, List, Dict, Literal
+from typing import Optional, Any, List, Dict, Literal, Tuple
 
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.context.interface import IContextFactory
 from msmodelslim.core.quant_service import KeyInfoPersistenceInfra
+from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.logging import logger_setter
 from msmodelslim.utils.plugin.plugin_utils import load_plugin_config_class
 from msmodelslim.utils.plugin.typed_factory import TypedFactory
@@ -35,6 +36,7 @@ from ..interface import (
     QuantServiceConfig,
     QUANT_SERVICE_PLUGIN_GROUP,
 )
+from ..modelslim_v0.pipeline_interface import PipelineInterface as ModelslimV0PipelineInterface
 
 # 模块级工厂：按 apiversion 加载插件后端（proxy 不参与插件，仅做调度）
 _QUANT_SERVICE_FACTORY = TypedFactory[IQuantService](config_base_class=QuantServiceConfig)
@@ -63,7 +65,7 @@ class QuantServiceProxy(IQuantService):
         self.quant_service_config = quant_service_config
         self.dataset_loader = dataset_loader
         self.vlm_dataset_loader = vlm_dataset_loader
-        self._service_cache: Dict[str, IQuantService] = {}
+        self._service_cache: Dict[Tuple[str, int], IQuantService] = {}
         self.context_factory = context_factory
         self.debug_info_persistence = debug_info_persistence
 
@@ -76,17 +78,18 @@ class QuantServiceProxy(IQuantService):
         device_indices: Optional[List[int]] = None,
     ) -> None:
         api_version = quant_config.apiversion
-        dataset_loader = self._dataset_loader_for_apiversion(api_version)
-        if api_version not in self._service_cache:
+        dataset_loader = self._dataset_loader_for_apiversion(api_version, model_adapter)
+        cache_key = (api_version, id(dataset_loader))
+        if cache_key not in self._service_cache:
             backend_config_class = load_plugin_config_class(QUANT_SERVICE_PLUGIN_GROUP, api_version)
             backend_config = backend_config_class(apiversion=api_version)
-            self._service_cache[api_version] = _QUANT_SERVICE_FACTORY.create(
+            self._service_cache[cache_key] = _QUANT_SERVICE_FACTORY.create(
                 backend_config,
                 dataset_loader=dataset_loader,
                 context_factory=self.context_factory,
                 debug_info_persistence=self.debug_info_persistence,
             )
-        quant_service = self._service_cache[api_version]
+        quant_service = self._service_cache[cache_key]
         quant_service.quantize(
             quant_config=quant_config,
             model_adapter=model_adapter,
@@ -95,8 +98,26 @@ class QuantServiceProxy(IQuantService):
             device_indices=device_indices,
         )
 
-    def _dataset_loader_for_apiversion(self, apiversion: str) -> DatasetLoaderInfra:
-        """按 apiversion 选择数据集加载器：VLM/SD 用 vlm_dataset_loader，其余用 dataset_loader。"""
-        if apiversion in {'multimodal_vlm_modelslim_v1', 'multimodal_sd_modelslim_v1'}:
+    def _dataset_loader_for_apiversion(self, apiversion: str, model_adapter: Any = None) -> DatasetLoaderInfra:
+        """Wire the loader required by a backend/model protocol.
+
+        VLMDatasetLoader determines the actual modality from dataset contents;
+        the proxy only injects the loader capability requested by the adapter.
+        """
+        is_vlm_backend = apiversion in {
+            'multimodal_vlm_modelslim_v1',
+            'multimodal_sd_modelslim_v1',
+        }
+        needs_vlm_loader = (
+            apiversion == 'modelslim_v0'
+            and isinstance(model_adapter, ModelslimV0PipelineInterface)
+            and model_adapter.uses_image_calib()
+        )
+        if is_vlm_backend or needs_vlm_loader:
+            if self.vlm_dataset_loader is None:
+                raise SchemaValidateError(
+                    "vlm_dataset_loader is required by the quantization task",
+                    action="Please inject vlm_dataset_loader when constructing QuantServiceProxy.",
+                )
             return self.vlm_dataset_loader
         return self.dataset_loader

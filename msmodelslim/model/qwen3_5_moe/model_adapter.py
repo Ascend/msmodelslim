@@ -20,6 +20,7 @@ See the Mulan PSL v2 for more details.
 
 # pylint: disable=too-many-lines
 
+import json
 import os
 from collections import defaultdict
 from contextlib import contextmanager
@@ -53,6 +54,7 @@ from msmodelslim.model.common.layer_wise_forward import generated_decoder_layer_
 from msmodelslim.model.interface_hub import (
     IterSmoothInterface,
     FlexSmoothQuantInterface,
+    ModelSlimPipelineInterfaceV0,
     ModelSlimPipelineInterfaceV1,
     LayerWiseOffloadOptionalInterface,
     AscendV1SaveInterface,
@@ -101,6 +103,7 @@ def default_dtype(dtype):
 class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
     VLMBaseModelAdapter,
     ModelInfoInterface,
+    ModelSlimPipelineInterfaceV0,
     ModelSlimPipelineInterfaceV1,
     IterSmoothInterface,
     FlexSmoothQuantInterface,
@@ -110,7 +113,10 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
     FakeQuantInferenceInterface,
 ):
     """
-    V1 Framework adapter for Qwen3-VL-MoE models.
+    Dual-pipeline adapter for Qwen3.5 Dense / MoE multimodal models.
+
+    - V1 (W8A8): layer-wise loading, FA3 / AscendV1 save / offload / fake-quant
+    - V0 (W8A8S): full-model load + Calibrator is_lowbit sparse path
 
     Key features:
     - Layer-wise loading for text decoder
@@ -248,6 +254,81 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
             has_image,
         )
         return processed_data
+
+    def handle_dataset_by_batch(self, dataset: Any, batch_size: int, device: DeviceType = DeviceType.NPU) -> List[Any]:
+        """V0 anti-outlier path; batching is not required for image calib."""
+        _ = batch_size
+        return self.handle_dataset(dataset=dataset, device=device)
+
+    def uses_image_calib(self) -> bool:
+        return True
+
+    def modelslim_v0_save_postprocess(self, save_directory: str) -> None:
+        """Patch saved config torch_dtype for Atlas inference W8A8SC follow-up."""
+        torch_dtype = "float16"
+        dest = Path(save_directory)
+        config_path = dest / "config.json"
+        if not config_path.is_file():
+            get_logger().warning("post_save_w8a8s: missing %s, skip", config_path)
+            return
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        # config may store "torch.float16" or "float16"
+        dtype_name = torch_dtype.rsplit(".", maxsplit=1)[-1] if "." in torch_dtype else torch_dtype
+        data["torch_dtype"] = dtype_name
+
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+            f.write("\n")
+        try:
+            os.chmod(config_path, 0o600)
+        except OSError:
+            pass
+        get_logger().info("post_save_w8a8s: set torch_dtype=%s in %s", dtype_name, config_path)
+
+    def load_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
+        """
+        Full-model load for modelslim_v0 W8A8S (Calibrator + is_lowbit).
+
+        Prefers FP16 for Atlas inference products W8A8SC deployment.
+        """
+        get_logger().info("Loading full Qwen3.5 model for V0 W8A8S quantization...")
+        self.model_path = get_valid_read_path(str(self.model_path), is_dir=True, check_user_stat=True)
+
+        arch = self.config.architectures[0] if self.config.architectures else ""
+        if arch == "Qwen3_5MoeForConditionalGeneration":
+            model_cls = Qwen3_5MoeForConditionalGeneration
+        elif arch == "Qwen3_5ForConditionalGeneration":
+            model_cls = Qwen3_5ForConditionalGeneration
+        else:
+            raise InvalidModelError(
+                f"Invalid model architecture: {arch}",
+                action="Please verify the model architecture is correct.",
+            )
+
+        device_map = "cpu" if device == DeviceType.CPU else "auto"
+        model = model_cls.from_pretrained(  # nosec B615
+            self.model_path,
+            config=self.config,
+            trust_remote_code=self.trust_remote_code,
+            torch_dtype=torch.float16,
+            local_files_only=True,
+            device_map=device_map,
+            attn_implementation="eager",
+        ).eval()
+
+        # Keep OV / smooth helpers that read flat num_*_heads on model.config
+        if hasattr(model.config, "text_config"):
+            text_cfg = model.config.text_config
+            if hasattr(text_cfg, "num_attention_heads"):
+                model.config.num_attention_heads = text_cfg.num_attention_heads
+            if hasattr(text_cfg, "num_key_value_heads"):
+                model.config.num_key_value_heads = text_cfg.num_key_value_heads
+
+        get_logger().info("Full model loaded for V0 (dtype=float16, device_map=%s)", device_map)
+        return model
 
     def inject_fa3_placeholders(
         self, root_name: str, root_module: nn.Module, should_inject: Callable[[str], bool]

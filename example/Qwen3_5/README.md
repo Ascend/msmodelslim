@@ -35,7 +35,7 @@ Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 | **Qwen3.5-MoE** | Qwen3.5-397B-A17B | [Qwen3.5-397B-A17B](https://huggingface.co/Qwen/Qwen3.5-397B-A17B)   | ✅ |  | ✅ |      |   |  |   |   | [W8A8](#Qwen3.5-397B-A17B-w8a8)/[W4A8](#Qwen3.5-397B-A17B-w4a8)|
 | **Qwen3.5-MoE** | Qwen3.5-122B-A10B | [Qwen3.5-122B-A10B](https://modelscope.cn/models/Qwen/Qwen3.5-122B-A10B)   | ✅ |  |    |        |   |  |   |   | [W8A8](#Qwen3.5-122B-A10B-w8a8)|
 | **Qwen3.5-MoE** | Qwen3.5-35B-A3B | [Qwen3.5-35B-A3B](https://modelscope.cn/models/Qwen/Qwen3.5-35B-A3B)   | ✅ |  |    |        |   |  |   |   | [W8A8](#Qwen3.5-35B-A3B-w8a8)|
-| **Qwen3.5-Dense** | Qwen3.5-27B | [Qwen3.5-27B](https://modelscope.cn/models/Qwen/Qwen3.5-27B)   | ✅ |  |    |        |   |  |   |   | [W8A8](#Qwen3.5-27B-w8a8)|
+| **Qwen3.5-Dense** | Qwen3.5-27B | [Qwen3.5-27B](https://modelscope.cn/models/Qwen/Qwen3.5-27B)   | ✅ |  |    |        |   |  ✅|   |   | [W8A8](#Qwen3.5-27B-w8a8)/[W8A8SC](#Qwen3.5-27B-w8a8s)|
 | **Qwen3.5-Dense** | Qwen3.5-4B | [Qwen3.5-4B](https://modelscope.cn/models/Qwen/Qwen3.5-4B)   | ✅ |  |    |        |   |  |   |   | [W8A8](#Qwen3.5-4B-w8a8)|
 
 **说明：**
@@ -97,6 +97,29 @@ Qwen3.5 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.5-27B --quant_type w8a8 --trust_remote_code true
   ```
+
+##### <span id="Qwen3.5-27B-w8a8s">Qwen3.5-27B W8A8SC（W8A8S → 压缩）</span>
+
+用于 Atlas 推理产品（如 **300I DUO**）部署前的稀疏量化链路：先生成 `W8A8S` 中间权重，再压缩为对外交付的 **`W8A8SC`**。
+
+参考配置：[`lab_practice/qwen3_5_moe/qwen3_5_27b_w8a8s.yaml`](../../lab_practice/qwen3_5_moe/qwen3_5_27b_w8a8s.yaml)。校准图放在 `lab_calib/calibImages`（或 `example/multimodal_vlm/calibImages`），建议不少于 30 张。视觉塔 Linear 通过 YAML `mix_cfg` 保持浮点（OCR/TextVQA）。
+
+**步骤 1：一键生成 W8A8S（推荐）**
+
+  ```shell
+  # 确保 lab_calib/calibImages 下有校准图（短名 calibImages）
+  msmodelslim quant \
+    --model_path ${MODEL_PATH} \
+    --save_path ${SAVE_PATH_W8A8S} \
+    --device npu \
+    --model_type Qwen3.5-27B \
+    --quant_type w8a8s \
+    --trust_remote_code true
+  ```
+
+生成结果中应包含 `quant_model_description.json`，且 `model_quant_type` 为 `W8A8S`。浮点层策略仅在实践配置 `mix_cfg` 中声明，勿另开脚本维护名单。
+
+> 说明：W8A8S 已接入 `msmodelslim quant --quant_type w8a8s`（`modelslim_v0` + `Calibrator`/`is_lowbit`）。对外交付形态为 **W8A8SC**；压缩与推理依赖 vLLM-Ascend 对应 scheme。
 
 #### 5. Qwen3.5-4B
 
