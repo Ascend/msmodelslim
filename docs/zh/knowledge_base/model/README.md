@@ -804,7 +804,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
     </tr>
     <tr>
       <td>GLM-5.3-Flash</td>
-      <td>transformers==5.16.0</td>
+      <td>transformers==5.16.1</td>
       <td>-</td>
       <td>√(一键量化)</td>
       <td>-</td>
