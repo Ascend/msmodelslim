@@ -25,10 +25,10 @@
   pip install transformers==5.15.0
   ```
 
-- GLM-5.3-Flash（GLM-5-Next）需要配置安装 transformers 5.16.0 版本：
+- GLM-5.3-Flash（GLM-5-Next）需要配置安装 transformers 5.16.1 版本：
 
   ```bash
-  pip install transformers==5.16.0
+  pip install transformers==5.16.1
   ```
 
 ## 支持的模型版本与量化策略
@@ -356,7 +356,7 @@ msmodelslim quant \
 - 其中`MODEL_PATH`为GLM-5.3-Flash模型的路径，`SAVE_PATH`为量化后的权重保存路径。
 - 该一键量化命令匹配使用的量化配置文件为[glm_5_next_w8a8.yaml](../../lab_practice/glm_5_next/glm_5_next_w8a8.yaml)，可以在其中查看具体的量化策略。
 
-**说明：** GLM-5.3-Flash 同样支持 W8A8C8 量化。由于 C8（KV Cache INT8）由框架侧在部署时使能，精度损失相对较小，权重侧无需做额外弥补（如针对 KV Cache 的校准选层），因此在不需要选层的情况下，W8A8C8 与 W8A8 的量化方式一致，可直接复用上述同一份量化命令与配置文件。
+**说明：** GLM-5.3-Flash 同样支持 W8A8C8 量化。由于 C8（KV Cache）由框架侧在部署时使能，精度损失相对较小，权重侧无需做额外弥补（如针对 KV Cache 的校准选层），因此在不需要选层的情况下，W8A8C8 与 W8A8 的量化方式一致，可直接复用上述同一份量化命令与配置文件。
 
 #### GLM-5.3-Flash 浮点权重 转 MXFP8
 
@@ -374,3 +374,5 @@ msmodelslim quant \
 
 - 其中`MODEL_PATH`为GLM-5.3-Flash模型的路径，`SAVE_PATH`为转换后的权重保存路径，`CONFIG_PATH`为 msModelSlim 安装目录下的 `lab_practice` 路径。
 - 该命令匹配使用的转换配置文件为[glm_5_next_convert_mxfp8.yaml](../../lab_practice/glm_5_next/glm_5_next_convert_mxfp8.yaml)，可以在其中查看具体的转换策略。
+
+**说明：** 转换得到的 MXFP8 权重同样支持 W8A8C8 部署。由于 C8（KV Cache）由框架侧在部署时使能，精度损失相对较小，权重侧无需做额外处理（如针对 KV Cache 的校准选层），因此 MXFP8 权重的 W8A8C8 与 W8A8 使用同一份转换命令与配置文件，可直接复用上述离线权重转换流程。
