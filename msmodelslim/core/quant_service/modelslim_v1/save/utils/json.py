@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 
 import os
 
-from ascend_utils.common.security import json_safe_dump
+from msmodelslim.utils.security import json_safe_dump
 
 
 class JsonWriter:

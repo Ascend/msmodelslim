@@ -31,7 +31,7 @@ import torch
 import torch.distributed as dist
 from torch import nn
 
-from ascend_utils.common.security.path import json_safe_dump
+from msmodelslim.utils.security import json_safe_dump
 from msmodelslim import logger
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.ir.qal.qregistry import QABCRegistry
