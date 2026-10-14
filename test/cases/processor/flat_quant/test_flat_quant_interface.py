@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=arguments-differ,function-redefined
 
 import unittest
 
@@ -33,31 +34,27 @@ class MockFlatQuantAdapter(FlatQuantInterface):
             AttnNormLinearPair,
             AttnLinearLinearPair,
             MLPNormLinearPair,
-            MLPLinearLinearPair
+            MLPLinearLinearPair,
         )
 
         structure_configs = [
             {
                 "source": "input_layernorm",
                 "targets": ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"],
-                "pair_class": AttnNormLinearPair
+                "pair_class": AttnNormLinearPair,
             },
             {
                 "source": "self_attn.v_proj",
                 "targets": ["self_attn.o_proj"],
                 "pair_class": AttnLinearLinearPair,
-                "extra_config": {'head_dim': 64, 'num_attention_heads': 8}
+                "extra_config": {'head_dim': 64, 'num_attention_heads': 8},
             },
             {
                 "source": "post_attention_layernorm",
                 "targets": ["mlp.gate_proj", "mlp.up_proj"],
-                "pair_class": MLPNormLinearPair
+                "pair_class": MLPNormLinearPair,
             },
-            {
-                "source": "mlp.up_proj",
-                "targets": ["mlp.down_proj"],
-                "pair_class": MLPLinearLinearPair
-            }
+            {"source": "mlp.up_proj", "targets": ["mlp.down_proj"], "pair_class": MLPLinearLinearPair},
         ]
         return structure_configs
 
@@ -74,7 +71,7 @@ class TestFlatQuantInterface(unittest.TestCase):
         self.assertTrue(callable(FlatQuantInterface.get_flatquant_subgraph))
 
 
-class TestFlatQuantInterface(unittest.TestCase):
+class TestFlatQuantInterface(unittest.TestCase):  # noqa: F811
     """Unit tests for FlatQuantInterface."""
 
     def test_FlatQuantInterface_has_method_get_flatquant_subgraph(self):
@@ -86,7 +83,7 @@ class TestFlatQuantInterface(unittest.TestCase):
         self.assertTrue(callable(FlatQuantInterface.get_flatquant_subgraph))
 
 
-class TestFlatQuantInterface(unittest.TestCase):
+class TestFlatQuantInterface(unittest.TestCase):  # noqa: F811
     """测试 FlatQuantInterface 类 - FlatQuant适配器接口"""
 
     def test_FlatQuantInterface_has_method_get_flatquant_subgraph(self):

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,10 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=attribute-defined-outside-init,unnecessary-dunder-call
 
 import pytest
-import numpy as np
-import operator
+import operator  # noqa: F401
+import numpy as np  # noqa: F401
 from unittest.mock import patch, MagicMock
 from ascend_utils.common.utils import (
     get_attrs_of_obj,
@@ -32,7 +33,7 @@ from ascend_utils.common.utils import (
     amp_enabled,
     OperatorAttrName,
     check_model_backend,
-    count_parameters
+    count_parameters,
 )
 
 
@@ -143,7 +144,7 @@ class MockResource:
 def test_reslisttorelease_enter_given_resources_when_called_then_enter_all():
     res1 = MockResource()
     res2 = MockResource()
-    with ResListToRelease(res1, res2) as rl:
+    with ResListToRelease(res1, res2) as rl:  # noqa: F841
         assert res1.entered
         assert res2.entered
 
@@ -163,6 +164,7 @@ def test_amp_enabled_given_apex_available_when_amp_enabled_then_return_true():
     with patch.dict('sys.modules', {'apex': MagicMock()}):
         with patch('apex.amp._amp_state.handle', True):
             assert amp_enabled()
+
 
 def test_amp_enabled_given_apex_not_available_when_called_then_return_false():
     with patch.dict('sys.modules', {'apex': None}):

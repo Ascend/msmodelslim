@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=abstract-class-instantiated
 
 from unittest.mock import MagicMock, patch
 from typing import List
@@ -27,8 +28,12 @@ from torch.nn import Conv2d, Linear
 from torch.nn.modules import activation, pooling
 
 from msmodelslim.pytorch.prune.prune_policy import (
-    PrunePolicyGraph, ImportanceInfo, PrunePolicy,
-    PrunePolicyGraphConv2D, PrunePolicyGraphLinear, DagNode
+    PrunePolicyGraph,
+    ImportanceInfo,
+    PrunePolicy,
+    PrunePolicyGraphConv2D,
+    PrunePolicyGraphLinear,
+    DagNode,
 )
 
 
@@ -66,7 +71,6 @@ class TestPrunePolicyGraph:
 
 # ------------------------------ ImportanceInfo 测试 ------------------------------
 class TestImportanceInfo:
-
     @staticmethod
     def test_init_success_with_valid_params(valid_params):
         info = ImportanceInfo(**valid_params)
@@ -92,7 +96,7 @@ class TestImportanceInfo:
             "out_weight_idxes": [0, 1],
             "policy": MagicMock(),
             "in_weight_idxes": [2, 3],
-            "out_chn_idxes": [4, 5]
+            "out_chn_idxes": [4, 5],
         }
 
     @pytest.mark.parametrize("none_param", ["importance", "params", "out_weight_idxes", "policy"])
@@ -104,14 +108,11 @@ class TestImportanceInfo:
 
 # ------------------------------ PrunePolicy 测试 ------------------------------
 class TestPrunePolicy:
-
     @staticmethod
     def test_create_item_in_desc():
         desc = {}
         PrunePolicy.create_item_in_desc(desc, "node1", "output", [1, 3], 5)
-        assert desc == {
-            "node1": {"output": [3, ['-', 'x', '-', 'x', '-']]}
-        }
+        assert desc == {"node1": {"output": [3, ['-', 'x', '-', 'x', '-']]}}
 
         PrunePolicy.create_item_in_desc(desc, "node1", "input", [0], 5)
         # 使用 get() 方法安全访问，指定默认值避免 KeyError
@@ -126,11 +127,7 @@ class TestPrunePolicy:
     @staticmethod
     def test_write_desc_basic(mock_policy):
         with patch.object(PrunePolicy, "create_item_in_desc") as mock_create:
-            importance_info = {
-                "out_weight_idxes": [0],
-                "in_weight_idxes": [1],
-                "out_chn_idxes": [2]
-            }
+            importance_info = {"out_weight_idxes": [0], "in_weight_idxes": [1], "out_chn_idxes": [2]}
             desc = {}
             mock_policy.write_desc(desc, importance_info)
 
@@ -229,19 +226,14 @@ class TestPrunePolicy:
 
     @pytest.fixture
     def importance_info_fixture(self):
-        return {
-            "out_weight_idxes": [0, 2, 4],
-            "in_weight_idxes": [1, 3],
-            "out_chn_idxes": [0, 1]
-        }
+        return {"out_weight_idxes": [0, 2, 4], "in_weight_idxes": [1, 3], "out_chn_idxes": [0, 1]}
 
     @pytest.mark.parametrize(
         "chn_eq1_has_weight, chn_eq2_has_weight, expected_call_count",
-        [(False, False, 2), (True, False, 3), (False, True, 3), (True, True, 4)]
+        [(False, False, 2), (True, False, 3), (False, True, 3), (True, True, 4)],
     )
     def test_write_desc_all_branches(
-            self, mock_policy, importance_info_fixture,
-            chn_eq1_has_weight, chn_eq2_has_weight, expected_call_count
+        self, mock_policy, importance_info_fixture, chn_eq1_has_weight, chn_eq2_has_weight, expected_call_count
     ):
         # 配置weight属性
         if chn_eq1_has_weight:
@@ -261,26 +253,17 @@ class TestPrunePolicy:
             mock_policy.write_desc(desc, importance_info_fixture)
             assert mock_create.call_count == expected_call_count
 
-            mock_create.assert_any_call(
-                desc, "node_out", "output", [0, 2, 4], mock_policy.out_weight_dims
-            )
-            mock_create.assert_any_call(
-                desc, "node_in", "input", [1, 3], mock_policy.in_weight_dims
-            )
+            mock_create.assert_any_call(desc, "node_out", "output", [0, 2, 4], mock_policy.out_weight_dims)
+            mock_create.assert_any_call(desc, "node_in", "input", [1, 3], mock_policy.in_weight_dims)
 
             if chn_eq1_has_weight:
-                mock_create.assert_any_call(
-                    desc, "chn_eq1", "input", [0, 1], mock_policy.out_chn
-                )
+                mock_create.assert_any_call(desc, "chn_eq1", "input", [0, 1], mock_policy.out_chn)
             if chn_eq2_has_weight:
-                mock_create.assert_any_call(
-                    desc, "chn_eq2", "input", [0, 1], mock_policy.out_chn
-                )
+                mock_create.assert_any_call(desc, "chn_eq2", "input", [0, 1], mock_policy.out_chn)
 
 
 # ------------------------------ PrunePolicyGraphConv2D 测试 ------------------------------
 class TestPrunePolicyGraphConv2D:
-
     @staticmethod
     def test_init_success(mock_conv_nodes, mock_importance_eval):
         policy = PrunePolicyGraphConv2D(mock_conv_nodes["graph"], mock_importance_eval)
@@ -427,6 +410,7 @@ class TestPrunePolicyGraphConv2D:
         mock_infos = [MagicMock(spec=ImportanceInfo)]
 
         with patch.object(policy, "_calc_importance_infos") as mock_calc:
+
             def mock_calc_logic():
                 policy._importance_infos = mock_infos
 
@@ -461,7 +445,7 @@ class TestPrunePolicyGraphConv2D:
             "conv_out": conv_out,
             "conv_in": conv_in,
             "dag_out": dag_out,
-            "dag_in": dag_in
+            "dag_in": dag_in,
         }
 
     @pytest.fixture
@@ -477,7 +461,6 @@ class TestPrunePolicyGraphConv2D:
 
 # ------------------------------ PrunePolicyGraphLinear 测试 ------------------------------
 class TestPrunePolicyGraphLinear:
-
     @staticmethod
     def test_init_success(mock_linear_nodes):
         importance_eval = MagicMock(return_value=0.7)
@@ -510,7 +493,7 @@ class TestPrunePolicyGraphLinear:
         return {
             "graph": {"linear_out": dag_out, "linear_in": dag_in, "chn_eq1": chn_eq1, "chn_eq2": chn_eq2},
             "linear_out": linear_out,
-            "linear_in": linear_in
+            "linear_in": linear_in,
         }
 
     @pytest.mark.parametrize("missing_key", ["linear_out", "linear_in"])

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=disallowed-name,redefined-argument-from-local
 
 import os
 from functools import lru_cache
@@ -101,15 +102,12 @@ def auto_convert_module_fp8_to_bf16(name: str, module: nn.Module, model_path: st
         }
         convert_module_fp8_to_bf16(name, module, model_path, weight_map=sub_weight_map)
     except KeyError:
-        get_logger().warning(f'Safetensors files not match index.json, please check whether model is of bf16.')
-        get_logger().warning(f'Skip fp8 to bf16.')
+        get_logger().warning('Safetensors files not match index.json, please check whether model is of bf16.')
+        get_logger().warning('Skip fp8 to bf16.')
 
 
 @torch.no_grad()
-def convert_module_fp8_to_bf16(name: str,
-                              module: nn.Module,
-                              model_path: str,
-                              weight_map: Dict[str, str]):
+def convert_module_fp8_to_bf16(name: str, module: nn.Module, model_path: str, weight_map: Dict[str, str]):
     with tqdm(total=len(weight_map), desc='fp8 to bf16') as bar:
         for sub_name, module in module.named_modules(prefix=name):
             if sub_name not in weight_map:

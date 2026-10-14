@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import unittest
 from unittest.mock import patch, Mock
@@ -32,12 +33,7 @@ from msmodelslim.utils.exception import VersionError
 
 def create_basic_qconfig() -> QConfig:
     """创建基本的量化配置"""
-    return QConfig(
-        dtype=QDType.INT8,
-        scope=QScope.PER_CHANNEL,
-        symmetric=True,
-        method="minmax"
-    )
+    return QConfig(dtype=QDType.INT8, scope=QScope.PER_CHANNEL, symmetric=True, method="minmax")
 
 
 def create_processor_config(include: list = None, exclude: list = None) -> DynamicCacheProcessorConfig:
@@ -63,34 +59,32 @@ def create_simple_model():
             self.query = nn.Linear(64, 64)
             self.key = nn.Linear(64, 64)
             self.value = nn.Linear(64, 64)
-            
+
         def forward(self, x):
             return self.query(x) + self.key(x) + self.value(x)
-    
+
     class SimpleDecoderLayer(nn.Module):
         def __init__(self):
             super().__init__()
             self.self_attn = SimpleAttention()  # 包含'attn'的属性名
             self.mlp = nn.Linear(64, 64)
-            
+
         def forward(self, x):
             x = self.self_attn(x)
             x = self.mlp(x)
             return x
-    
+
     class SimpleModel(nn.Module):
         def __init__(self):
             super().__init__()
             # 创建有层索引的结构，这样_detect_attention_layers能找到
-            self.layers = nn.ModuleList([
-                SimpleDecoderLayer() for _ in range(2)
-            ])
-            
+            self.layers = nn.ModuleList([SimpleDecoderLayer() for _ in range(2)])
+
         def forward(self, x):
             for layer in self.layers:
                 x = layer(x)
             return x
-    
+
     return SimpleModel()
 
 
@@ -125,7 +119,7 @@ class TestDynamicCacheQuantProcessor(unittest.TestCase):
         """测试处理器初始化"""
         config = create_processor_config()
         processor = DynamicCacheQuantProcessor(self.model, config)
-        
+
         self.assertEqual(processor.config, config)
         self.assertIsNotNone(processor.include)
         self.assertIsNotNone(processor.exclude)
@@ -143,7 +137,7 @@ class TestDynamicCacheQuantProcessor(unittest.TestCase):
             dtype=QDType.INT8,
             scope=QScope.PER_TENSOR,  # 应该是PER_CHANNEL
             symmetric=True,
-            method="minmax"
+            method="minmax",
         )
         config = DynamicCacheProcessorConfig(qconfig=qconfig)
         with self.assertRaises(ValueError):
@@ -154,7 +148,7 @@ class TestDynamicCacheQuantProcessor(unittest.TestCase):
         """测试处理器基本属性"""
         config = create_processor_config()
         processor = DynamicCacheQuantProcessor(self.model, config)
-        
+
         self.assertFalse(processor.is_data_free())
         self.assertTrue(processor.need_kv_cache())
         self.assertFalse(processor.support_distributed())
@@ -165,15 +159,15 @@ class TestDynamicCacheQuantProcessor(unittest.TestCase):
         """测试pre_run创建量化器"""
         # 模拟_detect_attention_layers返回正确的层结构
         mock_detect.return_value = {0: "layers.0.self_attn", 1: "layers.1.self_attn"}
-        
+
         config = create_processor_config()
         processor = DynamicCacheQuantProcessor(self.model, config)
-        
+
         # Mock _create_quantizer方法
         processor._create_quantizer = Mock()
-        
+
         processor.pre_run()
-        
+
         # 验证_create_quantizer被调用了正确的次数（每个检测到的层一次）
         self.assertEqual(processor._create_quantizer.call_count, 2)
 
@@ -184,7 +178,7 @@ class TestDynamicCacheQuantProcessor(unittest.TestCase):
 
         # 检测我们的简单模型中的attention层
         attention_layers = _detect_attention_layers(self.model)
-        
+
         # 验证检测到了正确数量的层
         self.assertEqual(len(attention_layers), 2)
         # 验证层名称格式正确
@@ -199,7 +193,7 @@ class TestDynamicCacheQuantProcessor(unittest.TestCase):
         # 测试有效配置
         valid_config = create_processor_config()
         self.assertIsInstance(valid_config.qconfig, QConfig)
-        
+
         # 测试include/exclude为空列表
         empty_config = create_processor_config(include=[], exclude=[])
         self.assertEqual(empty_config.include, [])

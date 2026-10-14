@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=assignment-from-none,consider-using-from-import,no-name-in-module,pointless-string-statement
 
 """
 DistributedTaskScheduler（分波调度器）的单元测试
@@ -28,25 +29,25 @@ DistributedTaskScheduler（分波调度器）的单元测试
 多 rank 同步验证：``run_distributed_spawn``（``torch.multiprocessing.spawn``）+子进程 ``gloo`` + ``file://``。
 """
 
-import os
-import unittest
-from typing import Any, Dict, List, Tuple
-from unittest.mock import MagicMock
+import os  # noqa: E402
+import unittest  # noqa: E402
+from unittest.mock import MagicMock  # noqa: E402, F401
+from typing import Any, Dict, List, Tuple  # noqa: E402, F401
 
 # 部分环境装了 torch_npu 但缺少运行时库时，torch 的 device backend auto-load 会导致 import torch 失败。
 os.environ.setdefault("TORCH_DEVICE_BACKEND_AUTOLOAD", "0")
 
-import torch
-import torch.nn as nn
+import torch  # noqa: E402
+import torch.nn as nn  # noqa: E402
 
-from msmodelslim.utils.distributed import TaskExecutionRecord, TaskSyncContext
+from msmodelslim.utils.distributed import TaskExecutionRecord, TaskSyncContext  # noqa: E402
 
-from test.cases.utils.distributed.dts_distributed_spawn import (
+from test.cases.utils.distributed.dts_distributed_spawn import (  # noqa: E402
     run_distributed_spawn,
     start_queue_result_collector,
     spawn_queue,
 )
-from test.cases.utils.distributed.test_dts_scheduler_test_workers import _run_sync_worker_fn
+from test.cases.utils.distributed.test_dts_scheduler_test_workers import _run_sync_worker_fn  # noqa: E402
 
 
 def _sync_np_to_tensor(x):
@@ -103,12 +104,10 @@ class TestSyncFunctions(unittest.TestCase):
             init_dir_prefix="dts_gloo_sync_",
         )
         results = results_future.result(timeout_s=120.0)
-            
+
         for r in results:
             if not r.get("ok", True):
-                self.fail(
-                    f"DTS sync worker rank {r.get('rank')} failed:\n{r.get('error', r)}"
-                )
+                self.fail(f"DTS sync worker rank {r.get('rank')} failed:\n{r.get('error', r)}")
 
         return results
 
@@ -214,8 +213,7 @@ class TestSyncFunctions(unittest.TestCase):
             synced_value = _sync_np_to_tensor(rank1_result["post_sync"][key])
             self.assertTrue(
                 torch.allclose(owner_value, synced_value),
-                f"{key} not synced correctly: rank0={owner_value.mean().item()}, "
-                f"rank1={synced_value.mean().item()}",
+                f"{key} not synced correctly: rank0={owner_value.mean().item()}, rank1={synced_value.mean().item()}",
             )
 
     def test_default_module_state_sync_syncs_conv2d_when_multirank_real_dist(self):
@@ -245,8 +243,7 @@ class TestSyncFunctions(unittest.TestCase):
             synced_value = _sync_np_to_tensor(rank1_result["post_sync"][key])
             self.assertTrue(
                 torch.allclose(owner_value, synced_value),
-                f"{key} not synced correctly: rank0={owner_value.mean().item()}, "
-                f"rank1={synced_value.mean().item()}",
+                f"{key} not synced correctly: rank0={owner_value.mean().item()}, rank1={synced_value.mean().item()}",
             )
 
     def test_default_module_state_sync_syncs_from_owner_rank1_when_multirank_real_dist(self):
@@ -274,8 +271,5 @@ class TestSyncFunctions(unittest.TestCase):
             t = _sync_np_to_tensor(value)
             self.assertTrue(
                 torch.allclose(t, torch.tensor(1.0)),
-                f"Rank 0 {key} should be synced to owner (rank 1) value 1.0, "
-                f"got {t.mean().item()}",
+                f"Rank 0 {key} should be synced to owner (rank 1) value 1.0, got {t.mean().item()}",
             )
-
-

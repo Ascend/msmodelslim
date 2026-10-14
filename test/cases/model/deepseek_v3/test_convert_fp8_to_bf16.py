@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,unspecified-encoding
+
 import json
 import os
 import tempfile
@@ -33,7 +35,6 @@ import msmodelslim.model.deepseek_v3.convert_fp8_to_bf16 as mod
 
 
 class TestConvertFP8ToBF16(unittest.TestCase):
-
     def setUp(self):
         torch.manual_seed(0)
 
@@ -43,8 +44,9 @@ class TestConvertFP8ToBF16(unittest.TestCase):
         weight = torch.randn(m, n, dtype=torch.float32)
         scale = torch.full((m // 128, n // 128), 0.5, dtype=torch.float32)
 
-        expected = (weight.to(torch.float32)
-                    * scale.repeat_interleave(128, dim=0).repeat_interleave(128, dim=1)[:m, :n]).to(torch.bfloat16)
+        expected = (
+            weight.to(torch.float32) * scale.repeat_interleave(128, dim=0).repeat_interleave(128, dim=1)[:m, :n]
+        ).to(torch.bfloat16)
 
         out = mod.weight_dequant(weight.clone(), scale)
         self.assertEqual(out.dtype, torch.bfloat16)
@@ -62,6 +64,7 @@ class TestConvertFP8ToBF16(unittest.TestCase):
 
         original_get_inv_tensor = mod.get_inv_tensor
         try:
+
             def fake_get_inv_tensor(tensor_name, fp8_path, wm):
                 self.assertEqual(tensor_name, 'linear')
                 self.assertIs(wm, weight_map)
@@ -99,10 +102,7 @@ class TestConvertFP8ToBF16(unittest.TestCase):
 
     def test_auto_convert_module_fp8_to_bf16_when_weight_map_not_empty_then_call_convert(self):
         """测试auto_convert_module_fp8_to_bf16方法：weight_map不为空时应调用转换"""
-        called = {
-            'flag': False,
-            'flag2': False
-        }
+        called = {'flag': False, 'flag2': False}
 
         def fake_get_inv_weight_map(_):
             called['flag2'] = True
@@ -187,9 +187,7 @@ class TestConvertFP8ToBF16(unittest.TestCase):
 
             # 创建模拟的scale tensor
             scale_tensor = torch.randn(2, 2)
-            tensors_dict = {
-                'model.layer1.weight_scale_inv': scale_tensor
-            }
+            tensors_dict = {'model.layer1.weight_scale_inv': scale_tensor}
 
             save_file(tensors_dict, safetensor_path)
 

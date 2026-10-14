@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=logging-fstring-interpolation
 
 import os
 from enum import Enum, auto
@@ -45,7 +46,7 @@ class OpsType(Enum):
     @staticmethod
     def get_ops_type(is_bf16: bool, is_fp8: bool):
         if is_bf16 and is_fp8:
-            raise ValueError(f'Using both label fp8 and label bf16.')
+            raise ValueError('Using both label fp8 and label bf16.')
 
         ops_type = OpsType.AUTO
         if is_bf16:
@@ -132,8 +133,8 @@ def auto_convert_model_fp8_to_bf16(model, model_path, ops_type: OpsType = OpsTyp
     try:
         convert_model_fp8_to_bf16(model, model_path, scale_list, weight_map)
     except KeyError:
-        msmodelslim_logger.warning(f'Safetensors files not match index.json, please check whether model is of bf16.')
-        msmodelslim_logger.warning(f'Skip fp8 to bf16.')
+        msmodelslim_logger.warning('Safetensors files not match index.json, please check whether model is of bf16.')
+        msmodelslim_logger.warning('Skip fp8 to bf16.')
     except Exception as e:
         msmodelslim_logger.error(f'Unexpected error occurred: {e}.')
         raise
@@ -144,7 +145,8 @@ def get_weight_map_and_scale_list_from_index(model, model_path):
     model_index = json_safe_load(model_index_path)
     weight_map = model_index['weight_map']
     convert_list = set(
-        map(lambda x: x.replace(WEIGHT_SCALE_INV, ''), filter(lambda x: WEIGHT_SCALE_INV in x, weight_map.keys())))
+        map(lambda x: x.replace(WEIGHT_SCALE_INV, ''), filter(lambda x: WEIGHT_SCALE_INV in x, weight_map.keys()))
+    )
     scale_list = []
     for name, _ in model.named_modules():
         if name in convert_list:
@@ -154,7 +156,7 @@ def get_weight_map_and_scale_list_from_index(model, model_path):
 
 def convert_model_fp8_to_bf16(model, model_path, scale_list, weight_map):
     if not judge_model_with_accelerate(model):
-        raise ValueError(f'Deepseek V3/R1 only support npu limited cpu unlimited quantization for now')
+        raise ValueError('Deepseek V3/R1 only support npu limited cpu unlimited quantization for now')
 
     replace_device_align_hook_if_needed(model)
 

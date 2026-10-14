@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=broad-exception-raised,logging-fstring-interpolation,no-member,raising-format-tuple,use-a-generator
 
 import time
 from collections import namedtuple
@@ -65,7 +66,7 @@ def init_acl(device_id=0, config_path=None):
 
     _, device_ret = acl.rt.get_device()
     if device_ret == 0:
-        logger.info(f'acl already initialized')
+        logger.info('acl already initialized')
     else:
         ret = acl.init(config_path) if config_path else acl.init()
         _check_ret("acl.init", ret)
@@ -111,6 +112,7 @@ class AclInference:
     >>> # 0.8130073547363281
     >>> acl_inference.release_acl(device_id=device_id)
     """
+
     def __init__(self, model_path, device_id=0):
         check_int(device_id, min_value=0, param_name="device_id")
         self.model_path = get_valid_read_path(model_path, extensions=["om"], size_max=MAX_READ_FILE_SIZE_32G)
@@ -135,7 +137,7 @@ class AclInference:
             # Create a new context for each new model
             self.context, ret = acl.rt.create_context(device_id)
             _check_ret("acl.rt.create_context", ret)
-            logger.info(f"end to create_context")
+            logger.info("end to create_context")
 
         except Exception as e:
             logger.error("Failed to create ACL runtime context: %s", e)
@@ -159,7 +161,6 @@ class AclInference:
                 raise ValueError("model with ascend_mbatch_shape_data currently not supported")
             if any([ii.shape is None for ii in self.outputs]):
                 raise ValueError("model dynamic input or output currently not supported")
-
 
         except Exception as e:
             # -------------------------- 异常时提示，由finally释放已分配资源 --------------------------

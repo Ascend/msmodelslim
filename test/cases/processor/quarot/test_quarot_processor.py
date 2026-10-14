@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,18 +18,19 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-in,redefined-outer-name
 
 from unittest.mock import MagicMock
-import sys
-import os
 
+import os  # noqa: F401
+import sys  # noqa: F401
 import pytest
 import torch
 
 from resources.fake.qwen3_dense import FakeQwen3Creator
+from msmodelslim.core.base.protocol import BatchProcessRequest  # noqa: F401
 
 from msmodelslim.utils.exception import UnsupportedError
-from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.processor.quarot.common.hadamard import random_hadamard_matrix, walsh_matrix
 from msmodelslim.processor.quarot.offline_quarot.quarot import QuaRotProcessorConfig, QuaRotProcessor
 from msmodelslim.processor.quarot.offline_quarot.quarot_interface import QuaRotInterface, RotatePair
@@ -117,21 +118,21 @@ class MockQuaRotAdapter(QuaRotInterface):
     def get_layer_wise_norm_liner_pair(self, decoder_module):
         norm_linear_pairs = {}
         norm_linear_pairs[decoder_module.input_layernorm] = [
-            decoder_module.self_attn.q_proj, 
-            decoder_module.self_attn.k_proj, 
-            decoder_module.self_attn.v_proj
+            decoder_module.self_attn.q_proj,
+            decoder_module.self_attn.k_proj,
+            decoder_module.self_attn.v_proj,
         ]
         norm_linear_pairs[decoder_module.post_attention_layernorm] = [
-            decoder_module.mlp.gate_proj, 
-            decoder_module.mlp.up_proj
+            decoder_module.mlp.gate_proj,
+            decoder_module.mlp.up_proj,
         ]
         return norm_linear_pairs
-    
+
     def get_layer_wise_ov_pair(self, decoder_module):
         ov_pairs = {}
         ov_pairs[decoder_module.self_attn.o_proj] = decoder_module.self_attn.v_proj
         return ov_pairs
-    
+
     def get_layer_wise_up_down_pair(self, decoder_module):
         up_down_pairs = {}
         up_down_pairs[decoder_module.mlp.up_proj] = decoder_module.mlp.down_proj
@@ -141,25 +142,25 @@ class MockQuaRotAdapter(QuaRotInterface):
         """返回层融合的mapping: 前置norm + 后续linear"""
         fuse_map = {}
         bake_names = []
-        
+
         # 处理decoder layers
         for i, _ in enumerate(self.model.layers):
             # input_layernorm融合到q_proj, k_proj, v_proj
             fuse_map[f"model.layers.{i}.input_layernorm"] = [
                 f"model.layers.{i}.self_attn.q_proj",
-                f"model.layers.{i}.self_attn.k_proj", 
-                f"model.layers.{i}.self_attn.v_proj"
+                f"model.layers.{i}.self_attn.k_proj",
+                f"model.layers.{i}.self_attn.v_proj",
             ]
-            
+
             # post_attention_layernorm融合到gate_proj, up_proj
             fuse_map[f"model.layers.{i}.post_attention_layernorm"] = [
                 f"model.layers.{i}.mlp.gate_proj",
-                f"model.layers.{i}.mlp.up_proj"
+                f"model.layers.{i}.mlp.up_proj",
             ]
-            
+
             # bake mean into down_proj
             bake_names.append(f"model.layers.{i}.mlp.down_proj")
-        
+
         return fuse_map, bake_names
 
     def get_bake_names(self):
@@ -173,7 +174,7 @@ class MockQuaRotAdapter(QuaRotInterface):
         """返回旋转矩阵的mapping"""
         model_dim = self.get_hidden_dim()
         head_dim = self.get_head_dim()
-        
+
         # 创建旋转矩阵（简化版本，实际使用中应该从hadamard或walsh生成）
         try:
             if block_size == -1 or model_dim == block_size:
@@ -182,21 +183,18 @@ class MockQuaRotAdapter(QuaRotInterface):
                 rot_main = random_hadamard_matrix(model_dim, torch.float32, self.model.device)
         except UnsupportedError:
             rot_main = torch.eye(model_dim, dtype=torch.float32, device=self.model.device)
-        
+
         try:
             rot_head = random_hadamard_matrix(head_dim, torch.float32, self.model.device)
         except UnsupportedError:
             rot_head = torch.eye(head_dim, dtype=torch.float32, device=self.model.device)
-        
+
         rotate_pairs = []
-        
+
         # 生成rotate pair供pre_run使用
-        pre_run_pair = RotatePair(
-            left_rot={"embed_tokens": rot_main},
-            right_rot={}
-        )
+        pre_run_pair = RotatePair(left_rot={"embed_tokens": rot_main}, right_rot={})
         rotate_pairs.append(pre_run_pair)
-        
+
         # 为每一层生成rotate pair
         for i in range(len(self.model.layers)):
             layer_pair = RotatePair(
@@ -210,18 +208,19 @@ class MockQuaRotAdapter(QuaRotInterface):
                 right_rot={
                     f"model.layers.{i}.self_attn.o_proj": rot_head,
                     f"model.layers.{i}.mlp.down_proj": rot_main,
-                }
+                },
             )
             rotate_pairs.append(layer_pair)
-        
+
         return rotate_pairs, rotate_pairs
 
 
 class TestQuaRotAdapter:
     """测试QuaRotInterface的所有方法"""
+
     @staticmethod
     def test_abstract_class():
-        decoder_module = MagicMock()
+        decoder_module = MagicMock()  # noqa: F841
         adapter = QuaRotInterface()
         # 测试QuaRotInterface的抽象方法
         try:

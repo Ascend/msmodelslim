@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=attribute-defined-outside-init
 
 from typing import Any, Dict, List, Optional, Tuple
 from enum import Enum
@@ -33,21 +34,21 @@ from .wrapper import WrapperIR, HookIR
 class QuarotOnlineRotationInfo:
     """
     Quarot旋转矩阵信息。
-    
+
     该类负责管理全局共享的旋转矩阵和层索引信息。
     """
 
     def __init__(
-            self,
-            rotation_o_proj: Optional[torch.Tensor],
-            rotation_o_proj_eye: Optional[torch.Tensor],
-            rotation_down_proj_m: Optional[torch.Tensor],
-            rotation_down_proj_n: Optional[torch.Tensor],
-            max_tp_size: int,
+        self,
+        rotation_o_proj: Optional[torch.Tensor],
+        rotation_o_proj_eye: Optional[torch.Tensor],
+        rotation_down_proj_m: Optional[torch.Tensor],
+        rotation_down_proj_n: Optional[torch.Tensor],
+        max_tp_size: int,
     ):
         """
         初始化QuarotRotationInfo。
-        
+
         Args:
             rotation_o_proj: 普通旋转矩阵
             rotation_down_proj_m: Kronecker旋转矩阵M
@@ -73,18 +74,14 @@ class QuarotOnlineRotationInfo:
     def get_quarot_save_info(self) -> Dict[str, Any]:
         """
         获取quarot相关的保存信息。
-        
+
         Returns:
             包含旋转矩阵和层名称的字典
         """
         return {
             "max_tp_size": self.max_tp_size,
-            "heads_rotation": {
-                "layers": self.heads_rotation_layers.copy()
-            },
-            "kronecker_rotation": {
-                "layers": self.kronecker_rotation_layers.copy()
-            }
+            "heads_rotation": {"layers": self.heads_rotation_layers.copy()},
+            "kronecker_rotation": {"layers": self.kronecker_rotation_layers.copy()},
         }
 
 
@@ -103,20 +100,15 @@ class QuarotOfflineRotationInfo:
 class QuarotOnlineHeadRotationWrapper(WrapperIR):
     """
     直接进行旋转运算的包装器。
-    
+
     该类继承自WrapperIR，包装AutoFakeQuantLinear实例，使用全局共享的旋转矩阵，
     在forward前添加旋转运算。
     """
 
-    def __init__(
-            self,
-            module: nn.Module,
-            layer_name: str,
-            rotation_info: QuarotOnlineRotationInfo
-    ):
+    def __init__(self, module: nn.Module, layer_name: str, rotation_info: QuarotOnlineRotationInfo):
         """
         初始化RotationWrapper包装器。
-        
+
         Args:
             module: 被包装的AutoFakeQuantLinear实例
             layer_name: 层名称，用于保存时标识
@@ -130,10 +122,10 @@ class QuarotOnlineHeadRotationWrapper(WrapperIR):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         前向传播，在AutoFakeQuantLinear前添加旋转运算。
-        
+
         Args:
             x: 输入张量
-            
+
         Returns:
             经过旋转运算和线性变换的输出张量
         """
@@ -155,10 +147,10 @@ class QuarotOnlineHeadRotationWrapper(WrapperIR):
     def _apply_rotation(self, x: torch.Tensor) -> torch.Tensor:
         """
         应用旋转运算。
-        
+
         Args:
             x: 输入张量
-            
+
         Returns:
             旋转后的张量
         """
@@ -176,20 +168,15 @@ class QuarotOnlineHeadRotationWrapper(WrapperIR):
 class QuarotOnlineKroneckerRotationWrapper(WrapperIR):
     """
     按Kronecker Product方式进行旋转的包装器。
-    
+
     该类继承自WrapperIR，包装AutoFakeQuantLinear实例，使用全局共享的旋转矩阵，
     通过Kronecker Product组合后进行旋转运算。
     """
 
-    def __init__(
-            self,
-            module: nn.Module,
-            layer_name: str,
-            rotation_info: QuarotOnlineRotationInfo
-    ):
+    def __init__(self, module: nn.Module, layer_name: str, rotation_info: QuarotOnlineRotationInfo):
         """
         初始化KroneckerRotationWrapper包装器。
-        
+
         Args:
             module: 被包装的AutoFakeQuantLinear实例
             layer_name: 层名称，用于保存时标识
@@ -203,10 +190,10 @@ class QuarotOnlineKroneckerRotationWrapper(WrapperIR):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         前向传播，在AutoFakeQuantLinear前添加Kronecker旋转运算。
-        
+
         Args:
             x: 输入张量
-            
+
         Returns:
             经过Kronecker旋转运算和线性变换的输出张量
         """
@@ -228,10 +215,10 @@ class QuarotOnlineKroneckerRotationWrapper(WrapperIR):
     def _apply_kronecker_rotation(self, x: torch.Tensor) -> torch.Tensor:
         """
         应用Kronecker Product旋转运算。
-        
+
         Args:
             x: 输入张量
-            
+
         Returns:
             Kronecker旋转后的张量
         """
@@ -250,14 +237,14 @@ class QuarotOnlineKroneckerRotationWrapper(WrapperIR):
 class QuarotHeadsRotationHookIR(HookIR):
     """
     Quarot专用的HookIR实现，用于替代直接使用register_forward_pre_hook。
-    
+
     该类实现了HookIR抽象基类，将hook信息转换为QuarotOnlineRotationWrapper。
     """
 
     def __init__(self, layer_name: str, rotation_info: QuarotOnlineRotationInfo):
         """
         初始化QuarotHookIR。
-        
+
         Args:
             layer_name: 层名称
             rotation_info: 旋转矩阵信息
@@ -267,13 +254,13 @@ class QuarotHeadsRotationHookIR(HookIR):
         self.rotation_info = rotation_info
 
     def __call__(
-            self,
-            module: nn.Module,
-            args: Tuple[Any, ...],
+        self,
+        module: nn.Module,
+        args: Tuple[Any, ...],
     ) -> Tuple[Any, ...]:
         """
         实现Callable接口，作为hook函数被调用。
-        
+
         Args:
             module: 被hook的模块
             args: 模块的输入参数
@@ -299,10 +286,10 @@ class QuarotHeadsRotationHookIR(HookIR):
     def wrapper_module(self, module: nn.Module) -> WrapperIR:
         """
         实现HookIR抽象方法，返回QuarotOnlineRotationWrapper。
-        
+
         Args:
             module: 要包装的模块
-            
+
         Returns:
             QuarotOnlineRotationWrapper实例
         """
@@ -315,14 +302,14 @@ class QuarotHeadsRotationHookIR(HookIR):
 class QuarotKroneckerRotationHookIR(HookIR):
     """
     Quarot专用的Kronecker HookIR实现，用于down_proj的Kronecker旋转。
-    
+
     该类实现了HookIR抽象基类，将hook信息转换为QuarotOnlineKroneckerRotationWrapper。
     """
 
     def __init__(self, layer_name: str, rotation_info: QuarotOnlineRotationInfo):
         """
         初始化QuarotKroneckerHookIR。
-        
+
         Args:
             layer_name: 层名称
             rotation_info: 旋转矩阵信息
@@ -332,17 +319,17 @@ class QuarotKroneckerRotationHookIR(HookIR):
         self.rotation_info = rotation_info
 
     def __call__(
-            self,
-            module: nn.Module,
-            args: Tuple[Any, ...],
+        self,
+        module: nn.Module,
+        args: Tuple[Any, ...],
     ) -> Tuple[Any, ...]:
         """
         实现Callable接口，作为hook函数被调用。
-        
+
         Args:
             module: 被hook的模块
             args: 模块的输入
-            
+
         Returns:
             处理后的输入
         """
@@ -365,10 +352,10 @@ class QuarotKroneckerRotationHookIR(HookIR):
     def wrapper_module(self, module: nn.Module) -> WrapperIR:
         """
         实现HookIR抽象方法，返回QuarotOnlineKroneckerRotationWrapper。
-        
+
         Args:
             module: 要包装的模块
-            
+
         Returns:
             QuarotOnlineKroneckerRotationWrapper实例
         """
@@ -391,9 +378,9 @@ class QuaRotExtraInfoHookIR(HookIR):
         self.rotation_info = rotation_info
 
     def __call__(
-            self,
-            module: nn.Module,
-            args: Tuple[Any, ...],
+        self,
+        module: nn.Module,
+        args: Tuple[Any, ...],
     ) -> Tuple[Any, ...]:
         """Hook 不改变前向结果，仅承载信息。"""
         return args
@@ -419,7 +406,7 @@ class QuaRotExtraInfoWrapperIR(WrapperIR):
     @staticmethod
     def is_atomic() -> bool:
         return False
-    
+
     def forward(self, *args, **kwargs) -> Any:
         return self.wrapped_module(*args, **kwargs)
 
@@ -435,19 +422,20 @@ class RotationType(str, Enum):
 class OnlineRotationInfo:
     """
     简化的在线旋转矩阵信息类。
-    
+
     该类负责管理旋转矩阵和配置信息，支持四种旋转模式：
     - input: 在模块输入处旋转
     - output: 在模块输出处旋转
     - replace: 替换模块，只执行旋转
     - offline: 离线旋转，直接作用在模型参数上
-    
+
     Args:
         rotation_matrix: 旋转矩阵 R
         rotation_type: 旋转类型 ("input", "output", "replace", "offline")
         layer_name: 层名称
         rotation_side: 旋转方向 ("left" 或 "right")，仅用于 offline 类型
     """
+
     rotation_matrix: torch.Tensor
     rotation_type: RotationType  # "input", "output", "replace", "offline"
     layer_name: str
@@ -463,7 +451,7 @@ class BaseOnlineRotation:
         """
         self.layer_name = layer_name
         self.rotation_info = rotation_info
-    
+
     def _apply_rotation(self, x: torch.Tensor) -> torch.Tensor:
         """
         应用旋转运算 x @ R.T。
@@ -472,7 +460,7 @@ class BaseOnlineRotation:
         dtype = x.dtype
         device = x.device
         init_shape = x.shape
-        
+
         # 确保 x 的最后一个维度与旋转矩阵匹配
         # x: [..., dim] -> [..., dim] @ R.T
         if len(init_shape) == 1:
@@ -489,24 +477,20 @@ class BaseOnlineRotation:
             x_flat = x.reshape(-1, init_shape[-1])
             rotated_flat = torch.matmul(x_flat, rot.T.to(device, dtype))
             return rotated_flat.reshape(*init_shape[:-1], rotated_flat.shape[-1])
-    
+
+
 @logger_setter()
 class OnlineRotationWrapper(BaseOnlineRotation, WrapperIR):
     """
     通用的在线旋转包装器，用于替换模块。
-    
+
     该类继承自WrapperIR，用于替换模块，只执行旋转运算而不调用原模块。
     """
 
-    def __init__(
-            self,
-            module: nn.Module,
-            layer_name: str,
-            rotation_info: OnlineRotationInfo
-    ):
+    def __init__(self, module: nn.Module, layer_name: str, rotation_info: OnlineRotationInfo):
         """
         初始化OnlineRotationWrapper。
-        
+
         Args:
             module: 被包装的模块（用于保存时保留原模块信息）
             layer_name: 层名称，用于保存时标识
@@ -527,14 +511,14 @@ class OnlineRotationWrapper(BaseOnlineRotation, WrapperIR):
 class OnlineRotationInputHookIR(BaseOnlineRotation, HookIR):
     """
     通用的在线旋转输入HookIR实现，用于输入旋转。
-    
+
     该类实现了HookIR抽象基类，支持在模块输入处应用旋转（forward_pre_hook）。
     """
 
     def __init__(self, layer_name: str, rotation_info: OnlineRotationInfo):
         """
         初始化OnlineRotationInputHookIR。
-        
+
         Args:
             layer_name: 层名称
             rotation_info: 旋转矩阵信息
@@ -543,9 +527,9 @@ class OnlineRotationInputHookIR(BaseOnlineRotation, HookIR):
         self._init_rotation_common(layer_name, rotation_info)
 
     def __call__(
-            self,
-            module: nn.Module,
-            args: Tuple[Any, ...],
+        self,
+        module: nn.Module,
+        args: Tuple[Any, ...],
     ) -> Tuple[Any, ...]:
         # 输入旋转：x @ R.T
         if len(args) == 0:
@@ -556,12 +540,13 @@ class OnlineRotationInputHookIR(BaseOnlineRotation, HookIR):
 
     def wrapper_module(self, module: nn.Module) -> WrapperIR:
         self.remove_hook()
+
         # 对于input类型，创建一个包装器，在forward中应用旋转但保留原模块功能
         class RotationInputModuleWrapper(BaseOnlineRotation, WrapperIR):
             def __init__(self, wrapped_module, layer_name, rotation_info):
                 WrapperIR.__init__(self, wrapped_module)
                 self._init_rotation_common(layer_name, rotation_info)
-            
+
             def forward(self, *args, **kwargs):
                 # 输入旋转：先旋转输入，再执行原模块
                 if len(args) > 0:
@@ -570,7 +555,7 @@ class OnlineRotationInputHookIR(BaseOnlineRotation, HookIR):
                     return self.wrapped_module(*new_args, **kwargs)
                 else:
                     raise ValueError("Input rotation hook requires input arguments")
-        
+
         return RotationInputModuleWrapper(module, self.layer_name, self.rotation_info)
 
 
@@ -578,14 +563,14 @@ class OnlineRotationInputHookIR(BaseOnlineRotation, HookIR):
 class OnlineRotationOutputHookIR(BaseOnlineRotation, HookIR):
     """
     通用的在线旋转输出HookIR实现，用于输出旋转。
-    
+
     该类实现了HookIR抽象基类，支持在模块输出处应用旋转（forward_hook）。
     """
 
     def __init__(self, layer_name: str, rotation_info: OnlineRotationInfo):
         """
         初始化OnlineRotationOutputHookIR。
-        
+
         Args:
             layer_name: 层名称
             rotation_info: 旋转矩阵信息
@@ -594,10 +579,10 @@ class OnlineRotationOutputHookIR(BaseOnlineRotation, HookIR):
         self._init_rotation_common(layer_name, rotation_info)
 
     def __call__(
-            self,
-            module: nn.Module,
-            args: Tuple[Any, ...],
-            output: torch.Tensor,
+        self,
+        module: nn.Module,
+        args: Tuple[Any, ...],
+        output: torch.Tensor,
     ) -> torch.Tensor:
         # 输出旋转：output @ R.T
         rotated_output = self._apply_rotation(output)
@@ -605,12 +590,13 @@ class OnlineRotationOutputHookIR(BaseOnlineRotation, HookIR):
 
     def wrapper_module(self, module: nn.Module) -> WrapperIR:
         self.remove_hook()
+
         # 对于output类型，创建一个包装器，在forward中应用旋转但保留原模块功能
         class RotationOutputModuleWrapper(BaseOnlineRotation, WrapperIR):
             def __init__(self, wrapped_module, layer_name, rotation_info):
                 WrapperIR.__init__(self, wrapped_module)
                 self._init_rotation_common(layer_name, rotation_info)
-            
+
             def forward(self, *args, **kwargs):
                 # 输出旋转：先执行原模块，再旋转输出
                 output = self.wrapped_module(*args, **kwargs)
@@ -618,5 +604,5 @@ class OnlineRotationOutputHookIR(BaseOnlineRotation, HookIR):
                     rotated_output = self._apply_rotation(output[0])
                     return (rotated_output,) + output[1:]
                 return self._apply_rotation(output)
-        
+
         return RotationOutputModuleWrapper(module, self.layer_name, self.rotation_info)

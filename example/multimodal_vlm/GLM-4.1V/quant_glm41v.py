@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,23 +18,25 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-member,no-name-in-module
+
 import os
 import argparse
 import sys
 import shutil
 import torch
-import torch_npu
+import torch_npu  # noqa: F401
 from transformers import Glm4vForConditionalGeneration, AutoProcessor, AutoConfig
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, "..", "..", ".."))
 sys.path.append(parent_directory)
 
-from example.common.utils import cmd_bool
-from example.common.security.path import get_valid_read_path, get_write_directory
-from example.common.vlm_utils import VlmSafeGenerator, ModifyConfigParams, CopyTokenizerParams
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
+from example.common.utils import cmd_bool  # noqa: E402
+from example.common.security.path import get_valid_read_path, get_write_directory  # noqa: E402
+from example.common.vlm_utils import VlmSafeGenerator, ModifyConfigParams, CopyTokenizerParams  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig  # noqa: E402
 
 CPU = "cpu"
 NPU = "npu"
@@ -61,8 +63,12 @@ if __name__ == '__main__':
     parser.add_argument('--sigma_factor', type=float, default=3.0)
     parser.add_argument('--torch_dtype', type=str, choices=['bf16', 'fp16'], default='bf16')
     parser.add_argument('--group_size', type=int, choices=[64, 128, 256, 512], default=64)
-    parser.add_argument('--mindie_format', action="store_true", help="Compatible with quantization formats \
-                supported by MindIE")
+    parser.add_argument(
+        '--mindie_format',
+        action="store_true",
+        help="Compatible with quantization formats \
+                supported by MindIE",
+    )
     args = parser.parse_args()
 
     # check args
@@ -73,18 +79,19 @@ if __name__ == '__main__':
     # 1.加载模型
     device_map = CPU if args.device_type == CPU else "auto"
     torch_dtype = torch.bfloat16 if args.torch_dtype == "bf16" else torch.float16
-    model = Glm4vForConditionalGeneration.from_pretrained(
+    model = Glm4vForConditionalGeneration.from_pretrained(  # nosec B615
         args.model_path,
         device_map=device_map,
         trust_remote_code=args.trust_remote_code,
         torch_dtype=torch_dtype,
-        local_files_only=True).eval()
-    config = AutoConfig.from_pretrained(args.model_path,
-                                        trust_remote_code=args.trust_remote_code,
-                                        local_files_only=True)
+        local_files_only=True,
+    ).eval()
+    config = AutoConfig.from_pretrained(  # nosec B615
+        args.model_path, trust_remote_code=args.trust_remote_code, local_files_only=True
+    )
 
     # 2.加载处理器
-    processor = AutoProcessor.from_pretrained(args.model_path, local_files_only=True)
+    processor = AutoProcessor.from_pretrained(args.model_path, local_files_only=True)  # nosec B615
 
     # 3.设置回退层
     disable_names = []
@@ -96,13 +103,15 @@ if __name__ == '__main__':
     ]
     llm_name = []
     for i in range(config.vision_config.depth):
-        vision_name.extend([
-            f'model.visual.blocks.{i}.attn.qkv',
-            f'model.visual.blocks.{i}.attn.proj',
-            f'model.visual.blocks.{i}.mlp.gate_proj',
-            f'model.visual.blocks.{i}.mlp.up_proj',
-            f'model.visual.blocks.{i}.mlp.down_proj'
-        ])
+        vision_name.extend(
+            [
+                f'model.visual.blocks.{i}.attn.qkv',
+                f'model.visual.blocks.{i}.attn.proj',
+                f'model.visual.blocks.{i}.mlp.gate_proj',
+                f'model.visual.blocks.{i}.mlp.up_proj',
+                f'model.visual.blocks.{i}.mlp.down_proj',
+            ]
+        )
     for i in range(config.text_config.num_hidden_layers):
         llm_name.extend([f'model.language_model.layers.{i}.mlp.down_proj'])
     disable_names.extend(vision_name)
@@ -123,24 +132,32 @@ if __name__ == '__main__':
                         "type": "image",
                         "image": image_path,
                     },
-                    {
-                        "type": "text",
-                        "text": "Please describe this picture in detail."
-                    },
-                ]
+                    {"type": "text", "text": "Please describe this picture in detail."},
+                ],
             }
         ]
         inputs = processor.apply_chat_template(
-            messages,
-            tokenize=True,
-            add_generation_prompt=True,
-            return_dict=True,
-            return_tensors="pt"
+            messages, tokenize=True, add_generation_prompt=True, return_dict=True, return_tensors="pt"
         ).to(args.device_type)
 
-        calib_data.append([inputs['input_ids'], inputs['attention_mask'],
-                           None, None, None, None, None, None, None, None,
-                           inputs['pixel_values'], None, inputs['image_grid_thw'], None])
+        calib_data.append(
+            [
+                inputs['input_ids'],
+                inputs['attention_mask'],
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                inputs['pixel_values'],
+                None,
+                inputs['image_grid_thw'],
+                None,
+            ]
+        )
 
     # 5.异常值抑制
     anti_config = AntiOutlierConfig(
@@ -171,11 +188,10 @@ if __name__ == '__main__':
         do_smooth=args.do_smooth,
         use_sigma=args.use_sigma,
         sigma_factor=args.sigma_factor,
-        group_size=args.group_size
+        group_size=args.group_size,
     )
 
     with torch.autocast(device_type=args.device_type, dtype=torch_dtype):
-
         calibrator = Calibrator(model, quant_config, calib_data=calib_data, disable_level='L0')
         calibrator.run()
 
@@ -193,14 +209,11 @@ if __name__ == '__main__':
         dest_dir=args.save_directory,
         torch_dtype="torch.bfloat16" if torch_dtype == torch.bfloat16 else "torch.float16",
         quantize_type=quant_type,
-        args=args
+        args=args,
     )
     checker.modify_config(modify_params)
 
-    copy_params = CopyTokenizerParams(
-        model_dir=args.model_path,
-        dest_dir=args.save_directory
-    )
+    copy_params = CopyTokenizerParams(model_dir=args.model_path, dest_dir=args.save_directory)
     checker.copy_tokenizer_files(copy_params)
 
     chat_template_src_path = os.path.join(args.model_path, "chat_template.jinja")

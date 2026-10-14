@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=attribute-defined-outside-init,consider-using-from-import,no-member,no-name-in-module,redefined-outer-name,too-many-lines,ungrouped-imports
 
 from unittest.mock import MagicMock, patch
 
@@ -27,7 +28,7 @@ import torch.nn as nn
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_funcs import (
     linear_quantization_params,
     init_weight_quant_normal,
-    init_weight_quant_hessian
+    init_weight_quant_hessian,
 )
 from transformers import PretrainedConfig
 
@@ -38,7 +39,7 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_modules import (
     Quantizer,
     LinearQuantizer,
     Conv2dQuantizer,
-    LinearNf4Quantizer
+    LinearNf4Quantizer,
 )
 
 
@@ -256,7 +257,7 @@ class TestQuantizer:
             is_signed=test_quantizer.is_signed,
             integral_zp=True,
             admm=test_quantizer.admm,
-            mm_tensor=test_quantizer.mm_per_tensor
+            mm_tensor=test_quantizer.mm_per_tensor,
         )
 
         assert torch.equal(result, expected_result)
@@ -286,7 +287,7 @@ class TestQuantizer:
             is_signed=test_quantizer.is_signed,
             integral_zp=True,
             admm=test_quantizer.admm,
-            mm_tensor=test_quantizer.mm_per_tensor
+            mm_tensor=test_quantizer.mm_per_tensor,
         )
 
         assert torch.equal(result, expected_result)
@@ -514,7 +515,7 @@ class TestQuantizer:
             is_signed=test_quantizer.is_signed,
             integral_zp=True,
             admm=test_quantizer.admm,
-            mm_tensor=test_quantizer.mm_per_tensor
+            mm_tensor=test_quantizer.mm_per_tensor,
         )
 
         assert torch.equal(weight_scale, expected_weight_scale)
@@ -541,7 +542,7 @@ class TestQuantizer:
             is_signed=test_quantizer.is_signed,
             integral_zp=True,
             admm=test_quantizer.admm,
-            mm_tensor=test_quantizer.mm_per_tensor
+            mm_tensor=test_quantizer.mm_per_tensor,
         )
 
         assert torch.equal(weight_scale, expected_weight_scale)
@@ -562,7 +563,7 @@ class TestLinearQuantizer:
 
         result = linear_quantizer(in_param_input)
 
-        expected_result = torch.tensor([[4., 4.]])
+        expected_result = torch.tensor([[4.0, 4.0]])
         assert torch.equal(result, expected_result)
 
     def test_forward_with_int_infer_should_return_expected_result(self):
@@ -570,8 +571,7 @@ class TestLinearQuantizer:
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         linear = torch.nn.Linear(in_features=4, out_features=2, bias=False, dtype=torch.float32)
         in_param_weight = torch.tensor([[1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]])
-        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0],
-                                       [1.0, 1.0, 1.0, 1.0]])
+        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]])
 
         linear.weight.data = in_param_weight
         linear_quantizer = LinearQuantizer(cfg, logger)
@@ -585,7 +585,7 @@ class TestLinearQuantizer:
         linear_quantizer.quant_weight.enable_int_infer()
         result = linear_quantizer(in_param_input)
 
-        expected_result = torch.tensor([[4., 4.], [4., 4.]])
+        expected_result = torch.tensor([[4.0, 4.0], [4.0, 4.0]])
         assert torch.equal(result, expected_result)
 
     def test_forward_with_int_infer_and_int_bias_should_return_expected_result(self):
@@ -593,9 +593,8 @@ class TestLinearQuantizer:
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         linear = torch.nn.Linear(in_features=4, out_features=2, bias=True, dtype=torch.float32)
         in_param_weight = torch.tensor([[1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]])
-        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0],
-                                       [1.0, 1.0, 1.0, 1.0]])
-        in_param_bias = torch.tensor([[1., 1.]])
+        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]])
+        in_param_bias = torch.tensor([[1.0, 1.0]])
 
         linear.weight.data = in_param_weight
         linear.bias.data = in_param_bias
@@ -611,7 +610,7 @@ class TestLinearQuantizer:
         linear_quantizer.quant_weight.int_bias = True
         result = linear_quantizer(in_param_input)
 
-        expected_result = torch.tensor([[5., 5.], [5., 5.]])
+        expected_result = torch.tensor([[5.0, 5.0], [5.0, 5.0]])
         assert torch.equal(result, expected_result)
 
     def test_int_bias_with_bias(self):
@@ -619,9 +618,8 @@ class TestLinearQuantizer:
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         linear = torch.nn.Linear(in_features=4, out_features=1, bias=True, dtype=torch.float32)
         in_param_weight = torch.tensor([[1.0, 1.0, 1.0, 1.0]])
-        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0],
-                                       [1.0, 1.0, 1.0, 1.0]])
-        in_param_bias = torch.tensor([[1.]])
+        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]])  # noqa: F841
+        in_param_bias = torch.tensor([[1.0]])
 
         linear.weight.data = in_param_weight
         linear.bias.data = in_param_bias
@@ -644,9 +642,7 @@ class TestLinearQuantizer:
         expected = (int_out + bias_int) * fp_scale  # [[1.25, 2.7]]
         expected = expected.to(x_dtype)
 
-        result = linear_quantizer._bias_and_dequant_process(
-            correction, int_out, fp_scale, x_device, x_dtype
-        )
+        result = linear_quantizer._bias_and_dequant_process(correction, int_out, fp_scale, x_device, x_dtype)
 
         # 验证结果
         assert torch.equal(result, expected)
@@ -657,9 +653,8 @@ class TestLinearQuantizer:
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         linear = torch.nn.Linear(in_features=4, out_features=1, bias=True, dtype=torch.float32)
         in_param_weight = torch.tensor([[1.0, 1.0, 1.0, 1.0]])
-        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0],
-                                       [1.0, 1.0, 1.0, 1.0]])
-        in_param_bias = torch.tensor([[1.]])
+        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]])  # noqa: F841
+        in_param_bias = torch.tensor([[1.0]])
 
         linear.weight.data = in_param_weight
         linear.bias.data = in_param_bias
@@ -681,9 +676,7 @@ class TestLinearQuantizer:
         expected = (int_out + bias_int) * fp_scale  # [[0.25, 0.7]]
         expected = expected.to(x_dtype)
 
-        result = linear_quantizer._bias_and_dequant_process(
-            correction, int_out, fp_scale, x_device, x_dtype
-        )
+        result = linear_quantizer._bias_and_dequant_process(correction, int_out, fp_scale, x_device, x_dtype)
 
         # 验证结果
         assert torch.equal(result, expected)
@@ -694,9 +687,8 @@ class TestLinearQuantizer:
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         linear = torch.nn.Linear(in_features=4, out_features=1, bias=True, dtype=torch.float32)
         in_param_weight = torch.tensor([[1.0, 1.0, 1.0, 1.0]])
-        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0],
-                                       [1.0, 1.0, 1.0, 1.0]])
-        in_param_bias = torch.tensor([[1.]])
+        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]])  # noqa: F841
+        in_param_bias = torch.tensor([[1.0]])
 
         linear.weight.data = in_param_weight
         linear.bias.data = in_param_bias
@@ -723,9 +715,7 @@ class TestLinearQuantizer:
 
         expected = fp_out + bias_fp  # [[1.25, 2.7]]
 
-        result = linear_quantizer._bias_and_dequant_process(
-            correction, int_out, fp_scale, x_device, x_dtype
-        )
+        result = linear_quantizer._bias_and_dequant_process(correction, int_out, fp_scale, x_device, x_dtype)
 
         # 验证结果
         assert torch.equal(result, expected)
@@ -736,9 +726,8 @@ class TestLinearQuantizer:
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         linear = torch.nn.Linear(in_features=4, out_features=1, bias=True, dtype=torch.float32)
         in_param_weight = torch.tensor([[1.0, 1.0, 1.0, 1.0]])
-        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0],
-                                       [1.0, 1.0, 1.0, 1.0]])
-        in_param_bias = torch.tensor([[1.]])
+        in_param_input = torch.tensor([[1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]])  # noqa: F841
+        in_param_bias = torch.tensor([[1.0]])
 
         linear.weight.data = in_param_weight
         linear.bias.data = in_param_bias
@@ -765,9 +754,7 @@ class TestLinearQuantizer:
 
         expected = fp_out + bias_fp  # [[0.25, 0.7]]
 
-        result = linear_quantizer._bias_and_dequant_process(
-            correction, int_out, fp_scale, x_device, x_dtype
-        )
+        result = linear_quantizer._bias_and_dequant_process(correction, int_out, fp_scale, x_device, x_dtype)
 
         # 验证结果
         assert torch.equal(result, expected)
@@ -800,12 +787,9 @@ class TestFAQuantizer:
             num_key_value_heads=self.num_heads,
         )
 
-        self.q_input = torch.ones((self.batch_size, self.num_heads, \
-                                   self.seq_len, self.head_dim), dtype=torch.float32)
-        self.k_input = torch.ones((self.batch_size, self.num_heads, \
-                                   self.seq_len, self.head_dim), dtype=torch.float32)
-        self.v_input = torch.ones((self.batch_size, self.num_heads, \
-                                   self.seq_len, self.head_dim), dtype=torch.float32)
+        self.q_input = torch.ones((self.batch_size, self.num_heads, self.seq_len, self.head_dim), dtype=torch.float32)
+        self.k_input = torch.ones((self.batch_size, self.num_heads, self.seq_len, self.head_dim), dtype=torch.float32)
+        self.v_input = torch.ones((self.batch_size, self.num_heads, self.seq_len, self.head_dim), dtype=torch.float32)
 
         self.fa_quantizer = FAQuantizer(self.model.config, logger)
         self.fa_quantizer.configure(bit=8, sym=True, tp_size=1)
@@ -851,9 +835,7 @@ class TestFAQuantizer:
         self.fa_quantizer.enable_calibration()
         assert self.fa_quantizer.is_calib is True
 
-        for observer in [self.fa_quantizer.q_observer,
-                         self.fa_quantizer.k_observer,
-                         self.fa_quantizer.v_observer]:
+        for observer in [self.fa_quantizer.q_observer, self.fa_quantizer.k_observer, self.fa_quantizer.v_observer]:
             observer.configure(bit=8, sym=True, num_head=self.num_heads, ratio=0.9999)
 
         q_out = self.fa_quantizer.quant(self.q_input, qkv="q")
@@ -882,9 +864,7 @@ class TestFAQuantizer:
         # 测试启用量化后的前向传播
         self.fa_quantizer.enable_calibration()
 
-        for observer in [self.fa_quantizer.q_observer,
-                         self.fa_quantizer.k_observer,
-                         self.fa_quantizer.v_observer]:
+        for observer in [self.fa_quantizer.q_observer, self.fa_quantizer.k_observer, self.fa_quantizer.v_observer]:
             observer.configure(bit=8, sym=True, num_head=self.num_heads, ratio=0.9999)
 
         _ = self.fa_quantizer.quant(self.q_input, qkv="q")
@@ -923,8 +903,7 @@ class TestFAQuantizer:
         self.fa_quantizer.processed_types = {"q", "k", "v"}
         # 测试整数推理模式,校准设置
         self.fa_quantizer.enable_calibration()
-        for observer in [self.fa_quantizer.q_observer, \
-                         self.fa_quantizer.k_observer, self.fa_quantizer.v_observer]:
+        for observer in [self.fa_quantizer.q_observer, self.fa_quantizer.k_observer, self.fa_quantizer.v_observer]:
             observer.configure(bit=8, sym=True, num_head=self.num_heads, ratio=0.9999)
 
         _ = self.fa_quantizer.quant(self.q_input, qkv="q")
@@ -936,8 +915,8 @@ class TestFAQuantizer:
         self.fa_quantizer.dequant_infer = False
 
         q_out = self.fa_quantizer.quant(self.q_input, qkv="q")
-        k_out = self.fa_quantizer.quant(self.k_input, qkv="k")
-        v_out = self.fa_quantizer.quant(self.v_input, qkv="v")
+        k_out = self.fa_quantizer.quant(self.k_input, qkv="k")  # noqa: F841
+        v_out = self.fa_quantizer.quant(self.v_input, qkv="v")  # noqa: F841
 
         assert q_out.shape == self.q_input.shape
         assert self.fa_quantizer.q_observer.is_calibrated()
@@ -962,12 +941,9 @@ class TestFAQuantizer:
 
             def forward(self, hidden_states):
                 batch_size, seq_len, _ = hidden_states.size()
-                q = self.q_proj(hidden_states).view(batch_size, seq_len, \
-                                                    self.num_heads, self.head_dim).transpose(1, 2)
-                k = self.k_proj(hidden_states).view(batch_size, seq_len, \
-                                                    self.num_heads, self.head_dim).transpose(1, 2)
-                v = self.v_proj(hidden_states).view(batch_size, seq_len, \
-                                                    self.num_heads, self.head_dim).transpose(1, 2)
+                q = self.q_proj(hidden_states).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+                k = self.k_proj(hidden_states).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+                v = self.v_proj(hidden_states).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
 
                 q = self.fa_quantizer.quant(q, qkv="q")
                 k = self.fa_quantizer.quant(k, qkv="k")
@@ -986,7 +962,7 @@ class TestFAQuantizer:
         x = torch.rand((2, 16, self.hidden_size), dtype=torch.float32)
 
         with torch.no_grad():
-            output1 = attention(x)
+            output1 = attention(x)  # noqa: F841
 
         attention.fa_quantizer.enable_calibration()
         with torch.no_grad():
@@ -1006,9 +982,7 @@ class TestFAQuantizer:
         class MockDeepseekR1(torch.nn.Module):
             def __init__(self, config, logger, num_layers):
                 super().__init__()
-                self.layers = torch.nn.ModuleList([
-                    mock_attention(config, logger) for _ in range(num_layers)
-                ])
+                self.layers = torch.nn.ModuleList([mock_attention(config, logger) for _ in range(num_layers)])
 
             def forward(self, x):
                 for layer in self.layers:
@@ -1048,15 +1022,15 @@ class TestConv2dQuantizer:
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         quantizer = Conv2dQuantizer(cfg, logger)
 
-        assert quantizer.in_channels == None
-        assert quantizer.out_channels == None
-        assert quantizer.kernel_size == None
-        assert quantizer.stride == None
-        assert quantizer.padding == None
-        assert quantizer.dilation == None
-        assert quantizer.groups == None
-        assert quantizer.weight == None
-        assert quantizer.bias == None
+        assert quantizer.in_channels is None
+        assert quantizer.out_channels is None
+        assert quantizer.kernel_size is None
+        assert quantizer.stride is None
+        assert quantizer.padding is None
+        assert quantizer.dilation is None
+        assert quantizer.groups is None
+        assert quantizer.weight is None
+        assert quantizer.bias is None
 
         # 验证量化器是否正确初始化
         assert quantizer.quant_input.bit == cfg.a_bit
@@ -1069,14 +1043,7 @@ class TestConv2dQuantizer:
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         quantizer = Conv2dQuantizer(cfg, logger)
         conv = nn.Conv2d(
-            in_channels=3,
-            out_channels=64,
-            kernel_size=3,
-            stride=1,
-            padding=1,
-            dilation=1,
-            groups=1,
-            bias=True
+            in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1, groups=1, bias=True
         )
 
         quantizer.set_param(conv)
@@ -1097,34 +1064,20 @@ class TestConv2dQuantizer:
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         quantizer = Conv2dQuantizer(cfg, logger)
         conv_without_bias = nn.Conv2d(
-            in_channels=3,
-            out_channels=64,
-            kernel_size=3,
-            stride=1,
-            padding=1,
-            dilation=1,
-            groups=1,
-            bias=False
+            in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1, groups=1, bias=False
         )
 
         quantizer.set_param(conv_without_bias)
 
         # 验证bias是否为None
-        assert quantizer.bias == None
+        assert quantizer.bias is None
 
     def test_conv_forward(self):
         # 测试_conv_forward方法
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         quantizer = Conv2dQuantizer(cfg, logger)
         conv = nn.Conv2d(
-            in_channels=3,
-            out_channels=64,
-            kernel_size=3,
-            stride=1,
-            padding=1,
-            dilation=1,
-            groups=1,
-            bias=True
+            in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1, dilation=1, groups=1, bias=True
         )
         quantizer.set_param(conv)
 
@@ -1143,26 +1096,22 @@ class TestLinearNf4Quantizer:
         cfg.block_size = 16
         quantizer = LinearNf4Quantizer(cfg, logger)
 
-        assert quantizer.weight == None
-        assert quantizer.bias == None
-        assert quantizer.weight_shape == None
-        assert quantizer.bias_shape == None
-        assert quantizer.dtype == None
-        assert quantizer.device == None
-        assert quantizer.weight_absmax == None
-        assert quantizer.bias_absmax == None
-        assert quantizer.nf4_mapping == None
+        assert quantizer.weight is None
+        assert quantizer.bias is None
+        assert quantizer.weight_shape is None
+        assert quantizer.bias_shape is None
+        assert quantizer.dtype is None
+        assert quantizer.device is None
+        assert quantizer.weight_absmax is None
+        assert quantizer.bias_absmax is None
+        assert quantizer.nf4_mapping is None
         assert quantizer.blocksize == cfg.block_size
 
     def test_set_param_with_bias(self):
         # 测试set_param方法（有bias的情况）
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         quantizer = LinearNf4Quantizer(cfg, logger)
-        linear = nn.Linear(
-            in_features=64,
-            out_features=128,
-            bias=True
-        )
+        linear = nn.Linear(in_features=64, out_features=128, bias=True)
         # 设置测试用的张量
         test_weight = torch.randn(128, 64)
         test_bias = torch.randn(128)
@@ -1182,11 +1131,7 @@ class TestLinearNf4Quantizer:
         # 测试set_param方法（没有bias的情况）
         cfg = QuantConfig(w_bit=8, a_bit=8).weight_quant()
         quantizer = LinearNf4Quantizer(cfg, logger)
-        linear_without_bias = nn.Linear(
-            in_features=64,
-            out_features=128,
-            bias=False
-        )
+        linear_without_bias = nn.Linear(in_features=64, out_features=128, bias=False)
 
         quantizer.set_param(linear_without_bias)
 
@@ -1195,8 +1140,8 @@ class TestLinearNf4Quantizer:
         assert quantizer.dtype == linear_without_bias.weight.dtype
         assert quantizer.device == linear_without_bias.weight.device
         assert torch.equal(quantizer.weight, linear_without_bias.weight.data)
-        assert quantizer.bias == None
-        assert quantizer.bias_shape == None
+        assert quantizer.bias is None
+        assert quantizer.bias_shape is None
 
     def test_normalize_data(self):
         # 测试normalize_data方法
@@ -1233,12 +1178,26 @@ class TestLinearNf4Quantizer:
         quantizer = LinearNf4Quantizer(cfg, logger)
         nf4_quantize_mock = MagicMock()
         nf4_quantize_mock.return_value = torch.ones(128, dtype=torch.uint8)
-        nf4_mapping = torch.tensor([
-            -1.0, -0.6961928009986877, -0.5250730514526367, -0.39491748809814453, -0.28444138169288635,
-            -0.18477343022823334, -0.09105003625154495, 0.0, 0.07958029955625534, 0.16093020141124725,
-            0.24611230194568634, 0.33791524171829224, 0.44070982933044434, 0.5626170039176941,
-            0.7229568362236023, 1.0
-        ])
+        nf4_mapping = torch.tensor(
+            [
+                -1.0,
+                -0.6961928009986877,
+                -0.5250730514526367,
+                -0.39491748809814453,
+                -0.28444138169288635,
+                -0.18477343022823334,
+                -0.09105003625154495,
+                0.0,
+                0.07958029955625534,
+                0.16093020141124725,
+                0.24611230194568634,
+                0.33791524171829224,
+                0.44070982933044434,
+                0.5626170039176941,
+                0.7229568362236023,
+                1.0,
+            ]
+        )
         quantizer.nf4_mapping = nf4_mapping
         weight = torch.randn(16, 16)
 
@@ -1254,12 +1213,26 @@ class TestLinearNf4Quantizer:
         quantizer = LinearNf4Quantizer(cfg, logger)
         nf4_quantize_mock = MagicMock()
         nf4_quantize_mock.return_value = torch.ones(128, dtype=torch.uint8)
-        nf4_mapping = torch.tensor([
-            -1.0, -0.6961928009986877, -0.5250730514526367, -0.39491748809814453, -0.28444138169288635,
-            -0.18477343022823334, -0.09105003625154495, 0.0, 0.07958029955625534, 0.16093020141124725,
-            0.24611230194568634, 0.33791524171829224, 0.44070982933044434, 0.5626170039176941,
-            0.7229568362236023, 1.0
-        ])
+        nf4_mapping = torch.tensor(
+            [
+                -1.0,
+                -0.6961928009986877,
+                -0.5250730514526367,
+                -0.39491748809814453,
+                -0.28444138169288635,
+                -0.18477343022823334,
+                -0.09105003625154495,
+                0.0,
+                0.07958029955625534,
+                0.16093020141124725,
+                0.24611230194568634,
+                0.33791524171829224,
+                0.44070982933044434,
+                0.5626170039176941,
+                0.7229568362236023,
+                1.0,
+            ]
+        )
         quantizer.nf4_mapping = nf4_mapping
         weight = torch.randn(10000, 10000)  # 模拟大张量
 

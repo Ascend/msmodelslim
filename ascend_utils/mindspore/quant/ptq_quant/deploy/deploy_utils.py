@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,unnecessary-list-index-lookup
 
 import logging
 
@@ -25,6 +26,7 @@ import mindspore.nn as nn
 import numpy as np
 from mindspore import Tensor
 from mindspore.common import dtype as mstype
+
 try:
     from mindspore.nn.transformer.layers import _Linear
 except ModuleNotFoundError:
@@ -34,13 +36,8 @@ except ModuleNotFoundError:
         from mindspore.nn import Dense as _Linear
 
 
-def compute_weight_bias(simulated_quant_cell,
-                        scale_input,
-                        offset_input,
-                        scale_weight,
-                        offset_weight):
-    weight = getattr(simulated_quant_cell.name_cells()['compute_cell'],
-                     'original_weight').asnumpy()
+def compute_weight_bias(simulated_quant_cell, scale_input, offset_input, scale_weight, offset_weight):
+    weight = getattr(simulated_quant_cell.name_cells()['compute_cell'], 'original_weight').asnumpy()
     if scale_weight.size == 1 and offset_weight.size == 1:
         try:
             weight = np.round(weight / scale_weight) + offset_weight
@@ -99,10 +96,8 @@ def compute_fused_deq_scale(scale_input, scale_weight, offset_weight):
     for index in range(deq_scale.size):
         fused_deq_scale[index] = uint8_offset_w[index]
 
-        fused_deq_scale[index] = (fused_deq_scale[index] << np.uint32(8)) \
-                                 + uint8_shift_n[index]
-        fused_deq_scale[index] = (fused_deq_scale[index] << np.uint32(32)) \
-                                 + uint32_deq_scale[index]
+        fused_deq_scale[index] = (fused_deq_scale[index] << np.uint32(8)) + uint8_shift_n[index]
+        fused_deq_scale[index] = (fused_deq_scale[index] << np.uint32(32)) + uint32_deq_scale[index]
     return Tensor(fused_deq_scale, mstype.uint64)
 
 
@@ -116,5 +111,4 @@ def get_op_type(cell):
     elif isinstance(cell, _Linear):
         return "_Linear"
     else:
-        raise TypeError("Supported quantize operator type is Conv2d, "
-                        "Dense, _Linear, please check it.")
+        raise TypeError("Supported quantize operator type is Conv2d, Dense, _Linear, please check it.")

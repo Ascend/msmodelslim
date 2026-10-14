@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
+
 """
 使用方法：
 在 msit/msmodelslim 目录下执行
@@ -27,25 +29,30 @@ python3 -m coverage html -d test/fuzz/pytorch_ptq_api/calibrator/htmlcov -i
 """
 
 # 导入必要的库
-import sys
-import os
-import tempfile
+import sys  # noqa: E402
+import os  # noqa: E402
+import tempfile  # noqa: E402
 
-import atheris  # Google开源的模糊测试框架
-import torch
+import atheris  # Google开源的模糊测试框架  # noqa: E402
+import torch  # noqa: E402
 
 # 导入需要测试的模块
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config import QuantConfig
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_tools import Calibrator
-from test.fuzz.common.fuzz_utils import (
-    consume_bool, consume_str, consume_int, consume_pick_list, random_all_tensors, DummyModel
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config import QuantConfig  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_tools import Calibrator  # noqa: E402
+from test.fuzz.common.fuzz_utils import (  # noqa: E402
+    consume_bool,
+    consume_str,
+    consume_int,
+    consume_pick_list,
+    random_all_tensors,
+    DummyModel,
 )
 
 
 def random_mix_cfg(fdp):
     """生成随机混合配置
     可能返回：None、量化配置字典或错误类型数据
-    
+
     Args:
         fdp: FuzzedDataProvider对象
     Returns:
@@ -64,7 +71,7 @@ def random_mix_cfg(fdp):
         return d
     else:
         return consume_int(fdp, 0, 100)
-    
+
 
 def random_save_args(fdp):
     """生成模型保存相关的随机参数
@@ -107,28 +114,34 @@ def TestCalibrator(data):
             pr=1.0,
             act_method=consume_pick_list(fdp, [1, 2, 3, 4]),
         )
-        
+
         # 构造测试模型和校准数据
         input_dim = 1024
         output_dim = 1024
         model = DummyModel(input_dim, output_dim)
         batch = 1
         calib_data = [torch.randn(batch, input_dim)]
-        
+
         # 生成随机测试参数
         disable_level_choices = ['L0', 'L1', 'L2', consume_str(fdp)]
         disable_level = consume_pick_list(fdp, disable_level_choices)
         all_tensors = random_all_tensors(fdp)
         mix_cfg = random_mix_cfg(fdp)
-        
+
         # 初始化Calibrator并测试其功能
-        calibrator = Calibrator(model, quant_config, calib_data=calib_data, 
-                              disable_level=disable_level, all_tensors=all_tensors, mix_cfg=mix_cfg)
-        
+        calibrator = Calibrator(
+            model,
+            quant_config,
+            calib_data=calib_data,
+            disable_level=disable_level,
+            all_tensors=all_tensors,
+            mix_cfg=mix_cfg,
+        )
+
         # 随机测试run方法
         if consume_bool(fdp):
             calibrator.run()
-            
+
         # 随机测试save方法
         if consume_bool(fdp):
             output_path, safetensors_name, json_name, save_type, part_file_size = random_save_args(fdp)
@@ -136,11 +149,12 @@ def TestCalibrator(data):
                 calibrator.save(output_path, safetensors_name, json_name, save_type, part_file_size)
             except Exception:
                 pass  # 忽略保存时的异常
-                
+
     except Exception:
         pass  # 忽略所有异常，专注于发现崩溃问题
+
 
 # 主程序入口
 if __name__ == "__main__":
     atheris.Setup(sys.argv, TestCalibrator)
-    atheris.Fuzz() 
+    atheris.Fuzz()

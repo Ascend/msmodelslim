@@ -2,6 +2,22 @@
 # -*- coding: UTF-8 -*-
 
 """
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
 Safetensors shard 级 handle 缓存（convert P0 IO 优化）。
 
 同一 dependency / shard 组内多个 IR 任务共享已打开的 ``safe_open`` 句柄，

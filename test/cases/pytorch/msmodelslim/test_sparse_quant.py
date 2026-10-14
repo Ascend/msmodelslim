@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import os
 import shutil
 from resources.sample_net_torch import ThreeLinearTorchModel_for_Sparse
@@ -46,15 +47,17 @@ def test_sparse_quant():
     powerquant = False
     mm_tensor = False
 
-    quant_config = SparseQuantConfig(w_bit=w_bit,
-                                     disable_names=[],
-                                     dev_type='cpu',
-                                     act_method=3,
-                                     pr=2.0,
-                                     fraction=fraction,
-                                     nonuniform=powerquant,
-                                     mm_tensor=mm_tensor,
-                                     co_sparse=True)
+    quant_config = SparseQuantConfig(
+        w_bit=w_bit,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=3,
+        pr=2.0,
+        fraction=fraction,
+        nonuniform=powerquant,
+        mm_tensor=mm_tensor,
+        co_sparse=True,
+    )
 
     calibrator = SparseQuantCalibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run(int_infer=False)
@@ -77,14 +80,16 @@ def test_sparse_quant_is_lowbit():
     powerquant = False
     mm_tensor = False
 
-    quant_config = SparseQuantConfig(w_bit=w_bit,
-                                     disable_names=[],
-                                     dev_type='cpu',
-                                     act_method=1,
-                                     fraction=fraction,
-                                     nonuniform=powerquant,
-                                     mm_tensor=mm_tensor,
-                                     is_lowbit=True)
+    quant_config = SparseQuantConfig(
+        w_bit=w_bit,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=1,
+        fraction=fraction,
+        nonuniform=powerquant,
+        mm_tensor=mm_tensor,
+        is_lowbit=True,
+    )
 
     calibrator = SparseQuantCalibrator(model, quant_config, calib_data=dataset_calib, disable_level='L1')
     calibrator.run(int_infer=False)
@@ -107,15 +112,17 @@ def test_sparse_quant_change_bias():
     powerquant = False
     mm_tensor = False
 
-    quant_config = SparseQuantConfig(w_bit=w_bit,
-                                     disable_names=[],
-                                     dev_type='cpu',
-                                     act_method=3,
-                                     pr=2.0,
-                                     fraction=fraction,
-                                     nonuniform=powerquant,
-                                     mm_tensor=mm_tensor,
-                                     co_sparse=True)
+    quant_config = SparseQuantConfig(
+        w_bit=w_bit,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=3,
+        pr=2.0,
+        fraction=fraction,
+        nonuniform=powerquant,
+        mm_tensor=mm_tensor,
+        co_sparse=True,
+    )
 
     calibrator = SparseQuantCalibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run(int_infer=False)
@@ -139,16 +146,18 @@ def test_sparse_quant_change_a_bit():
     powerquant = False
     mm_tensor = False
 
-    quant_config = SparseQuantConfig(w_bit=w_bit,
-                                     a_bit=a_bit,
-                                     disable_names=[],
-                                     dev_type='cpu',
-                                     act_method=3,
-                                     pr=2.0,
-                                     fraction=fraction,
-                                     nonuniform=powerquant,
-                                     mm_tensor=mm_tensor,
-                                     co_sparse=True)
+    quant_config = SparseQuantConfig(
+        w_bit=w_bit,
+        a_bit=a_bit,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=3,
+        pr=2.0,
+        fraction=fraction,
+        nonuniform=powerquant,
+        mm_tensor=mm_tensor,
+        co_sparse=True,
+    )
 
     calibrator = SparseQuantCalibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run(int_infer=False)
@@ -171,15 +180,17 @@ def test_sparse_quant_change_act_method():
     powerquant = False
     mm_tensor = False
 
-    quant_config = SparseQuantConfig(w_bit=w_bit,
-                                     disable_names=[],
-                                     dev_type='cpu',
-                                     act_method=2,
-                                     pr=2.0,
-                                     fraction=fraction,
-                                     nonuniform=powerquant,
-                                     mm_tensor=mm_tensor,
-                                     co_sparse=True)
+    quant_config = SparseQuantConfig(
+        w_bit=w_bit,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=2,
+        pr=2.0,
+        fraction=fraction,
+        nonuniform=powerquant,
+        mm_tensor=mm_tensor,
+        co_sparse=True,
+    )
 
     calibrator = SparseQuantCalibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run(int_infer=False)
@@ -202,15 +213,17 @@ def test_sparse_quant_change_fraction():
     powerquant = False
     mm_tensor = False
 
-    quant_config = SparseQuantConfig(w_bit=w_bit,
-                                     disable_names=[],
-                                     dev_type='cpu',
-                                     act_method=3,
-                                     pr=2.0,
-                                     fraction=fraction,
-                                     nonuniform=powerquant,
-                                     mm_tensor=mm_tensor,
-                                     co_sparse=True)
+    quant_config = SparseQuantConfig(
+        w_bit=w_bit,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=3,
+        pr=2.0,
+        fraction=fraction,
+        nonuniform=powerquant,
+        mm_tensor=mm_tensor,
+        co_sparse=True,
+    )
 
     calibrator = SparseQuantCalibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run(int_infer=False)
@@ -233,15 +246,17 @@ def test_sparse_quant_change_mm_tensor():
     powerquant = False
     mm_tensor = True
 
-    quant_config = SparseQuantConfig(w_bit=w_bit,
-                                     disable_names=[],
-                                     dev_type='cpu',
-                                     act_method=3,
-                                     pr=2.0,
-                                     fraction=fraction,
-                                     nonuniform=powerquant,
-                                     mm_tensor=mm_tensor,
-                                     co_sparse=True)
+    quant_config = SparseQuantConfig(
+        w_bit=w_bit,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=3,
+        pr=2.0,
+        fraction=fraction,
+        nonuniform=powerquant,
+        mm_tensor=mm_tensor,
+        co_sparse=True,
+    )
 
     calibrator = SparseQuantCalibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run(int_infer=False)
@@ -264,15 +279,17 @@ def test_sparse_quant_change_int_infer():
     powerquant = False
     mm_tensor = False
 
-    quant_config = SparseQuantConfig(w_bit=w_bit,
-                                     disable_names=[],
-                                     dev_type='cpu',
-                                     act_method=3,
-                                     pr=2.0,
-                                     fraction=fraction,
-                                     nonuniform=powerquant,
-                                     mm_tensor=mm_tensor,
-                                     co_sparse=True)
+    quant_config = SparseQuantConfig(
+        w_bit=w_bit,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=3,
+        pr=2.0,
+        fraction=fraction,
+        nonuniform=powerquant,
+        mm_tensor=mm_tensor,
+        co_sparse=True,
+    )
 
     calibrator = SparseQuantCalibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run(int_infer=True)

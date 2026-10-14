@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,13 +18,21 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=redefined-outer-name
+
 import argparse
 import os
 import glob
 from unittest.mock import MagicMock
 
-from ascend_utils.common.security import safe_copy_file, json_safe_dump, json_safe_load, get_valid_read_path, \
-    get_valid_write_path, set_file_stat
+from ascend_utils.common.security import (
+    safe_copy_file,
+    json_safe_dump,
+    json_safe_load,
+    get_valid_read_path,
+    get_valid_write_path,
+    set_file_stat,
+)
 
 
 def copy_json(src_path: str, dst_path: str, quant_config, mindie_format: bool):
@@ -42,7 +50,7 @@ def modify_config_json(src_path: str, dst_path: str, quant_config, mindie_format
     """
     model_config = json_safe_load(src_path)
     model_config['quantize'] = str(quant_config.model_quant_type.value).lower()
-    
+
     config_dir = dst_path.split("config.json")[0]
     dest_quant_description_filepath = (
         glob.glob(os.path.join(config_dir, "quant_model_description*.json"))[0]
@@ -53,12 +61,14 @@ def modify_config_json(src_path: str, dst_path: str, quant_config, mindie_format
     quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=True)
     quantization_config = {} if mindie_format else quant_description_data
 
-    quantization_config.update({
-        'kv_quant_type': "C8" if quant_config.use_kvcache_quant else None,
-        'fa_quant_type': "FAQuant" if quant_config.use_fa_quant else None,
-        'group_size': quant_config.group_size if quant_config.group_size > 0 else 0,
-    })
-    
+    quantization_config.update(
+        {
+            'kv_quant_type': "C8" if quant_config.use_kvcache_quant else None,
+            'fa_quant_type': "FAQuant" if quant_config.use_fa_quant else None,
+            'group_size': quant_config.group_size if quant_config.group_size > 0 else 0,
+        }
+    )
+
     if mindie_format:
         model_config['quantization_config'] = quantization_config
     else:
@@ -85,9 +95,7 @@ def modify_vllm_config_json(src_path: str, dst_path: str, quant_config, mindie_f
     json_safe_dump(model_config, dst_path, indent=4)
 
 
-EXCLUDING_SUBFIX_LIST = (
-    'index.json',
-)
+EXCLUDING_SUBFIX_LIST = ('index.json',)
 
 FILE_HOOKS = {
     'config.json': modify_config_json,

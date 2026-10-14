@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,14 +18,16 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from unittest.mock import MagicMock
 import pytest
 
 from testing_utils.mock import mock_kia_library
+
 mock_kia_library()
 
-from msmodelslim.pytorch.llm_ptq.model.hunyuan.hunyuan_large import HunyuanLargeAdapter
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig
+from msmodelslim.pytorch.llm_ptq.model.hunyuan.hunyuan_large import HunyuanLargeAdapter  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig  # noqa: E402
 
 
 class TestGetNormLinearSubgraph:
@@ -128,11 +130,7 @@ class TestModifySmoothArgs:
         adapter = self.create_adapter(3)
         cfg = self.create_anti_config()
         args, kwargs = adapter.modify_smooth_args(
-            cfg=cfg,
-            norm_name="layer.norm",
-            linear_names="dummy",
-            args=[1, 2],
-            kwargs={"existing": "value"}
+            cfg=cfg, norm_name="layer.norm", linear_names="dummy", args=[1, 2], kwargs={"existing": "value"}
         )
 
         assert kwargs["is_shift"] is True
@@ -145,11 +143,7 @@ class TestModifySmoothArgs:
         adapter = self.create_adapter(3)
         cfg = self.create_anti_config()
         args, kwargs = adapter.modify_smooth_args(
-            cfg=cfg,
-            norm_name="linear_layer",
-            linear_names="dummy",
-            args=[],
-            kwargs={}
+            cfg=cfg, norm_name="linear_layer", linear_names="dummy", args=[], kwargs={}
         )
 
         assert kwargs["is_shift"] is False
@@ -166,7 +160,7 @@ class TestModifySmoothArgs:
             norm_name="layer.norm",  # 即使包含 norm 也不应生效
             linear_names="dummy",
             args=[3.14],
-            kwargs=original_kwargs.copy()
+            kwargs=original_kwargs.copy(),
         )
 
         assert kwargs == original_kwargs  # 参数应无变化
@@ -177,13 +171,7 @@ class TestModifySmoothArgs:
         """测试边界条件：空 norm_name"""
         adapter = self.create_adapter(3)
         cfg = self.create_anti_config()
-        args, kwargs = adapter.modify_smooth_args(
-            cfg=cfg,
-            norm_name="",
-            linear_names="dummy",
-            args=[],
-            kwargs={}
-        )
+        args, kwargs = adapter.modify_smooth_args(cfg=cfg, norm_name="", linear_names="dummy", args=[], kwargs={})
 
         assert kwargs["is_shift"] is False
 
@@ -192,11 +180,7 @@ class TestModifySmoothArgs:
         adapter = self.create_adapter(3)
         cfg = self.create_anti_config()
         args, kwargs = adapter.modify_smooth_args(
-            cfg=cfg,
-            norm_name="norm.bias",
-            linear_names="dummy",
-            args=[],
-            kwargs={"is_shift": False, "alpha": 1.0}
+            cfg=cfg, norm_name="norm.bias", linear_names="dummy", args=[], kwargs={"is_shift": False, "alpha": 1.0}
         )
 
         assert kwargs["is_shift"] is True  # 应覆盖原有值

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import unittest
 from unittest.mock import MagicMock, patch
@@ -167,7 +168,7 @@ class TestLayerTrainer(unittest.TestCase):
             with patch('msmodelslim.processor.flat_quant.trainer.convert_outputs_to_inputs') as mock_convert:
                 mock_convert.return_value = float_output
 
-                result = trainer.train_layer(mock_request, float_output)
+                result = trainer.train_layer(mock_request, float_output)  # noqa: F841
                 mock_convert.assert_called_once_with(float_output)
 
     def test_LayerTrainer_trains_when_train_layer_with_trainable_params(self):
@@ -234,6 +235,7 @@ class TestLayerTrainer(unittest.TestCase):
                     def mock_forward(*args, **kwargs):
                         out = args[0] @ trainable_param
                         return (out,)
+
                     original_forward = module.forward
                     module.forward = mock_forward
 
@@ -274,6 +276,7 @@ class TestLayerTrainer(unittest.TestCase):
                     def mock_forward(*args, **kwargs):
                         out = args[0] @ trainable_param
                         return (out,)
+
                     original_forward = module.forward
                     module.forward = mock_forward
 
@@ -301,7 +304,7 @@ class TestLayerTrainer(unittest.TestCase):
             with patch('msmodelslim.processor.flat_quant.trainer.convert_outputs_to_inputs') as mock_convert:
                 mock_convert.return_value = []
 
-                result = trainer.train_layer(mock_request, float_output)
+                result = trainer.train_layer(mock_request, float_output)  # noqa: F841
                 mock_convert.assert_called_once_with(float_output)
 
     def test_LayerTrainer_loss_computed_correctly_when_train_layer(self):
@@ -334,6 +337,7 @@ class TestLayerTrainer(unittest.TestCase):
                     def mock_forward(*args, **kwargs):
                         out = args[0] @ trainable_param
                         return (out,)
+
                     original_forward = module.forward
                     module.forward = mock_forward
 

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=chained-comparison
 
 import re
 import importlib
@@ -35,8 +36,9 @@ def type_to_str(value_type):
 
 def check_type(value, value_type, param_name="value", additional_check_func=None, additional_msg=None):
     # 适配modelslim -> msmodelslim，向前兼容from modelslim.xxx import Class时，Class的类归属不属于msmodelslim的问题
-    is_modelslim_import = (value.__class__.__module__.startswith(OLD_PACKAGE_NAME) and
-                           value_type.__module__.startswith(NEW_PACKAGE_NAME))
+    is_modelslim_import = value.__class__.__module__.startswith(OLD_PACKAGE_NAME) and value_type.__module__.startswith(
+        NEW_PACKAGE_NAME
+    )
     if is_modelslim_import:
         original_module_name = value_type.__module__
         redirect_module_name = original_module_name.replace(NEW_PACKAGE_NAME, OLD_PACKAGE_NAME)
@@ -53,7 +55,7 @@ def check_type(value, value_type, param_name="value", additional_check_func=None
         elif not additional_check_func(value):
             raise ValueError("Value of {} is invalid.".format(param_name) + additional_msg)
     is_int_when_tuple = isinstance(value_type, tuple) and int in value_type and bool not in value_type
-    if value_type == int or is_int_when_tuple:
+    if value_type == int or is_int_when_tuple:  # noqa: E721
         if isinstance(value, bool):
             raise TypeError('{} must be {}, not {}.'.format(param_name, type_to_str(value_type), type(value).__name__))
 
@@ -123,8 +125,9 @@ def check_dict_element(dict_value, value_type, param_name='dict', additional_msg
     additional_msg = (" " + additional_msg) if additional_msg else ""
     for key, value in dict_value.items():
         if not isinstance(value, value_type):
-            raise ValueError("Param of dict {}[{}] should be {}, ".format(param_name, key, type_to_str(value_type))
-                             + additional_msg)
+            raise ValueError(
+                "Param of dict {}[{}] should be {}, ".format(param_name, key, type_to_str(value_type)) + additional_msg
+            )
 
 
 def check_mapping_element(mapping_value, value_type, param_name='dict', additional_msg=None):
@@ -133,6 +136,6 @@ def check_mapping_element(mapping_value, value_type, param_name='dict', addition
     for key in mapping_value:
         value = mapping_value[key]
         if not isinstance(value, value_type):
-            raise ValueError("Param of dict {}[{}] should be {}, ".format(param_name, key, type_to_str(value_type))
-                             + additional_msg)
-
+            raise ValueError(
+                "Param of dict {}[{}] should be {}, ".format(param_name, key, type_to_str(value_type)) + additional_msg
+            )

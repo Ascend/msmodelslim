@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=attribute-defined-outside-init
+
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -57,10 +59,7 @@ class TestTransformersModelLoadConfig(unittest.TestCase):
             result = adapter._load_config(trust_remote_code=False)
 
             self.assertEqual(result, mock_config)
-            mock_get_config.assert_called_once_with(
-                model_path=str(self.model_path),
-                trust_remote_code=False
-            )
+            mock_get_config.assert_called_once_with(model_path=str(self.model_path), trust_remote_code=False)
 
     @patch('msmodelslim.model.common.transformers.SafeGenerator.get_config_from_pretrained')
     def test_load_config_with_trust_remote_code_when_called_then_pass_trust_flag(self, mock_get_config):
@@ -72,12 +71,9 @@ class TestTransformersModelLoadConfig(unittest.TestCase):
             adapter = TransformersModel.__new__(TransformersModel)
             adapter.model_path = self.model_path
 
-            result = adapter._load_config(trust_remote_code=True)
+            result = adapter._load_config(trust_remote_code=True)  # noqa: F841
 
-            mock_get_config.assert_called_once_with(
-                model_path=str(self.model_path),
-                trust_remote_code=True
-            )
+            mock_get_config.assert_called_once_with(model_path=str(self.model_path), trust_remote_code=True)
 
 
 class TestTransformersModelLoadTokenizer(unittest.TestCase):
@@ -101,10 +97,7 @@ class TestTransformersModelLoadTokenizer(unittest.TestCase):
 
             self.assertEqual(result, mock_tokenizer)
             mock_get_tokenizer.assert_called_once_with(
-                model_path=str(self.model_path),
-                use_fast=False,
-                legacy=False,
-                trust_remote_code=False
+                model_path=str(self.model_path), use_fast=False, legacy=False, trust_remote_code=False
             )
 
     @patch('msmodelslim.model.common.transformers.SafeGenerator.get_tokenizer_from_pretrained')
@@ -117,13 +110,10 @@ class TestTransformersModelLoadTokenizer(unittest.TestCase):
             adapter = TransformersModel.__new__(TransformersModel)
             adapter.model_path = self.model_path
 
-            result = adapter._load_tokenizer(trust_remote_code=True)
+            result = adapter._load_tokenizer(trust_remote_code=True)  # noqa: F841
 
             mock_get_tokenizer.assert_called_once_with(
-                model_path=str(self.model_path),
-                use_fast=False,
-                legacy=False,
-                trust_remote_code=True
+                model_path=str(self.model_path), use_fast=False, legacy=False, trust_remote_code=True
             )
 
 
@@ -165,7 +155,7 @@ class TestTransformersModelLoadModel(unittest.TestCase):
             adapter.config = DummyConfig()
             adapter.trust_remote_code = False
 
-            result = adapter._load_model(device=DeviceType.CPU)
+            result = adapter._load_model(device=DeviceType.CPU)  # noqa: F841
 
             # 验证device_map为"cpu"
             call_kwargs = mock_get_model.call_args[1]
@@ -319,6 +309,7 @@ class TestTransformersModelGetPaddingData(unittest.TestCase):
             adapter.tokenizer = mock_tokenizer
 
             import torch.nn.functional as F_torch
+
             with patch('msmodelslim.model.common.transformers.F', F_torch):
                 calib_list = ['text1', 'text2']
                 result = adapter._get_padding_data(calib_list, DeviceType.CPU)
@@ -342,6 +333,7 @@ class TestTransformersModelGetPaddingData(unittest.TestCase):
             adapter.tokenizer = mock_tokenizer
 
             import torch.nn.functional as F_torch
+
             with patch('msmodelslim.model.common.transformers.F', F_torch):
                 calib_list = ['short', 'longer text']
                 result = adapter._get_padding_data(calib_list, DeviceType.CPU)
@@ -351,6 +343,7 @@ class TestTransformersModelGetPaddingData(unittest.TestCase):
                 # 验证第一个输入被padding到max_len=4
                 self.assertEqual(len(result), 1)  # 返回一个concatenated tensor的列表
                 self.assertEqual(result[0].shape[1], 4)  # 两个tensor都应该被padding到长度4
+
 
 class TestTransformersModelGetGlobalModelTorchDtype(unittest.TestCase):
     """测试 TransformersModel.get_global_model_torch_dtype（AscendV1GlobalModelDtypeInterface）。"""

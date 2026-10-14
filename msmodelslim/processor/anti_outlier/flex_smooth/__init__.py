@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -31,7 +31,7 @@ __all__ = [
     'FlexSmoothAlphaBetaSearcher',
     'FlexAWQSSZAlphaBetaSearcher',
     'quant_int8sym',
-    'quant_int8asym'
+    'quant_int8asym',
 ]
 
 from .processor import (
@@ -39,7 +39,7 @@ from .processor import (
     FlexAWQSSZProcessorConfig,
     FlexStatsCollector,
     FlexSmoothQuantProcessor,
-    FlexAWQSSZProcessor
+    FlexAWQSSZProcessor,
 )
 from .interface import FlexSmoothQuantInterface
 from .alpha_beta_search import (
@@ -47,7 +47,5 @@ from .alpha_beta_search import (
     FlexSmoothAlphaBetaSearcher,
     FlexAWQSSZAlphaBetaSearcher,
     quant_int8sym,
-    quant_int8asym
+    quant_int8asym,
 )
-
-

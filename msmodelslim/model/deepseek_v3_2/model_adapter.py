@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -59,7 +59,7 @@ from ..interface_hub import (
 from msmodelslim.model.common.utils import _get_expert_range
 
 
-# pylint: disable=too-many-ancestors
+# pylint: disable=no-name-in-module,too-many-ancestors
 @logger_setter("msmodelslim.model.deepseek_v3_2")
 class DeepSeekV32ModelAdapter(
     DefaultModelAdapter,

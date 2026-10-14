@@ -2,8 +2,25 @@
 # -*- coding: UTF-8 -*-
 
 """
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
 Unit tests for Qwen25OmniThinkerModelAdapter.
 """
+# pylint: disable=consider-using-from-import,redefined-outer-name
 
 import json
 from pathlib import Path
@@ -72,17 +89,13 @@ def _build_mock_model(hidden_layers: int = 2, has_sliding_layers: bool = False):
         layers=layers,
     )
     model.audio_tower = MagicMock()
-    model.audio_tower._get_feat_extract_output_lengths = MagicMock(
-        return_value=(torch.tensor([3]), torch.tensor([3]))
-    )
+    model.audio_tower._get_feat_extract_output_lengths = MagicMock(return_value=(torch.tensor([3]), torch.tensor([3])))
     model.visual = MagicMock()
     model.load_state_dict = MagicMock()
     model.get_input_embeddings = MagicMock(
         return_value=lambda input_ids: torch.zeros(input_ids.shape[0], input_ids.shape[1], 8)
     )
-    model.get_rope_index = MagicMock(
-        return_value=(torch.zeros(1, 3, dtype=torch.long), torch.zeros(1, 1))
-    )
+    model.get_rope_index = MagicMock(return_value=(torch.zeros(1, 3, dtype=torch.long), torch.zeros(1, 1)))
 
     def _placeholder_mask(input_ids, inputs_embeds=None, image_features=None, video_features=None):
         mask_shape = inputs_embeds.shape
@@ -122,9 +135,7 @@ def _run_forward_generator_to_end(gen):
 def adapter(tmp_path: Path):
     model_path = tmp_path / "model"
     model_path.mkdir()
-    (model_path / "config.json").write_text(
-        json.dumps({"model_type": "qwen2_5_omni_thinker"}), encoding="utf-8"
-    )
+    (model_path / "config.json").write_text(json.dumps({"model_type": "qwen2_5_omni_thinker"}), encoding="utf-8")
     mock_config = SimpleNamespace(
         model_type="qwen2_5_omni_thinker",
         use_cache=False,
@@ -185,15 +196,19 @@ def mock_processor():
         cache_position=None,
         video_second_per_grid=None,
     )
-    with patch(
-        "transformers.Qwen2_5OmniProcessor.from_pretrained",
-        return_value=processor,
-    ), patch(
-        "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.process_mm_info",
-        return_value=([], [], []),
-    ), patch(
-        "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.get_valid_read_path",
-        side_effect=lambda p, **kwargs: p,
+    with (
+        patch(
+            "transformers.Qwen2_5OmniProcessor.from_pretrained",
+            return_value=processor,
+        ),
+        patch(
+            "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.process_mm_info",
+            return_value=([], [], []),
+        ),
+        patch(
+            "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.get_valid_read_path",
+            side_effect=lambda p, **kwargs: p,
+        ),
     ):
         yield processor
 
@@ -226,9 +241,12 @@ class TestQwen2_5OmniThinkerModelAdapter:
             adapter.handle_dataset(samples, torch.device("cpu"))
 
     def test_init_model_return_model_when_from_pretrained_success(self, adapter, mock_model_class):
-        with patch.object(adapter, "_get_state_dict", return_value={}), patch(
-            "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.get_valid_read_path",
-            side_effect=lambda p, **kwargs: p,
+        with (
+            patch.object(adapter, "_get_state_dict", return_value={}),
+            patch(
+                "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.get_valid_read_path",
+                side_effect=lambda p, **kwargs: p,
+            ),
         ):
             model = adapter.init_model(torch.device("cpu"))
         assert model is not None
@@ -319,14 +337,17 @@ class TestQwen2_5OmniThinkerModelAdapter:
             "attention_mask": torch.ones(1, 3, dtype=torch.long),
             "position_ids": torch.zeros(1, 3, dtype=torch.long),
         }
-        with patch(
-            "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.create_causal_mask",
-            return_value=torch.ones(1, 1, 3, 3),
-            create=True,
-        ), patch(
-            "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.create_sliding_window_causal_mask",
-            return_value=torch.ones(1, 1, 3, 3),
-            create=True,
+        with (
+            patch(
+                "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.create_causal_mask",
+                return_value=torch.ones(1, 1, 3, 3),
+                create=True,
+            ),
+            patch(
+                "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.create_sliding_window_causal_mask",
+                return_value=torch.ones(1, 1, 3, 3),
+                create=True,
+            ),
         ):
             requests = _run_forward_generator_to_end(adapter.generate_model_forward(model, inputs))
         assert any(r.name == "model.layers.0" for r in requests)
@@ -391,12 +412,13 @@ class TestQwen2_5OmniThinkerModelAdapter:
         index_path.write_text(json.dumps(index_data), encoding="utf-8")
         (Path(adapter.model_path) / "model-00001.safetensors").write_bytes(b"mock")
         module = nn.Linear(4, 4)
-        with patch(
-            "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.get_valid_read_path",
-            side_effect=lambda p, **kwargs: p,
-        ), patch(
-            "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.safe_open"
-        ) as mock_open:
+        with (
+            patch(
+                "msmodelslim.model.qwen2_5_omni_thinker.model_adapter.get_valid_read_path",
+                side_effect=lambda p, **kwargs: p,
+            ),
+            patch("msmodelslim.model.qwen2_5_omni_thinker.model_adapter.safe_open") as mock_open,
+        ):
             f = MagicMock()
             f.get_tensor.side_effect = lambda name: torch.zeros(4, 4) if name.endswith("weight") else torch.zeros(4)
             mock_open.return_value.__enter__.return_value = f
@@ -418,10 +440,13 @@ class TestQwen2_5OmniThinkerModelAdapter:
         )
         model.get_submodule = MagicMock(return_value=broken_layer)
         fake_decoder = _DummyDecoderLayer()
-        with patch(
-            "transformers.models.qwen2_5_omni.modeling_qwen2_5_omni.Qwen2_5OmniDecoderLayer",
-            return_value=fake_decoder,
-            create=True,
-        ), patch.object(adapter, "_get_state_dict", return_value=fake_decoder.state_dict()):
+        with (
+            patch(
+                "transformers.models.qwen2_5_omni.modeling_qwen2_5_omni.Qwen2_5OmniDecoderLayer",
+                return_value=fake_decoder,
+                create=True,
+            ),
+            patch.object(adapter, "_get_state_dict", return_value=fake_decoder.state_dict()),
+        ):
             result = adapter._load_decoder_if_not_exist(model=model, name="model.layers.0", idx=0)
         assert result is fake_decoder

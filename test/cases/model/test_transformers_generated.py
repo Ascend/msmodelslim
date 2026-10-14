@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,useless-parent-delegation
 
 import unittest
 from typing import Tuple, Optional
@@ -30,7 +31,7 @@ from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.model.common.layer_wise_forward import (
     TransformersForwardBreak,
     generated_decoder_layer_visit_func,
-    transformers_generated_forward_func
+    transformers_generated_forward_func,
 )
 
 
@@ -38,8 +39,9 @@ class DummyDecoderLayer(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x: torch.Tensor) \
-            -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
+    def forward(
+        self, x: torch.Tensor
+    ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         return (x, None)
 
 
@@ -50,8 +52,9 @@ class SimpleModel(nn.Module):
         super().__init__()
         self.decoder = DummyDecoderLayer()
 
-    def forward(self, x: torch.Tensor) \
-            -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
+    def forward(
+        self, x: torch.Tensor
+    ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         x = self.decoder(x)
         return x
 
@@ -87,9 +90,11 @@ class TestTransformersGenerated(unittest.TestCase):
     def test_transformers_generated_visit_func_with_custom_blocks(self):
         """测试transformers_generated_visit_func函数，使用自定义的transformer_blocks"""
         # 创建自定义的transformer_blocks
-        transformer_blocks = [(name, module)
-                              for name, module in self.model.named_modules()
-                              if "decoder" in module.__class__.__name__.lower()]
+        transformer_blocks = [
+            (name, module)
+            for name, module in self.model.named_modules()
+            if "decoder" in module.__class__.__name__.lower()
+        ]
 
         # 获取生成器
         generator = generated_decoder_layer_visit_func(self.model, transformer_blocks)

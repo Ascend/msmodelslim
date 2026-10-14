@@ -1,10 +1,28 @@
 # -*- coding: UTF-8 -*-
 """
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
 Discover practice directories from plugins via entry point msmodelslim.naive_quantization.practice_dirs.
 
 Each entry point is a callable (e.g. module:function) that returns a Path or a list of Paths
 pointing to practice root directories (same layout as lab_practice: pedigree subdirs with YAMLs).
 """
+# pylint: disable=no-member
+
 import sys
 from importlib.metadata import entry_points
 from pathlib import Path
@@ -41,9 +59,7 @@ def discover_plugin_practice_dirs() -> List[Path]:
                 get_valid_read_path(str(path), is_dir=True)
                 result.append(path.resolve())
         except Exception as e:  # noqa: B902
-            get_logger().warning(
-                "Failed to load practice dir from plugin %s: %s", ep.name, e
-            )
+            get_logger().warning("Failed to load practice dir from plugin %s: %s", ep.name, e)
     if result:
         get_logger().info(
             "Discovered %d plugin practice dir(s): %s",

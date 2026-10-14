@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,22 +18,25 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
+
 """
 msmodelslim.utils.plugin.typed_factory 模块的单元测试（unittest TestCase + pytest 辅助）
 """
 
-import unittest
-from unittest.mock import patch
+import unittest  # noqa: E402
+from unittest.mock import patch  # noqa: E402
 
-from pydantic import BaseModel
+from pydantic import BaseModel  # noqa: E402
 
-from msmodelslim.utils.exception import ToDoError, UnsupportedError
-from msmodelslim.utils.plugin import TypedConfig, TypedFactory
+from msmodelslim.utils.exception import ToDoError, UnsupportedError  # noqa: E402
+from msmodelslim.utils.plugin import TypedConfig, TypedFactory  # noqa: E402
 
 
 @TypedConfig.plugin_entry(entry_point_group="test.group")
 class TestPluginConfig(TypedConfig):
     """测试用配置类，继承 TypedConfig；单测中通过 mock 插件加载避免依赖真实 entry_points。"""
+
     kind: TypedConfig.TypeField
     value: int = 0
 

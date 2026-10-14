@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -63,10 +63,12 @@ class DistillLossesManager(Module):
 
             if t_module is None:
                 raise ValueError(
-                    "The module \"{}\" not in teacher model. Please check config.".format(match["t_module"]))
+                    "The module \"{}\" not in teacher model. Please check config.".format(match["t_module"])
+                )
             if s_module is None:
                 raise ValueError(
-                    "The module \"{}\" not in student model. Please check config.".format(match["s_module"]))
+                    "The module \"{}\" not in student model. Please check config.".format(match["s_module"])
+                )
 
             t_module.register_forward_hook(self.teacher_forward_output_hook)
             s_module.register_forward_hook(self.student_forward_output_hook)
@@ -128,10 +130,12 @@ class DistillLossesManager(Module):
 
             if not 0 <= s_output_idx < len(s_outputs):
                 raise ValueError(
-                    "s_output_idx in {} out of range. Please check add_output_soft_label config.".format(match))
+                    "s_output_idx in {} out of range. Please check add_output_soft_label config.".format(match)
+                )
             if not 0 <= t_output_idx < len(t_outputs):
                 raise ValueError(
-                    "t_output_idx in {} out of range. Please check add_output_soft_label config.".format(match))
+                    "t_output_idx in {} out of range. Please check add_output_soft_label config.".format(match)
+                )
 
             s_output = s_outputs[s_output_idx]
             t_output = t_outputs[t_output_idx]
@@ -163,10 +167,12 @@ class DistillLossesManager(Module):
             t_outputs = self.index_able(self.t_outputs.get(match["t_module"]))
             if not 0 <= s_output_idx < len(s_outputs):
                 raise ValueError(
-                    "s_output_idx in {} out of range. Please check add_inter_soft_label config.".format(match))
+                    "s_output_idx in {} out of range. Please check add_inter_soft_label config.".format(match)
+                )
             if not 0 <= t_output_idx < len(t_outputs):
                 raise ValueError(
-                    "t_output_idx in {} out of range. Please check add_inter_soft_label config.".format(match))
+                    "t_output_idx in {} out of range. Please check add_inter_soft_label config.".format(match)
+                )
 
             s_output = s_outputs[s_output_idx]
             t_output = t_outputs[t_output_idx]

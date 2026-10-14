@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,13 +18,14 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,super-with-arguments
 
 # 导入相关依赖
 import mindspore.nn as nn
 from mindspore.ops import operations as P
 
 from msmodelslim import set_logger_level
-from msmodelslim import logger as msmodelslim_logger
+from msmodelslim import logger as msmodelslim_logger  # noqa: F401
 from msmodelslim.common.knowledge_distill.knowledge_distill import KnowledgeDistillConfig
 from msmodelslim.common.knowledge_distill.knowledge_distill import get_distill_model
 
@@ -40,9 +41,15 @@ class ConvBNReLUConfig:
 
     def build(self):
         output = [
-            nn.Conv2d(self.in_channel, self.out_channel, self.kernel_size, self.stride, pad_mode="same",
-                      group=1 if not self.depth_wise else self.in_channel),
-            nn.BatchNorm2d(self.out_channel)
+            nn.Conv2d(
+                self.in_channel,
+                self.out_channel,
+                self.kernel_size,
+                self.stride,
+                pad_mode="same",
+                group=1 if not self.depth_wise else self.in_channel,
+            ),
+            nn.BatchNorm2d(self.out_channel),
         ]
         if self.activation:
             output.append(nn.get_activation(self.activation))
@@ -85,13 +92,13 @@ set_logger_level("info")
 # 创建配置类
 distill_config = KnowledgeDistillConfig()
 # 添加软标签
-distill_config.add_output_soft_label({
-    "t_output_idx": 1,
-    "s_output_idx": 1,
-    "loss_func": [{"func_name": "KDCrossEntropy",
-                   "func_weight": 1,
-                   "temperature": 1}]
-})
+distill_config.add_output_soft_label(
+    {
+        "t_output_idx": 1,
+        "s_output_idx": 1,
+        "loss_func": [{"func_name": "KDCrossEntropy", "func_weight": 1, "temperature": 1}],
+    }
+)
 
 # 获得知识蒸馏模型
 distill_model = get_distill_model(model, model, distill_config)

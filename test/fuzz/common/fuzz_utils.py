@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,13 +18,15 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,pointless-string-statement
+
 """
 模糊测试公共工具函数
 提供了一组在模糊测试中常用的辅助函数
 """
-import torch
-import torch.nn as nn
-from dataclasses import dataclass, field
+import torch  # noqa: E402
+import torch.nn as nn  # noqa: E402
+from dataclasses import dataclass, field  # noqa: E402
 
 
 def consume_bool(fdp):
@@ -83,13 +85,14 @@ class DummyModel(nn.Module):
     """用于测试的简单线性模型
     包含一个线性层和必要的配置信息
     """
+
     def __init__(self, input_dim, output_dim):
         super().__init__()
         self.linear = nn.Linear(input_dim, output_dim)
         self.config = DummyModelConfig()
         self.device = torch.device('cpu')
         self.dtype = torch.float32
-    
+
     def forward(self, x):
         return self.linear(x)
 
@@ -121,4 +124,3 @@ def random_all_tensors(fdp):
         return [torch.tensor(consume_int(fdp, 0, 100))]
     else:
         return torch.tensor(consume_int(fdp, 0, 100))
-    

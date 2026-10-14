@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
+
 import torch
 import torch.nn as nn
 
@@ -25,10 +27,7 @@ from msmodelslim.ir.api import fake_quantize
 from msmodelslim.ir.qal import QABCRegistry, QDType, QParam, QStorage
 from msmodelslim.utils.logging import logger_setter
 from .auto import AutoFakeQuantDynamicCache
-from .const import (
-    int8_per_channel_sym,
-    int8_per_channel_asym
-)
+from .const import int8_per_channel_sym, int8_per_channel_asym
 
 
 @QABCRegistry.multi_register(
@@ -36,21 +35,21 @@ from .const import (
         int8_per_channel_sym,
         int8_per_channel_asym,
     ],
-    abc_type=AutoFakeQuantDynamicCache
+    abc_type=AutoFakeQuantDynamicCache,
 )
 @logger_setter()
 class FakeQuantDynamicCache(AutoFakeQuantDynamicCache):
     """
     动态缓存伪量化IR。
-    
+
     动态缓存伪量化方式可以用以下参数描述：
         kv_cache_scale: KV缓存的量化参数，类型为torch.Tensor, dtype为torch.float32
         kv_cache_offset: KV缓存的量化参数，类型为torch.Tensor, dtype为torch.int32
     """
 
     def __init__(
-            self,
-            x_q_param: QParam,
+        self,
+        x_q_param: QParam,
     ):
         super().__init__()
 

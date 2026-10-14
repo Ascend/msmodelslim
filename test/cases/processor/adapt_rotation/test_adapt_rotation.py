@@ -7,7 +7,7 @@ This file is part of the MindStudio project.
 Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
-You may use this software according to the terms and conditions of the Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
 You may obtain a copy of Mulan PSL v2 at:
 
          http://license.coscl.org.cn/MulanPSL2
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 # msmodelslim.processor.adapt_rotation.adapt_rotation 模块的单元测试
 import unittest
 from unittest.mock import MagicMock
@@ -86,9 +87,7 @@ class TestAdaptRotationProcessor(unittest.TestCase):
     def test_init_create_stage1_inner_processor_when_config_stage_is_1(self):
         """测试 config.stage=1 时创建 AdaptRotationStage1Processor 作为内部处理器"""
         mock_model = MagicMock()
-        config = AdaptRotationProcessorConfig.model_validate(
-            {"type": "adapt_rotation", "stage": 1}
-        )
+        config = AdaptRotationProcessorConfig.model_validate({"type": "adapt_rotation", "stage": 1})
         mock_adapter = MockQuaRotAdapter()
         with unittest.mock.patch.object(AdaptRotationProcessor, '__init__', lambda s, m, c, a, **kw: None):
             proc = AdaptRotationProcessor.__new__(AdaptRotationProcessor)
@@ -100,9 +99,7 @@ class TestAdaptRotationProcessor(unittest.TestCase):
     def test_init_create_stage2_inner_processor_when_config_stage_is_2(self):
         """测试 config.stage=2 时创建 AdaptRotationStage2Processor 作为内部处理器"""
         mock_model = MagicMock()
-        config = AdaptRotationProcessorConfig.model_validate(
-            {"type": "adapt_rotation", "stage": 2}
-        )
+        config = AdaptRotationProcessorConfig.model_validate({"type": "adapt_rotation", "stage": 2})
         mock_adapter = MockQuaRotAdapter()
         with unittest.mock.patch.object(AdaptRotationProcessor, '__init__', lambda s, m, c, a, **kw: None):
             proc = AdaptRotationProcessor.__new__(AdaptRotationProcessor)
@@ -129,9 +126,7 @@ class TestAdaptRotationProcessor(unittest.TestCase):
                 mock_inner = MagicMock()
                 if expected_return is not None:
                     getattr(mock_inner, name).return_value = expected_return
-                with unittest.mock.patch.object(
-                    AdaptRotationProcessor, "__init__", lambda s, m, c, a, **kw: None
-                ):
+                with unittest.mock.patch.object(AdaptRotationProcessor, "__init__", lambda s, m, c, a, **kw: None):
                     proc = AdaptRotationProcessor.__new__(AdaptRotationProcessor)
                     proc._inner = mock_inner
                 result, inner_method = run(proc, mock_inner)

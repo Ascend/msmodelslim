@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -58,4 +58,4 @@ class TestQuantConfigFactory:
     def test_get_base_quant_config_should_raise_error_given_error_description(self):
         description = 'xx'
         with pytest.raises(ValueError):
-            config = QuantConfigFactory.get_quant_config(description)
+            config = QuantConfigFactory.get_quant_config(description)  # noqa: F841

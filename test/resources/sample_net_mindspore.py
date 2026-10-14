@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,super-with-arguments
 
 import mindspore.nn as nn
 from mindspore.ops import operations as P
@@ -27,8 +28,12 @@ from mindformers.models.configuration_utils import PretrainedConfig
 
 
 def conv_bn_relu(in_channel, out_channel, kernel_size, stride, depth_wise, activation='relu6'):
-    output = [nn.Conv2d(in_channel, out_channel, kernel_size, stride, pad_mode="same",
-                        group=1 if not depth_wise else in_channel), nn.BatchNorm2d(out_channel)]
+    output = [
+        nn.Conv2d(
+            in_channel, out_channel, kernel_size, stride, pad_mode="same", group=1 if not depth_wise else in_channel
+        ),
+        nn.BatchNorm2d(out_channel),
+    ]
     if activation:
         output.append(nn.get_activation(activation))
     return nn.SequentialCell(output)
@@ -112,8 +117,7 @@ class TestNetMindSpore4(nn.Cell):
 
     def __init__(self, class_num=10):
         super().__init__()
-        self.backbone = nn.SequentialCell([conv_bn_relu(3, 64, 3, 2, False),
-                                           conv_bn_relu(64, 32, 3, 1, False)])
+        self.backbone = nn.SequentialCell([conv_bn_relu(3, 64, 3, 2, False), conv_bn_relu(64, 32, 3, 1, False)])
         self.fc = nn.Dense(32, class_num)
 
     def forward(self, x):
@@ -129,7 +133,6 @@ def get_model():
 
 
 class SampleModel(nn.Cell):
-
     def __init__(self, num_class=10, num_channel=3):
         super(SampleModel, self).__init__()
         # 定义所需要的运算
@@ -150,25 +153,31 @@ class SampleModel(nn.Cell):
 class LrdSampleNetwork(nn.Cell):
     def __init__(self):
         super().__init__()
-        self.embedding = nn.SequentialCell([
-            nn.Embedding(16, 32),
-            nn.Dense(32, 64),
-            nn.ReLU(),
-        ])
+        self.embedding = nn.SequentialCell(
+            [
+                nn.Embedding(16, 32),
+                nn.Dense(32, 64),
+                nn.ReLU(),
+            ]
+        )
 
-        self.feature = nn.SequentialCell([
-            nn.Conv2d(64, 128, 3, pad_mode="pad", padding=1, has_bias=True),
-            nn.ReLU(),
-            nn.Conv2d(128, 64, 1, has_bias=True),
-            nn.ReLU(),
-        ])
+        self.feature = nn.SequentialCell(
+            [
+                nn.Conv2d(64, 128, 3, pad_mode="pad", padding=1, has_bias=True),
+                nn.ReLU(),
+                nn.Conv2d(128, 64, 1, has_bias=True),
+                nn.ReLU(),
+            ]
+        )
         self.pool = nn.AvgPool2d((7, 7), stride=2)
         self.flatten = nn.Flatten()
         self.inner = nn.Dense(64 * 5 * 5, 512)
-        self.classifier = nn.SequentialCell([
-            nn.Dense(512, 256),
-            nn.Dense(256, 10),
-        ])
+        self.classifier = nn.SequentialCell(
+            [
+                nn.Dense(512, 256),
+                nn.Dense(256, 10),
+            ]
+        )
 
     def construct(self, inputs):
         shortcut = self.embedding(inputs)
@@ -210,10 +219,9 @@ class MsSparseModel(PreTrainedModel):
         self.q = Linear(256, 256)
         self.k = Linear(256, 256)
         self.v = Linear(256, 256)
-    
+
     def construct(self, x):
         x1 = self.q(x)
         x2 = self.k(x)
         x3 = self.v(x)
         return x1 + x2 + x3
-    

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,7 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
+# pylint: disable=consider-using-from-import,logging-fstring-interpolation
 
 from typing import Optional, Tuple
 
@@ -27,10 +27,17 @@ import torch.nn as nn
 
 import msmodelslim.ir as qir
 from msmodelslim.core.base.protocol import BatchProcessRequest
-from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
+from msmodelslim.utils.exception import UnsupportedError
+from msmodelslim.utils.exception import SchemaValidateError  # noqa: F401
 from msmodelslim.utils.logging import get_logger
 from .quarot_interface import LAOSOnlineRotationInterface
-from ..common.quarot_utils import get_decompose_dim, online_rotate_o_proj_input, online_rotate_down_proj, QuaRotMode, create_rot
+from ..common.quarot_utils import (
+    get_decompose_dim,
+    online_rotate_o_proj_input,
+    online_rotate_down_proj,
+    QuaRotMode,
+    create_rot,
+)
 
 
 def _get_available_device(index: int = 0) -> torch.device:
@@ -90,9 +97,10 @@ def _convert_hookir_to_wrapper(module: nn.Module) -> None:
 class LAOSOnlineRotationProcessor:
     def __init__(self, model: nn.Module, config, adapter: LAOSOnlineRotationInterface, **kwargs) -> None:
         if not isinstance(adapter, LAOSOnlineRotationInterface):
-            raise UnsupportedError(f'{adapter.__class__.__name__} does not support LAOSOnlineRotationInterface',
-                                   action='Please provide a valid model adapter '
-                                          'which implements LAOSOnlineRotationInterface')
+            raise UnsupportedError(
+                f'{adapter.__class__.__name__} does not support LAOSOnlineRotationInterface',
+                action='Please provide a valid model adapter which implements LAOSOnlineRotationInterface',
+            )
         self.config = config
         self.model = model
         self.adapter = adapter
@@ -105,13 +113,14 @@ class LAOSOnlineRotationProcessor:
     def pre_run(self) -> None:
         # 创建在线旋转矩阵
         device = _get_available_device()
-        
+
         get_logger().info(f"Creating online rotation matrices on device: {device}")
         rot1, rot2, self.rot_online_o_proj = self._add_online_rotations(self.model)
         identity = torch.eye(int(self.adapter.get_head_dim())).to(self.rot_online_o_proj)
         self.rot_online_down_proj = (rot1, rot2)
-        self.online_rotation_info = qir.QuarotOnlineRotationInfo(self.rot_online_o_proj, identity, rot1, rot2,
-                                                                 self.config.max_tp_size)
+        self.online_rotation_info = qir.QuarotOnlineRotationInfo(
+            self.rot_online_o_proj, identity, rot1, rot2, self.config.max_tp_size
+        )
         get_logger().info(f"Online rotation matrices created on device: {device}")
 
     def preprocess(self, request: BatchProcessRequest) -> None:
@@ -122,11 +131,8 @@ class LAOSOnlineRotationProcessor:
         # 插入在线旋转矩阵
         layer_idx = int(request.name.split('.')[-1])
 
-
         if self.rot_online_o_proj is not None:
-            online_rotate_o_proj_input(ov_pairs, 
-                                rot_online=self.rot_online_o_proj, 
-                                num_attn_heads=self.num_attn_heads)
+            online_rotate_o_proj_input(ov_pairs, rot_online=self.rot_online_o_proj, num_attn_heads=self.num_attn_heads)
 
         if self.rot_online_down_proj and layer_idx in self.config.down_proj_online_layers:
             online_rotate_down_proj(up_down_pairs, *self.rot_online_down_proj)
@@ -137,10 +143,7 @@ class LAOSOnlineRotationProcessor:
                 # 获取完整的模块名称
                 full_module_name = _get_full_module_name(down_proj, request)
                 # 使用完整的layer_name注册Kronecker HookIR实例作为hook（用于down_proj）
-                hook_ir = qir.QuarotKroneckerRotationHookIR(
-                    full_module_name,
-                    self.online_rotation_info
-                )
+                hook_ir = qir.QuarotKroneckerRotationHookIR(full_module_name, self.online_rotation_info)
                 hook_handle = down_proj.register_forward_pre_hook(hook_ir)
                 hook_ir.set_hook_handle(hook_handle)
 
@@ -149,10 +152,7 @@ class LAOSOnlineRotationProcessor:
                 # 获取完整的模块名称
                 full_module_name = _get_full_module_name(o_proj, request)
                 # 使用完整的layer_name注册普通HookIR实例作为hook（用于o_proj）
-                hook_ir = qir.QuarotHeadsRotationHookIR(
-                    full_module_name,
-                    self.online_rotation_info
-                )
+                hook_ir = qir.QuarotHeadsRotationHookIR(full_module_name, self.online_rotation_info)
                 hook_handle = o_proj.register_forward_pre_hook(hook_ir)
                 hook_ir.set_hook_handle(hook_handle)
 
@@ -164,17 +164,13 @@ class LAOSOnlineRotationProcessor:
         if not hasattr(model.config, 'intermediate_size'):
             raise ValueError("Model config must contain 'intermediate_size' for online rotation")
         size_1, size_2 = get_decompose_dim(model.config.intermediate_size)
-        rot1 = create_rot(mode=QuaRotMode.HADAMARD, 
-                        size=size_1, 
-                        block_size=self.config.max_tp_size
-                        ).to(device=model.device)
-        rot2 = create_rot(mode=QuaRotMode.HADAMARD, 
-                        size=size_2, 
-                        block_size=-1).to(model.device)
+        rot1 = create_rot(mode=QuaRotMode.HADAMARD, size=size_1, block_size=self.config.max_tp_size).to(
+            device=model.device
+        )
+        rot2 = create_rot(mode=QuaRotMode.HADAMARD, size=size_2, block_size=-1).to(model.device)
 
-        rot_online_o_proj = create_rot(mode=QuaRotMode.HADAMARD, 
-                                       size=self.num_attn_heads, 
-                                       block_size=self.config.max_tp_size
-                                       ).to(model.device)
+        rot_online_o_proj = create_rot(
+            mode=QuaRotMode.HADAMARD, size=self.num_attn_heads, block_size=self.config.max_tp_size
+        ).to(model.device)
 
         return rot1, rot2, rot_online_o_proj

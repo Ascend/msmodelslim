@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,logging-fstring-interpolation,not-callable,pointless-string-statement,unspecified-encoding,useless-parent-delegation
 
 import importlib
 import logging
@@ -37,12 +38,9 @@ from ascend_utils.common.security import get_write_directory
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.manager import TimestepManager
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: E402
 
 patch('torch.cuda.current_device', return_value=0).start()
 
@@ -50,6 +48,7 @@ patch('torch.cuda.current_device', return_value=0).start()
 @dataclass
 class OneStepSampleArgs:
     """Arguments for one step sampling function."""
+
     latents: torch.Tensor
     timestep: torch.Tensor
     step_index: int
@@ -61,6 +60,7 @@ class OneStepSampleArgs:
 @dataclass
 class TextEmbeddingsArgs:
     """Arguments for text embeddings function."""
+
     prompt: str
     negative_prompt: str
     num_frames: int
@@ -95,8 +95,7 @@ class DummyScheduler:
 
         # Create linearly spaced steps from 999 down to 0
         self.timesteps = torch.linspace(
-            self.num_train_timesteps - 1, 0, num_inference_steps,
-            dtype=torch.int, device=device
+            self.num_train_timesteps - 1, 0, num_inference_steps, dtype=torch.int, device=device
         )
 
         logger.info(f"Scheduler set with {num_inference_steps} steps")
@@ -146,9 +145,20 @@ class DummyPipeline:
         self.device = torch.device(device if torch.cuda.is_available() and 'cuda' in device else 'cpu')
         self.args = None  # Will be set by the optimization script
 
-    def __call__(self, prompt, negative_prompt=None, num_frames=16, height=256, width=256,
-                 num_inference_steps=50, guidance_scale=7.5, num_images_per_prompt=1,
-                 mask_feature=True, device=None, max_sequence_length=512):
+    def __call__(
+        self,
+        prompt,
+        negative_prompt=None,
+        num_frames=16,
+        height=256,
+        width=256,
+        num_inference_steps=50,
+        guidance_scale=7.5,
+        num_images_per_prompt=1,
+        mask_feature=True,
+        device=None,
+        max_sequence_length=512,
+    ):
         """
         Mock pipeline call function that returns random video tensors.
         """
@@ -219,6 +229,7 @@ class DummyPipeline:
 @dataclass
 class DummyArgs:
     """Dummy arguments class to mimic command line arguments."""
+
     num_frames: int = 16
     height: int = 256
     width: int = 256
@@ -245,7 +256,7 @@ class TestSampleOptimization(unittest.TestCase):
         # 1. 尝试导入真实的torch_npu
         cls.mock_used_torch_npu = False  # 标记是否使用了mock
         try:
-            import torch_npu
+            import torch_npu  # noqa: F401
             # 导入成功：使用真实模块，无需mock
         except ImportError:
             # 导入失败：使用mock
@@ -262,13 +273,15 @@ class TestSampleOptimization(unittest.TestCase):
         if cls.mock_used_torch_npu:
             # 为'torch_npu'配置__spec__和方法返回值
             torch_npu_spec = types.ModuleType(name='torch_npu')
-            cls.mock_modules.update({
-                'torch_npu': Mock(
-                    __spec__=torch_npu_spec,  # 直接在Mock参数中设置__spec__
-                    npu_init=Mock(return_value=True),  # 模拟方法调用返回True
-                    __version__='2.1.0'  # 模拟属性
-                )
-            })
+            cls.mock_modules.update(
+                {
+                    'torch_npu': Mock(
+                        __spec__=torch_npu_spec,  # 直接在Mock参数中设置__spec__
+                        npu_init=Mock(return_value=True),  # 模拟方法调用返回True
+                        __version__='2.1.0',  # 模拟属性
+                    )
+                }
+            )
 
         # 应用所有模拟并保存原始模块
         for module_name, mock_module in cls.mock_modules.items():
@@ -280,6 +293,7 @@ class TestSampleOptimization(unittest.TestCase):
             mock_module.reset_mock()
 
         from msmodelslim.pytorch.multi_modal.sampling_optimization import ReStepSearchConfig, ReStepAdaptor
+
         cls.ReStepSearchConfig = ReStepSearchConfig
         cls.ReStepAdaptor = ReStepAdaptor
 
@@ -340,7 +354,7 @@ class TestSampleOptimization(unittest.TestCase):
             width=self.test_config["width"],
             num_sampling_steps=self.test_config["num_sampling_steps"],
             guidance_scale=self.test_config["guidance_scale"],
-            device=self.device
+            device=self.device,
         )
 
         # Reset timestep manager before each test
@@ -380,7 +394,7 @@ class TestSampleOptimization(unittest.TestCase):
             num_frames=self.test_config["num_frames"],
             height=self.test_config["height"],
             width=self.test_config["width"],
-            num_inference_steps=self.test_config["num_sampling_steps"]
+            num_inference_steps=self.test_config["num_sampling_steps"],
         )
 
         # Verify the output shape
@@ -404,11 +418,7 @@ class TestSampleOptimization(unittest.TestCase):
 
         # Create mock arguments
         args = OneStepSampleArgs(
-            latents=latents,
-            timestep=timestep,
-            step_index=test_step_idx,
-            encoder_states={},
-            extra_step_kwargs={}
+            latents=latents, timestep=timestep, step_index=test_step_idx, encoder_states={}, extra_step_kwargs={}
         )
 
         # Run the step - this should update the timestep index
@@ -425,7 +435,7 @@ class TestSampleOptimization(unittest.TestCase):
             save_dir=self.save_dir,
             neighbour_type=self.test_config["neighbour_type"],
             monte_carlo_iters=self.test_config["monte_carlo_iters"],
-            num_sampling_steps=self.test_config["num_sampling_steps"] // 2  # Target half the original steps
+            num_sampling_steps=self.test_config["num_sampling_steps"] // 2,  # Target half the original steps
         )
 
         # Set environment variables required by the adaptor
@@ -459,7 +469,7 @@ class TestSampleOptimization(unittest.TestCase):
             save_dir=self.save_dir,
             neighbour_type=self.test_config["neighbour_type"],
             monte_carlo_iters=self.test_config["monte_carlo_iters"],
-            num_sampling_steps=self.test_config["num_sampling_steps"] // 2  # Target half the original steps
+            num_sampling_steps=self.test_config["num_sampling_steps"] // 2,  # Target half the original steps
         )
 
         # Set environment variables required by the adaptor
@@ -502,7 +512,7 @@ class TestSampleOptimization(unittest.TestCase):
 
     @unittest.skipIf(
         not is_torch_npu_available(),  # 条件：如果torch_npu不可用则跳过
-        "torch_npu 导入失败，跳过此用例"
+        "torch_npu 导入失败，跳过此用例",
     )
     @patch('msmodelslim.pytorch.multi_modal.sampling_optimization.adaptor.AYSOptimizer')
     def test_search_method(self, mock_optimizer):
@@ -518,7 +528,7 @@ class TestSampleOptimization(unittest.TestCase):
             save_dir=self.save_dir,
             neighbour_type="uniform",
             monte_carlo_iters=3,
-            num_sampling_steps=5
+            num_sampling_steps=5,
         )
 
         # Set environment variables required by the adaptor
@@ -565,8 +575,9 @@ class TestSampleOptimization(unittest.TestCase):
     @patch('torch.manual_seed')
     @patch('numpy.random.seed')
     @patch('random.seed')
-    def test_seed_everything_method(self, mock_random_seed, mock_np_seed,
-                                    mock_torch_seed, mock_torch_cuda_seed, mock_torch_cuda_seed_all):
+    def test_seed_everything_method(
+        self, mock_random_seed, mock_np_seed, mock_torch_seed, mock_torch_cuda_seed, mock_torch_cuda_seed_all
+    ):
         """Test that seed_everything sets all random seeds correctly."""
         # Create a configuration for testing
         config = self.ReStepSearchConfig(

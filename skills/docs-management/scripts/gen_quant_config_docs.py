@@ -1,6 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 """基础抽取脚本：从 Pydantic 配置模型注解按指定目标生成量化配置接口文档。
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
+基础抽取脚本：从 Pydantic 配置模型注解按指定目标生成量化配置接口文档。
 
 提供基础能力（--targets 指定特定对象、--expand-nested 控制是否展开嵌套）；
 具体抽取目标与后处理由驱动脚本 gen_config_api_docs.py 控制（见其模块 docstring）。

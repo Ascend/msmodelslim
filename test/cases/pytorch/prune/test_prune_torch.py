@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import unittest
 from unittest.mock import Mock, patch, MagicMock, call
@@ -29,7 +30,6 @@ from msmodelslim.pytorch.prune.prune_torch import PruneTorch, chn_weight
 
 
 class TestPruneTorch(unittest.TestCase):
-
     def setUp(self):
         self.simple_model = nn.Sequential(
             nn.Conv2d(3, 16, 3),
@@ -38,7 +38,7 @@ class TestPruneTorch(unittest.TestCase):
             nn.Conv2d(16, 32, 3),
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.Linear(32, 10)
+            nn.Linear(32, 10),
         )
 
         self.test_input = torch.randn(1, 3, 32, 32)
@@ -130,9 +130,11 @@ class TestPruneTorch(unittest.TestCase):
     def test_analysis_method_sorts_importance_info(self):
         prune_torch = PruneTorch(self.mock_dag)
 
-        with patch.object(prune_torch, '_preprocess_un_prune_list') as mock_preprocess, \
-                patch.object(prune_torch, '_assessment_importance_conv') as mock_conv, \
-                patch.object(prune_torch, '_assessment_importance_linear') as mock_linear:
+        with (
+            patch.object(prune_torch, '_preprocess_un_prune_list') as mock_preprocess,
+            patch.object(prune_torch, '_assessment_importance_conv') as mock_conv,
+            patch.object(prune_torch, '_assessment_importance_linear') as mock_linear,
+        ):
             mock_preprocess.return_value = set()
 
             mock_policy1 = Mock()
@@ -224,18 +226,12 @@ class TestPruneTorch(unittest.TestCase):
 
         self.mock_dag.get_node_by_name.side_effect = get_node_side_effect
 
-        desc = {
-            "node1": {"input": (5, "-----")},
-            "node2": {"output": (8, "--------")}
-        }
+        desc = {"node1": {"input": (5, "-----")}, "node2": {"output": (8, "--------")}}
 
         with patch.object(prune_torch, '_prune_one_node') as mock_prune:
             prune_torch.prune_by_desc(desc)
             self.assertEqual(mock_prune.call_count, 2)
-            mock_prune.assert_has_calls([
-                call(mock_node1, desc["node1"]),
-                call(mock_node2, desc["node2"])
-            ])
+            mock_prune.assert_has_calls([call(mock_node1, desc["node1"]), call(mock_node2, desc["node2"])])
 
     def test_check_desc_input_output_with_valid_input(self):
         prune_torch = PruneTorch(self.mock_dag)
@@ -353,9 +349,11 @@ class TestPruneTorch(unittest.TestCase):
         mock_dag_node.node = CustomLayer()
         node_desc = {"input": (5, "-----")}
 
-        with patch.object(prune_torch, '_prune_conv2d') as mock_conv, \
-                patch.object(prune_torch, '_prune_linear') as mock_linear, \
-                patch.object(prune_torch, '_prune_batchnorm') as mock_bn:
+        with (
+            patch.object(prune_torch, '_prune_conv2d') as mock_conv,
+            patch.object(prune_torch, '_prune_linear') as mock_linear,
+            patch.object(prune_torch, '_prune_batchnorm') as mock_bn,
+        ):
             prune_torch._prune_one_node(mock_dag_node, node_desc)
             mock_conv.assert_not_called()
             mock_linear.assert_not_called()

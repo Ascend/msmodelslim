@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,24 +18,24 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
+# pylint: disable=consider-using-from-import,pointless-string-statement,too-many-lines,ungrouped-imports
 
 """
 msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter 模块的单元测试
 """
 
-import unittest
-from collections import defaultdict
-from unittest.mock import Mock, patch
-import torch
-import torch.nn as nn
+import unittest  # noqa: E402
+from collections import defaultdict  # noqa: E402
+from unittest.mock import Mock, patch  # noqa: E402
+import torch  # noqa: E402
+import torch.nn as nn  # noqa: E402
 
-from ascend_utils.common.utils import CallParams
-from ascend_utils.core.dag.dag_node import DagNode
-from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook import DagTorchHook
-from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_infos import ModuleType
-from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process import StructureProcess
-from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import DagNodeInfo, TorchDAGAdapter
+from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook import DagTorchHook  # noqa: E402, F401
+from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process import StructureProcess  # noqa: E402, F401
+from ascend_utils.core.dag.dag_node import DagNode  # noqa: E402, F401
+from ascend_utils.common.utils import CallParams  # noqa: E402, F401
+from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_infos import ModuleType  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter import DagNodeInfo, TorchDAGAdapter  # noqa: E402
 
 
 class TestDagNodeInfo(unittest.TestCase):
@@ -44,10 +44,7 @@ class TestDagNodeInfo(unittest.TestCase):
     def setUp(self):
         """测试前准备"""
         self.dag_node_info = DagNodeInfo(
-            name="test_node",
-            class_type="Linear",
-            input_nodes=["input1", "input2"],
-            output_nodes=["output1", "output2"]
+            name="test_node", class_type="Linear", input_nodes=["input1", "input2"], output_nodes=["output1", "output2"]
         )
 
     def test_init(self):
@@ -60,10 +57,7 @@ class TestDagNodeInfo(unittest.TestCase):
     def test_eq_true(self):
         """测试相等比较"""
         other = DagNodeInfo(
-            name="test_node",
-            class_type="Linear",
-            input_nodes=["input1", "input2"],
-            output_nodes=["output1", "output2"]
+            name="test_node", class_type="Linear", input_nodes=["input1", "input2"], output_nodes=["output1", "output2"]
         )
         self.assertEqual(self.dag_node_info, other)
 
@@ -73,37 +67,28 @@ class TestDagNodeInfo(unittest.TestCase):
             name="other_node",
             class_type="Linear",
             input_nodes=["input1", "input2"],
-            output_nodes=["output1", "output2"]
+            output_nodes=["output1", "output2"],
         )
         self.assertNotEqual(self.dag_node_info, other)
 
     def test_eq_false_different_class_type(self):
         """测试类型不同"""
         other = DagNodeInfo(
-            name="test_node",
-            class_type="Conv2d",
-            input_nodes=["input1", "input2"],
-            output_nodes=["output1", "output2"]
+            name="test_node", class_type="Conv2d", input_nodes=["input1", "input2"], output_nodes=["output1", "output2"]
         )
         self.assertNotEqual(self.dag_node_info, other)
 
     def test_eq_false_different_input_nodes(self):
         """测试输入节点不同"""
         other = DagNodeInfo(
-            name="test_node",
-            class_type="Linear",
-            input_nodes=["input1", "input3"],
-            output_nodes=["output1", "output2"]
+            name="test_node", class_type="Linear", input_nodes=["input1", "input3"], output_nodes=["output1", "output2"]
         )
         self.assertNotEqual(self.dag_node_info, other)
 
     def test_eq_false_different_output_nodes(self):
         """测试输出节点不同"""
         other = DagNodeInfo(
-            name="test_node",
-            class_type="Linear",
-            input_nodes=["input1", "input2"],
-            output_nodes=["output1", "output3"]
+            name="test_node", class_type="Linear", input_nodes=["input1", "input2"], output_nodes=["output1", "output3"]
         )
         self.assertNotEqual(self.dag_node_info, other)
 
@@ -134,7 +119,7 @@ class TestTorchDAGAdapter(unittest.TestCase):
             MockDagNode("relu", "ReLU"),
             MockDagNode("layer2", "Linear"),
             MockDagNode("add_op", "__add__"),
-            MockDagNode("norm", "LayerNorm")
+            MockDagNode("norm", "LayerNorm"),
         ]
 
         self.dag_nodes[0].output_nodes = [self.dag_nodes[1]]
@@ -145,12 +130,12 @@ class TestTorchDAGAdapter(unittest.TestCase):
         self.mock_dag_hook = Mock()
         self.mock_dag_hook.dag_node_list = self.dag_nodes
 
-        with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook',
-                   return_value=self.mock_dag_hook):
+        with patch(
+            'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook',
+            return_value=self.mock_dag_hook,
+        ):
             self.adapter = TorchDAGAdapter(
-                model=self.model,
-                dummy_input=torch.randn(1, 224 * 224 * 3),
-                hook_nodes=[nn.LayerNorm]
+                model=self.model, dummy_input=torch.randn(1, 224 * 224 * 3), hook_nodes=[nn.LayerNorm]
             )
 
     def test_init_with_default_dummy_input(self):
@@ -159,8 +144,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
         mock_dag_hook = Mock()
         mock_dag_hook.dag_node_list = [MockDagNode("linear", "Linear")]
 
-        with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook',
-                   return_value=mock_dag_hook):
+        with patch(
+            'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook', return_value=mock_dag_hook
+        ):
             adapter = TorchDAGAdapter(default_model, dummy_input=torch.randn(1, 224 * 224 * 3))
             self.assertIsNotNone(adapter._dummy_input)
             self.assertEqual(adapter._dummy_input.shape, torch.Size([1, 224 * 224 * 3]))
@@ -172,8 +158,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
         mock_dag_hook = Mock()
         mock_dag_hook.dag_node_list = [MockDagNode("linear", "Linear")]
 
-        with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook',
-                   return_value=mock_dag_hook):
+        with patch(
+            'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook', return_value=mock_dag_hook
+        ):
             adapter = TorchDAGAdapter(model, dummy_input=dummy_input)
             self.assertTrue(torch.equal(adapter._dummy_input, dummy_input))
 
@@ -183,8 +170,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
         mock_dag_hook = Mock()
         mock_dag_hook.dag_node_list = [MockDagNode("linear", "Linear")]
 
-        with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook',
-                   return_value=mock_dag_hook):
+        with patch(
+            'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook', return_value=mock_dag_hook
+        ):
             adapter = TorchDAGAdapter(model, dummy_input=torch.randn(1, 10), hook_nodes=[nn.LayerNorm, nn.BatchNorm2d])
             self.assertIn("layernorm", adapter.norm_nodes)
             self.assertIn("batchnorm2d", adapter.norm_nodes)
@@ -195,8 +183,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
         mock_dag_hook = Mock()
         mock_dag_hook.dag_node_list = [MockDagNode("linear", "Linear")]
 
-        with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook',
-                   return_value=mock_dag_hook):
+        with patch(
+            'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook', return_value=mock_dag_hook
+        ):
             adapter = TorchDAGAdapter(model, dummy_input=torch.randn(1, 10), hook_nodes=None)
             self.assertEqual(adapter.norm_nodes, [])
 
@@ -223,10 +212,14 @@ class TestTorchDAGAdapter(unittest.TestCase):
             first_node = topology[0]
             self.assertEqual(first_node.name, self.dag_nodes[0].name_in_network)
             self.assertEqual(first_node.class_type, self.dag_nodes[0].op_type)
-            self.assertEqual(first_node.input_nodes,
-                             [item.name_in_network if item else None for item in self.dag_nodes[0].input_nodes])
-            self.assertEqual(first_node.output_nodes,
-                             [item.name_in_network if item else None for item in self.dag_nodes[0].output_nodes])
+            self.assertEqual(
+                first_node.input_nodes,
+                [item.name_in_network if item else None for item in self.dag_nodes[0].input_nodes],
+            )
+            self.assertEqual(
+                first_node.output_nodes,
+                [item.name_in_network if item else None for item in self.dag_nodes[0].output_nodes],
+            )
 
     def test_get_mhsa_pattern_with_valid_conditions(self):
         """测试获取MHSA模式，满足条件的情况"""
@@ -238,14 +231,19 @@ class TestTorchDAGAdapter(unittest.TestCase):
 
         mock_node.output_nodes = [mock_add_node, mock_other_branch]
 
-        test_nodes = [mock_node, mock_add_node, mock_other_branch, MockDagNode("linear1", "Linear"),
-                      MockDagNode("linear2", "Linear")]
+        test_nodes = [
+            mock_node,
+            mock_add_node,
+            mock_other_branch,
+            MockDagNode("linear1", "Linear"),
+            MockDagNode("linear2", "Linear"),
+        ]
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                    'StructureProcess.mhsa_matmul_process') \
-                        as mock_process:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.mhsa_matmul_process'
+            ) as mock_process:
                 qkv_list, proj_list = self.adapter.get_mhsa_pattern()
                 mock_process.assert_called()
                 self.assertIsInstance(qkv_list, list)
@@ -263,9 +261,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                    'StructureProcess.mhsa_matmul_process') \
-                        as mock_process:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.mhsa_matmul_process'
+            ) as mock_process:
                 qkv_list, proj_list = self.adapter.get_mhsa_pattern()
                 mock_process.assert_not_called()
                 self.assertIsInstance(qkv_list, list)
@@ -285,9 +283,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                    'StructureProcess.mhsa_matmul_process') \
-                        as mock_process:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.mhsa_matmul_process'
+            ) as mock_process:
                 qkv_list, proj_list = self.adapter.get_mhsa_pattern()
                 mock_process.assert_not_called()
                 self.assertIsInstance(qkv_list, list)
@@ -306,9 +304,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                    'StructureProcess.mhsa_matmul_process') \
-                        as mock_process:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.mhsa_matmul_process'
+            ) as mock_process:
                 qkv_list, proj_list = self.adapter.get_mhsa_pattern()
                 mock_process.assert_not_called()
                 self.assertIsInstance(qkv_list, list)
@@ -324,13 +322,20 @@ class TestTorchDAGAdapter(unittest.TestCase):
         mock_node.output_nodes = [mock_add_node, mock_other_branch]
         mock_add_node.input_nodes = [mock_node, MockDagNode("other_input", "Linear")]
 
-        test_nodes = [mock_node, mock_add_node, mock_other_branch, MockDagNode("linear1", "Linear"),
-                      MockDagNode("linear2", "Linear")]
+        test_nodes = [
+            mock_node,
+            mock_add_node,
+            mock_other_branch,
+            MockDagNode("linear1", "Linear"),
+            MockDagNode("linear2", "Linear"),
+        ]
 
         with patch.object(self.adapter, 'node_list', test_nodes):
-            with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                       'StructureProcess.is_ffn_matmul',
-                       return_value=True):
+            with patch(
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.is_ffn_matmul',
+                return_value=True,
+            ):
                 ffn_pattern = self.adapter.get_ffn_pattern()
                 self.assertIsInstance(ffn_pattern, list)
 
@@ -347,9 +352,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                    'StructureProcess.is_ffn_matmul') \
-                        as mock_is_ffn:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.is_ffn_matmul'
+            ) as mock_is_ffn:
                 ffn_pattern = self.adapter.get_ffn_pattern()
                 mock_is_ffn.assert_not_called()
                 self.assertIsInstance(ffn_pattern, list)
@@ -368,9 +373,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                    'StructureProcess.is_ffn_matmul') \
-                        as mock_is_ffn:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.is_ffn_matmul'
+            ) as mock_is_ffn:
                 ffn_pattern = self.adapter.get_ffn_pattern()
                 mock_is_ffn.assert_not_called()
                 self.assertIsInstance(ffn_pattern, list)
@@ -388,9 +393,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                    'StructureProcess.is_ffn_matmul') \
-                        as mock_is_ffn:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.is_ffn_matmul'
+            ) as mock_is_ffn:
                 ffn_pattern = self.adapter.get_ffn_pattern()
                 mock_is_ffn.assert_not_called()
                 self.assertIsInstance(ffn_pattern, list)
@@ -405,12 +410,20 @@ class TestTorchDAGAdapter(unittest.TestCase):
         mock_node.output_nodes = [mock_add_node, mock_other_branch]
         mock_add_node.input_nodes = [mock_node, MockDagNode("other_input", "Linear")]
 
-        test_nodes = [mock_node, mock_add_node, mock_other_branch, MockDagNode("linear1", "Linear"),
-                      MockDagNode("linear2", "Linear"), MockDagNode("norm", "LayerNorm")]
+        test_nodes = [
+            mock_node,
+            mock_add_node,
+            mock_other_branch,
+            MockDagNode("linear1", "Linear"),
+            MockDagNode("linear2", "Linear"),
+            MockDagNode("norm", "LayerNorm"),
+        ]
 
         with patch.object(self.adapter, 'node_list', test_nodes):
-            with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                       'StructureProcess.mhsa_matmul_ln_process'):
+            with patch(
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.mhsa_matmul_ln_process'
+            ):
                 qkv_list, proj_list, ln_list = self.adapter.get_mhsa_ln_pattern()
                 self.assertIsInstance(qkv_list, list)
                 self.assertIsInstance(proj_list, list)
@@ -426,12 +439,20 @@ class TestTorchDAGAdapter(unittest.TestCase):
         mock_node.output_nodes = [mock_add_node, mock_other_branch]
         mock_add_node.input_nodes = [mock_node, MockDagNode("other_input", "Linear")]
 
-        test_nodes = [mock_node, mock_add_node, mock_other_branch, MockDagNode("linear1", "Linear"),
-                      MockDagNode("linear2", "Linear"), MockDagNode("norm", "LayerNorm")]
+        test_nodes = [
+            mock_node,
+            mock_add_node,
+            mock_other_branch,
+            MockDagNode("linear1", "Linear"),
+            MockDagNode("linear2", "Linear"),
+            MockDagNode("norm", "LayerNorm"),
+        ]
 
         with patch.object(self.adapter, 'node_list', test_nodes):
-            with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
-                       'TorchDAGAdapter._get_ffn_pattern_and_ln_list'):
+            with patch(
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
+                'TorchDAGAdapter._get_ffn_pattern_and_ln_list'
+            ):
                 ffn_pattern, ffn_ln_list = self.adapter.get_ffn_ln_pattern()
                 self.assertIsInstance(ffn_pattern, list)
                 self.assertIsInstance(ffn_ln_list, list)
@@ -452,12 +473,20 @@ class TestTorchDAGAdapter(unittest.TestCase):
         mock_node.output_nodes = [mock_add_node, mock_other_branch]
         mock_add_node.input_nodes = [mock_node, MockDagNode("other_input", "Linear")]
 
-        test_nodes = [mock_node, mock_add_node, mock_other_branch, MockDagNode("linear1", "Linear"),
-                      MockDagNode("linear2", "Linear"), MockDagNode("norm", "LayerNorm")]
+        test_nodes = [
+            mock_node,
+            mock_add_node,
+            mock_other_branch,
+            MockDagNode("linear1", "Linear"),
+            MockDagNode("linear2", "Linear"),
+            MockDagNode("norm", "LayerNorm"),
+        ]
 
         with patch.object(self.adapter, 'node_list', test_nodes):
-            with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
-                       'TorchDAGAdapter._get_ffn_pattern_and_ln_list'):
+            with patch(
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
+                'TorchDAGAdapter._get_ffn_pattern_and_ln_list'
+            ):
                 ffn_pattern, ffn_ln_list = self.adapter.get_llama_ffn_ln_pattern()
                 self.assertIsInstance(ffn_pattern, list)
                 self.assertIsInstance(ffn_ln_list, list)
@@ -475,9 +504,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
-                    'TorchDAGAdapter._get_ffn_pattern_and_ln_list') \
-                        as mock_get:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
+                'TorchDAGAdapter._get_ffn_pattern_and_ln_list'
+            ) as mock_get:
                 ffn_pattern, ffn_ln_list = self.adapter.get_llama_ffn_ln_pattern()
                 mock_get.assert_not_called()
                 self.assertIsInstance(ffn_pattern, list)
@@ -497,9 +526,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
-                    'TorchDAGAdapter._get_ffn_pattern_and_ln_list') \
-                        as mock_get:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
+                'TorchDAGAdapter._get_ffn_pattern_and_ln_list'
+            ) as mock_get:
                 ffn_pattern, ffn_ln_list = self.adapter.get_llama_ffn_ln_pattern()
                 mock_get.assert_not_called()
                 self.assertIsInstance(ffn_pattern, list)
@@ -518,9 +547,9 @@ class TestTorchDAGAdapter(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
-                    'TorchDAGAdapter._get_ffn_pattern_and_ln_list') \
-                        as mock_get:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
+                'TorchDAGAdapter._get_ffn_pattern_and_ln_list'
+            ) as mock_get:
                 ffn_pattern, ffn_ln_list = self.adapter.get_llama_ffn_ln_pattern()
                 mock_get.assert_not_called()
                 self.assertIsInstance(ffn_pattern, list)
@@ -699,8 +728,14 @@ class TestTorchDAGAdapter(unittest.TestCase):
         linear3 = MockDagNode("linear3", "Linear")
         linear4 = MockDagNode("linear4", "Linear")
 
-        test_nodes = \
-            [MockDagNode("norm", "LayerNorm"), linear1, linear2, linear3, linear4, MockDagNode("end", "Linear")]
+        test_nodes = [
+            MockDagNode("norm", "LayerNorm"),
+            linear1,
+            linear2,
+            linear3,
+            linear4,
+            MockDagNode("end", "Linear"),
+        ]
 
         mhsa_linear = []
         mhsa_o = []
@@ -721,8 +756,16 @@ class TestTorchDAGAdapter(unittest.TestCase):
         linear5 = MockDagNode("linear5", "Linear")
         linear6 = MockDagNode("linear6", "Linear")
 
-        test_nodes = [MockDagNode("norm", "LayerNorm"), linear1, linear2, linear3,
-                      linear4, linear5, linear6, MockDagNode("end", "Linear")]
+        test_nodes = [
+            MockDagNode("norm", "LayerNorm"),
+            linear1,
+            linear2,
+            linear3,
+            linear4,
+            linear5,
+            linear6,
+            MockDagNode("end", "Linear"),
+        ]
 
         mhsa_linear = []
         mhsa_o = []
@@ -838,7 +881,7 @@ class TestTorchDAGAdapter(unittest.TestCase):
         """测试branch_aware=True的情况"""
         search_node = MockDagNode("search", "Linear")
         target_node = MockDagNode("target", "Linear")
-        other_node = MockDagNode("other", "Linear")
+        other_node = MockDagNode("other", "Linear")  # noqa: F841
 
         search_node.input_nodes = [target_node]
 
@@ -855,11 +898,11 @@ class TestTorchDAGAdapter(unittest.TestCase):
         ffn_pattern = []
         ffn_ln_list = []
 
-        with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.'
-                   'model_structure_process.StructureProcess.is_ffn_matmul',
-                   return_value=True):
-            TorchDAGAdapter._get_ffn_pattern_and_ln_list((2, matmul_list), ln_list,
-                                                         stop_node, ffn_pattern, ffn_ln_list)
+        with patch(
+            'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.StructureProcess.is_ffn_matmul',
+            return_value=True,
+        ):
+            TorchDAGAdapter._get_ffn_pattern_and_ln_list((2, matmul_list), ln_list, stop_node, ffn_pattern, ffn_ln_list)
             self.assertEqual(len(ffn_pattern), 1)
             self.assertEqual(len(ffn_ln_list), 1)
 
@@ -871,11 +914,11 @@ class TestTorchDAGAdapter(unittest.TestCase):
         ffn_pattern = []
         ffn_ln_list = []
 
-        with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.'
-                   'model_structure_process.StructureProcess.is_ffn_matmul',
-                   return_value=True):
-            TorchDAGAdapter._get_ffn_pattern_and_ln_list((2, matmul_list), ln_list,
-                                                         stop_node, ffn_pattern, ffn_ln_list)
+        with patch(
+            'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.StructureProcess.is_ffn_matmul',
+            return_value=True,
+        ):
+            TorchDAGAdapter._get_ffn_pattern_and_ln_list((2, matmul_list), ln_list, stop_node, ffn_pattern, ffn_ln_list)
             self.assertEqual(len(ffn_pattern), 1)
             self.assertEqual(len(ffn_ln_list), 1)
 
@@ -942,8 +985,10 @@ class TestTorchDAGAdapterEdgeCases(unittest.TestCase):
         self.mock_dag_hook = Mock()
         self.mock_dag_hook.dag_node_list = []
 
-        with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook',
-                   return_value=self.mock_dag_hook):
+        with patch(
+            'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook',
+            return_value=self.mock_dag_hook,
+        ):
             self.adapter = TorchDAGAdapter(self.model, dummy_input=torch.randn(1, 10))
 
     def test_empty_node_list(self):
@@ -983,8 +1028,10 @@ class TestTorchDAGAdapterEdgeCases(unittest.TestCase):
             mock_dag_hook = Mock()
             mock_dag_hook.dag_node_list = [MockDagNode("linear", "Linear")]
 
-            with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook',
-                       return_value=mock_dag_hook):
+            with patch(
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_torch_hook.DagTorchHook',
+                return_value=mock_dag_hook,
+            ):
                 adapter = TorchDAGAdapter(cuda_model, dummy_input=dummy_input)
                 self.assertEqual(adapter._dummy_input.device.type, 'cuda')
 
@@ -992,7 +1039,7 @@ class TestTorchDAGAdapterEdgeCases(unittest.TestCase):
         """测试branch_aware=True的情况"""
         search_node = MockDagNode("search", "Linear")
         target_node = MockDagNode("target", "Linear")
-        other_node = MockDagNode("other", "Linear")
+        other_node = MockDagNode("other", "Linear")  # noqa: F841
 
         search_node.input_nodes = [target_node]
 
@@ -1141,11 +1188,11 @@ class TestTorchDAGAdapterEdgeCases(unittest.TestCase):
 
         test_nodes = [mock_node, mock_add_node1, mock_add_node2]
 
-        with (patch.object(self.adapter, 'node_list', test_nodes)):
+        with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                    'StructureProcess.mhsa_matmul_process') \
-                    as mock_process:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.mhsa_matmul_process'
+            ) as mock_process:
                 qkv_list, proj_list = self.adapter.get_mhsa_pattern()
                 mock_process.assert_not_called()  # 应该不被调用
                 self.assertEqual(len(qkv_list), 0)
@@ -1165,9 +1212,9 @@ class TestTorchDAGAdapterEdgeCases(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                    'StructureProcess.mhsa_matmul_process') \
-                    as mock_process:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.mhsa_matmul_process'
+            ) as mock_process:
                 qkv_list, proj_list = self.adapter.get_mhsa_pattern()
                 mock_process.assert_not_called()  # 应该不被调用
                 self.assertEqual(len(qkv_list), 0)
@@ -1186,9 +1233,9 @@ class TestTorchDAGAdapterEdgeCases(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
-                    'StructureProcess.mhsa_matmul_process') \
-                    as mock_process:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.model_structure_process.'
+                'StructureProcess.mhsa_matmul_process'
+            ) as mock_process:
                 qkv_list, proj_list = self.adapter.get_mhsa_pattern()
                 mock_process.assert_not_called()  # 应该不被调用
                 self.assertEqual(len(qkv_list), 0)
@@ -1207,9 +1254,9 @@ class TestTorchDAGAdapterEdgeCases(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
-                    'TorchDAGAdapter._get_ffn_pattern_and_ln_list') \
-                    as mock_get:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
+                'TorchDAGAdapter._get_ffn_pattern_and_ln_list'
+            ) as mock_get:
                 ffn_pattern, ffn_ln_list = self.adapter.get_llama_ffn_ln_pattern()
                 mock_get.assert_not_called()  # 应该不被调用
                 self.assertEqual(len(ffn_pattern), 0)
@@ -1229,9 +1276,9 @@ class TestTorchDAGAdapterEdgeCases(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
-                    'TorchDAGAdapter._get_ffn_pattern_and_ln_list') \
-                    as mock_get:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
+                'TorchDAGAdapter._get_ffn_pattern_and_ln_list'
+            ) as mock_get:
                 ffn_pattern, ffn_ln_list = self.adapter.get_llama_ffn_ln_pattern()
                 mock_get.assert_not_called()  # 应该不被调用
                 self.assertEqual(len(ffn_pattern), 0)
@@ -1250,9 +1297,9 @@ class TestTorchDAGAdapterEdgeCases(unittest.TestCase):
 
         with patch.object(self.adapter, 'node_list', test_nodes):
             with patch(
-                    'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
-                    'TorchDAGAdapter._get_ffn_pattern_and_ln_list') \
-                    as mock_get:
+                'msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.torch_dag_adapter.'
+                'TorchDAGAdapter._get_ffn_pattern_and_ln_list'
+            ) as mock_get:
                 ffn_pattern, ffn_ln_list = self.adapter.get_llama_ffn_ln_pattern()
                 mock_get.assert_not_called()  # 应该不被调用
                 self.assertEqual(len(ffn_pattern), 0)

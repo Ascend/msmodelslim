@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=modified-iterating-list
+
 import os
 import stat
 
@@ -34,11 +36,7 @@ from msmodelslim.onnx.squant_ptq.aok.optimizer.graph_optimizer import GraphOptim
 
 
 class _InferenceRunInfo:
-
-    def __init__(self,
-                 model_name: str,
-                 latency: float,
-                 output: np.array) -> None:
+    def __init__(self, model_name: str, latency: float, output: np.array) -> None:
         self.model_name = model_name
         self.latency = latency
         self.output = output

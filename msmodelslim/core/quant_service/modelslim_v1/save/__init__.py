@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -34,7 +34,7 @@ from .ascendv1 import AscendV1Saver, AscendV1Config
 from .mindie_format import MindIEFormatSaver, MindIEFormatConfig
 from .interface import AscendV1SaveInterface
 from .ascendv1_distributed import (
-    DistributedAscendV1Saver, 
-    DistributedAscendV1Config, 
-    convert_to_distributed_config_if_needed
+    DistributedAscendV1Saver,
+    DistributedAscendV1Config,
+    convert_to_distributed_config_if_needed,
 )

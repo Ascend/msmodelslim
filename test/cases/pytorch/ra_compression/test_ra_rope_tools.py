@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,no-name-in-module,redefined-outer-name,use-implicit-booleaness-not-comparison
 
 import os
 import tempfile
@@ -78,8 +79,9 @@ def temp_dir():
         yield tmpdir
 
 
-def test_raropecompressor_init_given_valid_parameters_when_initialized_then_success(fake_model, fake_tokenizer,
-                                                                                    fake_config):
+def test_raropecompressor_init_given_valid_parameters_when_initialized_then_success(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     assert compressor.model == fake_model
     assert compressor.cfg == fake_config
@@ -96,8 +98,9 @@ def test_raropecompressor_init_given_invalid_model_when_missing_config_then_rais
         RARopeCompressor(invalid_model, fake_tokenizer, fake_config)
 
 
-def test_raropecompressor_init_given_invalid_model_when_missing_hidden_size_then_raise_error(fake_tokenizer,
-                                                                                             fake_config):
+def test_raropecompressor_init_given_invalid_model_when_missing_hidden_size_then_raise_error(
+    fake_tokenizer, fake_config
+):
     class InvalidConfigModel(nn.Module):
         def __init__(self):
             self.config = type('obj', (object,), {})
@@ -107,15 +110,12 @@ def test_raropecompressor_init_given_invalid_model_when_missing_hidden_size_then
         RARopeCompressor(invalid_model, fake_tokenizer, fake_config)
 
 
-def test_raropecompressor_init_given_model_with_different_head_names_when_initialized_then_success(fake_tokenizer,
-                                                                                                   fake_config):
+def test_raropecompressor_init_given_model_with_different_head_names_when_initialized_then_success(
+    fake_tokenizer, fake_config
+):
     class SpecialConfigModel(nn.Module):
         def __init__(self):
-            self.config = type('obj', (object,), {
-                'hidden_size': 512,
-                'n_head': 8,
-                'multi_query_group_num': 4
-            })
+            self.config = type('obj', (object,), {'hidden_size': 512, 'n_head': 8, 'multi_query_group_num': 4})
 
     special_model = SpecialConfigModel()
     compressor = RARopeCompressor(special_model, fake_tokenizer, fake_config)
@@ -123,8 +123,9 @@ def test_raropecompressor_init_given_model_with_different_head_names_when_initia
     assert compressor.num_key_value_heads == 4
 
 
-def test_max_every_group_given_valid_data_when_processed_then_return_correct_result(fake_model, fake_tokenizer,
-                                                                                    fake_config):
+def test_max_every_group_given_valid_data_when_processed_then_return_correct_result(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     data = {'layer1': [1, 3, 2, 4], 'layer2': [5, 7, 6, 8]}
     result = compressor.max_every_group(data, 2)
@@ -132,17 +133,18 @@ def test_max_every_group_given_valid_data_when_processed_then_return_correct_res
     assert result == expected
 
 
-def test_max_every_group_given_empty_data_when_processed_then_return_empty_dict(fake_model, fake_tokenizer,
-                                                                                fake_config):
+def test_max_every_group_given_empty_data_when_processed_then_return_empty_dict(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     data = {}
     result = compressor.max_every_group(data, 2)
     assert result == {}
 
 
-def test_remove_empty_list_keys_given_dict_with_empty_lists_when_processed_then_remove_empties(fake_model,
-                                                                                               fake_tokenizer,
-                                                                                               fake_config):
+def test_remove_empty_list_keys_given_dict_with_empty_lists_when_processed_then_remove_empties(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     data = {'key1': [1, 2, 3], 'key2': [], 'key3': [4, 5], 'key4': []}
     result = compressor.remove_empty_list_keys(data)
@@ -150,16 +152,18 @@ def test_remove_empty_list_keys_given_dict_with_empty_lists_when_processed_then_
     assert result == expected
 
 
-def test_remove_empty_list_keys_given_dict_no_empty_lists_when_processed_then_unchanged(fake_model, fake_tokenizer,
-                                                                                        fake_config):
+def test_remove_empty_list_keys_given_dict_no_empty_lists_when_processed_then_unchanged(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     data = {'key1': [1, 2, 3], 'key2': [4, 5]}
     result = compressor.remove_empty_list_keys(data)
     assert result == data
 
 
-def test_select_top_heads_given_valid_data_when_processed_then_return_correct_indices(fake_model, fake_tokenizer,
-                                                                                      fake_config):
+def test_select_top_heads_given_valid_data_when_processed_then_return_correct_indices(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     data = {'layer1': [1, 9, 2, 8], 'layer2': [3, 7, 4, 6]}
     result = compressor.select_top_heads(data, 0.5)
@@ -167,16 +171,18 @@ def test_select_top_heads_given_valid_data_when_processed_then_return_correct_in
     assert 3 in result['layer2']
 
 
-def test_select_top_heads_given_empty_data_when_processed_then_return_empty_dict(fake_model, fake_tokenizer,
-                                                                                 fake_config):
+def test_select_top_heads_given_empty_data_when_processed_then_return_empty_dict(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     data = {}
     result = compressor.select_top_heads(data, 0.5)
     assert result == {}
 
 
-def test_select_top_heads_given_zero_ratio_when_processed_then_return_empty_lists(fake_model, fake_tokenizer,
-                                                                                  fake_config):
+def test_select_top_heads_given_zero_ratio_when_processed_then_return_empty_lists(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     data = {'layer1': [1, 2, 3, 4], 'layer2': [5, 6, 7, 8]}
     result = compressor.select_top_heads(data, 0.0)
@@ -184,8 +190,9 @@ def test_select_top_heads_given_zero_ratio_when_processed_then_return_empty_list
     assert result['layer2'] == []
 
 
-def test_select_top_heads_given_one_ratio_when_processed_then_return_all_indices(fake_model, fake_tokenizer,
-                                                                                 fake_config):
+def test_select_top_heads_given_one_ratio_when_processed_then_return_all_indices(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     data = {'layer1': [1, 2], 'layer2': [3, 4]}
     result = compressor.select_top_heads(data, 1.0)
@@ -193,14 +200,15 @@ def test_select_top_heads_given_one_ratio_when_processed_then_return_all_indices
     assert result['layer2'] == [0, 1]
 
 
-def test_get_compress_heads_given_valid_save_path_when_processed_then_save_file(fake_model, fake_tokenizer, fake_config,
-                                                                                temp_dir):
+def test_get_compress_heads_given_valid_save_path_when_processed_then_save_file(
+    fake_model, fake_tokenizer, fake_config, temp_dir
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
 
     with patch.object(compressor, 'get_attention_score') as mock_get_attention:
         mock_get_attention.return_value = (
             {0: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]},
-            {0: [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]}
+            {0: [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]},
         )
 
         save_path = os.path.join(temp_dir, "test_heads.pt")
@@ -212,34 +220,34 @@ def test_get_compress_heads_given_valid_save_path_when_processed_then_save_file(
         assert 'copying' in loaded_data
 
 
-def test_get_compress_heads_given_invalid_save_path_when_processed_then_raise_error(fake_model, fake_tokenizer,
-                                                                                    fake_config):
+def test_get_compress_heads_given_invalid_save_path_when_processed_then_raise_error(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
 
     with patch.object(compressor, 'get_attention_score') as mock_get_attention:
-        mock_get_attention.return_value = (
-            {0: [0.1, 0.2, 0.3, 0.4]},
-            {0: [0.4, 0.3, 0.2, 0.1]}
-        )
+        mock_get_attention.return_value = ({0: [0.1, 0.2, 0.3, 0.4]}, {0: [0.4, 0.3, 0.2, 0.1]})
 
         with pytest.raises(Exception):
             compressor.get_compress_heads(123)
 
 
-def test_get_attention_score_given_valid_inputs_when_processed_then_return_scores(fake_model, fake_tokenizer,
-                                                                                  fake_config):
+def test_get_attention_score_given_valid_inputs_when_processed_then_return_scores(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     compressor.model.device = 'cpu'
 
-    with patch('msmodelslim.pytorch.ra_compression.ra_rope_tools.hook') as mock_hook:
+    with patch('msmodelslim.pytorch.ra_compression.ra_rope_tools.hook') as mock_hook:  # noqa: F841
         prefix_scores, copying_scores = compressor.get_attention_score()
 
         assert isinstance(prefix_scores, dict)
         assert isinstance(copying_scores, dict)
 
 
-def test_get_attention_score_given_empty_tokenizer_when_fallback_then_use_fallback_text(fake_model, fake_tokenizer,
-                                                                                        fake_config):
+def test_get_attention_score_given_empty_tokenizer_when_fallback_then_use_fallback_text(
+    fake_model, fake_tokenizer, fake_config
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     compressor.model.device = 'cpu'
 
@@ -315,9 +323,9 @@ def test_softmaxdumpoutput_get_copying_matching_score_given_valid_input_when_pro
     assert isinstance(score, torch.Tensor)
 
 
-def test_integration_compress_heads_workflow_given_complete_setup_when_processed_then_success(fake_model,
-                                                                                              fake_tokenizer,
-                                                                                              fake_config, temp_dir):
+def test_integration_compress_heads_workflow_given_complete_setup_when_processed_then_success(
+    fake_model, fake_tokenizer, fake_config, temp_dir
+):
     compressor = RARopeCompressor(fake_model, fake_tokenizer, fake_config)
     compressor.model.device = 'cpu'
 
@@ -327,7 +335,7 @@ def test_integration_compress_heads_workflow_given_complete_setup_when_processed
     with patch.object(compressor, 'get_attention_score') as mock_scores:
         mock_scores.return_value = (
             {0: [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2]},
-            {0: [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}
+            {0: [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]},
         )
 
         compressor.get_compress_heads(save_path)

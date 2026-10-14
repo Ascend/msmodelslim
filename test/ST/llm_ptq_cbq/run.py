@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,10 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module,ungrouped-imports
 
 import os
 import torch
-import torch_npu
+import torch_npu  # noqa: F401
 import torch.utils.data
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
@@ -38,20 +39,21 @@ option["NPU_FUZZY_COMPILE_BLACKLIST"] = "ReduceProd"
 torch.npu.set_option(option)
 
 LOAD_PATH = f"{os.environ['PROJECT_PATH']}/resource/llm_ptq/llama2_7b/"
-tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=LOAD_PATH,
-                                          trust_remote_code=True, 
-                                          local_files_only=True)
+tokenizer = AutoTokenizer.from_pretrained(
+    pretrained_model_name_or_path=LOAD_PATH, trust_remote_code=True, local_files_only=True
+)
 tokenizer.pad_token_id = 0
-model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=LOAD_PATH,
-                                             torch_dtype=torch.float16, 
-                                             trust_remote_code=True, 
-                                             local_files_only=True).npu()
+model = AutoModelForCausalLM.from_pretrained(
+    pretrained_model_name_or_path=LOAD_PATH, torch_dtype=torch.float16, trust_remote_code=True, local_files_only=True
+).npu()
 
-calib_list_all = ["Where is the capital of China?",
-              "Please make a poem:",
-              "I want to learn python, how should I learn it?",
-              "Please help me write a job report on large model inference optimization:",
-              "What are the most worth visiting scenic spots in China?"]
+calib_list_all = [
+    "Where is the capital of China?",
+    "Please make a poem:",
+    "I want to learn python, how should I learn it?",
+    "Please help me write a job report on large model inference optimization:",
+    "What are the most worth visiting scenic spots in China?",
+]
 
 
 def get_calib_dataset(tokenizer_instance, calib_list):
@@ -65,12 +67,12 @@ def get_calib_dataset(tokenizer_instance, calib_list):
 
 dataset_calib = get_calib_dataset(tokenizer, calib_list_all)
 
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig  # noqa: E402
 
 anti_config = AntiOutlierConfig(anti_method="m5", dev_type='npu')
 anti_outlier = AntiOutlier(model, calib_data=dataset_calib, cfg=anti_config)
-anti_outlier.process() 
+anti_outlier.process()
 msmodelslim_logger.info('cbq antioutlier is finished!')
 
 quant_config = QuantConfig(a_bit=8, w_bit=8, dev_type='npu', act_method=1, pr=1.0, mm_tensor=False)
@@ -84,8 +86,9 @@ test_input = tokenizer(test_prompt, return_tensors="pt")
 msmodelslim_logger.info("model is inferring...")
 model = model.npu()
 model.eval()
-generate_ids = model.generate(test_input.input_ids.npu(), attention_mask=test_input.attention_mask.npu(),
-                              max_new_tokens=SEQ_LEN_OUT)
+generate_ids = model.generate(
+    test_input.input_ids.npu(), attention_mask=test_input.attention_mask.npu(), max_new_tokens=SEQ_LEN_OUT
+)
 res = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
 msmodelslim_logger.info(res)
 for _, item in enumerate(res):

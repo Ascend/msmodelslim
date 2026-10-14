@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-merging-isinstance,reimported,unpacking-non-sequence,unsubscriptable-object
+
 from collections.abc import Generator, Iterable
 from typing import Tuple, Dict, Optional, Any
 
@@ -30,23 +32,24 @@ from msmodelslim.utils.exception import InvalidModelError
 
 class TransformersForwardBreak(Exception):
     """内部使用的异常类，用于中断前向传播并捕获输入"""
+
     pass
 
 
-def generated_decoder_layer_visit_func_with_keyword(model: torch.nn.Module,
-                                                    keyword: str = "decoderlayer",
-                                                    ) -> Generator[ProcessRequest, Any, None]:
+def generated_decoder_layer_visit_func_with_keyword(
+    model: torch.nn.Module,
+    keyword: str = "decoderlayer",
+) -> Generator[ProcessRequest, Any, None]:
     transformer_blocks = [
-        (name, module)
-        for name, module in model.named_modules()
-        if keyword in module.__class__.__name__.lower()
+        (name, module) for name, module in model.named_modules() if keyword in module.__class__.__name__.lower()
     ]
     return generated_decoder_layer_visit_func(model, transformer_blocks=transformer_blocks)
 
 
-def generated_decoder_layer_visit_func(model: torch.nn.Module,
-                                       transformer_blocks: Optional[Iterable[Tuple[str, torch.nn.Module]]] = None,
-                                       ) -> Generator[ProcessRequest, Any, None]:
+def generated_decoder_layer_visit_func(
+    model: torch.nn.Module,
+    transformer_blocks: Optional[Iterable[Tuple[str, torch.nn.Module]]] = None,
+) -> Generator[ProcessRequest, Any, None]:
     if transformer_blocks is None:
         transformer_blocks = [
             (name, module)
@@ -61,13 +64,12 @@ def generated_decoder_layer_visit_func(model: torch.nn.Module,
         yield ProcessRequest(name, block, tuple(), {})
 
 
-def transformers_generated_forward_func(model: torch.nn.Module,
-                                        inputs: Any,
-                                        ) -> Generator[ProcessRequest, Any, None]:
+def transformers_generated_forward_func(
+    model: torch.nn.Module,
+    inputs: Any,
+) -> Generator[ProcessRequest, Any, None]:
     transformer_blocks = [
-        (name, module)
-        for name, module in model.named_modules()
-        if "decoderlayer" in module.__class__.__name__.lower()
+        (name, module) for name, module in model.named_modules() if "decoderlayer" in module.__class__.__name__.lower()
     ]
 
     # 存储第一个transformer block的输入
@@ -75,7 +77,10 @@ def transformers_generated_forward_func(model: torch.nn.Module,
 
     def break_hook(module: nn.Module, hook_args: Tuple[Any, ...], hook_kwargs: Dict[str, Any]):
         nonlocal first_block_input
-        first_block_input = (hook_args, hook_kwargs,)
+        first_block_input = (
+            hook_args,
+            hook_kwargs,
+        )
         raise TransformersForwardBreak()
 
     hooks = [transformer_blocks[0][1].register_forward_pre_hook(break_hook, with_kwargs=True, prepend=True)]

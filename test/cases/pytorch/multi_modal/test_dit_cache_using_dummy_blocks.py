@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import sys
 import logging
@@ -37,7 +38,7 @@ class BaseDitCacheTestCase(unittest.TestCase):
         # 1. 尝试导入真实的torch_npu
         try:
             # 导入成功：使用真实模块，无需mock
-            import torch_npu
+            import torch_npu  # noqa: F401
         except ImportError:
             # 导入失败：使用mock
             self.mock_used = True
@@ -55,6 +56,7 @@ class BaseDitCacheTestCase(unittest.TestCase):
             self.mock_torch_npu.npu_init.return_value = None
 
         from msmodelslim.pytorch.multi_modal.dit_cache import DitCacheSearchConfig, DitCacheAdaptor, DitCacheConfig
+
         self.DitCacheSearchConfig = DitCacheSearchConfig
         self.DitCacheAdaptor = DitCacheAdaptor
         self.DitCacheConfig = DitCacheConfig
@@ -161,7 +163,8 @@ class DummyBlockDual(nn.Module):
         其他参数仅作为占位存在
         """
         return hidden_states + torch.tensor([self.t_idx, self.idx]), encoder_hidden_states + torch.tensor(
-            [self.t_idx, self.idx])
+            [self.t_idx, self.idx]
+        )
 
 
 class DummyTransformerDual(nn.Module):
@@ -225,8 +228,8 @@ class DummyPipelineDual:
 # 为了让类型提示通过，这里将 OpenSoraPipelineV1_2 定义为 DummyPipeline 的别名
 OpenSoraPipelineV1_2 = DummyPipeline
 
-import os
-import torch.distributed as dist
+import os  # noqa: E402
+import torch.distributed as dist  # noqa: E402
 
 
 class TestDitCacheAdaptor(BaseDitCacheTestCase):
@@ -244,7 +247,7 @@ class TestDitCacheAdaptor(BaseDitCacheTestCase):
             backend='gloo',  # 单机建议使用gloo，GPU用nccl
             init_method='tcp://localhost:29599',
             rank=0,
-            world_size=1
+            world_size=1,
         )
 
     def tearDown(self):
@@ -314,7 +317,7 @@ class TestDitCacheAdaptor(BaseDitCacheTestCase):
             # Block 缓存起始索引 idx， 若值为 0 表示第一个 block 开始
             cache_block_start=1,
             # Block 设定缓存区域 block 数量：
-            cache_num_blocks=3
+            cache_num_blocks=3,
         )
 
         cache_adaptor = self.DitCacheAdaptor(pipeline, config)
@@ -372,7 +375,7 @@ class TestDitCacheAdaptor(BaseDitCacheTestCase):
             # Block 缓存起始索引 idx， 若值为 0 表示第一个 block 开始
             cache_block_start=1,
             # Block 设定缓存区域 block 数量：
-            cache_num_blocks=3
+            cache_num_blocks=3,
         )
 
         cache_adaptor = self.DitCacheAdaptor(pipeline, config)

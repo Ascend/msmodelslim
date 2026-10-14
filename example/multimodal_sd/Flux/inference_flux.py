@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,16 +18,18 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=reimported,useless-return
+
 import os
 import sys
 import argparse
 import csv
-import json
+import json  # noqa: F401
 import time
 
 import torch
 import torch_npu
-from torch_npu.contrib import transfer_to_npu
+from torch_npu.contrib import transfer_to_npu  # noqa: F401
 from torch import nn
 
 from tqdm import tqdm
@@ -41,13 +43,22 @@ cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 example_base_dir = os.path.abspath(os.path.join(cur_file_dir, "..", "..", ".."))
 sys.path.append(example_base_dir)
 
-from example.common.security.pytorch import safe_torch_load
-from example.common.security.path import get_write_directory, get_valid_write_path, json_safe_load, json_safe_dump
-from msmodelslim.quant import quant_model, SessionConfig, FA3ProcessorConfig, W8A8DynamicQuantConfig, \
-    W8A8DynamicProcessorConfig, M3ProcessorConfig, M4ProcessorConfig, M6ProcessorConfig, M6Config
-from msmodelslim.quant import W8A8TimeStepProcessorConfig, W8A8TimeStepQuantConfig, \
-    SaveProcessorConfig
-from msmodelslim import logger
+from example.common.security.pytorch import safe_torch_load  # noqa: E402
+from example.common.security.path import get_write_directory, json_safe_load, json_safe_dump  # noqa: E402
+from example.common.security.path import get_write_directory, get_valid_write_path, json_safe_load, json_safe_dump  # noqa: E402, F401, F811
+from msmodelslim.quant import (  # noqa: E402
+    quant_model,
+    SessionConfig,
+    FA3ProcessorConfig,
+    W8A8DynamicQuantConfig,
+    W8A8DynamicProcessorConfig,
+    M3ProcessorConfig,
+    M4ProcessorConfig,
+    M6ProcessorConfig,
+    M6Config,
+)
+from msmodelslim.quant import W8A8TimeStepProcessorConfig, W8A8TimeStepQuantConfig, SaveProcessorConfig  # noqa: E402
+from msmodelslim import logger  # noqa: E402
 
 torch_npu.npu.set_compile_mode(jit_compile=False)
 
@@ -62,12 +73,12 @@ cache_dict['cache_interval'] = 2
 
 class PromptLoader:
     def __init__(
-            self,
-            prompt_file: str,
-            prompt_file_type: str,
-            batch_size: int = 1,
-            num_images_per_prompt: int = 1,
-            max_num_prompts: int = 0
+        self,
+        prompt_file: str,
+        prompt_file_type: str,
+        batch_size: int = 1,
+        num_images_per_prompt: int = 1,
+        max_num_prompts: int = 0,
     ):
         self.check_input_isvalid(batch_size, num_images_per_prompt, max_num_prompts)
         self.prompts = []
@@ -133,10 +144,13 @@ class PromptLoader:
             raise ValueError(f"Param batch_size invalid, expected less than or equal to 100, but get {batch_size}")
         if num_images_per_prompt <= 0:
             raise ValueError(
-                f"Param num_images_per_prompt invalid, expected positive value, but get {num_images_per_prompt}")
+                f"Param num_images_per_prompt invalid, expected positive value, but get {num_images_per_prompt}"
+            )
         if max_num_prompts < 0:
-            raise ValueError(f"Param max_num_prompts invalid, expected greater than or equal to 0, \
-                                     but get {max_num_prompts}")
+            raise ValueError(
+                f"Param max_num_prompts invalid, expected greater than or equal to 0, \
+                                     but get {max_num_prompts}"
+            )
 
     def load_prompts_plain(self, file_path: str, max_num_prompts: int):
         with os.fdopen(os.open(file_path, os.O_RDONLY), "r") as f:
@@ -159,7 +173,8 @@ class PromptLoader:
                 if len(line) < 2:
                     raise ValueError(
                         f"Invalid line {line}. The line must have at least 2 fields, "
-                        f"but only {len(line)} field(s) found.")
+                        f"but only {len(line)} field(s) found."
+                    )
 
                 prompt = line[0]
                 catagory = line[1]
@@ -192,10 +207,12 @@ def parse_arguments():
     parser.add_argument("--device_id", type=int, default=0, help="NPU device id")
     parser.add_argument("--device", choices=["npu", "cpu"], default="npu", help="NPU")
     parser.add_argument("--prompt_path", type=str, default="./calib_prompts.txt", help="input prompt text path")
-    parser.add_argument("--prompt_type", choices=["plain", "parti", "hpsv2"], default="plain",
-                        help="specify infer prompt type")
-    parser.add_argument("--num_images_per_prompt", type=int, default=1,
-                        help="specify image number every prompt generate")
+    parser.add_argument(
+        "--prompt_type", choices=["plain", "parti", "hpsv2"], default="plain", help="specify infer prompt type"
+    )
+    parser.add_argument(
+        "--num_images_per_prompt", type=int, default=1, help="specify image number every prompt generate"
+    )
     parser.add_argument("--max_num_prompt", type=int, default=0, help="limit the prompt number[0 indicates no limit]")
     parser.add_argument("--info_file_save_path", type=str, default="./image_info.json", help="path to save image info")
     parser.add_argument("--width", type=int, default=1024, help='Image size width')
@@ -204,12 +221,17 @@ def parse_arguments():
     parser.add_argument("--seed", type=int, default=42, help="A seed for all the prompts")
     parser.add_argument("--use_cache", action="store_true", help="turn on dit cache or not")
     parser.add_argument("--batch_size", type=int, default=1, help="prompt batch size")
-    parser.add_argument("--device_type", choices=["A2-32g-single", "A2-32g-dual", "A2-64g"], default="A2-64g",
-                        help="specify device type")
+    parser.add_argument(
+        "--device_type",
+        choices=["A2-32g-single", "A2-32g-dual", "A2-64g"],
+        default="A2-64g",
+        help="specify device type",
+    )
 
     parser.add_argument("--do_quant", action="store_true")
-    parser.add_argument("--quant_type", choices=["w8a8_timestep", "w8a8_dynamic_fa3", "w8a8_dynamic"],
-                        default="w8a8_timestep")
+    parser.add_argument(
+        "--quant_type", choices=["w8a8_timestep", "w8a8_dynamic_fa3", "w8a8_dynamic"], default="w8a8_timestep"
+    )
     parser.add_argument("--anti_method", choices=["m3", "m4", "m6"], default=None)
     parser.add_argument("--quant_weight_save_folder", type=str)
     parser.add_argument("--quant_dump_calib_folder", type=str)
@@ -229,6 +251,7 @@ def parse_arguments():
 def infer(args):
     if args.device_type == "A2-32g-dual":
         from FLUX1dev import replace_tp_from_pretrain, replace_tp_extract_init_dict
+
         FluxPipeline.from_pretrained = classmethod(replace_tp_from_pretrain)
         FluxPipeline.extract_init_dict = classmethod(replace_tp_extract_init_dict)
 
@@ -298,14 +321,12 @@ def infer(args):
         current_prompt = None
         image_info = []
         check_file_safety(args.prompt_path)
-        prompt_loader = PromptLoader(args.prompt_path,
-                                     args.prompt_type,
-                                     args.batch_size,
-                                     args.num_images_per_prompt,
-                                     args.max_num_prompt)
+        prompt_loader = PromptLoader(
+            args.prompt_path, args.prompt_type, args.batch_size, args.num_images_per_prompt, args.max_num_prompt
+        )
         check_param_valid(args.height, args.width, args.infer_steps)
         prompt_loader = list(prompt_loader)
-        prompt_loader = prompt_loader[args.data_split_id::args.data_split_num]
+        prompt_loader = prompt_loader[args.data_split_id :: args.data_split_num]
         for idx, input_info in enumerate(tqdm(prompt_loader, desc=desc)):
             torch.manual_seed(args.seed)
             torch.npu.manual_seed(args.seed)
@@ -365,7 +386,7 @@ def infer(args):
             os.remove(args.info_file_save_path)
 
         json_safe_dump(image_info, args.info_file_save_path)
-        image_time_count = len(prompt_loader) - 3
+        image_time_count = len(prompt_loader) - 3  # noqa: F841
 
     if args.do_quant:
         # do quant
@@ -375,14 +396,12 @@ def infer(args):
             infer_func=sample,
             infer_args=[],
             infer_kwargs=dict(
-                save_path=os.path.join(args.save_path, 'calib_fp'),
-                desc='Dump calib data by float model inference'
-            )
+                save_path=os.path.join(args.save_path, 'calib_fp'), desc='Dump calib data by float model inference'
+            ),
         )
         if args.do_save_img:
             # run fake quant
-            sample(save_path=os.path.join(args.save_path, 'calib_quant'),
-                   desc='Run fake quant using calib data')
+            sample(save_path=os.path.join(args.save_path, 'calib_quant'), desc='Run fake quant using calib data')
     else:
         raise ValueError("Please --do_quant to True")
 
@@ -398,8 +417,10 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
     rank = get_rank()
     is_distributed = rank >= 0  # 标记是否为分布式环境
 
-    dump_data_path = os.path.join(dump_calib_folder, get_rank_suffix_file(base_name="calib_data", ext="pth",
-                                                                          is_distributed=is_distributed, rank=rank))
+    dump_data_path = os.path.join(
+        dump_calib_folder,
+        get_rank_suffix_file(base_name="calib_data", ext="pth", is_distributed=is_distributed, rank=rank),
+    )
 
     # ***************************** 加载模型 *****************************
     if not isinstance(model, nn.Module):
@@ -425,75 +446,73 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
 
     # 量化配置
     def get_timestep_cfg():
-        safetensors_name = get_rank_suffix_file(base_name='quant_model_weight_w8a8_timestep', ext='safetensors',
-                                                is_distributed=is_distributed, rank=rank)
-        json_name = get_rank_suffix_file(base_name='quant_model_description_w8a8_timestep', ext='json',
-                                         is_distributed=is_distributed, rank=rank)
+        safetensors_name = get_rank_suffix_file(
+            base_name='quant_model_weight_w8a8_timestep', ext='safetensors', is_distributed=is_distributed, rank=rank
+        )
+        json_name = get_rank_suffix_file(
+            base_name='quant_model_description_w8a8_timestep', ext='json', is_distributed=is_distributed, rank=rank
+        )
         _cfg = SessionConfig(
             processor_cfg_map={
                 "w8a8_timestep": W8A8TimeStepProcessorConfig(
-                    cfg=W8A8TimeStepQuantConfig(
-                        act_method='minmax'
-                    ),
+                    cfg=W8A8TimeStepQuantConfig(act_method='minmax'),
                     disable_names=get_disable_layer_names(
                         model,
                         layer_include='*',
                         layer_exclude='*net.2*',
                     ),
                     timestep_sep=25,
-
                 ),
                 "save": SaveProcessorConfig(
                     output_path=safe_tensor_folder,
                     safetensors_name=safetensors_name,
                     json_name=json_name,
                     save_type=['safe_tensor'],
-                    part_file_size=None
-                )
+                    part_file_size=None,
+                ),
             },
             calib_data=calib_dataset,
-            device='npu'
+            device='npu',
         )
         return _cfg
 
     def get_fa3_cfg():
-        safetensors_name = get_rank_suffix_file(base_name='quant_model_weight_w8a8_dynamic', ext='safetensors',
-                                                is_distributed=is_distributed, rank=rank)
-        json_name = get_rank_suffix_file(base_name='quant_model_description_w8a8_dynamic', ext='json',
-                                         is_distributed=is_distributed, rank=rank)
+        safetensors_name = get_rank_suffix_file(
+            base_name='quant_model_weight_w8a8_dynamic', ext='safetensors', is_distributed=is_distributed, rank=rank
+        )
+        json_name = get_rank_suffix_file(
+            base_name='quant_model_description_w8a8_dynamic', ext='json', is_distributed=is_distributed, rank=rank
+        )
         _cfg = SessionConfig(
             processor_cfg_map={
                 "fa3": FA3ProcessorConfig(),
                 "w8a8_dynamic": W8A8DynamicProcessorConfig(
-                    cfg=W8A8DynamicQuantConfig(
-                        act_method='minmax'
-                    ),
+                    cfg=W8A8DynamicQuantConfig(act_method='minmax'),
                     disable_names=[],
-
                 ),
                 "save": SaveProcessorConfig(
                     output_path=safe_tensor_folder,
                     safetensors_name=safetensors_name,
                     json_name=json_name,
                     save_type=['safe_tensor'],
-                    part_file_size=None
-                )
+                    part_file_size=None,
+                ),
             },
             calib_data=calib_dataset,
-            device='npu'
+            device='npu',
         )
         return _cfg
 
     def get_w8a8_dynamic_cfg():
-        safetensors_name = get_rank_suffix_file(base_name='quant_model_weight_w8a8_dynamic', ext='safetensors',
-                                                is_distributed=is_distributed, rank=rank)
-        json_name = get_rank_suffix_file(base_name='quant_model_description_w8a8_dynamic', ext='json',
-                                         is_distributed=is_distributed, rank=rank)
+        safetensors_name = get_rank_suffix_file(
+            base_name='quant_model_weight_w8a8_dynamic', ext='safetensors', is_distributed=is_distributed, rank=rank
+        )
+        json_name = get_rank_suffix_file(
+            base_name='quant_model_description_w8a8_dynamic', ext='json', is_distributed=is_distributed, rank=rank
+        )
         processor_cfg_map = {
             "w8a8_dynamic": W8A8DynamicProcessorConfig(
-                cfg=W8A8DynamicQuantConfig(
-                    act_method='minmax'
-                ),
+                cfg=W8A8DynamicQuantConfig(act_method='minmax'),
                 disable_names=get_disable_layer_names(
                     model,
                     layer_include='*',
@@ -505,26 +524,17 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
                 safetensors_name=safetensors_name,
                 json_name=json_name,
                 save_type=['safe_tensor'],
-                part_file_size=None
-            )
+                part_file_size=None,
+            ),
         }
         if args.anti_method == 'm3':
             processor_cfg_map['m3'] = M3ProcessorConfig()
         elif args.anti_method == 'm4':
             processor_cfg_map['m4'] = M4ProcessorConfig()
         elif args.anti_method == 'm6':
-            processor_cfg_map['m6'] = M6ProcessorConfig(
-                cfg=M6Config(
-                    alpha=0.8,
-                    beta=0.2
-                )
-            )
+            processor_cfg_map['m6'] = M6ProcessorConfig(cfg=M6Config(alpha=0.8, beta=0.2))
 
-        _cfg = SessionConfig(
-            processor_cfg_map=processor_cfg_map,
-            calib_data=calib_dataset,
-            device='npu'
-        )
+        _cfg = SessionConfig(processor_cfg_map=processor_cfg_map, calib_data=calib_dataset, device='npu')
         return _cfg
 
     if 'timestep' in args.quant_type:

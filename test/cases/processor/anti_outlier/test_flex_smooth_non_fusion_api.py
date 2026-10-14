@@ -2,9 +2,26 @@
 # -*- coding: UTF-8 -*-
 
 """
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
 Unit tests for flex_smooth_quant NonFusionSubgraph API (flex_smooth_impl_non_fusion_linear).
 Covers non-fusion subgraph interface for flex_smooth_quant, mirroring iter_smooth non-fusion behavior.
 """
+# pylint: disable=consider-using-from-import
 
 import unittest
 from unittest.mock import patch
@@ -79,9 +96,7 @@ class TestFlexSmoothImplNonFusionLinear(unittest.TestCase):
         subgraph = NonFusionSubgraph(linears=[linear])
         config = FlexSmoothQuantConfig(version=1, alpha=0.5, beta=0.5)
 
-        with patch.object(
-            SubgraphFusionFactory, "apply_fusion_to_subgraph"
-        ) as mock_fusion:
+        with patch.object(SubgraphFusionFactory, "apply_fusion_to_subgraph") as mock_fusion:
             scales = flex_smooth_impl_non_fusion_linear(subgraph, config, self.context)
             mock_fusion.assert_called_once()
             call_args = mock_fusion.call_args
@@ -109,9 +124,7 @@ class TestFlexSmoothImplNonFusionLinear(unittest.TestCase):
         subgraph = NonFusionSubgraph(linears=[linear])
         config = FlexSmoothQuantConfig(version=1, alpha=0.5, beta=0.5)
 
-        with patch.object(
-            SubgraphFusionFactory, "apply_fusion_to_subgraph"
-        ) as mock_fusion:
+        with patch.object(SubgraphFusionFactory, "apply_fusion_to_subgraph") as mock_fusion:
             scales = flex_smooth_quant(subgraph, config, self.context)
             mock_fusion.assert_called_once()
 
@@ -133,9 +146,7 @@ class TestFlexSmoothImplNonFusionLinear(unittest.TestCase):
         subgraph = NonFusionSubgraph(linears=[linear1, linear2])
         config = FlexSmoothQuantConfig(version=1, alpha=0.5, beta=0.5)
 
-        with patch.object(
-            SubgraphFusionFactory, "apply_fusion_to_subgraph"
-        ) as mock_fusion:
+        with patch.object(SubgraphFusionFactory, "apply_fusion_to_subgraph") as mock_fusion:
             scales = flex_smooth_impl_non_fusion_linear(subgraph, config, self.context)
             mock_fusion.assert_called_once()
             call_args = mock_fusion.call_args
@@ -178,9 +189,7 @@ class TestFlexSmoothImplNonFusionLinear(unittest.TestCase):
         subgraph = NonFusionSubgraph(linears=[linear])
         config = FlexSmoothQuantConfig(version=1, alpha=None, beta=None)
 
-        with patch.object(
-            SubgraphFusionFactory, "apply_fusion_to_subgraph"
-        ) as mock_fusion:
+        with patch.object(SubgraphFusionFactory, "apply_fusion_to_subgraph") as mock_fusion:
             scales = flex_smooth_impl_non_fusion_linear(subgraph, config, self.context)
             mock_fusion.assert_called_once()
 
@@ -200,9 +209,7 @@ class TestFlexSmoothImplNonFusionLinear(unittest.TestCase):
         subgraph = NonFusionSubgraph(linears=[linear])
         config = FlexSmoothQuantConfig(version=1, alpha=0.5, beta=0.5)
 
-        with patch.object(
-            SubgraphFusionFactory, "apply_fusion_to_subgraph"
-        ) as mock_fusion:
+        with patch.object(SubgraphFusionFactory, "apply_fusion_to_subgraph") as mock_fusion:
             flex_smooth_impl_non_fusion_linear(subgraph, config, self.context)
             kwargs = mock_fusion.call_args[1]
             self.assertIn("scales", kwargs)

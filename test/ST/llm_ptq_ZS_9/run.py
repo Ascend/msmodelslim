@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module
+
 import os
 import logging
 
@@ -37,18 +39,15 @@ LOAD_PATH = f"{os.environ['PROJECT_PATH']}/resource/llm_ptq/llama2_7b/"
 calib_dataset = []
 
 # 加载模型配置
-config = AutoConfig.from_pretrained(LOAD_PATH, 
-                                    trust_remote_code=True, 
-                                    local_files_only=True)
+config = AutoConfig.from_pretrained(LOAD_PATH, trust_remote_code=True, local_files_only=True)
 # 加载分词器
-tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=LOAD_PATH, 
-                                          trust_remote_code=True, 
-                                          local_files_only=True)
+tokenizer = AutoTokenizer.from_pretrained(
+    pretrained_model_name_or_path=LOAD_PATH, trust_remote_code=True, local_files_only=True
+)
 # 加载模型，并指定数据类型为float32，然后移动到CPU
-model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=LOAD_PATH,
-                                             torch_dtype=torch.float32, 
-                                             trust_remote_code=True, 
-                                             local_files_only=True).cpu()
+model = AutoModelForCausalLM.from_pretrained(
+    pretrained_model_name_or_path=LOAD_PATH, torch_dtype=torch.float32, trust_remote_code=True, local_files_only=True
+).cpu()
 
 # 设置分词器的填充侧和填充符号
 tokenizer.padding_side = 'left'
@@ -60,7 +59,7 @@ calib_list = [
     "Please make a poem:",
     "I want to learn python, how should I learn it?",
     "Please help me write a job report on large model inference optimization:",
-    "What are the most worth visiting scenic spots in China?"
+    "What are the most worth visiting scenic spots in China?",
 ]
 
 # 定义函数，用于创建校准数据集
@@ -106,6 +105,8 @@ calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_l
 calibrator.run()
 
 # 保存量化后的模型权重
-calibrator.save(f"{os.environ['PROJECT_PATH']}/output/llm_ptq_ZS_9", save_type=["numpy", "safe_tensor"], part_file_size=1)
+calibrator.save(
+    f"{os.environ['PROJECT_PATH']}/output/llm_ptq_ZS_9", save_type=["numpy", "safe_tensor"], part_file_size=1
+)
 # 打印保存量化权重成功的信息
 logging.info('Save quant weight success!')

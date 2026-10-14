@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import functools
 import inspect
@@ -58,9 +59,9 @@ class InputCapture:
 
     @classmethod
     def capture_forward_inputs(
-            cls,
-            func: Callable,
-            capture_mode: str = 'args',
+        cls,
+        func: Callable,
+        capture_mode: str = 'args',
     ) -> Callable:
         """
         Decorator to capture inputs to a forward function.
@@ -101,7 +102,7 @@ class InputCapture:
                     "timestep_idx": TimestepManager.get_timestep_idx(),
                     "module_name": func.__qualname__,
                     "args": captured_args,
-                    "kwargs": captured_kwargs
+                    "kwargs": captured_kwargs,
                 }
             else:
                 raise ValueError(f"Invalid capture_mode: {capture_mode}. Must be 'args' or 'kwargs' or 'timestep'")
@@ -122,9 +123,9 @@ class DumperManager(nn.Module):
     """Module that listens to and captures forward pass inputs and outputs."""
 
     def __init__(
-            self,
-            module: nn.Module,
-            capture_mode: str = 'args',
+        self,
+        module: nn.Module,
+        capture_mode: str = 'args',
     ):
         """
         Initialize a listener for the given module.
@@ -184,9 +185,9 @@ def get_rank():
         return -1
 
 
-def get_disable_layer_names(model: nn.Module,
-                            layer_include: Union[List[str], Tuple[str], str],
-                            layer_exclude: Union[List[str], Tuple[str], str]) -> List[str]:
+def get_disable_layer_names(
+    model: nn.Module, layer_include: Union[List[str], Tuple[str], str], layer_exclude: Union[List[str], Tuple[str], str]
+) -> List[str]:
     """
     Get the names of layers to be disabled based on inclusion and exclusion patterns using fnmatch.
 
@@ -224,7 +225,7 @@ def get_disable_layer_names(model: nn.Module,
 
 
 def to_device(data, device, depth=0):
-    """ recursive function to move data to the specified device """
+    """recursive function to move data to the specified device"""
     if depth > MAX_RECURSION_DEPTH:
         raise RecursionError(f"Maximum recursion depth {MAX_RECURSION_DEPTH} exceeded")
 

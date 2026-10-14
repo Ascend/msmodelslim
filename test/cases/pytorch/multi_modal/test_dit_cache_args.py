@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-member,pointless-string-statement
 
 import sys
 import unittest
@@ -35,7 +36,7 @@ class BaseDitCacheTestCase(unittest.TestCase):
         # 1. 尝试导入真实的torch_npu
         try:
             # 导入成功：使用真实模块，无需mock
-            import torch_npu
+            import torch_npu  # noqa: F401
         except ImportError:
             # 导入失败：使用mock
             self.mock_used = True
@@ -50,6 +51,7 @@ class BaseDitCacheTestCase(unittest.TestCase):
             self.mock_torch_npu.npu_init.return_value = None
 
         from msmodelslim.pytorch.multi_modal.dit_cache import DitCacheSearchConfig, DitCacheAdaptor, DitCacheConfig
+
         self.dit_cache_search_config = DitCacheSearchConfig
         self.dit_cache_adaptor = DitCacheAdaptor
         self.dit_cache_config = DitCacheConfig
@@ -65,14 +67,10 @@ class BaseDitCacheTestCase(unittest.TestCase):
 
 
 class TestDitCacheConfig(BaseDitCacheTestCase):
-
     def test_valid_config(self):
         """测试有效的配置参数"""
         config = self.dit_cache_config(
-            cache_step_start=10,
-            cache_step_interval=5,
-            cache_block_start=2,
-            cache_num_blocks=4
+            cache_step_start=10, cache_step_interval=5, cache_block_start=2, cache_num_blocks=4
         )
         self.assertEqual(config.cache_step_start, 10)
         self.assertEqual(config.cache_step_interval, 5)
@@ -105,7 +103,6 @@ class TestDitCacheConfig(BaseDitCacheTestCase):
 
 
 class TestDitCacheSearchConfig(BaseDitCacheTestCase):
-
     def test_valid_search_config(self):
         """测试有效的配置参数"""
         config = self.dit_cache_search_config(cache_ratio=1.5, dit_block_num=12, num_sampling_steps=100)
@@ -140,12 +137,11 @@ class TestDitCacheSearchConfig(BaseDitCacheTestCase):
             self.dit_cache_search_config(cache_ratio="1.3", dit_block_num='10', num_sampling_steps=100)
         with self.assertRaises(ValueError) as context:
             self.dit_cache_search_config(cache_ratio=1.3, dit_block_num=10)
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(ValueError) as context:  # noqa: F841
             self.dit_cache_search_config(cache_ratio=1.3, dit_block_num=10, num_sampling_steps="100")
 
 
 class TestDitCacheAdaptor(BaseDitCacheTestCase):
-
     def setUp(self):
         # 先调用基类的setUp()，确保torch_npu的mock逻辑执行
         super().setUp()
@@ -166,11 +162,10 @@ class TestDitCacheAdaptor(BaseDitCacheTestCase):
             cache_ratio=1.5,
             dit_block_num=len(self.pipeline.transformer.transformer_blocks),
             num_sampling_steps=100,
-            num_hidden_states=1
+            num_hidden_states=1,
         )
         self.adaptor = self.dit_cache_adaptor(
-            pipeline=self.pipeline, config=self.config,
-            dit_block_path="transformer.transformer_blocks"
+            pipeline=self.pipeline, config=self.config, dit_block_path="transformer.transformer_blocks"
         )
 
     def test_set_timestep_idx(self):
@@ -180,10 +175,7 @@ class TestDitCacheAdaptor(BaseDitCacheTestCase):
 
     def test_get_timestep_idx_without_setting(self):
         """测试未设置时间步时，get_timestep_idx() 抛出异常"""
-        adaptor = self.dit_cache_adaptor(
-            pipeline=self.fake_pipeline(),
-            dit_block_path="transformer.transformer_blocks"
-        )
+        adaptor = self.dit_cache_adaptor(pipeline=self.fake_pipeline(), dit_block_path="transformer.transformer_blocks")
         self.dit_cache_adaptor._timestep_idx = None
         with self.assertRaises(ValueError) as context:
             adaptor.get_timestep_idx()

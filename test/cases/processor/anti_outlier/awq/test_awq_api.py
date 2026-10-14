@@ -1,4 +1,22 @@
-"""Tests for awq() dispatch API."""
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
+Tests for awq() dispatch API.
+"""
 
 from typing import Optional
 
@@ -13,7 +31,12 @@ from msmodelslim.processor.anti_outlier.common.subgraph_type import (
 )
 from msmodelslim.processor.anti_outlier.awq.api import awq
 from msmodelslim.processor.anti_outlier.awq.common import AWQConfig, AWQContext, offload
-from msmodelslim.processor.anti_outlier.common.subgraph_type import LinearLinearSubgraph, NonFusionSubgraph, NormLinearSubgraph, OVSubgraph
+from msmodelslim.processor.anti_outlier.common.subgraph_type import (
+    LinearLinearSubgraph,
+    NonFusionSubgraph,
+    NormLinearSubgraph,
+    OVSubgraph,
+)
 
 IN_FEATURES = 32
 HIDDEN = 64
@@ -64,7 +87,6 @@ def _non_trivial_scales(size: int = IN_FEATURES) -> torch.Tensor:
 
 
 class TestDispatchBySubgraphType:
-
     def test_dispatch_norm_linear(self):
         norm = RMSNormBias(IN_FEATURES)
         fc1 = nn.Linear(IN_FEATURES, HIDDEN, bias=False)
@@ -148,7 +170,6 @@ class TestDispatchBySubgraphType:
 
 
 class TestSkipWhenEmptyLinears:
-
     def test_skip_non_fusion_empty_linears(self):
         searcher = _mock_searcher()
         subgraph = NonFusionSubgraph(linears=[])
@@ -157,7 +178,6 @@ class TestSkipWhenEmptyLinears:
 
 
 class TestSkipWhenSearchReturnsNone:
-
     def test_no_fusion_norm_linear_when_search_returns_none(self):
         norm = RMSNormBias(IN_FEATURES)
         fc = nn.Linear(IN_FEATURES, HIDDEN, bias=False)
@@ -203,7 +223,6 @@ class TestSkipWhenSearchReturnsNone:
 
 
 class TestFusionApplied:
-
     def test_norm_linear_weights_modified(self):
         norm = RMSNormBias(IN_FEATURES)
         fc = nn.Linear(IN_FEATURES, HIDDEN, bias=False)

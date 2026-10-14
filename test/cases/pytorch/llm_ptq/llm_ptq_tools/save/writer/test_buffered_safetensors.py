@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=redefined-outer-name,unspecified-encoding
+
 import json
 import logging
 import os.path
@@ -33,12 +35,13 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save.writer import BufferedSafete
 TMP_PREFIX = 'test'
 TMP_KEY = 'test_tensor'
 
+
 @pytest.fixture(scope="function")
 def writer():
     logger = logging.getLogger()
     with tempfile.TemporaryDirectory() as tmp:
         writer = BufferedSafetensorsWriter(logger=logger, save_directory=tmp, save_prefix=TMP_PREFIX)
-        writer.max_size = 33 # 文件大小限制：33B
+        writer.max_size = 33  # 文件大小限制：33B
         yield writer
 
 
@@ -49,7 +52,6 @@ def test_write_multi_files_when_exceed_limit(writer):
         'w2': torch.randn(1, 4, dtype=torch.float32),
         'w3': torch.randn(1, 4, dtype=torch.float32),
         'w4': torch.randn(1, 4, dtype=torch.float32),
-
         'w5': torch.randn(1, 4, dtype=torch.float32),
     }
 
@@ -76,6 +78,7 @@ def test_write_multi_files_when_exceed_limit(writer):
     # check values
     for k, v in weight_dict.items():
         assert torch.allclose(get_tensor_helper(k), v)
+
 
 def test_write_one_file_when_one_large_tensor(writer):
     tensor = torch.randn(1, 16, dtype=torch.float32)  # 1*16*4 = 64B

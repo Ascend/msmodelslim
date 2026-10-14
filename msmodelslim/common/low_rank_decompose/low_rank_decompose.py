@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-else-break,unbalanced-tuple-unpacking,undefined-variable
 
 import re
 from collections import namedtuple
@@ -38,7 +39,7 @@ def make_divisible(inputs, divisor=64, min_value=None, limit_round_down=0.9):
     try:
         outputs = max(min_value, int(inputs + divisor / 2) // divisor * divisor)
     except ZeroDivisionError as ex:
-        logging.error('divisor can not be zero. %s', str(ex))
+        logging.error('divisor can not be zero. %s', str(ex))  # noqa: F821
         raise ex
     # Make sure that round down does not go down by more than 10%.
     if outputs < limit_round_down * inputs:
@@ -158,7 +159,7 @@ def get_decompose_channels_4d(source_input, hidden_channels, divisor=64, as_nump
         hidden_channels = search_rank(source_input)
     elif isinstance(hidden_channels, float) and hidden_channels < 1:
         target_params = source_params * hidden_channels
-        hidden_channels = np.roots([kernel_patch, (in_channels + out_channels), - target_params]).max()
+        hidden_channels = np.roots([kernel_patch, (in_channels + out_channels), -target_params]).max()
 
     if isinstance(hidden_channels, (int, float)):
         hidden_out, hidden_in = hidden_channels, hidden_channels

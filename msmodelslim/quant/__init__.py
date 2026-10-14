@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -38,11 +38,23 @@ __all__ = [
 
 try:
     from msmodelslim.quant.session.session import quant_model, SessionConfig
-    from msmodelslim.quant.session.session import M4ProcessorConfig, W8A8QuantConfig, W8A8ProcessorConfig, \
-        FA3ProcessorConfig, W8A8DynamicQuantConfig, W8A8DynamicProcessorConfig, W8A8TimeStepQuantConfig, \
-        W8A8TimeStepProcessorConfig, SaveProcessorConfig, M3ProcessorConfig, M6ProcessorConfig, M6Config
-except ImportError as e:
+    from msmodelslim.quant.session.session import (
+        M4ProcessorConfig,
+        W8A8QuantConfig,
+        W8A8ProcessorConfig,
+        FA3ProcessorConfig,
+        W8A8DynamicQuantConfig,
+        W8A8DynamicProcessorConfig,
+        W8A8TimeStepQuantConfig,
+        W8A8TimeStepProcessorConfig,
+        SaveProcessorConfig,
+        M3ProcessorConfig,
+        M6ProcessorConfig,
+        M6Config,
+    )
+except ImportError:
     from msmodelslim.utils.logging import get_logger
 
     get_logger().warning(
-        f"The session module is imported failed, but it is not a critical error, because v1 does not use it")
+        "The session module is imported failed, but it is not a critical error, because v1 does not use it"
+    )

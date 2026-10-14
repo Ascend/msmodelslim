@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -19,14 +19,20 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
 import torch
 from torch import nn
 
-from msmodelslim.processor.anti_outlier.common.subgraph_type import UpDownSubgraph, LinearLinearSubgraph, NonFusionSubgraph, NormLinearSubgraph, OVSubgraph, Subgraph
+from msmodelslim.processor.anti_outlier.common.subgraph_type import (
+    UpDownSubgraph,
+    LinearLinearSubgraph,
+    NonFusionSubgraph,
+    NormLinearSubgraph,
+    OVSubgraph,
+    Subgraph,
+)
 from msmodelslim.core.context import get_current_context
 
 
@@ -63,19 +69,14 @@ def apply_smooth_scale_shift(
         if layer.bias is None:
             # If no bias exists, create new bias parameter
             bias_shape = (layer.weight.shape[0],)
-            layer.bias = nn.Parameter(
-                torch.zeros(bias_shape, device=device, dtype=dtype, requires_grad=False)
-            )
+            layer.bias = nn.Parameter(torch.zeros(bias_shape, device=device, dtype=dtype, requires_grad=False))
         layer.bias.add_(shift)
 
 
-class SubgraphFusionStrategy(ABC): 
+class SubgraphFusionStrategy(ABC):
     @abstractmethod
     def apply_fusion(
-        self, 
-        subgraph: Subgraph, 
-        scales: Dict[str, torch.Tensor],
-        shifts: Optional[Dict[str, torch.Tensor]] = None
+        self, subgraph: Subgraph, scales: Dict[str, torch.Tensor], shifts: Optional[Dict[str, torch.Tensor]] = None
     ) -> None:
         pass
 
@@ -83,10 +84,7 @@ class SubgraphFusionStrategy(ABC):
 class OVSubgraphFusion(SubgraphFusionStrategy):
     @torch.no_grad()
     def apply_fusion(
-        self, 
-        subgraph: OVSubgraph, 
-        scales: Dict[str, torch.Tensor],
-        shifts: Optional[Dict[str, torch.Tensor]] = None
+        self, subgraph: OVSubgraph, scales: Dict[str, torch.Tensor], shifts: Optional[Dict[str, torch.Tensor]] = None
     ) -> None:
         o_scales = scales['o_scales']
         v_scales = scales['v_scales']
@@ -101,21 +99,17 @@ class OVSubgraphFusion(SubgraphFusionStrategy):
         if getattr(subgraph.v_proj, "bias", None) is not None:
             subgraph.v_proj.bias.mul_(1.0 / v_scales)
 
-        apply_smooth_scale_shift(
-            subgraph.o_proj, o_scales.view(1, -1), o_shift, o_proj_name
-        )
-        apply_smooth_scale_shift(
-            subgraph.v_proj, 1.0 / v_scales.view(-1, 1), v_shift, v_proj_name
-        )
+        apply_smooth_scale_shift(subgraph.o_proj, o_scales.view(1, -1), o_shift, o_proj_name)
+        apply_smooth_scale_shift(subgraph.v_proj, 1.0 / v_scales.view(-1, 1), v_shift, v_proj_name)
 
 
 class UpDownSubgraphFusion(SubgraphFusionStrategy):
     @torch.no_grad()
     def apply_fusion(
-        self, 
-        subgraph: UpDownSubgraph, 
+        self,
+        subgraph: UpDownSubgraph,
         scales: Dict[str, torch.Tensor],
-        shifts: Optional[Dict[str, torch.Tensor]] = None
+        shifts: Optional[Dict[str, torch.Tensor]] = None,
     ) -> None:
         scales_tensor = scales['scales']
 
@@ -129,21 +123,17 @@ class UpDownSubgraphFusion(SubgraphFusionStrategy):
         if getattr(subgraph.up_proj, "bias", None) is not None:
             subgraph.up_proj.bias.mul_(1.0 / scales_tensor)
 
-        apply_smooth_scale_shift(
-            subgraph.down_proj, scales_tensor.view(1, -1), down_shift, down_proj_name
-        )
-        apply_smooth_scale_shift(
-            subgraph.up_proj, 1.0 / scales_tensor.view(-1, 1), up_shift, up_proj_name
-        )
+        apply_smooth_scale_shift(subgraph.down_proj, scales_tensor.view(1, -1), down_shift, down_proj_name)
+        apply_smooth_scale_shift(subgraph.up_proj, 1.0 / scales_tensor.view(-1, 1), up_shift, up_proj_name)
 
 
 class LinearLinearSubgraphFusion(SubgraphFusionStrategy):
     @torch.no_grad()
     def apply_fusion(
-        self, 
-        subgraph: LinearLinearSubgraph, 
+        self,
+        subgraph: LinearLinearSubgraph,
         scales: Dict[str, torch.Tensor],
-        shifts: Optional[Dict[str, torch.Tensor]] = None
+        shifts: Optional[Dict[str, torch.Tensor]] = None,
     ) -> None:
         scales_tensor = scales['scales']
 
@@ -157,9 +147,7 @@ class LinearLinearSubgraphFusion(SubgraphFusionStrategy):
         if getattr(subgraph.linear1, "bias", None) is not None:
             subgraph.linear1.bias.mul_(1.0 / scales_tensor)
 
-        apply_smooth_scale_shift(
-            subgraph.linear2, scales_tensor.view(1, -1), linear2_shift, linear2_name
-        )
+        apply_smooth_scale_shift(subgraph.linear2, scales_tensor.view(1, -1), linear2_shift, linear2_name)
         apply_smooth_scale_shift(
             subgraph.linear1,
             1.0 / scales_tensor.view(-1, 1),
@@ -171,10 +159,10 @@ class LinearLinearSubgraphFusion(SubgraphFusionStrategy):
 class NormLinearSubgraphFusion(SubgraphFusionStrategy):
     @torch.no_grad()
     def apply_fusion(
-        self, 
-        subgraph: NormLinearSubgraph, 
+        self,
+        subgraph: NormLinearSubgraph,
         scales: Dict[str, torch.Tensor],
-        shifts: Optional[Dict[str, torch.Tensor]] = None
+        shifts: Optional[Dict[str, torch.Tensor]] = None,
     ) -> None:
         scales_tensor = scales['scales']
         linear_shifts = shifts.get('linear_shifts', []) if shifts else []
@@ -185,27 +173,21 @@ class NormLinearSubgraphFusion(SubgraphFusionStrategy):
 
         for idx, fc in enumerate(subgraph.linears):
             linear_shift = linear_shifts[idx] if idx < len(linear_shifts) else None
-            linear_name = (
-                linear_names[idx] if linear_names and idx < len(linear_names) else None
-            )
-            apply_smooth_scale_shift(
-                fc, scales_tensor.view(1, -1), linear_shift, linear_name
-            )
+            linear_name = linear_names[idx] if linear_names and idx < len(linear_names) else None
+            apply_smooth_scale_shift(fc, scales_tensor.view(1, -1), linear_shift, linear_name)
 
         # Note: norm layer doesn't have a name field in the subgraph, so we pass None
         if getattr(subgraph.norm, "bias", None) is not None:
             subgraph.norm.bias.mul_(1.0 / scales_tensor)
-        apply_smooth_scale_shift(
-            subgraph.norm, (1.0 / scales_tensor).squeeze(), norm_shift, None
-        )
+        apply_smooth_scale_shift(subgraph.norm, (1.0 / scales_tensor).squeeze(), norm_shift, None)
 
 
 class NonFusionSubgraphFusion(SubgraphFusionStrategy):
     def apply_fusion(
-        self, 
-        subgraph: NonFusionSubgraph, 
+        self,
+        subgraph: NonFusionSubgraph,
         scales: Dict[str, torch.Tensor],
-        shifts: Optional[Dict[str, torch.Tensor]] = None
+        shifts: Optional[Dict[str, torch.Tensor]] = None,
     ) -> None:
         # 暂不支持shift
         scales_tensor = scales['scales']
@@ -214,14 +196,11 @@ class NonFusionSubgraphFusion(SubgraphFusionStrategy):
         linear_names = getattr(subgraph, "linear_names", None)
 
         for idx, fc in enumerate(subgraph.linears):
-            linear_name = (
-                linear_names[idx] if linear_names and idx < len(linear_names) else None
-            )
+            linear_name = linear_names[idx] if linear_names and idx < len(linear_names) else None
             apply_smooth_scale_shift(fc, scales_tensor.view(1, -1), None, linear_name)
 
 
 class SubgraphFusionFactory:
-    
     _fusers = {
         OVSubgraph: OVSubgraphFusion(),
         UpDownSubgraph: UpDownSubgraphFusion(),
@@ -229,20 +208,17 @@ class SubgraphFusionFactory:
         NormLinearSubgraph: NormLinearSubgraphFusion(),
         NonFusionSubgraph: NonFusionSubgraphFusion(),
     }
-    
+
     @classmethod
     def get_fuser(cls, subgraph: Subgraph) -> Optional[SubgraphFusionStrategy]:
         for registered_type, fuser in cls._fusers.items():
             if isinstance(subgraph, registered_type):
                 return fuser
         return None
-    
+
     @classmethod
     def apply_fusion_to_subgraph(
-        cls,
-        subgraph: Subgraph,
-        scales: Dict[str, torch.Tensor],
-        shifts: Optional[Dict[str, torch.Tensor]] = None
+        cls, subgraph: Subgraph, scales: Dict[str, torch.Tensor], shifts: Optional[Dict[str, torch.Tensor]] = None
     ) -> None:
         fuser = cls.get_fuser(subgraph)
         if fuser is None:

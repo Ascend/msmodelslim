@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
 
 """
 Multimodal VLM V1 Quantization Service
@@ -39,5 +40,5 @@ __all__ = [
     'MultimodalVLMModelslimV1QuantConfig',
 ]
 
-from .quant_config import MultimodalVLMModelslimV1QuantConfig
-from .quant_service import MultimodalVLMModelslimV1QuantService, MultimodalVLMModelslimV1QuantServiceConfig
+from .quant_config import MultimodalVLMModelslimV1QuantConfig  # noqa: E402
+from .quant_service import MultimodalVLMModelslimV1QuantService, MultimodalVLMModelslimV1QuantServiceConfig  # noqa: E402

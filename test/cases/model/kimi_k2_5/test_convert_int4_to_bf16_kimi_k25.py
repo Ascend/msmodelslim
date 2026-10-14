@@ -1,3 +1,25 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+"""
+# pylint: disable=attribute-defined-outside-init
+
 import pytest
 import torch
 from torch import nn
@@ -46,7 +68,9 @@ def test_get_full_weight_map_given_model_path_when_json_loaded_then_return_weigh
     "weight_map,name,expected_none",
     [({}, "x.weight", True), ({"x.weight": "a.safetensors"}, "x.weight", False)],
 )
-def test_load_tensor_by_full_name_given_name_when_called_then_return_expected(monkeypatch, weight_map, name, expected_none):
+def test_load_tensor_by_full_name_given_name_when_called_then_return_expected(
+    monkeypatch, weight_map, name, expected_none
+):
     monkeypatch.setattr(target, "get_full_weight_map", lambda _: weight_map)
     monkeypatch.setattr(target, "get_valid_read_path", lambda p, **kwargs: p)
     monkeypatch.setattr(target, "load_file", lambda p, device="cpu": {"x.weight": torch.tensor([1])})
@@ -59,7 +83,9 @@ def test_load_tensor_by_full_name_given_name_when_called_then_return_expected(mo
     "tensor_dtype,num_bits,need_skip",
     [(torch.int64, 4, False), (torch.int32, 16, False), (torch.int32, 4, True)],
 )
-def test_unpack_from_int32_given_invalid_or_skip_when_called_then_raise_or_skip(func, tensor_dtype, num_bits, need_skip):
+def test_unpack_from_int32_given_invalid_or_skip_when_called_then_raise_or_skip(
+    func, tensor_dtype, num_bits, need_skip
+):
     if func is target._unpack_from_int32_numpy and target.np is None:
         pytest.skip("numpy unavailable")
     if need_skip:
@@ -124,7 +150,9 @@ def test_weight_dequant_given_invalid_inputs_when_called_then_raise_value_error(
 
 
 def test_weight_dequant_given_valid_inputs_when_called_then_return_tensor():
-    out = target.weight_dequant(torch.tensor([[1, 2, 3, 4]], dtype=torch.int8), torch.tensor([[1.0, 2.0]], dtype=torch.float32))
+    out = target.weight_dequant(
+        torch.tensor([[1, 2, 3, 4]], dtype=torch.int8), torch.tensor([[1.0, 2.0]], dtype=torch.float32)
+    )
     assert out.shape == (1, 4)
 
 
@@ -143,13 +171,17 @@ def test_replace_compressed_linear_with_bf16_given_root_compressed_when_loaded_t
     monkeypatch.setattr(
         target,
         "load_tensor_by_full_name",
-        lambda p, n: torch.ones((2, 2), dtype=torch.float32) if n.endswith(".weight") else torch.ones(2, dtype=torch.float32),
+        lambda p, n: torch.ones((2, 2), dtype=torch.float32)
+        if n.endswith(".weight")
+        else torch.ones(2, dtype=torch.float32),
     )
     out = target.replace_compressed_linear_with_bf16(CompressedLinear(), "root", "/tmp/model")
     assert isinstance(out, nn.Linear) and out.weight.dtype == torch.bfloat16
 
 
-def test_replace_compressed_linear_with_bf16_given_root_weight_shape_mismatch_when_called_then_return_original(monkeypatch):
+def test_replace_compressed_linear_with_bf16_given_root_weight_shape_mismatch_when_called_then_return_original(
+    monkeypatch,
+):
     root = CompressedLinear(weight_shape=(1, 2), bias=None)
     monkeypatch.setattr(target, "load_tensor_by_full_name", lambda *args, **kwargs: None)
     assert target.replace_compressed_linear_with_bf16(root, "root", "/tmp/model") is root
@@ -239,13 +271,17 @@ def test_auto_convert_module_int4_to_bf16_given_key_error_when_convert_then_log(
 
     logger = L()
     monkeypatch.setattr(target, "get_int4_weight_map", lambda _: {"m.0": "f"})
-    monkeypatch.setattr(target, "convert_module_int4_to_bf16", lambda *args, **kwargs: (_ for _ in ()).throw(KeyError("x")))
+    monkeypatch.setattr(
+        target, "convert_module_int4_to_bf16", lambda *args, **kwargs: (_ for _ in ()).throw(KeyError("x"))
+    )
     monkeypatch.setattr(target, "get_logger", lambda: logger)
     target.auto_convert_module_int4_to_bf16("m", nn.Sequential(nn.Linear(2, 2)), "/tmp/model")
     assert len(logger.w) == 2
 
 
-def test_auto_convert_module_int4_to_bf16_given_partial_map_when_convert_then_only_pass_existing_submodules(monkeypatch):
+def test_auto_convert_module_int4_to_bf16_given_partial_map_when_convert_then_only_pass_existing_submodules(
+    monkeypatch,
+):
     captured = {}
 
     def fake_convert(name, module, model_path, weight_map):
@@ -269,7 +305,9 @@ def test_convert_module_int4_to_bf16_given_compressed_linear_when_called_then_re
             self.sub = CompressedLinear(in_features=8, out_features=2, bias=torch.zeros(2))
 
     root = Root()
-    monkeypatch.setattr(target, "_load_int4_file_state_dict", lambda *args, **kwargs: _int4_state("root.sub", rows=2, cols=8))
+    monkeypatch.setattr(
+        target, "_load_int4_file_state_dict", lambda *args, **kwargs: _int4_state("root.sub", rows=2, cols=8)
+    )
     monkeypatch.setattr(target, "unpack_from_int32", lambda *args, **kwargs: torch.ones((2, 8), dtype=torch.int8))
     monkeypatch.setattr(target, "weight_dequant", lambda *args, **kwargs: torch.ones((2, 8), dtype=torch.float32))
     target.convert_module_int4_to_bf16("root", root, "/tmp/model", {"root.sub": "f"})
@@ -283,7 +321,9 @@ def test_convert_module_int4_to_bf16_given_regular_module_when_called_then_assig
             self.sub = _Plain(in_features=8, out_features=2)
 
     root = Root()
-    monkeypatch.setattr(target, "_load_int4_file_state_dict", lambda *args, **kwargs: _int4_state("root.sub", rows=2, cols=8))
+    monkeypatch.setattr(
+        target, "_load_int4_file_state_dict", lambda *args, **kwargs: _int4_state("root.sub", rows=2, cols=8)
+    )
     monkeypatch.setattr(target, "unpack_from_int32", lambda *args, **kwargs: torch.ones((2, 8), dtype=torch.int8))
     monkeypatch.setattr(target, "weight_dequant", lambda *args, **kwargs: torch.full((2, 8), 3.0, dtype=torch.float32))
     target.convert_module_int4_to_bf16("root", root, "/tmp/model", {"root.sub": "f"})
@@ -315,11 +355,15 @@ def test_convert_module_int4_to_bf16_given_loader_has_cache_clear_when_done_then
     assert loader.cache_cleared is True
 
 
-def test_convert_module_int4_to_bf16_given_two_submodules_same_file_when_called_then_outputs_match_expected(monkeypatch):
+def test_convert_module_int4_to_bf16_given_two_submodules_same_file_when_called_then_outputs_match_expected(
+    monkeypatch,
+):
     class Root(nn.Module):
         def __init__(self):
             super().__init__()
-            self.a = CompressedLinear(in_features=4, out_features=2, bias=torch.tensor([0.25, -0.75], dtype=torch.float32))
+            self.a = CompressedLinear(
+                in_features=4, out_features=2, bias=torch.tensor([0.25, -0.75], dtype=torch.float32)
+            )
             self.b = _Plain(in_features=4, out_features=2)
 
     root = Root()

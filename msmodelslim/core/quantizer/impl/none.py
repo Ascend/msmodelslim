@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -27,15 +27,9 @@ from msmodelslim.utils.logging import logger_setter
 from ..base import AutoActQuantizer, QConfig
 
 
-@QABCRegistry.multi_register(
-    dispatch_key=[
-        (qir.float_per_tensor_sym, "none")
-    ],
-    abc_type=AutoActQuantizer
-)
+@QABCRegistry.multi_register(dispatch_key=[(qir.float_per_tensor_sym, "none")], abc_type=AutoActQuantizer)
 @logger_setter()
 class ActPerTensorNone(AutoActQuantizer):
-
     def __init__(self, config: QConfig):
         super().__init__()
         self.config = config

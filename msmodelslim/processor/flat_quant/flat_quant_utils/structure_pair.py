@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,11 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=attribute-defined-outside-init,logging-fstring-interpolation
 
 import torch
 import functools
 from torch import nn
-from typing import Union, Callable, List, Dict, Any
+from typing import Union, Callable, List, Any
+from typing import Dict  # noqa: F401
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.exception import SchemaValidateError, UnexpectedError, UnsupportedError
 
@@ -144,14 +146,14 @@ class StructurePair(nn.Module):
         if isinstance(module_names, str):
             module_names = [module_names]
         elif not isinstance(module_names, list):
-            raise SchemaValidateError(f"module_names must be a str or a list of str, but got {type(module_names).__name__}")
+            raise SchemaValidateError(
+                f"module_names must be a str or a list of str, but got {type(module_names).__name__}"
+            )
 
         for module_name in module_names:
             module = get_module_by_name(self.model, module_name, prefix=self.prefix_name)
             if not hasattr(module, method):
-                raise UnsupportedError(
-                    f"Module '{module_name}' does not have a method named '{method}'"
-                )
+                raise UnsupportedError(f"Module '{module_name}' does not have a method named '{method}'")
 
             if isinstance(method, str):
                 target_method = getattr(module, method)
@@ -190,15 +192,9 @@ class StructurePair(nn.Module):
         """
         self.hooks = {}
         self.act_stats[name] = {}
-        self.act_stats[name]['input_max'] = torch.full(
-            [linear.weight.shape[1]], 1e-5, dtype=linear.weight.dtype
-        )
+        self.act_stats[name]['input_max'] = torch.full([linear.weight.shape[1]], 1e-5, dtype=linear.weight.dtype)
         self.hooks[name] = linear.register_forward_hook(
-            functools.partial(
-                stat_input_hook,
-                name=name,
-                act_stats=self.act_stats
-            )
+            functools.partial(stat_input_hook, name=name, act_stats=self.act_stats)
         )
 
     def _remove_forward_hook(self):
@@ -220,7 +216,9 @@ class StructurePair(nn.Module):
             weight = pre_linear_module.weight.data
             ori_dtype = weight.dtype
             if weight.dim() == 2:
-                weight = weight.to(torch.float32) * self.linear_trans.diag_trans.diag_scale.data.to(torch.float32).unsqueeze(1)
+                weight = weight.to(torch.float32) * self.linear_trans.diag_trans.diag_scale.data.to(
+                    torch.float32
+                ).unsqueeze(1)
             elif weight.dim() == 1:
                 weight = weight.to(torch.float32) * self.linear_trans.diag_trans.diag_scale.data.to(torch.float32)
             else:
@@ -233,7 +231,7 @@ class StructurePair(nn.Module):
         """
         if self.linear_trans.diag_trans is None:
             return
-        pre_linear_name = self.source_modules
+        pre_linear_name = self.source_modules  # noqa: F841
         post_linear_names = self.target_modules
 
         weights = []
@@ -333,8 +331,10 @@ class NormLinearPair(StructurePair):
             return
         ori_norm = self.norm_module.norm
         set_module_by_name(self.model, self.source_modules, ori_norm, prefix=self.prefix_name)
-        
-        get_logger().info(f"Rolling back affine transformation matrices for all modules in {self._name}: {self.target_modules}")
+
+        get_logger().info(
+            f"Rolling back affine transformation matrices for all modules in {self._name}: {self.target_modules}"
+        )
         self._call_method_on_modules(
             module_names=self.target_modules,
             method="set_trans",
@@ -371,7 +371,6 @@ class AttnLinearLinearPair(StructurePair):
 
     _name = "attn.linear_linear"
 
-
     def __init__(
         self,
         config: Any,
@@ -392,8 +391,10 @@ class AttnLinearLinearPair(StructurePair):
         根据注意力头维度创建变换矩阵，支持分头处理。
         """
         if self.head_dim is None or self.num_attention_heads is None:
-            raise SchemaValidateError("head_dim and num_attention_heads must not be empty. Please check that they are correctly assigned in the model adapter.")
-        
+            raise SchemaValidateError(
+                "head_dim and num_attention_heads must not be empty. Please check that they are correctly assigned in the model adapter."
+            )
+
         self.linear_trans = GeneralMatrixTrans(
             self.num_attention_heads,
             self.head_dim,
@@ -467,7 +468,6 @@ class MLPNormLinearPair(NormLinearPair):
     _register = True
     _name = "mlp.norm_linear"
 
-
     def __init__(
         self,
         config: Any,
@@ -486,7 +486,6 @@ class MLPLinearLinearPair(StructurePair):
     """
 
     _name = "mlp.linear_linear"
-
 
     def __init__(
         self,

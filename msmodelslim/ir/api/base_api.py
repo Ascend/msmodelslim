@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -30,16 +30,16 @@ from msmodelslim.ir.qal.qregistry import QFuncRegistry
 
 @QFuncRegistry.register_api(dispatch_key=Tuple[QDType, QScope, bool])
 def calculate_qparam(
-        min_val: torch.Tensor,
-        max_val: torch.Tensor,
-        q_dtype: QDType,
-        q_scope: QScope,
-        symmetric: bool,
-        **kwargs,
+    min_val: torch.Tensor,
+    max_val: torch.Tensor,
+    q_dtype: QDType,
+    q_scope: QScope,
+    symmetric: bool,
+    **kwargs,
 ) -> QParam:
     """
     计算量化参数函数，根据输入张量的最小值和最大值计算量化参数。
-    
+
     Args:
         min_val: 输入张量的最小值，类型为torch.Tensor
         max_val: 输入张量的最大值，类型为torch.Tensor
@@ -53,16 +53,16 @@ def calculate_qparam(
     Note:
         由于实现上的限制，并非所有的入参组合都是合法的，对于非法组合，QFuncRegistry.dispatch()接口将会抛出NotImplementedError异常。
     """
-    return QFuncRegistry.dispatch("calculate_qparam",
-                                  (q_dtype, q_scope, symmetric),
-                                  *(min_val, max_val, q_dtype, q_scope, symmetric), **kwargs)
+    return QFuncRegistry.dispatch(
+        "calculate_qparam", (q_dtype, q_scope, symmetric), *(min_val, max_val, q_dtype, q_scope, symmetric), **kwargs
+    )
 
 
 @QFuncRegistry.register_api(dispatch_key=Tuple[QDType, QDType, QScope, bool])
 def quantize(tensor: QStorage, q_param: QParam) -> QStorage:
     """
     量化函数，用于将浮点张量量化为量化张量。
-    
+
     Args:
         tensor: 需要进行量化操作的张量，类型为QStorage
 
@@ -73,13 +73,13 @@ def quantize(tensor: QStorage, q_param: QParam) -> QStorage:
 
     Note:
         由于实现上的限制，并非所有的入参组合都是合法的，对于非法组合，QFuncRegistry.dispatch()接口将会抛出NotImplementedError异常。
-        
+
     """
 
     return QFuncRegistry.dispatch(
         "quantize",
         (tensor.dtype, q_param.scheme.dtype, q_param.scheme.scope, q_param.scheme.symmetric),
-        *(tensor, q_param)
+        *(tensor, q_param),
     )
 
 
@@ -87,7 +87,7 @@ def quantize(tensor: QStorage, q_param: QParam) -> QStorage:
 def dequantize(tensor: QStorage, q_param: QParam) -> QStorage:
     """
     反量化函数，用于将量化张量反量化为浮点张量。
-    
+
     Args:
         tensor: 需要进行反量化操作的量化张量，类型为QStorage
 
@@ -98,13 +98,13 @@ def dequantize(tensor: QStorage, q_param: QParam) -> QStorage:
 
     Note:
         由于实现上的限制，并非所有的入参组合都是合法的，对于非法组合，QFuncRegistry.dispatch()接口将会抛出NotImplementedError异常。
-        
+
     """
 
     return QFuncRegistry.dispatch(
         "dequantize",
         (tensor.dtype, q_param.scheme.dtype, q_param.scheme.scope, q_param.scheme.symmetric),
-        *(tensor, q_param)
+        *(tensor, q_param),
     )
 
 
@@ -112,7 +112,7 @@ def dequantize(tensor: QStorage, q_param: QParam) -> QStorage:
 def fake_quantize(tensor: QStorage, q_param: QParam) -> QStorage:
     """
     伪量化函数，将浮点张量以特定的量化参数进行量化然后反量化后，返回一个与输入张量shape/dtype一致的新张量。
-    
+
     Args:
         tensor: 浮点张量，类型为QStorage
         q_param: 量化参数，类型为QParam

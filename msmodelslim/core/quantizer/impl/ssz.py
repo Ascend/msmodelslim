@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=unsubscriptable-object
 
 from typing import Optional
 
@@ -115,9 +116,9 @@ def ssz_calculate_qparam(
             quant_weight_tensor = quant_weight.value.to(weight.value.dtype)  # 转换为浮点类型用于计算
 
             # 使用最小二乘法计算最优scale
-            current_scale = (torch.sum(weight.value * quant_weight_tensor, dim=0, keepdim=True) /
-                             torch.sum(quant_weight_tensor * quant_weight_tensor, dim=0, keepdim=True)
-                             .clamp(min=SCALE_SEARCH_MIN_SCALE))
+            current_scale = torch.sum(weight.value * quant_weight_tensor, dim=0, keepdim=True) / torch.sum(
+                quant_weight_tensor * quant_weight_tensor, dim=0, keepdim=True
+            ).clamp(min=SCALE_SEARCH_MIN_SCALE)
 
             # 更新量化参数并重新量化
             q_param = set_ext_scale(q_param, current_scale.squeeze())  # 移除多余的维度
@@ -132,13 +133,14 @@ def ssz_calculate_qparam(
             quant_weight_minus_offset = quant_weight_tensor - q_param.ext[EXT_OFFSET_NAME]
 
             # 使用最小二乘法计算最优scale
-            current_scale = (torch.sum(weight.value * quant_weight_minus_offset, dim=0, keepdim=True) /
-                             torch.sum(quant_weight_minus_offset * quant_weight_minus_offset, dim=0, keepdim=True)
-                             .clamp(min=SCALE_SEARCH_MIN_SCALE))  # 防止除零
+            current_scale = torch.sum(weight.value * quant_weight_minus_offset, dim=0, keepdim=True) / torch.sum(
+                quant_weight_minus_offset * quant_weight_minus_offset, dim=0, keepdim=True
+            ).clamp(min=SCALE_SEARCH_MIN_SCALE)  # 防止除零
 
             # 计算最优offset
-            current_offset = (torch.sum(quant_weight_tensor * current_scale - weight.value, dim=0, keepdim=True) /
-                              (weight.value.shape[0] * current_scale))
+            current_offset = torch.sum(quant_weight_tensor * current_scale - weight.value, dim=0, keepdim=True) / (
+                weight.value.shape[0] * current_scale
+            )
 
             # 更新量化参数并重新量化
             q_param = set_ext_scale(q_param, current_scale.squeeze())
@@ -147,9 +149,10 @@ def ssz_calculate_qparam(
 
         # 评估当前参数的量化效果并更新最优参数
         current_dequant_weight = fake_quantize(weight, q_param)  # 使用当前参数进行反量化
-        current_mse = torch.mean(torch.pow(torch.abs((weight.value - current_dequant_weight.value)), 2),
-                                 dim=0, keepdim=True).squeeze()  # 计算当前MSE
-        
+        current_mse = torch.mean(
+            torch.pow(torch.abs((weight.value - current_dequant_weight.value)), 2), dim=0, keepdim=True
+        ).squeeze()  # 计算当前MSE
+
         # 收敛性检查：判断是否达到收敛条件
         # 使用两种判断标准来确保收敛的稳定性
 
@@ -165,7 +168,7 @@ def ssz_calculate_qparam(
         # logical_and(torch.logical_not(mask1), torch.logical_not(mask2)) 表示既不满足相对条件也不满足绝对条件
         # 如果所有通道都满足至少一个条件，则sum为0，可以退出循环
         # 这种双重判断机制可以覆盖不同量级的损失场景，提供更稳定的收敛判断
-        if (torch.sum(torch.logical_and(torch.logical_not(mask1), torch.logical_not(mask2))) == 0):
+        if torch.sum(torch.logical_and(torch.logical_not(mask1), torch.logical_not(mask2))) == 0:
             break  # 提前退出：所有通道都已收敛
 
         # 创建掩码：标记哪些通道的误差得到了改善
@@ -195,9 +198,9 @@ def ssz_calculate_qparam(
 @QABCRegistry.multi_register(
     dispatch_key=[
         (qir.int8_per_channel_sym, "ssz"),  # 注册为int8对称per-channel SSZ量化器
-        (qir.int4_per_channel_sym, "ssz")   # 注册int4对称per-channel SSZ量化器
+        (qir.int4_per_channel_sym, "ssz"),  # 注册int4对称per-channel SSZ量化器
     ],
-    abc_type=AutoWeightQuantizer
+    abc_type=AutoWeightQuantizer,
 )
 @logger_setter(__name__)
 class WeightPerChannelSsz(AutoWeightQuantizer):
@@ -316,11 +319,11 @@ class WeightPerChannelSsz(AutoWeightQuantizer):
         _broadcast_quantizer_state(self, record.executor_rank)
 
     def load_quantized_from_broadcast_tensors(
-            self,
-            scale: torch.Tensor,
-            offset: torch.Tensor,
-            w_q_storage_value: torch.Tensor,
-            q_storage_dtype: QDType,
+        self,
+        scale: torch.Tensor,
+        offset: torch.Tensor,
+        w_q_storage_value: torch.Tensor,
+        q_storage_dtype: QDType,
     ) -> None:
         """在非 owner rank 上重建量化状态（与 forward 首次量化后一致）。"""
         scheme = QScheme(
@@ -349,8 +352,10 @@ def _broadcast_quantizer_state(wq, owner_rank: int) -> None:
     meta = [None]
     if rank == owner_rank:
         if not wq.is_quantized:
-            raise SpecError("Cannot broadcast quantizer state: weight quantizer has not been initialized. "
-                            "Call forward() first to trigger quantization.")
+            raise SpecError(
+                "Cannot broadcast quantizer state: weight quantizer has not been initialized. "
+                "Call forward() first to trigger quantization."
+            )
         meta[0] = {
             "scale_shape": list(get_ext_scale(wq.w_q_param).shape),
             "scale_dtype": str(get_ext_scale(wq.w_q_param).dtype),

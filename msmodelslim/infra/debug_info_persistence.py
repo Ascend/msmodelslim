@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,11 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=logging-fstring-interpolation
+
 import os
 from pathlib import Path
 from typing import Optional, Dict, Any
-import hashlib
 
+import hashlib  # noqa: F401
 import torch
 
 from msmodelslim.core.quant_service import KeyInfoPersistenceInfra
@@ -124,9 +126,9 @@ class DebugInfoPersistence(KeyInfoPersistenceInfra):
         get_logger().info(f"Context saved successfully to {self.save_dir}")
 
     def _process_dict(
-            self,
-            data_dict: Dict[str, Any],
-            prefix: str,
+        self,
+        data_dict: Dict[str, Any],
+        prefix: str,
     ) -> Dict[str, Any]:
         """
         Process a dictionary, separating tensors and non-tensors.
@@ -177,15 +179,9 @@ class DebugInfoPersistence(KeyInfoPersistenceInfra):
 
             return ref_cache[hash_hex]
         elif isinstance(value, dict):
-            return {
-                k: self._serialize_value(v, f"{key_path}.{k}", ref_cache, ref_key)
-                for k, v in value.items()
-            }
+            return {k: self._serialize_value(v, f"{key_path}.{k}", ref_cache, ref_key) for k, v in value.items()}
         elif isinstance(value, (list, tuple)):
-            return [
-                self._serialize_value(v, f"{key_path}[{idx}]", ref_cache, ref_key)
-                for idx, v in enumerate(value)
-            ]
+            return [self._serialize_value(v, f"{key_path}[{idx}]", ref_cache, ref_key) for idx, v in enumerate(value)]
         elif isinstance(value, (int, float, str, bool, type(None))):
             return value
         else:
@@ -193,7 +189,5 @@ class DebugInfoPersistence(KeyInfoPersistenceInfra):
             try:
                 return str(value)
             except Exception as e:
-                get_logger().warning(
-                    f"Failed to serialize value of type {type(value)}: {e}"
-                )
+                get_logger().warning(f"Failed to serialize value of type {type(value)}: {e}")
                 return f"<unserializable: {type(value).__name__}>"

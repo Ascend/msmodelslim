@@ -1,7 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-"""DTS 稳定门面：``with`` / ``submit`` / ``run``；具体调度由 backend 实现。"""
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
+DTS 稳定门面：``with`` / ``submit`` / ``run``；具体调度由 backend 实现。
+"""
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -10,6 +28,7 @@ from torch import nn
 from msmodelslim.utils.distributed.task_scheduler.backend.base import DTSBackend
 from msmodelslim.utils.distributed.task_scheduler.backend.wave import WaveDTSBackend
 from msmodelslim.utils.distributed.task_scheduler.types import TaskExecutionRecord, TaskSyncContext
+
 
 class DistributedTaskScheduler:
     """分波调度（默认 wave backend）；依赖/前缀与 parallel 语义冲突则新开波次。"""
@@ -27,10 +46,10 @@ class DistributedTaskScheduler:
         return cls._global_disable_parallel
 
     def __init__(
-            self,
-            model: nn.Module,
-            disable_parallel: bool = False,
-            backend: Optional[DTSBackend] = None,
+        self,
+        model: nn.Module,
+        disable_parallel: bool = False,
+        backend: Optional[DTSBackend] = None,
     ) -> None:
         self.model = model
         self.disable_parallel = disable_parallel
@@ -48,13 +67,13 @@ class DistributedTaskScheduler:
             close_fn()
 
     def submit(
-            self,
-            fn: Callable[..., Any],
-            args: Tuple[Any, ...] = (),
-            kwargs: Optional[Dict[str, Any]] = None,
-            dependencies: Optional[List[str]] = None,
-            sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
-            parallel: bool = True,
+        self,
+        fn: Callable[..., Any],
+        args: Tuple[Any, ...] = (),
+        kwargs: Optional[Dict[str, Any]] = None,
+        dependencies: Optional[List[str]] = None,
+        sync_fn: Optional[Callable[[TaskExecutionRecord, TaskSyncContext], Any]] = None,
+        parallel: bool = True,
     ) -> None:
         if self._closed:
             raise RuntimeError("DistributedTaskScheduler is closed")
@@ -71,6 +90,3 @@ class DistributedTaskScheduler:
 
     def run(self) -> List[TaskExecutionRecord]:
         return self._backend.run()
-
-
-

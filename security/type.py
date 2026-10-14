@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=chained-comparison
 
 import re
 
@@ -40,7 +41,7 @@ def check_type(value, value_type, param_name="value", additional_check_func=None
         elif not additional_check_func(value):
             raise ValueError("Value of {} is invalid.".format(param_name) + additional_msg)
     is_int_when_tuple = isinstance(value_type, tuple) and int in value_type and bool not in value_type
-    if value_type == int or is_int_when_tuple:
+    if value_type == int or is_int_when_tuple:  # noqa: E721
         if isinstance(value, bool):
             raise TypeError('{} must be {}, not {}.'.format(param_name, type_to_str(value_type), type(value).__name__))
 

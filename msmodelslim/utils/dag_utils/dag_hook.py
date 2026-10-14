@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-merging-isinstance,consider-using-generator,simplifiable-if-expression,unnecessary-comprehension,unreachable
 
 import functools
 import inspect
@@ -27,9 +28,7 @@ from typing import Union, Optional, Callable, Any, List, Tuple, Dict, Iterable, 
 import torch
 
 from ascend_utils.common.hook import FunctionReplace
-from ascend_utils.common.utils import (
-    CallParams, ResListToRelease, concatenate_name_in_network, OperatorAttrName
-)
+from ascend_utils.common.utils import CallParams, ResListToRelease, concatenate_name_in_network, OperatorAttrName
 from ascend_utils.core.dag.dag import DirectedAcyclicGraph
 from ascend_utils.core.dag.dag_node import DagNode
 from ascend_utils.core.dag.dag_node_io import DagNodeIO
@@ -41,22 +40,18 @@ from .dag_model_hook import DagModelHook
 
 class DagHook(DirectedAcyclicGraph, ABC):
     """
-        hook方式获取的DAG图
+    hook方式获取的DAG图
 
-        优势：
-            1. 简单好理解
-        劣势：
-            1. 无法替换函数类节点
-            2. 不支持多个 if 分支
-            3. 如果存在共享卷积（在不同的父Module 中）无法正常替换
-            4. 如果一个变量直接穿透算子（既是输入又是输出），以计算顺序为准，以最后一次计算输出作为后面使用的输入，可能与代码写法不一致
+    优势：
+        1. 简单好理解
+    劣势：
+        1. 无法替换函数类节点
+        2. 不支持多个 if 分支
+        3. 如果存在共享卷积（在不同的父Module 中）无法正常替换
+        4. 如果一个变量直接穿透算子（既是输入又是输出），以计算顺序为准，以最后一次计算输出作为后面使用的输入，可能与代码写法不一致
     """
 
-    def __init__(self,
-                 network,
-                 inputs,
-                 hook_ops: Union[List[Any], None] = None,
-                 anti_method=None):
+    def __init__(self, network, inputs, hook_ops: Union[List[Any], None] = None, anti_method=None):
         super().__init__(network)
         self._inputs = inputs
         self._hook_ops = self._get_all_hook_ops(hook_ops)
@@ -221,19 +216,16 @@ class DagHook(DirectedAcyclicGraph, ABC):
 
         if isinstance(output, dict):
             for key, sub_output in output:
-                node_output_dict.update(
-                    self.get_node_output(sub_output, deduplicate, name + '.' + str(key)))
+                node_output_dict.update(self.get_node_output(sub_output, deduplicate, name + '.' + str(key)))
         elif isinstance(output, list) or isinstance(output, tuple):
             for index, sub_output in enumerate(output):
-                node_output_dict.update(
-                    self.get_node_output(sub_output, deduplicate, name + '.' + str(index)))
+                node_output_dict.update(self.get_node_output(sub_output, deduplicate, name + '.' + str(index)))
 
         return node_output_dict
 
-    def _parse_network_structure_tree(self, module,
-                                      name: str,
-                                      parent_module: Optional,
-                                      name_in_network: str) -> NoReturn:
+    def _parse_network_structure_tree(
+        self, module, name: str, parent_module: Optional, name_in_network: str
+    ) -> NoReturn:
         index_module = id(module)
         if index_module in self._structure_tree:
             if "parent_module_info" in self._structure_tree[index_module]:
@@ -243,15 +235,15 @@ class DagHook(DirectedAcyclicGraph, ABC):
             return
 
         self._structure_tree[index_module] = {
-            "name_in_network": name_in_network, "parent_module_info": [(parent_module, name)]
+            "name_in_network": name_in_network,
+            "parent_module_info": [(parent_module, name)],
         }
 
         for sub_name, sub_module in self._get_module_children(module):
             sub_name_in_network = concatenate_name_in_network(name_in_network, sub_name)
             self._parse_network_structure_tree(sub_module, sub_name, module, sub_name_in_network)
 
-    def _parse_network_with_hook(self, inputs,
-                                 parsed_nodes: Optional[Dict[Any, DagNode]] = None):
+    def _parse_network_with_hook(self, inputs, parsed_nodes: Optional[Dict[Any, DagNode]] = None):
         self._dag_node_list.clear()
         # prepare hook function
         replace_stack: List[Any] = []
@@ -263,11 +255,13 @@ class DagHook(DirectedAcyclicGraph, ABC):
         for op_hook_info in self._hook_ops:
             _, ops_location, ops_name = op_hook_info
             module_class, _ = ops_location
-            hooks[module_class] = DagModelHook(ops_name=ops_name,
-                                               replace_stack=replace_stack,
-                                               node_io_dict=node_io_dict,
-                                               parsed_node_list=parsed_node_list,
-                                               dag_hook=self)
+            hooks[module_class] = DagModelHook(
+                ops_name=ops_name,
+                replace_stack=replace_stack,
+                node_io_dict=node_io_dict,
+                parsed_node_list=parsed_node_list,
+                dag_hook=self,
+            )
 
         # register hook to modules of special types
         registered_hooks = []
@@ -296,8 +290,7 @@ class DagHook(DirectedAcyclicGraph, ABC):
 
         logger.info("parse network over")
 
-    def _parse_network(self, inputs,
-                       parsed_nodes: Optional[Dict[Any, DagNode]] = None):
+    def _parse_network(self, inputs, parsed_nodes: Optional[Dict[Any, DagNode]] = None):
         self._dag_node_list.clear()
         # prepare hook function
         replace_stack: List[Any] = []
@@ -344,9 +337,13 @@ class DagHook(DirectedAcyclicGraph, ABC):
 
         logger.info("parse network over")
 
-    def _get_node_wrapper(self, op_hook_info: Tuple[Callable, Any, str], replace_stack: List[Any],
-                          node_io_dict: Dict[int, DagNodeIO],
-                          parsed_nodes: Dict[Any, DagNode]) -> Callable:
+    def _get_node_wrapper(
+        self,
+        op_hook_info: Tuple[Callable, Any, str],
+        replace_stack: List[Any],
+        node_io_dict: Dict[int, DagNodeIO],
+        parsed_nodes: Dict[Any, DagNode],
+    ) -> Callable:
         node_hook, _, ops_type = op_hook_info
 
         @functools.wraps(node_hook)

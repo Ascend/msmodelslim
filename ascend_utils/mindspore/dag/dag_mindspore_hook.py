@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-generator,super-with-arguments
+
 from abc import ABC
 from typing import Union, Any, List, Tuple
 
@@ -32,10 +34,12 @@ from ascend_utils.core.dag.dag_node import DagNode
 
 
 class DagMindSporeHook(DagHook, ABC):
-    def __init__(self,
-                 network: nn.Cell,
-                 inputs: Union[Tensor, List[Tensor], Tuple[Tensor], CallParams],
-                 hook_ops: Union[List[Any], None] = None):
+    def __init__(
+        self,
+        network: nn.Cell,
+        inputs: Union[Tensor, List[Tensor], Tuple[Tensor], CallParams],
+        hook_ops: Union[List[Any], None] = None,
+    ):
         if not isinstance(network, mindspore.nn.Cell):
             raise TypeError("network must be type mindspore.nn.Cell")
         if not isinstance(inputs, (Tensor, list, tuple, CallParams)):
@@ -48,9 +52,10 @@ class DagMindSporeHook(DagHook, ABC):
 
     @staticmethod
     def _parse_network_device():
-        return dict(device_target=mindspore.context.get_context("device_target"),
-                    mode=mindspore.context.get_context("mode"))
-        
+        return dict(
+            device_target=mindspore.context.get_context("device_target"), mode=mindspore.context.get_context("mode")
+        )
+
     def get_params(self) -> int:
         model: mindspore.nn.Cell = self.network
         return sum([numpy.prod(param.shape) for param in model.get_parameters()])
@@ -185,17 +190,23 @@ class DagMindSporeHook(DagHook, ABC):
 
         unhook_modules = [mindspore.nn.SequentialCell, mindspore.nn.CellList]
         nn_modules_hook_infos = self._get_class_hook_infos(mindspore.nn, mindspore.nn.Cell)
-        nn_modules_hook_infos = [(getattr(cell, "construct"), (cell, "construct"), name)
-                                 for cell, _, name in nn_modules_hook_infos
-                                 if cell not in unhook_modules]
+        nn_modules_hook_infos = [
+            (getattr(cell, "construct"), (cell, "construct"), name)
+            for cell, _, name in nn_modules_hook_infos
+            if cell not in unhook_modules
+        ]
 
         ops_cells = self._get_class_hook_infos(mindspore.ops, mindspore.ops.primitive.Primitive)
-        ops_call_hook_infos = [(getattr(cell, "__call__"), (cell, "__call__"), name)
-                               for cell, _, name in ops_cells
-                               if cell not in unhook_modules]
-        ops_new_hook_infos = [(getattr(cell, "__new__"), (cell, "__new__"), "__new__")
-                              for cell, _, name in ops_cells
-                              if cell not in unhook_modules]
+        ops_call_hook_infos = [
+            (getattr(cell, "__call__"), (cell, "__call__"), name)
+            for cell, _, name in ops_cells
+            if cell not in unhook_modules
+        ]
+        ops_new_hook_infos = [
+            (getattr(cell, "__new__"), (cell, "__new__"), "__new__")
+            for cell, _, name in ops_cells
+            if cell not in unhook_modules
+        ]
 
         user_hook_infos = []
         if user_hook_ops is not None:
@@ -204,8 +215,13 @@ class DagMindSporeHook(DagHook, ABC):
                     user_hook_infos.append((getattr(hook_op, "construct"), (hook_op, "construct"), hook_op.__name__))
                 else:
                     user_hook_infos.append((hook_op, hook_op, hook_op.__qualname__))
-        return mindspore_func_hook_infos + tensor_func_hook_infos + tensor_operator_hook_infos + \
-            ops_func_hook_infos + ops_call_hook_infos + ops_new_hook_infos + \
-            nn_modules_hook_infos + user_hook_infos
-
-
+        return (
+            mindspore_func_hook_infos
+            + tensor_func_hook_infos
+            + tensor_operator_hook_infos
+            + ops_func_hook_infos
+            + ops_call_hook_infos
+            + ops_new_hook_infos
+            + nn_modules_hook_infos
+            + user_hook_infos
+        )

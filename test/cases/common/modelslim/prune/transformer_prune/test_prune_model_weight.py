@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,17 +18,19 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-import os 
-import stat 
+# pylint: disable=redefined-outer-name,useless-object-inheritance
 
+import os
+
+import stat  # noqa: F401
 from resources.sample_net_prune import TorchPrunedModel
 from resources.sample_net_prune import TorchOriModel
 from resources.sample_net_prune import MsPrunedModel
 from resources.sample_net_prune import MsOriModel
 
-import pytest 
-import torch 
-import mindspore 
+import pytest
+import torch
+import mindspore
 
 from msmodelslim.common.prune.transformer_prune.prune_model import PruneConfig
 from msmodelslim.common.prune.transformer_prune.prune_model import prune_model_weight
@@ -38,16 +40,16 @@ from msmodelslim.common.prune.transformer_prune.prune_model import prune_model_w
 def setup_module():
     pre_device_target = mindspore.get_context('device_target')
     mindspore.set_context(device_target='CPU')  # NPU will be rather slow
-    yield 
-    mindspore.set_context(device_target=pre_device_target) # Set back
+    yield
+    mindspore.set_context(device_target=pre_device_target)  # Set back
 
 
 @pytest.fixture()
 def prune_config():
     config = PruneConfig()
     config.set_steps(['prune_blocks', 'prune_bert_intra_block'])
-    config.add_blocks_params(r'fc(\d+)', {1 : 2})
-    yield config 
+    config.add_blocks_params(r'fc(\d+)', {1: 2})
+    yield config
 
 
 @pytest.fixture()
@@ -84,10 +86,12 @@ def ms_ori_weight_path():
 
 class TestPruneModelWeight(object):
     @pytest.mark.filterwarnings("ignore:TypedStorage is deprecated:UserWarning")
-    def test_prune_model_weight_given_valid_when_pytorch_then_pass(self, torch_ori_weight_path, torch_pruned_model,
-                                                                   prune_config):
+    def test_prune_model_weight_given_valid_when_pytorch_then_pass(
+        self, torch_ori_weight_path, torch_pruned_model, prune_config
+    ):
         prune_model_weight(torch_pruned_model, prune_config, torch_ori_weight_path)
 
-    def test_prune_model_weight_given_valid_when_mindspore_then_pass(self, ms_ori_weight_path, ms_pruned_model,
-                                                                     prune_config):
+    def test_prune_model_weight_given_valid_when_mindspore_then_pass(
+        self, ms_ori_weight_path, ms_pruned_model, prune_config
+    ):
         prune_model_weight(ms_pruned_model, prune_config, ms_ori_weight_path)

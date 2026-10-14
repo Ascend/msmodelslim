@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=chained-comparison,logging-fstring-interpolation,no-member,unspecified-encoding
 
 import re
 import os
@@ -25,7 +26,7 @@ import sys
 import shutil
 import stat
 import json
-import csv
+import csv  # noqa: F401
 from example.common.security.type import check_dict_character, check_type
 from msmodelslim.utils.logging import LOGGER_FUNC
 from msmodelslim import logger
@@ -87,8 +88,8 @@ def is_belong_to_user_or_group(file_stat):
 def check_others_not_writable(path):
     dir_stat = os.stat(path)
     is_writable = (
-        bool(dir_stat.st_mode & stat.S_IWGRP) or  # 组可写
-        bool(dir_stat.st_mode & stat.S_IWOTH)     # 其他用户可写
+        bool(dir_stat.st_mode & stat.S_IWGRP)  # 组可写
+        or bool(dir_stat.st_mode & stat.S_IWOTH)  # 其他用户可写
     )
     if is_writable:
         logger.warning("The file path %r may be insecure because it can be written by others.", path)
@@ -118,8 +119,9 @@ def get_valid_read_path(path, extensions=None, size_max=MAX_READ_FILE_SIZE_4G, c
     file_stat = os.stat(real_path)
     if check_user_stat and not sys.platform.startswith("win") and not is_belong_to_user_or_group(file_stat):
         if os.geteuid() == 0:
-            logger.warning("The file %r doesn't belong to the current user or group."
-            " current user is root, continue", path)
+            logger.warning(
+                "The file %r doesn't belong to the current user or group. current user is root, continue", path
+            )
         else:
             raise ValueError("The file {} doesn't belong to the current user or group.".format(path))
     if check_user_stat and os.stat(path).st_mode & READ_FILE_NOT_PERMITTED_STAT > 0:
@@ -139,11 +141,15 @@ def check_write_directory(dir_name, check_user_stat=True):
     file_stat = os.stat(real_dir_name)
     if check_user_stat and not sys.platform.startswith("win") and not is_belong_to_user_or_group(file_stat):
         if os.geteuid() == 0:
-            logger.warning("The file writen directory %r doesn't belong to the current user or group"
-            " current user is root, continue", dir_name)
+            logger.warning(
+                "The file writen directory %r doesn't belong to the current user or group"
+                " current user is root, continue",
+                dir_name,
+            )
         else:
-            raise ValueError("The file writen directory {} doesn't belong to the current user or group."
-                             .format(dir_name))
+            raise ValueError(
+                "The file writen directory {} doesn't belong to the current user or group.".format(dir_name)
+            )
     if not os.access(real_dir_name, os.W_OK):
         raise ValueError("Current user doesn't have writen permission to file writen directory {}.".format(dir_name))
 
@@ -269,6 +275,7 @@ class SafeWriteUmask:
     >>> with SafeWriteUmask(), open(..., "w") as ...:
     >>>     ...
     """
+
     def __init__(self, func=None, umask=0o027):
         self.func = func
         self.umask = umask
@@ -290,7 +297,7 @@ class SafeWriteUmask:
 def txt_safe_load(path, extensions=("txt"), size_max=MAX_READ_FILE_SIZE_4G, check_user_stat=True, delimiter=","):
     path = get_valid_read_path(path, extensions, size_max, check_user_stat)
     txt_data = []
-    
+
     with open(path, 'r', encoding='utf-8') as txt_file:
         for line in txt_file:
             line = line.strip()  # 去除首尾空白字符
@@ -298,6 +305,5 @@ def txt_safe_load(path, extensions=("txt"), size_max=MAX_READ_FILE_SIZE_4G, chec
                 # 按分隔符分割并去除每个元素的空白字符
                 row = [item.strip() for item in line.split(delimiter)]
                 txt_data.append(row)
-    
-    return txt_data
 
+    return txt_data

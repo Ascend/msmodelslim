@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,no-name-in-module,pointless-string-statement,ungrouped-imports
 
 """
 DistributedTaskScheduler（分波调度器）的单元测试
@@ -27,22 +28,25 @@ DistributedTaskScheduler（分波调度器）的单元测试
     - 单卡场景下的基本执行流程
 """
 
-import unittest
-from typing import Any, Dict, List, Tuple
-from unittest.mock import MagicMock
+import unittest  # noqa: E402
+from typing import Any, List  # noqa: E402
 
-import torch
-import torch.nn as nn
+import torch  # noqa: E402
 
-from msmodelslim.utils.distributed import DistributedTaskScheduler
-from test.cases.utils.distributed.dts_test_internals import (
-    _DtsMultiRankParallelWaveScheduler,
+from msmodelslim.utils.distributed import DistributedTaskScheduler  # noqa: E402
+from test.cases.utils.distributed.dts_test_internals import (  # noqa: E402
     _DtsSequentialWaveScheduler,
     dts_waves,
 )
-from msmodelslim.utils.exception import SchemaValidateError
+from msmodelslim.utils.exception import SchemaValidateError  # noqa: E402
 
-from test.cases.utils.distributed.dts_test_utils import build_dts_dependency_mock_model
+from test.cases.utils.distributed.dts_test_utils import build_dts_dependency_mock_model  # noqa: E402
+from test.cases.utils.distributed.dts_test_internals import (  # noqa: E402
+    _DtsMultiRankParallelWaveScheduler,  # noqa: F401
+)  # noqa: F401
+import torch.nn as nn  # noqa: E402, F401
+from unittest.mock import MagicMock  # noqa: E402, F401
+from typing import Dict, Tuple  # noqa: E402, F401
 
 
 class TestDistributedTaskScheduler(unittest.TestCase):
@@ -200,7 +204,10 @@ class TestDistributedTaskScheduler(unittest.TestCase):
     def test_submit_raises_when_dependency_path_not_under_model(self):
         """测试：非法 ``dependencies`` 在 submit 阶段即失败。"""
         scheduler = DistributedTaskScheduler(self.mock_model)
-        fn = lambda: None
+
+        def fn():
+            return None
+
         with scheduler:
             with self.assertRaises(SchemaValidateError) as ctx:
                 scheduler.submit(fn, dependencies=["no_such_submodule"])
@@ -310,21 +317,36 @@ class TestDistributedTaskScheduler(unittest.TestCase):
         with scheduler:
             # Wave 0: 不同层的权重量化（无冲突）
             for i in range(4):
-                scheduler.submit(self.mock_worker_fn, args=(f"quantize_layer{i}_q",), dependencies=[f"layer.{i}.q_proj"],
+                scheduler.submit(
+                    self.mock_worker_fn,
+                    args=(f"quantize_layer{i}_q",),
+                    dependencies=[f"layer.{i}.q_proj"],
                 )
-                scheduler.submit(self.mock_worker_fn, args=(f"quantize_layer{i}_k",), dependencies=[f"layer.{i}.k_proj"],
+                scheduler.submit(
+                    self.mock_worker_fn,
+                    args=(f"quantize_layer{i}_k",),
+                    dependencies=[f"layer.{i}.k_proj"],
                 )
 
             # layer0.q_proj 已在 Wave 0，冲突，创建 Wave 1
-            scheduler.submit(self.mock_worker_fn, args=("smooth_layer0_q",), dependencies=["layer.0.q_proj", "layer.0.o_proj"],
+            scheduler.submit(
+                self.mock_worker_fn,
+                args=("smooth_layer0_q",),
+                dependencies=["layer.0.q_proj", "layer.0.o_proj"],
             )
 
             # layer0.k_proj 在 Wave 0 但不在 Wave 1，加入 Wave 1
-            scheduler.submit(self.mock_worker_fn, args=("smooth_layer0_k",), dependencies=["layer.0.k_proj", "layer.0.v_proj"],
+            scheduler.submit(
+                self.mock_worker_fn,
+                args=("smooth_layer0_k",),
+                dependencies=["layer.0.k_proj", "layer.0.v_proj"],
             )
 
             # layer0.o_proj 已在 Wave 1，冲突，创建 Wave 2
-            scheduler.submit(self.mock_worker_fn, args=("rotate_layer0_o",), dependencies=["layer.0.o_proj"],
+            scheduler.submit(
+                self.mock_worker_fn,
+                args=("rotate_layer0_o",),
+                dependencies=["layer.0.o_proj"],
             )
 
         # 验证波次分布
@@ -338,7 +360,9 @@ class TestDistributedTaskScheduler(unittest.TestCase):
         scheduler = DistributedTaskScheduler(self.mock_model)
         with scheduler:
             # Wave0 (parallel=True): 两个无冲突任务
-            scheduler.submit(self.mock_worker_fn, args=("t1",), dependencies=["model.layers.0.self_attn"], parallel=True)
+            scheduler.submit(
+                self.mock_worker_fn, args=("t1",), dependencies=["model.layers.0.self_attn"], parallel=True
+            )
             scheduler.submit(self.mock_worker_fn, args=("t2",), dependencies=["layer.1.q_proj"], parallel=True)
 
             # Wave1 (parallel=True): 与 Wave0 前缀冲突（...q_proj vs ...self_attn）
@@ -367,12 +391,16 @@ class TestDistributedTaskScheduler(unittest.TestCase):
         scheduler = DistributedTaskScheduler(self.mock_model)
         with scheduler:
             # Wave0
-            scheduler.submit(self.mock_worker_fn, args=("w0_1",), dependencies=["model.layers.0.self_attn.q_proj"], parallel=True)
+            scheduler.submit(
+                self.mock_worker_fn, args=("w0_1",), dependencies=["model.layers.0.self_attn.q_proj"], parallel=True
+            )
             scheduler.submit(self.mock_worker_fn, args=("w0_2",), dependencies=["layer.1.q_proj"], parallel=True)
             scheduler.submit(self.mock_worker_fn, args=("w0_3",), dependencies=["layer.2.q_proj"], parallel=True)
 
             # Wave1: 与 wave0 父子冲突（...self_attn 与 ...self_attn.q_proj）
-            scheduler.submit(self.mock_worker_fn, args=("w1_1",), dependencies=["model.layers.0.self_attn"], parallel=True)
+            scheduler.submit(
+                self.mock_worker_fn, args=("w1_1",), dependencies=["model.layers.0.self_attn"], parallel=True
+            )
             scheduler.submit(self.mock_worker_fn, args=("w1_2",), dependencies=["layer.3.q_proj"], parallel=True)
 
             # Wave2: parallel=False
@@ -385,4 +413,3 @@ class TestDistributedTaskScheduler(unittest.TestCase):
 
         self.assertEqual(len(dts_waves(scheduler)), 4)
         self.assertEqual([len(w._tasks) for w in dts_waves(scheduler)], [3, 2, 2, 2])
-

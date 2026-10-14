@@ -1,9 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 """
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
 Unit tests for msmodelslim.processor.anti_outlier.default.model_adapter.
 Covers: get_adapter_config_for_subgraph.
 """
+# pylint: disable=consider-using-from-import,redefined-outer-name,reimported,undefined-variable
+
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -23,7 +41,7 @@ class _NormLinearModel(nn.Module):
         self.norm = nn.LayerNorm(dim)
         self.linear = nn.Linear(dim, dim)
         self.device = torch.device("cpu")
-        self.config = SimpleNamespace(is_encoder_decoder=False)
+        self.config = SimpleNamespace(is_encoder_decoder=False)  # noqa: F821
 
     def forward(self, x):
         return self.linear(self.norm(x))
@@ -48,8 +66,8 @@ class TestGetAdapterConfigForSubgraph(unittest.TestCase):
 
     @patch("msmodelslim.processor.anti_outlier.default.model_adapter.collect_shared_input_modules")
     def test_get_adapter_config_for_subgraph_returns_adapter_config_list_when_norm_linear_detected(self, mock_collect):
-        from unittest.mock import MagicMock
         import torch
+
         fake_tensor = torch.ones(2, 2)
         norm_module = MagicMock()
         norm_module.name = "norm"

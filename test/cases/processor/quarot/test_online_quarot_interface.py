@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -33,32 +33,21 @@ class TestRotationConfig(unittest.TestCase):
     def test_init_with_rotation_matrix(self):
         """测试使用旋转矩阵初始化"""
         rotation_matrix = torch.randn(4, 4)
-        config = RotationConfig(
-            rotation_type="input",
-            rotation_matrix=rotation_matrix
-        )
+        config = RotationConfig(rotation_type="input", rotation_matrix=rotation_matrix)
         self.assertEqual(config.rotation_type, "input")
         self.assertTrue(torch.equal(config.rotation_matrix, rotation_matrix))
         self.assertIsNone(config.rotation_size)
 
     def test_init_with_rotation_size(self):
         """测试使用rotation_size初始化"""
-        config = RotationConfig(
-            rotation_type="output",
-            rotation_size=64,
-            rotation_mode=QuaRotMode.HADAMARD
-        )
+        config = RotationConfig(rotation_type="output", rotation_size=64, rotation_mode=QuaRotMode.HADAMARD)
         self.assertEqual(config.rotation_type, "output")
         self.assertEqual(config.rotation_size, 64)
         self.assertEqual(config.rotation_mode, QuaRotMode.HADAMARD)
 
     def test_init_with_default_values(self):
         """测试默认值"""
-        config = RotationConfig(
-            rotation_type="replace",
-            rotation_size=32,
-            rotation_mode=QuaRotMode.HADAMARD
-        )
+        config = RotationConfig(rotation_type="replace", rotation_size=32, rotation_mode=QuaRotMode.HADAMARD)
         self.assertEqual(config.block_size, -1)
         self.assertEqual(config.rot_step, 1)
         self.assertEqual(config.eye_step, (-1,))
@@ -75,7 +64,7 @@ class TestRotationConfig(unittest.TestCase):
             rot_step=2,
             eye_step=(0, 1),
             seed=5678,
-            dtype=torch.float16
+            dtype=torch.float16,
         )
         self.assertEqual(config.block_size, 32)
         self.assertEqual(config.rot_step, 2)
@@ -86,20 +75,12 @@ class TestRotationConfig(unittest.TestCase):
     def test_validate_rotation_type_valid(self):
         """测试有效的rotation_type"""
         for rotation_type in ["input", "output", "replace", "offline"]:
-            config = RotationConfig(
-                rotation_type=rotation_type,
-                rotation_size=32,
-                rotation_mode=QuaRotMode.HADAMARD
-            )
+            config = RotationConfig(rotation_type=rotation_type, rotation_size=32, rotation_mode=QuaRotMode.HADAMARD)
             self.assertEqual(config.rotation_type, rotation_type)
 
     def test_offline_rotation_with_default_side(self):
         """测试offline类型默认rotation_side"""
-        config = RotationConfig(
-            rotation_type="offline",
-            rotation_size=32,
-            rotation_mode=QuaRotMode.HADAMARD
-        )
+        config = RotationConfig(rotation_type="offline", rotation_size=32, rotation_mode=QuaRotMode.HADAMARD)
         # 应该默认为"right"
         self.assertEqual(config.rotation_side, "right")
 
@@ -107,10 +88,7 @@ class TestRotationConfig(unittest.TestCase):
         """测试offline类型显式指定rotation_side"""
         for side in ["left", "right"]:
             config = RotationConfig(
-                rotation_type="offline",
-                rotation_size=32,
-                rotation_mode=QuaRotMode.HADAMARD,
-                rotation_side=side
+                rotation_type="offline", rotation_size=32, rotation_mode=QuaRotMode.HADAMARD, rotation_side=side
             )
             self.assertEqual(config.rotation_side, side)
 
@@ -121,7 +99,7 @@ class TestRotationConfig(unittest.TestCase):
                 rotation_type=rotation_type,
                 rotation_size=32,
                 rotation_mode=QuaRotMode.HADAMARD,
-                rotation_side="left"  # 非offline类型应该允许但不使用
+                rotation_side="left",  # 非offline类型应该允许但不使用
             )
             self.assertEqual(config.rotation_type, rotation_type)
             # rotation_side可能为None或设置的值，取决于实现
@@ -134,7 +112,7 @@ class TestRotationConfig(unittest.TestCase):
             rotation_type="input",
             rotation_matrix=rotation_matrix,
             rotation_size=64,  # 即使提供了size，也应该使用matrix
-            rotation_mode=QuaRotMode.HADAMARD
+            rotation_mode=QuaRotMode.HADAMARD,
         )
         self.assertIsNotNone(config.rotation_matrix)
         # 验证应该通过，因为提供了matrix
@@ -148,23 +126,16 @@ class TestRotationConfig(unittest.TestCase):
                     rotation_type=rotation_type,
                     rotation_size=32,
                     rotation_mode=QuaRotMode.HADAMARD,
-                    rotation_side="right"
+                    rotation_side="right",
                 )
             else:
-                config = RotationConfig(
-                    rotation_type=rotation_type,
-                    rotation_matrix=rotation_matrix
-                )
+                config = RotationConfig(rotation_type=rotation_type, rotation_matrix=rotation_matrix)
             self.assertEqual(config.rotation_type, rotation_type)
 
     def test_quarot_mode_enum(self):
         """测试QuaRotMode枚举"""
         for mode in [QuaRotMode.HADAMARD, QuaRotMode.BLOCK_HADAMARD_SHIFTED]:
-            config = RotationConfig(
-                rotation_type="input",
-                rotation_size=32,
-                rotation_mode=mode
-            )
+            config = RotationConfig(rotation_type="input", rotation_size=32, rotation_mode=mode)
             self.assertEqual(config.rotation_mode, mode)
 
 

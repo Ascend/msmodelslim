@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
+
 import unittest
 from typing import List, Tuple
 
@@ -57,7 +59,6 @@ class DummyModel(nn.Module):
 
 
 class TestLayerWiseForward(unittest.TestCase):
-
     def setUp(self):
         torch.manual_seed(0)
         self.model = DummyModel(num_layers=3)
@@ -113,12 +114,12 @@ class TestLayerWiseForward(unittest.TestCase):
     def test_generated_decoder_layer_visit_func_when_distributed_then_call_barrier(self):
         """测试generated_decoder_layer_visit_func：分布式环境下应调用barrier"""
         from unittest.mock import patch
-        
+
         # Mock dist.is_initialized返回True
         with patch('msmodelslim.model.common.layer_wise_forward.dist.is_initialized', return_value=True):
             with patch('msmodelslim.model.common.layer_wise_forward.dist.barrier') as mock_barrier:
                 gen = generated_decoder_layer_visit_func(self.model)
-                
+
                 list(gen)
                 # 验证barrier被调用
                 mock_barrier.assert_called_once()
@@ -126,14 +127,14 @@ class TestLayerWiseForward(unittest.TestCase):
     def test_transformers_generated_forward_func_when_dict_input_then_use_kwargs(self):
         """测试transformers_generated_forward_func：dict输入时应使用**kwargs"""
         from unittest.mock import patch
-        
+
         # 使用dict输入（覆盖第82-83行）
         dict_inputs = {'x': self.input}
-        
+
         # Mock TransformersForwardBreak以模拟hook触发
         with patch('msmodelslim.model.common.layer_wise_forward.TransformersForwardBreak', Exception):
             gen = transformers_generated_forward_func(self.model, dict_inputs)
-            
+
             try:
                 list(gen)
             except (InvalidModelError, Exception):
@@ -142,10 +143,10 @@ class TestLayerWiseForward(unittest.TestCase):
     def test_transformers_generated_forward_func_when_single_tensor_input_then_call_directly(self):
         """测试transformers_generated_forward_func：单个tensor输入时应直接调用"""
         from unittest.mock import patch
-        
+
         with patch('msmodelslim.model.common.layer_wise_forward.TransformersForwardBreak', Exception):
             gen = transformers_generated_forward_func(self.model, self.input)
-            
+
             try:
                 list(gen)
             except (InvalidModelError, Exception):
@@ -153,38 +154,38 @@ class TestLayerWiseForward(unittest.TestCase):
 
     def test_transformers_generated_forward_func_when_first_block_input_none_then_raise_error(self):
         """测试transformers_generated_forward_func：first_block_input为None时应抛出InvalidModelError"""
-        from unittest.mock import patch
-        
+        from unittest.mock import patch  # noqa: F401
+
         # 创建一个模型，forward不会触发TransformersForwardBreak
         class NoBreakModel(nn.Module):
             def __init__(self):
                 super().__init__()
                 self.layer = DummyDecoderLayer()
-            
+
             def named_modules(self):
                 return [('layer0', self.layer)]
-            
+
             def forward(self, x):
                 # 正常返回，不触发TransformersForwardBreak
                 return x
-        
+
         model = NoBreakModel()
-        
+
         gen = transformers_generated_forward_func(model, (self.input,))
-        
+
         with self.assertRaises(InvalidModelError) as context:
             list(gen)
-        
+
         self.assertIn("Can't get first block input", str(context.exception))
 
     def test_transformers_generated_forward_func_when_distributed_then_call_barrier(self):
         """测试transformers_generated_forward_func：分布式环境下应调用barrier"""
         from unittest.mock import patch
-        
+
         with patch('msmodelslim.model.common.layer_wise_forward.dist.is_initialized', return_value=True):
-            with patch('msmodelslim.model.common.layer_wise_forward.dist.barrier') as mock_barrier:
+            with patch('msmodelslim.model.common.layer_wise_forward.dist.barrier') as mock_barrier:  # noqa: F841
                 gen = transformers_generated_forward_func(self.model, (self.input,))
-                
+
                 try:
                     list(gen)
                 except (InvalidModelError, Exception):

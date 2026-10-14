@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=unnecessary-lambda
+
 from functools import wraps
 import logging
 
@@ -26,7 +28,8 @@ class MsgConst:
     """
     Class for log messages const
     """
-    SPECIAL_CHAR = ["\n", "\r", "\u007F", "\b", "\f", "\t", "\u000B", "%08", "%0a", "%0b", "%0c", "%0d", "%7f"]
+
+    SPECIAL_CHAR = ["\n", "\r", "\u007f", "\b", "\f", "\t", "\u000b", "%08", "%0a", "%0b", "%0c", "%0d", "%7f"]
 
 
 def get_logger():
@@ -39,6 +42,7 @@ def get_logger():
         stream_handler.setFormatter(formatter)
         amc_logger.addHandler(stream_handler)
     return amc_logger
+
 
 logger = get_logger()
 
@@ -101,7 +105,7 @@ LOG_LEVEL = {
     "warning": logging.WARNING,
     "error": logging.ERROR,
     "fatal": logging.FATAL,
-    "critical": logging.CRITICAL
+    "critical": logging.CRITICAL,
 }
 
 LOGGER_FUNC = {
@@ -142,4 +146,3 @@ def progress_bar(iterable, desc: str = None, total: int = -1, interval: int = 1)
         yield item
     logging.StreamHandler.terminator = prev_terminator
     logger.info("")
-

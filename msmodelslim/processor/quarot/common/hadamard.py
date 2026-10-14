@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,7 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
+# pylint: disable=logging-fstring-interpolation
 
 import os
 from typing import Tuple, Optional, Dict
@@ -51,10 +51,10 @@ HADAMARD_TXT_DATA_FILE_NAME: Dict[int, str] = {
 
 
 def txt_safe_load(
-        path: str,
-        extensions: Tuple[str, ...] = ("txt",),
-        size_max: int = MAX_READ_FILE_SIZE_1M,
-        check_user_stat: bool = True
+    path: str,
+    extensions: Tuple[str, ...] = ("txt",),
+    size_max: int = MAX_READ_FILE_SIZE_1M,
+    check_user_stat: bool = True,
 ) -> str:
     path = get_valid_read_path(path, extensions, size_max, check_user_stat)
 
@@ -73,8 +73,9 @@ def walsh_matrix(size: int, dtype: torch.dtype, device: torch.device) -> torch.T
     else:
         had = walsh_matrix(size // 2, dtype=dtype, device=device)
         had = torch.cat([torch.cat([had, had], dim=1), torch.cat([had, -had], dim=1)], dim=0)
-    binary_indices: torch.Tensor = torch.arange(size, device=device).unsqueeze(1).bitwise_xor(
-        torch.arange(size, device=device).unsqueeze(0))
+    binary_indices: torch.Tensor = (
+        torch.arange(size, device=device).unsqueeze(1).bitwise_xor(torch.arange(size, device=device).unsqueeze(0))
+    )
     sorted_indices: torch.Tensor = torch.argsort(torch.sum(binary_indices, dim=1))
     return had[sorted_indices]
 

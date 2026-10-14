@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
+
 """
 使用方法：
 在 msit/msmodelslim 目录下执行
@@ -26,16 +28,21 @@ python3 -m coverage report -m --include='msmodelslim/pytorch/llm_ptq/anti_outlie
 python3 -m coverage html -d test/fuzz/pytorch_ptq_api/anti_outlier/htmlcov -i
 """
 # 导入必要的库
-import sys
+import sys  # noqa: E402
 
-import atheris  # Google开源的模糊测试框架
-import torch
+import atheris  # Google开源的模糊测试框架  # noqa: E402
+import torch  # noqa: E402
 
 # 导入待测试的模块
-from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_outlier import AntiOutlier
-from msmodelslim.pytorch.llm_ptq.anti_outlier.config import AntiOutlierConfig
-from test.fuzz.common.fuzz_utils import (
-    consume_bool, consume_str, consume_float, consume_int, consume_pick_list, DummyModel
+from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_outlier import AntiOutlier  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier.config import AntiOutlierConfig  # noqa: E402
+from test.fuzz.common.fuzz_utils import (  # noqa: E402
+    consume_bool,
+    consume_str,
+    consume_float,
+    consume_int,
+    consume_pick_list,
+    DummyModel,
 )
 
 
@@ -57,7 +64,7 @@ def random_flex_config(fdp):
             v = consume_float(fdp)
             d[k] = v
         return d
-    
+
 
 def random_calib_data(fdp, input_dim):
     """生成随机校准数据
@@ -86,17 +93,23 @@ def TestAntiOutlier(data):
             w_bit=consume_pick_list(fdp, [2, 4, 8, 16]),
             a_bit=consume_pick_list(fdp, [2, 4, 8, 16]),
             anti_method=consume_pick_list(fdp, ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'other']),
-            dev_type=consume_pick_list(fdp, ['cpu', 'npu', ]),
-            flex_config=flex_config
+            dev_type=consume_pick_list(
+                fdp,
+                [
+                    'cpu',
+                    'npu',
+                ],
+            ),
+            flex_config=flex_config,
         )
-        
+
         # 创建测试模型和数据
         input_dim = 16
         output_dim = 16
         model = DummyModel(input_dim, output_dim)
         calib_data = random_calib_data(fdp, input_dim)
         norm_class_name = consume_str(fdp) if consume_bool(fdp) else None
-        
+
         # 测试AntiOutlier类
         anti = AntiOutlier(model, calib_data=calib_data, cfg=config, norm_class_name=norm_class_name)
         if consume_bool(fdp):
@@ -106,6 +119,7 @@ def TestAntiOutlier(data):
                 pass
     except Exception:
         pass
+
 
 if __name__ == "__main__":
     # 设置并运行模糊测试

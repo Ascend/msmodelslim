@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,11 +18,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-merging-isinstance
 
 from typing import List, Any, Optional, Tuple, Dict
 from enum import Enum
 import math
-import random
+import random  # noqa: F401
 import torch
 from torch import nn
 from msmodelslim.utils.exception import UnsupportedError
@@ -37,7 +38,7 @@ def random_hadamard_matrix_block(in_channel, stride, eye_step, dtype=torch.float
     """生成对角线上放置Hadamard矩阵的in_channel维矩阵"""
     # 生成stride维的Hadamard矩阵
     h_stride = random_hadamard_matrix(stride, dtype, device)
-    
+
     # 创建in_channel维的全零张量，并确保它在指定的设备上
     h_in_channel = torch.zeros((in_channel, in_channel), device=device, dtype=dtype)
     # 将stride维的Hadamard矩阵的副本放置在in_channel维矩阵的对角线上
@@ -46,11 +47,10 @@ def random_hadamard_matrix_block(in_channel, stride, eye_step, dtype=torch.float
         start_idx = i * stride
         end_idx = start_idx + stride
         if i in eye_step:
-            h_in_channel[start_idx:end_idx, start_idx:end_idx] = torch.eye(stride).to(device=device, 
-                                                                                      dtype=dtype)
+            h_in_channel[start_idx:end_idx, start_idx:end_idx] = torch.eye(stride).to(device=device, dtype=dtype)
         else:
             h_in_channel[start_idx:end_idx, start_idx:end_idx] = h_stride
-    
+
     return h_in_channel
 
 
@@ -59,16 +59,18 @@ class QuaRotMode(Enum):
     BLOCK_HADAMARD_SHIFTED = "block_hadamard_shifted"
 
 
-def create_rot(mode: QuaRotMode,
-               size: int, 
-               block_size: int = -1, 
-               rot_step: int = 1,
-               eye_step: tuple = (-1,),
-               seed: int = 1234,
-               dtype: torch.dtype = torch.float32) -> torch.Tensor:
+def create_rot(
+    mode: QuaRotMode,
+    size: int,
+    block_size: int = -1,
+    rot_step: int = 1,
+    eye_step: tuple = (-1,),
+    seed: int = 1234,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
     """
     创建旋转矩阵。
-    
+
     Args:
         mode: 旋转模式
         size: 旋转矩阵尺寸
@@ -76,7 +78,7 @@ def create_rot(mode: QuaRotMode,
         rot_step: 旋转步数，默认为1
         eye_step: eye步数，默认为(-1,)
         seed: 随机数种子，默认为1234
-    
+
     Returns:
         旋转矩阵
     """
@@ -106,15 +108,12 @@ def create_rot(mode: QuaRotMode,
         elif rot_step == 3:
             rot = rot @ p @ rot @ p.T @ rot.T @ p @ rot @ p.T @ rot.T
         else:
-            raise UnsupportedError("rot_step must be 1, 2, or 3!",
-                                   action="Please check the rot_step!")
+            raise UnsupportedError("rot_step must be 1, 2, or 3!", action="Please check the rot_step!")
 
     return rot
 
 
-def rotate_linear(linear: torch.nn.Linear, 
-                  rot: Any, 
-                  right_rotate: bool = True) -> None:
+def rotate_linear(linear: torch.nn.Linear, rot: Any, right_rotate: bool = True) -> None:
     if isinstance(rot, list) or isinstance(rot, tuple):
         rot = torch.block_diag(*rot)
     dtype = linear.weight.data.dtype
@@ -126,9 +125,11 @@ def rotate_linear(linear: torch.nn.Linear,
     if dim_size != rot.shape[0]:
         block_num = dim_size // rot.shape[0]
         if dim_size % rot.shape[0] != 0:
-            raise UnsupportedError("rotate matrix dim must be a divisor of weight dim!",
-                                   action="Please check the linear weight dim and rotate matrix dim!")
-        rot = torch.block_diag(* [rot] * block_num)
+            raise UnsupportedError(
+                "rotate matrix dim must be a divisor of weight dim!",
+                action="Please check the linear weight dim and rotate matrix dim!",
+            )
+        rot = torch.block_diag(*[rot] * block_num)
     if right_rotate:
         linear.weight.data = torch.matmul(weight_data, rot.to(weight_data)).to(dtype=dtype)
     else:
@@ -138,9 +139,7 @@ def rotate_linear(linear: torch.nn.Linear,
             linear.bias.data = torch.matmul(rot.T.to(weight_data), bias_data).to(dtype=dtype)
 
 
-def rotate_weight(weight: torch.Tensor,
-                  rot: Any,
-                  right_rotate: bool = True) -> None:
+def rotate_weight(weight: torch.Tensor, rot: Any, right_rotate: bool = True) -> None:
     if isinstance(rot, list) or isinstance(rot, tuple):
         rot = torch.block_diag(*rot)
     dtype = weight.data.dtype
@@ -152,9 +151,11 @@ def rotate_weight(weight: torch.Tensor,
     if dim_size != rot.shape[0]:
         block_num = dim_size // rot.shape[0]
         if dim_size % rot.shape[0] != 0:
-            raise UnsupportedError("rotate matrix dim must be a divisor of weight dim!",
-                                   action="Please check the weight dim and rotate matrix dim!")
-        rot = torch.block_diag(* [rot] * block_num)
+            raise UnsupportedError(
+                "rotate matrix dim must be a divisor of weight dim!",
+                action="Please check the weight dim and rotate matrix dim!",
+            )
+        rot = torch.block_diag(*[rot] * block_num)
     if right_rotate:
         weight.data = torch.matmul(weight_data, rot.to(weight_data)).to(dtype=dtype)
     else:
@@ -168,8 +169,10 @@ def fuse_ln_linear(layernorms: List[torch.nn.Module], linear_layers: List[torch.
         if hasattr(ln, 'bias'):
             ln_bias_data.append(ln.bias.data)
         if ln.weight.dim() != 1:
-            raise UnsupportedError("layernorm type is not supported! quarot rotate only support RMSNorm!",
-                                action="Please check the model's layernorm type!")
+            raise UnsupportedError(
+                "layernorm type is not supported! quarot rotate only support RMSNorm!",
+                action="Please check the model's layernorm type!",
+            )
         ln_data.append(ln.weight.data)
     ln_weight = torch.concat(ln_data, dim=0) if len(ln_data) > 1 else ln_data[0]
     ln_weight = ln_weight.to(dtype=GLOBAL_DTYPE)
@@ -178,15 +181,17 @@ def fuse_ln_linear(layernorms: List[torch.nn.Module], linear_layers: List[torch.
         linear_dtype = linear.weight.dtype
         current_weight = linear.weight.data.to(dtype=GLOBAL_DTYPE)
         if ln_weight.shape[0] != current_weight.shape[1]:
-            raise UnsupportedError("layernorm weight dim must be equal to linear weight input dim!",
-                                action="Please check the model's layernorm and linear input size!")
-        linear.weight.data = (current_weight * ln_weight.to(device=current_weight.device, 
-                                                            dtype=GLOBAL_DTYPE)).to(linear_dtype)
+            raise UnsupportedError(
+                "layernorm weight dim must be equal to linear weight input dim!",
+                action="Please check the model's layernorm and linear input size!",
+            )
+        linear.weight.data = (current_weight * ln_weight.to(device=current_weight.device, dtype=GLOBAL_DTYPE)).to(
+            linear_dtype
+        )
         if ln_bias is not None:
             if linear.bias is None:
                 linear.bias = torch.nn.Parameter(torch.zeros(linear.out_features, dtype=GLOBAL_DTYPE))
-            linear.bias.data = linear.bias.data + torch.matmul(current_weight, 
-                                                                ln_bias.to(device=current_weight.device))
+            linear.bias.data = linear.bias.data + torch.matmul(current_weight, ln_bias.to(device=current_weight.device))
             linear.bias.data = linear.bias.data.to(linear_dtype)
     for ln in layernorms:
         ln.weight.data.fill_(1.0)
@@ -234,9 +239,9 @@ def get_decompose_dim(n: int) -> Tuple[int, int]:
     raise UnsupportedError(f"Can not decompose {n}")
 
 
-def online_rotate_o_proj_input(ov_pairs: Dict[nn.Module, nn.Module],
-                        rot_online: Optional[torch.Tensor],
-                        num_attn_heads: int) -> None:
+def online_rotate_o_proj_input(
+    ov_pairs: Dict[nn.Module, nn.Module], rot_online: Optional[torch.Tensor], num_attn_heads: int
+) -> None:
     """在线旋转矩阵融合到o_proj层权重"""
     for o_proj, _ in ov_pairs.items():
         dtype = o_proj.weight.dtype
@@ -244,14 +249,12 @@ def online_rotate_o_proj_input(ov_pairs: Dict[nn.Module, nn.Module],
         identity = torch.eye(o_proj.weight.shape[1] // num_attn_heads, dtype=dtype, device=device)
         rot_online = rot_online.to(device)
         h_full = torch.kron(rot_online, identity)
-        weight = o_proj.weight.to(device=device, dtype=torch.float32)
+        weight = o_proj.weight.to(device=device, dtype=torch.float32)  # noqa: F841
         rotate_linear(o_proj, h_full.to(device))
         del h_full
 
 
-def online_rotate_down_proj(up_down_pairs: Dict[nn.Module, nn.Module], 
-                        rot1: torch.Tensor,
-                        rot2: torch.Tensor) -> None:
+def online_rotate_down_proj(up_down_pairs: Dict[nn.Module, nn.Module], rot1: torch.Tensor, rot2: torch.Tensor) -> None:
     """在线旋转矩阵融合到down_proj层权重"""
     for _, down_proj in up_down_pairs.items():
         dtype = down_proj.weight.dtype

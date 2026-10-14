@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,7 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
+# pylint: disable=broad-exception-raised
 
 import logging
 
@@ -47,27 +47,29 @@ class PruneUtilsTorch(PruneUtilsBase):
     def generate_combined_qkv_index(old_dim, new_dim):
         """
         generate index to extract weight from old weight
-        
+
         Args:
             old_dim: 原始维度大小
             new_dim: 新维度大小，必须满足 new_dim <= old_dim
-            
+
         Returns:
             torch.LongTensor: 提取权重的索引
-            
+
         Raises:
             ValueError: 当 new_dim > old_dim 时抛出异常
         """
         if new_dim > old_dim:
-            raise ValueError(f"new_dim ({new_dim}) cannot be greater than old_dim ({old_dim}). "
-                            f"This function only supports dimension reduction (new_dim <= old_dim).")
+            raise ValueError(
+                f"new_dim ({new_dim}) cannot be greater than old_dim ({old_dim}). "
+                f"This function only supports dimension reduction (new_dim <= old_dim)."
+            )
         mask = torch.zeros(old_dim)
         old_step = old_dim / QKV_NUMS
         new_step = new_dim / QKV_NUMS
         for i in range(3):
             start_ix = int(i * old_step)
             end_ix = int(start_ix + new_step)
-            mask[start_ix: end_ix] = 1
+            mask[start_ix:end_ix] = 1
         mask = mask.eq(1)
         index: torch.LongTensor = torch.arange(len(mask))[mask].long()
         return index
@@ -118,9 +120,9 @@ class PruneUtilsTorch(PruneUtilsBase):
                 self.prune_combined_qkv_weight(name, state_dict, model_weight, st_weight)
             else:
                 if model_weight.dim() == 1:
-                    state_dict[name] = st_weight[:model_weight_shape[0]]
+                    state_dict[name] = st_weight[: model_weight_shape[0]]
                 elif model_weight.dim() == 2:
-                    state_dict[name] = st_weight[:model_weight_shape[0], :model_weight_shape[1]]
+                    state_dict[name] = st_weight[: model_weight_shape[0], : model_weight_shape[1]]
                 else:
                     raise NotImplementedError('Other dimension is not implemented')
 
@@ -149,7 +151,7 @@ class PruneUtilsTorch(PruneUtilsBase):
 
 prune_utils_torch = PruneUtilsTorch()
 PRUNE_STATE_DICT_FUNCS_TORCH = {
-                                'prune_blocks': prune_utils_torch.prune_blocks,
-                                'prune_bert_intra_block': prune_utils_torch.prune_bert_intra_block_torch,
-                                'prune_vit_intra_block': prune_utils_torch.prune_vit_intra_block,
+    'prune_blocks': prune_utils_torch.prune_blocks,
+    'prune_bert_intra_block': prune_utils_torch.prune_bert_intra_block_torch,
+    'prune_vit_intra_block': prune_utils_torch.prune_vit_intra_block,
 }

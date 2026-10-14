@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,18 +18,24 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=comparison-with-itself
 
-import torch 
+import torch
 import unittest
 from unittest.mock import patch
 
-from msmodelslim.pytorch.llm_ptq.anti_outlier.cbq import inter_category_distance, intra_category_variance, otsu, calcu_outlier_mask
+from msmodelslim.pytorch.llm_ptq.anti_outlier.cbq import (
+    inter_category_distance,
+    intra_category_variance,
+    otsu,
+    calcu_outlier_mask,
+)
+
 
 class TestActivationOutliers(unittest.TestCase):
-    
     def test_inter_category_distance(self):
         """测试类别间距离计算函数
-        
+
         验证：
         1. 正确计算两个类别间的距离（上类最小值与下类最大值的绝对差）
         2. 正确处理正数和负数输入
@@ -42,7 +48,7 @@ class TestActivationOutliers(unittest.TestCase):
         self.assertEqual(distance, 6)
         self.assertEqual(min_outlier, 8)
         self.assertEqual(max_outlier, 2)
-        
+
         # 测试负数情况
         top_cate = torch.tensor([-1, -2, -3])
         bottom_cate = torch.tensor([-10, -11, -12])
@@ -50,10 +56,10 @@ class TestActivationOutliers(unittest.TestCase):
         self.assertEqual(distance, 7)
         self.assertEqual(min_outlier, -3)
         self.assertEqual(max_outlier, -10)
-    
+
     def test_intra_category_variance(self):
         """测试类别内方差计算函数
-        
+
         验证：
         1. 正确计算两个类别内部的方差
         2. 当类别只有一个元素时返回0方差
@@ -65,17 +71,17 @@ class TestActivationOutliers(unittest.TestCase):
         top_var, bottom_var = intra_category_variance(top_cate, bottom_cate)
         self.assertAlmostEqual(top_var.item(), 1)
         self.assertAlmostEqual(bottom_var.item(), 100)
-        
+
         # 测试单个元素的情况
         top_cate = torch.tensor([5.0])
         bottom_cate = torch.tensor([10.0])
         top_var, bottom_var = intra_category_variance(top_cate, bottom_cate)
         self.assertEqual(top_var, 0)
         self.assertEqual(bottom_var, 0)
-    
+
     def test_otsu_positive(self):
         """测试正向OTSU阈值分割算法
-        
+
         验证：
         1. 正确识别正向异常值（较大的值）
         2. 返回正确的异常值数量、异常值张量和阈值
@@ -85,20 +91,20 @@ class TestActivationOutliers(unittest.TestCase):
         # 测试正例分割
         data = torch.tensor([10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0])
         out_num, outlier, threshold = otsu(data, pos=True)
-        
+
         # 验证输出类型
         self.assertIsInstance(out_num, int)
         self.assertIsInstance(outlier, torch.Tensor)
         self.assertIsInstance(threshold, torch.Tensor)
-        
+
         # 验证分割结果 (简单验证，实际最优分割需要根据算法逻辑确定)
         self.assertTrue(len(outlier) > 0)
         self.assertTrue(threshold <= data[0])
         self.assertTrue(threshold >= data[-1])
-    
+
     def test_otsu_negative(self):
         """测试负向OTSU阈值分割算法
-        
+
         验证：
         1. 正确识别负向异常值（较小的值）
         2. 返回正确的异常值数量、异常值张量和阈值
@@ -108,20 +114,20 @@ class TestActivationOutliers(unittest.TestCase):
         # 测试负例分割
         data = torch.tensor([-1.0, -2.0, -3.0, -4.0, -5.0, -6.0, -7.0, -8.0, -9.0, -10.0])
         out_num, outlier, threshold = otsu(data, pos=False)
-        
+
         # 验证输出类型
         self.assertIsInstance(out_num, int)
         self.assertIsInstance(outlier, torch.Tensor)
         self.assertIsInstance(threshold, torch.Tensor)
-        
+
         # 验证分割结果
         self.assertTrue(len(outlier) > 0)
         self.assertTrue(threshold <= data[0])
         self.assertTrue(threshold >= data[-1])
-    
+
     def test_otsu_edge_cases(self):
         """测试OTSU算法的边界情况
-        
+
         验证：
         1. 处理全相同值的情况
         2. 处理空输入的情况（应抛出异常）
@@ -131,15 +137,15 @@ class TestActivationOutliers(unittest.TestCase):
         data = torch.tensor([5.0, 5.0, 5.0, 5.0, 5.0])
         out_num, outlier, threshold = otsu(data, pos=True)
         self.assertEqual(out_num, 1)  # 或根据算法逻辑确定正确值
-        
+
         # 测试空输入 (虽然函数内部应该处理)
         data = torch.tensor([])
         with self.assertRaises(UnboundLocalError):  # 或其他适当的异常
             otsu(data, pos=True)
-    
+
     def test_calcu_outlier_mask(self):
         """测试异常值掩码计算函数
-        
+
         验证：
         1. 正确计算异常值掩码
         2. 输出形状与输入一致
@@ -151,29 +157,29 @@ class TestActivationOutliers(unittest.TestCase):
         per_channel_max = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
         per_channel_min = torch.tensor([-5.0, -4.0, -3.0, -2.0, -1.0])
         outlier_mask = calcu_outlier_mask(per_channel_min, per_channel_max)
-        
+
         # 验证输出类型和形状
         self.assertIsInstance(outlier_mask, torch.Tensor)
         self.assertEqual(outlier_mask.shape, per_channel_max.shape)
-        
+
         # 验证所有值都在[0,1]范围内
         self.assertTrue(torch.all((outlier_mask >= 0) & (outlier_mask <= 1)))
-        
+
         # 测试边界情况：所有值相同
         per_channel_max = torch.tensor([5.0, 5.0, 5.0, 5.0, 5.0])
         per_channel_min = torch.tensor([-5.0, -5.0, -5.0, -5.0, -5.0])
         outlier_mask = calcu_outlier_mask(per_channel_min, per_channel_max)
         self.assertTrue(torch.all(outlier_mask == 1.0))
-        
+
         # 测试最小值为0的情况
         per_channel_max = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
         per_channel_min = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0])
         outlier_mask = calcu_outlier_mask(per_channel_min, per_channel_max)
         self.assertTrue(torch.all(outlier_mask == outlier_mask))  # 应使用outlier_mask_pos
-    
+
     def test_calcu_outlier_mask_mocked(self):
         """使用mock测试异常值掩码计算函数
-        
+
         验证：
         1. 函数内部正确调用了torch.quantile
         2. 调用次数和参数类型正确
@@ -198,7 +204,7 @@ class TestActivationOutliers(unittest.TestCase):
             args, kwargs = mock_quantile.call_args_list[0]
             assert isinstance(args[0], torch.Tensor)
             assert args[1] == 0.20
-            
+
 
 if __name__ == '__main__':
     unittest.main()

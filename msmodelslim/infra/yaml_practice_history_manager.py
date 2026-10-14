@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import datetime
 from contextlib import contextmanager
 from pathlib import Path
@@ -62,21 +63,21 @@ class YamlTuningHistory(TuningHistoryInfra):
     YAML-based implementation of TuningHistoryInfra.
     Manages history.yaml (history index).
     """
-    
+
     def __init__(self, database: str):
         """
         Initialize YamlTuningHistory.
-        
+
         Args:
             database: str, the path to the history database directory
         """
         self.database = database
         get_write_directory(database)
         self.history_dir = Path(database)
-        
+
         # Load or create history index
         history_index_file_path = self.history_dir / 'history.yaml'
-        
+
         # Initialize database
         self._database_history = YamlDatabaseHistory(
             history_practice_database=YamlDatabase(
@@ -85,16 +86,16 @@ class YamlTuningHistory(TuningHistoryInfra):
             ),
             history_index_file_path=history_index_file_path,
         )
-        
+
         # Always start with new history index
         self._history_index = TuningHistoryIndex()
-    
+
     def clear_records(self) -> None:
         """
         Clear history records (history.yaml and practice config files), but preserve accuracy cache.
         """
         get_logger().info("Clearing history records (preserving accuracy cache)...")
-        
+
         # Clear practice config files
         record_database = self._database_history.history_practice_database
         excluded_files = {'accuracy', 'history'}
@@ -103,48 +104,50 @@ class YamlTuningHistory(TuningHistoryInfra):
             practice_file = record_database.config_dir / f"{practice_id}.yaml"
             if practice_file.exists():
                 safe_delete_path_if_exists(str(practice_file), logger_level="info")
-        
+
         # Clear history index
         with _get_modifiable_history_index(self._database_history.history_index_file_path) as history_index:
             history_index.records.clear()
             self._history_index = history_index
-        
+
         get_logger().info("History records cleared successfully")
-    
+
     def append_history(self, practice: PracticeConfig, evaluation: EvaluateResult) -> None:
         """
         Append a history record to the database.
         """
         practice_id = practice.metadata.config_id
         quant_config_md5 = calculate_md5(practice.extract_quant_config())
-        
+
         # Append to history index
         with _get_modifiable_history_index(self._database_history.history_index_file_path) as history_index:
-            history_index.records.append(TuningHistoryIndexUnit(
-                practice_id=practice_id,
-                evaluation=evaluation,
-                quant_config_md5=quant_config_md5,
-            ))
+            history_index.records.append(
+                TuningHistoryIndexUnit(
+                    practice_id=practice_id,
+                    evaluation=evaluation,
+                    quant_config_md5=quant_config_md5,
+                )
+            )
             self._history_index = history_index
-        
+
         # Save practice config (this will replace if exists)
         self._database_history.history_practice_database[practice_id] = practice
 
 
 class YamlTuningHistoryManager(TuningHistoryManagerInfra):
     """Manager for loading YAML-based tuning history."""
-    
+
     def load_history(self, database: str) -> TuningHistoryInfra:
         """
         Load the complete tuning history from the specified database path.
         Returns a history instance even if no records exist (empty history).
-        
+
         Args:
             database: str, the path to the history database directory
-            
+
         Returns:
             TuningHistoryInfra: The tuning history instance
-            
+
         Raises:
             RuntimeError: If failed to create or load history
         """

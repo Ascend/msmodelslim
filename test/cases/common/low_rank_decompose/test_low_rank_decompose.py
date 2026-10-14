@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -110,9 +110,7 @@ def test_get_decompose_channels_4d_given_vbmf_when_any_then_pass():
 def test_decompose_weight_4d_tucker_given_basic_when_any_then_pass():
     in_channels, out_channels, kernel_size, hidden_in, hidden_out = 32, 64, 3, 16, 32
     source_input = np.random.uniform(size=[out_channels, in_channels, kernel_size, kernel_size])
-    res = low_rank_decompose.decompose_weight_4d_tucker(
-        source_input, hidden_out, hidden_in
-    )
+    res = low_rank_decompose.decompose_weight_4d_tucker(source_input, hidden_out, hidden_in)
     first = res.get('first', None)
     core = res.get('core', None)
     last = res.get('last', None)

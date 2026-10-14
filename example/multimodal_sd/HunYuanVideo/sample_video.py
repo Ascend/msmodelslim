@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=unnecessary-list-index-lookup,unspecified-encoding,useless-return
 
 import os
 import sys
@@ -26,14 +27,21 @@ from pathlib import Path
 
 import torch
 import torch_npu
-from torch_npu.contrib import transfer_to_npu
+from torch_npu.contrib import transfer_to_npu  # noqa: F401
 from torch import nn
 from tqdm import tqdm
 
 from hyvideo.utils.file_utils import save_videos_grid
 from hyvideo.config import (
-    sanity_check_args, add_device_args, add_network_args, add_extra_models_args, add_denoise_schedule_args,
-    add_inference_args, add_parallel_args, add_ditcache_args, add_attentioncache_args
+    sanity_check_args,
+    add_device_args,
+    add_network_args,
+    add_extra_models_args,
+    add_denoise_schedule_args,
+    add_inference_args,
+    add_parallel_args,
+    add_ditcache_args,
+    add_attentioncache_args,
 )
 from hyvideo.inference import HunyuanVideoSampler
 from mindiesd import CacheConfig, CacheAgent
@@ -42,13 +50,21 @@ cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 example_base_dir = os.path.abspath(os.path.join(cur_file_dir, "..", "..", ".."))
 sys.path.append(example_base_dir)
 
-from example.common.security.pytorch import safe_torch_load
-from example.common.security.path import get_write_directory, get_valid_read_path
-from msmodelslim.quant import quant_model, SessionConfig, FA3ProcessorConfig, W8A8DynamicQuantConfig, \
-    W8A8DynamicProcessorConfig, M3ProcessorConfig, M4ProcessorConfig, M6ProcessorConfig, M6Config
-from msmodelslim.quant import W8A8TimeStepProcessorConfig, W8A8TimeStepQuantConfig, \
-    SaveProcessorConfig
-from msmodelslim import logger
+from example.common.security.pytorch import safe_torch_load  # noqa: E402
+from example.common.security.path import get_write_directory, get_valid_read_path  # noqa: E402
+from msmodelslim.quant import (  # noqa: E402
+    quant_model,
+    SessionConfig,
+    FA3ProcessorConfig,
+    W8A8DynamicQuantConfig,
+    W8A8DynamicProcessorConfig,
+    M3ProcessorConfig,
+    M4ProcessorConfig,
+    M6ProcessorConfig,
+    M6Config,
+)
+from msmodelslim.quant import W8A8TimeStepProcessorConfig, W8A8TimeStepQuantConfig, SaveProcessorConfig  # noqa: E402
+from msmodelslim import logger  # noqa: E402
 
 torch_npu.npu.set_compile_mode(jit_compile=False)
 torch.npu.config.allow_internal_format = False
@@ -67,8 +83,11 @@ def parse_args(namespace=None):
     parser = add_attentioncache_args(parser)
 
     parser.add_argument("--do_quant", action="store_true")
-    parser.add_argument("--quant_type", choices=["w8a8_timestep", "w8a8_dynamic_fa3", "w8a8_dynamic"],
-                        default="w8a8_timestep", )
+    parser.add_argument(
+        "--quant_type",
+        choices=["w8a8_timestep", "w8a8_dynamic_fa3", "w8a8_dynamic"],
+        default="w8a8_timestep",
+    )
     parser.add_argument("--anti_method", choices=["m3", "m4", "m6"], default=None)
     parser.add_argument("--quant_weight_save_folder", type=str)
     parser.add_argument("--quant_dump_calib_folder", type=str)
@@ -117,7 +136,7 @@ def main():
             step_interval=args.cache_interval,
             step_end=args.infer_steps - 1,
             block_start=args.single_block_start,
-            block_end=args.single_block_end
+            block_end=args.single_block_end,
         )
         cache_single = CacheAgent(config_single)
         hunyuan_video_sampler.pipeline.transformer.cache_single = cache_single
@@ -131,7 +150,7 @@ def main():
             step_interval=args.cache_interval,
             step_end=args.infer_steps - 1,
             block_start=args.double_block_start,
-            block_end=args.double_block_end
+            block_end=args.double_block_end,
         )
         cache_dual = CacheAgent(config_double)
         hunyuan_video_sampler.pipeline.transformer.cache_dual = cache_dual
@@ -143,7 +162,7 @@ def main():
             steps_count=args.infer_steps,
             step_start=args.start_step,
             step_interval=args.attentioncache_interval,
-            step_end=args.end_step
+            step_end=args.end_step,
         )
         config_single = CacheConfig(
             method="attention_cache",
@@ -151,18 +170,14 @@ def main():
             steps_count=args.infer_steps,
             step_start=args.start_step,
             step_interval=args.attentioncache_interval,
-            step_end=args.end_step
+            step_end=args.end_step,
         )
     else:
         config_double = CacheConfig(
-            method="attention_cache",
-            blocks_count=len(transformer.double_blocks),
-            steps_count=args.infer_steps
+            method="attention_cache", blocks_count=len(transformer.double_blocks), steps_count=args.infer_steps
         )
         config_single = CacheConfig(
-            method="attention_cache",
-            blocks_count=len(transformer.single_blocks),
-            steps_count=args.infer_steps
+            method="attention_cache", blocks_count=len(transformer.single_blocks), steps_count=args.infer_steps
         )
     cache_double = CacheAgent(config_double)
     cache_single = CacheAgent(config_single)
@@ -172,7 +187,6 @@ def main():
         block.cache = cache_single
 
     def sample(save_path, desc='', **kwargs):
-
         # Start sampling
         for idx in tqdm(range(len(prompts)), desc=desc):
             if idx == 0:
@@ -189,7 +203,7 @@ def main():
                     num_videos_per_prompt=args.num_videos,
                     flow_shift=args.flow_shift,
                     batch_size=args.batch_size,
-                    embedded_guidance_scale=args.embedded_cfg_scale
+                    embedded_guidance_scale=args.embedded_cfg_scale,
                 )
 
             outputs = hunyuan_video_sampler.predict(
@@ -204,7 +218,7 @@ def main():
                 num_videos_per_prompt=args.num_videos,
                 flow_shift=args.flow_shift,
                 batch_size=args.batch_size,
-                embedded_guidance_scale=args.embedded_cfg_scale
+                embedded_guidance_scale=args.embedded_cfg_scale,
             )
             samples = outputs['samples']
 
@@ -225,15 +239,13 @@ def main():
             infer_func=sample,
             infer_args=[],
             infer_kwargs=dict(
-                save_path=os.path.join(args.save_path, 'calib_fp'),
-                desc='Dump calib data by float model inference'
-            )
+                save_path=os.path.join(args.save_path, 'calib_fp'), desc='Dump calib data by float model inference'
+            ),
         )
 
         if args.do_save_video:
             # run fake quant
-            sample(save_path=os.path.join(args.save_path, 'calib_quant'),
-                desc='Run fake quant using calib data')
+            sample(save_path=os.path.join(args.save_path, 'calib_quant'), desc='Run fake quant using calib data')
 
     else:
         raise ValueError("Please --do_quant to True")
@@ -250,8 +262,10 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
     rank = get_rank()
     is_distributed = rank >= 0  # 标记是否为分布式环境
 
-    dump_data_path = os.path.join(dump_calib_folder, get_rank_suffix_file(base_name="calib_data", ext="pth",
-                                                                          is_distributed=is_distributed, rank=rank))
+    dump_data_path = os.path.join(
+        dump_calib_folder,
+        get_rank_suffix_file(base_name="calib_data", ext="pth", is_distributed=is_distributed, rank=rank),
+    )
 
     # ***************************** 加载模型 *****************************
     if not isinstance(model, nn.Module):
@@ -277,49 +291,48 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
 
     # 量化配置
     def get_timestep_cfg():
-        safetensors_name = get_rank_suffix_file(base_name='quant_model_weight_w8a8_timestep', ext='safetensors',
-                                                is_distributed=is_distributed, rank=rank)
-        json_name = get_rank_suffix_file(base_name='quant_model_description_w8a8_timestep', ext='json',
-                                         is_distributed=is_distributed, rank=rank)
+        safetensors_name = get_rank_suffix_file(
+            base_name='quant_model_weight_w8a8_timestep', ext='safetensors', is_distributed=is_distributed, rank=rank
+        )
+        json_name = get_rank_suffix_file(
+            base_name='quant_model_description_w8a8_timestep', ext='json', is_distributed=is_distributed, rank=rank
+        )
         _cfg = SessionConfig(
             processor_cfg_map={
                 "w8a8_timestep": W8A8TimeStepProcessorConfig(
-                    cfg=W8A8TimeStepQuantConfig(
-                        act_method='minmax'
-                    ),
+                    cfg=W8A8TimeStepQuantConfig(act_method='minmax'),
                     disable_names=get_disable_layer_names(
                         model,
                         layer_include=('*double_blocks*', '*single_blocks*'),
                         layer_exclude=('*img_mod*', '*modulation*', '*fc2*'),
                     ),
                     timestep_sep=25,
-
                 ),
                 "save": SaveProcessorConfig(
                     output_path=safe_tensor_folder,
                     safetensors_name=safetensors_name,
                     json_name=json_name,
                     save_type=['safe_tensor'],
-                    part_file_size=None
-                )
+                    part_file_size=None,
+                ),
             },
             calib_data=calib_dataset,
-            device='npu'
+            device='npu',
         )
         return _cfg
 
     def get_fa3_cfg():
-        safetensors_name = get_rank_suffix_file(base_name='quant_model_weight_w8a8_dynamic', ext='safetensors',
-                                                is_distributed=is_distributed, rank=rank)
-        json_name = get_rank_suffix_file(base_name='quant_model_description_w8a8_dynamic', ext='json',
-                                         is_distributed=is_distributed, rank=rank)
+        safetensors_name = get_rank_suffix_file(
+            base_name='quant_model_weight_w8a8_dynamic', ext='safetensors', is_distributed=is_distributed, rank=rank
+        )
+        json_name = get_rank_suffix_file(
+            base_name='quant_model_description_w8a8_dynamic', ext='json', is_distributed=is_distributed, rank=rank
+        )
         _cfg = SessionConfig(
             processor_cfg_map={
                 "fa3": FA3ProcessorConfig(),
                 "w8a8_dynamic": W8A8DynamicProcessorConfig(
-                    cfg=W8A8DynamicQuantConfig(
-                        act_method='minmax'
-                    ),
+                    cfg=W8A8DynamicQuantConfig(act_method='minmax'),
                     disable_names=get_disable_layer_names(
                         model,
                         layer_include=('*double_blocks*', '*single_blocks*'),
@@ -332,7 +345,7 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
                     json_name=json_name,
                     save_type=["safe_tensor"],
                     part_file_size=None,
-                )
+                ),
             },
             calib_data=calib_dataset[:20],
             device="npu",
@@ -340,15 +353,15 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
         return _cfg
 
     def get_w8a8_dynamic_cfg():
-        safetensors_name = get_rank_suffix_file(base_name='quant_model_weight_w8a8_dynamic', ext='safetensors',
-                                                is_distributed=is_distributed, rank=rank)
-        json_name = get_rank_suffix_file(base_name='quant_model_description_w8a8_dynamic', ext='json',
-                                         is_distributed=is_distributed, rank=rank)
+        safetensors_name = get_rank_suffix_file(
+            base_name='quant_model_weight_w8a8_dynamic', ext='safetensors', is_distributed=is_distributed, rank=rank
+        )
+        json_name = get_rank_suffix_file(
+            base_name='quant_model_description_w8a8_dynamic', ext='json', is_distributed=is_distributed, rank=rank
+        )
         processor_cfg_map = {
             "w8a8_dynamic": W8A8DynamicProcessorConfig(
-                cfg=W8A8DynamicQuantConfig(
-                    act_method='minmax'
-                ),
+                cfg=W8A8DynamicQuantConfig(act_method='minmax'),
                 disable_names=get_disable_layer_names(
                     model,
                     layer_include=('*double_blocks*', '*single_blocks*'),
@@ -360,26 +373,17 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
                 safetensors_name=safetensors_name,
                 json_name=json_name,
                 save_type=['safe_tensor'],
-                part_file_size=None
-            )
+                part_file_size=None,
+            ),
         }
         if args.anti_method == 'm3':
             processor_cfg_map['m3'] = M3ProcessorConfig()
         elif args.anti_method == 'm4':
             processor_cfg_map['m4'] = M4ProcessorConfig()
         elif args.anti_method == 'm6':
-            processor_cfg_map['m6'] = M6ProcessorConfig(
-                cfg=M6Config(
-                    alpha=0.8,
-                    beta=0.2
-                )
-            )
+            processor_cfg_map['m6'] = M6ProcessorConfig(cfg=M6Config(alpha=0.8, beta=0.2))
 
-        _cfg = SessionConfig(
-            processor_cfg_map=processor_cfg_map,
-            calib_data=calib_dataset,
-            device='npu'
-        )
+        _cfg = SessionConfig(processor_cfg_map=processor_cfg_map, calib_data=calib_dataset, device='npu')
         return _cfg
 
     if 'timestep' in args.quant_type:

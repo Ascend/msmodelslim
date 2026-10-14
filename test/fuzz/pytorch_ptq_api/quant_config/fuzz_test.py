@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
+
 """
 使用方法：
 在 msit/msmodelslim 目录下执行
@@ -25,15 +27,20 @@ python3 -m coverage run --source=msmodelslim test/fuzz/pytorch_ptq_api/anti_outl
 python3 -m coverage report -m --include='msmodelslim/pytorch/llm_ptq/anti_outlier/anti_outlier.py'
 python3 -m coverage html -d test/fuzz/pytorch_ptq_api/anti_outlier/htmlcov -i
 """
-import sys
+import sys  # noqa: E402
 
-import atheris
-import torch
+import atheris  # noqa: E402
+import torch  # noqa: E402
 
-from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_outlier import AntiOutlier
-from msmodelslim.pytorch.llm_ptq.anti_outlier.config import AntiOutlierConfig
-from test.fuzz.common.fuzz_utils import (
-    consume_bool, consume_str, consume_int, consume_pick_list, consume_float, DummyModel
+from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_outlier import AntiOutlier  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier.config import AntiOutlierConfig  # noqa: E402
+from test.fuzz.common.fuzz_utils import (  # noqa: E402
+    consume_bool,
+    consume_str,
+    consume_int,
+    consume_pick_list,
+    consume_float,
+    DummyModel,
 )
 
 
@@ -55,7 +62,7 @@ def random_flex_config(fdp):
             v = consume_float(fdp)
             d[k] = v
         return d
-    
+
 
 def random_calib_data(fdp, input_dim):
     """生成随机校准数据
@@ -82,15 +89,15 @@ def TestQuantConfig(data):
             a_bit=consume_pick_list(fdp, [2, 4, 8, 16]),
             anti_method=consume_pick_list(fdp, ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'other']),
             dev_type=consume_pick_list(fdp, ['cpu', 'npu']),
-            flex_config=flex_config
+            flex_config=flex_config,
         )
-        
+
         input_dim = 16
         output_dim = 16
         model = DummyModel(input_dim, output_dim)
         calib_data = random_calib_data(fdp, input_dim)
         norm_class_name = consume_str(fdp) if consume_bool(fdp) else None
-        
+
         anti = AntiOutlier(model, calib_data=calib_data, cfg=config, norm_class_name=norm_class_name)
         if consume_bool(fdp):
             try:
@@ -100,6 +107,7 @@ def TestQuantConfig(data):
     except Exception:
         pass
 
+
 if __name__ == "__main__":
     atheris.Setup(sys.argv, TestQuantConfig)
-    atheris.Fuzz() 
+    atheris.Fuzz()

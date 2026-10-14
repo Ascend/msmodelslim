@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import numpy as np
 import mindspore.nn as nn
@@ -35,7 +36,7 @@ def rename_parameters(cell, prefix):
 
 
 def insert_child_to_cell(network, target_cell_name, new_subcell):
-    """ insert the new_subcell to original's father cell """
+    """insert the new_subcell to original's father cell"""
     change = False
     cell_name_list = target_cell_name.split('.')
     sub_cell = None
@@ -69,6 +70,6 @@ def quant_activation(network, cell_name, cell):
         search_range_start,
         search_range_end,
         search_step,
-        True
+        True,
     )
     insert_child_to_cell(network, cell_name, new_subcell)

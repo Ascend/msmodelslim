@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,20 +18,22 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
+
 """
 msmodelslim.utils.plugin.typed_config 模块的单元测试（unittest TestCase + pytest 辅助）
 """
 
-import importlib
-import unittest
-from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+import importlib  # noqa: E402
+import unittest  # noqa: E402
+from types import SimpleNamespace  # noqa: E402
+from unittest.mock import patch, MagicMock  # noqa: E402
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError  # noqa: E402
 
-from msmodelslim.utils.exception import ToDoError, UnsupportedError, SchemaValidateError
-from msmodelslim.utils.plugin import TypedConfig
-from msmodelslim.utils.plugin.plugin_utils import load_plugin_config_class
+from msmodelslim.utils.exception import ToDoError, UnsupportedError, SchemaValidateError  # noqa: E402
+from msmodelslim.utils.plugin import TypedConfig  # noqa: E402
+from msmodelslim.utils.plugin.plugin_utils import load_plugin_config_class  # noqa: E402
 
 typed_config_module = importlib.import_module("msmodelslim.utils.plugin.typed_config")
 plugin_utils_module = importlib.import_module("msmodelslim.utils.plugin.plugin_utils")
@@ -86,9 +88,9 @@ class TestTypedConfig(unittest.TestCase):
         )
 
         with patch.object(
-                plugin_utils_module,
-                "get_entry_points",
-                return_value=[fake_entry],
+            plugin_utils_module,
+            "get_entry_points",
+            return_value=[fake_entry],
         ):
             cls = load_plugin_config_class(
                 entry_point_group="test.group",
@@ -98,9 +100,9 @@ class TestTypedConfig(unittest.TestCase):
         self.assertIs(PluginCfg, cls)
         # 再次加载会重新调用 load（不使用缓存）
         with patch.object(
-                plugin_utils_module,
-                "get_entry_points",
-                return_value=[fake_entry],
+            plugin_utils_module,
+            "get_entry_points",
+            return_value=[fake_entry],
         ):
             cls2 = load_plugin_config_class(
                 entry_point_group="test.group",
@@ -128,9 +130,9 @@ class TestTypedConfig(unittest.TestCase):
         )
 
         with patch.object(
-                plugin_utils_module,
-                "get_entry_points",
-                return_value=[fake_entry],
+            plugin_utils_module,
+            "get_entry_points",
+            return_value=[fake_entry],
         ):
             with self.assertRaises(ToDoError) as cm:
                 load_plugin_config_class(
@@ -144,9 +146,9 @@ class TestTypedConfig(unittest.TestCase):
         # 再次调用时会重新尝试加载（不使用缓存）
         fake_entry.load.reset_mock()
         with patch.object(
-                plugin_utils_module,
-                "get_entry_points",
-                return_value=[fake_entry],
+            plugin_utils_module,
+            "get_entry_points",
+            return_value=[fake_entry],
         ):
             with self.assertRaises(ToDoError) as cm2:
                 load_plugin_config_class(
@@ -163,9 +165,9 @@ class TestTypedConfig(unittest.TestCase):
         """当没有找到对应 entry 时，应抛出 UnsupportedError"""
 
         with patch.object(
-                plugin_utils_module,
-                "get_entry_points",
-                return_value=[],
+            plugin_utils_module,
+            "get_entry_points",
+            return_value=[],
         ):
             with self.assertRaises(UnsupportedError) as cm:
                 load_plugin_config_class(
@@ -189,9 +191,9 @@ class TestTypedConfig(unittest.TestCase):
         )
 
         with patch.object(
-                plugin_utils_module,
-                "get_entry_points",
-                return_value=[fake_entry],
+            plugin_utils_module,
+            "get_entry_points",
+            return_value=[fake_entry],
         ):
             with self.assertRaises(ToDoError) as cm:
                 load_plugin_config_class(
@@ -225,9 +227,9 @@ class TestTypedConfig(unittest.TestCase):
             load=MagicMock(return_value=plugin_func),
         )
         with patch.object(
-                plugin_utils_module,
-                "get_entry_points",
-                return_value=[fake_entry],
+            plugin_utils_module,
+            "get_entry_points",
+            return_value=[fake_entry],
         ):
             obj = BaseCfg.model_validate({"apiversion": "v1", "value": 10})
 
@@ -286,16 +288,11 @@ class TestTypedConfig(unittest.TestCase):
             load=MagicMock(return_value=plugin_func),
         )
         with patch.object(
-                plugin_utils_module,
-                "get_entry_points",
-                return_value=[fake_entry],
+            plugin_utils_module,
+            "get_entry_points",
+            return_value=[fake_entry],
         ):
-            obj = BaseCfg.model_validate({
-                "apiversion": "v1",
-                "value": 20,
-                "extra_field": "custom",
-                "new_field": 200
-            })
+            obj = BaseCfg.model_validate({"apiversion": "v1", "value": 20, "extra_field": "custom", "new_field": 200})
 
         # validator 应该被触发
         self.assertIsInstance(obj, PluginCfg)
@@ -312,9 +309,9 @@ class TestTypedConfig(unittest.TestCase):
             apiversion: TypedConfig.TypeField
 
         with patch.object(
-                plugin_utils_module,
-                "get_entry_points",
-                return_value=[],
+            plugin_utils_module,
+            "get_entry_points",
+            return_value=[],
         ):
             with self.assertRaises(UnsupportedError) as cm:
                 BaseCfg.model_validate({"apiversion": "non-existent"})
@@ -332,8 +329,8 @@ class TestTypedConfig(unittest.TestCase):
         # 空字符串被视为 falsy，不会触发插件加载，使用基类验证
         # 空字符串是有效的字符串值，所以会正常创建实例
         with patch.object(
-                plugin_utils_module,
-                "load_plugin_config_class",
+            plugin_utils_module,
+            "load_plugin_config_class",
         ) as mock_load:
             obj = BaseCfg.model_validate({"apiversion": ""})
 
@@ -371,16 +368,11 @@ class TestTypedConfig(unittest.TestCase):
         )
 
         with patch.object(
-                plugin_utils_module,
-                "get_entry_points",
-                return_value=[fake_entry],
+            plugin_utils_module,
+            "get_entry_points",
+            return_value=[fake_entry],
         ):
-            obj = TuningPlanConfig.model_validate({
-                "strategy": {
-                    "type": "plugin",
-                    "value": 10
-                }
-            })
+            obj = TuningPlanConfig.model_validate({"strategy": {"type": "plugin", "value": 10}})
 
         # 验证嵌套字段能正常验证和创建实例
         # 注意：嵌套字段验证时，Pydantic 的验证机制会触发 model_validator
@@ -395,6 +387,7 @@ class TestTypedConfig(unittest.TestCase):
 
         # 尝试在不继承 TypedConfig 的类上使用装饰器，应抛出 ToDoError
         with self.assertRaises(ToDoError) as cm:
+
             @TypedConfig.plugin_entry(entry_point_group="test.group")
             class InvalidCfg(BaseModel):
                 apiversion: TypedConfig.TypeField
@@ -424,6 +417,7 @@ class TestTypedConfig(unittest.TestCase):
         # 使用 @TypedConfig.plugin_entry 装饰器但没有 TypeField 注解，应该报错
         # 错误会在装饰器执行时（类定义时）抛出
         with self.assertRaises(ToDoError) as cm:
+
             @TypedConfig.plugin_entry(entry_point_group="test.group")
             class InvalidCfg(TypedConfig):
                 apiversion: str  # 不是 TypeField

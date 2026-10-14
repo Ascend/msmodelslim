@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-iterating-dictionary,redefined-outer-name,reimported,unspecified-encoding
+
 import json
 import os
 from typing import Union, List, Dict, Any, Callable, Optional
@@ -25,9 +27,16 @@ from typing import Union, List, Dict, Any, Callable, Optional
 import torch
 from safetensors.torch import safe_open
 
-from msmodelslim.ir import W8A8StaticFakeQuantLinear, W8A8DynamicPerChannelFakeQuantLinear, \
-    W8A8DynamicPerGroupFakeQuantLinear, W4A4DynamicPerGroupFakeQuantLinear, W4A4DynamicPerChannelFakeQuantLinear, \
-    W4A4MXDynamicPerBlockFakeQuantLinear, W8A8MXDynamicPerBlockFakeQuantLinear, W4A8MXDynamicPerBlockFakeQuantLinear
+from msmodelslim.ir import (
+    W8A8StaticFakeQuantLinear,
+    W8A8DynamicPerChannelFakeQuantLinear,
+    W8A8DynamicPerGroupFakeQuantLinear,
+    W4A4DynamicPerGroupFakeQuantLinear,
+    W4A4DynamicPerChannelFakeQuantLinear,
+    W4A4MXDynamicPerBlockFakeQuantLinear,
+    W8A8MXDynamicPerBlockFakeQuantLinear,
+    W4A8MXDynamicPerBlockFakeQuantLinear,
+)
 
 
 def check_quant_model_description(tmp_dir: str, expected_quant_types: Union[str, List[str]]) -> None:
@@ -46,15 +55,18 @@ def check_quant_model_description(tmp_dir: str, expected_quant_types: Union[str,
     assert "model_quant_type" in config_data, "Config data should have model_quant_type field"
 
     if isinstance(expected_quant_types, str):
-        assert config_data["model_quant_type"] == expected_quant_types, \
+        assert config_data["model_quant_type"] == expected_quant_types, (
             f"model_quant_type should be {expected_quant_types}, got {config_data['model_quant_type']}"
+        )
     else:
-        assert config_data["model_quant_type"] in expected_quant_types, \
+        assert config_data["model_quant_type"] in expected_quant_types, (
             f"model_quant_type should be one of {expected_quant_types}, got {config_data['model_quant_type']}"
+        )
 
 
-def check_w8a8_static_export(module: W8A8StaticFakeQuantLinear, name: str,
-                             all_tensors: Dict[str, torch.Tensor]) -> None:
+def check_w8a8_static_export(
+    module: W8A8StaticFakeQuantLinear, name: str, all_tensors: Dict[str, torch.Tensor]
+) -> None:
     """检查W8A8StaticFakeQuantLinear模块的导出内容"""
     # 检查权重相关tensor
     weight_key = f"{name}.weight"
@@ -67,37 +79,43 @@ def check_w8a8_static_export(module: W8A8StaticFakeQuantLinear, name: str,
     # 验证权重tensor必须存在
     assert weight_key in all_tensors, f"Weight tensor {weight_key} must exist in safetensors file"
     weight_tensor = all_tensors[weight_key]
-    assert weight_tensor.dtype == torch.int8, \
-        f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
-    assert weight_tensor.shape == module.weight.shape, \
+    assert weight_tensor.dtype == torch.int8, f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
+    assert weight_tensor.shape == module.weight.shape, (
         f"Weight tensor {weight_key} shape mismatch: expected {module.weight.shape}, got {weight_tensor.shape}"
+    )
 
     # 验证输入缩放因子tensor必须存在
     assert input_scale_key in all_tensors, f"Input scale tensor {input_scale_key} must exist in safetensors file"
     input_scale_tensor = all_tensors[input_scale_key]
-    assert input_scale_tensor.dtype == torch.float32, \
+    assert input_scale_tensor.dtype == torch.float32, (
         f"Input scale tensor {input_scale_key} should be float32, got {input_scale_tensor.dtype}"
-    assert input_scale_tensor.shape == (1,), \
-        (f"Input scale tensor {input_scale_key} shape mismatch: expected {module.input_scale.shape}, "
-         f"got {input_scale_tensor.shape}")
+    )
+    assert input_scale_tensor.shape == (1,), (
+        f"Input scale tensor {input_scale_key} shape mismatch: expected {module.input_scale.shape}, "
+        f"got {input_scale_tensor.shape}"
+    )
 
     # 验证输入偏移量tensor必须存在
     assert input_offset_key in all_tensors, f"Input offset tensor {input_offset_key} must exist in safetensors file"
     input_offset_tensor = all_tensors[input_offset_key]
-    assert input_offset_tensor.dtype == torch.float32, \
+    assert input_offset_tensor.dtype == torch.float32, (
         f"Input offset tensor {input_offset_key} should be float32, got {input_offset_tensor.dtype}"
-    assert input_offset_tensor.shape == (1,), \
-        (f"Input offset tensor {input_offset_key} shape mismatch: expected {module.input_offset.shape}, "
-         f"got {input_offset_tensor.shape}")
+    )
+    assert input_offset_tensor.shape == (1,), (
+        f"Input offset tensor {input_offset_key} shape mismatch: expected {module.input_offset.shape}, "
+        f"got {input_offset_tensor.shape}"
+    )
 
     # 验证量化偏置tensor必须存在
     assert quant_bias_key in all_tensors, f"Quant bias tensor {quant_bias_key} must exist in safetensors file"
     quant_bias_tensor = all_tensors[quant_bias_key]
-    assert quant_bias_tensor.dtype == torch.int32, \
+    assert quant_bias_tensor.dtype == torch.int32, (
         f"Quant bias tensor {quant_bias_key} should be int32, got {quant_bias_tensor.dtype}"
-    assert quant_bias_tensor.shape == (module.weight.shape[0],), \
-        (f"Quant bias tensor {quant_bias_key} shape mismatch: expected {module.quant_bias.shape}, "
-         f"got {quant_bias_tensor.shape}")
+    )
+    assert quant_bias_tensor.shape == (module.weight.shape[0],), (
+        f"Quant bias tensor {quant_bias_key} shape mismatch: expected {module.quant_bias.shape}, "
+        f"got {quant_bias_tensor.shape}"
+    )
 
     # 验证deq缩放因子tensor必须存在（非 bf16 时保存层将 deq_scale 转为 int64，deqscale2int64）
     assert deq_scale_key in all_tensors, f"Deq scale tensor {deq_scale_key} must exist in safetensors file"
@@ -105,22 +123,24 @@ def check_w8a8_static_export(module: W8A8StaticFakeQuantLinear, name: str,
     assert deq_scale_tensor.dtype == torch.int64, (
         f"Deq scale tensor {deq_scale_key} should be int64, got {deq_scale_tensor.dtype}"
     )
-    assert deq_scale_tensor.shape == (module.weight.shape[0],), \
-        (f"Deq scale tensor {deq_scale_key} shape mismatch: expected {module.deq_scale.shape}, "
-         f"got {deq_scale_tensor.shape}")
+    assert deq_scale_tensor.shape == (module.weight.shape[0],), (
+        f"Deq scale tensor {deq_scale_key} shape mismatch: expected {module.deq_scale.shape}, "
+        f"got {deq_scale_tensor.shape}"
+    )
 
     if module.bias is not None:
         # 验证偏置tensor必须存在
         assert bias_key in all_tensors, f"Bias tensor {bias_key} must exist in safetensors file"
         bias_tensor = all_tensors[bias_key]
-        assert bias_tensor.dtype == torch.float32, \
-            f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
-        assert bias_tensor.shape == module.bias.shape, \
+        assert bias_tensor.dtype == torch.float32, f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
+        assert bias_tensor.shape == module.bias.shape, (
             f"Bias tensor {bias_key} shape mismatch: expected {module.bias.shape}, got {bias_tensor.shape}"
+        )
 
 
-def check_w8a8_dynamic_per_channel_export(module: W8A8DynamicPerChannelFakeQuantLinear, name: str,
-                                          all_tensors: Dict[str, torch.Tensor]) -> None:
+def check_w8a8_dynamic_per_channel_export(
+    module: W8A8DynamicPerChannelFakeQuantLinear, name: str, all_tensors: Dict[str, torch.Tensor]
+) -> None:
     """检查W8A8DynamicPerChannelFakeQuantLinear模块的导出内容"""
     # 检查权重相关tensor
     weight_key = f"{name}.weight"
@@ -131,45 +151,48 @@ def check_w8a8_dynamic_per_channel_export(module: W8A8DynamicPerChannelFakeQuant
     # 验证权重tensor必须存在
     assert weight_key in all_tensors, f"Weight tensor {weight_key} must exist in safetensors file"
     weight_tensor = all_tensors[weight_key]
-    assert weight_tensor.dtype == torch.int8, \
-        f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
-    assert weight_tensor.shape == module.weight.shape, \
+    assert weight_tensor.dtype == torch.int8, f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
+    assert weight_tensor.shape == module.weight.shape, (
         f"Weight tensor {weight_key} shape mismatch: expected {module.weight.shape}, got {weight_tensor.shape}"
+    )
 
     # 验证权重缩放因子tensor必须存在
-    assert weight_scale_key in all_tensors, \
-        f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
+    assert weight_scale_key in all_tensors, f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
     weight_scale_tensor = all_tensors[weight_scale_key]
-    assert weight_scale_tensor.dtype == torch.float32, \
+    assert weight_scale_tensor.dtype == torch.float32, (
         f"Weight scale tensor {weight_scale_key} should be float32, got {weight_scale_tensor.dtype}"
+    )
     expected_scale_shape = (module.weight.shape[0], 1)
-    assert weight_scale_tensor.shape == expected_scale_shape, \
-        (f"Weight scale tensor {weight_scale_key} shape mismatch: expected {expected_scale_shape}, "
-         f"got {weight_scale_tensor.shape}")
+    assert weight_scale_tensor.shape == expected_scale_shape, (
+        f"Weight scale tensor {weight_scale_key} shape mismatch: expected {expected_scale_shape}, "
+        f"got {weight_scale_tensor.shape}"
+    )
 
     # 验证权重偏移量tensor必须存在
-    assert weight_offset_key in all_tensors, \
-        f"Weight offset tensor {weight_offset_key} must exist in safetensors file"
+    assert weight_offset_key in all_tensors, f"Weight offset tensor {weight_offset_key} must exist in safetensors file"
     weight_offset_tensor = all_tensors[weight_offset_key]
-    assert weight_offset_tensor.dtype == torch.float32, \
+    assert weight_offset_tensor.dtype == torch.float32, (
         f"Weight offset tensor {weight_offset_key} should be float32, got {weight_offset_tensor.dtype}"
+    )
     expected_offset_shape = (module.weight.shape[0], 1)
-    assert weight_offset_tensor.shape == expected_offset_shape, \
-        (f"Weight offset tensor {weight_offset_key} shape mismatch: expected {expected_offset_shape}, "
-         f"got {weight_offset_tensor.shape}")
+    assert weight_offset_tensor.shape == expected_offset_shape, (
+        f"Weight offset tensor {weight_offset_key} shape mismatch: expected {expected_offset_shape}, "
+        f"got {weight_offset_tensor.shape}"
+    )
 
     if module.bias is not None:
         # 验证偏置tensor必须存在
         assert bias_key in all_tensors, f"Bias tensor {bias_key} must exist in safetensors file"
         bias_tensor = all_tensors[bias_key]
-        assert bias_tensor.dtype == torch.float32, \
-            f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
-        assert bias_tensor.shape == module.bias.shape, \
+        assert bias_tensor.dtype == torch.float32, f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
+        assert bias_tensor.shape == module.bias.shape, (
             f"Bias tensor {bias_key} shape mismatch: expected {module.bias.shape}, got {bias_tensor.shape}"
+        )
 
 
-def check_w8a8_mx_dynamic_per_block_export(module: W8A8MXDynamicPerBlockFakeQuantLinear, name: str,
-                                        all_tensors: Dict[str, torch.Tensor]) -> None:
+def check_w8a8_mx_dynamic_per_block_export(
+    module: W8A8MXDynamicPerBlockFakeQuantLinear, name: str, all_tensors: Dict[str, torch.Tensor]
+) -> None:
     """检查W8A8DynamicPerChannelFakeQuantLinear模块的导出内容"""
     # 检查权重相关tensor
     weight_key = f"{name}.weight"
@@ -180,38 +203,43 @@ def check_w8a8_mx_dynamic_per_block_export(module: W8A8MXDynamicPerBlockFakeQuan
     assert weight_key in all_tensors, f"Weight tensor {weight_key} must exist in safetensors file"
     weight_tensor = all_tensors[weight_key]
 
-    assert weight_tensor.dtype == torch.float8_e4m3fn, \
+    assert weight_tensor.dtype == torch.float8_e4m3fn, (
         f"Weight tensor {weight_key} should be float8_e4m3fn, got {weight_tensor.dtype}"
-    assert weight_tensor.shape == module.weight.shape, \
+    )
+    assert weight_tensor.shape == module.weight.shape, (
         f"Weight tensor {weight_key} shape mismatch: expected {module.weight.shape}, got {weight_tensor.shape}"
+    )
     weight_float32 = weight_tensor.to(dtype=torch.float32)
     max_val = weight_float32.max().item()
     min_val = weight_float32.min().item()
-    assert max_val <= torch.tensor([+448.0], device=weight_tensor.device), \
+    assert max_val <= torch.tensor([+448.0], device=weight_tensor.device), (
         f"Weight tensor {weight_key} max value should be less than 448.0, got {max_val}"
-    assert min_val >= torch.tensor([-448.0], device=weight_tensor.device), \
+    )
+    assert min_val >= torch.tensor([-448.0], device=weight_tensor.device), (
         f"Weight tensor {weight_key} min value should be greater than -448.0, got {min_val}"
+    )
 
     # 验证权重缩放因子tensor必须存在
-    assert weight_scale_key in all_tensors, \
-        f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
+    assert weight_scale_key in all_tensors, f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
     weight_scale_tensor = all_tensors[weight_scale_key]
-    assert weight_scale_tensor.dtype == torch.uint8, \
+    assert weight_scale_tensor.dtype == torch.uint8, (
         f"Weight scale tensor {weight_scale_key} should be uint8, got {weight_scale_tensor.dtype}"
+    )
 
     if module.bias is not None:
         # 验证偏置tensor必须存在
         assert bias_key in all_tensors, f"Bias tensor {bias_key} must exist in safetensors file"
         bias_tensor = all_tensors[bias_key]
-        assert bias_tensor.dtype == torch.float32, \
-            f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
-        assert bias_tensor.shape == module.bias.shape, \
+        assert bias_tensor.dtype == torch.float32, f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
+        assert bias_tensor.shape == module.bias.shape, (
             f"Bias tensor {bias_key} shape mismatch: expected {module.bias.shape}, \
             got {bias_tensor.shape}"
+        )
 
 
-def check_w4a8_mx_dynamic_per_block_export(module: W4A8MXDynamicPerBlockFakeQuantLinear, name: str,
-                                        all_tensors: Dict[str, torch.Tensor]) -> None:
+def check_w4a8_mx_dynamic_per_block_export(
+    module: W4A8MXDynamicPerBlockFakeQuantLinear, name: str, all_tensors: Dict[str, torch.Tensor]
+) -> None:
     """检查W4A8DynamicPerChannelFakeQuantLinear模块的导出内容"""
     # 检查权重相关tensor
     weight_key = f"{name}.weight"
@@ -222,32 +250,33 @@ def check_w4a8_mx_dynamic_per_block_export(module: W4A8MXDynamicPerBlockFakeQuan
     assert weight_key in all_tensors, f"Weight tensor {weight_key} must exist in safetensors file"
     weight_tensor = all_tensors[weight_key]
 
-    assert weight_tensor.dtype == torch.uint8, \
-        f"Weight tensor {weight_key} should be uint8, got {weight_tensor.dtype}"
+    assert weight_tensor.dtype == torch.uint8, f"Weight tensor {weight_key} should be uint8, got {weight_tensor.dtype}"
     expected_weight_shape = (module.weight.shape[0], module.weight.shape[1] // 2)
-    assert weight_tensor.shape == expected_weight_shape, \
+    assert weight_tensor.shape == expected_weight_shape, (
         f"Weight tensor {weight_key} shape mismatch: expected {expected_weight_shape}, got {weight_tensor.shape}"
+    )
 
     # 验证权重缩放因子tensor必须存在
-    assert weight_scale_key in all_tensors, \
-        f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
+    assert weight_scale_key in all_tensors, f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
     weight_scale_tensor = all_tensors[weight_scale_key]
-    assert weight_scale_tensor.dtype == torch.uint8, \
+    assert weight_scale_tensor.dtype == torch.uint8, (
         f"Weight scale tensor {weight_scale_key} should be uint8, got {weight_scale_tensor.dtype}"
+    )
 
     if module.bias is not None:
         # 验证偏置tensor必须存在
         assert bias_key in all_tensors, f"Bias tensor {bias_key} must exist in safetensors file"
         bias_tensor = all_tensors[bias_key]
-        assert bias_tensor.dtype == torch.float32, \
-            f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
-        assert bias_tensor.shape == module.bias.shape, \
+        assert bias_tensor.dtype == torch.float32, f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
+        assert bias_tensor.shape == module.bias.shape, (
             f"Bias tensor {bias_key} shape mismatch: expected {module.bias.shape}, \
             got {bias_tensor.shape}"
+        )
 
 
-def check_w4a4_mx_dynamic_per_block_export(module: W4A4MXDynamicPerBlockFakeQuantLinear, name: str,
-                                        all_tensors: Dict[str, torch.Tensor]) -> None:
+def check_w4a4_mx_dynamic_per_block_export(
+    module: W4A4MXDynamicPerBlockFakeQuantLinear, name: str, all_tensors: Dict[str, torch.Tensor]
+) -> None:
     """检查W4A4DynamicPerChannelFakeQuantLinear模块的导出内容"""
     # 检查权重相关tensor
     weight_key = f"{name}.weight"
@@ -258,32 +287,33 @@ def check_w4a4_mx_dynamic_per_block_export(module: W4A4MXDynamicPerBlockFakeQuan
     assert weight_key in all_tensors, f"Weight tensor {weight_key} must exist in safetensors file"
     weight_tensor = all_tensors[weight_key]
 
-    assert weight_tensor.dtype == torch.uint8, \
-        f"Weight tensor {weight_key} should be uint8, got {weight_tensor.dtype}"
+    assert weight_tensor.dtype == torch.uint8, f"Weight tensor {weight_key} should be uint8, got {weight_tensor.dtype}"
     expected_weight_shape = (module.weight.shape[0], module.weight.shape[1] // 2)
-    assert weight_tensor.shape == expected_weight_shape, \
+    assert weight_tensor.shape == expected_weight_shape, (
         f"Weight tensor {weight_key} shape mismatch: expected {expected_weight_shape}, got {weight_tensor.shape}"
+    )
 
     # 验证权重缩放因子tensor必须存在
-    assert weight_scale_key in all_tensors, \
-        f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
+    assert weight_scale_key in all_tensors, f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
     weight_scale_tensor = all_tensors[weight_scale_key]
-    assert weight_scale_tensor.dtype == torch.uint8, \
+    assert weight_scale_tensor.dtype == torch.uint8, (
         f"Weight scale tensor {weight_scale_key} should be uint8, got {weight_scale_tensor.dtype}"
+    )
 
     if module.bias is not None:
         # 验证偏置tensor必须存在
         assert bias_key in all_tensors, f"Bias tensor {bias_key} must exist in safetensors file"
         bias_tensor = all_tensors[bias_key]
-        assert bias_tensor.dtype == torch.float32, \
-            f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
-        assert bias_tensor.shape == module.bias.shape, \
+        assert bias_tensor.dtype == torch.float32, f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
+        assert bias_tensor.shape == module.bias.shape, (
             f"Bias tensor {bias_key} shape mismatch: expected {module.bias.shape}, \
             got {bias_tensor.shape}"
+        )
 
 
-def check_w8a8_pd_mix_export(module: W8A8StaticFakeQuantLinear, name: str,
-                             all_tensors: Dict[str, torch.Tensor]) -> None:
+def check_w8a8_pd_mix_export(
+    module: W8A8StaticFakeQuantLinear, name: str, all_tensors: Dict[str, torch.Tensor]
+) -> None:
     """检查W8A8StaticFakeQuantLinear模块的导出内容"""
     # 检查权重相关tensor
     weight_key = f"{name}.weight"
@@ -298,37 +328,43 @@ def check_w8a8_pd_mix_export(module: W8A8StaticFakeQuantLinear, name: str,
     # 验证权重tensor必须存在
     assert weight_key in all_tensors, f"Weight tensor {weight_key} must exist in safetensors file"
     weight_tensor = all_tensors[weight_key]
-    assert weight_tensor.dtype == torch.int8, \
-        f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
-    assert weight_tensor.shape == module.weight.shape, \
+    assert weight_tensor.dtype == torch.int8, f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
+    assert weight_tensor.shape == module.weight.shape, (
         f"Weight tensor {weight_key} shape mismatch: expected {module.weight.shape}, got {weight_tensor.shape}"
+    )
 
     # 验证输入缩放因子tensor必须存在
     assert input_scale_key in all_tensors, f"Input scale tensor {input_scale_key} must exist in safetensors file"
     input_scale_tensor = all_tensors[input_scale_key]
-    assert input_scale_tensor.dtype == torch.float32, \
+    assert input_scale_tensor.dtype == torch.float32, (
         f"Input scale tensor {input_scale_key} should be float32, got {input_scale_tensor.dtype}"
-    assert input_scale_tensor.shape == (1,), \
-        (f"Input scale tensor {input_scale_key} shape mismatch: expected {module.input_scale.shape}, "
-         f"got {input_scale_tensor.shape}")
+    )
+    assert input_scale_tensor.shape == (1,), (
+        f"Input scale tensor {input_scale_key} shape mismatch: expected {module.input_scale.shape}, "
+        f"got {input_scale_tensor.shape}"
+    )
 
     # 验证输入偏移量tensor必须存在
     assert input_offset_key in all_tensors, f"Input offset tensor {input_offset_key} must exist in safetensors file"
     input_offset_tensor = all_tensors[input_offset_key]
-    assert input_offset_tensor.dtype == torch.float32, \
+    assert input_offset_tensor.dtype == torch.float32, (
         f"Input offset tensor {input_offset_key} should be float32, got {input_offset_tensor.dtype}"
-    assert input_offset_tensor.shape == (1,), \
-        (f"Input offset tensor {input_offset_key} shape mismatch: expected {module.input_offset.shape}, "
-         f"got {input_offset_tensor.shape}")
+    )
+    assert input_offset_tensor.shape == (1,), (
+        f"Input offset tensor {input_offset_key} shape mismatch: expected {module.input_offset.shape}, "
+        f"got {input_offset_tensor.shape}"
+    )
 
     # 验证量化偏置tensor必须存在
     assert quant_bias_key in all_tensors, f"Quant bias tensor {quant_bias_key} must exist in safetensors file"
     quant_bias_tensor = all_tensors[quant_bias_key]
-    assert quant_bias_tensor.dtype == torch.int32, \
+    assert quant_bias_tensor.dtype == torch.int32, (
         f"Quant bias tensor {quant_bias_key} should be int32, got {quant_bias_tensor.dtype}"
-    assert quant_bias_tensor.shape == (module.weight.shape[0],), \
-        (f"Quant bias tensor {quant_bias_key} shape mismatch: expected {module.quant_bias.shape}, "
-         f"got {quant_bias_tensor.shape}")
+    )
+    assert quant_bias_tensor.shape == (module.weight.shape[0],), (
+        f"Quant bias tensor {quant_bias_key} shape mismatch: expected {module.quant_bias.shape}, "
+        f"got {quant_bias_tensor.shape}"
+    )
 
     # 验证deq缩放因子tensor必须存在（非 bf16 时保存层将 deq_scale 转为 int64，deqscale2int64）
     assert deq_scale_key in all_tensors, f"Deq scale tensor {deq_scale_key} must exist in safetensors file"
@@ -336,42 +372,48 @@ def check_w8a8_pd_mix_export(module: W8A8StaticFakeQuantLinear, name: str,
     assert deq_scale_tensor.dtype == torch.int64, (
         f"Deq scale tensor {deq_scale_key} should be int64, got {deq_scale_tensor.dtype}"
     )
-    assert deq_scale_tensor.shape == (module.weight.shape[0],), \
-        (f"Deq scale tensor {deq_scale_key} shape mismatch: expected {module.deq_scale.shape}, "
-         f"got {deq_scale_tensor.shape}")
+    assert deq_scale_tensor.shape == (module.weight.shape[0],), (
+        f"Deq scale tensor {deq_scale_key} shape mismatch: expected {module.deq_scale.shape}, "
+        f"got {deq_scale_tensor.shape}"
+    )
 
     # 验证权重缩放因子tensor必须存在
     assert weight_scale_key in all_tensors, f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
     weight_scale_tensor = all_tensors[weight_scale_key]
-    assert weight_scale_tensor.dtype == torch.float32, \
+    assert weight_scale_tensor.dtype == torch.float32, (
         f"Weight scale tensor {weight_scale_key} should be float32, got {weight_scale_tensor.dtype}"
+    )
     expected_scale_shape = (module.weight.shape[0], 1)
-    assert weight_scale_tensor.shape == expected_scale_shape, \
-        (f"Weight scale tensor {weight_scale_key} shape mismatch: expected {expected_scale_shape}, "
-         f"got {weight_scale_tensor.shape}")
+    assert weight_scale_tensor.shape == expected_scale_shape, (
+        f"Weight scale tensor {weight_scale_key} shape mismatch: expected {expected_scale_shape}, "
+        f"got {weight_scale_tensor.shape}"
+    )
 
     # 验证权重偏移量tensor必须存在
     assert weight_offset_key in all_tensors, f"Weight offset tensor {weight_offset_key} must exist in safetensors file"
     weight_offset_tensor = all_tensors[weight_offset_key]
-    assert weight_offset_tensor.dtype == torch.float32, \
+    assert weight_offset_tensor.dtype == torch.float32, (
         f"Weight offset tensor {weight_offset_key} should be float32, got {weight_offset_tensor.dtype}"
+    )
     expected_offset_shape = (module.weight.shape[0], 1)
-    assert weight_offset_tensor.shape == expected_offset_shape, \
-        (f"Weight offset tensor {weight_offset_key} shape mismatch: expected {expected_offset_shape}, "
-         f"got {weight_offset_tensor.shape}")
+    assert weight_offset_tensor.shape == expected_offset_shape, (
+        f"Weight offset tensor {weight_offset_key} shape mismatch: expected {expected_offset_shape}, "
+        f"got {weight_offset_tensor.shape}"
+    )
 
     if module.bias is not None:
         # 验证偏置tensor必须存在
         assert bias_key in all_tensors, f"Bias tensor {bias_key} must exist in safetensors file"
         bias_tensor = all_tensors[bias_key]
-        assert bias_tensor.dtype == torch.float32, \
-            f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
-        assert bias_tensor.shape == module.bias.shape, \
+        assert bias_tensor.dtype == torch.float32, f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
+        assert bias_tensor.shape == module.bias.shape, (
             f"Bias tensor {bias_key} shape mismatch: expected {module.bias.shape}, got {bias_tensor.shape}"
+        )
 
 
-def check_w8a8_dynamic_per_group_export(module: W8A8DynamicPerGroupFakeQuantLinear, name: str,
-                                        all_tensors: Dict[str, torch.Tensor], group_size) -> None:
+def check_w8a8_dynamic_per_group_export(
+    module: W8A8DynamicPerGroupFakeQuantLinear, name: str, all_tensors: Dict[str, torch.Tensor], group_size
+) -> None:
     """检查W8A8DynamicPerChannelFakeQuantLinear模块的导出内容"""
     # 检查权重相关tensor
     weight_key = f"{name}.weight"
@@ -382,43 +424,48 @@ def check_w8a8_dynamic_per_group_export(module: W8A8DynamicPerGroupFakeQuantLine
     # 验证权重tensor必须存在
     assert weight_key in all_tensors, f"Weight tensor {weight_key} must exist in safetensors file"
     weight_tensor = all_tensors[weight_key]
-    assert weight_tensor.dtype == torch.int8, \
-        f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
-    assert weight_tensor.shape == module.weight.shape, \
+    assert weight_tensor.dtype == torch.int8, f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
+    assert weight_tensor.shape == module.weight.shape, (
         f"Weight tensor {weight_key} shape mismatch: expected {module.weight.shape}, got {weight_tensor.shape}"
+    )
 
     # 验证权重缩放因子tensor必须存在
     assert weight_scale_key in all_tensors, f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
     weight_scale_tensor = all_tensors[weight_scale_key]
-    assert weight_scale_tensor.dtype == torch.float32, \
+    assert weight_scale_tensor.dtype == torch.float32, (
         f"Weight scale tensor {weight_scale_key} should be float32, got {weight_scale_tensor.dtype}"
+    )
     expected_scale_shape = (module.weight.shape[0], module.weight.shape[1] // group_size)
-    assert weight_scale_tensor.shape == expected_scale_shape, \
-        (f"Weight scale tensor {weight_scale_key} shape mismatch: expected {expected_scale_shape}, "
-         f"got {weight_scale_tensor.shape}")
+    assert weight_scale_tensor.shape == expected_scale_shape, (
+        f"Weight scale tensor {weight_scale_key} shape mismatch: expected {expected_scale_shape}, "
+        f"got {weight_scale_tensor.shape}"
+    )
 
     # 验证权重偏移量tensor必须存在
     assert weight_offset_key in all_tensors, f"Weight offset tensor {weight_offset_key} must exist in safetensors file"
     weight_offset_tensor = all_tensors[weight_offset_key]
-    assert weight_offset_tensor.dtype == torch.float32, \
+    assert weight_offset_tensor.dtype == torch.float32, (
         f"Weight offset tensor {weight_offset_key} should be float32, got {weight_offset_tensor.dtype}"
+    )
     expected_offset_shape = (module.weight.shape[0], module.weight.shape[1] // group_size)
-    assert weight_offset_tensor.shape == expected_offset_shape, \
-        (f"Weight offset tensor {weight_offset_key} shape mismatch: expected {expected_offset_shape}, "
-         f"got {weight_offset_tensor.shape}")
+    assert weight_offset_tensor.shape == expected_offset_shape, (
+        f"Weight offset tensor {weight_offset_key} shape mismatch: expected {expected_offset_shape}, "
+        f"got {weight_offset_tensor.shape}"
+    )
 
     if module.bias is not None:
         # 验证偏置tensor必须存在
         assert bias_key in all_tensors, f"Bias tensor {bias_key} must exist in safetensors file"
         bias_tensor = all_tensors[bias_key]
-        assert bias_tensor.dtype == torch.float32, \
-            f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
-        assert bias_tensor.shape == module.bias.shape, \
+        assert bias_tensor.dtype == torch.float32, f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
+        assert bias_tensor.shape == module.bias.shape, (
             f"Bias tensor {bias_key} shape mismatch: expected {module.bias.shape}, got {bias_tensor.shape}"
+        )
 
 
-def check_w4a4_dynamic_per_group_export(module: W4A4DynamicPerGroupFakeQuantLinear, name: str,
-                                        all_tensors: Dict[str, torch.Tensor], group_size) -> None:
+def check_w4a4_dynamic_per_group_export(
+    module: W4A4DynamicPerGroupFakeQuantLinear, name: str, all_tensors: Dict[str, torch.Tensor], group_size
+) -> None:
     """检查W8A8DynamicPerChannelFakeQuantLinear模块的导出内容"""
     # 检查权重相关tensor
     weight_key = f"{name}.weight"
@@ -429,47 +476,54 @@ def check_w4a4_dynamic_per_group_export(module: W4A4DynamicPerGroupFakeQuantLine
     # 验证权重tensor必须存在
     assert weight_key in all_tensors, f"Weight tensor {weight_key} must exist in safetensors file"
     weight_tensor = all_tensors[weight_key]
-    assert weight_tensor.dtype == torch.int8, \
-        f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
-    assert weight_tensor.shape == module.weight.shape, \
+    assert weight_tensor.dtype == torch.int8, f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
+    assert weight_tensor.shape == module.weight.shape, (
         f"Weight tensor {weight_key} shape mismatch: expected {module.weight.shape}, got {weight_tensor.shape}"
-    assert weight_tensor.max() <= torch.tensor([+7.0], device=weight_tensor.device), \
+    )
+    assert weight_tensor.max() <= torch.tensor([+7.0], device=weight_tensor.device), (
         f"Weight tensor {weight_key} max value should be less than 7.0, got {weight_tensor.max()}"
-    assert weight_tensor.min() >= torch.tensor([-8.0], device=weight_tensor.device), \
+    )
+    assert weight_tensor.min() >= torch.tensor([-8.0], device=weight_tensor.device), (
         f"Weight tensor {weight_key} min value should be greater than -8.0, got {weight_tensor.min()}"
+    )
 
     # 验证权重缩放因子tensor必须存在
     assert weight_scale_key in all_tensors, f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
     weight_scale_tensor = all_tensors[weight_scale_key]
-    assert weight_scale_tensor.dtype == torch.float32, \
+    assert weight_scale_tensor.dtype == torch.float32, (
         f"Weight scale tensor {weight_scale_key} should be float32, got {weight_scale_tensor.dtype}"
+    )
     expected_scale_shape = (module.weight.shape[0], module.weight.shape[1] // group_size)
-    assert weight_scale_tensor.shape == expected_scale_shape, \
-        (f"Weight scale tensor {weight_scale_key} shape mismatch: expected {expected_scale_shape}, "
-         f"got {weight_scale_tensor.shape}")
+    assert weight_scale_tensor.shape == expected_scale_shape, (
+        f"Weight scale tensor {weight_scale_key} shape mismatch: expected {expected_scale_shape}, "
+        f"got {weight_scale_tensor.shape}"
+    )
 
     # 验证权重偏移量tensor必须存在
     assert weight_offset_key in all_tensors, f"Weight offset tensor {weight_offset_key} must exist in safetensors file"
     weight_offset_tensor = all_tensors[weight_offset_key]
-    assert weight_offset_tensor.dtype == torch.float32, \
+    assert weight_offset_tensor.dtype == torch.float32, (
         f"Weight offset tensor {weight_offset_key} should be float32, got {weight_offset_tensor.dtype}"
+    )
     expected_offset_shape = (module.weight.shape[0], module.weight.shape[1] // group_size)
-    assert weight_offset_tensor.shape == expected_offset_shape, \
-        (f"Weight offset tensor {weight_offset_key} shape mismatch: expected {expected_offset_shape}, "
-         f"got {weight_offset_tensor.shape}")
+    assert weight_offset_tensor.shape == expected_offset_shape, (
+        f"Weight offset tensor {weight_offset_key} shape mismatch: expected {expected_offset_shape}, "
+        f"got {weight_offset_tensor.shape}"
+    )
 
     if module.bias is not None:
         # 验证偏置tensor必须存在
         assert bias_key in all_tensors, f"Bias tensor {bias_key} must exist in safetensors file"
         bias_tensor = all_tensors[bias_key]
-        assert bias_tensor.dtype == torch.float32, \
-            f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
-        assert bias_tensor.shape == module.bias.shape, \
+        assert bias_tensor.dtype == torch.float32, f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
+        assert bias_tensor.shape == module.bias.shape, (
             f"Bias tensor {bias_key} shape mismatch: expected {module.bias.shape}, got {bias_tensor.shape}"
+        )
 
 
-def check_w4a4_dynamic_per_channel_export(module: W4A4DynamicPerChannelFakeQuantLinear, name: str,
-                                          all_tensors: Dict[str, torch.Tensor]) -> None:
+def check_w4a4_dynamic_per_channel_export(
+    module: W4A4DynamicPerChannelFakeQuantLinear, name: str, all_tensors: Dict[str, torch.Tensor]
+) -> None:
     """检查W8A8DynamicPerChannelFakeQuantLinear模块的导出内容"""
     # 检查权重相关tensor
     weight_key = f"{name}.weight"
@@ -480,56 +534,62 @@ def check_w4a4_dynamic_per_channel_export(module: W4A4DynamicPerChannelFakeQuant
     # 验证权重tensor必须存在
     assert weight_key in all_tensors, f"Weight tensor {weight_key} must exist in safetensors file"
     weight_tensor = all_tensors[weight_key]
-    assert weight_tensor.dtype == torch.int8, \
-        f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
-    assert weight_tensor.shape == module.weight.shape, \
+    assert weight_tensor.dtype == torch.int8, f"Weight tensor {weight_key} should be int8, got {weight_tensor.dtype}"
+    assert weight_tensor.shape == module.weight.shape, (
         f"Weight tensor {weight_key} shape mismatch: expected {module.weight.shape}, got {weight_tensor.shape}"
-    assert weight_tensor.max() <= torch.tensor([+7.0], device=weight_tensor.device), \
+    )
+    assert weight_tensor.max() <= torch.tensor([+7.0], device=weight_tensor.device), (
         f"Weight tensor {weight_key} max value should be less than 7.0, got {weight_tensor.max()}"
-    assert weight_tensor.min() >= torch.tensor([-8.0], device=weight_tensor.device), \
+    )
+    assert weight_tensor.min() >= torch.tensor([-8.0], device=weight_tensor.device), (
         f"Weight tensor {weight_key} min value should be greater than -8.0, got {weight_tensor.min()}"
+    )
 
     # 验证权重缩放因子tensor必须存在
     assert weight_scale_key in all_tensors, f"Weight scale tensor {weight_scale_key} must exist in safetensors file"
     weight_scale_tensor = all_tensors[weight_scale_key]
-    assert weight_scale_tensor.dtype == torch.float32, \
+    assert weight_scale_tensor.dtype == torch.float32, (
         f"Weight scale tensor {weight_scale_key} should be float32, got {weight_scale_tensor.dtype}"
+    )
     expected_scale_shape = (module.weight.shape[0], 1)
-    assert weight_scale_tensor.shape == expected_scale_shape, \
-        (f"Weight scale tensor {weight_scale_key} shape mismatch: expected {expected_scale_shape}, "
-         f"got {weight_scale_tensor.shape}")
+    assert weight_scale_tensor.shape == expected_scale_shape, (
+        f"Weight scale tensor {weight_scale_key} shape mismatch: expected {expected_scale_shape}, "
+        f"got {weight_scale_tensor.shape}"
+    )
 
     # 验证权重偏移量tensor必须存在
     assert weight_offset_key in all_tensors, f"Weight offset tensor {weight_offset_key} must exist in safetensors file"
     weight_offset_tensor = all_tensors[weight_offset_key]
-    assert weight_offset_tensor.dtype == torch.float32, \
+    assert weight_offset_tensor.dtype == torch.float32, (
         f"Weight offset tensor {weight_offset_key} should be float32, got {weight_offset_tensor.dtype}"
+    )
     expected_offset_shape = (module.weight.shape[0], 1)
-    assert weight_offset_tensor.shape == expected_offset_shape, \
-        (f"Weight offset tensor {weight_offset_key} shape mismatch: expected {expected_offset_shape}, "
-         f"got {weight_offset_tensor.shape}")
+    assert weight_offset_tensor.shape == expected_offset_shape, (
+        f"Weight offset tensor {weight_offset_key} shape mismatch: expected {expected_offset_shape}, "
+        f"got {weight_offset_tensor.shape}"
+    )
 
     if module.bias is not None:
         # 验证偏置tensor必须存在
         assert bias_key in all_tensors, f"Bias tensor {bias_key} must exist in safetensors file"
         bias_tensor = all_tensors[bias_key]
-        assert bias_tensor.dtype == torch.float32, \
-            f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
-        assert bias_tensor.shape == module.bias.shape, \
+        assert bias_tensor.dtype == torch.float32, f"Bias tensor {bias_key} should be float32, got {bias_tensor.dtype}"
+        assert bias_tensor.shape == module.bias.shape, (
             f"Bias tensor {bias_key} shape mismatch: expected {module.bias.shape}, got {bias_tensor.shape}"
+        )
 
 
 def run_fake_quantization_test(
-        model_adapter: Any,
-        tmp_dir: str,
-        expected_quant_types: Union[str, List[str]],
-        module_checkers: Dict[type, Callable],
-        input_text: str = "Hello world",
-        group_size: Optional[int] = None
+    model_adapter: Any,
+    tmp_dir: str,
+    expected_quant_types: Union[str, List[str]],
+    module_checkers: Dict[type, Callable],
+    input_text: str = "Hello world",
+    group_size: Optional[int] = None,
 ) -> None:
     """
     运行伪量化测试的公共函数
-    
+
     Args:
         model_adapter: 模型适配器对象
         tmp_dir: 临时目录路径
@@ -543,6 +603,7 @@ def run_fake_quantization_test(
 
     try:
         import accelerate
+
         device_map = accelerate.infer_auto_device_map(model_adapter.loaded_model)
         model_adapter.loaded_model = accelerate.dispatch_model(model_adapter.loaded_model, device_map=device_map)
     except ImportError:
@@ -609,8 +670,13 @@ def load_all_tensors_from_safetensors(tmp_dir: str) -> dict:
     return all_tensors
 
 
-def check_tensor_in_dict(tensor_dict: dict, tensor_name: str, expected_shape: tuple = None,
-                         expected_dtype: torch.dtype = None, should_exist: bool = True) -> bool:
+def check_tensor_in_dict(
+    tensor_dict: dict,
+    tensor_name: str,
+    expected_shape: tuple = None,
+    expected_dtype: torch.dtype = None,
+    should_exist: bool = True,
+) -> bool:
     """
     检查指定的tensor是否存在于tensor字典中，并验证其形状和数据类型
 
@@ -634,12 +700,14 @@ def check_tensor_in_dict(tensor_dict: dict, tensor_name: str, expected_shape: tu
         assert tensor_found, f"Tensor '{tensor_name}' should exist in tensor dict but was not found"
 
         if expected_shape is not None:
-            assert tensor_data.shape == expected_shape, \
+            assert tensor_data.shape == expected_shape, (
                 f"Tensor '{tensor_name}' shape mismatch: expected {expected_shape}, got {tensor_data.shape}"
+            )
 
         if expected_dtype is not None:
-            assert tensor_data.dtype == expected_dtype, \
+            assert tensor_data.dtype == expected_dtype, (
                 f"Tensor '{tensor_name}' dtype mismatch: expected {expected_dtype}, got {tensor_data.dtype}"
+            )
 
         print(f"[PASS] Tensor '{tensor_name}' found with shape {tensor_data.shape} and dtype {tensor_data.dtype}")
         return True
@@ -649,8 +717,13 @@ def check_tensor_in_dict(tensor_dict: dict, tensor_name: str, expected_shape: tu
         return True
 
 
-def check_tensor_in_safetensors(tmp_dir: str, tensor_name: str, expected_shape: tuple = None,
-                                expected_dtype: torch.dtype = None, should_exist: bool = True) -> bool:
+def check_tensor_in_safetensors(
+    tmp_dir: str,
+    tensor_name: str,
+    expected_shape: tuple = None,
+    expected_dtype: torch.dtype = None,
+    should_exist: bool = True,
+) -> bool:
     """
     检查指定的tensor是否存在于保存的safetensors文件中，并验证其形状和数据类型
     （为了向后兼容保留此函数，但推荐使用load_all_tensors_from_safetensors + check_tensor_in_dict）
@@ -708,15 +781,11 @@ def check_tensors_by_mapping(tmp_dir: str, assert_in_map: dict = None, assert_no
                 tensor_name=tensor_name,
                 expected_shape=tensor_info.shape,
                 expected_dtype=tensor_info.dtype,
-                should_exist=True
+                should_exist=True,
             )
 
     # 检查不应该存在的tensor
     if assert_not_in_map:
         print(f"Checking {len(assert_not_in_map)} tensors that should NOT exist...")
         for tensor_name in assert_not_in_map:
-            check_tensor_in_dict(
-                tensor_dict=all_tensors,
-                tensor_name=tensor_name,
-                should_exist=False
-            )
+            check_tensor_in_dict(tensor_dict=all_tensors, tensor_name=tensor_name, should_exist=False)

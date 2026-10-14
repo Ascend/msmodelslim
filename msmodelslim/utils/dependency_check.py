@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,8 +18,9 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from __future__ import annotations
-import os
+import os  # noqa: F401
 import importlib
 from typing import Dict
 
@@ -75,9 +76,7 @@ class DependencyChecker:
         try:
             spec = SpecifierSet(constraint)
         except InvalidSpecifier as e:
-            raise VersionError(
-                f"Invalid version specifier {constraint!r} for package '{pkg_name}'"
-            ) from e
+            raise VersionError(f"Invalid version specifier {constraint!r} for package '{pkg_name}'") from e
 
         installed_version = None
 
@@ -93,9 +92,7 @@ class DependencyChecker:
                 mod = importlib.import_module(pkg_name)
                 installed_version = getattr(mod, "__version__", None)
             except ImportError:
-                raise VersionError(
-                    f"Required package '{pkg_name}{constraint}' is not installed."
-                ) from None
+                raise VersionError(f"Required package '{pkg_name}{constraint}' is not installed.") from None
 
         if installed_version is None:
             raise VersionError(f"Cannot determine version for '{pkg_name}'.")
@@ -104,15 +101,12 @@ class DependencyChecker:
         try:
             parsed_version = Version(installed_version)
         except InvalidVersion as e:
-            raise VersionError(
-                f"Installed version for '{pkg_name}' is invalid: {installed_version!r}"
-            ) from e
+            raise VersionError(f"Installed version for '{pkg_name}' is invalid: {installed_version!r}") from e
 
         # 最终版本约束匹配
         if parsed_version not in spec:
             raise VersionError(
-                f"Package '{pkg_name}' version {installed_version} "
-                f"does not satisfy requirement '{constraint}'."
+                f"Package '{pkg_name}' version {installed_version} does not satisfy requirement '{constraint}'."
             )
 
     @classmethod

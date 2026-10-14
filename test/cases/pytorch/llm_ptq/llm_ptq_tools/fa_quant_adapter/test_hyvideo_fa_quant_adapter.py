@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=attribute-defined-outside-init,comparison-with-callable,consider-using-from-import,no-member,no-name-in-module,no-value-for-parameter
 
 from dataclasses import dataclass
 import logging
@@ -38,7 +39,7 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.hyvideo import (
     install_for_hyvideo_model,
     hyvideo_mm_double_stream_block_double_forward_adapter,
     hyvideo_mm_single_stream_block_single_forward_adapter,
-    ForwardFactory
+    ForwardFactory,
 )
 
 
@@ -168,7 +169,6 @@ class HyVideoConfigTestCase:
 
 # ------------------------------ 测试用例 ------------------------------
 class TestHYVideoFAQuantAdapter:
-
     @staticmethod
     def test_install_forward_adapter_success(mocker):
         mock_module = MMDoubleStreamBlock()
@@ -187,7 +187,7 @@ class TestHYVideoFAQuantAdapter:
             module_type="MMDoubleStreamBlock",
             adapter_type="double_forward",
             module_name="test_block",
-            logger=mock_logger
+            logger=mock_logger,
         )
 
         ForwardFactory.get_forward_adapter.assert_called_once_with("MMDoubleStreamBlock", "double_forward")
@@ -210,21 +210,28 @@ class TestHYVideoFAQuantAdapter:
                 module_type="MMDoubleStreamBlock",
                 adapter_type="double_forward",
                 module_name="test_block",
-                logger=mock_logger
+                logger=mock_logger,
             )
 
         assert str(excinfo.value) == "Adapter not found"
         mock_logger.error.assert_called_once_with(
-            "Failed to install FAQuantizer for module test_block: Adapter not found")
+            "Failed to install FAQuantizer for module test_block: Adapter not found"
+        )
 
-    @pytest.mark.parametrize("test_case", [
-        HyVideoConfigTestCase(is_distributed=False, world_size=1, heads_num=8, hidden_size=256, expected_heads=8,
-                              expected_hidden=256),
-        HyVideoConfigTestCase(is_distributed=True, world_size=2, heads_num=8, hidden_size=256, expected_heads=4,
-                              expected_hidden=128),
-        HyVideoConfigTestCase(is_distributed=True, world_size=4, heads_num=8, hidden_size=256, expected_heads=2,
-                              expected_hidden=64),
-    ])
+    @pytest.mark.parametrize(
+        "test_case",
+        [
+            HyVideoConfigTestCase(
+                is_distributed=False, world_size=1, heads_num=8, hidden_size=256, expected_heads=8, expected_hidden=256
+            ),
+            HyVideoConfigTestCase(
+                is_distributed=True, world_size=2, heads_num=8, hidden_size=256, expected_heads=4, expected_hidden=128
+            ),
+            HyVideoConfigTestCase(
+                is_distributed=True, world_size=4, heads_num=8, hidden_size=256, expected_heads=2, expected_hidden=64
+            ),
+        ],
+    )
     def test_get_hyvideo_config(self, mocker, test_case):
         mock_logger = mocker.MagicMock(spec=logging.Logger)
         mock_config = PretrainedConfig()
@@ -261,10 +268,12 @@ class TestHYVideoFAQuantAdapter:
         skip_layers = ["skip_block"]
 
         mock_install_adapter = mocker.patch(
-            "msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.hyvideo._install_forward_adapter")
+            "msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.hyvideo._install_forward_adapter"
+        )
         mocker.patch(
             "msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.hyvideo.FAQuantizer",
-            return_value=MockFAQuantizer())
+            return_value=MockFAQuantizer(),
+        )
 
         install_for_hyvideo_model(mock_model, mock_config, mock_logger, skip_layers)
 
@@ -292,7 +301,8 @@ class TestHYVideoFAQuantAdapter:
         skip_layers = ["double_block_skip"]
 
         mock_install_adapter = mocker.patch(
-            "msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.hyvideo._install_forward_adapter")
+            "msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.hyvideo._install_forward_adapter"
+        )
 
         install_for_hyvideo_model(mock_model, mock_config, mock_logger, skip_layers)
 
@@ -325,12 +335,17 @@ class TestHYVideoFAQuantAdapter:
             new_forward = adapter.__get__(mock_block, MMDoubleStreamBlock)
 
             output = new_forward(
-                img=img, txt=txt,
-                img_mod1_shift=shift_scale, img_mod1_scale=shift_scale,
-                txt_mod1_shift=shift_scale, txt_mod1_scale=shift_scale,
+                img=img,
+                txt=txt,
+                img_mod1_shift=shift_scale,
+                img_mod1_scale=shift_scale,
+                txt_mod1_shift=shift_scale,
+                txt_mod1_scale=shift_scale,
                 freqs_cis=freqs_cis,
-                cu_seqlens_q=cu_seqlens_q, cu_seqlens_kv=cu_seqlens_kv,
-                max_seqlen_q=max_seqlen_q, max_seqlen_kv=max_seqlen_kv
+                cu_seqlens_q=cu_seqlens_q,
+                cu_seqlens_kv=cu_seqlens_kv,
+                max_seqlen_q=max_seqlen_q,
+                max_seqlen_kv=max_seqlen_kv,
             )
 
             assert mock_block.fa_quantizer.quant_called == 3
@@ -367,9 +382,14 @@ class TestHYVideoFAQuantAdapter:
             new_forward = adapter.__get__(mock_block, MMSingleStreamBlock)
 
             output = new_forward(
-                qkv=qkv, freqs_cis=freqs_cis, txt_len=txt_len, x=x,
-                cu_seqlens_q=cu_seqlens_q, cu_seqlens_kv=cu_seqlens_kv,
-                max_seqlen_q=max_seqlen_q, max_seqlen_kv=max_seqlen_kv
+                qkv=qkv,
+                freqs_cis=freqs_cis,
+                txt_len=txt_len,
+                x=x,
+                cu_seqlens_q=cu_seqlens_q,
+                cu_seqlens_kv=cu_seqlens_kv,
+                max_seqlen_q=max_seqlen_q,
+                max_seqlen_kv=max_seqlen_kv,
             )
 
             assert mock_block.fa_quantizer.quant_called == 3

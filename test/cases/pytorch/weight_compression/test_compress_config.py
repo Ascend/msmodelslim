@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from unittest.mock import patch
 
 import pytest
@@ -44,7 +45,7 @@ class TestCompressConfig:
         with pytest.raises(TypeError):
             config = CompressConfig(do_pseudo_sparse=1)
         with pytest.raises(TypeError):
-            config = CompressConfig(do_pseudo_sparse='True')
+            config = CompressConfig(do_pseudo_sparse='True')  # noqa: F841
 
     def test_arg_sparse_ratio_with_right_data_type(self):
         config = CompressConfig(do_pseudo_sparse=True, sparse_ratio=1)
@@ -76,25 +77,11 @@ class TestCompressConfig:
 
     def test_arg_compress_disable_layers_with_right_data_type(self):
         config = CompressConfig(
-            compress_disable_layers=[
-                'model.layers.0.self_attn.q_proj',
-                'model.layers.0.self_attn.k_proj'
-            ]
+            compress_disable_layers=['model.layers.0.self_attn.q_proj', 'model.layers.0.self_attn.k_proj']
         )
-        assert config.compress_disable_layers == [
-                'model.layers.0.self_attn.q_proj',
-                'model.layers.0.self_attn.k_proj'
-            ]
-        config = CompressConfig(
-            compress_disable_layers=(
-                'model.layers.1.mlp.up_proj',
-                'model.layers.1.mlp.gate_proj'
-            )
-        )
-        assert config.compress_disable_layers == (
-            'model.layers.1.mlp.up_proj',
-            'model.layers.1.mlp.gate_proj'
-        )
+        assert config.compress_disable_layers == ['model.layers.0.self_attn.q_proj', 'model.layers.0.self_attn.k_proj']
+        config = CompressConfig(compress_disable_layers=('model.layers.1.mlp.up_proj', 'model.layers.1.mlp.gate_proj'))
+        assert config.compress_disable_layers == ('model.layers.1.mlp.up_proj', 'model.layers.1.mlp.gate_proj')
 
     def test_arg_compress_disable_layers_with_wrong_data_type(self):
         with pytest.raises(TypeError):

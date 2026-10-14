@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-member,no-name-in-module
+
 import argparse
 import os
 import sys
@@ -30,11 +32,11 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, "..", "..", ".."))
 sys.path.append(parent_directory)
 
-from example.common.utils import cmd_bool
-from example.common.security.path import get_valid_read_path, get_write_directory
-from example.common.vlm_utils import VlmSafeGenerator, ModifyConfigParams, CopyTokenizerParams
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
+from example.common.utils import cmd_bool  # noqa: E402
+from example.common.security.path import get_valid_read_path, get_write_directory  # noqa: E402
+from example.common.vlm_utils import VlmSafeGenerator, ModifyConfigParams, CopyTokenizerParams  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig  # noqa: E402
 
 
 CPU = "cpu"
@@ -51,8 +53,12 @@ if __name__ == '__main__':
     parser.add_argument('--a_bit', type=int, default=8)
     parser.add_argument('--device_type', type=str, choices=[CPU, NPU], default=NPU)
     parser.add_argument('--trust_remote_code', type=cmd_bool, default=False)
-    parser.add_argument('--mindie_format', action="store_true", help="Compatible with quantization formats \
-                        supported by MindIE")
+    parser.add_argument(
+        '--mindie_format',
+        action="store_true",
+        help="Compatible with quantization formats \
+                        supported by MindIE",
+    )
     args = parser.parse_args()
 
     # check args
@@ -60,27 +66,21 @@ if __name__ == '__main__':
     args.calib_images = get_valid_read_path(args.calib_images, is_dir=True, check_user_stat=True)
     args.save_directory = get_write_directory(args.save_directory, write_mode=0o750)
 
-    processor = AutoProcessor.from_pretrained(args.model_path, 
-                                              local_files_only=True, 
-                                              pad_token="<pad>")
+    processor = AutoProcessor.from_pretrained(args.model_path, local_files_only=True, pad_token="<pad>")  # nosec B106, B615
     ##1.加载模型
     device_map = CPU if args.device_type == CPU else "auto"
-    config = AutoConfig.from_pretrained(args.model_path, 
-                                        local_files_only=True, 
-                                        trust_remote_code=args.trust_remote_code)
+    config = AutoConfig.from_pretrained(  # nosec B615
+        args.model_path, local_files_only=True, trust_remote_code=args.trust_remote_code
+    )
     dtype = config.torch_dtype if args.device_type == NPU else torch.float32
-    model = LlavaForConditionalGeneration.from_pretrained(
-        args.model_path,
-        local_files_only=True, 
-        torch_dtype=dtype, 
-        device_map=device_map
+    model = LlavaForConditionalGeneration.from_pretrained(  # nosec B615
+        args.model_path, local_files_only=True, torch_dtype=dtype, device_map=device_map
     ).eval()
-
 
     ##2.设置回退层
     text_num_layers = config.text_config.num_hidden_layers
     disable_names = [f"language_model.model.layers.{layer}.mlp.down_proj" for layer in range(text_num_layers)]
-    disable_names.append('language_model.lm_head') 
+    disable_names.append('language_model.lm_head')
 
     ##3.校准集
     images_list = os.listdir(args.calib_images)
@@ -103,7 +103,7 @@ if __name__ == '__main__':
         anti_method="m2",
         dev_type=args.device_type,
         dev_id=model.device.index,
-        )
+    )
     anti_outlier = AntiOutlier(model, calib_data=calib_data, cfg=anti_config)
     anti_outlier.process()
     ##5.模型量化
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     quant_type = quant_config.model_quant_type.lower()
     checker = VlmSafeGenerator()
     auto_config = checker.get_config_from_pretrained(args.model_path, trust_remote_code=args.trust_remote_code)
-    
+
     # 使用dataclass参数
     modify_params = ModifyConfigParams(
         model_dir=args.model_path,
@@ -133,12 +133,9 @@ if __name__ == '__main__':
         torch_dtype=auto_config.torch_dtype,
         quantize_type=quant_type,
         args=args,
-        quantize_config_parts=['vision_config']
+        quantize_config_parts=['vision_config'],
     )
     checker.modify_config(modify_params)
-    
-    copy_params = CopyTokenizerParams(
-        model_dir=args.model_path,
-        dest_dir=args.save_directory
-    )
+
+    copy_params = CopyTokenizerParams(model_dir=args.model_path, dest_dir=args.save_directory)
     checker.copy_tokenizer_files(copy_params)

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,self-assigning-variable,super-with-arguments
 
 import torch
 import torch.nn as nn
@@ -25,9 +26,7 @@ import torch.nn as nn
 
 def conv_bn_relu(in_channel, out_channel, kernel_size, stride):
     return nn.Sequential(
-        nn.Conv2d(in_channel, out_channel, kernel_size, stride),
-        nn.BatchNorm2d(out_channel),
-        nn.ReLU()
+        nn.Conv2d(in_channel, out_channel, kernel_size, stride), nn.BatchNorm2d(out_channel), nn.ReLU()
     )
 
 
@@ -37,7 +36,7 @@ class TestAscendQuantModel(nn.Module):
         self.first_conv = nn.Conv2d(1, 1, 3)
         self.left_conv = nn.Conv2d(1, 1, 3)
         self.right_conv = nn.Conv2d(1, 1, 3)
-    
+
     def forward(self, x):
         x = self.first_conv(x)
         x1 = self.left_conv(x)
@@ -109,10 +108,14 @@ class TestNet3(nn.Module):
 class TestOnnxQuantModel(nn.Module):
     def __init__(self, class_num=10):
         super().__init__()
-        self.conv_list = nn.ModuleList([conv_bn_relu(3, 32, 3, 1),
-                                        conv_bn_relu(32, 32, 3, 1),
-                                        conv_bn_relu(32, 32, 3, 1),
-                                        conv_bn_relu(32, 32, 3, 1)])
+        self.conv_list = nn.ModuleList(
+            [
+                conv_bn_relu(3, 32, 3, 1),
+                conv_bn_relu(32, 32, 3, 1),
+                conv_bn_relu(32, 32, 3, 1),
+                conv_bn_relu(32, 32, 3, 1),
+            ]
+        )
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.linear = nn.Linear(32, class_num)
 
@@ -264,7 +267,7 @@ class AttentionTorchModel(nn.Module):
         self.post_norm = RMSNorm(embed_dim)
 
         # Scaling factor
-        self.scale = embed_dim ** -0.5
+        self.scale = embed_dim**-0.5
 
     def forward(self, hidden_states, past_key_value=None, mask=None):
         # 投影
@@ -337,7 +340,7 @@ class SophonTorchAttention(nn.Module):
         self.k_proj = nn.Linear(self.embed_dim, self.embed_dim)
         self.v_proj = nn.Linear(self.embed_dim, self.embed_dim)
         self.o_proj = nn.Linear(self.embed_dim, self.embed_dim)
-        self.scale = self.embed_dim ** -0.5
+        self.scale = self.embed_dim**-0.5
 
     def forward(self, hidden_states, past_key_value=None, mask=None, **kargs):
         query = self.q_proj(hidden_states)
@@ -387,8 +390,10 @@ class SophonTorchMlp(nn.Module):
         self.act2 = nn.ReLU(inplace=True)
 
     def forward(self, hidden_states):
-        return self.down_proj((self.act2(self.gate_proj(hidden_states)) +
-                               self.act1(self.gate_proj2(hidden_states))) * self.up_proj(hidden_states))
+        return self.down_proj(
+            (self.act2(self.gate_proj(hidden_states)) + self.act1(self.gate_proj2(hidden_states)))
+            * self.up_proj(hidden_states)
+        )
 
 
 class SophonTorchDecoder(nn.Module):
@@ -397,7 +402,7 @@ class SophonTorchDecoder(nn.Module):
         self.embed_dim = embed_dim
         self.num_heads = num_heads
 
-        self.input_norm = SophonRMSNorm(self.embed_dim) # 使用SophonRMSNorm替换LayerNorm
+        self.input_norm = SophonRMSNorm(self.embed_dim)  # 使用SophonRMSNorm替换LayerNorm
         self.attn = SophonTorchAttention(self.embed_dim, self.num_heads)
         self.mlp = SophonTorchMlp(self.embed_dim)
         self.post_norm = SophonRMSNorm(self.embed_dim)
@@ -437,8 +442,9 @@ class AttentionTorchSophonModel(nn.Module):
         for _, decoder_layer in enumerate(self.layers):
             attention_mask = 1
             rotary_pos_emb_list = 1
-            hidden_states, past_key_value = decoder_layer(hidden_states, attention_mask,
-                                                          rotary_pos_emb_list, use_cache=use_cache)
+            hidden_states, past_key_value = decoder_layer(
+                hidden_states, attention_mask, rotary_pos_emb_list, use_cache=use_cache
+            )
         hidden_states = self.norm(hidden_states)
 
         return hidden_states, past_key_value

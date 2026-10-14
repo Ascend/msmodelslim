@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,no-name-in-module,pointless-string-statement,ungrouped-imports
 
 """
 DistributedTaskScheduler（分波调度器）的单元测试
@@ -27,20 +28,21 @@ DistributedTaskScheduler（分波调度器）的单元测试
     - 单卡场景下的基本执行流程
 """
 
-import unittest
-from typing import Any, Dict, List, Tuple
-from unittest.mock import MagicMock
+import unittest  # noqa: E402
+from typing import Any, List, Tuple  # noqa: E402
 
-import torch
-import torch.nn as nn
+import torch  # noqa: E402, F401
+from unittest.mock import MagicMock  # noqa: E402, F401
+from typing import Dict  # noqa: E402, F401
+import torch.nn as nn  # noqa: E402
 
-from msmodelslim.utils.distributed import DistributedTaskScheduler
-from test.cases.utils.distributed.dts_test_internals import (
+from msmodelslim.utils.distributed import DistributedTaskScheduler  # noqa: E402
+from test.cases.utils.distributed.dts_test_internals import (  # noqa: E402
     _DtsSequentialWaveScheduler,
     dts_waves,
 )
 
-from test.cases.utils.distributed.dts_test_utils import build_dts_dependency_mock_model
+from test.cases.utils.distributed.dts_test_utils import build_dts_dependency_mock_model  # noqa: E402
 
 
 class TestDistributedTaskSchedulerExecution(unittest.TestCase):
@@ -53,6 +55,7 @@ class TestDistributedTaskSchedulerExecution(unittest.TestCase):
 
     def test_run_executes_waves_in_order_when_multiple_waves_exist(self):
         """测试：多波次按顺序执行（使用空依赖避免模块解析）"""
+
         def fn(payload: Any) -> str:
             # 记录执行顺序（以 payload 作为外部可读标识）
             wave_idx = len(self.execution_order)
@@ -77,6 +80,7 @@ class TestDistributedTaskSchedulerExecution(unittest.TestCase):
 
     def test_run_records_task_result_when_worker_returns_value(self):
         """测试：任务结果正确记录在 TaskExecutionRecord 中"""
+
         def fn(payload: Any) -> str:
             return f"processed_{payload}"
 
@@ -94,6 +98,7 @@ class TestDistributedTaskSchedulerExecution(unittest.TestCase):
 
     def test_run_records_executor_rank_when_single_rank(self):
         """测试：TaskExecutionRecord 中记录了正确的执行 rank"""
+
         def fn(payload: Any) -> str:
             return str(payload)
 
@@ -109,7 +114,10 @@ class TestDistributedTaskSchedulerExecution(unittest.TestCase):
 
     def test_submit_creates_expected_waves_when_dependencies_alternate(self):
         """测试：交替依赖模式（A->B->A->B）- 仅验证分波逻辑，不执行"""
-        fn = lambda payload: str(payload)
+
+        def fn(payload):
+            return str(payload)
+
         scheduler = DistributedTaskScheduler(build_dts_dependency_mock_model())
 
         with scheduler:
@@ -143,7 +151,10 @@ class TestDistributedTaskSchedulerEdgeCases(unittest.TestCase):
 
     def test_submit_creates_new_wave_per_task_when_all_dependencies_same(self):
         """测试：所有任务具有相同依赖"""
-        fn = lambda payload: str(payload)
+
+        def fn(payload):
+            return str(payload)
+
         scheduler = DistributedTaskScheduler(self.mock_model)
 
         with scheduler:
@@ -159,7 +170,10 @@ class TestDistributedTaskSchedulerEdgeCases(unittest.TestCase):
 
     def test_submit_keeps_single_wave_when_all_dependencies_unique(self):
         """测试：大量任务在同一个波次"""
-        fn = lambda payload: str(payload)
+
+        def fn(payload):
+            return str(payload)
+
         scheduler = DistributedTaskScheduler(self.mock_model)
 
         num_tasks = 100
@@ -167,7 +181,10 @@ class TestDistributedTaskSchedulerEdgeCases(unittest.TestCase):
         with scheduler:
             for i in range(num_tasks):
                 # 每个任务依赖不同的模块，无冲突
-                scheduler.submit(fn, args=(f"task{i}",), dependencies=[f"module{i}"],
+                scheduler.submit(
+                    fn,
+                    args=(f"task{i}",),
+                    dependencies=[f"module{i}"],
                 )
 
         # 所有任务都在同一个波次
@@ -176,7 +193,10 @@ class TestDistributedTaskSchedulerEdgeCases(unittest.TestCase):
 
     def test_submit_creates_many_waves_when_dependencies_always_conflict(self):
         """测试：大量波次"""
-        fn = lambda payload: str(payload)
+
+        def fn(payload):
+            return str(payload)
+
         scheduler = DistributedTaskScheduler(self.mock_model)
 
         num_waves = 50
@@ -184,7 +204,10 @@ class TestDistributedTaskSchedulerEdgeCases(unittest.TestCase):
         with scheduler:
             for i in range(num_waves):
                 # 每个任务都与前一个冲突（依赖相同的模块）
-                scheduler.submit(fn, args=(f"task{i}",), dependencies=["shared_module"],
+                scheduler.submit(
+                    fn,
+                    args=(f"task{i}",),
+                    dependencies=["shared_module"],
                 )
 
         # 每个任务创建一个新波次
@@ -204,7 +227,7 @@ class TestDistributedTaskSchedulerEdgeCases(unittest.TestCase):
             scheduler.submit(fn, args=({"key": "value1"},), dependencies=[])
             scheduler.submit(fn, args=({"key": "value2"},), dependencies=[])
 
-            records = scheduler.run()
+            records = scheduler.run()  # noqa: F841
 
         # 验证 payload 正确传递
         self.assertEqual(len(executed_tasks), 2)
@@ -213,7 +236,10 @@ class TestDistributedTaskSchedulerEdgeCases(unittest.TestCase):
 
     def test_submit_creates_new_wave_when_any_dependency_conflicts(self):
         """测试：多个依赖全部与当前波次冲突"""
-        fn = lambda payload: str(payload)
+
+        def fn(payload):
+            return str(payload)
+
         scheduler = DistributedTaskScheduler(self.mock_model)
 
         with scheduler:
@@ -227,7 +253,10 @@ class TestDistributedTaskSchedulerEdgeCases(unittest.TestCase):
 
     def test_submit_keeps_same_wave_when_no_dependencies_conflict(self):
         """测试：部分依赖但无冲突"""
-        fn = lambda payload: str(payload)
+
+        def fn(payload):
+            return str(payload)
+
         scheduler = DistributedTaskScheduler(self.mock_model)
 
         with scheduler:
@@ -244,14 +273,17 @@ class TestDistributedTaskSchedulerEdgeCases(unittest.TestCase):
 
     def test_run_does_not_remove_waves_when_completed(self):
         """测试：run 后波次状态保持不变"""
-        fn = lambda payload: str(payload)
+
+        def fn(payload):
+            return str(payload)
+
         scheduler = DistributedTaskScheduler(self.mock_model)
 
         with scheduler:
             scheduler.submit(fn, args=("task1",), dependencies=[])
             scheduler.submit(fn, args=("task2",), dependencies=[])
 
-            records = scheduler.run()
+            records = scheduler.run()  # noqa: F841
 
         # 验证波次仍然存在
         self.assertEqual(len(dts_waves(scheduler)), 1)
@@ -295,7 +327,9 @@ class TestDistributedTaskSchedulerIntegration(unittest.TestCase):
         """测试：混合依赖场景（模拟实际量化流程）- 仅验证分波逻辑"""
         mock_model = build_dts_dependency_mock_model()
 
-        fn = lambda payload: payload
+        def fn(payload):
+            return payload
+
         scheduler = DistributedTaskScheduler(mock_model)
 
         with scheduler:
@@ -349,5 +383,3 @@ class TestDistributedTaskSchedulerIntegration(unittest.TestCase):
         self.assertEqual(wave0_phases, {"weight_quant"})
         self.assertEqual(wave1_phases, {"smooth"})
         self.assertEqual(wave2_phases, {"rotation"})
-
-

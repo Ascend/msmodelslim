@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=anomalous-backslash-in-string,logging-format-interpolation,logging-fstring-interpolation,logging-not-lazy,no-name-in-module,undefined-variable,unnecessary-comprehension,unnecessary-negation,unspecified-encoding
+
 import glob
 import json
 import os
@@ -29,13 +31,13 @@ import collections
 
 import torch
 import torch.nn.functional as F
-import torch_npu
+import torch_npu  # noqa: F401
 import pandas as pd
 import numpy as np
-from transformers import PreTrainedModel, AutoTokenizer
+from transformers import PreTrainedModel, AutoTokenizer  # noqa: F401
 from tqdm import tqdm
 
-from security import json_safe_load, json_safe_dump, get_valid_path, get_valid_write_path, get_valid_read_path
+from security import json_safe_load, json_safe_dump, get_valid_path, get_valid_write_path, get_valid_read_path  # noqa: F401
 from precision_tool import logger
 from precision_tool import truthfulqa_eval
 from ascend_utils.common.security.type import check_type
@@ -48,8 +50,9 @@ supported_hardware = ["npu"]
 TENSOR_TYPE_PYTORCH = "pt"
 DATASET_HUMAN_EVAL = "humaneval"
 
-CalcParam = collections.namedtuple('CalcParam', ['tag', 'frame', 'idx', 'scores_true', 
-                                   'scores_false', 'ref_true', 'ref_best'])
+CalcParam = collections.namedtuple(
+    'CalcParam', ['tag', 'frame', 'idx', 'scores_true', 'scores_false', 'ref_true', 'ref_best']
+)
 
 
 def is_running_on_npu(device_name):
@@ -57,8 +60,7 @@ def is_running_on_npu(device_name):
 
 
 class PrecisionTest:
-    def __init__(self, model, tokenizer, dataset, batch_size, hardware_type,
-                 tokenizer_return_type_id=False, shot=5):
+    def __init__(self, model, tokenizer, dataset, batch_size, hardware_type, tokenizer_return_type_id=False, shot=5):
         """
         @param model:
             llm to run the test, should be an instance of transformers.PreTrainedModel
@@ -103,7 +105,7 @@ class PrecisionTest:
         self.dataset_path = get_valid_path(self.dataset_path)
         self.result_file = ""
         self.logger.info("Precision test was inited.")
-        
+
     @staticmethod
     def __postprocess(text: str, options: str, cushion=True) -> str:
         patterns = [
@@ -115,8 +117,7 @@ class PrecisionTest:
             f'答案为\s?([{options}])',
             f'答案选\s?([{options}])',
             f'选择?\s?([{options}])',
-            f'故选?\s?([{options}])'
-            f'只有选?项?\s?([{options}])\s?是?对',
+            f'故选?\s?([{options}])只有选?项?\s?([{options}])\s?是?对',
             f'只有选?项?\s?([{options}])\s?是?错',
             f'只有选?项?\s?([{options}])\s?不?正确',
             f'只有选?项?\s?([{options}])\s?错误',
@@ -135,9 +136,9 @@ class PrecisionTest:
             f'[是为。]\s?([{options}])[。\.]?$',
             f'因此\s?([{options}])[。\.]?$',
             f'显然\s?([{options}])[。\.]?$',
-            f'答案是\s?(\S+)(?:。|$)',
-            f'答案应该是\s?(\S+)(?:。|$)',
-            f'答案为\s?(\S+)(?:。|$)',
+            '答案是\s?(\S+)(?:。|$)',
+            '答案应该是\s?(\S+)(?:。|$)',
+            '答案为\s?(\S+)(?:。|$)',
             f'[Tt]he answer is \(?([{options}])\)?',
             f'[Tt]he answer is option \(?([{options}])\)?',
             f'[Tt]he correct answer is \(?([{options}])\)?',
@@ -147,7 +148,7 @@ class PrecisionTest:
             f'^([{options}])\s?选?项',
             f'(\s|^)[{options}][\s。，,：:\.$]',
             f'(\s|^)[{options}](\s|$)',
-            f'1.\s?(.*?)$',
+            '1.\s?(.*?)$',
             f'1.\s?([{options}])[.。$]?$',
         ]
         cushion_patterns = [
@@ -160,7 +161,7 @@ class PrecisionTest:
         for pattern in patterns:
             match = re.search(pattern, text)
             if not match:
-                continue 
+                continue
             outputs = match.group(0)
             for i in options:
                 if i in outputs:
@@ -191,7 +192,7 @@ class PrecisionTest:
             return False
         if self.dataset == DATASET_HUMAN_EVAL:
             try:
-                from human_eval.evaluation import evaluate_functional_correctness
+                from human_eval.evaluation import evaluate_functional_correctness  # noqa: F401
             except Exception as e:
                 self.logger.error(f"Import human_eval test package failed. Error info is as below. \n {e}")
                 return False
@@ -205,8 +206,9 @@ class PrecisionTest:
 
     def __verify_tokenizer(self):
         text = "hello world"
-        inputs = (self.tokenizer(text, return_tensors=TENSOR_TYPE_PYTORCH, 
-                    return_token_type_ids=self.tokenizer_return_type_id).to(self.model.device))
+        inputs = self.tokenizer(
+            text, return_tensors=TENSOR_TYPE_PYTORCH, return_token_type_ids=self.tokenizer_return_type_id
+        ).to(self.model.device)
         try:
             with torch.no_grad():
                 self.model(**inputs)
@@ -278,12 +280,17 @@ class PrecisionTest:
                 for batch in tqdm(dataloader):
                     texts = batch["inputs_pretokenized"]
                     queries = [build_prompt(query) for query in texts]
-                    inputs = self.tokenizer(queries, padding=True, return_tensors=TENSOR_TYPE_PYTORCH, truncation=True,
-                                            return_token_type_ids=self.tokenizer_return_type_id).to(self.device)
+                    inputs = self.tokenizer(
+                        queries,
+                        padding=True,
+                        return_tensors=TENSOR_TYPE_PYTORCH,
+                        truncation=True,
+                        return_token_type_ids=self.tokenizer_return_type_id,
+                    ).to(self.device)
                     outputs = self.model.generate(**inputs, do_sample=False, max_new_tokens=512)
                     intermediate_outputs = []
                     for idx in range(len(outputs)):
-                        output = outputs.tolist()[idx][len(inputs["input_ids"][idx]):]
+                        output = outputs.tolist()[idx][len(inputs["input_ids"][idx]) :]
                         response = self.tokenizer.decode(output)
                         intermediate_outputs.append(response)
                     answer_texts = []
@@ -292,9 +299,13 @@ class PrecisionTest:
                     input_tokens = []
                     for answer_text in answer_texts:
                         input_tokens.append(build_prompt(answer_text))
-                    inputs = self.tokenizer(input_tokens, padding=True, return_tensors=TENSOR_TYPE_PYTORCH,
-                                            truncation=True,
-                                            return_token_type_ids=self.tokenizer_return_type_id).to(self.device)
+                    inputs = self.tokenizer(
+                        input_tokens,
+                        padding=True,
+                        return_tensors=TENSOR_TYPE_PYTORCH,
+                        truncation=True,
+                        return_token_type_ids=self.tokenizer_return_type_id,
+                    ).to(self.device)
                     outputs = self.model(**inputs)
                     logits = outputs.logits[:, -1, :]
                     logits = logits[:, choice_tokens]
@@ -311,7 +322,8 @@ class PrecisionTest:
             self.logger.error("Did not ran any test, maybe wrong cevel_0_shot dataset folder.")
         else:
             self.logger.info(
-                f"correct rate:{correct_total / sum_total}, correct total:{correct_total}, sum_total:{sum_total}")
+                f"correct rate:{correct_total / sum_total}, correct total:{correct_total}, sum_total:{sum_total}"
+            )
 
     def __run_full_dataset_ceval_5_shot(self):
         choices = ["A", "B", "C", "D"]
@@ -326,7 +338,7 @@ class PrecisionTest:
 
         def load_csv_by_task_name(task_name, dataset_path):
             dev_file_path = get_valid_path(os.path.join(dataset_path, "dev", task_name + "_dev.csv"))
-            dev_df = pd.read_csv(dev_file_path, header=None)[:shot + 1]
+            dev_df = pd.read_csv(dev_file_path, header=None)[: shot + 1]
             val_file_path = get_valid_path(os.path.join(dataset_path, "val", task_name + "_val.csv"))
             val_df = pd.read_csv(val_file_path, header=None)
 
@@ -353,7 +365,8 @@ class PrecisionTest:
 
         def gen_prompt(train_df, subject, k=-1):
             prompt = "The following are multiple choice questions (with answers) about {}.\n\n".format(
-                format_subject(subject))
+                format_subject(subject)
+            )
             if k == -1:
                 k = train_df.shape[0]
             for i in range(k):
@@ -378,12 +391,17 @@ class PrecisionTest:
                 prompt = [t + p for t, p in zip(train_prompts, prompt_ends)]
                 labels = [val_df.iloc[i * self.batch_size + j, val_df.shape[1] - 1] for j in range(q_num)]
                 prompts = [prpt.encode().decode(encoding="utf8") for prpt in prompt]
-                inputs = self.tokenizer(prompts, padding=True, return_tensors=TENSOR_TYPE_PYTORCH, truncation=True,
-                                        return_token_type_ids=self.tokenizer_return_type_id).to(self.device)
+                inputs = self.tokenizer(
+                    prompts,
+                    padding=True,
+                    return_tensors=TENSOR_TYPE_PYTORCH,
+                    truncation=True,
+                    return_token_type_ids=self.tokenizer_return_type_id,
+                ).to(self.device)
                 outputs = self.model.generate(**inputs, do_sample=False, max_new_tokens=20)
                 answers = []
                 for idx in range(len(outputs)):
-                    output = outputs.tolist()[idx][len(inputs["input_ids"][idx]):]
+                    output = outputs.tolist()[idx][len(inputs["input_ids"][idx]) :]
                     response = self.tokenizer.decode(output)
                     answers.append(response)
 
@@ -397,10 +415,12 @@ class PrecisionTest:
             index += 1
         if sum_total == 0:
             self.logger.error(
-                f"Did not ran any test, maybe wrong cevel_5_shot dataset folder. Current folder is {self.dataset_path}")
+                f"Did not ran any test, maybe wrong cevel_5_shot dataset folder. Current folder is {self.dataset_path}"
+            )
         else:
             self.logger.info(
-                f"correct rate:{correct_total / sum_total}, correct total:{correct_total}, sum_total:{sum_total}")
+                f"correct rate:{correct_total / sum_total}, correct total:{correct_total}, sum_total:{sum_total}"
+            )
 
     def __run_full_dataset_humaneval(self):
         def cleanup_code(code: str) -> str:
@@ -418,12 +438,13 @@ class PrecisionTest:
                 end_words = ["\ndef", "\nclass", "\n#", "\nassert", '\n"""', "\nprint", "\nif", "\n\n\n"]
                 for w in end_words:
                     if w in code:
-                        code = code[:code.rfind(w)]
+                        code = code[: code.rfind(w)]
             return code
 
         def run_test():
-            for entry in tqdm(glob.glob((Path(self.dataset_path) / "*.jsonl").as_posix(), recursive=True),
-                              desc='global'):
+            for entry in tqdm(
+                glob.glob((Path(self.dataset_path) / "*.jsonl").as_posix(), recursive=True), desc='global'
+            ):
                 dataset = []
                 entry = get_valid_read_path(entry)
                 with open(entry, encoding='utf-8') as f:
@@ -436,13 +457,17 @@ class PrecisionTest:
                 for _, batch in enumerate(tqdm(dataloader)):
                     task_ids = [task_id.split('/')[1] for task_id in batch["task_id"]]
                     queries = [prompt.strip() for prompt in batch["prompt"]]
-                    inputs = self.tokenizer(queries, padding=True, return_tensors=TENSOR_TYPE_PYTORCH,
-                                            truncation=True).to(self.device)
-                    outputs = self.model.generate(inputs=inputs.input_ids,
-                                                  attention_mask=inputs.attention_mask, do_sample=False,
-                                                  max_new_tokens=512)
+                    inputs = self.tokenizer(
+                        queries, padding=True, return_tensors=TENSOR_TYPE_PYTORCH, truncation=True
+                    ).to(self.device)
+                    outputs = self.model.generate(
+                        inputs=inputs.input_ids,
+                        attention_mask=inputs.attention_mask,
+                        do_sample=False,
+                        max_new_tokens=512,
+                    )
                     for idx, output in enumerate(outputs.tolist()):
-                        output = output[len(inputs["input_ids"][idx]):]
+                        output = output[len(inputs["input_ids"][idx]) :]
                         response = self.tokenizer.decode(output)
                         response_cleaned_up = cleanup_code(response)
                         result = dict(
@@ -457,7 +482,7 @@ class PrecisionTest:
 
         try:
             from human_eval.evaluation import evaluate_functional_correctness
-        except ImportException as e:
+        except ImportException as e:  # noqa: F821
             self.logger.error(f"Import human_eval test package failed. Error info is as below. \n {e}")
             return
 
@@ -471,10 +496,12 @@ class PrecisionTest:
         sample_yes = "How can we learning machine learning: yes"
         sample_no = "How can we learning machine learning: no"
         choice_tokens = [
-            self.tokenizer([sample_yes], return_tensors=TENSOR_TYPE_PYTORCH, max_length=2048,
-                           add_special_tokens=False).input_ids[0, -1].item(),
-            self.tokenizer([sample_no], return_tensors=TENSOR_TYPE_PYTORCH, max_length=2048,
-                           add_special_tokens=False).input_ids[0, -1].item()
+            self.tokenizer([sample_yes], return_tensors=TENSOR_TYPE_PYTORCH, max_length=2048, add_special_tokens=False)
+            .input_ids[0, -1]
+            .item(),
+            self.tokenizer([sample_no], return_tensors=TENSOR_TYPE_PYTORCH, max_length=2048, add_special_tokens=False)
+            .input_ids[0, -1]
+            .item(),
         ]
 
         def build_prompt(title, text, passage):
@@ -482,8 +509,9 @@ class PrecisionTest:
             return prompt
 
         def run_test(choice_tokens, correct_total, sum_total):
-            for entry in tqdm(glob.glob((Path(self.dataset_path) / "*.jsonl").as_posix(), recursive=True),
-                              desc='global'):
+            for entry in tqdm(
+                glob.glob((Path(self.dataset_path) / "*.jsonl").as_posix(), recursive=True), desc='global'
+            ):
                 dataset = []
                 entry = get_valid_read_path(entry)
                 with open(entry, encoding='utf-8') as f:
@@ -501,8 +529,13 @@ class PrecisionTest:
                     queries = []
                     for title, query, passage in zip(titles, texts, passages):
                         queries.append(build_prompt(title, query, passage))
-                    inputs = self.tokenizer(queries, padding=True, return_tensors=TENSOR_TYPE_PYTORCH, truncation=True,
-                                            return_token_type_ids=self.tokenizer_return_type_id).to(self.model.device)
+                    inputs = self.tokenizer(
+                        queries,
+                        padding=True,
+                        return_tensors=TENSOR_TYPE_PYTORCH,
+                        truncation=True,
+                        return_token_type_ids=self.tokenizer_return_type_id,
+                    ).to(self.model.device)
                     outputs = self.model(**inputs)
                     logits = outputs.logits[:, -1, :]
                     logits_softmax = F.log_softmax(logits.float(), dim=-1)
@@ -523,7 +556,8 @@ class PrecisionTest:
             self.logger.error("Did not ran any test, maybe wrong humaneval dataset folder.")
         else:
             self.logger.info(
-                f"correct rate:{correct_total / sum_total}, correct total:{correct_total}, sum_total:{sum_total}")
+                f"correct rate:{correct_total / sum_total}, correct total:{correct_total}, sum_total:{sum_total}"
+            )
 
     def __save_humaneval_res(self, results):
         self.result_file = os.path.dirname(os.path.abspath(__file__)) + os.sep + "result.jsonl"
@@ -555,41 +589,50 @@ class PrecisionTest:
             seq_start = np.array(tokenizer('A:')['input_ids'])
             seq_end = np.array(tokenizer('Q:')['input_ids'])
             try:
-                self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+                self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})  # nosec B105
             except AttributeError:
                 self.logger.info("this model can't set attribute 'pad_token'")
             with torch.no_grad():
                 for batch in tqdm(range(num_batches)):
-                    q_num = self.batch_size if (batch + 1) * self.batch_size <= num_rows \
+                    q_num = (
+                        self.batch_size
+                        if (batch + 1) * self.batch_size <= num_rows
                         else num_rows - self.batch_size * batch
+                    )
                     idx_list = [i for i in range(batch * self.batch_size, batch * self.batch_size + q_num)]
                     prompt = [truthfulqa_eval.format_prompt(frame.loc[idx]) for idx in idx_list]
-                    input_ids = tokenizer(prompt, padding=True, return_tensors=TENSOR_TYPE_PYTORCH,
-                                            truncation=True).input_ids
+                    input_ids = tokenizer(
+                        prompt, padding=True, return_tensors=TENSOR_TYPE_PYTORCH, truncation=True
+                    ).input_ids
                     max_len = input_ids.shape[-1] + 50
                     input_ids = input_ids.to(self.device)
-                    outputs = self.model.generate(input_ids, do_sample=False, max_length=max_len,
-                                                    pad_token_id=self.tokenizer.eos_token_id)
-                    output_token_ids_list = [output[len(input_ids[idx]):] 
-                                                for idx, output in enumerate(outputs.tolist())] 
+                    outputs = self.model.generate(
+                        input_ids, do_sample=False, max_length=max_len, pad_token_id=self.tokenizer.eos_token_id
+                    )
+                    output_token_ids_list = [
+                        output[len(input_ids[idx]) :] for idx, output in enumerate(outputs.tolist())
+                    ]
                     gen_arrs = np.array(output_token_ids_list)
-                    
-                    idx_start = [truthfulqa_eval.find_subsequence(gen_arr, seq_start, start=True)
-                                    for gen_arr in gen_arrs]
-                    idx_end = [truthfulqa_eval.find_subsequence(gen_arr, seq_end, start=False)
-                                for gen_arr in gen_arrs]
 
-                    output_token_ids_list = [output_token_ids[idx_start[output_token_ids_idx]:
-                                                                idx_end[output_token_ids_idx]] 
-                    for output_token_ids_idx, output_token_ids in enumerate(output_token_ids_list)]
-                    output_strs = [tokenizer.decode(output_token_ids, skip_special_tokens=True)
-                                    for output_token_ids in output_token_ids_list]
+                    idx_start = [
+                        truthfulqa_eval.find_subsequence(gen_arr, seq_start, start=True) for gen_arr in gen_arrs
+                    ]
+                    idx_end = [truthfulqa_eval.find_subsequence(gen_arr, seq_end, start=False) for gen_arr in gen_arrs]
+
+                    output_token_ids_list = [
+                        output_token_ids[idx_start[output_token_ids_idx] : idx_end[output_token_ids_idx]]
+                        for output_token_ids_idx, output_token_ids in enumerate(output_token_ids_list)
+                    ]
+                    output_strs = [
+                        tokenizer.decode(output_token_ids, skip_special_tokens=True)
+                        for output_token_ids in output_token_ids_list
+                    ]
                     output_str = [output_str.strip() for output_str in output_strs]
 
                     for idx in idx_list:
-                        frame.loc[idx, tag] = output_str[idx % self.batch_size] 
+                        frame.loc[idx, tag] = output_str[idx % self.batch_size]
             return frame
-        
+
         def run_probs(frame):
             truthfulqa_eval.set_columns(tag, frame)
             with torch.no_grad():
@@ -622,10 +665,10 @@ class PrecisionTest:
                 input_ids = input_ids.to(self.device)
                 prompt_ids = prompt_ids.to(self.device)
                 logits = self.model(prompt_ids)[0].squeeze(0)
-                logits = logits[input_ids.shape[-1] - 1: -1, :]
+                logits = logits[input_ids.shape[-1] - 1 : -1, :]
 
                 logits_softmax = F.log_softmax(logits.float(), dim=-1)
-                prompt_ids = prompt_ids[0, input_ids.shape[-1]:]
+                prompt_ids = prompt_ids[0, input_ids.shape[-1] :]
                 log_probs = logits_softmax[range(logits_softmax.shape[0]), prompt_ids.squeeze(0)]
                 log_probs = log_probs[3:]
                 scores_answer.append(log_probs.sum().item())
@@ -633,28 +676,21 @@ class PrecisionTest:
 
         tokenizer = self.tokenizer
         tag = "test_model"
-        
+
         frame = run_answers()
         frame = run_probs(frame)
         frame = truthfulqa_eval.run_bleu_and_rouge(tag, frame)
-    
+
         results = truthfulqa_eval.format_frame(frame)
 
         results = results.mean(axis=0)
-        results = results.reset_index().rename(columns={'level_0': 'Model',
-                                                        'level_1': 'Metric',
-                                                        0: 'Value'})
+        results = results.reset_index().rename(columns={'level_0': 'Model', 'level_1': 'Metric', 0: 'Value'})
 
-        results = results[results['Metric'].isin(['MC1', 'MC2',
-                                                'bleu diff',
-                                                'rouge1 diff',
-                                                'BLEURT diff'])]
-        
+        results = results[results['Metric'].isin(['MC1', 'MC2', 'bleu diff', 'rouge1 diff', 'BLEURT diff'])]
+
         results = pd.pivot_table(results, 'Value', 'Model', 'Metric')
 
-        results = results.rename(columns={'bleu diff': 'BLEU',
-                                            'rouge1 diff': 'ROUGE',
-                                            'BLEURT diff': 'BLEURT'})
+        results = results.rename(columns={'bleu diff': 'BLEU', 'rouge1 diff': 'ROUGE', 'BLEURT diff': 'BLEURT'})
         self.logger.info(f"results:{results}")
 
     def __run_full_dataset_mmlu(self):
@@ -664,32 +700,34 @@ class PrecisionTest:
             self.__run_full_dataset_mmlu_few_shots()
 
     def __run_full_dataset_mmlu_0_shot(self):
-        def get_subject_mapping():            
+        def get_subject_mapping():
             subject_mapping_path = os.path.join(self.dataset_path, "subject_mapping.json")
             subject_mapping = json_safe_load(subject_mapping_path)
             return subject_mapping
-        
+
         def load_csv_by_task_name(task_name, dataset_path):
             csv_file_path = get_valid_path(os.path.join(dataset_path, "test", task_name + "_test.csv"))
             val_df = pd.read_csv(csv_file_path, header=None)
             return val_df
-        
+
         def format_example(name, df, idx):
             question = df.iloc[idx, 0]
             a = df.iloc[idx, 1]
             b = df.iloc[idx, 2]
             c = df.iloc[idx, 3]
             d = df.iloc[idx, 4]
-            prompt = "\nThere is a single choice question about {}. Answer the question by replying A, B, C or D.\n" \
-                     "Q: {}\nA. {}\nB. {}\nC. {}\nD. {}\n" \
-                     "Let's think step by step. A: ".format(name.replace("_", " "), question, a, b, c, d)
+            prompt = (
+                "\nThere is a single choice question about {}. Answer the question by replying A, B, C or D.\n"
+                "Q: {}\nA. {}\nB. {}\nC. {}\nD. {}\n"
+                "Let's think step by step. A: ".format(name.replace("_", " "), question, a, b, c, d)
+            )
             return prompt
 
         correct_total = 0
         sum_total = 0
         result_total = []
         try:
-            self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})  # nosec B105
         except AttributeError:
             self.logger.info("this model can't set attribute 'pad_token'")
 
@@ -713,14 +751,18 @@ class PrecisionTest:
                 inputs = inputs.to(self.device)
                 tokenizer_out_ids = inputs.input_ids.to(self.device)
                 attention_mask = inputs.attention_mask.to(self.device)
-                outputs = self.model.generate(inputs=tokenizer_out_ids, attention_mask=attention_mask,
-                                                do_sample=False, max_new_tokens=1024,
-                                                pad_token_id=self.tokenizer.eos_token_id)
+                outputs = self.model.generate(
+                    inputs=tokenizer_out_ids,
+                    attention_mask=attention_mask,
+                    do_sample=False,
+                    max_new_tokens=1024,
+                    pad_token_id=self.tokenizer.eos_token_id,
+                )
                 answers = []
                 for idx, output in enumerate(outputs.tolist()):
-                    output = output[len(inputs["input_ids"][idx]):]
+                    output = output[len(inputs["input_ids"][idx]) :]
                     answers.append(self.tokenizer.decode(output))
-                
+
                 answer_results = [self.__postprocess(answer, "ABCD") for answer in answers]
                 is_correct = []
                 for answer_result, label in zip(answer_results, labels):
@@ -735,13 +777,13 @@ class PrecisionTest:
             index += 1
         if sum_total == 0:
             self.logger.error(
-                f"Did not run any test, maybe wrong mmlu dataset folder. Current folder is {self.dataset_path}")
+                f"Did not run any test, maybe wrong mmlu dataset folder. Current folder is {self.dataset_path}"
+            )
             return
         total = ["total", correct_total / sum_total, correct_total, sum_total]
         self.logger.info(f"total result:{total}")
 
-    
-    def __run_full_dataset_mmlu_few_shots(self): 
+    def __run_full_dataset_mmlu_few_shots(self):
         choices = ["A", "B", "C", "D"]
         test_set = {"mmlu": "test"}
 
@@ -749,27 +791,28 @@ class PrecisionTest:
             subject_mapping_path = os.path.join(self.dataset_path, "subject_mapping.json")
             subject_mapping = json_safe_load(subject_mapping_path)
             return subject_mapping["mmlu_all_sets"]
-        
+
         def load_csv_by_task_name(task_name, dataset_path):
             row_begin_idx = 0
             col_begin_idx = 0
             dev_file_path = get_valid_path(os.path.join(dataset_path, "dev", task_name + "_dev.csv"))
             ori_dev_df = pd.read_csv(dev_file_path, header=None)
-            val_file_path = get_valid_path(os.path.join(dataset_path, test_set.get(self.dataset), 
-                                                  f"{task_name}_{test_set.get(self.dataset)}.csv"))
+            val_file_path = get_valid_path(
+                os.path.join(dataset_path, test_set.get(self.dataset), f"{task_name}_{test_set.get(self.dataset)}.csv")
+            )
             ori_val_df = pd.read_csv(val_file_path, header=None)
 
-            dev_df = ori_dev_df.iloc[row_begin_idx:row_begin_idx + self.shot, col_begin_idx:]
+            dev_df = ori_dev_df.iloc[row_begin_idx : row_begin_idx + self.shot, col_begin_idx:]
             val_df = ori_val_df.iloc[row_begin_idx:, col_begin_idx:]
             return dev_df, val_df
-        
+
         def format_subject(subject):
             sub_set = subject.split("_")
             res = ""
             for entry in sub_set:
-                res += " " + entry    
+                res += " " + entry
             return res
-            
+
         def format_example(df, idx, include_answer=True):
             prompt = df.iloc[idx, 0]
             k = len(choices)
@@ -779,10 +822,11 @@ class PrecisionTest:
             if include_answer:
                 prompt += " {}\n\n".format(df.iloc[idx, k + 1])
             return prompt
-        
+
         def gen_prompt(train_df, subject, k=-1):
-            prompt = "The following are multiple choice questions " \
-                     "(with answers) about {}.\n\n".format(format_subject(subject))
+            prompt = "The following are multiple choice questions (with answers) about {}.\n\n".format(
+                format_subject(subject)
+            )
             if k == -1:
                 k = train_df.shape[0]
             for i in range(k):
@@ -792,9 +836,9 @@ class PrecisionTest:
         correct_total = 0
         sum_total = 0
         result_total = []
-        is_result = False
+        is_result = False  # noqa: F841
         try:
-            self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})  # nosec B105
         except AttributeError:
             self.logger.info("this model can't set attribute 'pad_token'")
 
@@ -811,7 +855,7 @@ class PrecisionTest:
                 q_num = self.batch_size if (i + 1) * self.batch_size <= task_len else task_len - i * self.batch_size
                 prompt_ends = []
                 for j in range(q_num):
-                    prompt_ends.append(format_example(val_df, i * self.batch_size + j, include_answer=False))                
+                    prompt_ends.append(format_example(val_df, i * self.batch_size + j, include_answer=False))
                 train_prompts = [gen_prompt(dev_df, task_name, self.shot)] * q_num
                 prompt = [t + p for t, p in zip(train_prompts, prompt_ends)]
                 labels = [val_df.iloc[i * self.batch_size + j, val_df.shape[1] - 1] for j in range(q_num)]
@@ -820,12 +864,16 @@ class PrecisionTest:
                 inputs = inputs.to(self.device)
                 tokenizer_out_ids = inputs.input_ids.to(self.device)
                 attention_mask = inputs.attention_mask.to(self.device)
-                outputs = self.model.generate(inputs=tokenizer_out_ids, attention_mask=attention_mask, do_sample=False,
-                                                max_new_tokens=20,
-                                                pad_token_id=self.tokenizer.eos_token_id)
+                outputs = self.model.generate(
+                    inputs=tokenizer_out_ids,
+                    attention_mask=attention_mask,
+                    do_sample=False,
+                    max_new_tokens=20,
+                    pad_token_id=self.tokenizer.eos_token_id,
+                )
                 answers = []
                 for idx in range(len(outputs)):
-                    output = outputs.tolist()[idx][len(inputs["input_ids"][idx]):]
+                    output = outputs.tolist()[idx][len(inputs["input_ids"][idx]) :]
                     response = self.tokenizer.decode(output)
                     answers.append(response)
 
@@ -841,10 +889,11 @@ class PrecisionTest:
             correct_total += correct
             sum_total += task_len
             index += 1
-        
+
         if sum_total == 0:
             self.logger.error(
-                f"Did not run any test, maybe wrong mmlu dataset folder. Current folder is {self.dataset_path}")
+                f"Did not run any test, maybe wrong mmlu dataset folder. Current folder is {self.dataset_path}"
+            )
             return
         total = ["total", correct_total / sum_total, correct_total, sum_total]
         self.logger.info(f"total result:{total}")

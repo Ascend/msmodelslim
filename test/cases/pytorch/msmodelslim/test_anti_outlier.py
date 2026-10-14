@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import torch
 import unittest
 
@@ -70,7 +71,6 @@ def test_anti_outlier_m3():
 
 
 class TestAdapterMethods(unittest.TestCase):
-
     def test_check_all_names_not_disable_anti(self):
         """测试 check_all_names_not_disable_anti 方法"""
 

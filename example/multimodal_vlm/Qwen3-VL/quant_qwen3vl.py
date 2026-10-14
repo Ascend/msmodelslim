@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,23 +18,24 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-member,no-name-in-module
 
 import os
 import argparse
 import sys
 import torch
-import torch_npu
+import torch_npu  # noqa: F401
 from transformers import Qwen3VLForConditionalGeneration, AutoProcessor, AutoConfig
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, "..", "..", ".."))
 sys.path.append(parent_directory)
 
-from example.common.utils import cmd_bool
-from example.common.security.path import get_valid_read_path, get_write_directory
-from example.common.vlm_utils import VlmSafeGenerator, ModifyConfigParams, CopyTokenizerParams
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
+from example.common.utils import cmd_bool  # noqa: E402
+from example.common.security.path import get_valid_read_path, get_write_directory  # noqa: E402
+from example.common.vlm_utils import VlmSafeGenerator, ModifyConfigParams, CopyTokenizerParams  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig  # noqa: E402
 
 CPU = "cpu"
 NPU = "npu"
@@ -68,21 +69,21 @@ if __name__ == '__main__':
     # 1.加载模型
     device_map = CPU if args.device_type == CPU else "auto"
     torch_dtype = torch.bfloat16 if args.torch_dtype == "bf16" else torch.float16
-    model = Qwen3VLForConditionalGeneration.from_pretrained(
+    model = Qwen3VLForConditionalGeneration.from_pretrained(  # nosec B615
         args.model_path,
         trust_remote_code=args.trust_remote_code,
         torch_dtype="float16",
         local_files_only=True,
         device_map=device_map,
-        attn_implementation="eager"
+        attn_implementation="eager",
     ).eval()
 
-    config = AutoConfig.from_pretrained(
+    config = AutoConfig.from_pretrained(  # nosec B615
         args.model_path, trust_remote_code=args.trust_remote_code, local_files_only=True
     )
 
     # 2.加载处理器
-    processor = AutoProcessor.from_pretrained(args.model_path, local_files_only=True)
+    processor = AutoProcessor.from_pretrained(args.model_path, local_files_only=True)  # nosec B615
 
     # 3.设置回退层
     disable_names = []
@@ -116,26 +117,29 @@ if __name__ == '__main__':
                         "type": "image",
                         "image": image_path,
                     },
-                    {
-                        "type": "text",
-                        "text": "Please describe this picture in detail."
-                    },
+                    {"type": "text", "text": "Please describe this picture in detail."},
                 ],
             }
         ]
         inputs = processor.apply_chat_template(
-            messages,
-            tokenize=True,
-            add_generation_prompt=True,
-            return_dict=True,
-            return_tensors="pt"
+            messages, tokenize=True, add_generation_prompt=True, return_dict=True, return_tensors="pt"
         ).to(args.device_type)
 
         calib_data.append(
-            [inputs["input_ids"], inputs["attention_mask"],
-             None, None, None, None,
-             inputs["pixel_values"], None, inputs["image_grid_thw"],
-             None, None, 0]
+            [
+                inputs["input_ids"],
+                inputs["attention_mask"],
+                None,
+                None,
+                None,
+                None,
+                inputs["pixel_values"],
+                None,
+                inputs["image_grid_thw"],
+                None,
+                None,
+                0,
+            ]
         )
 
     # 5.异常值抑制
@@ -164,7 +168,7 @@ if __name__ == '__main__':
         co_sparse=args.co_sparse,
         fraction=args.fraction,
         use_sigma=args.use_sigma,
-        sigma_factor=args.sigma_factor
+        sigma_factor=args.sigma_factor,
     )
 
     with torch.autocast(device_type=args.device_type, dtype=torch.float16):
@@ -177,7 +181,7 @@ if __name__ == '__main__':
     quant_type = quant_config.model_quant_type.lower()
     checker = VlmSafeGenerator()
     auto_config = checker.get_config_from_pretrained(args.model_path, trust_remote_code=args.trust_remote_code)
-    
+
     # 使用dataclass参数
     modify_params = ModifyConfigParams(
         model_dir=args.model_path,
@@ -185,12 +189,9 @@ if __name__ == '__main__':
         torch_dtype="torch.bfloat16" if torch_dtype == torch.bfloat16 else "torch.float16",
         quantize_type=quant_type,
         args=args,
-        quantize_config_parts=['text_config', 'vision_config']
+        quantize_config_parts=['text_config', 'vision_config'],
     )
     checker.modify_config(modify_params)
-    
-    copy_params = CopyTokenizerParams(
-        model_dir=args.model_path,
-        dest_dir=args.save_directory
-    )
+
+    copy_params = CopyTokenizerParams(model_dir=args.model_path, dest_dir=args.save_directory)
     checker.copy_tokenizer_files(copy_params)

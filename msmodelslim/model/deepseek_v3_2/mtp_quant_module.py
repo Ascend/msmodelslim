@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import os
 
@@ -41,7 +42,7 @@ def remove_zero_and_shift(matrix):
     # Step 2: 构造掩码，标记要保留的元素（排除每行的第一个 0）
     # 生成一个 [n, m] 的坐标矩阵，标记每列是否等于 zero_pos
     col_indices = torch.arange(m, device=matrix.device).expand(n, -1)  # [n, m]
-    mask = (col_indices != zero_pos.unsqueeze(1))  # [n, m]
+    mask = col_indices != zero_pos.unsqueeze(1)  # [n, m]
 
     # Step 3: 用掩码筛选元素（自动展平，需要重新调整形状）
     filtered = matrix[mask].view(n, m - 1)  # [n, m-1]
@@ -55,9 +56,7 @@ def remove_zero_and_shift(matrix):
 class SharedHead(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.norm = DeepseekV3RMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
-        )
+        self.norm = DeepseekV3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
     def forward(self, hidden_states):
@@ -86,23 +85,13 @@ class DeepseekV3RMSNorm(nn.Module):
 class MTPLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.enorm = DeepseekV3RMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
-        )
-        self.hnorm = DeepseekV3RMSNorm(
-            config.hidden_size, eps=config.rms_norm_eps
-        )
+        self.enorm = DeepseekV3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.hnorm = DeepseekV3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.shared_head = SharedHead(config)
 
-        self.eh_proj = nn.Linear(
-            config.hidden_size * 2,
-            config.hidden_size,
-            bias=False
-        )
-        self.embed_tokens = nn.Embedding(
-            config.vocab_size, config.hidden_size
-        )
+        self.eh_proj = nn.Linear(config.hidden_size * 2, config.hidden_size, bias=False)
+        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size)
 
 
 def get_mtp_layer(config, model_path):
@@ -110,10 +99,7 @@ def get_mtp_layer(config, model_path):
     mtp_layer = MTPLayer(config)
     mtp_safetensor = os.path.join(model_path, "model-00163-of-000163.safetensors")
     mtp_safetensor = get_valid_read_path(
-        mtp_safetensor,
-        size_max=MAX_READ_FILE_SIZE_16G,
-        is_dir=False,
-        check_user_stat=True
+        mtp_safetensor, size_max=MAX_READ_FILE_SIZE_16G, is_dir=False, check_user_stat=True
     )
     mtp_weight = load_file(mtp_safetensor, device="cpu")
     new_state_dict = {}

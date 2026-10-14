@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
 
 """
 Usage:
@@ -25,14 +26,15 @@ TEST_PATH=$PWD/test/fuzz/low_rank_decompose/from_fixed/channel_fixed/
 python3 -m coverage run ${TEST_PATH}/fuzz_test.py ${TEST_PATH}/samples/ -atheris_runs=1000
 """
 
-import sys
-import logging
+import sys  # noqa: E402
+import logging  # noqa: E402
 
-import atheris
+import atheris  # noqa: E402
 
 with atheris.instrument_imports():
-     from msmodelslim.pytorch.low_rank_decompose import Decompose
-     from resources.sample_net_torch import LrdSampleNetwork
+    from msmodelslim.pytorch.low_rank_decompose import Decompose
+    from resources.sample_net_torch import LrdSampleNetwork
+
 
 @atheris.instrument_func
 def fuzz_test(input_bytes):

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-member,pointless-string-statement
 
 """
 测试用例执行脚本（与 Shell 联动版）
@@ -32,14 +33,15 @@ See the Mulan PSL v2 for more details.
 - 单独执行：python3 run_st.py -d ./test_cases -p "**/*.sh" -t 300
 """
 
-import os
-import sys
-import subprocess
-import argparse
-import time
-import signal
-from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+import os  # noqa: E402
+import sys  # noqa: E402
+import subprocess  # noqa: E402
+import argparse  # noqa: E402
+import time  # noqa: E402
+import signal  # noqa: E402
+from pathlib import Path  # noqa: E402
+from typing import List, Dict, Tuple  # noqa: E402
+from typing import Optional  # noqa: E402, F401
 
 
 # -------------------------- 工具函数：特殊字符过滤（适配 Shell/grep 解析） --------------------------
@@ -66,7 +68,8 @@ def sanitize_all(s: str, enable: bool = False) -> str:
     sensitive_chars = (
         r'()[]{}'  # 正则分组/范围符
         r'|*?+^$\\'  # 管道/通配符/正则量词
-        r'&<>!@#%~`"'';:='  # Shell 特殊操作符
+        r'&<>!@#%~`"'
+        ';:='  # Shell 特殊操作符
     )
 
     # 替换所有敏感字符为空（也可替换为下划线，根据需求调整）
@@ -133,11 +136,11 @@ class TestCaseExecutor:
 
         # 初始化日志（输出关键配置，便于 Shell 解析）
         self.log_output("=" * 60)
-        self.log_output(f"=== 测试任务初始化完成 ===")
+        self.log_output("=== 测试任务初始化完成 ===")
         self.log_output(f"用例基础目录：{sanitize_all(str(self.base_dir))}")
         self.log_output(f"单个用例超时时间：{self.timeout} 秒")
         self.log_output(f"日志文件路径：{sanitize_all(str(self.log_file))}")
-        self.log_output(f"日志特性：控制台与文件实时同步输出")
+        self.log_output("日志特性：控制台与文件实时同步输出")
         self.log_output("=" * 60)
 
     def log_output(self, msg: str, end: str = "\n") -> None:
@@ -206,13 +209,13 @@ class TestCaseExecutor:
 
         try:
             # subprocess.run 捕获输出，避免干扰正常日志
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: F841
                 ["chmod", "-R", mode, str(self.base_dir)],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
-                check=True  # 若 chmod 返回非 0 码，触发 CalledProcessError
+                check=True,  # 若 chmod 返回非 0 码，触发 CalledProcessError
             )
             self.log_output(f"[权限设置] 成功：{safe_dir} 权限已更新为 {mode}")
         except subprocess.CalledProcessError as e:
@@ -222,7 +225,7 @@ class TestCaseExecutor:
             self.log_output(f"[权限设置] 建议：手动执行 `chmod -R {mode} {safe_dir}` 后重试")
         except FileNotFoundError:
             # 极端场景：系统无 chmod 命令（几乎不可能）
-            self.log_output(f"[权限设置] 异常：未找到 chmod 命令（系统工具缺失）")
+            self.log_output("[权限设置] 异常：未找到 chmod 命令（系统工具缺失）")
         except Exception as e:
             # 其他未知异常（如目录被删除）
             err_msg = sanitize_all(str(e))
@@ -261,9 +264,11 @@ class TestCaseExecutor:
                 # 1. 是文件（非目录）
                 # 2. 不是符号链接
                 # 3. 拥有执行权限
-                if (file_path.is_file()
-                        and not file_path.is_symlink()  # 过滤符号链接
-                        and os.access(file_path, os.X_OK)):
+                if (
+                    file_path.is_file()
+                    and not file_path.is_symlink()  # 过滤符号链接
+                    and os.access(file_path, os.X_OK)
+                ):
                     test_cases.append(file_path)
         except OSError as e:
             # 扫描异常（如目录无访问权限）
@@ -276,7 +281,7 @@ class TestCaseExecutor:
 
         # 输出发现结果
         if not test_cases:
-            self.log_output(f"[用例发现] 未找到符合条件的可执行用例（需 .sh 脚本、非符号链接且有执行权限）")
+            self.log_output("[用例发现] 未找到符合条件的可执行用例（需 .sh 脚本、非符号链接且有执行权限）")
         else:
             self.log_output(f"[用例发现] 共找到 {len(test_cases)} 个可执行用例：")
             for idx, case in enumerate(test_cases, 1):
@@ -332,7 +337,7 @@ class TestCaseExecutor:
                 cwd=test_case.parent,  # 切换到用例所在目录（避免相对路径问题）
                 encoding="utf-8",  # 输出编码
                 errors="replace",  # 编码错误时替换为 �
-                check=False  # 不自动抛出 CalledProcessError（手动判断返回码）
+                check=False,  # 不自动抛出 CalledProcessError（手动判断返回码）
             )
 
             # 3. 计算耗时，处理输出
@@ -348,31 +353,31 @@ class TestCaseExecutor:
 
             # 5. 判断执行结果（返回码 0 视为成功）
             if result.returncode == 0:
-                self.log_output(f"[执行结果] 状态：成功 ✅")
+                self.log_output("[执行结果] 状态：成功 ✅")
                 success = True
             else:
-                self.log_output(f"[执行结果] 状态：失败 ❌")
+                self.log_output("[执行结果] 状态：失败 ❌")
 
         except subprocess.TimeoutExpired:
             # 用例超时（subprocess 会自动杀死子进程）
             exec_time = round(time.time() - start_time, 2)
             self.log_output(f"耗时：{exec_time} 秒")
-            self.log_output(f"[执行结果] 状态：超时 ⏰")
+            self.log_output("[执行结果] 状态：超时 ⏰")
             self.log_output(f"超时原因：超过 {self.timeout} 秒限制")
 
         except FileNotFoundError:
             # 用例文件不存在（执行中被删除）
             exec_time = round(time.time() - start_time, 2)
             self.log_output(f"耗时：{exec_time} 秒")
-            self.log_output(f"[执行结果] 状态：异常 ⚠")
-            self.log_output(f"异常原因：用例文件不存在（可能被删除）")
+            self.log_output("[执行结果] 状态：异常 ⚠")
+            self.log_output("异常原因：用例文件不存在（可能被删除）")
 
         except Exception as e:
             # 其他未知异常（如权限突然被回收）
             exec_time = round(time.time() - start_time, 2)
             err_msg = sanitize_all(str(e))
             self.log_output(f"耗时：{exec_time} 秒")
-            self.log_output(f"[执行结果] 状态：异常 ⚠")
+            self.log_output("[执行结果] 状态：异常 ⚠")
             self.log_output(f"异常原因：{err_msg}")
 
         # 用例分隔线（便于 Shell 按行分割不同用例的日志）
@@ -390,7 +395,7 @@ class TestCaseExecutor:
             bool：所有用例执行成功返回 True，否则返回 False
         """
         total = len(test_cases)
-        self.log_output(f"\n=== 开始顺序执行用例 ===")
+        self.log_output("\n=== 开始顺序执行用例 ===")
         self.log_output(f"总用例数：{total}，执行策略：失败不中断（便于完整统计）")
         self.results.clear()  # 清空历史结果
 
@@ -401,20 +406,22 @@ class TestCaseExecutor:
             success, exec_time = self.execute_single_case(test_case, case_idx)
 
             # 记录结果（便于后续统计）
-            self.results.append({
-                "idx": case_idx,
-                "module": sanitize_all(test_case.parent.name),
-                "name": sanitize_all(test_case.name),
-                "success": success,
-                "time": exec_time
-            })
+            self.results.append(
+                {
+                    "idx": case_idx,
+                    "module": sanitize_all(test_case.parent.name),
+                    "name": sanitize_all(test_case.name),
+                    "success": success,
+                    "time": exec_time,
+                }
+            )
 
             # 若有任意用例失败，整体结果设为 False
             if not success:
                 all_passed = False
 
         # 输出执行汇总（便于 Shell 提取总结果）
-        self.log_output(f"\n=== 测试执行汇总 ===")
+        self.log_output("\n=== 测试执行汇总 ===")
         passed = sum(1 for res in self.results if res["success"])
         failed = total - passed
         total_time = round(sum(res["time"] for res in self.results), 2)
@@ -440,7 +447,7 @@ class TestCaseExecutor:
         2. 支持设置最大并行数（--max-workers 参数）
         3. 并行日志需加锁，避免输出混乱
         """
-        self.log_output(f"\n[WARNING] 并行执行功能暂未实现（预留接口），自动切换为顺序执行")
+        self.log_output("\n[WARNING] 并行执行功能暂未实现（预留接口），自动切换为顺序执行")
         return self.execute_sequentially(test_cases)
 
 
@@ -461,48 +468,28 @@ def main():
     # 2. 解析命令行参数（适配 Shell 传参）
     parser = argparse.ArgumentParser(
         description="测试用例执行脚本（与 Shell 联动版）",
-        formatter_class=argparse.RawTextHelpFormatter  # 保留帮助信息的换行
+        formatter_class=argparse.RawTextHelpFormatter,  # 保留帮助信息的换行
     )
     parser.add_argument(
-        '--base-dir', '-d',
-        default=str(default_base_dir),
-        help='用例基础目录（默认：st_pr，相对路径会转为绝对路径）'
+        '--base-dir', '-d', default=str(default_base_dir), help='用例基础目录（默认：st_pr，相对路径会转为绝对路径）'
     )
     parser.add_argument(
-        '--pattern', '-p',
-        default='**/*.sh',
-        help='用例匹配模式（默认：**/*.sh，递归匹配所有 .sh 脚本）'
+        '--pattern', '-p', default='**/*.sh', help='用例匹配模式（默认：**/*.sh，递归匹配所有 .sh 脚本）'
+    )
+    parser.add_argument('--timeout', '-t', type=int, default=600, help='单个用例超时时间（默认：600 秒，必须为正数）')
+    parser.add_argument('--parallel', '-par', action='store_true', help='启用并行执行（暂未实现，默认顺序执行）')
+    parser.add_argument(
+        '--modules', '-m', nargs='+', help='指定执行的模块列表（模块 = 用例所在父目录名，如：-m module1 module2）'
     )
     parser.add_argument(
-        '--timeout', '-t',
-        type=int,
-        default=600,
-        help='单个用例超时时间（默认：600 秒，必须为正数）'
-    )
-    parser.add_argument(
-        '--parallel', '-par',
-        action='store_true',
-        help='启用并行执行（暂未实现，默认顺序执行）'
-    )
-    parser.add_argument(
-        '--modules', '-m',
-        nargs='+',
-        help='指定执行的模块列表（模块 = 用例所在父目录名，如：-m module1 module2）'
-    )
-    parser.add_argument(
-        '--perm-mode', '-per',
-        default='750',
-        help='用例目录递归权限模式（默认：750，需 3 位 0-7 数字，如 644、777）'
+        '--perm-mode', '-per', default='750', help='用例目录递归权限模式（默认：750，需 3 位 0-7 数字，如 644、777）'
     )
     args = parser.parse_args()
 
     # 3. 核心执行流程（加异常捕获，避免脚本崩溃无日志）
     try:
         # 初始化执行器
-        executor = TestCaseExecutor(
-            base_dir=args.base_dir,
-            timeout=args.timeout
-        )
+        executor = TestCaseExecutor(base_dir=args.base_dir, timeout=args.timeout)
 
         # 设置目录权限（可选，默认执行）
         executor.set_base_dir_permissions(mode=args.perm_mode)
@@ -519,10 +506,7 @@ def main():
             executor.log_output(f"\n[模块筛选] 指定执行模块：{safe_modules}")
 
             # 筛选规则：用例的父目录名在指定模块列表中
-            filtered_cases = [
-                case for case in test_cases
-                if sanitize_all(case.parent.name) in safe_modules
-            ]
+            filtered_cases = [case for case in test_cases if sanitize_all(case.parent.name) in safe_modules]
 
             if not filtered_cases:
                 executor.log_output(f"[ERROR] 指定模块 {safe_modules} 无可用用例，脚本退出")

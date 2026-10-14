@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import os
 import shutil
 import tempfile
@@ -28,11 +29,18 @@ import torch
 from .base import FakeLlamaModelAdapter, invoke_test, is_npu_available
 
 
-@pytest.mark.parametrize("test_device, test_dtype", [
-    pytest.param("cpu", torch.float32),
-    pytest.param("npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-    pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-])
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
 @pytest.mark.smoke
 def test_iter_smooth_sym_process(test_device, test_dtype):
     torch.set_default_dtype(test_dtype)
@@ -53,11 +61,19 @@ def test_iter_smooth_sym_process(test_device, test_dtype):
         if os.path.exists(tmp_dir):
             shutil.rmtree(tmp_dir)
 
-@pytest.mark.parametrize("test_device, test_dtype", [
-    pytest.param("cpu", torch.float32),
-    pytest.param("npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-    pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-])
+
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
 @pytest.mark.smoke
 def test_iter_smooth_asym_process(test_device, test_dtype):
     torch.set_default_dtype(test_dtype)

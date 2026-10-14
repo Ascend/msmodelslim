@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,10 +18,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,consider-using-generator,consider-using-set-comprehension,super-with-arguments
+
 import inspect
 import itertools
 from abc import ABC
-from typing import Union, Optional, Callable, Any, List, Tuple, Dict, Iterable, NoReturn, Set
+from typing import Union, Optional, Callable, Any, List, Tuple, Dict, Iterable, NoReturn, Set  # noqa: F401
 
 import torch
 from torch import Tensor
@@ -31,27 +33,29 @@ import torch.nn as nn
 from ascend_utils.common.utils import CallParams
 from ascend_utils.core.dag.dag_hook import DagHook
 from ascend_utils.core.dag.dag_node import DagNode
-from ascend_utils.common.utils import CallParams, ResListToRelease, concatenate_name_in_network, OperatorAttrName
+from ascend_utils.common.utils import ResListToRelease, concatenate_name_in_network, OperatorAttrName  # noqa: F401
 
 
 class DagTorchHook(DagHook, ABC):
     """
-        hook方式获取torch的DAG图
+    hook方式获取torch的DAG图
 
-        优势：
-            1. 简单好理解
-        劣势：
-            1. 无法替换函数类节点
-            2. 无法跟踪到多个 if 分支
-            3. 如果存在共享卷积（在不同的父Module 中）无法正常替换
-            4. 如果一个变量直接穿透算子（既是输入又是输出），以计算顺序为准，以最后一次计算输出作为后面使用的输入，可能与代码写法不一致
+    优势：
+        1. 简单好理解
+    劣势：
+        1. 无法替换函数类节点
+        2. 无法跟踪到多个 if 分支
+        3. 如果存在共享卷积（在不同的父Module 中）无法正常替换
+        4. 如果一个变量直接穿透算子（既是输入又是输出），以计算顺序为准，以最后一次计算输出作为后面使用的输入，可能与代码写法不一致
     """
 
-    def __init__(self,
-                 network: Module,
-                 inputs: Union[Tensor, List[Tensor], Tuple[Tensor], CallParams],
-                 hook_ops: Union[List[Any], None] = None,
-                 collapse_repeat_block=False):
+    def __init__(
+        self,
+        network: Module,
+        inputs: Union[Tensor, List[Tensor], Tuple[Tensor], CallParams],
+        hook_ops: Union[List[Any], None] = None,
+        collapse_repeat_block=False,
+    ):
         if not isinstance(network, torch.nn.Module):
             raise TypeError("network must be type torch.nn.Module")
         if not isinstance(inputs, (Tensor, list, tuple, CallParams)):
@@ -186,8 +190,12 @@ class DagTorchHook(DagHook, ABC):
         tensor_operator_hook_infos = self._get_operator_hook_infos(Tensor)
 
         unhook_modules = [
-                          torch.nn.Sequential, torch.nn.Container, torch.nn.ModuleList, torch.nn.ModuleDict,
-                          torch.nn.ParameterList, torch.nn.ParameterDict,
+            torch.nn.Sequential,
+            torch.nn.Container,
+            torch.nn.ModuleList,
+            torch.nn.ModuleDict,
+            torch.nn.ParameterList,
+            torch.nn.ParameterDict,
         ]
         nn_modules_hook_infos = self._get_class_hook_infos(torch.nn, torch.nn.Module)
         nn_modules = set([cell for cell, _, name in nn_modules_hook_infos if cell not in unhook_modules])
@@ -210,9 +218,17 @@ class DagTorchHook(DagHook, ABC):
         self._just_calc_order_op_type.update(modules_has_sub_model_in_network - nn_modules)
         nn_modules.update(modules_in_network)
 
-        nn_modules_hook_infos = [(getattr(op_type, "forward"), (op_type, "forward"), op_type.__name__)
-                                 for op_type in nn_modules]
+        nn_modules_hook_infos = [
+            (getattr(op_type, "forward"), (op_type, "forward"), op_type.__name__) for op_type in nn_modules
+        ]
 
-        return list(itertools.chain(torch_func_hook_infos, functional_func_hook_infos,
-                                    tensor_func_hook_infos, tensor_operator_hook_infos,
-                                    nn_modules_hook_infos, user_hook_infos))
+        return list(
+            itertools.chain(
+                torch_func_hook_infos,
+                functional_func_hook_infos,
+                tensor_func_hook_infos,
+                tensor_operator_hook_infos,
+                nn_modules_hook_infos,
+                user_hook_infos,
+            )
+        )

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from abc import abstractmethod
 
 import torch
@@ -30,12 +31,12 @@ from msmodelslim.utils.logging import get_logger
 class VirtualVModuleBase(nn.Module):
     @abstractmethod
     def update_weights(self):
-        raise ToDoError("update_weights is not implemented.",
-                        action="Please implement this method in the subclass.")
+        raise ToDoError("update_weights is not implemented.", action="Please implement this method in the subclass.")
 
     def forward(self, x):
-        raise SpecError("VirtualVModuleBase is not supported for forward.",
-                        action="Please do Not use this module for forward.")
+        raise SpecError(
+            "VirtualVModuleBase is not supported for forward.", action="Please do Not use this module for forward."
+        )
 
 
 class VirtualVModuleFromQKVFused(VirtualVModuleBase):
@@ -88,8 +89,10 @@ class VirtualVModuleFromQKVFused(VirtualVModuleBase):
             return "MQA"  # Multi-Query Attention
         elif self.num_key_value_heads == self.num_attention_heads:
             return "MHA"  # Multi-Head Attention
-        elif (self.num_key_value_heads < self.num_attention_heads and
-              self.num_attention_heads % self.num_key_value_heads == 0):
+        elif (
+            self.num_key_value_heads < self.num_attention_heads
+            and self.num_attention_heads % self.num_key_value_heads == 0
+        ):
             return "GQA"  # Grouped-Query Attention
         else:
             get_logger().warning("Invalid attention type, please check.")
@@ -145,14 +148,11 @@ class VirtualVModuleFromQKVFused(VirtualVModuleBase):
 class VirtualVModuleFromKVFused(VirtualVModuleBase):
     """
     Virtual V module for handling DeepSeek V3 KV fusion (expanded by head, row dimension concatenated as [K_nope, V])
-    
+
     Assumes qk_nope_head_dim equals v_head_dim, and automatically derives each head size from weight out_features.
     """
 
-    def __init__(self, kv_module: nn.Linear,
-                 num_attention_heads: int,
-                 qk_nope_head_dim: int,
-                 v_head_dim: int):
+    def __init__(self, kv_module: nn.Linear, num_attention_heads: int, qk_nope_head_dim: int, v_head_dim: int):
         super().__init__()
         self.kv_module = kv_module
         self.num_attention_heads = num_attention_heads
@@ -166,16 +166,16 @@ class VirtualVModuleFromKVFused(VirtualVModuleBase):
             raise SpecError(
                 'KV-fused module weight dimension mismatch, please check.',
                 action='Please ensure the weight out_features dimension '
-                       'is (qk_nope_head_dim + v_head_dim) * num_attention_heads.'
+                'is (qk_nope_head_dim + v_head_dim) * num_attention_heads.',
             )
 
         # Calculate all V row indices: for each head, select the latter v_head_dim rows
         kv_w = self.kv_module.weight.data.view(self.num_attention_heads, per_head_out, -1)
-        v_w = kv_w[:, self.qk_nope_head_dim:, :].contiguous().view(-1, kv_w.size(-1))
+        v_w = kv_w[:, self.qk_nope_head_dim :, :].contiguous().view(-1, kv_w.size(-1))
         self.weight = nn.Parameter(v_w.clone())
         if self.kv_module.bias is not None:
             kv_b = self.kv_module.bias.data.view(self.num_attention_heads, per_head_out)
-            v_b = kv_b[:, self.qk_nope_head_dim:].contiguous().view(-1)
+            v_b = kv_b[:, self.qk_nope_head_dim :].contiguous().view(-1)
             self.bias = nn.Parameter(v_b.clone())
 
     def update_weights(self):
@@ -184,7 +184,7 @@ class VirtualVModuleFromKVFused(VirtualVModuleBase):
             out_features = self.kv_module.weight.data.size(0)
             per_head_out = out_features // self.num_attention_heads
             kv_w = self.kv_module.weight.data.view(self.num_attention_heads, per_head_out, -1)
-            kv_w[:, self.qk_nope_head_dim:, :] = self.weight.data.view(self.num_attention_heads, self.v_head_dim, -1)
+            kv_w[:, self.qk_nope_head_dim :, :] = self.weight.data.view(self.num_attention_heads, self.v_head_dim, -1)
 
             # Handle bias update: if bias is produced after smoothing, update to kv_module
             if hasattr(self, 'bias') and self.bias is not None:
@@ -193,14 +193,15 @@ class VirtualVModuleFromKVFused(VirtualVModuleBase):
                     kv_b = self.kv_module.bias.data.view(self.num_attention_heads, per_head_out)
                     # self.bias is 1D, needs reshape to [num_attention_heads, v_head_dim]
                     v_bias_reshaped = self.bias.data.view(self.num_attention_heads, self.v_head_dim)
-                    kv_b[:, self.qk_nope_head_dim:] = v_bias_reshaped
+                    kv_b[:, self.qk_nope_head_dim :] = v_bias_reshaped
                 else:
                     # Original kv_module has no bias, but bias is produced after smoothing
                     # Create zero bias, then update V part
-                    new_bias = torch.zeros(out_features, device=self.kv_module.weight.device,
-                                           dtype=self.kv_module.weight.dtype)
+                    new_bias = torch.zeros(
+                        out_features, device=self.kv_module.weight.device, dtype=self.kv_module.weight.dtype
+                    )
                     kv_b = new_bias.view(self.num_attention_heads, per_head_out)
                     # self.bias is 1D, needs reshape to [num_attention_heads, v_head_dim]
                     v_bias_reshaped = self.bias.data.view(self.num_attention_heads, self.v_head_dim)
-                    kv_b[:, self.qk_nope_head_dim:] = v_bias_reshaped
+                    kv_b[:, self.qk_nope_head_dim :] = v_bias_reshaped
                     self.kv_module.bias = nn.Parameter(new_bias)

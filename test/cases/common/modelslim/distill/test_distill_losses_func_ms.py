@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,21 +18,34 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=ungrouped-imports
 
 import unittest
 
 import pytest
 import numpy as np
-import mindspore
-from mindspore import Tensor, nn, ops, context
+from mindspore import Tensor, context
 from mindspore import dtype as mstype
 
 from ascend_utils.mindspore.knowledge_distill.distill_losses_func_ms import (
-    REDUCE_NONE, REDUCE_MEAN, REDUCE_SUM,
-    mse_loss_ms, update_logits_by_temperature_ms,
-    KDMse, KLDivLoss, Mse, KDCrossEntropy,
-    HardKDCrossEntropy, HiddenMse, MMD, DISTILL_LOSS_FUNC_MS
+    REDUCE_NONE,
+    REDUCE_MEAN,
+    REDUCE_SUM,
+    mse_loss_ms,
+    update_logits_by_temperature_ms,
+    KDMse,
+    KLDivLoss,
+    Mse,
+    KDCrossEntropy,
+    HiddenMse,
+    MMD,
+    DISTILL_LOSS_FUNC_MS,
 )
+from ascend_utils.mindspore.knowledge_distill.distill_losses_func_ms import (
+    HardKDCrossEntropy,  # noqa: F401
+)  # noqa: F401
+from mindspore import nn, ops  # noqa: F401
+import mindspore  # noqa: F401
 
 
 class TestMSELossMS:

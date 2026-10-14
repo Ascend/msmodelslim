@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,25 +18,28 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
+
 """
 msmodelslim.utils.hook_util 模块的单元测试（pytest 版）
 """
 
-from unittest.mock import Mock
-import pytest
+from unittest.mock import Mock  # noqa: E402
+import pytest  # noqa: E402
 
-from msmodelslim.utils.hook_utils import (
+from msmodelslim.utils.hook_utils import (  # noqa: E402
     HookManager,
     add_before_hook,
-    add_after_hook,
-    add_error_hook,
     restore_target,
-    restore_all_hooks,
 )
+from msmodelslim.utils.hook_utils import (  # noqa: E402
+    add_after_hook,  # noqa: F401
+    add_error_hook,  # noqa: F401
+    restore_all_hooks,  # noqa: F401
+)  # noqa: F401
 
 
 class TestHookManager:
-
     @staticmethod
     def test_add_before_hook_executes_before_function(mock_self):
         """测试before钩子在目标函数执行前被调用"""
@@ -121,7 +124,6 @@ class TestHookManager:
         """测试restore_all方法能恢复所有被hook的目标"""
 
         class AnotherClass:
-
             @staticmethod
             def another_method():
                 return "original"
@@ -159,7 +161,6 @@ class TestHookManager:
         mock.manager = HookManager()
 
         class TestClass:
-
             @staticmethod
             def test_method(a, b=2):
                 return a + b

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement,unspecified-encoding
 
 """
 Usage:
@@ -25,17 +26,18 @@ TEST_PATH=$PWD/test/fuzz/mindspore_quant_api/create_quant_config/config_file
 python3 -m coverage run ${TEST_PATH}/fuzz_test.py ${TEST_PATH}/samples/ -atheris_runs=1000
 """
 
-import sys
-import json
-import logging
+import sys  # noqa: E402
+import json  # noqa: E402
+import logging  # noqa: E402
 
-import atheris
+import atheris  # noqa: E402
 
 
 @atheris.instrument_func
 def fuzz_test(input_bytes):
     # Put mindspore related imports inside, avoiding ARM atheris `cannot allocate memory in static TLS block` error.
     import mindspore as ms
+
     ms.set_context(device_target='CPU')  # NPU will be rather slow
 
     from test.resources import sample_net_mindspore as sample_net

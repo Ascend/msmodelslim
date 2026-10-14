@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-merging-isinstance,consider-using-generator,super-with-arguments
 
 import inspect
 from abc import ABC
@@ -34,22 +35,24 @@ from .dag_hook import DagHook
 
 class DagTorchHook(DagHook, ABC):
     """
-        hook方式获取torch的DAG图
+    hook方式获取torch的DAG图
 
-        优势：
-            1. 简单好理解
-        劣势：
-            1. 无法替换函数类节点
-            2. 无法跟踪到多个 if 分支
-            3. 如果存在共享卷积（在不同的父Module 中）无法正常替换
-            4. 如果一个变量直接穿透算子（既是输入又是输出），以计算顺序为准，以最后一次计算输出作为后面使用的输入，可能与代码写法不一致
+    优势：
+        1. 简单好理解
+    劣势：
+        1. 无法替换函数类节点
+        2. 无法跟踪到多个 if 分支
+        3. 如果存在共享卷积（在不同的父Module 中）无法正常替换
+        4. 如果一个变量直接穿透算子（既是输入又是输出），以计算顺序为准，以最后一次计算输出作为后面使用的输入，可能与代码写法不一致
     """
 
-    def __init__(self,
-                 network: Module,
-                 inputs: Union[Tensor, List[Tensor], Tuple[Tensor], CallParams],
-                 hook_ops: Union[List[Any], None] = None,
-                 anti_method=None):
+    def __init__(
+        self,
+        network: Module,
+        inputs: Union[Tensor, List[Tensor], Tuple[Tensor], CallParams],
+        hook_ops: Union[List[Any], None] = None,
+        anti_method=None,
+    ):
         if not isinstance(network, torch.nn.Module):
             raise TypeError("network must be type torch.nn.Module")
         if not isinstance(inputs, (Tensor, list, tuple, dict, CallParams)):
@@ -189,7 +192,7 @@ class DagTorchHook(DagHook, ABC):
                 return args if len(args) > 0 else kwargs
 
         self.replace_node(dag_node, Eq())
-        
+
     def get_module_cls(self):
         return torch.nn.Module
 
@@ -214,10 +217,12 @@ class DagTorchHook(DagHook, ABC):
         forward_str = "forward"
         nn_modules_hook_infos = self._get_class_hook_infos(torch.nn, torch.nn.Module)
         hook_modules = [torch.nn.Linear]
-        linear_hook_infos = [(getattr(cell, forward_str), (cell, forward_str), name)
-                                 for cell, _, name in nn_modules_hook_infos
-                                 if cell in hook_modules]
-        
+        linear_hook_infos = [
+            (getattr(cell, forward_str), (cell, forward_str), name)
+            for cell, _, name in nn_modules_hook_infos
+            if cell in hook_modules
+        ]
+
         user_hook_infos = []
         if user_hook_ops is not None:
             for hook_op in user_hook_ops:
@@ -235,14 +240,22 @@ class DagTorchHook(DagHook, ABC):
         tensor_operator_hook_infos = self._get_operator_hook_infos(Tensor)
 
         unhook_modules = [
-                              torch.nn.Sequential, torch.nn.Container, torch.nn.ModuleList, torch.nn.ModuleDict,
-                              torch.nn.ParameterList, torch.nn.ParameterDict, torch.nn.modules.module.Module, 
-                              torch.nn.modules.dropout.Dropout, torch.nn.modules.activation.SiLU
+            torch.nn.Sequential,
+            torch.nn.Container,
+            torch.nn.ModuleList,
+            torch.nn.ModuleDict,
+            torch.nn.ParameterList,
+            torch.nn.ParameterDict,
+            torch.nn.modules.module.Module,
+            torch.nn.modules.dropout.Dropout,
+            torch.nn.modules.activation.SiLU,
         ]
         nn_modules_hook_infos = self._get_class_hook_infos(torch.nn, torch.nn.Module)
-        nn_modules_hook_infos = [(getattr(cell, forward_str), (cell, forward_str), name)
-                                 for cell, _, name in nn_modules_hook_infos
-                                 if cell not in unhook_modules]
+        nn_modules_hook_infos = [
+            (getattr(cell, forward_str), (cell, forward_str), name)
+            for cell, _, name in nn_modules_hook_infos
+            if cell not in unhook_modules
+        ]
 
         user_hook_infos = []
         if user_hook_ops is not None:
@@ -251,5 +264,11 @@ class DagTorchHook(DagHook, ABC):
                     user_hook_infos.append((getattr(hook_op, forward_str), (hook_op, forward_str), hook_op.__name__))
                 else:
                     user_hook_infos.append((hook_op, hook_op, hook_op.__qualname__))
-        return torch_func_hook_infos + tensor_func_hook_infos + functional_func_hook_infos + \
-               tensor_operator_hook_infos + nn_modules_hook_infos + user_hook_infos
+        return (
+            torch_func_hook_infos
+            + tensor_func_hook_infos
+            + functional_func_hook_infos
+            + tensor_operator_hook_infos
+            + nn_modules_hook_infos
+            + user_hook_infos
+        )

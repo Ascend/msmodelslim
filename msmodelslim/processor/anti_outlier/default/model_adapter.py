@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,13 +18,15 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 from typing import List
-import torch.nn as nn
+import torch.nn as nn  # noqa: F401
 from msmodelslim.core.graph.adapter_types import AdapterConfig, MappingConfig
 from msmodelslim.utils.logging import get_logger
 from .model_structure_retriever import collect_shared_input_modules, is_layernorm, _is_moe_module
 from msmodelslim.core.base.protocol import BatchProcessRequest
+
 
 def get_adapter_config_for_subgraph(request: BatchProcessRequest) -> List[AdapterConfig]:
     if request.module is None:
@@ -59,9 +61,8 @@ def get_adapter_config_for_subgraph(request: BatchProcessRequest) -> List[Adapte
                     )
                 )
         return subgraphs_list
-    except Exception as e: 
+    except Exception as e:
         get_logger().warning(
             "DefaultModelAdapter auto-detect subgraph structure failed: %s, returning empty config.", e
         )
         return []
-

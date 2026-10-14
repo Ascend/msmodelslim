@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=attribute-defined-outside-init
 
 import unittest
 
@@ -36,18 +37,8 @@ class TestLinearQuantProcessor(TestProcessorBase):
 
     def create_basic_qconfig(self, w_bits: int = 8, a_bits: int = 8) -> LinearQConfig:
         """创建基本的量化配置"""
-        weight_config = QConfig(
-            dtype=QDType.MXFP8,
-            scope=QScope.PER_BLOCK,
-            symmetric=True,
-            method="minmax"
-        )
-        act_config = QConfig(
-            dtype=QDType.MXFP8,
-            scope=QScope.PER_BLOCK,
-            symmetric=True,
-            method="minmax"
-        )
+        weight_config = QConfig(dtype=QDType.MXFP8, scope=QScope.PER_BLOCK, symmetric=True, method="minmax")
+        act_config = QConfig(dtype=QDType.MXFP8, scope=QScope.PER_BLOCK, symmetric=True, method="minmax")
         return LinearQConfig(act=act_config, weight=weight_config)
 
     def create_processor_config(self, include: list = None, exclude: list = None) -> LinearProcessorConfig:
@@ -66,7 +57,7 @@ class TestLinearQuantProcessor(TestProcessorBase):
     def test_basic_quantization(self):
         config = self.create_processor_config()
 
-        runner = self.run_processor_with_cfg(config)
+        runner = self.run_processor_with_cfg(config)  # noqa: F841
 
         inputs = self.create_test_input()
         self.assert_model_runs_without_error(inputs)
@@ -137,7 +128,7 @@ class TestLinearQuantProcessor(TestProcessorBase):
     def test_per_block_quantization(self):
         qconfig_per_block = LinearQConfig(
             act=QConfig(dtype=QDType.MXFP8, scope=QScope.PER_BLOCK, symmetric=True, method="minmax"),
-            weight=QConfig(dtype=QDType.MXFP8, scope=QScope.PER_BLOCK, symmetric=True, method="minmax")
+            weight=QConfig(dtype=QDType.MXFP8, scope=QScope.PER_BLOCK, symmetric=True, method="minmax"),
         )
         config = LinearProcessorConfig(qconfig=qconfig_per_block, include=["*"])
 
@@ -233,14 +224,14 @@ class TestLinearQuantProcessor(TestProcessorBase):
         test_inputs = [
             self.create_test_input("Short", 5),
             self.create_test_input("Medium length text", 15),
-            self.create_test_input("This is a longer text for testing", 20)
+            self.create_test_input("This is a longer text for testing", 20),
         ]
 
         for inputs in test_inputs:
             self.assert_model_runs_without_error(inputs)
 
     def test_quantization_preserves_model_structure(self):
-        original_modules = list(self.model.named_modules())
+        original_modules = list(self.model.named_modules())  # noqa: F841
 
         config = self.create_processor_config(include=["*"])
         self.run_processor_with_cfg(config)
@@ -311,7 +302,7 @@ class TestLinearQuantProcessor(TestProcessorBase):
         existing_layer = self.linear_layer_names[0]
         config = self.create_processor_config(
             include=[existing_layer, "nonexistent_include_1", "nonexistent_include_2"],
-            exclude=["nonexistent_exclude_1", "nonexistent_exclude_2"]
+            exclude=["nonexistent_exclude_1", "nonexistent_exclude_2"],
         )
 
         with self.assertLogs('msmodelslim.processor.linear_quant', level='WARNING') as log_context:

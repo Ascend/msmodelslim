@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 Shared fixtures for compressed_tensors_format unit tests.
 """
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=no-name-in-module,redefined-outer-name
 
 from __future__ import annotations
 

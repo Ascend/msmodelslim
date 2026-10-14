@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,no-name-in-module,pointless-string-statement,reimported
 
 """
 DistributedTaskScheduler 集合通信检测单元测试
@@ -28,28 +29,35 @@ DistributedTaskScheduler 集合通信检测单元测试
     - 通过 DTS 调度器执行含集合通信的任务时正确报错
 """
 
-import inspect
-import os
-import unittest
-from typing import Any, Dict, List, Tuple
+import inspect  # noqa: E402
+import os  # noqa: E402
+import unittest  # noqa: E402
+from typing import Any, Dict, List, Tuple  # noqa: E402, F401
 
 os.environ.setdefault("TORCH_DEVICE_BACKEND_AUTOLOAD", "0")
 
-import torch
-import torch.distributed as dist
-import torch.nn as nn
+import torch  # noqa: E402
+import torch.distributed as dist  # noqa: E402
+import torch.nn as nn  # noqa: E402
 
-from msmodelslim.utils.distributed import DistributedTaskScheduler
-from msmodelslim.utils.distributed.task_scheduler.backend.wave import _collective_op_guard
-from msmodelslim.utils.exception import SchemaValidateError
-from test.cases.utils.distributed.dts_distributed_spawn import (
-    distributed_test,
+from msmodelslim.utils.distributed import DistributedTaskScheduler  # noqa: E402
+from msmodelslim.utils.distributed.task_scheduler.backend.wave import _collective_op_guard  # noqa: E402
+from msmodelslim.utils.exception import SchemaValidateError  # noqa: E402
+from test.cases.utils.distributed.dts_distributed_spawn import (  # noqa: E402
     run_distributed_spawn,
 )
-from test.cases.utils.distributed.dts_test_internals import (
-    _TaskSpec,
+from test.cases.utils.distributed.dts_distributed_spawn import (  # noqa: E402
+    distributed_test,  # noqa: F401
+    run_distributed_spawn,  # noqa: F811
+)  # noqa: F401
+from test.cases.utils.distributed.dts_test_internals import (  # noqa: E402
+    _TaskSpec,  # noqa: F401
     _DtsMultiRankParallelWaveScheduler,
     _DtsSequentialWaveScheduler,
+)  # noqa: F401
+from test.cases.utils.distributed.dts_test_internals import (  # noqa: E402
+    _DtsMultiRankParallelWaveScheduler,  # noqa: F811
+    _DtsSequentialWaveScheduler,  # noqa: F811
 )
 
 
@@ -70,6 +78,7 @@ class TestCollectiveOpGuardNonDistributed(unittest.TestCase):
 
     def test_noop_on_function_call(self):
         """未初始化 dist 时任意函数调用正常执行。"""
+
         def _helper(x):
             return x * 2
 
@@ -157,9 +166,7 @@ def _run_collective_detection_test(rank: int, world_size: int, collective_name: 
     # Test 2: guard detects the specified collective
     try:
         _verify_guard_detects_collective(rank, world_size, collective_name)
-        raise AssertionError(
-            f"Expected SchemaValidateError for dist.{collective_name}, but no exception was raised"
-        )
+        raise AssertionError(f"Expected SchemaValidateError for dist.{collective_name}, but no exception was raised")
     except SchemaValidateError:
         pass  # Expected
     except Exception as e:
@@ -178,53 +185,43 @@ class TestCollectiveOpGuardDistributed(unittest.TestCase):
 
     def test_broadcast_detected(self):
         """broadcast 操作应被检测并抛出 SchemaValidateError。"""
-        run_distributed_spawn(2, _run_collective_detection_test,
-                              fn_args=("broadcast",))
+        run_distributed_spawn(2, _run_collective_detection_test, fn_args=("broadcast",))
 
     def test_all_reduce_detected(self):
         """all_reduce 操作应被检测并抛出 SchemaValidateError。"""
-        run_distributed_spawn(2, _run_collective_detection_test,
-                              fn_args=("all_reduce",))
+        run_distributed_spawn(2, _run_collective_detection_test, fn_args=("all_reduce",))
 
     def test_barrier_detected(self):
         """barrier 操作应被检测并抛出 SchemaValidateError。"""
-        run_distributed_spawn(2, _run_collective_detection_test,
-                              fn_args=("barrier",))
+        run_distributed_spawn(2, _run_collective_detection_test, fn_args=("barrier",))
 
     def test_all_gather_detected(self):
         """all_gather 操作应被检测并抛出 SchemaValidateError。"""
-        run_distributed_spawn(2, _run_collective_detection_test,
-                              fn_args=("all_gather",))
+        run_distributed_spawn(2, _run_collective_detection_test, fn_args=("all_gather",))
 
     def test_broadcast_object_list_detected(self):
         """broadcast_object_list 操作应被检测并抛出 SchemaValidateError。"""
-        run_distributed_spawn(2, _run_collective_detection_test,
-                              fn_args=("broadcast_object_list",))
+        run_distributed_spawn(2, _run_collective_detection_test, fn_args=("broadcast_object_list",))
 
     def test_all_gather_object_detected(self):
         """all_gather_object 操作应被检测并抛出 SchemaValidateError。"""
-        run_distributed_spawn(2, _run_collective_detection_test,
-                              fn_args=("all_gather_object",))
+        run_distributed_spawn(2, _run_collective_detection_test, fn_args=("all_gather_object",))
 
     def test_reduce_detected(self):
         """reduce 操作应被检测并抛出 SchemaValidateError。"""
-        run_distributed_spawn(2, _run_collective_detection_test,
-                              fn_args=("reduce",))
+        run_distributed_spawn(2, _run_collective_detection_test, fn_args=("reduce",))
 
     def test_gather_detected(self):
         """gather 操作应被检测并抛出 SchemaValidateError。"""
-        run_distributed_spawn(2, _run_collective_detection_test,
-                              fn_args=("gather",))
+        run_distributed_spawn(2, _run_collective_detection_test, fn_args=("gather",))
 
     def test_scatter_detected(self):
         """scatter 操作应被检测并抛出 SchemaValidateError。"""
-        run_distributed_spawn(2, _run_collective_detection_test,
-                              fn_args=("scatter",))
+        run_distributed_spawn(2, _run_collective_detection_test, fn_args=("scatter",))
 
     def test_reduce_scatter_detected(self):
         """reduce_scatter 操作应被检测并抛出 SchemaValidateError。"""
-        run_distributed_spawn(2, _run_collective_detection_test,
-                              fn_args=("reduce_scatter",))
+        run_distributed_spawn(2, _run_collective_detection_test, fn_args=("reduce_scatter",))
 
 
 def _run_parallel_scheduler_legal_task(rank: int, world_size: int):
@@ -255,13 +252,19 @@ class TestDTSCollectiveDetectionIntegration(unittest.TestCase):
         """验证 _DtsMultiRankParallelWaveScheduler 的 _execute_local_task 包含 guard。"""
         # Parallel scheduler should wrap with guard
         parallel_source = inspect.getsource(_DtsMultiRankParallelWaveScheduler._execute_local_task)
-        self.assertIn("_collective_op_guard", parallel_source,
-                      "_DtsMultiRankParallelWaveScheduler._execute_local_task must use _collective_op_guard")
+        self.assertIn(
+            "_collective_op_guard",
+            parallel_source,
+            "_DtsMultiRankParallelWaveScheduler._execute_local_task must use _collective_op_guard",
+        )
 
         # Sequential scheduler should NOT have guard (inherits base class)
         seq_source = inspect.getsource(_DtsSequentialWaveScheduler._execute_local_task)
-        self.assertNotIn("_collective_op_guard", seq_source,
-                         "_DtsSequentialWaveScheduler._execute_local_task must NOT use _collective_op_guard")
+        self.assertNotIn(
+            "_collective_op_guard",
+            seq_source,
+            "_DtsSequentialWaveScheduler._execute_local_task must NOT use _collective_op_guard",
+        )
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module,too-many-ancestors
 
 import os
 from functools import lru_cache
@@ -38,7 +39,8 @@ from msmodelslim.processor.kv_smooth import KVSmoothFusedUnit, KVSmoothFusedType
 @lru_cache(maxsize=1)
 def is_npu_available():
     try:
-        import torch_npu
+        import torch_npu  # noqa: F401
+
         return torch.npu.is_available()
     except ImportError:
         return False
@@ -76,7 +78,7 @@ class FakeLlamaModelAdapter(Qwen3ModelAdapter):
                 layer_idx=i,
                 fused_from_query_states_name="q_proj",
                 fused_from_key_states_name="k_proj",
-                fused_type=KVSmoothFusedType.StateViaRopeToLinear
+                fused_type=KVSmoothFusedType.StateViaRopeToLinear,
             )
             for i in range(self.config.num_hidden_layers)
         ]
@@ -103,39 +105,38 @@ def invoke_test(config_name: str, model_save_path: str, device: str = 'cpu', off
         sys.argv = [
             'msmodelslim',
             'quant',
-            '--model_type', 'fake_llama',
-            '--model_path', './',
-            '--save_path', model_save_path,
-            '--device', device,
-            '--config_path', config_path,
-            '--trust_remote_code', 'False'
+            '--model_type',
+            'fake_llama',
+            '--model_path',
+            './',
+            '--save_path',
+            model_save_path,
+            '--device',
+            device,
+            '--config_path',
+            config_path,
+            '--trust_remote_code',
+            'False',
         ]
 
         # 使用patch来模拟copy_files调用并拦截model_adapter
-        with (patch(
-                "msmodelslim.model.plugin_factory.plugin_model_factory.entry_points"
-        ) as mock_entry_points, patch(
-                "msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.copy_files"
-        ) as mock_copy_files, patch(
-                "msmodelslim.model.plugin_factory.base_loader.DependencyChecker.check_plugin"
-        ) as mock_check_plugin):
-
+        with (
+            patch("msmodelslim.model.plugin_factory.plugin_model_factory.entry_points") as mock_entry_points,
+            patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.copy_files") as mock_copy_files,  # noqa: F841
+            patch("msmodelslim.model.plugin_factory.base_loader.DependencyChecker.check_plugin") as mock_check_plugin,
+        ):
             mock_entry_points.return_value.select.return_value = [fake_ep]
             mock_check_plugin.return_value = None
 
             # 获取原始的quantize方法
             from msmodelslim.core.quant_service.proxy import QuantServiceProxy
+
             original_quantize = QuantServiceProxy.quantize
 
             # 创建包装函数来捕获model_adapter但不影响原始流程
             def capture_model_adapter(
-                self, 
-                quant_config, 
-                model_adapter, 
-                save_path=None, 
-                device=None, 
-                device_indices=None):
-
+                self, quant_config, model_adapter, save_path=None, device=None, device_indices=None
+            ):
                 nonlocal captured_model_adapter
                 captured_model_adapter = model_adapter
                 # 调用原始方法，保持原始流程不变
@@ -175,12 +176,12 @@ def invoke_test(config_name: str, model_save_path: str, device: str = 'cpu', off
 def invoke_analysis_test(metrics: str = "kurtosis", patterns: list = None, topk: int = 15):
     """
     使用真正的CLI parser来模拟分析模块命令行参数并返回分析结果
-    
+
     Args:
         metrics: 分析算法
         patterns: 层模式列表
         topk: 输出topk敏感层
-        
+
     Returns:
         分析结果
     """
@@ -198,13 +199,20 @@ def invoke_analysis_test(metrics: str = "kurtosis", patterns: list = None, topk:
         sys.argv = [
             'msmodelslim',
             'analyze',
-            '--model_type', 'fake_llama',
-            '--model_path', './',
-            '--device', 'cpu',
-            '--metrics', metrics,
-            '--calib_dataset', 'boolq.jsonl',
-            '--topk', str(topk),
-            '--trust_remote_code', 'False'
+            '--model_type',
+            'fake_llama',
+            '--model_path',
+            './',
+            '--device',
+            'cpu',
+            '--metrics',
+            metrics,
+            '--calib_dataset',
+            'boolq.jsonl',
+            '--topk',
+            str(topk),
+            '--trust_remote_code',
+            'False',
         ]
 
         # 添加patterns参数
@@ -224,6 +232,7 @@ def invoke_analysis_test(metrics: str = "kurtosis", patterns: list = None, topk:
                 with patch('msmodelslim.cli.analysis.__main__.PipelineAnalysisService'):
                     # 使用patch来捕获分析结果
                     from msmodelslim.cli.analysis.__main__ import main as analysis_main
+
                     original_analysis_main = analysis_main
 
                     def capture_result(args):
@@ -237,6 +246,7 @@ def invoke_analysis_test(metrics: str = "kurtosis", patterns: list = None, topk:
 
                     # 临时替换方法
                     import msmodelslim.cli.analysis.__main__ as analysis_module
+
                     analysis_module.main = capture_result
 
                     try:

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,9 +18,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-import unittest
-from typing import Tuple, Dict, Any
+# pylint: disable=consider-using-from-import
 
+import unittest
+from typing import Dict, Any
+
+from typing import Tuple  # noqa: F401
 import torch
 import torch.nn as nn
 
@@ -41,7 +44,6 @@ class DummyModel(nn.Module):
 
 
 class TestModelWiseForward(unittest.TestCase):
-
     def setUp(self):
         self.model = DummyModel()
         torch.manual_seed(0)

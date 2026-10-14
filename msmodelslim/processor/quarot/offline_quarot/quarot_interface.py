@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -19,7 +19,8 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from typing import Callable, Any, List, Tuple, Dict
+from typing import Any, List, Tuple, Dict
+from typing import Callable  # noqa: F401
 from enum import Enum
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -70,11 +71,9 @@ class QuaRotInterface:
     RotatePair = RotatePair
 
     @staticmethod
-    def get_rotate_command(mode: QuaRotMode,
-               size: int,
-               block_size: int = -1,
-               rot_step: int = 1,
-               eye_step: tuple = (-1,)):
+    def get_rotate_command(
+        mode: QuaRotMode, size: int, block_size: int = -1, rot_step: int = 1, eye_step: tuple = (-1,)
+    ):
         rot = create_rot(mode, size, block_size, rot_step, eye_step)
         if hasattr(torch, 'npu') and torch.npu.is_available():
             rot = rot.to(dtype=GLOBAL_DTYPE, device=torch.device(f"npu:{torch.npu.current_device()}"))
@@ -140,4 +139,3 @@ class LAOSOnlineRotationInterface:
     @abstractmethod
     def get_layer_wise_up_down_pair(self, decoder_module):
         pass
-

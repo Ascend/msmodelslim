@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,23 +18,27 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=attribute-defined-outside-init,consider-using-from-import
 
 import sys
 import types
 from collections import OrderedDict
 import unittest
-from unittest.mock import Mock, MagicMock, patch, PropertyMock
+from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import PropertyMock  # noqa: F401
 import torch
 import torch.nn as nn
 
 
 class ColumnParallelLinear(nn.Module):
     """Mock ColumnParallelLinear for testing"""
+
     pass
 
 
 class RowParallelLinear(nn.Module):
     """Mock RowParallelLinear for testing"""
+
     pass
 
 
@@ -81,11 +85,7 @@ sys.modules['mindspeed.patch_utils'] = MagicMock()
 
 # Mock torch_npu to avoid ImportError when torch_npu is not available
 torch_npu_spec = types.ModuleType(name='torch_npu')
-mock_torch_npu = Mock(
-    __spec__=torch_npu_spec,
-    __version__='2.1.0',
-    npu_init=Mock(return_value=None)
-)
+mock_torch_npu = Mock(__spec__=torch_npu_spec, __version__='2.1.0', npu_init=Mock(return_value=None))
 sys.modules['torch_npu'] = mock_torch_npu
 
 # Mock torch.npu to avoid AttributeError when torch_npu is not available
@@ -118,6 +118,8 @@ def mock_device(device):
         return mock_dev
     # For other devices, use the original function
     return original_device(device)
+
+
 torch.device = mock_device
 
 # Configure mock modules with proper class types BEFORE importing
@@ -134,12 +136,11 @@ sys.modules['megatron.inference.text_generation'].generate = MagicMock()
 sys.modules['megatron.core.tensor_parallel'] = mock_megatron_core_tp
 sys.modules['megatron.core.tensor_parallel.mappings'] = mock_megatron_core_tp.mappings
 sys.modules['megatron.legacy.model.fused_layer_norm'] = mock_megatron_fused_ln
-sys.modules['megatron.training'].get_args = MagicMock(
-    return_value=MagicMock(max_new_tokens=1))
+sys.modules['megatron.training'].get_args = MagicMock(return_value=MagicMock(max_new_tokens=1))
 
 # Now import msmodelslim modules after all mocks are set up
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig
-from msmodelslim.pytorch.mindspeed_adapter.modelslim_adapter import (
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig  # noqa: E402
+from msmodelslim.pytorch.mindspeed_adapter.modelslim_adapter import (  # noqa: E402
     ModelAdapter,
     CalibratorAdapter,
     MegatronLinearAdapter,
@@ -149,7 +150,7 @@ from msmodelslim.pytorch.mindspeed_adapter.modelslim_adapter import (
     set_module,
     get_norm_linear_subgraph,
 )
-from msmodelslim.pytorch.mindspeed_adapter.anti_outlier_adapter import (
+from msmodelslim.pytorch.mindspeed_adapter.anti_outlier_adapter import (  # noqa: E402
     AntiOutlierAdapter,
 )
 
@@ -193,7 +194,6 @@ class MockModelNoConfig(nn.Module):
 
 
 class TestModelAdapter(unittest.TestCase):
-
     def test_state_dict(self):
         model = MockModelWithArgs()
         adapter = ModelAdapter(model, dev_type='npu', prefix='model.')
@@ -212,7 +212,7 @@ class TestModelAdapter(unittest.TestCase):
         adapter = ModelAdapter(model, dev_type='npu', prefix='model.')
         mock_generate.return_value = torch.randn(1, 10)
         x = [torch.randn(1, 10)]
-        result = adapter.forward(x)
+        result = adapter.forward(x)  # noqa: F841
         mock_generate.assert_called_once()
 
     def test_forward_with_model_generate_forward(self):
@@ -228,14 +228,13 @@ class TestModelAdapter(unittest.TestCase):
 
 
 class TestGenerateForward(unittest.TestCase):
-
     @patch('msmodelslim.pytorch.mindspeed_adapter.modelslim_adapter.generate')
     def test_call_with_list_input(self, mock_generate):
         forward = GenerateForward()
         model = Mock()
         x = [[torch.randn(1, 10)]]
         mock_generate.return_value = torch.randn(1, 10)
-        result = forward(model, x)
+        result = forward(model, x)  # noqa: F841
         mock_generate.assert_called_once_with(model, x[0], tokens_to_generate=1)
 
     @patch('msmodelslim.pytorch.mindspeed_adapter.modelslim_adapter.generate')
@@ -244,12 +243,11 @@ class TestGenerateForward(unittest.TestCase):
         model = Mock()
         x = torch.randn(1, 10)
         mock_generate.return_value = torch.randn(1, 10)
-        result = forward(model, x)
+        result = forward(model, x)  # noqa: F841
         mock_generate.assert_called_once_with(model, x, tokens_to_generate=1)
 
 
 class TestModelGenerateForward(unittest.TestCase):
-
     def test_call(self):
         forward = ModelGenerateForward()
         model = MockModelWithConfig()
@@ -264,12 +262,8 @@ class TestModelGenerateForward(unittest.TestCase):
 
 
 class TestSetModule(unittest.TestCase):
-
     def test_set_module(self):
-        model = nn.Sequential(
-            nn.Linear(10, 20),
-            nn.Linear(20, 30)
-        )
+        model = nn.Sequential(nn.Linear(10, 20), nn.Linear(20, 30))
         new_module = nn.Linear(20, 40)
         set_module(model, '1', new_module)
         self.assertIsInstance(model[1], nn.Linear)
@@ -277,7 +271,6 @@ class TestSetModule(unittest.TestCase):
 
 
 class TestLinear(unittest.TestCase):
-
     def test_init(self):
         mock_linear = Mock()
         mock_linear.input_size = 10
@@ -315,7 +308,7 @@ class TestLinear(unittest.TestCase):
         mock_linear.return_value = (torch.randn(1, 20), None)
         linear = Linear(mock_linear)
         x = torch.randn(1, 10)
-        result = linear(x)
+        result = linear(x)  # noqa: F841
         mock_linear.assert_called_once_with(x)
 
     def test_state_dict(self):
@@ -362,7 +355,6 @@ class TestLinear(unittest.TestCase):
 
 
 class TestMegatronLinearAdapter(unittest.TestCase):
-
     def test_init(self):
         mock_linear = Mock()
         mock_linear.input_size = 10
@@ -437,7 +429,6 @@ class TestMegatronLinearAdapter(unittest.TestCase):
 
 
 class TestCalibratorAdapter(unittest.TestCase):
-
     @patch('msmodelslim.pytorch.mindspeed_adapter.modelslim_adapter.TorchDAGAdapter')
     def test_extract_dag_with_calib_data(self, mock_dag):
         model = MockModelWithConfig()
@@ -470,10 +461,7 @@ class TestCalibratorAdapter(unittest.TestCase):
                 self.assertIsNotNone(result)
 
     def test_get_ori_model_weight(self):
-        model = nn.Sequential(
-            nn.Linear(10, 20),
-            nn.LayerNorm(20)
-        )
+        model = nn.Sequential(nn.Linear(10, 20), nn.LayerNorm(20))
         # Use actual Calibrator class - __new__() bypasses __init__
         adapter = CalibratorAdapter.__new__(CalibratorAdapter)
         adapter.logger = Mock()
@@ -483,7 +471,6 @@ class TestCalibratorAdapter(unittest.TestCase):
 
 
 class TestGetNormLinearSubgraph(unittest.TestCase):
-
     def test_get_norm_linear_subgraph(self):
         mock_self = Mock()
         mock_node1 = Mock()
@@ -502,7 +489,6 @@ class TestGetNormLinearSubgraph(unittest.TestCase):
 
 
 class TestAntiOutlierAdapter(unittest.TestCase):
-
     def setUp(self):
         self.model = MockModelWithConfig()
         self.calib_data = [[torch.randn(1, 10)]]
@@ -522,8 +508,7 @@ class TestAntiOutlierAdapter(unittest.TestCase):
 
     def test_init_invalid_norm_class_name(self):
         with self.assertRaises(TypeError) as context:
-            AntiOutlierAdapter(self.model, self.calib_data,
-                               self.cfg, norm_class_name=123)
+            AntiOutlierAdapter(self.model, self.calib_data, self.cfg, norm_class_name=123)
         self.assertIn("str", str(context.exception))
 
     def test_init_invalid_model(self):
@@ -539,8 +524,7 @@ class TestAntiOutlierAdapter(unittest.TestCase):
     @patch('msmodelslim.pytorch.mindspeed_adapter.anti_outlier_adapter.extract_dag')
     def test_init_with_context_embedder(self, mock_extract_dag):
         model = MockModelWithConfig()
-        model.state_dict = Mock(
-            return_value={'context_embedder.weight': torch.randn(10, 20)})
+        model.state_dict = Mock(return_value={'context_embedder.weight': torch.randn(10, 20)})
         mock_dag = Mock()
         mock_dag.get_norm_linear_subgraph.return_value = {'norm1': ['linear1']}
         mock_extract_dag.return_value = mock_dag
@@ -550,8 +534,7 @@ class TestAntiOutlierAdapter(unittest.TestCase):
     def test_trans_to_dict(self):
         with patch('msmodelslim.pytorch.mindspeed_adapter.anti_outlier_adapter.extract_dag') as mock_extract_dag:
             mock_dag = Mock()
-            mock_dag.get_norm_linear_subgraph.return_value = {
-                'norm1': ['linear1']}
+            mock_dag.get_norm_linear_subgraph.return_value = {'norm1': ['linear1']}
             mock_extract_dag.return_value = mock_dag
             adapter = AntiOutlierAdapter(self.model, self.calib_data, self.cfg)
             data = [torch.randn(1, 10)]
@@ -609,7 +592,6 @@ class TestAntiOutlierAdapter(unittest.TestCase):
         num_heads = adapter.get_num_attention_heads()
         self.assertEqual(num_heads, 8)
 
-
     @patch('msmodelslim.pytorch.mindspeed_adapter.anti_outlier_adapter.extract_dag')
     def test_check_calib_data(self, mock_extract_dag):
         mock_dag = Mock()
@@ -630,6 +612,6 @@ class TestAntiOutlierAdapter(unittest.TestCase):
         result = adapter.check_multimodel(self.model)
         self.assertFalse(result)
 
+
 if __name__ == '__main__':
     unittest.main()
-

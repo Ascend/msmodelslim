@@ -7,7 +7,7 @@ This file is part of the MindStudio project.
 Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
-You may use this software according to the terms and conditions of the Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
 You may obtain a copy of Mulan PSL v2 at:
 
          http://license.coscl.org.cn/MulanPSL2
@@ -18,14 +18,16 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
+
 """
 msmodelslim.processor.adapt_rotation.iterative_hadamard_optimization 模块的单元测试
 """
-import unittest
+import unittest  # noqa: E402
 
-import torch
+import torch  # noqa: E402
 
-from msmodelslim.processor.adapt_rotation.iterative_hadamard_optimization import (
+from msmodelslim.processor.adapt_rotation.iterative_hadamard_optimization import (  # noqa: E402
     orthogonal_transform,
     reconstruction_loss,
     quant_tensor_sym,
@@ -43,7 +45,7 @@ class TestOrthogonalTransform(unittest.TestCase):
         B = torch.randn(4, 4)
         X = orthogonal_transform(A, B, iters=50)
         XtX = X.T @ X
-        I = torch.eye(4)
+        I = torch.eye(4)  # noqa: E741
         self.assertTrue(torch.allclose(XtX, I, atol=1e-4))
 
     def test_orthogonal_transform_return_shape_d_by_d_when_inputs_are_n_by_d(self):

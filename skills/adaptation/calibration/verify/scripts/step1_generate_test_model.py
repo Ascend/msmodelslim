@@ -1,11 +1,29 @@
 #!/usr/bin/env python3
 """步骤1：生成结构覆盖完备的减层随机权重测试模型。
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
+步骤1：生成结构覆盖完备的减层随机权重测试模型。
 
 验证语义（非全量）：
   模型由若干结构类型堆叠而成；减层只需覆盖每种结构至少一次。
   默认取「覆盖完备的最小前缀层数」L，再 from_config 建随机权重模型。
   禁止盲目前 N 层（可能漏 MoE / full_attn 等）。
 """
+# pylint: disable=no-name-in-module
 
 from __future__ import annotations
 

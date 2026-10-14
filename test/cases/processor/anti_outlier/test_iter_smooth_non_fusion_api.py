@@ -2,13 +2,31 @@
 # -*- coding: UTF-8 -*-
 
 """
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
 Unit tests for iter_smooth NonFusionSubgraph API (iter_smooth_impl_non_fusion_linear).
 Covers code added in commit f2075e1 (non-fusion iter_smooth).
 """
+# pylint: disable=consider-using-from-import
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
+from unittest.mock import MagicMock  # noqa: F401
 import torch
 import torch.nn as nn
 
@@ -67,9 +85,7 @@ class TestIterSmoothImplNonFusionLinear(unittest.TestCase):
         torch.nn.init.zeros_(linear.bias)
         subgraph = NonFusionSubgraph(linears=[linear])
 
-        with patch.object(
-            SubgraphFusionFactory, "apply_fusion_to_subgraph"
-        ) as mock_fusion:
+        with patch.object(SubgraphFusionFactory, "apply_fusion_to_subgraph") as mock_fusion:
             scales = iter_smooth(subgraph, self.config, self.context)
             mock_fusion.assert_called_once()
             call_args = mock_fusion.call_args
@@ -98,9 +114,7 @@ class TestIterSmoothImplNonFusionLinear(unittest.TestCase):
         torch.nn.init.ones_(linear2.weight)
         subgraph = NonFusionSubgraph(linears=[linear1, linear2])
 
-        with patch.object(
-            SubgraphFusionFactory, "apply_fusion_to_subgraph"
-        ) as mock_fusion:
+        with patch.object(SubgraphFusionFactory, "apply_fusion_to_subgraph") as mock_fusion:
             scales = iter_smooth(subgraph, self.config, self.context)
             mock_fusion.assert_called_once()
 

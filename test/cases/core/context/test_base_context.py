@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=unsubscriptable-object
 
 import pytest
 from collections.abc import MutableMapping
@@ -126,7 +127,7 @@ class TestBaseContext:
         """key 存在时 get 返回对应 namespace."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["a"]
+            var = ctx["a"]  # noqa: F841
             ns = ctx.get("a")
             assert ns is not None
             assert ns.state is not None
@@ -135,7 +136,7 @@ class TestBaseContext:
         """delete 删除已存在的 namespace."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["a"]
+            var = ctx["a"]  # noqa: F841
             assert "a" in ctx
             ctx.delete("a")
             assert "a" not in ctx
@@ -145,7 +146,7 @@ class TestBaseContext:
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
             var = ctx["x"]
-            var = ctx["y"]
+            var = ctx["y"]  # noqa: F841
             assert set(ctx.keys()) == {"x", "y"}
 
     def test_getitem_creates_and_returns_namespace_when_key_missing(self):
@@ -160,14 +161,14 @@ class TestBaseContext:
         """key 已存在时 __getitem__ 返回同一 namespace."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["same"]
+            var = ctx["same"]  # noqa: F841
             assert ctx["same"] is ctx["same"]
 
     def test_delitem_removes_namespace_when_key_exists(self):
         """__delitem__ 删除已存在的 namespace."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["d"]
+            var = ctx["d"]  # noqa: F841
             del ctx["d"]
             assert "d" not in ctx
 
@@ -175,7 +176,7 @@ class TestBaseContext:
         """key 存在时 __contains__ 为 True."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["k"]
+            var = ctx["k"]  # noqa: F841
             assert "k" in ctx
 
     def test_contains_returns_false_when_key_missing(self):
@@ -190,7 +191,7 @@ class TestBaseContext:
         with ContextManager(ctx=ctx):
             assert len(ctx) == 0
             var = ctx["a"]
-            var = ctx["b"]
+            var = ctx["b"]  # noqa: F841
             assert len(ctx) == 2
 
     def test_iter_returns_keys_iterator(self):
@@ -198,7 +199,7 @@ class TestBaseContext:
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
             var = ctx["p"]
-            var = ctx["q"]
+            var = ctx["q"]  # noqa: F841
             assert set(iter(ctx)) == {"p", "q"}
 
 

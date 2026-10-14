@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -34,6 +34,7 @@ import atheris.instrument_bytecode
 from msmodelslim.common.knowledge_distill.knowledge_distill import KnowledgeDistillConfig
 from msmodelslim.common.knowledge_distill.knowledge_distill import get_distill_model
 
+
 @atheris.instrument_func
 def fuzz_test(input_bytes):
     fuzz_value = input_bytes.decode('utf-8', 'ignore').strip()
@@ -42,10 +43,8 @@ def fuzz_test(input_bytes):
         "s_module": "student_fc",
         "t_output_idx": 0,
         "s_output_idx": 0,
-        "loss_func": [{
-            "func_name": "KDCrossEntropy",
-            "func_weight": 1}],
-        "shape": [1]
+        "loss_func": [{"func_name": "KDCrossEntropy", "func_weight": 1}],
+        "shape": [1],
     }
     random_change_dict_value(distill_soft_label, fuzz_value)
     config = KnowledgeDistillConfig()

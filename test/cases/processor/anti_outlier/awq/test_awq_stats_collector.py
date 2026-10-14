@@ -1,6 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+"""
+# pylint: disable=consider-using-from-import
+
 import pytest
 import torch
 import torch.nn as nn
@@ -46,7 +65,6 @@ def _context():
 
 
 class TestAWQStatsCollectorInit:
-
     def test_init_creates_empty_stats(self):
         collector, _ = _make_collector()
         assert len(collector.global_stats) == 0
@@ -58,7 +76,6 @@ class TestAWQStatsCollectorInit:
 
 
 class TestObserveActivation:
-
     def test_single_forward_collects_mean(self):
         collector, model = _make_collector(in_features=16)
         collector.observe_activation("block.fc")
@@ -108,7 +125,6 @@ class TestObserveActivation:
 
 
 class TestObserveKwargs:
-
     def test_single_forward_collects_kwargs(self):
         collector, model = _make_collector()
         collector.observe_kwargs("block")
@@ -137,7 +153,6 @@ class TestObserveKwargs:
 
 
 class TestGetActivationMean:
-
     def test_returns_none_for_unobserved_module(self):
         collector, _ = _make_collector()
         assert collector.get_activation_mean("block.fc") is None
@@ -149,7 +164,6 @@ class TestGetActivationMean:
 
 
 class TestGetBlockKwargs:
-
     def test_returns_none_for_unobserved_module(self):
         collector, _ = _make_collector()
         assert collector.get_block_kwargs("block") is None
@@ -161,7 +175,6 @@ class TestGetBlockKwargs:
 
 
 class TestStopObserving:
-
     def test_hooks_removed_after_stop(self):
         collector, model = _make_collector()
         collector.observe_activation("block.fc")
@@ -188,7 +201,6 @@ class TestStopObserving:
 
 
 class TestClearStats:
-
     def test_clear_empties_all_stats(self):
         collector, model = _make_collector()
         collector.observe_activation("block.fc")

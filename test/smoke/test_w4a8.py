@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -33,11 +33,18 @@ from .utils import check_w4a8_mx_dynamic_per_block_export
 from .utils import run_fake_quantization_test
 
 
-@pytest.mark.parametrize("test_device, test_dtype", [
-    pytest.param("cpu", torch.float32),
-    pytest.param("npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-    pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-])
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
 @pytest.mark.smoke
 def test_w4a8_dynamic_per_channel_quantization(test_device: str, test_dtype: torch.dtype):
     tmp_dir = tempfile.mkdtemp()
@@ -63,11 +70,18 @@ def test_w4a8_dynamic_per_channel_quantization(test_device: str, test_dtype: tor
             shutil.rmtree(tmp_dir)
 
 
-@pytest.mark.parametrize("test_device, test_dtype", [
-    pytest.param("cpu", torch.float32),
-    pytest.param("npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-    pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-])
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
 @pytest.mark.smoke
 def test_w4a8_mx_dynamic_per_block_quantization(test_device, test_dtype):
     """测试W4A8 per_token量化功能（act: per_token, weight: per_channel）"""

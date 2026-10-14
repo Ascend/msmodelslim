@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-merging-isinstance,consider-using-generator,function-redefined,no-member,unnecessary-comprehension,unreachable
 
 import functools
 import inspect
@@ -37,21 +38,18 @@ MAX_RECURSIVE_DEPTH = 100
 
 class DagHook(DirectedAcyclicGraph, ABC):
     """
-        hook方式获取的DAG图
+    hook方式获取的DAG图
 
-        优势：
-            1. 简单好理解
-        劣势：
-            1. 无法替换函数类节点
-            2. 无法跟踪到多个 if 分支
-            3. 如果存在共享卷积（在不同的父Module 中）无法正常替换
-            4. 如果一个变量直接穿透算子（既是输入又是输出），以计算顺序为准，以最后一次计算输出作为后面使用的输入，可能与代码写法不一致
+    优势：
+        1. 简单好理解
+    劣势：
+        1. 无法替换函数类节点
+        2. 无法跟踪到多个 if 分支
+        3. 如果存在共享卷积（在不同的父Module 中）无法正常替换
+        4. 如果一个变量直接穿透算子（既是输入又是输出），以计算顺序为准，以最后一次计算输出作为后面使用的输入，可能与代码写法不一致
     """
 
-    def __init__(self,
-                 network,
-                 inputs,
-                 hook_ops: Union[List[Any], None] = None):
+    def __init__(self, network, inputs, hook_ops: Union[List[Any], None] = None):
         super().__init__(network)
         self._inputs = inputs
         self._structure_tree: Dict[Any, Dict] = {}
@@ -85,7 +83,7 @@ class DagHook(DirectedAcyclicGraph, ABC):
     @property
     def calc_order(self):
         return self._calc_order
-    
+
     @staticmethod
     def _get_attr_names(obj: Any, filter_func: Optional[Callable]) -> List[str]:
         if obj is None:
@@ -119,7 +117,7 @@ class DagHook(DirectedAcyclicGraph, ABC):
             return not inspect.isclass(attr) and not name.startswith("_") and callable(attr)
 
         return cls._get_ops_hook_info(obj, cls._get_attr_names(obj, is_function))
-       
+
     @abstractmethod
     def _before_parse(self):
         pass
@@ -213,19 +211,19 @@ class DagHook(DirectedAcyclicGraph, ABC):
             [(ops instances, ops owner module, attr name, ops name)]
         """
         pass
-        
+
     def _replace_node(self, parent_module, name_in_parent, new_node):
         setattr(parent_module, name_in_parent, new_node)
 
-    def _parse_network_structure_tree(self, module,
-                                      name: str,
-                                      parent_module: Optional,
-                                      name_in_network: str,
-                                      depth: int = 1) -> NoReturn:
+    def _parse_network_structure_tree(
+        self, module, name: str, parent_module: Optional, name_in_network: str, depth: int = 1
+    ) -> NoReturn:
         if depth > MAX_RECURSIVE_DEPTH:
             raise ValueError(
-                'The recursive func depth exceeds MAX_RECURSIVE_DEPTH={} '
-                'when parsing network structure'.format(MAX_RECURSIVE_DEPTH))
+                'The recursive func depth exceeds MAX_RECURSIVE_DEPTH={} when parsing network structure'.format(
+                    MAX_RECURSIVE_DEPTH
+                )
+            )
 
         if module in self._structure_tree:
             parent_module_info = self._structure_tree[module].get("parent_module_info", [])
@@ -234,7 +232,7 @@ class DagHook(DirectedAcyclicGraph, ABC):
             return
         self._structure_tree[module] = {
             "name_in_network": name_in_network,
-            "parent_module_info": [(parent_module, name)]
+            "parent_module_info": [(parent_module, name)],
         }
 
         for sub_name, sub_module in self._get_module_children(module):
@@ -244,8 +242,7 @@ class DagHook(DirectedAcyclicGraph, ABC):
             sub_name_in_network = concatenate_name_in_network(name_in_network, sub_name)
             self._parse_network_structure_tree(sub_module, sub_name, module, sub_name_in_network, depth=depth + 1)
 
-    def _parse_network(self, inputs,
-                       parsed_nodes: Optional[Dict[Any, DagNode]] = None):
+    def _parse_network(self, inputs, parsed_nodes: Optional[Dict[Any, DagNode]] = None):
         self._dag_node_list.clear()
         # prepare hook function
         replace_stack: List[Any] = []
@@ -272,9 +269,13 @@ class DagHook(DirectedAcyclicGraph, ABC):
 
         logging.info("parse network over")
 
-    def _get_node_wrapper(self, op_hook_info: Tuple[Callable, Any, str], replace_stack: List[Any],
-                          node_io_dict: Dict[int, DagNodeIO],
-                          parsed_nodes: Dict[Any, DagNode]) -> Callable:
+    def _get_node_wrapper(
+        self,
+        op_hook_info: Tuple[Callable, Any, str],
+        replace_stack: List[Any],
+        node_io_dict: Dict[int, DagNodeIO],
+        parsed_nodes: Dict[Any, DagNode],
+    ) -> Callable:
         node_hook, _, ops_type = op_hook_info
 
         @functools.wraps(node_hook)
@@ -362,12 +363,14 @@ class DagHook(DirectedAcyclicGraph, ABC):
 
         return inputs
 
-    def _get_node_output(self, output, deduplicate: List[int], name: str = "output",
-                         depth: int = 1) -> Dict[int, DagNodeIO]:
+    def _get_node_output(
+        self, output, deduplicate: List[int], name: str = "output", depth: int = 1
+    ) -> Dict[int, DagNodeIO]:
         if depth > MAX_RECURSIVE_DEPTH:
             raise ValueError(
-                'The recursive func depth exceeds MAX_RECURSIVE_DEPTH={} '
-                'when parsing the node output'.format(MAX_RECURSIVE_DEPTH)
+                'The recursive func depth exceeds MAX_RECURSIVE_DEPTH={} when parsing the node output'.format(
+                    MAX_RECURSIVE_DEPTH
+                )
             )
 
         node_output_dict: Dict[int, DagNodeIO] = {}

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,12 +18,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=arguments-differ,attribute-defined-outside-init,consider-using-from-import
 
 import unittest
 from unittest.mock import MagicMock, patch
 import torch
 import torch.nn as nn
-from collections import defaultdict
 
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config import QuantConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.timestep_utils import (
@@ -32,11 +32,12 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.timestep_utils import (
     _run_calib_timestep,
     change_timestep_aware_quantizer_config,
     run_calib_timestep,
-    load_quant_weight
+    load_quant_weight,
 )
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config_classes import TimestepQuantConfig
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.manager import TimestepManager
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.quantizer import TimestepQuantMixin
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.manager import TimestepManager  # noqa: F401
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config_classes import TimestepQuantConfig  # noqa: F401
+from collections import defaultdict  # noqa: F401
 
 
 # Create mock classes for testing
@@ -78,10 +79,14 @@ class MockTimestepAwareTensorQuantizer(nn.Module):
 
 
 # Setup mocks for the import path
-patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.timestep_utils.LinearQuantizerTimestep',
-      MockLinearQuantizerTimestep).start()
-patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.timestep_utils.TimestepAwareTensorQuantizer',
-      MockTimestepAwareTensorQuantizer).start()
+patch(
+    'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.timestep_utils.LinearQuantizerTimestep',
+    MockLinearQuantizerTimestep,
+).start()
+patch(
+    'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.timestep.timestep_utils.TimestepAwareTensorQuantizer',
+    MockTimestepAwareTensorQuantizer,
+).start()
 
 
 class TestTimestepUtils(unittest.TestCase):
@@ -93,12 +98,7 @@ class TestTimestepUtils(unittest.TestCase):
 
         # Create model with nested modules
         self.model = nn.Sequential(
-            nn.Linear(10, 10),
-            self.mock_module,
-            nn.Sequential(
-                self.mock_module,
-                nn.Linear(10, 5)
-            )
+            nn.Linear(10, 10), self.mock_module, nn.Sequential(self.mock_module, nn.Linear(10, 5))
         )
 
         # Mock calibration data
@@ -106,7 +106,7 @@ class TestTimestepUtils(unittest.TestCase):
             {'timestep_idx': 3, 'args': (torch.randn(1, 10),)},
             {'timestep_idx': 2, 'args': (torch.randn(1, 10),)},
             {'timestep_idx': 3, 'args': (torch.randn(1, 10),)},
-            {'timestep_idx': 1, 'args': (torch.randn(1, 10),)}
+            {'timestep_idx': 1, 'args': (torch.randn(1, 10),)},
         ]
 
         # Config
@@ -174,14 +174,7 @@ class TestTimestepUtils(unittest.TestCase):
         quantizer1 = MockTimestepAwareTensorQuantizer()
         quantizer2 = MockTimestepAwareTensorQuantizer()
 
-        model = nn.Sequential(
-            nn.Linear(10, 10),
-            quantizer1,
-            nn.Sequential(
-                nn.Linear(10, 10),
-                quantizer2
-            )
-        )
+        model = nn.Sequential(nn.Linear(10, 10), quantizer1, nn.Sequential(nn.Linear(10, 10), quantizer2))
 
         # Call the function with a max_dynamic_step value
         max_dynamic_step = 50
@@ -214,7 +207,7 @@ class TestTimestepUtils(unittest.TestCase):
             "block.layer2.bias": torch.randn(5),
             "block.layer2.input_scale": torch.randn(10),
             "block.layer2.input_offset": torch.randn(10),
-            "other.weight": torch.randn(10, 10)  # Should be ignored
+            "other.weight": torch.randn(10, 10),  # Should be ignored
         }
 
         # Call the function
@@ -233,9 +226,11 @@ class TestTimestepUtils(unittest.TestCase):
         self.assertTrue(torch.equal(quantizer2.loaded_params["weight"], params_to_load["block.layer2.weight"]))
         self.assertTrue(torch.equal(quantizer2.loaded_params["bias"], params_to_load["block.layer2.bias"]))
         self.assertTrue(
-            torch.equal(quantizer2.loaded_params["input_scale"], params_to_load["block.layer2.input_scale"]))
+            torch.equal(quantizer2.loaded_params["input_scale"], params_to_load["block.layer2.input_scale"])
+        )
         self.assertTrue(
-            torch.equal(quantizer2.loaded_params["input_offset"], params_to_load["block.layer2.input_offset"]))
+            torch.equal(quantizer2.loaded_params["input_offset"], params_to_load["block.layer2.input_offset"])
+        )
         self.assertEqual(quantizer2.device, device)
 
 

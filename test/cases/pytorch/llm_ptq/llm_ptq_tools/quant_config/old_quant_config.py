@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-in
 
 from ascend_utils.common.security import check_number, check_element_type, check_type
 from ascend_utils.common.security.pytorch import validate_device
@@ -33,33 +34,33 @@ _SUPPORTED_DEVICES = ["cpu", "npu"]
 
 
 class OldQuantConfig:
-    """ The configuration for quantization"""
+    """The configuration for quantization"""
 
     def __init__(
-            self,
-            w_bit: int = 8,
-            a_bit: int = 8,
-            act_method: int = 1,
-            w_method: str = 'MinMax',
-            disable_names: object = None,
-            pr: float = 1.0,
-            mm_tensor: bool = True,
-            dev_type: object = 'cpu',
-            dev_id: int = None,
-            fraction: float = 0.01,
-            nonuniform: bool = False,
-            co_sparse: bool = False,
-            w_sym: bool = True,
-            is_lowbit: bool = False,
-            do_smooth: bool = False,
-            use_sigma: bool = False,
-            sigma_factor: float = 3.0,
-            disable_last_linear: bool = True,
-            use_kvcache_quant: bool = False,
-            is_dynamic: bool = False,
-            open_outlier: bool = True,
-            group_size: int = 64,
-            percdamp: float = 0.01,
+        self,
+        w_bit: int = 8,
+        a_bit: int = 8,
+        act_method: int = 1,
+        w_method: str = 'MinMax',
+        disable_names: object = None,
+        pr: float = 1.0,
+        mm_tensor: bool = True,
+        dev_type: object = 'cpu',
+        dev_id: int = None,
+        fraction: float = 0.01,
+        nonuniform: bool = False,
+        co_sparse: bool = False,
+        w_sym: bool = True,
+        is_lowbit: bool = False,
+        do_smooth: bool = False,
+        use_sigma: bool = False,
+        sigma_factor: float = 3.0,
+        disable_last_linear: bool = True,
+        use_kvcache_quant: bool = False,
+        is_dynamic: bool = False,
+        open_outlier: bool = True,
+        group_size: int = 64,
+        percdamp: float = 0.01,
     ):
         """
         Args:
@@ -133,12 +134,12 @@ class OldQuantConfig:
         self._check_dynamic_config()
 
         params = {
-            'w_bit': self.w_bit, 
-            'a_bit': self.a_bit, 
+            'w_bit': self.w_bit,
+            'a_bit': self.a_bit,
             'w_method': "None",  # 根据实际状况填写
-            'is_sparse': self.co_sparse, 
-            'is_dynamic': self.is_dynamic, 
-            'is_lowbit': self.is_lowbit
+            'is_sparse': self.co_sparse,
+            'is_dynamic': self.is_dynamic,
+            'is_lowbit': self.is_lowbit,
         }
         self.model_quant_type = QuantType.get_quant_type(params)
         self.w_hessian, self.hqq = WeightQuantMethod.get_wmethod_config(w_method)
@@ -194,9 +195,10 @@ class OldQuantConfig:
         else:
             self.group_size = -1
             if self.is_lowbit and (self.w_method == 'HQQ' or self.w_method == 'GPTQ'):
-                raise ValueError("When is_lowbit is set to True, the w_method configuration is only supported in a "
-                                 "per-group scenario. Please check the config.")
-
+                raise ValueError(
+                    "When is_lowbit is set to True, the w_method configuration is only supported in a "
+                    "per-group scenario. Please check the config."
+                )
 
     def _check_sparse_config(self):
         check_type(self.nonuniform, bool, param_name="nonuniform")
@@ -209,12 +211,14 @@ class OldQuantConfig:
             self.pr = 1.0
             if self.w_bit != 4:
                 self.w_bit = 4
-                msmodelslim_logger.warning("Running in sparse requires `w_bit` of 4, "
-                                         "your config `w_bit` will replaced to 4 instead.")
+                msmodelslim_logger.warning(
+                    "Running in sparse requires `w_bit` of 4, your config `w_bit` will replaced to 4 instead."
+                )
             if self.a_bit != 8:
                 self.a_bit = 8
-                msmodelslim_logger.warning("Running in sparse requires `a_bit` of 8, "
-                                         "your config `a_bit` will replaced to 8 instead.")
+                msmodelslim_logger.warning(
+                    "Running in sparse requires `a_bit` of 8, your config `a_bit` will replaced to 8 instead."
+                )
         elif self.is_lowbit:
             if self.w_bit not in W_BIT_LIST_LOW_BIT:
                 raise ValueError(f"w_bit must be among choice {W_BIT_LIST_LOW_BIT}, please check it.")
@@ -233,7 +237,7 @@ class OldQuantConfig:
         check_number(self.sigma_factor, float, 3.0, 4.0, param_name="sigma factor")
         if self.act_method == 3 and self.is_lowbit:
             raise ValueError("act_method can not be 3 when running lowbit.")
-    
+
     def _check_dynamic_config(self):
         check_type(self.is_dynamic, bool, param_name='is_dynamic')
         if self.is_dynamic:

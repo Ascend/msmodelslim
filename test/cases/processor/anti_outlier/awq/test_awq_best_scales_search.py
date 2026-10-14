@@ -1,4 +1,23 @@
-"""Tests for AWQAlphaSearcher.search() interface."""
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
+Tests for AWQAlphaSearcher.search() interface.
+"""
+# pylint: disable=attribute-defined-outside-init
 
 import copy
 
@@ -46,7 +65,6 @@ def _build_context(
 
 
 class TestSearchInputValidation:
-
     def test_empty_linears_raises(self):
         searcher = AWQBestScalesSearcher(weight_qconfig=_make_qconfig(), n_grid=5)
         module = SimpleMLP()
@@ -72,7 +90,6 @@ class TestSearchInputValidation:
 
 
 class TestSearchReturnsScales:
-
     def setup_method(self):
         self.in_features = 64
         self.module = SimpleMLP(in_features=self.in_features)
@@ -90,7 +107,6 @@ class TestSearchReturnsScales:
 
 
 class TestSearchPreservesState:
-
     def setup_method(self):
         self.module = SimpleMLP()
         self.ctx = _build_context(inspect_module=self.module)
@@ -111,7 +127,6 @@ class TestSearchPreservesState:
 
 
 class TestSearchGridBehavior:
-
     def setup_method(self):
         self.in_features = 64
         self.module = SimpleMLP(in_features=self.in_features)
@@ -129,7 +144,6 @@ class TestSearchGridBehavior:
 
 
 class TestSearchWithMultipleLinears:
-
     def test_two_linears_same_in_features(self):
         """Search with two linears sharing the same in_features succeeds."""
         in_features = 64

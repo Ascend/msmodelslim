@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=redefined-builtin
 
 import math
 from typing import Optional
@@ -111,8 +112,9 @@ def _validate_ext_config(config: QConfig):
         (qir.int8_per_channel_sym, "gptq"),
         (qir.int8_per_channel_asym, "gptq"),
         (qir.int4_per_channel_sym, "gptq"),
-        (qir.int4_per_channel_asym, "gptq")
-    ], abc_type=AutoWeightQuantizer
+        (qir.int4_per_channel_asym, "gptq"),
+    ],
+    abc_type=AutoWeightQuantizer,
 )
 @logger_setter()
 class WeightPerChannelGPTQ(AutoWeightQuantizer):
@@ -172,28 +174,20 @@ class WeightPerChannelGPTQ(AutoWeightQuantizer):
         """
         _validate_ext_config(self.config)
 
-    def init_weight(
-            self, weight: QStorage, bias: Optional[torch.Tensor] = None
-    ) -> None:
+    def init_weight(self, weight: QStorage, bias: Optional[torch.Tensor] = None) -> None:
         self.weight = weight
         self.bias = bias
 
     def get_q_storage(self) -> QStorage:
         if self.hessian is None:
-            raise SpecError(
-                "No hessian was set",
-                action="Please call forward first"
-            )
+            raise SpecError("No hessian was set", action="Please call forward first")
         if self.w_q_storage is None:
             self.w_q_storage, self.w_q_param = self.__gptq_per_channel_quantize()
         return self.w_q_storage
 
     def get_q_param(self) -> QParam:
         if self.hessian is None:
-            raise SpecError(
-                "No hessian was set",
-                action="Please call forward first"
-            )
+            raise SpecError("No hessian was set", action="Please call forward first")
         if self.w_q_param is None:
             self.w_q_storage, self.w_q_param = self.__gptq_per_channel_quantize()
         return self.w_q_param
@@ -263,8 +257,9 @@ class WeightPerChannelGPTQ(AutoWeightQuantizer):
         (qir.int8_per_group_sym, "gptq"),
         (qir.int8_per_group_asym, "gptq"),
         (qir.int4_per_group_sym, "gptq"),
-        (qir.int4_per_group_asym, "gptq")
-    ], abc_type=AutoWeightQuantizer
+        (qir.int4_per_group_asym, "gptq"),
+    ],
+    abc_type=AutoWeightQuantizer,
 )
 @logger_setter()
 class WeightPerGroupGPTQ(AutoWeightQuantizer):
@@ -325,33 +320,25 @@ class WeightPerGroupGPTQ(AutoWeightQuantizer):
         """
         _validate_ext_config(self.config)
 
-    def init_weight(
-            self, weight: QStorage, bias: Optional[torch.Tensor] = None
-    ) -> None:
+    def init_weight(self, weight: QStorage, bias: Optional[torch.Tensor] = None) -> None:
         if weight.value.shape[1] % self.group_size != 0:
             raise SpecError(
                 "Input channels must be divisible by group_size in per-group GPTQ",
-                action=f"Please set group_size to divide input channels ({weight.value.shape[1]})"
+                action=f"Please set group_size to divide input channels ({weight.value.shape[1]})",
             )
         self.weight = weight
         self.bias = bias
 
     def get_q_storage(self) -> QStorage:
         if self.hessian is None:
-            raise SpecError(
-                "No hessian was set",
-                action="Please call forward first"
-            )
+            raise SpecError("No hessian was set", action="Please call forward first")
         if self.w_q_storage is None:
             self.w_q_storage, self.w_q_param = self.__gptq_per_group_quantize()
         return self.w_q_storage
 
     def get_q_param(self) -> QParam:
         if self.hessian is None:
-            raise SpecError(
-                "No hessian was set",
-                action="Please call forward first"
-            )
+            raise SpecError("No hessian was set", action="Please call forward first")
         if self.w_q_param is None:
             self.w_q_storage, self.w_q_param = self.__gptq_per_group_quantize()
         return self.w_q_param
@@ -410,12 +397,14 @@ class WeightPerGroupGPTQ(AutoWeightQuantizer):
                 symmetric=self.config.symmetric,
             ),
             ext={
-                "scale": torch.zeros(weight_shape[0], weight_shape[1] // self.group_size,
-                                     device=self.weight.value.device),
-                "offset": torch.zeros(weight_shape[0], weight_shape[1] // self.group_size,
-                                      device=self.weight.value.device),
-                "group_size": self.group_size
-            }
+                "scale": torch.zeros(
+                    weight_shape[0], weight_shape[1] // self.group_size, device=self.weight.value.device
+                ),
+                "offset": torch.zeros(
+                    weight_shape[0], weight_shape[1] // self.group_size, device=self.weight.value.device
+                ),
+                "group_size": self.group_size,
+            },
         )
 
     def __calculate_group_q_param(self, weight_tensor: torch.Tensor, current_idx: int) -> QParam:
@@ -453,6 +442,6 @@ class WeightPerGroupGPTQ(AutoWeightQuantizer):
                 ),
                 ext={
                     "scale": self.w_q_param.ext["scale"][:, group_idx],
-                    "offset": self.w_q_param.ext["offset"][:, group_idx]
-                }
+                    "offset": self.w_q_param.ext["offset"][:, group_idx],
+                },
             )

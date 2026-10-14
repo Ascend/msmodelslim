@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import unittest
 import torch
@@ -58,17 +59,17 @@ class TestQuarotOnlineRotationInfo(unittest.TestCase):
             rotation_o_proj_eye=self.rotation_o_proj_eye,
             rotation_down_proj_m=self.rotation_down_proj_m,
             rotation_down_proj_n=self.rotation_down_proj_n,
-            max_tp_size=self.max_tp_size
+            max_tp_size=self.max_tp_size,
         )
         self.assertTrue(torch.equal(info.heads_rotation, self.rotation_o_proj))
         self.assertEqual(info.max_tp_size, self.max_tp_size)
         self.assertEqual(len(info.heads_rotation_layers), 0)
-        
+
         info.add_rotation_layer("layer1")
         info.add_kronecker_rotation_layer("layer2")
         self.assertEqual(len(info.heads_rotation_layers), 1)
         self.assertEqual(len(info.kronecker_rotation_layers), 1)
-        
+
         save_info = info.get_quarot_save_info()
         self.assertEqual(save_info["max_tp_size"], self.max_tp_size)
         self.assertEqual(save_info["heads_rotation"]["layers"], ["layer1"])
@@ -92,11 +93,9 @@ class TestQuarotRotationWrappers(unittest.TestCase):
             rotation_o_proj_eye=self.rotation_o_proj_eye,
             rotation_down_proj_m=None,
             rotation_down_proj_n=None,
-            max_tp_size=8
+            max_tp_size=8,
         )
-        wrapper = QuarotOnlineHeadRotationWrapper(
-            self.wrapped_module, self.layer_name, rotation_info
-        )
+        wrapper = QuarotOnlineHeadRotationWrapper(self.wrapped_module, self.layer_name, rotation_info)
         x = torch.randn(2, 32)
         output = wrapper(x)
         self.assertEqual(output.shape, (2, 16))
@@ -109,11 +108,9 @@ class TestQuarotRotationWrappers(unittest.TestCase):
             rotation_o_proj_eye=None,
             rotation_down_proj_m=self.rotation_m,
             rotation_down_proj_n=self.rotation_n,
-            max_tp_size=8
+            max_tp_size=8,
         )
-        wrapper = QuarotOnlineKroneckerRotationWrapper(
-            self.wrapped_module, self.layer_name, rotation_info
-        )
+        wrapper = QuarotOnlineKroneckerRotationWrapper(self.wrapped_module, self.layer_name, rotation_info)
         x = torch.randn(2, 32)
         output = wrapper(x)
         self.assertEqual(output.shape, (2, 16))
@@ -137,14 +134,14 @@ class TestQuarotRotationHookIR(unittest.TestCase):
             rotation_o_proj_eye=self.rotation_o_proj_eye,
             rotation_down_proj_m=None,
             rotation_down_proj_n=None,
-            max_tp_size=8
+            max_tp_size=8,
         )
         hook_ir = QuarotHeadsRotationHookIR(self.layer_name, rotation_info)
         module = nn.Linear(32, 16)
         x = torch.randn(2, 32)
         result = hook_ir(module, (x,))
         self.assertEqual(result[0].shape, x.shape)
-        
+
         wrapper = hook_ir.wrapper_module(module)
         self.assertIsInstance(wrapper, QuarotOnlineHeadRotationWrapper)
 
@@ -155,7 +152,7 @@ class TestQuarotRotationHookIR(unittest.TestCase):
             rotation_o_proj_eye=None,
             rotation_down_proj_m=self.rotation_m,
             rotation_down_proj_n=self.rotation_n,
-            max_tp_size=8
+            max_tp_size=8,
         )
         hook_ir = QuarotKroneckerRotationHookIR(self.layer_name, rotation_info)
         module = nn.Linear(32, 16)
@@ -178,18 +175,16 @@ class TestRotationTypeAndInfo(unittest.TestCase):
         """测试OnlineRotationInfo"""
         rotation_matrix = torch.randn(4, 4)
         info = OnlineRotationInfo(
-            rotation_matrix=rotation_matrix,
-            rotation_type=RotationType.INPUT,
-            layer_name="test_layer"
+            rotation_matrix=rotation_matrix, rotation_type=RotationType.INPUT, layer_name="test_layer"
         )
         self.assertTrue(torch.equal(info.rotation_matrix, rotation_matrix))
         self.assertEqual(info.rotation_type, RotationType.INPUT)
-        
+
         info_with_side = OnlineRotationInfo(
             rotation_matrix=rotation_matrix,
             rotation_type=RotationType.OFFLINE,
             layer_name="test_layer",
-            rotation_side="right"
+            rotation_side="right",
         )
         self.assertEqual(info_with_side.rotation_side, "right")
 
@@ -200,9 +195,7 @@ class TestBaseOnlineRotation(unittest.TestCase):
     def setUp(self):
         self.rotation_matrix = torch.eye(4)
         self.rotation_info = OnlineRotationInfo(
-            rotation_matrix=self.rotation_matrix,
-            rotation_type=RotationType.INPUT,
-            layer_name="test_layer"
+            rotation_matrix=self.rotation_matrix, rotation_type=RotationType.INPUT, layer_name="test_layer"
         )
         self.base_rotation = BaseOnlineRotation()
         self.base_rotation._init_rotation_common("test_layer", self.rotation_info)
@@ -222,9 +215,7 @@ class TestOnlineRotationWrapper(unittest.TestCase):
         """测试包装器初始化和前向传播"""
         rotation_matrix = torch.eye(4)
         rotation_info = OnlineRotationInfo(
-            rotation_matrix=rotation_matrix,
-            rotation_type=RotationType.REPLACE,
-            layer_name="test_layer"
+            rotation_matrix=rotation_matrix, rotation_type=RotationType.REPLACE, layer_name="test_layer"
         )
         wrapped_module = nn.Linear(4, 4)
         wrapper = OnlineRotationWrapper(wrapped_module, "test_layer", rotation_info)
@@ -239,9 +230,7 @@ class TestOnlineRotationHookIR(unittest.TestCase):
     def setUp(self):
         self.rotation_matrix = torch.eye(4)
         self.rotation_info = OnlineRotationInfo(
-            rotation_matrix=self.rotation_matrix,
-            rotation_type=RotationType.INPUT,
-            layer_name="test_layer"
+            rotation_matrix=self.rotation_matrix, rotation_type=RotationType.INPUT, layer_name="test_layer"
         )
 
     def test_input_hook_ir(self):
@@ -251,16 +240,14 @@ class TestOnlineRotationHookIR(unittest.TestCase):
         x = torch.randn(2, 4)
         result = hook_ir(module, (x,))
         self.assertEqual(result[0].shape, x.shape)
-        
+
         with self.assertRaises(ValueError):
             hook_ir(module, ())
 
     def test_output_hook_ir(self):
         """测试输出HookIR"""
         rotation_info = OnlineRotationInfo(
-            rotation_matrix=self.rotation_matrix,
-            rotation_type=RotationType.OUTPUT,
-            layer_name="test_layer"
+            rotation_matrix=self.rotation_matrix, rotation_type=RotationType.OUTPUT, layer_name="test_layer"
         )
         hook_ir = OnlineRotationOutputHookIR("test_layer", rotation_info)
         module = nn.Linear(4, 4)
@@ -268,12 +255,12 @@ class TestOnlineRotationHookIR(unittest.TestCase):
         output = module(x)
         rotated_output = hook_ir(module, (x,), output)
         self.assertEqual(rotated_output.shape, output.shape)
-        
+
         # 测试wrapper_module处理元组输出
         class TupleOutputModule(nn.Module):
             def forward(self, x):
                 return (x, x)
-        
+
         module = TupleOutputModule()
         wrapper = hook_ir.wrapper_module(module)
         output = wrapper(x)

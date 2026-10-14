@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import json
 import os
 import shutil
@@ -51,8 +52,7 @@ def _check_optional_quarot_export(tmp_dir: str) -> None:
     relative_safetensors_path = rotation_map["global_rotation"]
     safetensors_abs_path = os.path.join(tmp_dir, relative_safetensors_path)
     assert os.path.exists(safetensors_abs_path), (
-        f"optional quarot safetensors should exist at {safetensors_abs_path} "
-        f"(relative: {relative_safetensors_path})"
+        f"optional quarot safetensors should exist at {safetensors_abs_path} (relative: {relative_safetensors_path})"
     )
     assert safetensors_abs_path.endswith(".safetensors"), (
         f"optional.quarot.global_rotation should point to a .safetensors file, got {relative_safetensors_path}"
@@ -65,11 +65,18 @@ def _check_optional_dir_not_exists(tmp_dir: str) -> None:
     assert not os.path.exists(optional_dir), "optional directory should not be created when no optional infos"
 
 
-@pytest.mark.parametrize("test_device, test_dtype", [
-    pytest.param("cpu", torch.float32),
-    pytest.param("npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-    pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-])
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
 @pytest.mark.smoke
 def test_quarot_only_process(test_device: str, test_dtype: torch.dtype):
     tmp_dir = tempfile.mkdtemp()
@@ -95,11 +102,18 @@ def test_quarot_only_process(test_device: str, test_dtype: torch.dtype):
             shutil.rmtree(tmp_dir)
 
 
-@pytest.mark.parametrize("test_device, test_dtype", [
-    pytest.param("cpu", torch.float32),
-    pytest.param("npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-    pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-])
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
 @pytest.mark.smoke
 def test_quarot_autoround_process(test_device: str, test_dtype: torch.dtype):
     tmp_dir = tempfile.mkdtemp()
@@ -125,11 +139,18 @@ def test_quarot_autoround_process(test_device: str, test_dtype: torch.dtype):
             shutil.rmtree(tmp_dir)
 
 
-@pytest.mark.parametrize("test_device, test_dtype", [
-    pytest.param("cpu", torch.float32),
-    pytest.param("npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-    pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-])
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
 @pytest.mark.smoke
 def test_quarot_without_optional_export_does_not_create_optional_dir(
     test_device: str,
@@ -151,11 +172,18 @@ def test_quarot_without_optional_export_does_not_create_optional_dir(
             shutil.rmtree(tmp_dir)
 
 
-@pytest.mark.parametrize("test_device, test_dtype", [
-    pytest.param("cpu", torch.float32),
-    pytest.param("npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-    pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-])
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
 @pytest.mark.smoke
 def test_without_quarot_does_not_create_optional_dir(
     test_device: str,

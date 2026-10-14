@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,15 +18,18 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module,ungrouped-imports
+
 import re
 from pathlib import Path
 
 import torch
-from regex import F
+from regex import F  # noqa: F401
 from torch import nn
-from transformers import PreTrainedTokenizerBase, PreTrainedModel, PretrainedConfig
+from transformers import PretrainedConfig
+from msmodelslim.core.const import DeviceType  # noqa: F401
+from transformers import PreTrainedTokenizerBase, PreTrainedModel  # noqa: F401
 
-from msmodelslim.core.const import DeviceType
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.model.interface_hub import AscendV1GlobalModelDtypeInterface
 from msmodelslim.utils.security.model import SafeGenerator
@@ -75,8 +78,9 @@ class VLMBaseModelAdapter(BaseModelAdapter, AscendV1GlobalModelDtypeInterface):
         model.model.config.use_cache = enable
 
     def _load_config(self, trust_remote_code=False) -> PretrainedConfig:
-        return SafeGenerator.get_config_from_pretrained(model_path=str(self.model_path),
-                                                        trust_remote_code=trust_remote_code)
+        return SafeGenerator.get_config_from_pretrained(
+            model_path=str(self.model_path), trust_remote_code=trust_remote_code
+        )
 
     def _get_model_type(self, model_type: str) -> str:
         if model_type is None:
@@ -89,8 +93,7 @@ class VLMBaseModelAdapter(BaseModelAdapter, AscendV1GlobalModelDtypeInterface):
 
         model_type = re.match(r'^[a-zA-Z]+', model_type)
         if model_type is None:
-            raise SchemaValidateError(f"Invalid model_name: {model_type}.",
-                                      action='Please check the model type')
+            raise SchemaValidateError(f"Invalid model_name: {model_type}.", action='Please check the model type')
         return model_type.group().lower()
 
     def _collect_inputs_to_device(self, inputs, device, keys, defaults=None):

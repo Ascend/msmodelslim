@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,no-name-in-module,pointless-string-statement
 
 """
 DistributedTaskScheduler（分波调度器）的单元测试
@@ -29,21 +30,20 @@ DistributedTaskScheduler（分波调度器）的单元测试
 +子进程 ``gloo`` + ``file://``。
 """
 
-import unittest
-from typing import Any, Dict, List, Tuple
-from unittest.mock import MagicMock
+import unittest  # noqa: E402
+from typing import Any, Dict, List, Tuple  # noqa: E402, F401
+from unittest.mock import MagicMock  # noqa: E402
 
-import torch
-import torch.nn as nn
+from msmodelslim.utils.distributed import DistributedTaskScheduler  # noqa: E402, F401
+import torch.nn as nn  # noqa: E402, F401
+import torch  # noqa: E402, F401
 
-from msmodelslim.utils.distributed import DistributedTaskScheduler
-
-from test.cases.utils.distributed.dts_distributed_spawn import (
+from test.cases.utils.distributed.dts_distributed_spawn import (  # noqa: E402
     run_distributed_spawn,
     start_queue_result_collector,
     spawn_queue,
 )
-from test.cases.utils.distributed.test_dts_scheduler_test_workers import (
+from test.cases.utils.distributed.test_dts_scheduler_test_workers import (  # noqa: E402
     _run_disable_parallel_worker,
     _run_dts_dp_serial_oracle_equivalence_worker,
     _run_dts_heterogeneous_submit_supported_worker,
@@ -79,6 +79,7 @@ class TestDistributedTaskSchedulerQueue(unittest.TestCase):
             get_distributed_task_work_queue,
             set_distributed_task_work_queue,
         )
+
         mock_queue = MagicMock()
 
         set_distributed_task_work_queue(mock_queue)
@@ -93,6 +94,7 @@ class TestDistributedTaskSchedulerQueue(unittest.TestCase):
             get_distributed_task_work_queue,
             set_distributed_task_work_queue,
         )
+
         mock_queue = MagicMock()
         set_distributed_task_work_queue(mock_queue)
 
@@ -238,4 +240,3 @@ class TestDtsHeterogeneousSubmitSupport(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

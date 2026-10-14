@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=possibly-used-before-assignment,redefined-outer-name,used-before-assignment
 
 import os
 import sys
@@ -35,7 +36,7 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, '..'))
 sys.path.append(parent_directory)
 
-from example.common.security.path import get_valid_write_path, SafeWriteUmask, get_valid_read_path
+from example.common.security.path import get_valid_write_path, SafeWriteUmask, get_valid_read_path  # noqa: E402
 
 TOOL_AWQ = 'awq'
 TOOL_GPTQ = 'gptq'
@@ -77,8 +78,10 @@ def apply_order(
         elif direction == "row":
             iweight = iweight.view(pack_num, -1)[order, :].view(iweight.shape)
     except IndexError as ide:
-        raise IndexError(f"Order index {order} out of range for pack_num {pack_num}. "
-                           f"Order indices must be < {pack_num} for w_bit={w_bit}") from ide
+        raise IndexError(
+            f"Order index {order} out of range for pack_num {pack_num}. "
+            f"Order indices must be < {pack_num} for w_bit={w_bit}"
+        ) from ide
     return iweight
 
 
@@ -105,9 +108,9 @@ def gptq_qzeros_pack(zeros: torch.Tensor, w_bit: int):
     col = 0
     if zeros.dtype == torch.bfloat16:
         zeros = zeros.to(torch.float16)
-    
-    #AutoGPTQ zeros -= 1, or it may breaks exllama kernels 
-    zeros -= 1    
+
+    # AutoGPTQ zeros -= 1, or it may breaks exllama kernels
+    zeros -= 1
     zeros = zeros.numpy().astype(np.uint32)
     if len(zeros.shape) < 2:
         raise ValueError("Expected zeros to have at least 2 dimensions, but got shape: {}".format(zeros.shape))
@@ -118,14 +121,13 @@ def gptq_qzeros_pack(zeros: torch.Tensor, w_bit: int):
                 qzeros[:, col] |= zeros[:, j] << (w_bit * (j - i))
             i += 32 // w_bit
             col += 1
-            
+
     qzeros = qzeros.astype(np.int32)
     qzeros = torch.from_numpy(qzeros)
-    return qzeros  
+    return qzeros
 
 
 def convert_ms_to_vllm(target_tool, w_bit, weight_dict, json_dict):
-
     vllm_weight_dict = {}
     for name, quant_type in json_dict.items():
         if name in weight_dict.keys():
@@ -140,7 +142,7 @@ def convert_ms_to_vllm(target_tool, w_bit, weight_dict, json_dict):
                         continue
                     vllm_name = base_name + '.qweight'
                     tensor = tensor.t().contiguous()
-                    tensor = torch.clamp(tensor, -2**(w_bit - 1), 2**(w_bit - 1) - 1)
+                    tensor = torch.clamp(tensor, -(2 ** (w_bit - 1)), 2 ** (w_bit - 1) - 1)
                     if w_bit == 8:
                         tensor = tensor.to(torch.int32)
                     tensor.add_(2 ** (w_bit - 1))
@@ -160,7 +162,7 @@ def convert_ms_to_vllm(target_tool, w_bit, weight_dict, json_dict):
                 elif name.endswith('.weight_offset'):
                     vllm_name = name.rsplit('.', 1)[0] + '.qzeros'
                     tensor = tensor.t().contiguous()
-                    tensor = torch.clamp(tensor, -2**(w_bit - 1), 2**(w_bit - 1) - 1)
+                    tensor = torch.clamp(tensor, -(2 ** (w_bit - 1)), 2 ** (w_bit - 1) - 1)
                     if w_bit == 8:
                         tensor = tensor.to(torch.int32)
                     tensor.add_(2 ** (w_bit - 1))
@@ -182,7 +184,7 @@ def convert_ms_to_vllm(target_tool, w_bit, weight_dict, json_dict):
             else:
                 vllm_weight_dict[name] = tensor
     return vllm_weight_dict
-    
+
 
 def load_json_info(json_file_path):
     with open(json_file_path, 'r', encoding='utf-8') as f:
@@ -208,19 +210,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default=None, help="Quantied safetensors file path")
     parser.add_argument("--json", type=str, default=None, help="Quantied description file path")
-    parser.add_argument("--save_path", type=str, 
-                        default='res.safetensors', 
-                        help="The path to save converted quant weights")
+    parser.add_argument(
+        "--save_path", type=str, default='res.safetensors', help="The path to save converted quant weights"
+    )
     parser.add_argument("--w_bit", type=check_w_bit, default=4, help="Quantied weight bits")
     parser.add_argument(
         "--target_tool", type=check_target_tool, default="awq", help="target tool, value include awq and gptq"
-        )
+    )
     args = parser.parse_args()
 
     save_path = args.save_path
     w_bit = args.w_bit
     quant_tool = args.target_tool
-    
+
     model_path = get_valid_read_path(args.model, size_max=0)
     tensor_info = load_file(model_path)
 

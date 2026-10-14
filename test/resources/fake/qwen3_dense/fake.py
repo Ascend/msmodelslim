@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,no-name-in-module
 
 import os
 import torch
@@ -62,60 +63,55 @@ class FakeQwen3Model(nn.Module):
     """
     一个简化的Qwen3模型，用于测试
     """
-    
+
     def __init__(self, config):
         super().__init__()
         self.device = "cpu"
         self.config = config
-        
+
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size)
-        
+
         self.rotary_emb = Qwen3RotaryEmbedding(self.config)
-        
-        self.layers = nn.ModuleList([
-            Qwen3DecoderLayer(config, layer_idx=i) for i in range(config.num_hidden_layers)
-        ])
-        
+
+        self.layers = nn.ModuleList([Qwen3DecoderLayer(config, layer_idx=i) for i in range(config.num_hidden_layers)])
+
         # 最终层
         self.norm = Qwen3RMSNorm(config.hidden_size, config.rms_norm_eps)
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
-        
+
         # 初始化权重
         self.apply(self._init_weights)
 
     def forward(self, input_ids, position_ids=None, attention_mask=None, **kwargs):
         """
         前向传播函数，返回logits
-        
+
         Args:
             input_ids: 输入token ids，形状为 (batch_size, seq_len)
             position_ids: 位置id，形状为 (batch_size, seq_len)
             attention_mask: 注意力掩码，形状为 (batch_size, seq_len)
-            
+
         Returns:
             logits: 输出logits，形状为 (batch_size, seq_len, vocab_size)
         """
         batch_size, seq_length = input_ids.shape
-        
+
         # Embedding
         hidden_states = self.embed_tokens(input_ids)
-        
+
         # 创建位置id（如果未提供）
         if position_ids is None:
             position_ids = torch.arange(seq_length, dtype=torch.long, device=input_ids.device)
             position_ids = position_ids.unsqueeze(0).expand(batch_size, -1)
-        
+
         position_embeddings = self.rotary_emb(hidden_states, position_ids)
 
         # Decoder layers
         for layer in self.layers:
             hidden_states = layer(
-                hidden_states, 
-                position_embeddings=position_embeddings,
-                attention_mask=attention_mask,
-                **kwargs
+                hidden_states, position_embeddings=position_embeddings, attention_mask=attention_mask, **kwargs
             )[0]  # Qwen3DecoderLayer返回(output, past_key_value)
-        
+
         # Final norm and lm_head
         hidden_states = self.norm(hidden_states)
         logits = self.lm_head(hidden_states)

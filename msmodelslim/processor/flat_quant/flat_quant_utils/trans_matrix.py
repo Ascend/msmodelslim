@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=attribute-defined-outside-init,consider-using-from-import
 
 import torch
 import torch.nn as nn
@@ -70,8 +71,7 @@ class SingleTransMatrix(nn.Module):
             return output.reshape(init_shape)
         else:
             raise SchemaValidateError(
-                f"Invalid transformation direction: {self.direction}. "
-                "Only 'left' or 'right' are supported."
+                f"Invalid transformation direction: {self.direction}. Only 'left' or 'right' are supported."
             )
 
     def get_save_params(self):
@@ -84,14 +84,14 @@ class SVDSingleTransMatrix(SingleTransMatrix):
 
     def __init__(self, size, direction="right", diag_relu=False):
         super().__init__(size, direction)
-        
+
         # 左正交矩阵 U（左乘方向）
         self.linear_u = nn.Linear(size, size, bias=False)
         self.linear_u.weight.data = get_init_weight(size).to(self.linear_u.weight)
         self.linear_u = nn.utils.parametrizations.orthogonal(
             self.linear_u, orthogonal_map="cayley", use_trivialization=False
         )
-        
+
         # 右正交矩阵 V（右乘方向）
         self.linear_v = nn.Linear(size, size, bias=False)
         self.linear_v.weight.data = get_init_weight(size).to(self.linear_v.weight)

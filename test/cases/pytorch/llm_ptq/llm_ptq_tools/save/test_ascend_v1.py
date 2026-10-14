@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=unspecified-encoding
+
 import json
 import os
 import unittest
@@ -32,7 +34,7 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save.saver.safetensors import Saf
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.save.writer import (
     BufferedSafetensorsWriter,
     JsonDescriptionWriter,
-    SafetensorsWriter
+    SafetensorsWriter,
 )
 
 
@@ -48,7 +50,7 @@ class TestAscendV1ConfigValidation(unittest.TestCase):
             'safetensors_name': 'test.safetensors',
             'json_name': 'test.json',
             'part_file_size': None,
-            'group_size': 128
+            'group_size': 128,
         }
 
     def test_config_creation_with_valid_params_should_succeed(self):
@@ -94,7 +96,7 @@ class TestAscendV1SaverBasics(unittest.TestCase):
             safetensors_name='test.safetensors',
             json_name='test.json',
             part_file_size=None,
-            group_size=128
+            group_size=128,
         )
         os.makedirs('./test_output', exist_ok=True)
 
@@ -191,7 +193,7 @@ class TestEndToEndSaving(unittest.TestCase):
             safetensors_name='test.safetensors',
             json_name='test.json',
             part_file_size=None,
-            group_size=128
+            group_size=128,
         )
 
     def tearDown(self):
@@ -274,17 +276,11 @@ class TestFormatCompatibility(unittest.TestCase):
     def test_default_json_names_should_follow_format_conventions(self):
         """Test that default JSON filenames follow format-specific conventions"""
         # Verify AscendV1 default JSON name
-        self.assertEqual(
-            self.ascend_config.json_name,
-            "quant_model_description.json"
-        )
+        self.assertEqual(self.ascend_config.json_name, "quant_model_description.json")
 
         # Verify Safetensors default JSON name
         expected_safe_json_name = f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json"
-        self.assertEqual(
-            self.safe_config.json_name,
-            expected_safe_json_name
-        )
+        self.assertEqual(self.safe_config.json_name, expected_safe_json_name)
 
     def test_basic_format_differences_should_maintain_compatibility(self):
         """Test format differences while maintaining basic compatibility"""
@@ -302,8 +298,7 @@ class TestFormatCompatibility(unittest.TestCase):
         # Verify file paths
         ascend_json_path = os.path.join(self.test_dir, "quant_model_description.json")
         safe_json_path = os.path.join(
-            self.test_dir,
-            f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json"
+            self.test_dir, f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json"
         )
 
         self.assertTrue(os.path.exists(ascend_json_path))
@@ -336,25 +331,24 @@ class TestFormatCompatibility(unittest.TestCase):
     def test_factory_format_selection_should_use_correct_defaults(self):
         """Test that factory creates savers with correct default configurations"""
         # Test AscendV1 format
-        ascend_saver = SaverFactory.create(SAVE_TYPE_ASCENDV1, **{
-            **self.factory_kwargs,
-            'safetensors_name': 'test.safetensors',
-        })
-        self.assertIsInstance(ascend_saver, AscendV1Saver)
-        self.assertEqual(
-            ascend_saver.meta_writer.json_name,
-            "quant_model_description.json"
+        ascend_saver = SaverFactory.create(
+            SAVE_TYPE_ASCENDV1,
+            **{
+                **self.factory_kwargs,
+                'safetensors_name': 'test.safetensors',
+            },
         )
+        self.assertIsInstance(ascend_saver, AscendV1Saver)
+        self.assertEqual(ascend_saver.meta_writer.json_name, "quant_model_description.json")
 
         # Test Safetensors format
-        safe_saver = SaverFactory.create(SAVE_TYPE_SAFE_TENSOR, **{
-            **self.factory_kwargs,
-            'safetensors_name': 'test.safetensors'
-        })
+        safe_saver = SaverFactory.create(
+            SAVE_TYPE_SAFE_TENSOR, **{**self.factory_kwargs, 'safetensors_name': 'test.safetensors'}
+        )
         self.assertIsInstance(safe_saver, SafetensorsSaver)
         self.assertEqual(
             safe_saver.meta_writer.json_name,
-            f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json"
+            f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json",
         )
 
     def test_kv_cache_format_differences_should_maintain_compatibility(self):
@@ -392,8 +386,7 @@ class TestFormatCompatibility(unittest.TestCase):
         # Compare contents
         ascend_json_path = os.path.join(self.test_dir, "quant_model_description.json")
         safe_json_path = os.path.join(
-            self.test_dir,
-            f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json"
+            self.test_dir, f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json"
         )
 
         with open(ascend_json_path, 'r') as f:
@@ -459,8 +452,7 @@ class TestFormatCompatibility(unittest.TestCase):
         # Compare contents
         ascend_json_path = os.path.join(self.test_dir, "quant_model_description.json")
         safe_json_path = os.path.join(
-            self.test_dir,
-            f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json"
+            self.test_dir, f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json"
         )
 
         with open(ascend_json_path, 'r') as f:
@@ -523,8 +515,7 @@ class TestFormatCompatibility(unittest.TestCase):
         # Compare contents
         ascend_json_path = os.path.join(self.test_dir, "quant_model_description.json")
         safe_json_path = os.path.join(
-            self.test_dir,
-            f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json"
+            self.test_dir, f"quant_model_description_{self.safe_config.model_quant_type.lower()}.json"
         )
 
         with open(ascend_json_path, 'r') as f:

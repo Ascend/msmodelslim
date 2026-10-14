@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -30,26 +31,22 @@ class IModel(ABC):
 
     @property
     @abstractmethod
-    def model_type(self) -> str:
-        ...
+    def model_type(self) -> str: ...
 
     @property
     @abstractmethod
-    def model_path(self) -> Path:
-        ...
+    def model_path(self) -> Path: ...
 
     @property
     @abstractmethod
-    def trust_remote_code(self) -> bool:
-        ...
+    def trust_remote_code(self) -> bool: ...
 
 
 class IModelFactory(ABC):
-
     @abstractmethod
-    def create(self,
-               model_type: str,
-               model_path: Path,
-               trust_remote_code: bool = False,
-               ) -> IModel:
-        ...
+    def create(
+        self,
+        model_type: str,
+        model_path: Path,
+        trust_remote_code: bool = False,
+    ) -> IModel: ...

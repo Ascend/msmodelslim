@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -30,14 +30,14 @@ from msmodelslim.pytorch.weight_compression.compress_utils import (
     compress_weight_fun,
     pseudo_sparse,
     round_up,
-    transform_nd2nz
+    transform_nd2nz,
 )
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.llm_ptq_utils import QuantType
 
 
 class TestCompressUtils:
     def test_pseudo_sparse(self):
-        np.random.seed(2024) # 不能删除，因为调用的pseudo_sparse函数中有numpy的随机数设置
+        np.random.seed(2024)  # 不能删除，因为调用的pseudo_sparse函数中有numpy的随机数设置
         arr = np.array([1, 1, 1, 1])
         ratio = 0.5
         res = pseudo_sparse(arr, ratio)
@@ -107,6 +107,3 @@ class TestCompressUtils:
         assert np.array_equal(output, np.array([11, 12], dtype=np.int8))
         assert np.array_equal(index, np.array([1, 0], dtype=np.int8))
         assert info == [2, 2, 1]
-
-
-

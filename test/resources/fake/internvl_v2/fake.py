@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,unspecified-encoding
 
 from typing import Optional, Tuple
 
@@ -27,6 +28,7 @@ import torch
 import torch.nn as nn
 
 from resources.fake.llava.fake import FakeLlavaCreator
+
 
 class DictConfig:
     def __init__(self, config_dict: dict):
@@ -69,7 +71,7 @@ class MockInternAttention(nn.Module):
                 f' {self.num_heads}).'
             )
 
-        self.scale = self.head_dim ** -0.5
+        self.scale = self.head_dim**-0.5
         self.qkv = nn.Linear(self.embed_dim, 3 * self.embed_dim, bias=config.qkv_bias)
         self.attn_drop = nn.Dropout(config.attention_dropout)
         self.proj_drop = nn.Dropout(config.dropout)
@@ -119,8 +121,8 @@ class MockInternVisionEncoderLayer(nn.Module):
         self.drop_path2 = nn.Identity()
 
     def forward(
-            self,
-            hidden_states: torch.Tensor,
+        self,
+        hidden_states: torch.Tensor,
     ) -> Tuple[torch.FloatTensor, Optional[torch.FloatTensor], Optional[Tuple[torch.FloatTensor]]]:
         return hidden_states
 
@@ -166,7 +168,7 @@ class MockInternLM2MLP(nn.Module):
         self.w3 = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
         self.w2 = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = nn.GELU()
-        
+
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         return hidden_states
 
@@ -205,4 +207,4 @@ class FakeInternVLCreator:
         获取一个随机的、非常小的InternLM2DecoderLayer，用于验证工具中某些流程的正确性
         """
         layer = MockInternLM2DecoderLayer(config=cls.llm_config)
-        return layer 
+        return layer

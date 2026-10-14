@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module
+
 import os
 import stat
 
@@ -26,7 +28,7 @@ import pytest
 from transformers import AutoConfig, AutoModelForCausalLM
 
 from ascend_utils.common.security import file_safe_write, safe_delete_path_if_exists
-from msmodelslim.pytorch import ra_compression
+from msmodelslim.pytorch import ra_compression  # noqa: F401
 from msmodelslim.pytorch.ra_compression import RACompressConfig
 
 torch.manual_seed(2024)
@@ -69,7 +71,6 @@ def model_config():
 # @pytest.mark.skipif("RACompressor" not in ra_compression.__all__, reason="requires KIA so")
 @pytest.mark.skip()
 def test_ra_compression_given_model_then_pass():
-
     from msmodelslim.pytorch.ra_compression import RACompressor
 
     config = AutoConfig.from_pretrained("./", local_files_only=True)

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,10 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=ungrouped-imports
 
 import os
 import torch
-import torch_npu
+import torch_npu  # noqa: F401
 import torch.utils.data
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
@@ -30,18 +31,20 @@ from msmodelslim import logger as msmodelslim_logger
 SEQ_LEN_OUT = 32
 
 LOAD_PATH = f"{os.environ['PROJECT_PATH']}/resource/llm_ptq/llama2_7b/"
-tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=LOAD_PATH,
-                                          trust_remote_code=True, 
-                                          local_files_only=True)
-model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=LOAD_PATH,
-                                             torch_dtype=torch.float32, 
-                                             trust_remote_code=True).cpu()
+tokenizer = AutoTokenizer.from_pretrained(
+    pretrained_model_name_or_path=LOAD_PATH, trust_remote_code=True, local_files_only=True
+)
+model = AutoModelForCausalLM.from_pretrained(
+    pretrained_model_name_or_path=LOAD_PATH, torch_dtype=torch.float32, trust_remote_code=True
+).cpu()
 
-calib_list_all = ["Where is the capital of China?",
-              "Please make a poem:",
-              "I want to learn python, how should I learn it?",
-              "Please help me write a job report on large model inference optimization:",
-              "What are the most worth visiting scenic spots in China?"]
+calib_list_all = [
+    "Where is the capital of China?",
+    "Please make a poem:",
+    "I want to learn python, how should I learn it?",
+    "Please help me write a job report on large model inference optimization:",
+    "What are the most worth visiting scenic spots in China?",
+]
 
 
 def get_calib_dataset(tokenizer_instance, calib_list):
@@ -55,16 +58,9 @@ def get_calib_dataset(tokenizer_instance, calib_list):
 
 dataset_calib = get_calib_dataset(tokenizer, calib_list_all[:1])
 
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig  # noqa: E402
 
-quant_config = QuantConfig(a_bit=16,
-                           w_bit=8,
-                           dev_type='cpu', 
-                           pr=0.5, 
-                           mm_tensor=False,
-                           w_sym=False,
-                           w_method='GPTQ'
-                           )
+quant_config = QuantConfig(a_bit=16, w_bit=8, dev_type='cpu', pr=0.5, mm_tensor=False, w_sym=False, w_method='GPTQ')
 calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
 calibrator.run()
 

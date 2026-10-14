@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-merging-isinstance,consider-using-from-import,no-else-continue
 
 from collections import OrderedDict
 import copy
@@ -107,10 +108,13 @@ def quant_module(model, strategy):
 
 
 def is_quant_cell(cell):
-    return isinstance(cell, nn.Conv2d) and cell.in_channels > 16 \
-        or isinstance(cell, nn.Conv1d) \
-        or isinstance(cell, nn.Dense) \
+    return (
+        isinstance(cell, nn.Conv2d)
+        and cell.in_channels > 16
+        or isinstance(cell, nn.Conv1d)
+        or isinstance(cell, nn.Dense)
         or (isinstance(cell, _Linear) and hasattr(cell, "expert_num") and cell.expert_num == 1)
+    )
 
 
 def get_compression_rate(network):
@@ -123,10 +127,12 @@ def get_compression_rate(network):
     except ZeroDivisionError as ex:
         logging.error('origin_size cannot be zero. %s', str(ex))
         raise ex
-    logging.info("Origin model size = %.2f KB, "
-                 "Quanted model size  = %.2f KB, "
-                 "compress_ratio = %.2f%%",
-                 origin_size, quanted_model_size, compress_ratio)
+    logging.info(
+        "Origin model size = %.2f KB, Quanted model size  = %.2f KB, compress_ratio = %.2f%%",
+        origin_size,
+        quanted_model_size,
+        compress_ratio,
+    )
     return compress_ratio, origin_size, quanted_model_size
 
 
@@ -198,10 +204,8 @@ class ModelStatistics:
                 temp_input = input_x
             params_dict = layer.parameters_dict()
 
-            value_h0 = (layer.kernel_size[0] - 1) * (layer.dilation[0] - 1) + \
-                       layer.kernel_size[0]
-            value_w0 = (layer.kernel_size[1] - 1) * (layer.dilation[1] - 1) + \
-                       layer.kernel_size[1]
+            value_h0 = (layer.kernel_size[0] - 1) * (layer.dilation[0] - 1) + layer.kernel_size[0]
+            value_w0 = (layer.kernel_size[1] - 1) * (layer.dilation[1] - 1) + layer.kernel_size[1]
             if isinstance(layer.padding, tuple):
                 h_padding = layer.padding[0] + layer.padding[1]
                 w_padding = layer.padding[2] + layer.padding[3]
@@ -209,16 +213,18 @@ class ModelStatistics:
                 h_padding = 2 * layer.padding
                 w_padding = 2 * layer.padding
             try:
-                out_h = int((temp_input.shape[2] + h_padding - value_h0) /
-                            layer.stride[0] + 1)
-                out_w = int((temp_input.shape[3] + w_padding - value_w0) /
-                            layer.stride[1] + 1)
-                layer.flops = layer.in_channels * \
-                              layer.out_channels * \
-                              layer.kernel_size[0] * \
-                              layer.kernel_size[1] * \
-                              out_h * out_w / layer.group * \
-                              multi_add
+                out_h = int((temp_input.shape[2] + h_padding - value_h0) / layer.stride[0] + 1)
+                out_w = int((temp_input.shape[3] + w_padding - value_w0) / layer.stride[1] + 1)
+                layer.flops = (
+                    layer.in_channels
+                    * layer.out_channels
+                    * layer.kernel_size[0]
+                    * layer.kernel_size[1]
+                    * out_h
+                    * out_w
+                    / layer.group
+                    * multi_add
+                )
             except ZeroDivisionError:
                 logging.error("division by zero! %s", ZeroDivisionError)
             layer.params = sum(p.size for p in params_dict.values())
@@ -289,6 +295,7 @@ def custom_deepcopy(model):
             del model.config.logger
     copy_model = copy.deepcopy(model)
     from mindspore._c_expression import MixedPrecisionType
+
     ori_cells = {}
     for name, cell in model.cells_and_names():
         ori_cells.setdefault(name, cell)

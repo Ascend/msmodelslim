@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module
 
 import unittest
 from unittest.mock import Mock
@@ -110,9 +111,7 @@ class TestKVCacheListener(unittest.TestCase):
         """当存在cache时，应调用listen_helper和cache.update方法"""
         listener = KVCacheListener(self.listen_helper, cache=self.mock_cache)
 
-        result_key, result_value = listener.update(
-            self.key_states, self.value_states, self.layer_idx
-        )
+        result_key, result_value = listener.update(self.key_states, self.value_states, self.layer_idx)
 
         # 验证 listen_helper 被调用
         self.assertTrue(self.listen_helper_called)

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,no-name-in-module,pointless-string-statement,reimported
 
 """
 DTS 性能语义单测：
@@ -29,32 +30,36 @@ DTS 性能语义单测：
   +子进程 ``gloo``（``file://``），两 rank 走 ``world_size>1`` 的 ``run()``。
 """
 
-import os
-import unittest
-from unittest.mock import MagicMock, patch
+import os  # noqa: E402
+import unittest  # noqa: E402
+from unittest.mock import MagicMock, patch  # noqa: E402
 
 os.environ.setdefault("TORCH_DEVICE_BACKEND_AUTOLOAD", "0")
 
-import torch.nn as nn
+import torch.nn as nn  # noqa: E402
 
-from msmodelslim.utils.distributed import (
+from msmodelslim.utils.distributed import (  # noqa: E402
     DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX,
     DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX,
-    DTS_PERF_LOG_SPEEDUP_RATIO_PREFIX,
-    DTS_PERF_LOG_SPEEDUP_SKIPPED_PREFIX,
 )
-from msmodelslim.utils.distributed.task_scheduler.backend import wave as dts_wave_mod
-from test.cases.utils.distributed.dts_test_internals import (
+from msmodelslim.utils.distributed import (  # noqa: E402
+    DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX,  # noqa: F811
+    DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX,  # noqa: F811
+    DTS_PERF_LOG_SPEEDUP_RATIO_PREFIX,  # noqa: F401
+    DTS_PERF_LOG_SPEEDUP_SKIPPED_PREFIX,  # noqa: F401
+)  # noqa: F401
+from msmodelslim.utils.distributed.task_scheduler.backend import wave as dts_wave_mod  # noqa: E402
+from test.cases.utils.distributed.dts_test_internals import (  # noqa: E402
     _DtsMultiRankParallelWaveScheduler,
     _DtsSequentialWaveScheduler,
 )
 
-from test.cases.utils.distributed.dts_distributed_spawn import (
+from test.cases.utils.distributed.dts_distributed_spawn import (  # noqa: E402
     run_distributed_spawn,
     start_queue_result_collector,
     spawn_queue,
 )
-from test.cases.utils.distributed.test_dts_scheduler_test_workers import _run_dts_multirank_perf_worker
+from test.cases.utils.distributed.test_dts_scheduler_test_workers import _run_dts_multirank_perf_worker  # noqa: E402
 
 
 def _fake_all_gather_object_for_two_ranks(object_list, obj):
@@ -131,12 +136,10 @@ class TestDtsPerformanceExecVsSync(unittest.TestCase):
         self.assertEqual(len(records), 1)
         self.assertAlmostEqual(records[0].exec_time_s, 80.0, places=5)
         self.assertAlmostEqual(records[0].sync_time_s, 0.0, places=5)
-        total_exec = sum(r.exec_time_s for r in records)
+        total_exec = sum(r.exec_time_s for r in records)  # noqa: F841
         total_sync = sum(r.sync_time_s for r in records)
         self.assertEqual(total_sync, 0.0)
-        not_suitable = [
-            c for c in mock_log.debug.call_args_list if c.args and "not suitable for parallel" in c.args[0]
-        ]
+        not_suitable = [c for c in mock_log.debug.call_args_list if c.args and "not suitable for parallel" in c.args[0]]
         self.assertEqual(len(not_suitable), 0)
 
     def test_when_sync_ge_exec_ratio_le_one_triggers_debug_branch(self):
@@ -153,14 +156,12 @@ class TestDtsPerformanceExecVsSync(unittest.TestCase):
         self.assertEqual(len(records), 1)
         self.assertAlmostEqual(records[0].exec_time_s, 2.0, places=5)
         self.assertAlmostEqual(records[0].sync_time_s, 0.0, places=5)
-        total_exec = sum(r.exec_time_s for r in records)
+        total_exec = sum(r.exec_time_s for r in records)  # noqa: F841
         total_sync = sum(r.sync_time_s for r in records)
         self.assertEqual(total_sync, 0.0)
 
         not_suitable_calls = [
-            c
-            for c in mock_log.debug.call_args_list
-            if c.args and "not suitable for parallel" in c.args[0]
+            c for c in mock_log.debug.call_args_list if c.args and "not suitable for parallel" in c.args[0]
         ]
         self.assertEqual(
             len(not_suitable_calls),
@@ -183,9 +184,7 @@ class TestDtsPerformanceExecVsSync(unittest.TestCase):
         self.assertEqual(len(records), 2)
         self.assertAlmostEqual(sum(r.exec_time_s for r in records), 60.0, places=5)
         self.assertAlmostEqual(sum(r.sync_time_s for r in records), 0.0, places=5)
-        not_suitable = [
-            c for c in mock_log.debug.call_args_list if c.args and "not suitable for parallel" in c.args[0]
-        ]
+        not_suitable = [c for c in mock_log.debug.call_args_list if c.args and "not suitable for parallel" in c.args[0]]
         self.assertEqual(len(not_suitable), 0)
 
     def test_multi_task_when_sync_dominates(self):
@@ -204,9 +203,7 @@ class TestDtsPerformanceExecVsSync(unittest.TestCase):
         total_sync = sum(r.sync_time_s for r in records)
         self.assertEqual(total_exec, 2.0)
         self.assertEqual(total_sync, 0.0)
-        not_suitable = [
-            c for c in mock_log.debug.call_args_list if c.args and "not suitable for parallel" in c.args[0]
-        ]
+        not_suitable = [c for c in mock_log.debug.call_args_list if c.args and "not suitable for parallel" in c.args[0]]
         self.assertEqual(len(not_suitable), 0)
 
     def test_single_rank_run_does_not_emit_speedup_ratio_info(self):
@@ -221,11 +218,7 @@ class TestDtsPerformanceExecVsSync(unittest.TestCase):
                     sch.submit(lambda: None, dependencies=[])
                     _ = sch.run()
 
-        summary_calls = [
-            c
-            for c in mock_log.info.call_args_list
-            if c.args and "Summary" in c.args[0]
-        ]
+        summary_calls = [c for c in mock_log.info.call_args_list if c.args and "Summary" in c.args[0]]
         self.assertEqual(len(summary_calls), 1)
         # 单卡串行：最后一个格式化参数为 mode 值 "single-rank"
         self.assertEqual(summary_calls[0].args[-1], "single-rank")

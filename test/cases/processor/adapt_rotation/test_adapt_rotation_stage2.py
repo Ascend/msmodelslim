@@ -7,7 +7,7 @@ This file is part of the MindStudio project.
 Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
-You may use this software according to the terms and conditions of the Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
 You may obtain a copy of Mulan PSL v2 at:
 
          http://license.coscl.org.cn/MulanPSL2
@@ -18,22 +18,24 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
+
 """
 msmodelslim.processor.adapt_rotation.adapt_rotation_stage2 模块的单元测试
 """
-import unittest
-from unittest.mock import MagicMock, patch
+import unittest  # noqa: E402
+from unittest.mock import MagicMock, patch  # noqa: E402
 
-import torch
+import torch  # noqa: E402
 
-from msmodelslim.processor.adapt_rotation.adapt_rotation_stage2 import (
+from msmodelslim.processor.adapt_rotation.adapt_rotation_stage2 import (  # noqa: E402
     AdaptRotationStage2ProcessorConfig,
     AdaptRotationStage2Processor,
 )
-from msmodelslim.processor.quarot.offline_quarot.quarot_interface import RotatePair
-from msmodelslim.utils.exception import SchemaValidateError
+from msmodelslim.processor.quarot.offline_quarot.quarot_interface import RotatePair  # noqa: E402
+from msmodelslim.utils.exception import SchemaValidateError  # noqa: E402
 
-from .common import MockQuaRotAdapter
+from .common import MockQuaRotAdapter  # noqa: E402
 
 
 class TestAdaptRotationStage2ProcessorConfig(unittest.TestCase):
@@ -83,9 +85,7 @@ class TestAdaptRotationStage2ProcessorOverlayAdaptedMatrix(unittest.TestCase):
         D = 4
         adapted = torch.eye(D)
         config = AdaptRotationStage2ProcessorConfig(type="_adapt_rotation_stage2")
-        processor = AdaptRotationStage2Processor(
-            model=MagicMock(), config=config, adapter=MockQuaRotAdapter()
-        )
+        processor = AdaptRotationStage2Processor(model=MagicMock(), config=config, adapter=MockQuaRotAdapter())
 
         with self.subTest(match="形状匹配时替换"):
             pair = RotatePair(
@@ -191,6 +191,8 @@ class TestAdaptRotationStage2ProcessorPreRun(unittest.TestCase):
             proc._bake_mean = MagicMock()
             proc._rotate = MagicMock()
         with patch("msmodelslim.processor.adapt_rotation.adapt_rotation_stage2.get_current_context", return_value=None):
-            with patch("msmodelslim.processor.adapt_rotation.adapt_rotation_stage2.get_rotate_command", return_value=[]):
+            with patch(
+                "msmodelslim.processor.adapt_rotation.adapt_rotation_stage2.get_rotate_command", return_value=[]
+            ):
                 proc.pre_run()
         proc.online_processor.pre_run.assert_called_once()

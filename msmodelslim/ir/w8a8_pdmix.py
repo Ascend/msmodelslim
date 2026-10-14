@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from enum import Enum
 
 import torch
@@ -40,13 +41,13 @@ class PDMixState(str, Enum):
     dispatch_key=[
         (int8_pd_mix_asym, int8_per_channel_sym),
     ],
-    abc_type=AutoFakeQuantLinear
+    abc_type=AutoFakeQuantLinear,
 )
 @logger_setter()
 class W8A8PDMixFakeQuantLinear(W8A8StaticFakeQuantLinear):
     """
     W8A8 pdmix sym/asym PDMIX混合量化方式的伪量化IR。
-    
+
     W8A8 PDMIX混合量化方式可以用以下参数描述：
         input_scale: 输入张量的量化参数，类型为torch.Tensor, dtype为torch.float32
         input_offset: 输入张量的量化参数，类型为torch.Tensor, dtype为torch.int32
@@ -56,11 +57,7 @@ class W8A8PDMixFakeQuantLinear(W8A8StaticFakeQuantLinear):
         state: 状态，类型为PDMixState, 可选值为PDMixState.PREFILLING和PDMixState.DECODING
     """
 
-    def __init__(self,
-                 x_q_param: QParam,
-                 w_q_param: QParam,
-                 w_q: QStorage,
-                 bias: torch.Tensor):
+    def __init__(self, x_q_param: QParam, w_q_param: QParam, w_q: QStorage, bias: torch.Tensor):
         super().__init__(x_q_param, w_q_param, w_q, bias)
         self.state = PDMixState.PREFILLING
 
@@ -79,7 +76,9 @@ class W8A8PDMixFakeQuantLinear(W8A8StaticFakeQuantLinear):
         x_token_max = torch.amax(x_reshape, dim=0)
         x_q_param = calculate_qparam(x_token_min, x_token_max, QDType.INT8, QScope.PER_TOKEN, True)
         x_q_dq = fake_quantize(QStorage(QDType.FLOAT, x_reshape), x_q_param)
-        w_q_param = QParam(scheme=QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.INT8, symmetric=True),
-                           ext={"scale": self.weight_scale.data})
+        w_q_param = QParam(
+            scheme=QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.INT8, symmetric=True),
+            ext={"scale": self.weight_scale.data},
+        )
         weight_q_dq = dequantize(QStorage(dtype=QDType.INT8, value=self.weight.data).T, w_q_param).T
         return F.linear(x_q_dq.value.reshape(x_shape), weight_q_dq.value, self.bias)

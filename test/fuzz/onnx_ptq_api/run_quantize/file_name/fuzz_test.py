@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
 
 """
 Usage:
@@ -25,16 +26,16 @@ TEST_PATH=test/fuzz/onnx_ptq_api/run_quantize/file_name
 python3 -m coverage run ${TEST_PATH}/fuzz_test.py ${TEST_PATH}/samples/ -atheris_runs=1000
 """
 
-import sys
-import os
+import sys  # noqa: E402
+import os  # noqa: E402
 
-import atheris
-import numpy as np
-import torch
+import atheris  # noqa: E402
+import numpy as np  # noqa: E402
+import torch  # noqa: E402
+from onnxruntime import quantization as _  # noqa: E402, F401
+import sympy as _  # noqa: E402, F401, F811
 
 # Need to import these first, otherwise `atheris.instrument_imports` will take a long time
-import sympy as _
-from onnxruntime import quantization as _
 
 with atheris.instrument_imports():
     from resources.sample_net_torch import TestOnnxQuantModel
@@ -50,14 +51,18 @@ def get_calib_data1():
 
 
 def get_calib_data2():
-    data_list = [np.random.randn(3, 32, 32).astype(np.float32),
-                 np.random.randn(3, 32, 32).astype(np.float32),
-                 [np.random.randn(3, 32, 32).astype(np.float32)]]
+    data_list = [
+        np.random.randn(3, 32, 32).astype(np.float32),
+        np.random.randn(3, 32, 32).astype(np.float32),
+        [np.random.randn(3, 32, 32).astype(np.float32)],
+    ]
     return data_list
 
 
 def get_calib_data3():
-    return [1, ]
+    return [
+        1,
+    ]
 
 
 def get_calib_data4():
@@ -73,10 +78,12 @@ def fuzz_test(input_bytes):
     get_calib_data = np.random.choice(func_list)
     logger.info("get_calib_data func: %s", get_calib_data)
 
-    config_list = [QuantConfig(quant_mode=0),
-                   QuantConfig(quant_mode=0, calib_data=get_calib_data()),
-                   QuantConfig(calib_data=get_calib_data(), amp_num=1),
-                   QuantConfig(calib_data=get_calib_data())]
+    config_list = [
+        QuantConfig(quant_mode=0),
+        QuantConfig(quant_mode=0, calib_data=get_calib_data()),
+        QuantConfig(calib_data=get_calib_data(), amp_num=1),
+        QuantConfig(calib_data=get_calib_data()),
+    ]
     quant_config = np.random.choice(config_list)
 
     try:
@@ -90,11 +97,7 @@ def fuzz_test(input_bytes):
 def gen_onnx_model():
     model = TestOnnxQuantModel()
     input_x = torch.randn((1, 3, 32, 32))
-    torch.onnx.export(model,
-                      input_x,
-                      ONNX_MODEL_PATH,
-                      input_names=['input'],
-                      output_names=['output'])
+    torch.onnx.export(model, input_x, ONNX_MODEL_PATH, input_names=['input'], output_names=['output'])
 
 
 if __name__ == '__main__':

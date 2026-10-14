@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,12 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=super-with-arguments,useless-parent-delegation
 
 # 导入相关依赖
 import torch
 
 from msmodelslim import set_logger_level
-from msmodelslim import logger as msmodelslim_logger
+from msmodelslim import logger as msmodelslim_logger  # noqa: F401
 from msmodelslim.common.knowledge_distill.knowledge_distill import KnowledgeDistillConfig
 from msmodelslim.common.knowledge_distill.knowledge_distill import get_distill_model
 
@@ -63,8 +64,7 @@ set_logger_level("info")
 
 # verify custom
 distill_config = KnowledgeDistillConfig()
-distill_config.set_hard_label(0.5, 0) \
-    .add_custom_loss_func("custom_loss", CustomLoss())
+distill_config.set_hard_label(0.5, 0).add_custom_loss_func("custom_loss", CustomLoss())
 
 distill_model = get_distill_model(TorchTeacherModel(), TorchStudentModel(), distill_config)
 distill_model(torch.randn((1, 1)))
@@ -72,16 +72,15 @@ student_model = distill_model.get_student_model()
 
 # verify t_module s_module
 distill_config = KnowledgeDistillConfig()
-distill_config.set_hard_label(0.5, 0) \
-    .add_inter_soft_label({
-    "t_module": "teacher_fc",
-    "s_module": "student_fc",
-    "t_output_idx": 0,
-    "s_output_idx": 0,
-    "loss_func": [{"func_name": "KDCrossEntropy",
-                   "func_weight": 1,
-                   "temperature": 1}]
-})
+distill_config.set_hard_label(0.5, 0).add_inter_soft_label(
+    {
+        "t_module": "teacher_fc",
+        "s_module": "student_fc",
+        "t_output_idx": 0,
+        "s_output_idx": 0,
+        "loss_func": [{"func_name": "KDCrossEntropy", "func_weight": 1, "temperature": 1}],
+    }
+)
 
 distill_model = get_distill_model(TorchTeacherModel(), TorchStudentModel(), distill_config)
 distill_model(torch.randn((1, 1)))
@@ -89,13 +88,9 @@ student_model = distill_model.get_student_model()
 
 # verify not module
 distill_config = KnowledgeDistillConfig()
-distill_config.set_hard_label(0.5, 0) \
-    .add_inter_soft_label({
-    "t_output_idx": 0,
-    "s_output_idx": 0,
-    "loss_func": [{"func_name": "KDCrossEntropy",
-                   "func_weight": 1}]
-})
+distill_config.set_hard_label(0.5, 0).add_inter_soft_label(
+    {"t_output_idx": 0, "s_output_idx": 0, "loss_func": [{"func_name": "KDCrossEntropy", "func_weight": 1}]}
+)
 
 distill_model = get_distill_model(TorchTeacherModel(), TorchStudentModel(), distill_config)
 distill_model(torch.randn((1, 1)))

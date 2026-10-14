@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -50,9 +50,7 @@ def helper_test_anti_outlier_numeric(anti_method):
 
     output_logits_after_anti = model(test_prompt[KEY_INPUT_IDS]).logits
 
-    if not torch.allclose(
-        output_logits_before_anti, output_logits_after_anti, atol=1e-5
-    ):
+    if not torch.allclose(output_logits_before_anti, output_logits_after_anti, atol=1e-5):
         pytest.fail()
 
 

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,18 +18,16 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
+# pylint: disable=pointless-string-statement
 
 """
 msmodelslim.utils.logging 模块的单元测试
 """
 
-import logging
-from unittest import TestCase
+import logging  # noqa: E402
+from unittest import TestCase  # noqa: E402
 
-from msmodelslim.utils.logging import (
-    logger_setter, get_logger, set_logger_level
-)
+from msmodelslim.utils.logging import logger_setter, get_logger, set_logger_level  # noqa: E402
 
 
 class TestLoggerSetter(TestCase):

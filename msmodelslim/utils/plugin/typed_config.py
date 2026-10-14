@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=bad-staticmethod-argument,pointless-string-statement
+
 """
 类型化配置工具，提供基类和装饰器协作实现插件式数据类
 
@@ -29,18 +31,18 @@ See the Mulan PSL v2 for more details.
         apiversion: TypedConfig.TypeField  # 通过类型注解指定为类型字段
         spec: Any = None
 """
-from typing import Type, cast, Any, Annotated, get_args, get_origin, ClassVar
+from typing import Type, cast, Any, Annotated, get_args, get_origin, ClassVar  # noqa: E402
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter, model_validator
+from pydantic import BaseModel, ConfigDict, TypeAdapter, model_validator  # noqa: E402
 
-from msmodelslim.utils.exception import ToDoError
-from msmodelslim.utils.plugin.plugin_utils import load_plugin_config_class
+from msmodelslim.utils.exception import ToDoError  # noqa: E402
+from msmodelslim.utils.plugin.plugin_utils import load_plugin_config_class  # noqa: E402
 
 
 class TypedConfig(BaseModel):
     """
     插件式数据类的基类，使用 BaseModel 校验机制
-    
+
     插件基类应继承此类，并通过 @TypedConfig.plugin_entry 装饰器绑定 entry_point_group
     从插件模块加载插件类并输出子类实例
     """
@@ -58,12 +60,12 @@ class TypedConfig(BaseModel):
     def detect_type_field(cls: Type[BaseModel]) -> str:
         """
         通过类型注解检测类中的类型字段
-        
+
         只检查使用 TypeField 注解的字段
-        
+
         Args:
             cls: 要检测的类（可以是 TypedConfig 子类或任意 BaseModel 子类）
-        
+
         Returns:
             类型字段名
         """
@@ -83,27 +85,27 @@ class TypedConfig(BaseModel):
 
         raise ToDoError(
             f"No type field found in {cls.__name__}. ",
-            action=f"Please use TypedConfig.TypeField annotation to mark the type field, "
-                   f"e.g., 'apiversion: TypedConfig.TypeField'"
+            action="Please use TypedConfig.TypeField annotation to mark the type field, "
+            "e.g., 'apiversion: TypedConfig.TypeField'",
         )
 
     @staticmethod
     def plugin_entry(entry_point_group: str):
         """
         静态方法装饰器：为插件基类绑定插件入口点组（entry_point_group）
-        
+
         插件基类应继承 TypedConfig 类，通过此装饰器绑定 entry_point_group，
         用于从插件模块动态加载插件类。
-        
+
         Args:
             entry_point_group: entry_point 组名，例如 "msmodelslim.quant_config.plugins"
-        
+
         Returns:
             装饰器函数
-        
+
         使用示例:
             from msmodelslim.utils.plugin import TypedConfig
-            
+
             @TypedConfig.plugin_entry(entry_point_group="msmodelslim.quant_config.plugins")
             class QuantConfig(TypedConfig):
                 apiversion: TypedConfig.TypeField  # 通过类型注解指定为类型字段

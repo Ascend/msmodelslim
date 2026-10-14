@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,10 +18,17 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import os
 import shutil
-from resources.sample_net_torch import TwoLinearTorchModel, GroupLinearTorchModel, AttentionTorchModel, MOEModel, \
-    ThreeLinearTorchModel_for_Sparse, AttentionTorchSophonModel
+from resources.sample_net_torch import (
+    TwoLinearTorchModel,
+    GroupLinearTorchModel,
+    AttentionTorchModel,
+    MOEModel,
+    ThreeLinearTorchModel_for_Sparse,
+    AttentionTorchSophonModel,
+)
 import torch
 
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
@@ -62,8 +69,9 @@ def test_llm_ptq_w8a16_nsym():
 
     dataset_calib = [[torch.randn(8, 8)]]
 
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', act_method=3, pr=1.0,
-                               w_sym=False, mm_tensor=False)
+    quant_config = QuantConfig(
+        a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', act_method=3, pr=1.0, w_sym=False, mm_tensor=False
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -80,8 +88,9 @@ def test_llm_ptq_w8a16_sym():
 
     dataset_calib = [[torch.randn(8, 8)]]
 
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', act_method=3, pr=1.0,
-                               w_sym=True, mm_tensor=False)
+    quant_config = QuantConfig(
+        a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', act_method=3, pr=1.0, w_sym=True, mm_tensor=False
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -114,8 +123,17 @@ def test_llm_ptq_hqq():
     model = TwoLinearTorchModel()
     model.config = Config(torch_dtype=torch.float16)
 
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', act_method=3, pr=1.0,
-                               w_sym=True, mm_tensor=False, w_method='HQQ')
+    quant_config = QuantConfig(
+        a_bit=16,
+        w_bit=8,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=3,
+        pr=1.0,
+        w_sym=True,
+        mm_tensor=False,
+        w_method='HQQ',
+    )
     calibrator = Calibrator(model, quant_config, calib_data=[], disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -137,8 +155,9 @@ def test_llm_ptq_awq():
     anti_outlier = AntiOutlier(model, calib_data=dataset_calib, cfg=anti_config)
     anti_outlier.process()
 
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu',
-                               w_sym=w_sym, mm_tensor=False, w_method='MinMax')
+    quant_config = QuantConfig(
+        a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', w_sym=w_sym, mm_tensor=False, w_method='MinMax'
+    )
     calibrator = Calibrator(model, quant_config, calib_data=[], disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -154,8 +173,17 @@ def test_llm_ptq_minmax():
     model.config = Config(torch_dtype=torch.float16)
 
     w_sym = False
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', act_method=3, pr=1.0,
-                               w_sym=w_sym, mm_tensor=False, w_method='MinMax')
+    quant_config = QuantConfig(
+        a_bit=16,
+        w_bit=8,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=3,
+        pr=1.0,
+        w_sym=w_sym,
+        mm_tensor=False,
+        w_method='MinMax',
+    )
     calibrator = Calibrator(model, quant_config, calib_data=[], disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -171,11 +199,12 @@ def test_llm_ptq_lowbit_when_smooth_is_False():
     model.config = Config(torch_dtype=torch.float16)
 
     dataset_calib = [[torch.randn(8, 8)]]
-    quant_config = QuantConfig(disable_names=[],
-                               do_smooth=False,
-                               is_lowbit=True,
-                               use_sigma=False,
-                               )
+    quant_config = QuantConfig(
+        disable_names=[],
+        do_smooth=False,
+        is_lowbit=True,
+        use_sigma=False,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib)
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -197,8 +226,15 @@ def test_llm_ptq_w8a8_per_token():
     anti_outlier.process()
 
     quant_config = QuantConfig(
-        a_bit=8, w_bit=8, disable_names=[], dev_type='cpu', act_method=1, pr=1.0, w_sym=True,
-        mm_tensor=False, is_dynamic=True
+        a_bit=8,
+        w_bit=8,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=1,
+        pr=1.0,
+        w_sym=True,
+        mm_tensor=False,
+        is_dynamic=True,
     )
     calibrator = Calibrator(model, quant_config, calib_data=[], disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
@@ -216,8 +252,17 @@ def test_llm_ptq_auto_optimize_w4a8():
 
     dataset_calib = [[torch.randn(1, 256, 256)]]
 
-    quant_config = QuantConfig(w_bit=4, a_bit=8, disable_names=[], dev_type='cpu', act_method=2, mm_tensor=False,
-                               do_smooth=False, is_lowbit=True, open_outlier=True)
+    quant_config = QuantConfig(
+        w_bit=4,
+        a_bit=8,
+        disable_names=[],
+        dev_type='cpu',
+        act_method=2,
+        mm_tensor=False,
+        do_smooth=False,
+        is_lowbit=True,
+        open_outlier=True,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -234,8 +279,9 @@ def test_llm_ptq_kvcache():
 
     dataset_calib = [[torch.FloatTensor(32, 32)]]
 
-    quant_config = QuantConfig(a_bit=8, w_bit=8, disable_names=[], act_method=1, pr=1.0, w_sym=True, mm_tensor=False,
-                               use_kvcache_quant=True)
+    quant_config = QuantConfig(
+        a_bit=8, w_bit=8, disable_names=[], act_method=1, pr=1.0, w_sym=True, mm_tensor=False, use_kvcache_quant=True
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -252,8 +298,15 @@ def test_llm_ptq_kvcache_assym():
 
     dataset_calib = [[torch.FloatTensor(32, 32)]]
 
-    quant_config = QuantConfig(a_bit=8, w_bit=8, disable_names=[], act_method=1, pr=1.0, w_sym=True, mm_tensor=False,
-                               ).kv_quant(kv_sym=False)
+    quant_config = QuantConfig(
+        a_bit=8,
+        w_bit=8,
+        disable_names=[],
+        act_method=1,
+        pr=1.0,
+        w_sym=True,
+        mm_tensor=False,
+    ).kv_quant(kv_sym=False)
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -270,8 +323,15 @@ def test_llm_ptq_w8a16_kvcache():
 
     dataset_calib = [[torch.FloatTensor(32, 32)]]
 
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], act_method=1, pr=1.0, w_sym=True, mm_tensor=False,
-                               ).kv_quant(kv_sym=False)
+    quant_config = QuantConfig(
+        a_bit=16,
+        w_bit=8,
+        disable_names=[],
+        act_method=1,
+        pr=1.0,
+        w_sym=True,
+        mm_tensor=False,
+    ).kv_quant(kv_sym=False)
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -288,8 +348,15 @@ def test_llm_ptq_fp16_kvcache():
 
     dataset_calib = [[torch.FloatTensor(32, 32)]]
 
-    quant_config = QuantConfig(a_bit=8, w_bit=8, disable_names=[], act_method=1, pr=1.0, w_sym=True, mm_tensor=False,
-                               ).kv_quant(kv_sym=False)
+    quant_config = QuantConfig(
+        a_bit=8,
+        w_bit=8,
+        disable_names=[],
+        act_method=1,
+        pr=1.0,
+        w_sym=True,
+        mm_tensor=False,
+    ).kv_quant(kv_sym=False)
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L1000')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -307,9 +374,18 @@ def test_llm_ptq_per_group_gptq_w4a16():
     dataset_calib = [[torch.randn(256, 256)]]
 
     w_sym = False
-    quant_config = QuantConfig(a_bit=16, w_bit=4, disable_names=[], dev_type='cpu', w_sym=w_sym, mm_tensor=False,
-                               is_lowbit=True, open_outlier=False, w_method='GPTQ', group_size=128
-                               )
+    quant_config = QuantConfig(
+        a_bit=16,
+        w_bit=4,
+        disable_names=[],
+        dev_type='cpu',
+        w_sym=w_sym,
+        mm_tensor=False,
+        is_lowbit=True,
+        open_outlier=False,
+        w_method='GPTQ',
+        group_size=128,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -325,9 +401,18 @@ def test_llm_ptq_per_group_hqq_w4a16():
     model.config = Config(torch_dtype=torch.float16)
 
     w_sym = True
-    quant_config = QuantConfig(a_bit=16, w_bit=4, disable_names=[], dev_type='cpu', w_sym=w_sym, mm_tensor=False,
-                               is_lowbit=True, open_outlier=False, w_method='HQQ', group_size=128
-                               )
+    quant_config = QuantConfig(
+        a_bit=16,
+        w_bit=4,
+        disable_names=[],
+        dev_type='cpu',
+        w_sym=w_sym,
+        mm_tensor=False,
+        is_lowbit=True,
+        open_outlier=False,
+        w_method='HQQ',
+        group_size=128,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=[], disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -345,9 +430,18 @@ def test_llm_ptq_per_group_gptq_w8a16():
     dataset_calib = [[torch.randn(256, 256)]]
 
     w_sym = False
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', w_sym=w_sym, mm_tensor=False,
-                               is_lowbit=True, open_outlier=False, w_method='GPTQ', group_size=128
-                               )
+    quant_config = QuantConfig(
+        a_bit=16,
+        w_bit=8,
+        disable_names=[],
+        dev_type='cpu',
+        w_sym=w_sym,
+        mm_tensor=False,
+        is_lowbit=True,
+        open_outlier=False,
+        w_method='GPTQ',
+        group_size=128,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -363,9 +457,18 @@ def test_llm_ptq_per_group_hqq_w8a16():
     model.config = Config(torch_dtype=torch.float16)
 
     w_sym = True
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', w_sym=w_sym, mm_tensor=False,
-                               is_lowbit=True, open_outlier=False, w_method='HQQ', group_size=128
-                               )
+    quant_config = QuantConfig(
+        a_bit=16,
+        w_bit=8,
+        disable_names=[],
+        dev_type='cpu',
+        w_sym=w_sym,
+        mm_tensor=False,
+        is_lowbit=True,
+        open_outlier=False,
+        w_method='HQQ',
+        group_size=128,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=[], disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -381,9 +484,18 @@ def test_llm_ptq_per_group_minmax_w8a16():
     model.config = Config(torch_dtype=torch.float16)
 
     w_sym = True
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', w_sym=w_sym, mm_tensor=False,
-                               is_lowbit=True, open_outlier=False, w_method='MinMax', group_size=128
-                               )
+    quant_config = QuantConfig(
+        a_bit=16,
+        w_bit=8,
+        disable_names=[],
+        dev_type='cpu',
+        w_sym=w_sym,
+        mm_tensor=False,
+        is_lowbit=True,
+        open_outlier=False,
+        w_method='MinMax',
+        group_size=128,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=[], disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -405,9 +517,18 @@ def test_llm_ptq_per_group_awq_w8a16():
     anti_outlier = AntiOutlier(model, calib_data=dataset_calib, cfg=anti_config)
     anti_outlier.process()
 
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', w_sym=w_sym, mm_tensor=False,
-                               is_lowbit=True, open_outlier=False, w_method='MinMax', group_size=128
-                               )
+    quant_config = QuantConfig(
+        a_bit=16,
+        w_bit=8,
+        disable_names=[],
+        dev_type='cpu',
+        w_sym=w_sym,
+        mm_tensor=False,
+        is_lowbit=True,
+        open_outlier=False,
+        w_method='MinMax',
+        group_size=128,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -435,7 +556,7 @@ def test_llm_ptq_cbq():
         dev_type='cpu',  # dev_type="npu", dev_id=0  如果需要使用npu进行量化
         act_method=1,
         pr=1.0,
-        mm_tensor=False
+        mm_tensor=False,
     )
 
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
@@ -454,8 +575,17 @@ def test_llm_ptq_W8A16_GPTQ_MOE():
 
     dataset_calib = [[torch.randn(8, 32)]]
 
-    quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', pr=1.0, w_method="GPTQ",
-                               w_sym=False, mm_tensor=False, disable_last_linear=False)
+    quant_config = QuantConfig(
+        a_bit=16,
+        w_bit=8,
+        disable_names=[],
+        dev_type='cpu',
+        pr=1.0,
+        w_method="GPTQ",
+        w_sym=False,
+        mm_tensor=False,
+        disable_last_linear=False,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -479,8 +609,18 @@ def test_llm_ptq_pangu7b_w8a8_anti():
     anti_outlier = AntiOutlier(model, calib_data=dataset_calib, cfg=anti_config, norm_class_name="SophonRMSNorm")
     anti_outlier.process()
 
-    quant_config = QuantConfig(a_bit=8, w_bit=8, disable_names=[], co_sparse=False, do_smooth=False,
-                               is_lowbit=False, dev_type='cpu', act_method=2, pr=1.0, mm_tensor=False)
+    quant_config = QuantConfig(
+        a_bit=8,
+        w_bit=8,
+        disable_names=[],
+        co_sparse=False,
+        do_smooth=False,
+        is_lowbit=False,
+        dev_type='cpu',
+        act_method=2,
+        pr=1.0,
+        mm_tensor=False,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -501,8 +641,18 @@ def test_llm_ptq_pangu7b_w4a8_lowbit_anti():
     anti_outlier = AntiOutlier(model, calib_data=dataset_calib, cfg=anti_config, norm_class_name="SophonRMSNorm")
     anti_outlier.process()
 
-    quant_config = QuantConfig(a_bit=8, w_bit=4, disable_names=[], co_sparse=False, do_smooth=False,
-                               is_lowbit=True, dev_type='cpu', act_method=2, pr=1.0, mm_tensor=False)
+    quant_config = QuantConfig(
+        a_bit=8,
+        w_bit=4,
+        disable_names=[],
+        co_sparse=False,
+        do_smooth=False,
+        is_lowbit=True,
+        dev_type='cpu',
+        act_method=2,
+        pr=1.0,
+        mm_tensor=False,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])
@@ -519,8 +669,18 @@ def test_llm_ptq_pangu7b_w4a8_lowbit_smooth():
 
     dataset_calib = [[torch.randn(256, 256)]]
 
-    quant_config = QuantConfig(a_bit=8, w_bit=4, disable_names=[], co_sparse=False, do_smooth=True,
-                               is_lowbit=True, dev_type='cpu', act_method=2, pr=1.0, mm_tensor=False)
+    quant_config = QuantConfig(
+        a_bit=8,
+        w_bit=4,
+        disable_names=[],
+        co_sparse=False,
+        do_smooth=True,
+        is_lowbit=True,
+        dev_type='cpu',
+        act_method=2,
+        pr=1.0,
+        mm_tensor=False,
+    )
     calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
     calibrator.run()  # 执行PTQ量化校准
     calibrator.save(TEST_SAVE_PATH, save_type=["numpy", "safe_tensor"])

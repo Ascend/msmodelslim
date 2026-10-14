@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from typing import Tuple, Optional, List
 
 from msmodelslim.core.const import DeviceType
@@ -60,8 +61,7 @@ def parse_device_string(device_str: str) -> Tuple[DeviceType, Optional[List[int]
     except ValueError as e:
         valid_types = ', '.join([f"'{dt.value}'" for dt in DeviceType])
         raise SchemaValidateError(
-            f"Invalid device type: '{device_type_str}'. "
-            f"Supported device types: {valid_types}"
+            f"Invalid device type: '{device_type_str}'. Supported device types: {valid_types}"
         ) from e
 
     # Parse device indices if provided
@@ -73,9 +73,7 @@ def parse_device_string(device_str: str) -> Tuple[DeviceType, Optional[List[int]
             indices_list = [idx.strip() for idx in indices_str.split(',') if idx.strip()]
 
             if not indices_list:
-                raise SchemaValidateError(
-                    f"Device indices cannot be empty after parsing: '{indices_str}'"
-                )
+                raise SchemaValidateError(f"Device indices cannot be empty after parsing: '{indices_str}'")
 
             # Convert to integers
             try:

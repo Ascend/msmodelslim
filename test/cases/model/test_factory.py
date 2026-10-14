@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from pathlib import Path
 from unittest.mock import Mock, patch
 from importlib.metadata import EntryPoints, EntryPoint
@@ -45,8 +46,7 @@ def make_entry_point(name):
 @patch("msmodelslim.model.plugin_factory.plugin_model_factory.DependencyChecker.check_plugin")
 @patch("msmodelslim.model.plugin_factory.plugin_model_factory.DependencyChecker.set_plugin")
 @patch("msmodelslim.model.plugin_factory.plugin_model_factory.entry_points")
-def test_create_valid_model(
-        mock_plugin_entry_points, mock_set_plugin, mock_check_plugin):
+def test_create_valid_model(mock_plugin_entry_points, mock_set_plugin, mock_check_plugin):
     mock_check_plugin.return_value = None
     PluginModelFactory._model_map = None
     ep = make_entry_point("deepseek")
@@ -66,9 +66,7 @@ def test_create_valid_model(
 @patch("msmodelslim.model.plugin_factory.plugin_model_factory.get_logger")
 @patch("msmodelslim.model.plugin_factory.plugin_model_factory.DependencyChecker.check_plugin")
 @patch("msmodelslim.model.plugin_factory.plugin_model_factory.DependencyChecker.set_plugin")
-def test_create_fallback_default(
-        mock_set_plugin, mock_check_plugin, mock_logger,
-        mock_adapter_entry_points):
+def test_create_fallback_default(mock_set_plugin, mock_check_plugin, mock_logger, mock_adapter_entry_points):
     # Only default exists
     PluginModelFactory._model_map = None
     ep_default = make_entry_point(DEFAULT)
@@ -96,8 +94,7 @@ def test_no_adapter_registered_should_raise(mock_entry_points):
 
 @patch("msmodelslim.model.plugin_factory.plugin_model_factory.DependencyChecker.check_plugin")
 @patch("msmodelslim.model.plugin_factory.plugin_model_factory.entry_points")
-def test_adapter_entrypoint_should_load_before_dependency_check(
-        mock_adapter_entry_points, mock_check_plugin):
+def test_adapter_entrypoint_should_load_before_dependency_check(mock_adapter_entry_points, mock_check_plugin):
     PluginModelFactory._model_map = None
 
     ep_adapter = make_entry_point("deepseek")

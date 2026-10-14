@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=invalid-envvar-default,no-name-in-module,unspecified-encoding
 # Note: This file is copied and modified from Open-Sora-Plan repo v1.2: opensora.sample.sample_t2v_sp
 
 import os
@@ -27,10 +28,17 @@ import torch
 import torch.distributed as dist
 import torch_npu
 from transformers import T5Tokenizer, MT5EncoderModel
-from diffusers.schedulers import (DDIMScheduler, DDPMScheduler, PNDMScheduler,
-                                  EulerDiscreteScheduler, DPMSolverMultistepScheduler,
-                                  HeunDiscreteScheduler, EulerAncestralDiscreteScheduler,
-                                  DEISMultistepScheduler, KDPM2AncestralDiscreteScheduler)
+from diffusers.schedulers import (
+    DDIMScheduler,
+    DDPMScheduler,
+    PNDMScheduler,
+    EulerDiscreteScheduler,
+    DPMSolverMultistepScheduler,
+    HeunDiscreteScheduler,
+    EulerAncestralDiscreteScheduler,
+    DEISMultistepScheduler,
+    KDPM2AncestralDiscreteScheduler,
+)
 from diffusers.schedulers.scheduling_dpmsolver_singlestep import DPMSolverSinglestepScheduler
 
 from opensora.models.causalvideovae import ae_stride_config, CausalVAEModelWrapper
@@ -69,8 +77,9 @@ def get_args():
     parser.add_argument('--save_memory', action='store_true')
 
     # sample_optimization
-    parser.add_argument("--save_dir", type=str, default=None,
-                        help='The path to save file about the optimized schedule timestep')
+    parser.add_argument(
+        "--save_dir", type=str, default=None, help='The path to save file about the optimized schedule timestep'
+    )
     parser.add_argument("--videos_path", type=str, default=None, help='The path of calibration videos')
     parser.add_argument("--neighbour_type", type=str, required=False, default="uniform")
     parser.add_argument("--monte_carlo_iters", type=int, required=False, default=5)
@@ -88,21 +97,23 @@ def build_pipeline(args):
     def load_t2v_checkpoint(model_path):
         logger.info('load_t2v_checkpoint, %r', model_path)
         if args.model_type == 'dit':
-            transformer_model = OpenSoraT2V.from_pretrained(model_path, 
-                                                            local_files_only=True, 
-                                                            cache_dir=args.cache_dir,
-                                                            low_cpu_mem_usage=False, 
-                                                            device_map=None,
-                                                            torch_dtype=weight_dtype)
+            transformer_model = OpenSoraT2V.from_pretrained(
+                model_path,
+                local_files_only=True,
+                cache_dir=args.cache_dir,
+                low_cpu_mem_usage=False,
+                device_map=None,
+                torch_dtype=weight_dtype,
+            )
         else:
             raise ValueError('--model_type is not supported')
 
         # set eval mode
         transformer_model.eval()
 
-        pipeline = OpenSoraPipelineV1x2(vae=vae, text_encoder=text_encoder,
-                                       tokenizer=tokenizer, scheduler=scheduler,
-                                       transformer=transformer_model).to(device)
+        pipeline = OpenSoraPipelineV1x2(
+            vae=vae, text_encoder=text_encoder, tokenizer=tokenizer, scheduler=scheduler, transformer=transformer_model
+        ).to(device)
 
         if args.compile:
             pipeline.transformer = torch.compile(pipeline.transformer)
@@ -143,14 +154,14 @@ def build_pipeline(args):
 
     args.cache_dir = get_write_directory(args.cache_dir)
     args.text_encoder_name = get_valid_read_path(args.text_encoder_name, is_dir=True)
-    text_encoder = MT5EncoderModel.from_pretrained(args.text_encoder_name,
-                                                   cache_dir=args.cache_dir,
-                                                   low_cpu_mem_usage=True, 
-                                                   torch_dtype=weight_dtype, 
-                                                   local_files_only=True).to(device)
-    tokenizer = T5Tokenizer.from_pretrained(args.text_encoder_name, 
-                                            cache_dir=args.cache_dir, 
-                                            local_files_only=True)
+    text_encoder = MT5EncoderModel.from_pretrained(
+        args.text_encoder_name,
+        cache_dir=args.cache_dir,
+        low_cpu_mem_usage=True,
+        torch_dtype=weight_dtype,
+        local_files_only=True,
+    ).to(device)
+    tokenizer = T5Tokenizer.from_pretrained(args.text_encoder_name, cache_dir=args.cache_dir, local_files_only=True)
 
     # set eval mode
     vae.eval()

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,16 +18,17 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module,pointless-string-statement
 
 """
 Pytest config for qwen3_vl_moe tests.
 """
 
-import sys
-import types
-from unittest.mock import MagicMock
+import sys  # noqa: E402
+import types  # noqa: E402
+from unittest.mock import MagicMock  # noqa: E402
 
-import pytest
+import pytest  # noqa: E402, F401
 
 # 记录创建的模块和原始模块，用于 pytest_unconfigure 中清理
 _created_modules = {}
@@ -36,9 +37,10 @@ _original_modules = {}
 
 def _setup_mock_modules():
     """设置 transformers 相关模块的 mock，记录创建的模块以便后续清理"""
-    from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
-    from transformers import PreTrainedTokenizerBase, PreTrainedModel, PretrainedConfig
-    from transformers import models, activations
+    from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig  # noqa: F401
+    from transformers import PreTrainedTokenizerBase, PreTrainedModel, PretrainedConfig  # noqa: F401
+    from transformers import models, activations  # noqa: F401
+
     _original_modules['transformers'] = sys.modules['transformers']
     transformers_module = sys.modules['transformers']
 
@@ -46,7 +48,7 @@ def _setup_mock_modules():
         'AutoProcessor': MagicMock(),
         'Qwen3VLMoeForConditionalGeneration': MagicMock(),
     }
-    
+
     for attr_name, attr_value in required_attrs.items():
         if not hasattr(transformers_module, attr_name):
             setattr(transformers_module, attr_name, attr_value)
@@ -62,13 +64,13 @@ def _setup_mock_modules():
     else:
         _original_modules['transformers.masking_utils'] = sys.modules['transformers.masking_utils']
         masking_utils = sys.modules['transformers.masking_utils']
-    
+
     # 关键：无论模块是否已存在，都要确保父模块有正确的属性引用
     setattr(transformers_module, 'masking_utils', masking_utils)
 
     _original_modules['transformers.models'] = sys.modules['transformers.models']
     models_module = sys.modules['transformers.models']
-    
+
     if 'transformers.models.qwen3_vl_moe' not in sys.modules:
         _original_modules['transformers.models.qwen3_vl_moe'] = None
         qwen3_vl_moe_module = types.ModuleType('transformers.models.qwen3_vl_moe')
@@ -81,6 +83,7 @@ def _setup_mock_modules():
 
     # modeling_qwen3_vl_moe 模块并添加必需的类
     if 'transformers.models.qwen3_vl_moe.modeling_qwen3_vl_moe' not in sys.modules:
+
         def _make_modeling():
             m = types.ModuleType('transformers.models.qwen3_vl_moe.modeling_qwen3_vl_moe')
 

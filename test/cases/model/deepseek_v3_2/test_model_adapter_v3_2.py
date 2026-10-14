@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,no-value-for-parameter
+
 import unittest
 from pathlib import Path
 from typing import List
@@ -155,7 +157,7 @@ class DummyModel(nn.Module):
         self.lm_head = nn.Linear(
             config.hidden_size if config else 128,
             config.vocab_size if config else 1000,
-            bias=True  # 匹配lm_head.bias参数
+            bias=True,  # 匹配lm_head.bias参数
         )
 
     def forward(self, input_ids=None, attention_mask=None, **kwargs):
@@ -246,11 +248,12 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
         adapter.generate_decoder_layer = Mock(return_value=mock_blocks)
 
         # 执行测试
-        with patch('msmodelslim.model.deepseek_v3_2.model_adapter'
-                   '.generated_decoder_layer_visit_func') as mock_visit_func:
+        with patch(
+            'msmodelslim.model.deepseek_v3_2.model_adapter.generated_decoder_layer_visit_func'
+        ) as mock_visit_func:
             mock_visit_func.return_value = iter([])
 
-            result = adapter.generate_model_visit(dummy_model)
+            result = adapter.generate_model_visit(dummy_model)  # noqa: F841
 
             # 验证调用了generated_decoder_layer_visit_func
             mock_visit_func.assert_called_once()
@@ -278,7 +281,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
         """测试init_model完整流程"""
         adapter = self.create_adapter()
         adapter.get_state_dict = Mock(return_value=self.dummy_full_state_dict)
-        original_num_layers = adapter.config.num_hidden_layers
+        original_num_layers = adapter.config.num_hidden_layers  # noqa: F841
 
         # 执行初始化并Mock load_state_dict
         result_model = adapter.init_model(device=self.test_device)
@@ -305,7 +308,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
         mock_json_load.return_value = {
             "weight_map": {
                 "model.layers.0.self_attn.q_a_proj.weight": "model-00001.safetensors",
-                "model.layers.1.self_attn.q_a_proj.weight": "model-00002.safetensors"
+                "model.layers.1.self_attn.q_a_proj.weight": "model-00002.safetensors",
             }
         }
         mock_index_path = self.model_path / "model.safetensors.index.json"
@@ -395,8 +398,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
         """测试generate_decoder_layer生成所有层（最后一层加载MTP）"""
         mock_decoders = [DummyDecoderLayer(0), DummyDecoderLayer(1), DummyDecoderLayer(2)]
         adapter = self.create_adapter(
-            config=Mock(num_hidden_layers=3),
-            load_decoder_if_not_exist=Mock(side_effect=mock_decoders)
+            config=Mock(num_hidden_layers=3), load_decoder_if_not_exist=Mock(side_effect=mock_decoders)
         )
 
         # 执行生成并验证
@@ -467,7 +469,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
         adapter.config.num_hidden_layers = 2
         mock_blocks = [
             ('model.layers.0', Mock()),
-            ('model.layers.1', Mock())  # 最后一层
+            ('model.layers.1', Mock()),  # 最后一层
         ]
         adapter.generate_decoder_layer = Mock(return_value=mock_blocks)
 
@@ -491,7 +493,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
         adapter.config.num_hidden_layers = 3
         mock_blocks = [
             ('model.layers.0', Mock()),
-            ('model.layers.1', Mock())  # 不是最后一层
+            ('model.layers.1', Mock()),  # 不是最后一层
         ]
         adapter.generate_decoder_layer = Mock(return_value=mock_blocks)
 
@@ -561,11 +563,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
                     # 测试1: dict输入
                     inputs_dict = {'input_ids': input_ids, 'attention_mask': attention_mask}
                     new_args_dict, new_kwargs_dict = adapter.mtp_preprocess(
-                        model=dummy_model,
-                        mtp_decoder=mtp_decoder,
-                        inputs=inputs_dict,
-                        args=args,
-                        kwargs=kwargs
+                        model=dummy_model, mtp_decoder=mtp_decoder, inputs=inputs_dict, args=args, kwargs=kwargs
                     )
 
                     # 验证dict输入的结果
@@ -576,11 +574,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
                     # 测试2: list输入
                     inputs_list = [input_ids, attention_mask]
                     new_args_list, new_kwargs_list = adapter.mtp_preprocess(
-                        model=dummy_model,
-                        mtp_decoder=mtp_decoder,
-                        inputs=inputs_list,
-                        args=args,
-                        kwargs=kwargs
+                        model=dummy_model, mtp_decoder=mtp_decoder, inputs=inputs_list, args=args, kwargs=kwargs
                     )
 
                     # 验证list输入的结果
@@ -611,7 +605,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
                 "weight_map": {"prefix.layer.weight": "file1.safetensors", "prefix.layer.bias": "file1.safetensors"},
                 "params": [("layer.weight", Mock()), ("layer.bias", Mock())],
                 "expected_calls": ["prefix.layer.weight", "prefix.layer.bias"],
-                "expected_file_count": 1
+                "expected_file_count": 1,
             },
             # 不带prefix的情况
             {
@@ -619,7 +613,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
                 "weight_map": {"layer.weight": "file2.safetensors", "layer.bias": "file2.safetensors"},
                 "params": [("layer.weight", Mock()), ("layer.bias", Mock())],
                 "expected_calls": ["layer.weight", "layer.bias"],
-                "expected_file_count": 1
+                "expected_file_count": 1,
             },
             # 多文件的情况
             {
@@ -628,30 +622,33 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
                     "layer1.weight": "file1.safetensors",
                     "layer1.bias": "file1.safetensors",
                     "layer2.weight": "file2.safetensors",
-                    "layer2.bias": "file2.safetensors"
+                    "layer2.bias": "file2.safetensors",
                 },
                 "params": [
-                    ("layer1.weight", Mock()), ("layer1.bias", Mock()),
-                    ("layer2.weight", Mock()), ("layer2.bias", Mock())
+                    ("layer1.weight", Mock()),
+                    ("layer1.bias", Mock()),
+                    ("layer2.weight", Mock()),
+                    ("layer2.bias", Mock()),
                 ],
                 "expected_calls": ["layer1.weight", "layer1.bias", "layer2.weight", "layer2.bias"],
-                "expected_file_count": 2
-            }
+                "expected_file_count": 2,
+            },
         ]
 
         for case in test_cases:
             with self.subTest(case=case):
                 try:
-                    mock_module, adapter = self.create_mock_setup(
-                        case["prefix"], case["weight_map"], case["params"]
-                    )
+                    mock_module, adapter = self.create_mock_setup(case["prefix"], case["weight_map"], case["params"])
                 except Exception as e:
                     self.fail(f"test_get_state_dict_with_prefix_and_multiple_files failed: {e}")
 
-                with patch('msmodelslim.model.deepseek_v3_2.model_adapter.get_valid_read_path',
-                           side_effect=lambda x, **kwargs: x), \
-                        patch('msmodelslim.model.deepseek_v3_2.model_adapter.safe_open') as mock_safe_open:
-
+                with (
+                    patch(
+                        'msmodelslim.model.deepseek_v3_2.model_adapter.get_valid_read_path',
+                        side_effect=lambda x, **kwargs: x,
+                    ),
+                    patch('msmodelslim.model.deepseek_v3_2.model_adapter.safe_open') as mock_safe_open,
+                ):
                     if case["expected_file_count"] > 1:
                         # 多文件情况
                         mock_file1, mock_file2 = MagicMock(), MagicMock()
@@ -688,8 +685,10 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
 
         mock_module, adapter = self.create_mock_setup("", weight_map, params)
 
-        with patch('msmodelslim.model.deepseek_v3_2.model_adapter.get_valid_read_path',
-                   side_effect=FileNotFoundError("File not found")):
+        with patch(
+            'msmodelslim.model.deepseek_v3_2.model_adapter.get_valid_read_path',
+            side_effect=FileNotFoundError("File not found"),
+        ):
             with self.assertRaises(FileNotFoundError):
                 adapter.get_state_dict(mock_module)
 
@@ -718,8 +717,7 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
             self.assertIn("model.layers.0.self_attn.indexer.wk", ln_linear_map["model.layers.0.input_layernorm"])
             self.assertIn("model.layers.0.self_attn.q_a_layernorm", ln_linear_map)
             self.assertIn(
-                "model.layers.0.self_attn.indexer.wq_b",
-                ln_linear_map["model.layers.0.self_attn.q_a_layernorm"]
+                "model.layers.0.self_attn.indexer.wq_b", ln_linear_map["model.layers.0.self_attn.q_a_layernorm"]
             )
 
     def test_get_bake_names(self):
@@ -745,25 +743,18 @@ class TestDeepSeekV32ModelAdapter(unittest.TestCase):
             mock_rot_b_proj_pair = Mock()
             mock_rot_b_proj_pair.right_rot = {}
 
-            mock_rotate_matrix = {
-                'rot': torch.randn(128, 128),
-                'rot_b_proj': torch.randn(128, 128)
-            }
+            mock_rotate_matrix = {'rot': torch.randn(128, 128), 'rot_b_proj': torch.randn(128, 128)}
 
             mock_get_rotate.return_value = (
                 mock_pre_run,
                 {'rot': mock_rot_pair, 'rot_b_proj': mock_rot_b_proj_pair},
-                mock_rotate_matrix
+                mock_rotate_matrix,
             )
 
             pre_run_list, rot_pairs_list = adapter.get_rotate_map(block_size)
 
             # 验证调用了quarot的get_rotate_map
-            mock_get_rotate.assert_called_once_with(
-                adapter.config,
-                block_size,
-                num_hidden_layers=2
-            )
+            mock_get_rotate.assert_called_once_with(adapter.config, block_size, num_hidden_layers=2)
 
             # 验证返回值
             self.assertEqual(pre_run_list, [mock_pre_run])

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,20 +18,21 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
 
 """
 Usage:
 python3 -m coverage run fuzz_test.py ../samples/ -atheris_runs=1000
 """
 
-import os
-import sys
+import os  # noqa: E402
+import sys  # noqa: E402
 
-import atheris
-import torch
+import atheris  # noqa: E402
+import torch  # noqa: E402
+from scipy.optimize import minimize_scalar as _  # noqa: E402, F401
+import sympy as _  # noqa: E402, F401, F811
 # Need to import these first, otherwise `atheris.instrument_imports` will take a long time
-import sympy as _
-from scipy.optimize import minimize_scalar as _
 
 
 class MyConvTestNet(torch.nn.Module):

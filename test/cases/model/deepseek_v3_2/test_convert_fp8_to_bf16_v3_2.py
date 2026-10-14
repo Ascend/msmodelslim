@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
+
 import unittest
 import os
 import tempfile
@@ -70,8 +72,10 @@ class TestConvertFP8ToBF16(unittest.TestCase):
             return result
 
         # 替换依赖函数
-        with patch.object(mod, 'get_inv_tensor', return_value=scale), \
-                patch.object(mod, 'weight_dequant', side_effect=record_and_dequant):
+        with (
+            patch.object(mod, 'get_inv_tensor', return_value=scale),
+            patch.object(mod, 'weight_dequant', side_effect=record_and_dequant),
+        ):
             mod.convert_module_fp8_to_bf16("parent", parent_module, "IGNORED", weight_map)
 
             # 验证结果
@@ -85,21 +89,21 @@ class TestConvertFP8ToBF16(unittest.TestCase):
         """测试auto_convert_module_fp8_to_bf16：weight_map为空时跳过转换"""
         convert_mock = Mock()
 
-        with patch.object(mod, 'get_inv_weight_map', return_value={}), \
-                patch.object(mod, 'convert_module_fp8_to_bf16', convert_mock):
+        with (
+            patch.object(mod, 'get_inv_weight_map', return_value={}),
+            patch.object(mod, 'convert_module_fp8_to_bf16', convert_mock),
+        ):
             mod.auto_convert_module_fp8_to_bf16('name', nn.Linear(1, 1), 'IGNORED')
             convert_mock.assert_not_called()
 
     def test_auto_convert_module_fp8_to_bf16_handles_keyerror(self):
         """测试auto_convert_module_fp8_to_bf16：优雅处理KeyError异常"""
-        with patch.object(mod, 'get_inv_weight_map', return_value={'root.linear': 'chunk.safetensors'}), \
-                patch.object(mod, 'convert_module_fp8_to_bf16', side_effect=KeyError('missing tensor')):
+        with (
+            patch.object(mod, 'get_inv_weight_map', return_value={'root.linear': 'chunk.safetensors'}),
+            patch.object(mod, 'convert_module_fp8_to_bf16', side_effect=KeyError('missing tensor')),
+        ):
             # 执行测试：应无异常抛出
-            mod.auto_convert_module_fp8_to_bf16(
-                'root',
-                nn.ModuleDict({'linear': nn.Linear(1, 1)}),
-                'IGNORED'
-            )
+            mod.auto_convert_module_fp8_to_bf16('root', nn.ModuleDict({'linear': nn.Linear(1, 1)}), 'IGNORED')
 
     def test_get_inv_weight_map_loads_and_filters(self):
         """测试get_inv_weight_map：加载并过滤出含scale_inv的权重映射"""
@@ -116,10 +120,9 @@ class TestConvertFP8ToBF16(unittest.TestCase):
             mod.get_inv_weight_map.cache_clear()
             result = mod.get_inv_weight_map('dummy_path')
 
-            self.assertEqual(result, {
-                'model.layer1': 'model-00001.safetensors',
-                'model.layer2': 'model-00002.safetensors'
-            })
+            self.assertEqual(
+                result, {'model.layer1': 'model-00001.safetensors', 'model.layer2': 'model-00002.safetensors'}
+            )
 
     def test_get_inv_tensor_loads_from_safetensors(self):
         """测试get_inv_tensor：从safetensors文件加载scale tensor"""

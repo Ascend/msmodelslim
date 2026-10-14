@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,no-name-in-module,pointless-string-statement
 
 """
 DistributedTaskScheduler（分波调度器）的单元测试
@@ -26,21 +27,21 @@ DistributedTaskScheduler（分波调度器）的单元测试
     - DTS 同步 API 与默认/自定义同步路径
 """
 
-import unittest
-from typing import Any, Dict, List, Tuple
-from unittest.mock import MagicMock, patch
+import unittest  # noqa: E402
+from typing import Any, Dict, List, Tuple  # noqa: E402, F401
+from unittest.mock import patch  # noqa: E402
+from unittest.mock import MagicMock  # noqa: E402, F401
 
-import torch
-import torch.nn as nn
+import torch  # noqa: E402
+import torch.nn as nn  # noqa: E402
 
-from msmodelslim.utils.distributed import (
+from msmodelslim.utils.distributed import (  # noqa: E402
     DTSMixin,
     DistributedTaskScheduler,
     TaskExecutionRecord,
     TaskSyncContext,
 )
-from test.cases.utils.distributed.dts_test_internals import dts_waves
-
+from test.cases.utils.distributed.dts_test_internals import dts_waves  # noqa: E402
 
 
 class TestDistributedTaskSchedulerSync(unittest.TestCase):
@@ -69,12 +70,14 @@ class TestDistributedTaskSchedulerSync(unittest.TestCase):
             received_record = record
             received_ctx = sync_ctx
 
-        fn = lambda: "ok"
+        def fn():
+            return "ok"
+
         scheduler = DistributedTaskScheduler(self.mock_model)
 
         with scheduler:
             scheduler.submit(fn, dependencies=[], sync_fn=custom_sync_fn)
-            records = scheduler.run()
+            records = scheduler.run()  # noqa: F841
 
         self.assertFalse(custom_sync_called)
         self.assertIsNone(received_record)
@@ -95,7 +98,10 @@ class TestDistributedTaskSchedulerSync(unittest.TestCase):
                 self.m1 = SyncableModule(10, 10)
 
         syncable_model = Root()
-        fn = lambda: "ok"
+
+        def fn():
+            return "ok"
+
         scheduler = DistributedTaskScheduler(syncable_model)
 
         with scheduler:
@@ -108,7 +114,10 @@ class TestDistributedTaskSchedulerSync(unittest.TestCase):
 
     def test_sync_task_falls_back_to_default_sync_when_no_task_or_instance_sync(self):
         """测试：无自定义 sync_fn / DTSMixin 时回退到默认同步函数（不应抛错）"""
-        fn = lambda: "ok"
+
+        def fn():
+            return "ok"
+
         scheduler = DistributedTaskScheduler(self.mock_model)
 
         with scheduler:
@@ -119,7 +128,10 @@ class TestDistributedTaskSchedulerSync(unittest.TestCase):
 
     def test_sync_all_task_returns_records_with_sync_meta_when_sync_runs(self):
         """测试：同步记录包含 sync_meta"""
-        fn = lambda: "ok"
+
+        def fn():
+            return "ok"
+
         scheduler = DistributedTaskScheduler(self.mock_model)
 
         with scheduler:
@@ -212,5 +224,3 @@ class TestDistributedTaskSchedulerSync(unittest.TestCase):
 
         self.assertEqual(len(synced_modules), 1)
         self.assertIs(synced_modules[0], leaf)
-
-

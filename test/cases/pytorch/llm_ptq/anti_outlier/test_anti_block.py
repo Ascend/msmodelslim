@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -19,9 +19,9 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-import sys
+import sys  # noqa: F401
+from typing import Optional, Tuple  # noqa: F401
 import unittest
-from typing import Optional, Tuple
 from unittest.mock import patch, MagicMock
 
 import torch
@@ -34,7 +34,7 @@ from msmodelslim.pytorch.llm_ptq.anti_outlier.anti_block import (
     LlavaClipVision,
     check_migration_import,
     QuantInternVisionEncoderLayer,
-    QuantInternLM2DecoderLayer
+    QuantInternLM2DecoderLayer,
 )
 
 from resources.fake.qwen2_vl.fake import FakeQwenCreator
@@ -53,7 +53,6 @@ def mock_migration(*args, **kwargs):
 
 
 class TestAntiBlock(unittest.TestCase):
-
     def setUp(self):
         self.device = torch.device("cpu")
         self.batch_size = 2
@@ -66,7 +65,8 @@ class TestAntiBlock(unittest.TestCase):
         block = QuantQwen2VLDecoderLayer(fake_block, config, "test_layer")
         hidden_states = torch.randn(self.batch_size, self.seq_length, config.hidden_size).to(self.device)
         attention_mask = torch.ones(self.batch_size, config.num_attention_heads, self.seq_length, self.seq_length).to(
-            self.device)
+            self.device
+        )
         position_ids = torch.randint(0, 10000, (self.batch_size, self.seq_length)).to(self.device)
         past_key_value = None
         output_attentions = False
@@ -75,7 +75,7 @@ class TestAntiBlock(unittest.TestCase):
 
         position_embeddings = (
             torch.randn(3, 1, sum(config.rope_scaling['mrope_section']) * 2).to(self.device),
-            torch.randn(3, 1, sum(config.rope_scaling['mrope_section']) * 2).to(self.device)
+            torch.randn(3, 1, sum(config.rope_scaling['mrope_section']) * 2).to(self.device),
         )
 
         # 测试前向传播
@@ -87,7 +87,7 @@ class TestAntiBlock(unittest.TestCase):
             output_attentions=output_attentions,
             use_cache=use_cache,
             cache_position=cache_position,
-            position_embeddings=position_embeddings
+            position_embeddings=position_embeddings,
         )
 
         self.assertIsInstance(outputs, tuple)
@@ -154,7 +154,8 @@ class TestAntiBlock(unittest.TestCase):
         block = QuantQwen2VLDecoderLayer(fake_block, config, "test_layer")
         hidden_states = torch.randn(self.batch_size, self.seq_length, config.hidden_size).to(self.device)
         attention_mask = torch.ones(self.batch_size, config.num_attention_heads, self.seq_length, self.seq_length).to(
-            self.device)
+            self.device
+        )
         position_ids = torch.randint(0, 10000, (self.batch_size, self.seq_length)).to(self.device)
         past_key_value = None
         output_attentions = False
@@ -163,7 +164,7 @@ class TestAntiBlock(unittest.TestCase):
 
         position_embeddings = (
             torch.randn(3, 1, sum(config.rope_scaling['mrope_section']) * 2).to(self.device),
-            torch.randn(3, 1, sum(config.rope_scaling['mrope_section']) * 2).to(self.device)
+            torch.randn(3, 1, sum(config.rope_scaling['mrope_section']) * 2).to(self.device),
         )
 
         # 测试前向传播
@@ -175,7 +176,7 @@ class TestAntiBlock(unittest.TestCase):
             output_attentions=output_attentions,
             use_cache=use_cache,
             cache_position=cache_position,
-            position_embeddings=position_embeddings
+            position_embeddings=position_embeddings,
         )
 
         self.assertIsInstance(outputs, tuple)
@@ -199,18 +200,15 @@ class TestAntiBlock(unittest.TestCase):
         fake_block = FakeInternVLCreator.get_decoder_layer()
         block = QuantInternLM2DecoderLayer(fake_block, config, "test_layer")
         hidden_states = torch.randn(self.batch_size, self.seq_length, config.llm_config.hidden_size).to(self.device)
-        attention_mask = torch.ones(self.batch_size, config.llm_config.num_attention_heads, self.seq_length,
-                                    self.seq_length).to(self.device)
+        attention_mask = torch.ones(
+            self.batch_size, config.llm_config.num_attention_heads, self.seq_length, self.seq_length
+        ).to(self.device)
         position_ids = torch.randint(0, 10000, (self.batch_size, self.seq_length)).to(self.device)
         past_key_value = None
         output_attentions = False
         use_cache = False
 
-        fake_return_value = (
-            hidden_states,
-            attention_mask,
-            past_key_value
-        )
+        fake_return_value = (hidden_states, attention_mask, past_key_value)
 
         with patch.object(block.attention, 'forward', MagicMock(return_value=fake_return_value)):
             # 测试前向传播
@@ -220,7 +218,7 @@ class TestAntiBlock(unittest.TestCase):
                 position_ids=position_ids,
                 past_key_value=past_key_value,
                 output_attentions=output_attentions,
-                use_cache=use_cache
+                use_cache=use_cache,
             )
 
         self.assertIsInstance(outputs, tuple)
@@ -234,12 +232,14 @@ class TestAntiBlock(unittest.TestCase):
         block = LlavaClipVision(fake_block, config, "test_block")
         hidden_states = torch.randn(self.batch_size, self.seq_length, vision_config.hidden_size).to(self.device)
         attention_mask = torch.ones(self.batch_size, config.num_attention_heads, self.seq_length, self.seq_length).to(
-            self.device)
+            self.device
+        )
         fake_return_value = (hidden_states, attention_mask)
 
         with patch.object(block.self_attn, 'forward', MagicMock(return_value=fake_return_value)):
-            causal_attention_mask = torch.zeros(self.batch_size, config.num_attention_heads, self.seq_length,
-                                                self.seq_length).to(self.device)
+            causal_attention_mask = torch.zeros(
+                self.batch_size, config.num_attention_heads, self.seq_length, self.seq_length
+            ).to(self.device)
 
             # 测试前向传播
             _ = block(hidden_states, attention_mask=attention_mask, causal_attention_mask=causal_attention_mask)
@@ -250,11 +250,15 @@ class TestAntiBlock(unittest.TestCase):
         fake_block = FakeLlavaCreator.get_decoder_layer()
         block = LlavaQuantDecoder(fake_block, config, "test_layer")
 
-        with patch.object(block.self_attn, 'forward', MagicMock(
-                return_value=(torch.randn(self.batch_size, self.seq_length, config.hidden_size), None, None))):
+        with patch.object(
+            block.self_attn,
+            'forward',
+            MagicMock(return_value=(torch.randn(self.batch_size, self.seq_length, config.hidden_size), None, None)),
+        ):
             hidden_states = torch.randn(self.batch_size, self.seq_length, config.hidden_size).to(self.device)
-            attention_mask = torch.ones(self.batch_size, config.num_attention_heads, self.seq_length,
-                                        self.seq_length).to(self.device)
+            attention_mask = torch.ones(
+                self.batch_size, config.num_attention_heads, self.seq_length, self.seq_length
+            ).to(self.device)
             position_ids = torch.randint(0, 10000, (self.batch_size, self.seq_length)).to(self.device)
             past_key_value = None
             output_attentions = False
@@ -267,7 +271,7 @@ class TestAntiBlock(unittest.TestCase):
                 position_ids=position_ids,
                 past_key_value=past_key_value,
                 output_attentions=output_attentions,
-                use_cache=use_cache
+                use_cache=use_cache,
             )
 
             self.assertIsInstance(outputs, tuple)

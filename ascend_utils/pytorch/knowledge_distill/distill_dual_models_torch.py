@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=super-with-arguments
 
 import logging
 
@@ -32,8 +33,9 @@ class DistillDualModelsTorch(Module):
 
         self.student_model = student_model
         self.teacher_model = teacher_model
-        self.hard_label_loss_weight = \
+        self.hard_label_loss_weight = (
             config.hard_label_loss_weight if hasattr(config, 'hard_label_loss_weight') else None
+        )
         self.distill_loss = None
 
         self.distill_losses_manager = DistillLossesManager(config, self.student_model, self.teacher_model)
@@ -63,8 +65,9 @@ class DistillDualModelsTorch(Module):
         if self.hard_label_loss_weight is None:
             total_loss = self.distill_loss
         else:
-            total_loss = self.distill_loss * (
-                        1 - self.hard_label_loss_weight) + hard_label_loss * self.hard_label_loss_weight
+            total_loss = (
+                self.distill_loss * (1 - self.hard_label_loss_weight) + hard_label_loss * self.hard_label_loss_weight
+            )
         return total_loss
 
     def set_train_state(self, is_teacher_train=False):

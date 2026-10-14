@@ -1,6 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+"""
+# pylint: disable=consider-using-with,unspecified-encoding
+
 # -------------------------------------------------------------------------
 # 分布式单测公共入口：与常见 ``mp.spawn`` + ``distributed_test`` 写法一致；
 # DTS 要求并行用例使用 **spawn + gloo**，并用 **file://** 初始化以避免固定 TCP 端口冲突。
@@ -125,14 +144,15 @@ class QueueResultFuture:
         self._thread.join(timeout=max(1.0, self._poll_s * 5))
         if not ok:
             raise TimeoutError(
-                f"QueueResultFuture timeout after {timeout_s}s "
-                f"(collected={len(self._results)}/{self._expected})."
+                f"QueueResultFuture timeout after {timeout_s}s (collected={len(self._results)}/{self._expected})."
             )
         with self._lock:
             return list(self._results[: self._expected])
 
 
-def start_queue_result_collector(results_queue, expected_results: int, *, poll_interval_s: float = 0.2) -> QueueResultFuture:
+def start_queue_result_collector(
+    results_queue, expected_results: int, *, poll_interval_s: float = 0.2
+) -> QueueResultFuture:
     """启动父进程消费线程并返回结果 future。"""
     return QueueResultFuture(results_queue, expected_results=expected_results, poll_interval_s=poll_interval_s)
 

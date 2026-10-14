@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -19,13 +19,11 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-import pytest
-
+import pytest  # noqa: F401
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config_classes import KVQuantConfig
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config.quant_config_classes import BaseConfig
 from ..old_quant_config import OldQuantConfig
-from ..compare_old_and_new_config import \
-    compare_config_parameters
+from ..compare_old_and_new_config import compare_config_parameters
 
 
 class TestKVQuantConfig:

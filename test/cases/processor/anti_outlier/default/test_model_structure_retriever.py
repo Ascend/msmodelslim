@@ -1,12 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 """
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
 Unit tests for msmodelslim.processor.anti_outlier.default.model_structure_retriever.
 Covers: is_layernorm, collect_shared_input_modules.
 """
-import unittest
-from collections import defaultdict
+# pylint: disable=consider-using-from-import
 
+import unittest
+
+from collections import defaultdict  # noqa: F401
 import torch
 import torch.nn as nn
 
@@ -30,8 +48,10 @@ class TestIsLayernorm(unittest.TestCase):
             def __init__(self, hidden_size):
                 super().__init__()
                 self.weight = nn.Parameter(torch.ones(hidden_size))
+
             def forward(self, x):
                 return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + 1e-6) * self.weight
+
         module = RMSNorm(10)
         self.assertTrue(is_layernorm(module))
 

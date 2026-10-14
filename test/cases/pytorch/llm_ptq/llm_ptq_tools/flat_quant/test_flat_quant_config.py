@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -19,8 +19,9 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-import pytest
+import pytest  # noqa: F401
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.flat_quant.config import FlatQuantConfig
+
 
 def test_flat_quant_config_defaults():
     cfg = FlatQuantConfig()
@@ -58,6 +59,7 @@ def test_flat_quant_config_defaults():
     # quantize分支
     assert cfg.quantize is True
 
+
 def test_flat_quant_config_quantize_logic():
     cfg = FlatQuantConfig()
     # w_bits >= 16, a_bits < 16
@@ -81,6 +83,7 @@ def test_flat_quant_config_quantize_logic():
     cfg.quantize = (cfg.w_bits < 16) or (cfg.a_bits < 16)
     assert cfg.quantize is True
 
+
 def test_flat_quant_config_types():
     cfg = FlatQuantConfig()
     assert isinstance(cfg.seed, int)
@@ -93,4 +96,4 @@ def test_flat_quant_config_types():
     assert isinstance(cfg.add_diag, bool)
     assert isinstance(cfg.deactive_amp, bool)
     assert isinstance(cfg.direct_inv, bool)
-    assert isinstance(cfg.quantize, bool) 
+    assert isinstance(cfg.quantize, bool)

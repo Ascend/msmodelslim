@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -22,4 +22,4 @@ See the Mulan PSL v2 for more details.
 # NOTE: even in MindSpore test cases, we must import torch in the first place
 # or it will cause following import error when importing cv2 which needed by vega:
 # ImportError: dlopen: cannot load any more object with static TLS
-import torch
+import torch  # noqa: F401

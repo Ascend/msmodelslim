@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,25 +18,28 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
+
 """
 msmodelslim.utils.patch.torch 模块的单元测试
 """
-from unittest.mock import Mock
-import torch
-from torch import nn
-import pytest
+from unittest.mock import Mock  # noqa: E402
+import torch  # noqa: E402
+from torch import nn  # noqa: E402
+import pytest  # noqa: E402
 
-from msmodelslim.utils.patch.torch import (
+from msmodelslim.utils.patch.torch import (  # noqa: E402
     patch_torch,
     _is_torch_nn_module_has_get_submodule,
     _is_torch_nn_module_has_set_submodule,
     _is_torch_has_get_default_device,
-    _TORCH_DEFAULT_DEVICE,
 )
+from msmodelslim.utils.patch.torch import (  # noqa: E402
+    _TORCH_DEFAULT_DEVICE,  # noqa: F401
+)  # noqa: F401
 
 
 class TestTorchPatch:
-
     @staticmethod
     def test_patch_keeps_get_submodule_when_existing():
         if not hasattr(nn.Module, "get_submodule"):
@@ -44,9 +47,7 @@ class TestTorchPatch:
 
         original_method = nn.Module.get_submodule
         patch_torch()
-        assert (
-            nn.Module.get_submodule is original_method
-        ), "补丁不应覆盖原生 get_submodule"
+        assert nn.Module.get_submodule is original_method, "补丁不应覆盖原生 get_submodule"
 
     @staticmethod
     def test_patch_keeps_set_submodule_when_existing():
@@ -55,9 +56,7 @@ class TestTorchPatch:
 
         original_method = nn.Module.set_submodule
         patch_torch()
-        assert (
-            nn.Module.set_submodule is original_method
-        ), "补丁不应覆盖原生 set_submodule"
+        assert nn.Module.set_submodule is original_method, "补丁不应覆盖原生 set_submodule"
 
     @staticmethod
     def test_patch_adds_get_default_device_when_missing():
@@ -80,9 +79,7 @@ class TestTorchPatch:
 
         original_method = torch.get_default_device
         patch_torch()
-        assert (
-            torch.get_default_device is original_method
-        ), "补丁不应覆盖原生 get_default_device"
+        assert torch.get_default_device is original_method, "补丁不应覆盖原生 get_default_device"
 
     @staticmethod
     def test_patch_adds_get_submodule_when_missing(mock_self):
@@ -94,12 +91,8 @@ class TestTorchPatch:
         assert _is_torch_nn_module_has_get_submodule(), "补丁应补充 get_submodule"
 
         assert isinstance(mock_self.test_model.get_submodule("conv"), nn.Conv2d)  # 顶层
-        assert isinstance(
-            mock_self.test_model.get_submodule("inner.linear"), nn.Linear
-        )  # 嵌套
-        assert (
-            mock_self.test_model.get_submodule("inner.non_exist") is None
-        )  # 不存在的子模块返回 None
+        assert isinstance(mock_self.test_model.get_submodule("inner.linear"), nn.Linear)  # 嵌套
+        assert mock_self.test_model.get_submodule("inner.non_exist") is None  # 不存在的子模块返回 None
 
     @staticmethod
     def test_patch_adds_set_submodule_when_missing(mock_self):

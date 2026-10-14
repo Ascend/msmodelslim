@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,18 +18,21 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=inconsistent-return-statements,too-many-nested-blocks,useless-return
+
 import math
 import torch
 import numpy as np
 from scipy.linalg import qr
 from torch.nn import Module
-from typing import Union, List, Dict, Any, Pattern
-from msmodelslim.utils.logging import get_logger
+from typing import Union, Pattern
+from msmodelslim.utils.logging import get_logger  # noqa: F401
+from typing import List, Dict, Any  # noqa: F401
 from msmodelslim.utils.exception import UnexpectedError
 
 npu_available = False
 try:
-    import torch_npu
+    import torch_npu  # noqa: F401
 except ImportError:
     pass
 else:
@@ -159,9 +162,7 @@ def move_tensors_to_device(data, device):
             return data.to(device)
         except RuntimeError as e:
             if "CUDA out of memory" in str(e):
-                raise UnexpectedError(
-                    f"CUDA out of memory occurred during the data transfer phase."
-                ) from e
+                raise UnexpectedError("CUDA out of memory occurred during the data transfer phase.") from e
 
     elif isinstance(data, dict):
         return {key: move_tensors_to_device(value, device) for key, value in data.items()}
@@ -184,10 +185,10 @@ def empty_cache():
         torch.cuda.empty_cache()
 
 
-def get_module_by_name(model: Module, submodule_key: str, prefix: str=None) -> Module:
+def get_module_by_name(model: Module, submodule_key: str, prefix: str = None) -> Module:
     """根据名称路径获取模型中的子模块"""
     if prefix is not None:
-        submodule_key = submodule_key[len(prefix) + 1:] 
+        submodule_key = submodule_key[len(prefix) + 1 :]
     module_tokens = submodule_key.split('.')
     cur_mod = model
     for s in module_tokens:
@@ -195,10 +196,10 @@ def get_module_by_name(model: Module, submodule_key: str, prefix: str=None) -> M
     return cur_mod
 
 
-def set_module_by_name(model: Module, submodule_key: str, module: Module, clone_hooks: bool = True, prefix: str=None):
+def set_module_by_name(model: Module, submodule_key: str, module: Module, clone_hooks: bool = True, prefix: str = None):
     """根据名称路径设置模型中的子模块，并可选择是否克隆原模块的钩子"""
     if prefix is not None:
-        submodule_key = submodule_key[len(prefix) + 1:] 
+        submodule_key = submodule_key[len(prefix) + 1 :]
     tokens = submodule_key.split('.')
     sub_tokens = tokens[:-1]
     cur_mod = model
@@ -216,7 +217,7 @@ def clone_module_hooks(source_module: Module, target_module: Module):
         ('_forward_pre_hooks', 'register_forward_pre_hook'),
         ('_forward_hooks', 'register_forward_hook'),
         ('_backward_pre_hooks', 'register_backward_pre_hook'),
-        ('_backward_hooks', 'register_backward_hook')
+        ('_backward_hooks', 'register_backward_hook'),
     ]
     for hook_attr, register_method in hook_types:
         if hasattr(source_module, hook_attr):
@@ -235,7 +236,7 @@ def remove_after_substring(text, substring):
     """移除字符串中指定子串之后的部分，保留子串及其之前内容"""
     index = text.find(substring)
     if index != -1:
-        return text[:index + len(substring)]
+        return text[: index + len(substring)]
     return text
 
 

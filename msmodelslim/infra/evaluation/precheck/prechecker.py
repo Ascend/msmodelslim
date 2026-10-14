@@ -1,7 +1,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -15,15 +15,18 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-from functools import wraps
-from typing import List, Optional, Dict, Any, Callable
+# pylint: disable=logging-fstring-interpolation
 
+from functools import wraps
+from typing import List, Optional, Any, Callable
+
+from typing import Dict  # noqa: F401
 from msmodelslim.core.tune_strategy import EvaluateAccuracy
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.plugin.plugin_utils import get_entry_points
 from msmodelslim.utils.plugin.typed_factory import TypedFactory
 
-from .base import BasePrecheckRule, BasePrecheckConfig, BasePrecheckConfigList
+from .base import BasePrecheckRule, BasePrecheckConfig, BasePrecheckConfigList  # noqa: F401
 
 PRECHECK_PLUGIN_PATH = "msmodelslim.precheck_rule.plugins"
 
@@ -58,10 +61,10 @@ class PrecheckerFactory:
 class ModelOutputPrechecker:
     """
     模型输出预检查器管理器。
-    
+
     统一管理多个预检查器，支持多种预检类型。
     """
-    
+
     def __init__(self, configs: Optional[List[BasePrecheckConfig]] = None):
         self.precheckers: List[BasePrecheckRule] = []
         self._factory = PrecheckerFactory()
@@ -71,17 +74,13 @@ class ModelOutputPrechecker:
                     self.precheckers.append(self._factory.create(config))
                 except Exception as e:
                     get_logger().warning(f"Failed to create prechecker from config {config}: {e}. Skipping.")
-    
+
     def check(
-            self,
-            host: str,
-            port: int,
-            served_model_name: str,
-            datasets: List[str]
+        self, host: str, port: int, served_model_name: str, datasets: List[str]
     ) -> Optional[List[EvaluateAccuracy]]:
         """
         执行所有预检查。
-        
+
         依次执行所有配置的预检查器，如果任何一个预检查失败，则返回失败结果。
 
         如果检查失败，返回不达标的结果列表；如果检查通过，返回 None
@@ -94,12 +93,7 @@ class ModelOutputPrechecker:
 
         for idx, prechecker in enumerate(self.precheckers, 1):
             get_logger().debug(f"Running prechecker {idx}/{len(self.precheckers)}: {type(prechecker).__name__}")
-            result = prechecker.check(
-                host=host,
-                port=port,
-                served_model_name=served_model_name,
-                datasets=datasets
-            )
+            result = prechecker.check(host=host, port=port, served_model_name=served_model_name, datasets=datasets)
             if result is not None:
                 get_logger().warning(f"Prechecker {idx} failed. Skipping evaluation stage.")
                 return result
@@ -111,14 +105,14 @@ class ModelOutputPrechecker:
 def model_output_precheck(func: Callable) -> Callable:
     """
     模型输出预检查装饰器。
-    
+
     如果配置中启用了预检查，则在执行测评前进行检测。
-    
+
     使用示例：
         @model_output_precheck
         def run(self):
             ...
-    
+
     Returns:
         装饰后的函数
     """
@@ -138,8 +132,7 @@ def model_output_precheck(func: Callable) -> Callable:
         # 只支持列表格式
         if not isinstance(precheck_config, list):
             get_logger().warning(
-                f"Precheck config must be a list format, got {type(precheck_config)}. "
-                "Skipping precheck."
+                f"Precheck config must be a list format, got {type(precheck_config)}. Skipping precheck."
             )
             return func(self, *args, **kwargs)
 
@@ -154,8 +147,7 @@ def model_output_precheck(func: Callable) -> Callable:
         # 如果缺少必要的服务器信息，跳过预检查
         if not all([host, port, served_model_name]):
             get_logger().warning(
-                "Precheck enabled but missing server info (host, port, or served_model_name). "
-                "Skipping precheck."
+                "Precheck enabled but missing server info (host, port, or served_model_name). Skipping precheck."
             )
             return func(self, *args, **kwargs)
 
@@ -164,12 +156,7 @@ def model_output_precheck(func: Callable) -> Callable:
 
         # 使用 ModelOutputPrechecker 执行预检查
         prechecker = ModelOutputPrechecker(configs=precheck_config)
-        result = prechecker.check(
-            host=host,
-            port=port,
-            served_model_name=served_model_name,
-            datasets=datasets
-        )
+        result = prechecker.check(host=host, port=port, served_model_name=served_model_name, datasets=datasets)
 
         if result is not None:
             return result

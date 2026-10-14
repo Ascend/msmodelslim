@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -49,7 +49,7 @@ def fold(source_tensor, axis, target_shape):
     target_shape.pop(axis)
     source_tensor = source_tensor.reshape([source_tensor.shape[0], *target_shape])
 
-    axes = axes[1:axis + 1] + [0] + axes[axis + 1:]
+    axes = axes[1 : axis + 1] + [0] + axes[axis + 1 :]
     return source_tensor.transpose(axes)
 
 
@@ -74,8 +74,7 @@ def tucker(source_tensor, ranks=None, modes=None, iter_max=100, error_tolerance=
     sorted_modes_with_ranks = sorted(zip(ranks, modes), key=lambda xx: xx[1])
     sorted_modes = [ii[1] for ii in sorted_modes_with_ranks]
     logger.info(
-        "modes: %s, ranks: %s, sorted_modes_with_ranks: %s",
-        str(modes), str(ranks), str(sorted_modes_with_ranks)
+        "modes: %s, ranks: %s, sorted_modes_with_ranks: %s", str(modes), str(ranks), str(sorted_modes_with_ranks)
     )
     # Init by SVD
     uu_for_each_modes = []
@@ -85,13 +84,13 @@ def tucker(source_tensor, ranks=None, modes=None, iter_max=100, error_tolerance=
         uu_for_each_modes.append(svd_uu)
 
     norm_tensor = np.linalg.norm(source_tensor)
-    norm_tensor_square = norm_tensor ** 2
+    norm_tensor_square = norm_tensor**2
 
     core, pre_rec_error = None, None
     for iteration in range(iter_max):
         for index, (rank, mode) in enumerate(sorted_modes_with_ranks):
-            cur_modes = sorted_modes[:index] + sorted_modes[index + 1:]
-            cur_uu_for_each_modes = uu_for_each_modes[:index] + uu_for_each_modes[index + 1:]
+            cur_modes = sorted_modes[:index] + sorted_modes[index + 1 :]
+            cur_uu_for_each_modes = uu_for_each_modes[:index] + uu_for_each_modes[index + 1 :]
             approximate_core = multi_mode_dot(source_tensor, cur_uu_for_each_modes, modes=cur_modes, transpose=True)
             cur_tensor = unfold(approximate_core, mode)
             svd_uu = positive_largest_trunked_svd_u(cur_tensor, rank)

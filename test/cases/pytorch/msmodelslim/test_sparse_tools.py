@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,18 +18,19 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=redefined-outer-name,super-with-arguments
 
 import torch
 import pytest
 
 try:
     import torch_npu
-except Exception as e:
+except Exception:
     torch_npu = None
 
 try:
     from msmodelslim.pytorch.sparse import sparse_tools
-except Exception as e:
+except Exception:
     sparse_tools = None
 
 
@@ -38,12 +39,12 @@ class TwoLayerNet(torch.nn.Module):
         super(TwoLayerNet, self).__init__()
         self.linear1 = torch.nn.Linear(D_in, H, bias=True)
         self.linear2 = torch.nn.Linear(H, D_out, bias=True)
-    
+
     def forward(self, x):
         _ = self.linear1(x)
         y_pred = self.linear2(_)
         return y_pred
-    
+
 
 @pytest.fixture(scope="function")
 def generate_model():

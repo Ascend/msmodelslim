@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 from msmodelslim.model.interface import IModel
@@ -26,17 +27,15 @@ from msmodelslim.model.interface import IModel
 class AdapterLoaderInterface(ABC):
     @abstractmethod
     def precheck(
-            self,
-            model_type: str,
-            model_path: Path,
-    ) -> None:
-        ...
+        self,
+        model_type: str,
+        model_path: Path,
+    ) -> None: ...
 
     @abstractmethod
     def load(
-            self,
-            model_type: str,
-            model_path: Path,
-            trust_remote_code: bool = False,
-    ) -> IModel:
-        ...
+        self,
+        model_type: str,
+        model_path: Path,
+        trust_remote_code: bool = False,
+    ) -> IModel: ...

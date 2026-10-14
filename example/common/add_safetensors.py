@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-iterating-dictionary,logging-fstring-interpolation
+
 import os
 import glob
 import argparse
@@ -37,7 +39,7 @@ def find_file_with_pattern(target_dir, pattern):
     if not files:
         raise FileNotFoundError(f"can't find {pattern} in {target_dir}")
     if len(files) > 1:
-        raise ValueError(f"find mutiple json files")
+        raise ValueError("find mutiple json files")
     return files[0]
 
 
@@ -69,7 +71,7 @@ def get_prefix(name, last_index=-1):
 
 def add_safetensors(org_paths, target_dir, safetensors_prefix, max_file_size_gb=5, prefix=None):
     """将原始模型的tensor添加到量化模型中，支持分文件保存
-    
+
     Args:
         org_paths (str): 原始模型safetensors文件所在目录路径
         target_dir (str): 目标量化模型目录路径
@@ -91,7 +93,6 @@ def add_safetensors(org_paths, target_dir, safetensors_prefix, max_file_size_gb=
 
     weight_map = get_weight_map(float_index_path)
 
-    
     index_data = json_safe_load(index_path)
     desc_data = json_safe_load(desc_path)
     if "metadata" not in index_data:
@@ -104,7 +105,7 @@ def add_safetensors(org_paths, target_dir, safetensors_prefix, max_file_size_gb=
     if prefix:
         tensor_names = [name for name in tensor_names if name.startswith(prefix)]
 
-    max_file_size = max_file_size_gb * (1024 ** 3) 
+    max_file_size = max_file_size_gb * (1024**3)
     current_file_size = 0
     new_data = {}
     file_count = 0
@@ -114,19 +115,21 @@ def add_safetensors(org_paths, target_dir, safetensors_prefix, max_file_size_gb=
             tensor = get_tensor(tensor_name, org_paths, weight_map)
             tensor_size = calculate_tensor_size(tensor)
             current_total_size += tensor_size
-            
+
             mod_name = get_prefix(tensor_name)
             if mod_name + ".weight_scale_inv" in tensor_names:
                 try:
                     weight_scale_inv = get_tensor(mod_name + ".weight_scale_inv", org_paths, weight_map)
                     tensor = weight_dequant(tensor, weight_scale_inv)
                 except KeyError:
-                    msmodelslim_logger.warning(f"{mod_name + '.weight_scale_inv'} not found in org_paths, \
-                                               skip convert {mod_name} from fp8 to bf16")
+                    msmodelslim_logger.warning(
+                        f"{mod_name + '.weight_scale_inv'} not found in org_paths, \
+                                               skip convert {mod_name} from fp8 to bf16"
+                    )
 
             # 如果当前文件大小超过限制，保存当前文件并开始新文件
             if (current_file_size + tensor_size) > max_file_size and new_data:
-                file_name = f"{safetensors_prefix}-{file_count+1}.safetensors"
+                file_name = f"{safetensors_prefix}-{file_count + 1}.safetensors"
                 ori_mask = os.umask(0o377)
                 save_file(new_data, os.path.join(target_dir, file_name))
                 os.umask(ori_mask)
@@ -143,7 +146,7 @@ def add_safetensors(org_paths, target_dir, safetensors_prefix, max_file_size_gb=
 
     # 保存最后一个文件
     if new_data:
-        file_name = f"{safetensors_prefix}-{file_count+1}.safetensors"
+        file_name = f"{safetensors_prefix}-{file_count + 1}.safetensors"
         ori_mask = os.umask(0o377)
         save_file(new_data, os.path.join(target_dir, file_name))
         os.umask(ori_mask)
@@ -161,8 +164,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='添加新的safetensors文件到现有模型')
     parser.add_argument('--quant_dir', help='量化模型文件所在目录')
     parser.add_argument('--float_dir', help='浮点safetensors文件所在目录')
-    
+
     args = parser.parse_args()
-    
+
     add_safetensors(args.float_dir, args.quant_dir, "mtp", max_file_size_gb=5, prefix='model.layers.61.')
-    

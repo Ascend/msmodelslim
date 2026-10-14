@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
 
 """
 Usage:
@@ -25,20 +26,21 @@ TEST_PATH=test/fuzz/onnx_ptq_api/run_quantize/file_name
 python3 -m coverage run ${TEST_PATH}/fuzz_test.py ${TEST_PATH}/samples/ -atheris_runs=1000
 """
 
-import sys
-import os
+import sys  # noqa: E402
+import os  # noqa: E402
 
-import atheris
-import numpy as np
-import torch
+import atheris  # noqa: E402
+import torch  # noqa: E402, F401
+import numpy as np  # noqa: E402, F401
 
 with atheris.instrument_imports():
     from resources.sample_net_torch import TestOnnxQuantModel
     from msmodelslim import logger
     from msmodelslim.pytorch.quant.ptq_tools import QuantConfig
+
     try:
         from msmodelslim.pytorch.quant.ptq_tools import Calibrator
-    except ImportError as ee:
+    except ImportError:
         logger.error("can not import Calibrator, skip")
         Calibrator = None
 

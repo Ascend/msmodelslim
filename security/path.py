@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,11 +18,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=chained-comparison,no-member,unspecified-encoding
 
 import re
 import os
 import sys
-import shutil
+import shutil  # noqa: F401
 import stat
 import json
 
@@ -90,11 +91,15 @@ def check_write_directory(dir_name, check_user_stat=True):
     file_stat = os.stat(real_dir_name)
     if check_user_stat and not sys.platform.startswith("win") and not is_belong_to_user_or_group(file_stat):
         if os.geteuid() == 0:
-            logger.warning("The file writen directory %r doesn't belong to the current user or group."
-                           " current user is root, continue", dir_name)
+            logger.warning(
+                "The file writen directory %r doesn't belong to the current user or group."
+                " current user is root, continue",
+                dir_name,
+            )
         else:
-            raise ValueError("The file writen directory {} doesn't belong to the current user or group."
-                             .format(dir_name))
+            raise ValueError(
+                "The file writen directory {} doesn't belong to the current user or group.".format(dir_name)
+            )
     if not os.access(real_dir_name, os.W_OK):
         raise ValueError("Current user doesn't have writen permission to file writen directory {}.".format(dir_name))
 
@@ -109,8 +114,9 @@ def get_valid_read_path(path, extensions=None, size_max=MAX_READ_FILE_SIZE_4G, c
     file_stat = os.stat(real_path)
     if check_user_stat and not sys.platform.startswith("win") and not is_belong_to_user_or_group(file_stat):
         if os.geteuid() == 0:
-            logger.warning("The file %r doesn't belong to the current user or group. current user is root, continue",
-                           path)
+            logger.warning(
+                "The file %r doesn't belong to the current user or group. current user is root, continue", path
+            )
         else:
             raise ValueError("The file {} doesn't belong to the current user or group.".format(path))
     if not os.access(real_path, os.R_OK) or file_stat.st_mode & stat.S_IRUSR == 0:  # At least been 400

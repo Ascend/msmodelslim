@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -63,26 +63,20 @@ def evbmf(source_input, sigma2=None, high=None) -> int:
     # Estimation of the variance when sigma2 is unspecified
     if sigma2 is None:
         # Calculate residual
-        residual = np.sum(np.sum(source_input ** 2) - np.sum(svd_ss ** 2)) if high < low else 0
+        residual = np.sum(np.sum(source_input**2) - np.sum(svd_ss**2)) if high < low else 0
 
         inner_thresh = (1 + alpha_thresh) * (1 + none_zero_divide(alpha, alpha_thresh))
         eh_ub_base = int(np.min([np.ceil(none_zero_divide(low, 1 + alpha)) - 1, high])) - 1
         # 限制eh_ub的范围：0 ≤ eh_ub ≤ high-2，确保eh_ub + 1 < high（即不超过svd_ss的长度）
         eh_ub = np.clip(eh_ub_base, 0, high - 2)
-        upper_bound = none_zero_divide((np.sum(svd_ss ** 2) + residual), low * median)
-        ss_median = none_zero_divide(np.mean(svd_ss[eh_ub + 1:] ** 2), median)
+        upper_bound = none_zero_divide((np.sum(svd_ss**2) + residual), low * median)
+        ss_median = none_zero_divide(np.mean(svd_ss[eh_ub + 1 :] ** 2), median)
         lower_bound = np.max([none_zero_divide(svd_ss[eh_ub + 1] ** 2, median * inner_thresh), ss_median])
 
         if upper_bound < lower_bound:
             lower_bound, upper_bound = upper_bound, lower_bound
 
-        params = EvbSigma2Params(
-            low=low,
-            median=median,
-            svd_ss=svd_ss,
-            residual=residual,
-            inner_thresh=inner_thresh
-        )
+        params = EvbSigma2Params(low=low, median=median, svd_ss=svd_ss, residual=residual, inner_thresh=inner_thresh)
 
         sigma2_opt = minimize_scalar(
             evb_sigma2,
@@ -107,7 +101,7 @@ def evb_sigma2(sigma2, params):
     high = len(svd_ss)
 
     alpha = none_zero_divide(low, median)
-    inner_xx = none_zero_divide(svd_ss ** 2, median * sigma2)
+    inner_xx = none_zero_divide(svd_ss**2, median * sigma2)
 
     inner_upper, inner_lower = inner_xx[inner_xx > inner_thresh], inner_xx[inner_xx <= inner_thresh]
     tau_z1 = 0.5 * (inner_upper - (1 + alpha) + np.sqrt((inner_upper - (1 + alpha)) ** 2 - 4 * alpha))

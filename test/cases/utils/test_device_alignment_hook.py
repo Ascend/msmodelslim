@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,14 +18,18 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import unittest
 
 import torch
 import torch.nn as nn
 
-from msmodelslim.utils.memory import align_input_to_module_device_hook, register_device_alignment_hook, \
-    unregister_device_alignment_hook
+from msmodelslim.utils.memory import (
+    align_input_to_module_device_hook,
+    register_device_alignment_hook,
+    unregister_device_alignment_hook,
+)
 
 
 class MockModule(nn.Module):
@@ -147,7 +151,7 @@ class TestDeviceAlignmentHook(unittest.TestCase):
             'tensor1': input_tensor1,
             'tensor2': input_tensor2,
             'list_data': [input_tensor1, input_tensor2],
-            'tuple_data': (input_tensor1, input_tensor2)
+            'tuple_data': (input_tensor1, input_tensor2),
         }
 
         # 模拟 hook 的输入格式
@@ -214,7 +218,7 @@ class TestDeviceAlignmentHook(unittest.TestCase):
             'tensor1': cpu_tensor1,
             'tensor2': cpu_tensor2,
             'list_data': [cpu_tensor3],
-            'already_on_device': torch.randn(5, 5).to(self.module.linear.weight.device)
+            'already_on_device': torch.randn(5, 5).to(self.module.linear.weight.device),
         }
 
         # 模拟 hook 的输入格式

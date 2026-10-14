@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List
@@ -43,20 +44,28 @@ class KVSmoothFusedUnit(BaseModel):
 class KVSmoothFusedInterface(ABC):
     @abstractmethod
     def get_kvcache_smooth_fused_subgraph(self) -> List[KVSmoothFusedUnit]:
-        raise UnsupportedError(f'{self.__class__.__name__} does not support get_kvcache_smooth_fused_subgraph',
-                               action='Please implement this method before using kvcache smooth')
+        raise UnsupportedError(
+            f'{self.__class__.__name__} does not support get_kvcache_smooth_fused_subgraph',
+            action='Please implement this method before using kvcache smooth',
+        )
 
     @abstractmethod
     def get_head_dim(self) -> int:
-        raise UnsupportedError(f'{self.__class__.__name__} does not support get_head_dim',
-                               action='Please implement this method before using kvcache smooth')
+        raise UnsupportedError(
+            f'{self.__class__.__name__} does not support get_head_dim',
+            action='Please implement this method before using kvcache smooth',
+        )
 
     @abstractmethod
     def get_num_key_value_groups(self) -> int:
-        raise UnsupportedError(f'{self.__class__.__name__} does not support get_num_key_value_groups',
-                               action='Please implement this method before using kvcache smooth')
+        raise UnsupportedError(
+            f'{self.__class__.__name__} does not support get_num_key_value_groups',
+            action='Please implement this method before using kvcache smooth',
+        )
 
     @abstractmethod
     def get_num_key_value_heads(self) -> int:
-        raise UnsupportedError(f'{self.__class__.__name__} does not support get_num_key_value_heads',
-                               action='Please implement this method before using kvcache smooth')
+        raise UnsupportedError(
+            f'{self.__class__.__name__} does not support get_num_key_value_heads',
+            action='Please implement this method before using kvcache smooth',
+        )

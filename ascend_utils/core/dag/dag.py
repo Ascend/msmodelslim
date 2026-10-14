@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=unnecessary-comprehension,use-yield-from
 
 import copy
 from abc import abstractmethod
@@ -102,10 +103,9 @@ class DirectedAcyclicGraph:
                     calculating_nodes.put(next_will_calc_node)
 
         return node_list_in_calc_order
-    
+
     @staticmethod
-    def _get_proper_combination_of_outputs(ori_graph_outputs: List[DagNode],
-                                           sub_graph_outputs: List[DagNode]):
+    def _get_proper_combination_of_outputs(ori_graph_outputs: List[DagNode], sub_graph_outputs: List[DagNode]):
         # check output count
         if len(ori_graph_outputs) != len(sub_graph_outputs):
             return
@@ -116,9 +116,11 @@ class DirectedAcyclicGraph:
                 if ori_graph_outputs[index_ori_node].op_type not in sub_graph_outputs[index_sub_node].op_types:
                     break
             else:
-                yield {sub_graph_outputs[index_sub_node].name: ori_graph_outputs[index_ori_node] for
-                    index_sub_node, index_ori_node in enumerate(seq)}
-    
+                yield {
+                    sub_graph_outputs[index_sub_node].name: ori_graph_outputs[index_ori_node]
+                    for index_sub_node, index_ori_node in enumerate(seq)
+                }
+
     def search_nodes_by_class(self, cls: Type) -> Generator[DagNode, None, None]:
         check_type(cls, type, param_name="cls")
         for dag_node in self._dag_node_list:
@@ -228,8 +230,9 @@ class DirectedAcyclicGraph:
                     node_output.inputs.append(node_input)
         return dag_node_list
 
-    def _search_by_calc_order(self, matched_nodes: Dict[str, DagNode], node_list_in_calc_order: List[DagNode],
-                              index: int):
+    def _search_by_calc_order(
+        self, matched_nodes: Dict[str, DagNode], node_list_in_calc_order: List[DagNode], index: int
+    ):
         if index >= len(node_list_in_calc_order):
             return
 

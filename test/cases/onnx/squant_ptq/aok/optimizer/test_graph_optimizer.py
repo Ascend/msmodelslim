@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,17 +18,18 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=attribute-defined-outside-init,unspecified-encoding
 
 import os
-import pytest
+import pytest  # noqa: F401
 import numpy as np
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock  # noqa: F401
 import tempfile
 from tempfile import TemporaryDirectory
 
+from msmodelslim.onnx.squant_ptq.aok.optimizer import architectures  # noqa: F401
 from msmodelslim.onnx.squant_ptq.aok.optimizer.graph_optimizer import _InferenceRunInfo
 from msmodelslim.onnx.squant_ptq.aok.optimizer.graph_optimizer import GraphOptimizer
-from msmodelslim.onnx.squant_ptq.aok.optimizer import architectures
 
 
 class TestInferenceRunInfo:

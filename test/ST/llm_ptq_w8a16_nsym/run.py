@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module
+
 import os
 import json
 import torch
@@ -26,13 +28,13 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 
 # for local path
 fp16_path = f"{os.environ['PROJECT_PATH']}/resource/llm_ptq/llama2_7b/"  # 原始模型路径，其中的内容如下图
-tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=fp16_path, 
-                                          trust_remote_code=True, 
-                                          local_files_only=True)
-model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=fp16_path, 
-                                             torch_dtype=torch.float32, 
-                                             trust_remote_code=True, 
-                                             local_files_only=True).cpu()
+tokenizer = AutoTokenizer.from_pretrained(
+    pretrained_model_name_or_path=fp16_path, trust_remote_code=True, local_files_only=True
+)
+model = AutoModelForCausalLM.from_pretrained(
+    pretrained_model_name_or_path=fp16_path, torch_dtype=torch.float32, trust_remote_code=True, local_files_only=True
+).cpu()
+
 
 # 获取校准数据函数定义
 def get_calib_dataset(fp16_tokenizer, calib_list):
@@ -44,6 +46,7 @@ def get_calib_dataset(fp16_tokenizer, calib_list):
         calib_dataset.append([inputs.data['input_ids'], inputs.data['token_type_ids'], inputs.data['attention_mask']])
     return calib_dataset
 
+
 entry = f"{os.environ['PROJECT_PATH']}/resource/CEval/val/Social_Science/teacher_qualification.jsonl"
 dataset = []
 with open(entry, encoding='utf-8') as file:
@@ -52,12 +55,14 @@ with open(entry, encoding='utf-8') as file:
 
 dataset_calib = get_calib_dataset(tokenizer, dataset[:1])
 
-disable_names=[]
+disable_names = []
 
 disable_names.append('lm_head')
 
 # w_sym=True：对称量化，w_sym=False：非对称量化
-quant_config = QuantConfig(a_bit=16, w_bit=8, disable_names=disable_names, dev_type='cpu', act_method=3, pr=1.0, w_sym=False, mm_tensor=False)
+quant_config = QuantConfig(
+    a_bit=16, w_bit=8, disable_names=disable_names, dev_type='cpu', act_method=3, pr=1.0, w_sym=False, mm_tensor=False
+)
 calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
 calibrator.run()  # 执行PTQ量化校准
 

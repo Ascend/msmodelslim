@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=ungrouped-imports
 
 import logging
 
@@ -44,19 +45,15 @@ class DeployQuant(Cell):
         tmp_o_w = getattr(simulated_quant_cell.name_cells()['compute_cell'], 'offset_weight')
         offset_weight = np.squeeze(tmp_o_w.asnumpy())
 
-        weight_tensor, bias_tensor = compute_weight_bias(simulated_quant_cell,
-                                                              scale_input, offset_input,
-                                                              scale_weight, offset_weight)
-        deq_scale_tmp = (np.squeeze(scale_weight) * scale_input)
+        weight_tensor, bias_tensor = compute_weight_bias(
+            simulated_quant_cell, scale_input, offset_input, scale_weight, offset_weight
+        )
+        deq_scale_tmp = np.squeeze(scale_weight) * scale_input
         self.deq_scale = Tensor(deq_scale_tmp, mstype.float16)
 
-        fused_deq_scale = compute_fused_deq_scale(scale_input,
-                                                       scale_weight,
-                                                       offset_weight)
+        fused_deq_scale = compute_fused_deq_scale(scale_input, scale_weight, offset_weight)
         self.weight = Parameter(weight_tensor, name='weight')
-        self.weight_offset = Parameter(np.zeros(shape=weight_tensor.shape,
-                                                dtype=np.int8),
-                                       name='weight_offset')
+        self.weight_offset = Parameter(np.zeros(shape=weight_tensor.shape, dtype=np.int8), name='weight_offset')
         self.fused_deq_scale = fused_deq_scale
 
         self.has_bias = bias_tensor is not None

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,9 +18,10 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module
 
 import os
-import argparse
+import argparse  # noqa: F401
 from qwen_vl_utils import process_vision_info
 from transformers import Qwen2VLForConditionalGeneration, AutoProcessor, AutoConfig
 from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
@@ -38,14 +39,10 @@ device_type = NPU
 
 # 1.加载模型
 device_map = CPU if device_type == CPU else "auto"
-model = Qwen2VLForConditionalGeneration.from_pretrained(model_path,
-                                                        device_map=device_map,
-                                                        trust_remote_code=True,
-                                                        torch_dtype="auto",
-                                                        local_files_only=True).eval()
-config = AutoConfig.from_pretrained(model_path,
-                                    trust_remote_code=True,
-                                    local_files_only=True)
+model = Qwen2VLForConditionalGeneration.from_pretrained(
+    model_path, device_map=device_map, trust_remote_code=True, torch_dtype="auto", local_files_only=True
+).eval()
+config = AutoConfig.from_pretrained(model_path, trust_remote_code=True, local_files_only=True)
 
 # 2.加载处理器
 processor = AutoProcessor.from_pretrained(model_path, local_files_only=True)
@@ -76,36 +73,38 @@ for i in images_list:
                     "type": "image",
                     "image": image_path,
                 },
-                {
-                    "type": "text",
-                    "text": "Please describe this picture in detail."
-                },
-            ]
+                {"type": "text", "text": "Please describe this picture in detail."},
+            ],
         }
     ]
-    text = processor.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
+    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     image_inputs, video_inputs = process_vision_info(messages)
-    inputs = processor(
-        text=[text],
-        images=image_inputs,
-        videos=video_inputs,
-        padding=True,
-        return_tensors='pt'
-    ).to(device_type)
+    inputs = processor(text=[text], images=image_inputs, videos=video_inputs, padding=True, return_tensors='pt').to(
+        device_type
+    )
 
-    calib_data.append([inputs['input_ids'], inputs['attention_mask'],
-                        None, None, None, None, None, None, None, None,
-                        inputs['pixel_values'], None, inputs['image_grid_thw'], None])
+    calib_data.append(
+        [
+            inputs['input_ids'],
+            inputs['attention_mask'],
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            inputs['pixel_values'],
+            None,
+            inputs['image_grid_thw'],
+            None,
+        ]
+    )
 
 # 5.异常值抑制
 anti_config = AntiOutlierConfig(
-    w_bit=w_bit,
-    a_bit=a_bit,
-    anti_method="m2",
-    dev_type=device_type,
-    dev_id=model.device.index
+    w_bit=w_bit, a_bit=a_bit, anti_method="m2", dev_type=device_type, dev_id=model.device.index
 )
 anti_outlier = AntiOutlier(model, calib_data=calib_data[:1], cfg=anti_config)
 anti_outlier.process()
@@ -118,7 +117,7 @@ quant_config = QuantConfig(
     dev_type=device_type,
     dev_id=model.device.index,
     act_method=2,
-    mm_tensor=False
+    mm_tensor=False,
 )
 
 calibrator = Calibrator(model, quant_config, calib_data=calib_data[:1], disable_level='L0')

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -39,12 +39,12 @@ class SaveOutputShapeModule(Cell):
         self.output_shape = Parameter(
             mindspore.Tensor(np.zeros((TENSOR_SHAPE_MAX_LEN,)), mstype.float32),
             requires_grad=False,
-            name="{}.{}".format(self.name, "module_output_shape")
+            name="{}.{}".format(self.name, "module_output_shape"),
         )
         self.output_shape_len = Parameter(
             mindspore.Tensor(0, mstype.int64),
             requires_grad=False,
-            name="{}.{}".format(self.name, "module_output_shape_len")
+            name="{}.{}".format(self.name, "module_output_shape_len"),
         )
         self.scatter_nd_update = mindspore.ops.ScatterNdUpdate()
 
@@ -91,15 +91,18 @@ class SaveOutputModule(Cell):
         self.output = Parameter(
             mindspore.Tensor(np.zeros(output_shape), mstype.float32),
             requires_grad=False,
-            name="{}.{}".format(self.name, "module_output")
+            name="{}.{}".format(self.name, "module_output"),
         )
 
     def construct(self, *args, **kwargs):
         ori_output = self.module(*args, **kwargs)
         # MindSpore only support comparison with 1 operator
         if self.output_idx >= len(ori_output) or self.output_idx < 0:
-            raise ValueError("s_output_idx/t_output_idx:{} out of range. Please check add_inter_soft_label config."
-                             .format(self.output_idx))
+            raise ValueError(
+                "s_output_idx/t_output_idx:{} out of range. Please check add_inter_soft_label config.".format(
+                    self.output_idx
+                )
+            )
         if self.output_idx is not None:
             output = ori_output[self.output_idx]
         else:
@@ -164,11 +167,13 @@ class LossModule(LossModuleBase):
             local_s_output = self.s_output_module.construct()
         else:
             if self.s_output_idx >= len(s_output) or self.s_output_idx < 0:
-                raise ValueError("s_output_idx:{} out of range. Please check add_output_soft_label config.".format(
-                    self.s_output_idx))
+                raise ValueError(
+                    "s_output_idx:{} out of range. Please check add_output_soft_label config.".format(self.s_output_idx)
+                )
             if self.t_output_idx >= len(t_output) or self.t_output_idx < 0:
-                raise ValueError("t_output_idx:{} out of range. Please check add_output_soft_label config.".format(
-                    self.t_output_idx))
+                raise ValueError(
+                    "t_output_idx:{} out of range. Please check add_output_soft_label config.".format(self.t_output_idx)
+                )
             local_t_output = t_output[self.t_output_idx]
             local_s_output = s_output[self.s_output_idx]
 
@@ -216,8 +221,9 @@ class DistillLossesManagerBase(Cell):
         if not isinstance(s_outputs, (tuple, list)):
             raise ValueError("Please check your student model's type of output, it must be tuple or list.")
         if len(s_outputs) <= idx:
-            raise ValueError(f"Please check the value of output_replace_idx in yml, "
-                             f"it must be smaller than {len(s_outputs)}")
+            raise ValueError(
+                f"Please check the value of output_replace_idx in yml, it must be smaller than {len(s_outputs)}"
+            )
         s_loss = s_outputs[idx]
         total_loss = s_loss + t_outputs
         return self._reconstruct_loss(total_loss, s_outputs)
@@ -306,12 +312,14 @@ class DistillLossesManager(DistillLossesManagerBase):
             s_module_name = match["s_module"]
             t_module = self.t_name2module.get(t_module_name)
             if not t_module:
-                raise ValueError("The module name: \"{}\" is not in the teacher model! Please check config".
-                                 format(t_module_name))
+                raise ValueError(
+                    "The module name: \"{}\" is not in the teacher model! Please check config".format(t_module_name)
+                )
             s_module = self.s_name2module.get(s_module_name)
             if not s_module:
-                raise ValueError("The module name: \"{}\" is not in the student model! Please check config".
-                                 format(s_module_name))
+                raise ValueError(
+                    "The module name: \"{}\" is not in the student model! Please check config".format(s_module_name)
+                )
             s_output_idx = match["s_output_idx"]
             t_output_idx = match["t_output_idx"]
 

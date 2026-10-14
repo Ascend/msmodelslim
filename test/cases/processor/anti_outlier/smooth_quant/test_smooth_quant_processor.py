@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 from typing import List
 
@@ -37,7 +38,7 @@ from msmodelslim.processor.anti_outlier.common import (
 from msmodelslim.processor.anti_outlier.smooth_quant import SmoothQuantProcessor, SmoothQuantProcessorConfig
 from msmodelslim.processor.anti_outlier.smooth_quant.api import smooth_quant, smooth_quant_impl_norm_linear
 from msmodelslim.processor.anti_outlier.smooth_quant.interface import SmoothQuantInterface
-from msmodelslim.utils.exception import UnsupportedError
+from msmodelslim.utils.exception import UnsupportedError  # noqa: F401
 
 
 class MockRMSNorm(nn.Module):
@@ -82,19 +83,20 @@ class MockAdapter(SmoothQuantInterface):
                 subgraph_type="norm-linear",
                 mapping=MappingConfig(
                     source="model.layers.0.input_layernorm",
-                    targets=["model.layers.0.mlp.gate_proj", "model.layers.0.mlp.up_proj"]
-                )
+                    targets=["model.layers.0.mlp.gate_proj", "model.layers.0.mlp.up_proj"],
+                ),
             ),
             # 添加一个非 norm-linear 类型，用于测试过滤
             AdapterConfig(
                 subgraph_type="linear-linear",
-                mapping=MappingConfig(source="model.layers.0.mlp.gate_proj", targets=["other"])
+                mapping=MappingConfig(source="model.layers.0.mlp.gate_proj", targets=["other"]),
             ),
         ]
 
 
 class MockInvalidAdapter:
     """不实现SmoothQuantInterface的适配器"""
+
     pass
 
 
@@ -255,11 +257,7 @@ class TestSmoothQuantAPI:
 
         subgraph = NormLinearSubgraph(norm, [linear1, linear2])
         config = SmoothQuantConfig(alpha=0.5, shift=False)
-        context = SmoothQuantContext(
-            version=1,
-            a_smooth_scale=torch.rand(hidden_size) + 0.1,
-            shift=None
-        )
+        context = SmoothQuantContext(version=1, a_smooth_scale=torch.rand(hidden_size) + 0.1, shift=None)
 
         # 记录原始权重
         orig_linear1_weight = linear1.weight.data.clone()
@@ -282,9 +280,7 @@ class TestSmoothQuantAPI:
         subgraph = NormLinearSubgraph(norm, [linear])
         config = SmoothQuantConfig(alpha=0.5, shift=True)
         context = SmoothQuantContext(
-            version=1,
-            a_smooth_scale=torch.rand(hidden_size) + 0.1,
-            shift=torch.randn(hidden_size) * 0.1
+            version=1, a_smooth_scale=torch.rand(hidden_size) + 0.1, shift=torch.randn(hidden_size) * 0.1
         )
 
         smooth_quant_impl_norm_linear(subgraph, config, context)
@@ -303,11 +299,7 @@ class TestSmoothQuantAPI:
 
         subgraph = NormLinearSubgraph(norm, [linear])
         config = SmoothQuantConfig(alpha=0.5, shift=False)
-        context = SmoothQuantContext(
-            version=1,
-            a_smooth_scale=torch.ones(hidden_size),
-            shift=None
-        )
+        context = SmoothQuantContext(version=1, a_smooth_scale=torch.ones(hidden_size), shift=None)
 
         # 应该不抛出异常
         smooth_quant(subgraph, config, context)

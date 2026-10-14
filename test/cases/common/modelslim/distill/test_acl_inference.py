@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -21,11 +21,11 @@ See the Mulan PSL v2 for more details.
 
 import pytest
 from unittest.mock import patch, MagicMock
-import numpy as np
 
 # Import the module to test
+import numpy as np  # noqa: F401
+from ascend_utils.common.security import check_int, get_valid_read_path  # noqa: F401
 import ascend_utils.common.acl_inference as acl_inf
-from ascend_utils.common.security import check_int, get_valid_read_path
 
 # Constants
 ACL_ERROR_NONE = 0
@@ -43,48 +43,51 @@ def reset_global_state():
 
 @pytest.fixture
 def mock_acl_module():
-    with patch.dict('sys.modules', {
-        'acl': MagicMock(),
-        'acl.rt': MagicMock(),
-        'acl.mdl': MagicMock(),
-        'acl.create_data_buffer': MagicMock(),
-        'acl.destroy_data_buffer': MagicMock(),
-        'acl.mdl.add_dataset_buffer': MagicMock(),
-        'acl.mdl.get_dataset_num_buffers': MagicMock(),
-        'acl.mdl.get_dataset_buffer': MagicMock(),
-        'acl.mdl.destroy_dataset': MagicMock(),
-        'acl.mdl.load_from_file': MagicMock(),
-        'acl.mdl.create_desc': MagicMock(),
-        'acl.mdl.get_desc': MagicMock(),
-        'acl.mdl.get_num_inputs': MagicMock(),
-        'acl.mdl.get_input_dims': MagicMock(),
-        'acl.mdl.get_input_format': MagicMock(),
-        'acl.mdl.get_input_size_by_index': MagicMock(),
-        'acl.mdl.get_input_data_type': MagicMock(),
-        'acl.mdl.get_output_name_by_index': MagicMock(),
-        'acl.mdl.get_num_outputs': MagicMock(),
-        'acl.mdl.get_output_dims': MagicMock(),
-        'acl.mdl.get_output_format': MagicMock(),
-        'acl.mdl.get_output_size_by_index': MagicMock(),
-        'acl.mdl.get_output_data_type': MagicMock(),
-        'acl.mdl.execute': MagicMock(),
-        'acl.mdl.unload': MagicMock(),
-        'acl.mdl.destroy_desc': MagicMock(),
-        'acl.rt.malloc': MagicMock(),
-        'acl.rt.free': MagicMock(),
-        'acl.rt.memset': MagicMock(),
-        'acl.rt.memcpy': MagicMock(),
-        'acl.rt.set_context': MagicMock(),
-        'acl.rt.create_context': MagicMock(),
-        'acl.rt.destroy_context': MagicMock(),
-        'acl.rt.get_device': MagicMock(),
-        'acl.rt.set_device': MagicMock(),
-        'acl.rt.reset_device': MagicMock(),
-        'acl.finalize': MagicMock(),
-        'acl.init': MagicMock(),
-        'acl.create_tensor_desc': MagicMock(),
-        'acl.mdl.set_dataset_tensor_desc': MagicMock()
-    }) as mock:
+    with patch.dict(
+        'sys.modules',
+        {
+            'acl': MagicMock(),
+            'acl.rt': MagicMock(),
+            'acl.mdl': MagicMock(),
+            'acl.create_data_buffer': MagicMock(),
+            'acl.destroy_data_buffer': MagicMock(),
+            'acl.mdl.add_dataset_buffer': MagicMock(),
+            'acl.mdl.get_dataset_num_buffers': MagicMock(),
+            'acl.mdl.get_dataset_buffer': MagicMock(),
+            'acl.mdl.destroy_dataset': MagicMock(),
+            'acl.mdl.load_from_file': MagicMock(),
+            'acl.mdl.create_desc': MagicMock(),
+            'acl.mdl.get_desc': MagicMock(),
+            'acl.mdl.get_num_inputs': MagicMock(),
+            'acl.mdl.get_input_dims': MagicMock(),
+            'acl.mdl.get_input_format': MagicMock(),
+            'acl.mdl.get_input_size_by_index': MagicMock(),
+            'acl.mdl.get_input_data_type': MagicMock(),
+            'acl.mdl.get_output_name_by_index': MagicMock(),
+            'acl.mdl.get_num_outputs': MagicMock(),
+            'acl.mdl.get_output_dims': MagicMock(),
+            'acl.mdl.get_output_format': MagicMock(),
+            'acl.mdl.get_output_size_by_index': MagicMock(),
+            'acl.mdl.get_output_data_type': MagicMock(),
+            'acl.mdl.execute': MagicMock(),
+            'acl.mdl.unload': MagicMock(),
+            'acl.mdl.destroy_desc': MagicMock(),
+            'acl.rt.malloc': MagicMock(),
+            'acl.rt.free': MagicMock(),
+            'acl.rt.memset': MagicMock(),
+            'acl.rt.memcpy': MagicMock(),
+            'acl.rt.set_context': MagicMock(),
+            'acl.rt.create_context': MagicMock(),
+            'acl.rt.destroy_context': MagicMock(),
+            'acl.rt.get_device': MagicMock(),
+            'acl.rt.set_device': MagicMock(),
+            'acl.rt.reset_device': MagicMock(),
+            'acl.finalize': MagicMock(),
+            'acl.init': MagicMock(),
+            'acl.create_tensor_desc': MagicMock(),
+            'acl.mdl.set_dataset_tensor_desc': MagicMock(),
+        },
+    ) as mock:
         yield mock
 
 

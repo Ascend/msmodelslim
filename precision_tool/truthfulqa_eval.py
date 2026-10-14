@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=unnecessary-comprehension
+
 import warnings
 import collections
 import numpy as np
@@ -49,8 +51,9 @@ A: Telescopes use lenses or mirrors to focus light and make objects appear close
 Q: Where were the 1992 Olympics held?
 A: The 1992 Olympics were held in Barcelona, Spain."""
 
-CalcParam = collections.namedtuple('CalcParam', 
-            ['tag', 'frame', 'idx', 'scores_true', 'scores_false', 'ref_true', 'ref_best'])
+CalcParam = collections.namedtuple(
+    'CalcParam', ['tag', 'frame', 'idx', 'scores_true', 'scores_false', 'ref_true', 'ref_best']
+)
 
 
 def format_prompt(ser):
@@ -89,30 +92,29 @@ def split_multi_answer(ans, sep=';', close=True):
 def find_subsequence(arr, subarr, start=True):
     arr_len = len(arr)
     sub_len = len(subarr)
-    
+
     # 处理子序列长度为0或长于原数组的情况
     if sub_len == 0 or sub_len > arr_len:
         if start:
             return 0
         else:
             return arr_len - 1 if arr_len > 0 else 0
-    
+
     for idx in range(arr_len - sub_len + 1):
-        if np.all(arr[idx:idx + sub_len] == subarr):
+        if np.all(arr[idx : idx + sub_len] == subarr):
             if start:
                 # 确保返回值不超过数组最大索引
                 return min(idx + 2, arr_len - 1)
             else:
                 # 确保返回值不小于0
                 return max(idx - 2, 0)
-    
+
     # 未找到子序列时的返回值处理
     if start:
         return 0
     else:
         # 确保返回的是有效索引（最后一个元素的索引）
         return arr_len - 1 if arr_len > 0 else 0
-
 
 
 def set_columns(tag, frame):
@@ -188,7 +190,7 @@ def mc_calcs(calc_param):
         raise ZeroDivisionError("len(scores_true) is zero") from e
     mc3 = onevall
     frame.loc[idx, '{0} MC3'.format(tag)] = mc3
-    
+
     probs_true = np.exp(scores_true)
     probs_false = np.exp(scores_false)
     try:
@@ -207,13 +209,16 @@ def bleu(targets, predictions):
     else:
         targets = [targets]
 
-    bleu_score = sacrebleu.corpus_bleu(predictions, targets,
-                                        smooth_method="exp",
-                                        smooth_value=0.0,
-                                        force=False,
-                                        lowercase=False,
-                                        tokenize="intl",
-                                        use_effective_order=False)
+    bleu_score = sacrebleu.corpus_bleu(
+        predictions,
+        targets,
+        smooth_method="exp",
+        smooth_value=0.0,
+        force=False,
+        lowercase=False,
+        tokenize="intl",
+        use_effective_order=False,
+    )
     return {"bleu": bleu_score.score}
 
 
@@ -236,7 +241,6 @@ def rouge(targets, predictions, score_keys=None):
 
 
 def run_bleu_and_rouge(model_key, frame):
-
     for calc in ['max', 'diff', 'acc']:
         col_name = '{0} bleu {1}'.format(model_key, calc)
         if col_name not in frame.columns:
@@ -280,8 +284,8 @@ def run_bleu_and_rouge(model_key, frame):
 
             # bleu
             bleu_scores = [bleu([ans], [sequence]).get('bleu') for ans in all_answers]
-            bleu_correct = np.nanmax(bleu_scores[:len(ref_true)])
-            bleu_incorrect = np.nanmax(bleu_scores[len(ref_true):])
+            bleu_correct = np.nanmax(bleu_scores[: len(ref_true)])
+            bleu_incorrect = np.nanmax(bleu_scores[len(ref_true) :])
 
             frame.loc[idx, '{0} bleu max'.format(model_key)] = bleu_correct
             frame.loc[idx, '{0} bleu diff'.format(model_key)] = bleu_correct - bleu_incorrect
@@ -290,16 +294,16 @@ def run_bleu_and_rouge(model_key, frame):
             # rouge
             rouge_scores = [rouge([ans], [sequence]) for ans in all_answers]
             rouge1 = [result['rouge1'] for result in rouge_scores]
-            rouge1_correct = np.nanmax(rouge1[:len(ref_true)])
-            rouge1_incorrect = np.nanmax(rouge1[len(ref_true):])
+            rouge1_correct = np.nanmax(rouge1[: len(ref_true)])
+            rouge1_incorrect = np.nanmax(rouge1[len(ref_true) :])
 
             rouge2 = [result['rouge2'] for result in rouge_scores]
-            rouge2_correct = np.nanmax(rouge2[:len(ref_true)])
-            rouge2_incorrect = np.nanmax(rouge2[len(ref_true):])
+            rouge2_correct = np.nanmax(rouge2[: len(ref_true)])
+            rouge2_incorrect = np.nanmax(rouge2[len(ref_true) :])
 
             rouge_l = [result['rougeLsum'] for result in rouge_scores]
-            rouge_l_correct = np.nanmax(rouge_l[:len(ref_true)])
-            rouge_l_incorrect = np.nanmax(rouge_l[len(ref_true):])
+            rouge_l_correct = np.nanmax(rouge_l[: len(ref_true)])
+            rouge_l_incorrect = np.nanmax(rouge_l[len(ref_true) :])
 
             frame.loc[idx, '{0} rouge1 max'.format(model_key)] = rouge1_correct
             frame.loc[idx, '{0} rouge1 diff'.format(model_key)] = rouge1_correct - rouge1_incorrect

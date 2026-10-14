@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=redefined-outer-name
+
 import os
 import shutil
 import stat
@@ -32,8 +34,10 @@ from resources.sample_net_torch import TestAscendQuantModel
 from resources.sample_net_torch import TestOnnxQuantModel
 
 from msmodelslim.onnx.post_training_quant import QuantConfig, run_quantize
-from msmodelslim.onnx.post_training_quant.label_free.preprocess_func import preprocess_func_imagenet, \
-    preprocess_func_coco
+from msmodelslim.onnx.post_training_quant.label_free.preprocess_func import (
+    preprocess_func_imagenet,
+    preprocess_func_coco,
+)
 
 fake_acl = namedtuple('acl', ['get_soc_name'])(lambda: "Ascend310P3")
 sys.modules['acl'] = fake_acl
@@ -46,6 +50,7 @@ def set_random_seed():
     np.random.seed(0)
     try:
         import torch_npu
+
         torch_npu.npu.manual_seed(0)
         torch_npu.npu.manual_seed_all(0)
     except Exception:
@@ -58,11 +63,7 @@ def onnx_model():
     model = TestOnnxQuantModel()
     onnx_model_path = "./test.onnx"
     input_x = torch.randn((1, 3, 32, 32))
-    torch.onnx.export(model,
-                      input_x,
-                      onnx_model_path,
-                      input_names=['input'],
-                      output_names=['output'])
+    torch.onnx.export(model, input_x, onnx_model_path, input_names=['input'], output_names=['output'])
     os.chmod(onnx_model_path, stat.S_IRUSR | stat.S_IWUSR)
     yield onnx_model_path
 
@@ -72,11 +73,7 @@ def ascend_quant_model():
     model = TestAscendQuantModel()
     ascend_quant_model_path = "./ascend_quant_model.onnx"
     input_x = torch.randn((1, 1, 32, 32))
-    torch.onnx.export(model,
-                      input_x,
-                      ascend_quant_model_path,
-                      input_names=['input'],
-                      output_names=['output'])
+    torch.onnx.export(model, input_x, ascend_quant_model_path, input_names=['input'], output_names=['output'])
     os.chmod(ascend_quant_model_path, stat.S_IRUSR | stat.S_IWUSR)
     yield ascend_quant_model_path
 
@@ -86,22 +83,10 @@ def onnx_model_dynamic():
     model = TestOnnxQuantModel()
     onnx_model_path = "./test_dynamic.onnx"
     input_x = torch.randn((1, 3, 224, 224))
-    dynamic_axes = {
-        'input': {
-            0: 'batch',
-            2: 'h',
-            3: 'w'
-        },
-        'output': {
-            0: 'batch'
-        }
-    }
-    torch.onnx.export(model,
-                      input_x,
-                      onnx_model_path,
-                      input_names=['input'],
-                      output_names=['output'],
-                      dynamic_axes=dynamic_axes)
+    dynamic_axes = {'input': {0: 'batch', 2: 'h', 3: 'w'}, 'output': {0: 'batch'}}
+    torch.onnx.export(
+        model, input_x, onnx_model_path, input_names=['input'], output_names=['output'], dynamic_axes=dynamic_axes
+    )
     os.chmod(onnx_model_path, stat.S_IRUSR | stat.S_IWUSR)
     yield onnx_model_path
     os.remove(onnx_model_path)
@@ -136,11 +121,7 @@ def test_run_quantize_given_onnx_when_label_free_then_pass(onnx_model):
 def test_run_quantize_given_onnx_with_dynamic_shape_label_free_amp_0(onnx_model_dynamic):
     calib_data = [np.random.random((1, 3, 640, 640)).astype('float32')]
     quant_config = QuantConfig(
-        quant_mode=1,
-        calib_data=[calib_data],
-        amp_num=0,
-        input_shape=[[1, 3, 640, 640]],
-        is_dynamic_shape=True
+        quant_mode=1, calib_data=[calib_data], amp_num=0, input_shape=[[1, 3, 640, 640]], is_dynamic_shape=True
     )
     quant_model_path = "./test_squant_dym.onnx"
 
@@ -152,11 +133,7 @@ def test_run_quantize_given_onnx_with_dynamic_shape_label_free_amp_0(onnx_model_
 def test_run_quantize_given_onnx_with_dynamic_shape_label_free_amp_5(onnx_model_dynamic):
     calib_data = [np.random.random((1, 3, 640, 640)).astype('float32')]
     quant_config = QuantConfig(
-        quant_mode=1,
-        calib_data=[calib_data],
-        amp_num=5,
-        input_shape=[[1, 3, 640, 640]],
-        is_dynamic_shape=True
+        quant_mode=1, calib_data=[calib_data], amp_num=5, input_shape=[[1, 3, 640, 640]], is_dynamic_shape=True
     )
     quant_model_path = "./test_squant_dym.onnx"
 
@@ -169,6 +146,7 @@ def test_label_free_preprocess_func():
     TEST_SAVE_PATH = "imagenet_or_coco_dataset"
     os.makedirs(TEST_SAVE_PATH, exist_ok=True, mode=0o750)
     from PIL import Image, ImageDraw
+
     # 创建一个新的空白图像
     image = Image.new("RGB", (500, 500), (255, 255, 255))
     # 在图像上绘制一些内容
@@ -182,7 +160,7 @@ def test_label_free_preprocess_func():
     quant_config = QuantConfig(calib_data=calib_data, amp_num=5)
 
     calib_data = preprocess_func_coco(TEST_SAVE_PATH)
-    quant_config = QuantConfig(calib_data=calib_data, amp_num=5)
+    quant_config = QuantConfig(calib_data=calib_data, amp_num=5)  # noqa: F841
 
     if os.path.exists(TEST_SAVE_PATH):
         shutil.rmtree(TEST_SAVE_PATH)

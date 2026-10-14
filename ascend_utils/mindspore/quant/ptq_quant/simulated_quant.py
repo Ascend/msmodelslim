@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -46,19 +46,21 @@ class SimulatedQuant(Cell):
     return:
         The compute result of input cell
     """
+
     def __init__(
-            self,
-            cell,
-            cell_name,
-            scale_init,
-            offset_init,
-            num_bins=128,
-            min_percentile=0.999999,
-            max_percentile=0.999999,
-            search_start=0.7,
-            search_end=1.3,
-            search_step=0.01,
-            with_offset=True):
+        self,
+        cell,
+        cell_name,
+        scale_init,
+        offset_init,
+        num_bins=128,
+        min_percentile=0.999999,
+        max_percentile=0.999999,
+        search_start=0.7,
+        search_end=1.3,
+        search_step=0.01,
+        with_offset=True,
+    ):
         super().__init__()
         self.compute_cell = cell
         self.compute_cell.weight.name = cell_name + '.weight'
@@ -75,26 +77,23 @@ class SimulatedQuant(Cell):
         self.dtype = P.DType()
         self.cast = P.Cast()
 
-        self.scale_featuremap = Parameter(initializer(scale_init,
-                                                      scale_init.shape),
-                               name=(cell_name + '.scale_featuremap'))
-        self.offset_featuremap = Parameter(initializer(offset_init,
-                                                       offset_init.shape),
-                                name=(cell_name + '.offset_featuremap'))
+        self.scale_featuremap = Parameter(
+            initializer(scale_init, scale_init.shape), name=(cell_name + '.scale_featuremap')
+        )
+        self.offset_featuremap = Parameter(
+            initializer(offset_init, offset_init.shape), name=(cell_name + '.offset_featuremap')
+        )
 
-        self.ifmr = Q.IFMR(min_percentile, max_percentile,
-                           [search_start, search_end], search_step,
-                           with_offset)
-
+        self.ifmr = Q.IFMR(min_percentile, max_percentile, [search_start, search_end], search_step, with_offset)
 
     def construct(self, input_x):
-        """ define the construct of IFMR"""
+        """define the construct of IFMR"""
         if self._phase == 'train':
             # calibration
             min_val = self.reduce_min(input_x)
             max_val = self.reduce_max(input_x)
-            min_val = self.reshape(min_val, (1, ))
-            max_val = self.reshape(max_val, (1, ))
+            min_val = self.reshape(min_val, (1,))
+            max_val = self.reshape(max_val, (1,))
             range_tensor = self.concat((min_val, max_val))
             hist = self.hist(input_x, range_tensor)
             cdf = self.cumsum(hist, -1)

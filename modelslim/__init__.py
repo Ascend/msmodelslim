@@ -1,7 +1,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -15,16 +15,18 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-""" 
-工具正式改名为"msModelSlim"，对工具包的三点变化： 
-1. 调用接口从`import modelslim;`，更改为`import msmodelslim;` 
-2. 调用接口需要同时兼容之前的包引入方式`import modelslim`，暂时兼容至MindStudio 7.0.RC3的版本 
-3. 当对尝试使用原来的导入方式的时候，报出`DeprecationWarning` 
+# pylint: disable=pointless-string-statement
+
+"""
+工具正式改名为"msModelSlim"，对工具包的三点变化：
+1. 调用接口从`import modelslim;`，更改为`import msmodelslim;`
+2. 调用接口需要同时兼容之前的包引入方式`import modelslim`，暂时兼容至MindStudio 7.0.RC3的版本
+3. 当对尝试使用原来的导入方式的时候，报出`DeprecationWarning`
 """
 
-import sys
-import warnings
-import importlib
+import sys  # noqa: E402
+import warnings  # noqa: E402
+import importlib  # noqa: E402
 
 OLD_PACKAGE_NAME = 'modelslim'
 NEW_PACKAGE_NAME = 'msmodelslim'
@@ -53,10 +55,11 @@ _recursive_import_and_replace(NEW_PACKAGE_NAME, OLD_PACKAGE_NAME)
 
 def issue_deprecation_warn():
     warnings.warn(
-        "Package API `{}` is deprecated and will be removed in future version. "
-        "Please use `{}` instead.".format(OLD_PACKAGE_NAME, NEW_PACKAGE_NAME),
+        "Package API `{}` is deprecated and will be removed in future version. Please use `{}` instead.".format(
+            OLD_PACKAGE_NAME, NEW_PACKAGE_NAME
+        ),
         DeprecationWarning,
-        stacklevel=3
+        stacklevel=3,
     )
 
     # 报出DeprecationWarning

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,9 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module,pointless-string-statement,redefined-outer-name,ungrouped-imports
+
 import os
 import torch
-import torch_npu
+import torch_npu  # noqa: F401
 import torch.utils.data
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
@@ -33,16 +35,14 @@ torch.npu.set_option(option)
 
 LOAD_PATH = f"{os.environ['PROJECT_PATH']}/resource/llm_ptq/llama2_7b/"
 tokenizer = AutoTokenizer.from_pretrained(
-    pretrained_model_name_or_path=LOAD_PATH,
-    trust_remote_code=True, 
-    local_files_only=True
+    pretrained_model_name_or_path=LOAD_PATH, trust_remote_code=True, local_files_only=True
 )
 model = AutoModelForCausalLM.from_pretrained(
     pretrained_model_name_or_path=LOAD_PATH,
     torch_dtype=torch.float16,
     trust_remote_code=True,
-    device_map="auto", 
-    local_files_only=True
+    device_map="auto",
+    local_files_only=True,
 ).eval()
 
 '''
@@ -54,11 +54,13 @@ calib_list = ["中国的首都在哪里？",
               "中国最值得去的几个景点"]
 '''
 
-calib_list = ["Where is the capital of China?",
-              "Please make a poem:",
-              "I want to learn python, how should I learn it?",
-              "Please help me write a job report on large model inference optimization:",
-              "What are the most worth visiting scenic spots in China?"]
+calib_list = [
+    "Where is the capital of China?",
+    "Please make a poem:",
+    "I want to learn python, how should I learn it?",
+    "Please help me write a job report on large model inference optimization:",
+    "What are the most worth visiting scenic spots in China?",
+]
 
 
 def get_calib_dataset(tokenizer, calib_list):
@@ -67,18 +69,15 @@ def get_calib_dataset(tokenizer, calib_list):
         inputs = tokenizer([calib_data], return_tensors='pt')
         print(inputs)
         calib_dataset.append(
-            [
-                inputs.data['input_ids'].to(model.device),
-                inputs.data['attention_mask'].to(model.device)
-            ]
+            [inputs.data['input_ids'].to(model.device), inputs.data['attention_mask'].to(model.device)]
         )
     return calib_dataset
 
 
 dataset_calib = get_calib_dataset(tokenizer, calib_list)
 
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlier, AntiOutlierConfig
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlier, AntiOutlierConfig  # noqa: E402
 
 anti_config = AntiOutlierConfig(anti_method="m1", dev_type='npu', dev_id=model.device.index)
 anti_outlier = AntiOutlier(model, calib_data=dataset_calib, cfg=anti_config)

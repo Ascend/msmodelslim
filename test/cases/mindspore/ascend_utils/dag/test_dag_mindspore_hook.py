@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,redefined-outer-name,super-with-arguments
+
 import mindspore
 import mindspore.nn as nn
 import pytest
@@ -182,8 +184,9 @@ def inputs_of_model():
 def dag(inputs_of_model):
     model = Network2Search()
     input_data = inputs_of_model
-    return DagMindSporeHook(model, input_data,
-                            hook_ops=[FakeModuleAA, FakeModuleBB, FakeModuleCC, FakeModuleDD, FakeModuleQuant])
+    return DagMindSporeHook(
+        model, input_data, hook_ops=[FakeModuleAA, FakeModuleBB, FakeModuleCC, FakeModuleDD, FakeModuleQuant]
+    )
 
 
 @pytest.mark.skip()
@@ -274,7 +277,7 @@ class TestNetworkModify:
         new_leaky_relu_node = mindspore.nn.LeakyReLU(0.1)
         dag.replace_node(relu_node, new_leaky_relu_node)
         mindspore.set_context(mode=mindspore.GRAPH_MODE)
-        output = model(inputs_of_model)
+        output = model(inputs_of_model)  # noqa: F841
 
         assert relu_node.node == new_leaky_relu_node
         assert mindspore.nn.LeakyReLU in [type(module) for _, module in model.cells_and_names()]
@@ -289,7 +292,7 @@ class TestNetworkModify:
         with dag:
             dag.add_node_before(embedding_node, new_fake_node)
         mindspore.set_context(mode=mindspore.GRAPH_MODE)
-        output = model(inputs_of_model)
+        output = model(inputs_of_model)  # noqa: F841
 
         assert new_fake_node in [module for _, module in model.cells_and_names()]
         assert ori_node_count + 1 == len(dag.dag_node_list)
@@ -306,7 +309,7 @@ class TestNetworkModify:
         with dag:
             dag.add_node_after(embedding_node, new_fake_node)
         mindspore.set_context(mode=mindspore.GRAPH_MODE)
-        output = model(inputs_of_model)
+        output = model(inputs_of_model)  # noqa: F841
 
         assert new_fake_node in [module for _, module in model.cells_and_names()]
         assert dag.get_node_by_name("g3_b2.0").node == ori_embedding_module
@@ -323,7 +326,7 @@ class TestNetworkModify:
                 remove_cnt += 1
                 dag.remove_node(relu_node)
         mindspore.set_context(mode=mindspore.GRAPH_MODE)
-        output = model(inputs_of_model)
+        output = model(inputs_of_model)  # noqa: F841
 
         assert nn.ReLU not in [type(module) for _, module in model.cells_and_names()]
         assert ori_node_count == len(dag.dag_node_list) + remove_cnt
@@ -333,12 +336,9 @@ class TestNetworkModify:
         model = dag.network
         linear_node = dag.get_node_by_name("g1_b1")
         with dag:
-            dag.replace_node(linear_node, nn.SequentialCell(
-                FakeModuleQuant(),
-                linear_node.node,
-                FakeModuleQuant()))
+            dag.replace_node(linear_node, nn.SequentialCell(FakeModuleQuant(), linear_node.node, FakeModuleQuant()))
         mindspore.set_context(mode=mindspore.GRAPH_MODE)
-        output = model(inputs_of_model)
+        output = model(inputs_of_model)  # noqa: F841
 
         assert dag.get_node_by_name("g1_b1.0").op_type == "FakeModuleQuant"
         assert dag.get_node_by_name("g1_b1.1").op_type == "FakeModuleBB"
@@ -353,7 +353,7 @@ class TestNetworkModify:
             dag.replace_node(conv1_node, mindspore.nn.Conv2d(3, 32, 3))
             dag.replace_node(conv2_node, mindspore.nn.Conv2d(32, 3, 3))
         mindspore.set_context(mode=mindspore.GRAPH_MODE)
-        output = model(inputs_of_model)
+        output = model(inputs_of_model)  # noqa: F841
 
         assert dag.get_node_by_name("conv1").op_type == "Conv2d"
         assert dag.get_node_by_name("conv1").node.out_channels == 32
@@ -367,12 +367,15 @@ class TestNetworkModify:
         model = dag.network
         linear_node = dag.get_node_by_name("dense")
         with dag:
-            dag.replace_node(linear_node, mindspore.nn.SequentialCell(
-                nn.Dense(768, 8),
-                nn.Dense(8, 16),
-            ))
+            dag.replace_node(
+                linear_node,
+                mindspore.nn.SequentialCell(
+                    nn.Dense(768, 8),
+                    nn.Dense(8, 16),
+                ),
+            )
         mindspore.set_context(mode=mindspore.GRAPH_MODE)
-        output = model(inputs_of_model)
+        output = model(inputs_of_model)  # noqa: F841
 
         assert dag.get_node_by_name("dense.0").op_type == "Dense"
         assert dag.get_node_by_name("dense.1").op_type == "Dense"

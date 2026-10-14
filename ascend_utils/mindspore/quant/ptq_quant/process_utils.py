@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,possibly-used-before-assignment,used-before-assignment
 
 import copy
 import collections
@@ -32,13 +33,14 @@ from mindspore.train.anf_ir_pb2 import ModelProto
 
 from ascend_utils.mindspore.quant.ptq_quant.utils import custom_deepcopy
 
-FusedObj = collections.namedtuple("FusedObj", ["network", "cell_name", "bn_name", "param_weights",
-                                               "fused_weights", "param_bias", "fused_bias"])
+FusedObj = collections.namedtuple(
+    "FusedObj", ["network", "cell_name", "bn_name", "param_weights", "fused_weights", "param_bias", "fused_bias"]
+)
 FuseBiasObj = collections.namedtuple("FuseBiasObj", "conv_bias, bn_gamma, bn_beta, bn_mean, bn_variance, bn_epsilon")
 
 
 class Identity(Cell):
-    """ The identity Layer, simply pass throught the input"""
+    """The identity Layer, simply pass throught the input"""
 
     def construct(self, input_x):
         '''Definition of subgraph.'''
@@ -46,7 +48,7 @@ class Identity(Cell):
 
 
 def is_invalid(value_array):
-    ''' whether there's inf or nan in value_array'''
+    '''whether there's inf or nan in value_array'''
     is_array_invalid = np.isnan(value_array) | np.isinf(value_array)
     return is_array_invalid.any()
 
@@ -66,25 +68,21 @@ def match_fusebn_pattern(node):
 
 def get_np_array_from_conv(param_weights, param_bias, conv_type):
     if len(param_weights.data.shape) != 4:
-        raise RuntimeError("Convolution weights\' shape should be " \
-                           "4 dims: N,C,H,W")
+        raise RuntimeError("Convolution weights' shape should be 4 dims: N,C,H,W")
     weights_array = None
     if param_weights.data is not None:
         weights_array = param_weights.data.asnumpy()
     bias_array = None
     if param_bias is not None:
         if len(param_bias.data.shape) != 1:
-            raise RuntimeError("Convolution bias\' shape should be " \
-                               "1 dims: N")
+            raise RuntimeError("Convolution bias' shape should be 1 dims: N")
         if param_bias.data is not None:
             bias_array = param_bias.data.asnumpy()
     else:
         if conv_type == 'DepthwiseConv2dNative':
-            bias_array = np.zeros(
-                (param_weights.data.shape[1]), dtype=np.float32)
+            bias_array = np.zeros((param_weights.data.shape[1]), dtype=np.float32)
         else:
-            bias_array = np.zeros(
-                (param_weights.data.shape[0]), dtype=np.float32)
+            bias_array = np.zeros((param_weights.data.shape[0]), dtype=np.float32)
     return weights_array, bias_array
 
 
@@ -154,7 +152,7 @@ def fuse_weight(conv_weight, bn_gamma, bn_variance, bn_epsilon, conv_type):
 
 
 def fuse_bias(fuse_obj):
-    """ Fuse bias with BN layer's parameters.
+    """Fuse bias with BN layer's parameters.
 
     Inputs:
         conv_bias: a np.array, the bias to be fused.
@@ -163,8 +161,13 @@ def fuse_bias(fuse_obj):
     Returns:
         fused_bias: a np.array, the fused bias.
     """
-    conv_bias, bn_gamma, bn_beta, bn_mean, bn_variance = \
-        fuse_obj.conv_bias, fuse_obj.bn_gamma, fuse_obj.bn_beta, fuse_obj.bn_mean, fuse_obj.bn_variance
+    conv_bias, bn_gamma, bn_beta, bn_mean, bn_variance = (
+        fuse_obj.conv_bias,
+        fuse_obj.bn_gamma,
+        fuse_obj.bn_beta,
+        fuse_obj.bn_mean,
+        fuse_obj.bn_variance,
+    )
     if conv_bias is None:
         tmp_bias = np.multiply(bn_mean, -1)
     else:
@@ -197,18 +200,16 @@ def fuse_conv_bn(conv_params, bn_params, conv_type):
     bn_beta = bn_params[3]
     bn_epsilon = bn_params[4]
 
-    fused_weight = fuse_weight(
-        conv_weight, bn_gamma, bn_variance, bn_epsilon, conv_type)
-    fused_bias = fuse_bias(FuseBiasObj(
-        conv_bias, bn_gamma, bn_beta, bn_mean, bn_variance, bn_epsilon))
+    fused_weight = fuse_weight(conv_weight, bn_gamma, bn_variance, bn_epsilon, conv_type)
+    fused_bias = fuse_bias(FuseBiasObj(conv_bias, bn_gamma, bn_beta, bn_mean, bn_variance, bn_epsilon))
     return fused_weight, fused_bias
 
 
 def find_cell_by_name(network, layer_name):
-    """ find the specific cell from network use the input layer_name
-        args:
-            network: the network of mindspore
-            layer_name: the name_prefix of parameters
+    """find the specific cell from network use the input layer_name
+    args:
+        network: the network of mindspore
+        layer_name: the name_prefix of parameters
     """
 
     for name, cell in network.cells_and_names():
@@ -227,8 +228,7 @@ def convert_bn_with_identity(network, bn_name, identity):
         subcell = cells[name]
         if subcell == network:
             continue
-        if isinstance(subcell, (nn.BatchNorm2d)) and \
-                subcell.gamma.name.startswith(bn_name):
+        if isinstance(subcell, (nn.BatchNorm2d)) and subcell.gamma.name.startswith(bn_name):
             new_subcell = identity
             network.insert_child_to_cell(name, new_subcell)
             change = True
@@ -249,31 +249,31 @@ def write_fused_weights_bias_back(fused_obj):
                 fused_bias: fused bias that in numpy.array format
     Return: None
     """
-    network, cell_name, bn_name, param_weights, fused_weights = \
-        fused_obj.network, fused_obj.cell_name, fused_obj.bn_name, fused_obj.param_weights, fused_obj.fused_weights
+    network, cell_name, bn_name, param_weights, fused_weights = (
+        fused_obj.network,
+        fused_obj.cell_name,
+        fused_obj.bn_name,
+        fused_obj.param_weights,
+        fused_obj.fused_weights,
+    )
     param_bias, fused_bias = fused_obj.param_bias, fused_obj.fused_bias
-    fused_weights_tensor = Tensor(
-        fused_weights.reshape(param_weights.data.shape),
-        param_weights.data.dtype)
+    fused_weights_tensor = Tensor(fused_weights.reshape(param_weights.data.shape), param_weights.data.dtype)
     if fused_bias is not None:
-        fused_bias_tensor = Tensor(
-            fused_bias, param_weights.data.dtype)
+        fused_bias_tensor = Tensor(fused_bias, param_weights.data.dtype)
         if param_bias is not None:
             param_bias.set_data(fused_bias_tensor)
         else:
-            param_bias = Parameter(
-                fused_bias_tensor, name='bias')
+            param_bias = Parameter(fused_bias_tensor, name='bias')
     conv_cell = find_cell_by_name(network, cell_name)
     conv_cell.weight.set_data(fused_weights_tensor)
-    conv_cell.has_bias = (fused_bias is not None)
+    conv_cell.has_bias = fused_bias is not None
     conv_cell.bias = param_bias
 
     conv_cell.weight.name = cell_name + '.weight'
     conv_cell.bias.name = cell_name + '.bias'
 
     new_identity_cell = Identity()
-    convert_bn_with_identity(
-        network, bn_name, new_identity_cell)
+    convert_bn_with_identity(network, bn_name, new_identity_cell)
 
 
 def fuse_convbn_node_pair(network, nodes, node):
@@ -289,14 +289,12 @@ def fuse_convbn_node_pair(network, nodes, node):
         if _node and _node.op_type == 'Load':
             param_name = _node.input._values[0].name
     if param_name.endswith(".weight"):
-        cell_name = param_name[:-len('.weight')]
+        cell_name = param_name[: -len('.weight')]
     else:
-        cell_name = param_name[:-len('.bias')]
+        cell_name = param_name[: -len('.bias')]
     conv_cell = find_cell_by_name(network, cell_name)
     if is_invalid(conv_cell.weight.data.asnumpy()):
-        raise ValueError(
-            'Invalid value(nan or inf) in weight of layer {}'.format(
-                cell_name))
+        raise ValueError('Invalid value(nan or inf) in weight of layer {}'.format(cell_name))
 
     weight_param_name = cell_name + '.weight'
     bias_param_name = cell_name + '.bias'
@@ -307,9 +305,7 @@ def fuse_convbn_node_pair(network, nodes, node):
     param_bias = None
     if conv_cell.has_bias:
         if is_invalid(conv_cell.bias.data.asnumpy()):
-            raise ValueError(
-                'Invalid value(nan or inf) in bias of layer {}'.format(
-                    node_conv.name_prefix))
+            raise ValueError('Invalid value(nan or inf) in bias of layer {}'.format(node_conv.name_prefix))
         param_bias = conv_cell.parameters_dict()[bias_param_name]
         param_bias = copy.deepcopy(param_bias)
 
@@ -324,40 +320,33 @@ def fuse_convbn_node_pair(network, nodes, node):
             param_mean = param_dict[input_name]
         elif input_name.endswith('moving_variance'):
             param_variance = param_dict[input_name]
-    bn_name = input_name[:-len('.moving_variance')]
+    bn_name = input_name[: -len('.moving_variance')]
     bn_params = [param_gamma, param_beta, param_mean, param_variance]
     for param in bn_params:
         if is_invalid(param.data.asnumpy()):
-            raise ValueError(
-                'Invalid value(nan or inf) in {}'.format(node.name))
+            raise ValueError('Invalid value(nan or inf) in {}'.format(node.name))
 
     gamma_array = param_gamma.data.asnumpy()
     beta_array = param_beta.data.asnumpy()
-    weights_array, bias_array = get_np_array_from_conv(
-        param_weights, param_bias, node_conv.op_type)
-    mean_array, variance_array = get_np_array_from_bn(param_mean,
-                                                      param_variance)
+    weights_array, bias_array = get_np_array_from_conv(param_weights, param_bias, node_conv.op_type)
+    mean_array, variance_array = get_np_array_from_bn(param_mean, param_variance)
     bn_cell = find_cell_by_name(network, bn_name)
     eps = bn_cell.eps if hasattr(bn_cell, "eps") else 0.00001
     fused_weights, fused_bias = fuse_conv_bn(
-        [weights_array, bias_array],
-        [mean_array, variance_array, gamma_array, beta_array, eps],
-        node_conv.op_type)
+        [weights_array, bias_array], [mean_array, variance_array, gamma_array, beta_array, eps], node_conv.op_type
+    )
     weights_shape = param_weights.data.shape
 
-    fused_weights.shape = (weights_shape[3] *
-                           weights_shape[2] *
-                           weights_shape[1] *
-                           weights_shape[0])
+    fused_weights.shape = weights_shape[3] * weights_shape[2] * weights_shape[1] * weights_shape[0]
 
     if node_conv.op_type == 'DepthwiseConv2dNative':
-        fused_bias.shape = (weights_shape[1])
+        fused_bias.shape = weights_shape[1]
     else:
-        fused_bias.shape = (weights_shape[0])
+        fused_bias.shape = weights_shape[0]
 
-    write_fused_weights_bias_back(FusedObj(
-        network, cell_name, bn_name, param_weights,
-        fused_weights, param_bias, fused_bias))
+    write_fused_weights_bias_back(
+        FusedObj(network, cell_name, bn_name, param_weights, fused_weights, param_bias, fused_bias)
+    )
 
 
 def get_model_nodes(model, input_data):
@@ -367,10 +356,12 @@ def get_model_nodes(model, input_data):
     if hasattr(network, "set_jit_for_quant_after_prune"):
         if hasattr(network, "set_jit_config"):
             from mindspore.common.jit_config import JitConfig
+
             jit_config = JitConfig(jit_level="O0")
             network.set_jit_config(jit_config)
         else:
             from mindspore.common.api import _cell_graph_executor
+
             if hasattr(_cell_graph_executor, "set_jit_config"):
                 _cell_graph_executor.set_jit_config(jit_config={"jit_level": "o0"})
 
@@ -404,12 +395,10 @@ def convert_equact_to_relu(network):
     for _, cell in enumerate(network.cells_and_names()):
         name, cell = cell
         if not cell._cells or cell._cell_tag.endswith('SimulatedQuant'):
-            if cell.cls_name == 'SimulatedQuant' \
-                    and first_cell and first_cell.cls_name == 'SiLU':
+            if cell.cls_name == 'SimulatedQuant' and first_cell and first_cell.cls_name == 'SiLU':
                 silu_names.append(first_name)
 
-            elif cell.cls_name == 'SimulatedQuant' \
-                    and first_cell and first_cell.cls_name == 'ReLU6':
+            elif cell.cls_name == 'SimulatedQuant' and first_cell and first_cell.cls_name == 'ReLU6':
                 relu6_names.append(first_name)
             first_cell = cell
             first_name = name

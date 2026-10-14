@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=useless-import-alias
 
 from typing import Tuple, Optional, Iterator, Set
 
@@ -34,7 +35,7 @@ class AutoFakeQuantLinear(nn.Module):
     """
 
     AutoFakeQuantLinear用于快速创建相应的伪量化IR。
-    
+
     伪量化IR提供了某种量化方式的所有参数描述，例如对于W8A8量化，其所对应的伪量化IR为W8A8FakeQuantLinear。
 
     """
@@ -51,16 +52,14 @@ class AutoFakeQuantLinear(nn.Module):
     @classmethod
     def create(cls, x_q_param: QParam, w_q_param: QParam, w_q: QStorage, bias: Optional[torch.Tensor] = None):
         return QABCRegistry.create(
-            AutoFakeQuantLinear,
-            (x_q_param.scheme, w_q_param.scheme),
-            *(x_q_param, w_q_param, w_q, bias)
+            AutoFakeQuantLinear, (x_q_param.scheme, w_q_param.scheme), *(x_q_param, w_q_param, w_q, bias)
         )
 
     def named_modules(
-            self,
-            memo: Optional[Set[nn.Module]] = None,
-            prefix: str = '',
-            remove_duplicate: bool = True,
+        self,
+        memo: Optional[Set[nn.Module]] = None,
+        prefix: str = '',
+        remove_duplicate: bool = True,
     ) -> Iterator[Tuple[str, nn.Module]]:
         if self.is_atomic():
             yield prefix, self
@@ -81,17 +80,10 @@ class AutoFakeQuantActivation(nn.Module):
 
     @classmethod
     def create(cls, x_q_param: QParam):
-        return QABCRegistry.create(
-            AutoFakeQuantActivation,
-            x_q_param.scheme,
-            x_q_param
-        )
+        return QABCRegistry.create(AutoFakeQuantActivation, x_q_param.scheme, x_q_param)
 
     def named_modules(
-            self,
-            memo: Optional[Set[nn.Module]] = None,
-            prefix: str = '',
-            remove_duplicate: bool = True
+        self, memo: Optional[Set[nn.Module]] = None, prefix: str = '', remove_duplicate: bool = True
     ) -> Iterator[Tuple[str, nn.Module]]:
         if self.is_atomic():
             yield prefix, self
@@ -108,17 +100,10 @@ class AutoFakeQuantDynamicCache(nn.Module):
 
     @classmethod
     def create(cls, x_q_param: QParam):
-        return QABCRegistry.create(
-            AutoFakeQuantDynamicCache,
-            x_q_param.scheme,
-            x_q_param
-        )
+        return QABCRegistry.create(AutoFakeQuantDynamicCache, x_q_param.scheme, x_q_param)
 
     def named_modules(
-            self,
-            memo: Optional[Set[nn.Module]] = None,
-            prefix: str = '',
-            remove_duplicate: bool = True
+        self, memo: Optional[Set[nn.Module]] = None, prefix: str = '', remove_duplicate: bool = True
     ) -> Iterator[Tuple[str, nn.Module]]:
         if self.is_atomic():
             yield prefix, self

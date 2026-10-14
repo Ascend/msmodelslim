@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=expression-not-assigned,no-name-in-module,unspecified-encoding
+
 import argparse
 import functools
 import json
@@ -33,37 +35,54 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
 sys.path.append(parent_directory)
 
-from convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, OpsType
-from add_safetensors import add_safetensors
-from mtp_quant_module import warp_mtp_model, post_process_mtp_quant
+from convert_fp8_to_bf16 import auto_convert_model_fp8_to_bf16, OpsType  # noqa: E402
+from add_safetensors import add_safetensors  # noqa: E402
+from mtp_quant_module import warp_mtp_model, post_process_mtp_quant  # noqa: E402
 
-from example.common.security.path import get_valid_read_path, get_write_directory
-from example.common.security.path import json_safe_load, json_safe_dump
-from example.common.security.type import check_number
-from example.common.utils import cmd_bool
-from example.common.copy_config_files import copy_config_files, modify_config_json, modify_vllm_config_json
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
-from msmodelslim.utils.logging import set_logger_level
+from example.common.security.path import get_valid_read_path, get_write_directory  # noqa: E402
+from example.common.security.path import json_safe_load, json_safe_dump  # noqa: E402
+from example.common.security.type import check_number  # noqa: E402
+from example.common.utils import cmd_bool  # noqa: E402
+from example.common.copy_config_files import copy_config_files, modify_config_json, modify_vllm_config_json  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig, AntiOutlier  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig  # noqa: E402
+from msmodelslim.utils.logging import set_logger_level  # noqa: E402
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, help="The path of float model and tokenizer"),
-    parser.add_argument('--save_path', type=str, help="The path to save quant model"),
+    (parser.add_argument('--model_path', type=str, help="The path of float model and tokenizer"),)
+    (parser.add_argument('--save_path', type=str, help="The path to save quant model"),)
     parser.add_argument('--layer_count', type=int, default=0, help="Layer count when loading model")
-    parser.add_argument('--anti_dataset', type=str, default="../common/deepseek_anti_prompt.json",
-                        help="The calib data for anti outlier")
-    parser.add_argument('--calib_dataset', type=str, default="../common/deepseek_calib_prompt.json",
-                        help="The calib data for calibration")
+    parser.add_argument(
+        '--anti_dataset',
+        type=str,
+        default="../common/deepseek_anti_prompt.json",
+        help="The calib data for anti outlier",
+    )
+    parser.add_argument(
+        '--calib_dataset',
+        type=str,
+        default="../common/deepseek_calib_prompt.json",
+        help="The calib data for calibration",
+    )
     parser.add_argument('--batch_size', type=int, default=1, help="Batch size for anti and calibration")
     parser.add_argument('--from_fp8', action='store_true', help="Origin model is of fp8")
     parser.add_argument('--from_bf16', action='store_true', help="Origin model is of bf16")
-    parser.add_argument('--mindie_format', action='store_true', help="Compatible with quantization formats \
-                        supported by before 2.1.RC1 version of MindIE")
-    parser.add_argument('--quant_mtp', type=str, choices=['mix', 'float', 'none'], default='none', \
-                        help="Quantization mode: 'mix(w8a8 mix quant)' , or \
-                            'float(save float mtp weight)' (default: %(default)s)")
+    parser.add_argument(
+        '--mindie_format',
+        action='store_true',
+        help="Compatible with quantization formats \
+                        supported by before 2.1.RC1 version of MindIE",
+    )
+    parser.add_argument(
+        '--quant_mtp',
+        type=str,
+        choices=['mix', 'float', 'none'],
+        default='none',
+        help="Quantization mode: 'mix(w8a8 mix quant)' , or \
+                            'float(save float mtp weight)' (default: %(default)s)",
+    )
     parser.add_argument('--trust_remote_code', type=cmd_bool, default=False)
     return parser.parse_args()
 
@@ -100,21 +119,22 @@ def get_calib_dataset_batch(model_tokenizer, calib_list, batch_size, max_len=512
         return result
 
     calib_list = truncate_strings(calib_list)
-    calib_list = [calib_list[i:i + batch_size] for i in range(0, len(calib_list), batch_size)]
+    calib_list = [calib_list[i : i + batch_size] for i in range(0, len(calib_list), batch_size)]
     for calib_data in calib_list:
         inputs = model_tokenizer(calib_data, return_tensors='pt', padding=True).to(device)
         calib_dataset.append(
-            [value.to(device) for key, value in inputs.data.items() if isinstance(value, torch.Tensor)])
+            [value.to(device) for key, value in inputs.data.items() if isinstance(value, torch.Tensor)]
+        )
     return calib_dataset
 
 
 def remove_module_entries(save_path, json_filename="quant_model_description_w8a8_dynamic.json"):
     """
     移除JSON文件中键包含"module"的条目
-    
+
     参数:
     save_path (str): 输入JSON文件路径，json_filename (str): 输入JSON文件名称
-    
+
     """
     json_file_path = os.path.join(save_path, json_filename)
     # 读取JSON文件
@@ -126,18 +146,18 @@ def remove_module_entries(save_path, json_filename="quant_model_description_w8a8
         if "norm.module." not in key
         # 检查键中是否包含"norm.module."字符串
     }
-    # 写回更新后的JSON文件（如需保留原始文件，可改为写入新文件） 
+    # 写回更新后的JSON文件（如需保留原始文件，可改为写入新文件）
     json_safe_dump(filtered_data, json_file_path, indent=4)
 
 
 def update_quant_type(save_path, json_filename):
     """
     更新量化类型为 W8A8_DYNAMIC
-    
+
     参数:
     save_path (str): 输出JSON文件路径
     json_filename (str): 输入JSON文件名称
-    
+
     返回值:
     None
     """
@@ -164,15 +184,13 @@ def main():
     calib_path = get_valid_read_path(calib_path, is_dir=False, check_user_stat=True)
     check_number(batch_size, int, 1, 16, "batch_size")
 
-    config = AutoConfig.from_pretrained(
-        pretrained_model_name_or_path=model_path, 
-        trust_remote_code=args.trust_remote_code
-        )
+    config = AutoConfig.from_pretrained(  # nosec B615
+        pretrained_model_name_or_path=model_path, trust_remote_code=args.trust_remote_code
+    )
     num_layer = config.num_hidden_layers
     if args.layer_count < 0 or args.layer_count > num_layer:
         raise ValueError(
-            f"Invalid value for parameter layer_count: {args.layer_count}."
-            f"Must be between 0 and {num_layer}."
+            f"Invalid value for parameter layer_count: {args.layer_count}.Must be between 0 and {num_layer}."
         )
     # Set layer count to 0 means use all layers, otherwise it will only use the first layer_count layers
     config.num_hidden_layers = args.layer_count if args.layer_count != 0 else config.num_hidden_layers
@@ -190,23 +208,27 @@ def main():
     # Disable use cache because we don't need to use cache, otherwise it will use too much device memory then cause OOM
     config.use_cache = False
 
-    tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path=model_path,
-                                              config=config,
-                                              trust_remote_code=args.trust_remote_code,
-                                              use_fast=True,
-                                              add_eos_token=True)
+    tokenizer = AutoTokenizer.from_pretrained(  # nosec B615
+        pretrained_model_name_or_path=model_path,
+        config=config,
+        trust_remote_code=args.trust_remote_code,
+        use_fast=True,
+        add_eos_token=True,
+    )
 
-    model = AutoModelForCausalLM.from_pretrained(pretrained_model_name_or_path=model_path,
-                                                 config=config,
-                                                 trust_remote_code=args.trust_remote_code,
-                                                 device_map={
-                                                     "model.embed_tokens": 0,
-                                                     "model.layers": "cpu",
-                                                     "model.norm": "cpu",
-                                                     "lm_head": 0,
-                                                 },
-                                                 torch_dtype="auto",
-                                                 attn_implementation='eager')
+    model = AutoModelForCausalLM.from_pretrained(  # nosec B615
+        pretrained_model_name_or_path=model_path,
+        config=config,
+        trust_remote_code=args.trust_remote_code,
+        device_map={
+            "model.embed_tokens": 0,
+            "model.layers": "cpu",
+            "model.norm": "cpu",
+            "lm_head": 0,
+        },
+        torch_dtype="auto",
+        attn_implementation='eager',
+    )
 
     # 内存自动反量化fp8到bf16，如果没有反量化参数则认为是bf16，跳过
     auto_convert_model_fp8_to_bf16(model, model_path, OpsType.get_ops_type(args.from_bf16, args.from_fp8))
@@ -226,11 +248,7 @@ def main():
     dataset_calib = get_calib_dataset_batch(tokenizer, calib_prompt, batch_size, device=model.device)
 
     with torch.no_grad():
-        anti_config = AntiOutlierConfig(w_bit=8,
-                                        a_bit=8,
-                                        anti_method='m4',
-                                        dev_type='npu',
-                                        dev_id=model.device.index)
+        anti_config = AntiOutlierConfig(w_bit=8, a_bit=8, anti_method='m4', dev_type='npu', dev_id=model.device.index)
         anti_outlier = AntiOutlier(model, calib_data=anti_dataset, cfg=anti_config)
         anti_outlier.process()
     pbar.update(1)
@@ -281,11 +299,13 @@ def main():
         quant_model_description_json_name = "quant_model_description.json"
 
     save_type = "safe_tensor" if args.mindie_format else "ascendV1"
-    calibrator.save(save_path,
-                    json_name=quant_model_description_json_name,
-                    safetensors_name="quant_model_weight_w8a8_dynamic.safetensors",
-                    save_type=[save_type],
-                    part_file_size=4)
+    calibrator.save(
+        save_path,
+        json_name=quant_model_description_json_name,
+        safetensors_name="quant_model_weight_w8a8_dynamic.safetensors",
+        save_type=[save_type],
+        part_file_size=4,
+    )
     # w4a8 混合量化中 MindIE 要求 description 中的 model_quant_type 为 W8A8_DYNAMIC
     update_quant_type(save_path, quant_model_description_json_name)
     # 适配mindie删除description里的module字段
@@ -294,16 +314,26 @@ def main():
 
     custom_hook_instance = create_custom_hook(args.quant_mtp, args.mindie_format)
     custom_hooks = {
-        'config.json': functools.partial(modify_config_json, custom_hook=custom_hook_instance) \
-            if args.mindie_format \
-            else functools.partial(modify_vllm_config_json, custom_hook=custom_hook_instance)
+        'config.json': functools.partial(modify_config_json, custom_hook=custom_hook_instance)
+        if args.mindie_format
+        else functools.partial(modify_vllm_config_json, custom_hook=custom_hook_instance)
     }
-    copy_config_files(input_path=model_path, output_path=save_path, quant_config=w4a8_pertoken_config,
-                      mindie_format=args.mindie_format, custom_hooks=custom_hooks)
+    copy_config_files(
+        input_path=model_path,
+        output_path=save_path,
+        quant_config=w4a8_pertoken_config,
+        mindie_format=args.mindie_format,
+        custom_hooks=custom_hooks,
+    )
     pbar.update(1)
     if args.quant_mtp == "float":
-        add_safetensors(org_paths=model_path, target_dir=save_path, safetensors_prefix="mtp_float",
-                        max_file_size_gb=5, prefix="model.layers.61.")
+        add_safetensors(
+            org_paths=model_path,
+            target_dir=save_path,
+            safetensors_prefix="mtp_float",
+            max_file_size_gb=5,
+            prefix="model.layers.61.",
+        )
     if args.quant_mtp == "mix":
         post_process_mtp_quant(save_path)
     pbar.update(1)

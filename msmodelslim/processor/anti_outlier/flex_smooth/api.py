@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=logging-fstring-interpolation,useless-return
 
 from typing import Type, Tuple
 
@@ -28,12 +29,15 @@ from msmodelslim.ir.qal.qregistry import QFuncRegistry
 from msmodelslim.processor.anti_outlier.common.subgraph_type import (
     UpDownSubgraph,
 )
-from msmodelslim.processor.anti_outlier.common.subgraph_type import LinearLinearSubgraph, NonFusionSubgraph, NormLinearSubgraph, OVSubgraph, Subgraph
-from msmodelslim.utils.logging import get_logger
-from .alpha_beta_search import (
-    FlexSmoothAlphaBetaSearcher,
-    FlexAWQSSZAlphaBetaSearcher
+from msmodelslim.processor.anti_outlier.common.subgraph_type import (
+    LinearLinearSubgraph,
+    NonFusionSubgraph,
+    NormLinearSubgraph,
+    OVSubgraph,
+    Subgraph,
 )
+from msmodelslim.utils.logging import get_logger
+from .alpha_beta_search import FlexSmoothAlphaBetaSearcher, FlexAWQSSZAlphaBetaSearcher
 from ..common import (
     FlexSmoothQuantConfig,
     FlexAWQSSZConfig,
@@ -43,7 +47,7 @@ from ..common import (
     compute_multi_weight_scale,
     FlexSmoothScaleCalculator,
     FlexAWQSSZScaleCalculator,
-    SubgraphFusionFactory
+    SubgraphFusionFactory,
 )
 
 
@@ -51,7 +55,7 @@ from ..common import (
 def flex_smooth_quant(subgraph: Subgraph, config: FlexSmoothQuantConfig, context: SmoothContext) -> None:
     """
     使用flex_smooth_quant算法进行异常值抑制
-    
+
     Args:
         subgraph: 应用flex_smooth_quant算法的子图，支持以下类型：
             NormLinearSubgraph
@@ -61,14 +65,12 @@ def flex_smooth_quant(subgraph: Subgraph, config: FlexSmoothQuantConfig, context
             NonFusionSubgraph（非融合子图）
         config: FlexSmoothQuant算法配置
         context: 上下文，用于输入激活的smooth_scale，并记录权重的smooth_scale
-        
+
     Returns:
         None: 无返回值
-        
+
     """
-    return QFuncRegistry.dispatch("flex_smooth_quant",
-                                  (type(subgraph), config.version),
-                                  *(subgraph, config, context))
+    return QFuncRegistry.dispatch("flex_smooth_quant", (type(subgraph), config.version), *(subgraph, config, context))
 
 
 @QFuncRegistry.register_api(dispatch_key=Tuple[Type[Subgraph], int])
@@ -76,12 +78,11 @@ def flex_awq_ssz(subgraph: Subgraph, config: FlexAWQSSZConfig, context: SmoothCo
     """
     使用flex_awq_ssz算法进行异常值抑制
     """
-    return QFuncRegistry.dispatch("flex_awq_ssz",
-                                  (type(subgraph), config.version),
-                                  *(subgraph, config, context))
+    return QFuncRegistry.dispatch("flex_awq_ssz", (type(subgraph), config.version), *(subgraph, config, context))
 
 
 # ============== FlexSmoothQuant Implementation ==============
+
 
 def get_optimal_alpha_beta_flex_smooth(
     config: FlexSmoothQuantConfig, act: torch.Tensor, fc_weights: torch.Tensor
@@ -112,18 +113,13 @@ def flex_smooth_impl_ov(subgraph: Subgraph, config: FlexSmoothQuantConfig, conte
     group_method = 'mean'
     if config.extra_config is not None and config.extra_config.get('group_method') == 'max':
         group_method = 'max'
-    
+
     calculator = FlexSmoothScaleCalculator(alpha=best_alpha, beta=best_beta, group_method=group_method)
     o_scales, v_scales = calculator.compute_ov_scales(
-        a_scale, w_scale, 
-        subgraph.num_attention_heads, 
-        subgraph.key_value_heads
+        a_scale, w_scale, subgraph.num_attention_heads, subgraph.key_value_heads
     )
 
-    SubgraphFusionFactory.apply_fusion_to_subgraph(
-        subgraph,
-        scales={'o_scales': o_scales, 'v_scales': v_scales}
-    )
+    SubgraphFusionFactory.apply_fusion_to_subgraph(subgraph, scales={'o_scales': o_scales, 'v_scales': v_scales})
     get_logger().debug("OV smoothing completed successfully")
     return
 
@@ -140,19 +136,14 @@ def flex_smooth_impl_up_down(subgraph: Subgraph, config: FlexSmoothQuantConfig, 
     w_scale = compute_weight_scale(subgraph.down_proj.weight, dtype)
     calculator = FlexSmoothScaleCalculator(alpha=best_alpha, beta=best_beta)
     scales = calculator.compute_smooth_scale(a_scale, w_scale)
-    SubgraphFusionFactory.apply_fusion_to_subgraph(
-        subgraph,
-        scales={'scales': scales}
-    )
+    SubgraphFusionFactory.apply_fusion_to_subgraph(subgraph, scales={'scales': scales})
     get_logger().debug("Up-Down smoothing completed successfully")
     return
 
 
 @torch.no_grad()
 @QFuncRegistry.register(dispatch_key=(LinearLinearSubgraph, 1), api_name="flex_smooth_quant")
-def flex_smooth_impl_linear_linear(
-    subgraph: Subgraph, config: FlexSmoothQuantConfig, context: SmoothContext
-) -> None:    
+def flex_smooth_impl_linear_linear(subgraph: Subgraph, config: FlexSmoothQuantConfig, context: SmoothContext) -> None:
     tmp_device = next(subgraph.linear1.parameters()).device
     dtype = subgraph.linear2.weight.dtype
     act = validate_and_process_tensors(context, tmp_device, dtype)
@@ -162,10 +153,7 @@ def flex_smooth_impl_linear_linear(
     w_scale = compute_weight_scale(subgraph.linear2.weight, dtype)
     calculator = FlexSmoothScaleCalculator(alpha=best_alpha, beta=best_beta)
     scales = calculator.compute_smooth_scale(a_scale, w_scale)
-    SubgraphFusionFactory.apply_fusion_to_subgraph(
-        subgraph,
-        scales={'scales': scales}
-    )
+    SubgraphFusionFactory.apply_fusion_to_subgraph(subgraph, scales={'scales': scales})
     get_logger().debug("Linear-Linear smoothing completed successfully")
     return
 
@@ -182,10 +170,7 @@ def flex_smooth_impl_norm_linear(subgraph: Subgraph, config: FlexSmoothQuantConf
     w_scale = compute_multi_weight_scale([fc.weight for fc in subgraph.linears], dtype)
     calculator = FlexSmoothScaleCalculator(alpha=best_alpha, beta=best_beta)
     scales = calculator.compute_smooth_scale(a_scale, w_scale)
-    SubgraphFusionFactory.apply_fusion_to_subgraph(
-        subgraph,
-        scales={'scales': scales}
-    )
+    SubgraphFusionFactory.apply_fusion_to_subgraph(subgraph, scales={'scales': scales})
     get_logger().debug("Norm-Linear smoothing completed successfully")
     return
 
@@ -215,14 +200,12 @@ def flex_smooth_impl_non_fusion_linear(
     calculator = FlexSmoothScaleCalculator(alpha=best_alpha, beta=best_beta, group_method='max')
     scales = calculator.compute_smooth_scale(a_scale, w_scale)
 
-    SubgraphFusionFactory.apply_fusion_to_subgraph(
-        subgraph,
-        scales={'scales': scales}
-    )
+    SubgraphFusionFactory.apply_fusion_to_subgraph(subgraph, scales={'scales': scales})
     return scales
 
 
 # ============== FlexAWQSSZ Implementation ==============
+
 
 @torch.no_grad()
 def get_optimal_alpha_beta(config: FlexAWQSSZConfig, act, linear: nn.Linear):
@@ -239,37 +222,28 @@ def get_optimal_alpha_beta(config: FlexAWQSSZConfig, act, linear: nn.Linear):
 
 @torch.no_grad()
 @QFuncRegistry.register(dispatch_key=(OVSubgraph, 1), api_name="flex_awq_ssz")
-def flex_awq_ssz_impl_ov(
-    subgraph: Subgraph, config: FlexAWQSSZConfig, context: SmoothContext
-) -> None:   
+def flex_awq_ssz_impl_ov(subgraph: Subgraph, config: FlexAWQSSZConfig, context: SmoothContext) -> None:
     tmp_device = next(subgraph.v_proj.parameters()).device
     dtype = subgraph.o_proj.weight.dtype
     act = validate_and_process_tensors(context, tmp_device, dtype)
     # flex awq ssz 的 act 尺度计算使用mean
     act_scales = torch.mean(torch.abs(act), dim=0, keepdim=True)[0]
     best_alpha, best_beta = get_optimal_alpha_beta(config, act, subgraph.o_proj)
-    
+
     w_scale = compute_weight_scale(subgraph.o_proj.weight, dtype)
     calculator = FlexAWQSSZScaleCalculator(alpha=best_alpha, beta=best_beta)
     o_scales, v_scales = calculator.compute_ov_scales(
-        act_scales, w_scale,
-        subgraph.num_attention_heads,
-        subgraph.key_value_heads
+        act_scales, w_scale, subgraph.num_attention_heads, subgraph.key_value_heads
     )
-    
-    SubgraphFusionFactory.apply_fusion_to_subgraph(
-        subgraph,
-        scales={'o_scales': o_scales, 'v_scales': v_scales}
-    )
+
+    SubgraphFusionFactory.apply_fusion_to_subgraph(subgraph, scales={'o_scales': o_scales, 'v_scales': v_scales})
     get_logger().debug("OV smoothing completed successfully")
     return
 
 
 @torch.no_grad()
 @QFuncRegistry.register(dispatch_key=(UpDownSubgraph, 1), api_name="flex_awq_ssz")
-def flex_awq_ssz_impl_up_down(
-    subgraph: Subgraph, config: FlexAWQSSZConfig, context: SmoothContext
-) -> None:
+def flex_awq_ssz_impl_up_down(subgraph: Subgraph, config: FlexAWQSSZConfig, context: SmoothContext) -> None:
     tmp_device = next(subgraph.up_proj.parameters()).device
     dtype = subgraph.down_proj.weight.dtype
     act = validate_and_process_tensors(context, tmp_device, dtype)
@@ -278,19 +252,14 @@ def flex_awq_ssz_impl_up_down(
     w_scale = compute_weight_scale(subgraph.down_proj.weight, dtype)
     calculator = FlexAWQSSZScaleCalculator(alpha=best_alpha, beta=best_beta)
     scales = calculator.compute_smooth_scale(act_scales, w_scale)
-    SubgraphFusionFactory.apply_fusion_to_subgraph(
-        subgraph,
-        scales={'scales': scales}
-    )
+    SubgraphFusionFactory.apply_fusion_to_subgraph(subgraph, scales={'scales': scales})
     get_logger().debug("Up-Down smoothing completed successfully")
     return
 
 
 @torch.no_grad()
 @QFuncRegistry.register(dispatch_key=(LinearLinearSubgraph, 1), api_name="flex_awq_ssz")
-def flex_awq_ssz_impl_linear_linear(
-    subgraph: Subgraph, config: FlexAWQSSZConfig, context: SmoothContext
-) -> None:
+def flex_awq_ssz_impl_linear_linear(subgraph: Subgraph, config: FlexAWQSSZConfig, context: SmoothContext) -> None:
     tmp_device = next(subgraph.linear1.parameters()).device
     dtype = subgraph.linear2.weight.dtype
     act = validate_and_process_tensors(context, tmp_device, dtype)
@@ -299,19 +268,14 @@ def flex_awq_ssz_impl_linear_linear(
     w_scale = compute_weight_scale(subgraph.linear2.weight, dtype)
     calculator = FlexAWQSSZScaleCalculator(alpha=best_alpha, beta=best_beta)
     scales = calculator.compute_smooth_scale(act_scales, w_scale)
-    SubgraphFusionFactory.apply_fusion_to_subgraph(
-        subgraph,
-        scales={'scales': scales}
-    )
+    SubgraphFusionFactory.apply_fusion_to_subgraph(subgraph, scales={'scales': scales})
     get_logger().debug("Linear-Linear smoothing completed successfully")
     return
 
 
 @torch.no_grad()
 @QFuncRegistry.register(dispatch_key=(NormLinearSubgraph, 1), api_name="flex_awq_ssz")
-def flex_awq_ssz_impl_norm_linear(
-    subgraph: Subgraph, config: FlexAWQSSZConfig, context: SmoothContext
-) -> None:
+def flex_awq_ssz_impl_norm_linear(subgraph: Subgraph, config: FlexAWQSSZConfig, context: SmoothContext) -> None:
     tmp_device = next(subgraph.norm.parameters()).device
     dtype = subgraph.linears[0].weight.dtype
     act = validate_and_process_tensors(context, tmp_device, dtype)
@@ -321,17 +285,14 @@ def flex_awq_ssz_impl_norm_linear(
         fc_weights = torch.cat([fc.weight for fc in subgraph.linears[0:2]], dim=0)
     else:
         fc_weights = torch.cat([fc.weight for fc in subgraph.linears], dim=0)
-    
-    get_logger().debug(
-        "Activation scale shape: %s, Weight shape: %s",
-        act_scales.shape, fc_weights.shape
-    )
+
+    get_logger().debug("Activation scale shape: %s, Weight shape: %s", act_scales.shape, fc_weights.shape)
     merged_linear = nn.Linear(
         in_features=fc_weights.shape[1],
         out_features=fc_weights.shape[0],
         bias=False,
         device=fc_weights.device,
-        dtype=fc_weights.dtype
+        dtype=fc_weights.dtype,
     )
     merged_linear.weight.data = fc_weights
     best_alpha, best_beta = get_optimal_alpha_beta(config, act, merged_linear)
@@ -341,9 +302,6 @@ def flex_awq_ssz_impl_norm_linear(
     calculator = FlexAWQSSZScaleCalculator(alpha=best_alpha, beta=best_beta)
     scales = calculator.compute_smooth_scale(act_scales, w_scale)
     get_logger().debug("Computed smooth scales shape: %s", scales.shape)
-    SubgraphFusionFactory.apply_fusion_to_subgraph(
-        subgraph,
-        scales={'scales': scales}
-    )
+    SubgraphFusionFactory.apply_fusion_to_subgraph(subgraph, scales={'scales': scales})
     get_logger().debug("Norm-Linear smoothing completed successfully")
     return

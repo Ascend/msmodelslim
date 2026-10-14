@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,15 +18,16 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
 
 """
 Test validation logic for QuaRotProcessorConfig
 """
 
-import pytest
+import pytest  # noqa: E402
 
-from msmodelslim.processor.quarot.offline_quarot.quarot import QuaRotProcessorConfig
-from msmodelslim.utils.exception import SchemaValidateError
+from msmodelslim.processor.quarot.offline_quarot.quarot import QuaRotProcessorConfig  # noqa: E402
+from msmodelslim.utils.exception import SchemaValidateError  # noqa: E402
 
 
 class TestQuaRotProcessorConfigValidation:
@@ -103,16 +104,11 @@ class TestQuaRotProcessorConfigValidation:
 
     def test_combined_valid_config(self):
         """Test combined valid configuration"""
-        config = QuaRotProcessorConfig(
-            block_size=64,
-            max_tp_size=4,
-            online=True,
-            down_proj_online_layers=[0, 1, 2]
-        )
+        config = QuaRotProcessorConfig(block_size=64, max_tp_size=4, online=True, down_proj_online_layers=[0, 1, 2])
 
         assert config.block_size == 64
         assert config.max_tp_size == 4
-        assert config.online == True
+        assert config.online
         assert config.down_proj_online_layers == [0, 1, 2]
 
     def test_combined_invalid_config(self):
@@ -122,7 +118,7 @@ class TestQuaRotProcessorConfigValidation:
             QuaRotProcessorConfig(
                 block_size=3,  # Invalid: not a power of 2
                 max_tp_size=4,  # Valid
-                online=True
+                online=True,
             )
 
         assert "block_size must be -1 or a positive power of 2, got 3" in str(exc_info.value)
@@ -132,7 +128,7 @@ class TestQuaRotProcessorConfigValidation:
             QuaRotProcessorConfig(
                 block_size=64,  # Valid
                 max_tp_size=3,  # Invalid: not a power of 2
-                online=True
+                online=True,
             )
 
         assert "max_tp_size must be a positive power of 2 or equal to 1, got 3" in str(exc_info.value)

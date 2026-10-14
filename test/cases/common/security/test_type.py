@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -109,7 +109,7 @@ def test_check_element_type_given_invalid_element_when_any_then_error():
     with pytest.raises(ValueError):
         # ValueError: Element in test is invalid. Should be all int or float.
         security.check_element_type(("12", "13", 14), element_type=(int, float), param_name="test")
-    
+
 
 def test_check_character_given_valid_when_any_then_pass():
     security.check_character(11)

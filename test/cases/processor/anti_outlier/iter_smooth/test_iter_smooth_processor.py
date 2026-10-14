@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,useless-parent-delegation
 
 from typing import List
 
@@ -41,7 +42,7 @@ class MockModel(nn.Module):
         self.layer1 = nn.Linear(10, 20)
         self.layer2 = nn.Linear(20, 30)
         self.norm_layer = nn.LayerNorm(10)
-        
+
     def get_submodule(self, name):
         """模拟get_submodule方法"""
         if name == "layer1":
@@ -51,7 +52,7 @@ class MockModel(nn.Module):
         elif name == "model.layers.0.input_layernorm":
             return self.norm_layer
         return None
-    
+
     def set_submodule(self, name, module):
         """模拟set_submodule方法"""
         if name == "model.layers.0.input_layernorm":
@@ -65,7 +66,7 @@ class MockAdapter(IterSmoothInterface):
         return [
             AdapterConfig(
                 subgraph_type="norm-linear",
-                mapping=MappingConfig(source="model.layers.0.input_layernorm", targets=["layer1"])
+                mapping=MappingConfig(source="model.layers.0.input_layernorm", targets=["layer1"]),
             )
         ]
 
@@ -75,10 +76,7 @@ class MockAdapterWithInvalidNorm(IterSmoothInterface):
 
     def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
         return [
-            AdapterConfig(
-                subgraph_type="norm-linear",
-                mapping=MappingConfig(source="invalid_norm", targets=["layer1"])
-            )
+            AdapterConfig(subgraph_type="norm-linear", mapping=MappingConfig(source="invalid_norm", targets=["layer1"]))
         ]
 
 
@@ -87,10 +85,7 @@ class MockAdapterWithNormWithoutWeight(IterSmoothInterface):
 
     def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
         return [
-            AdapterConfig(
-                subgraph_type="norm-linear",
-                mapping=MappingConfig(source="norm_layer", targets=["layer1"])
-            )
+            AdapterConfig(subgraph_type="norm-linear", mapping=MappingConfig(source="norm_layer", targets=["layer1"]))
         ]
 
 
@@ -111,9 +106,9 @@ class TestIterSmoothProcessor:
         model = MockModel()
         config = IterSmoothProcessorConfig()
         adapter = MockAdapter()
-        
+
         processor = IterSmoothProcessor(model, config, adapter)
-        
+
         # 验证初始化后的属性设置
         assert processor.model == model
         assert processor.config == config
@@ -131,24 +126,21 @@ class TestIterSmoothProcessor:
         model = MockModel()
         config = IterSmoothProcessorConfig()
         adapter = MockAdapter()
-        
+
         processor = IterSmoothProcessor(model, config, adapter)
-        
+
         # 设置adapter_config（模拟pre_run后的状态）
         processor.global_adapter_config = adapter.get_adapter_config_for_subgraph()
-        
+
         # 创建BatchProcessRequest
-        request = BatchProcessRequest(
-            name="model.layers.0",
-            module=model.layer1
-        )
-        
+        request = BatchProcessRequest(name="model.layers.0", module=model.layer1)
+
         # 记录原始norm_layer的类型
-        original_norm_type = type(model.norm_layer)
-        
+        original_norm_type = type(model.norm_layer)  # noqa: F841
+
         # 调用preprocess方法
         processor.preprocess(request)
-        
+
         # 验证norm_layer已被替换为RMSNormBias
         assert isinstance(model.norm_layer, RMSNormBias)
         assert model.norm_layer.weight.shape == torch.Size([10])
@@ -160,22 +152,19 @@ class TestIterSmoothProcessor:
         model = MockModel()
         config = IterSmoothProcessorConfig()
         adapter = MockAdapterWithInvalidNorm()
-        
+
         processor = IterSmoothProcessor(model, config, adapter)
-        
+
         # 设置adapter_config（模拟pre_run后的状态）
         processor.global_adapter_config = adapter.get_adapter_config_for_subgraph()
-        
+
         # 创建BatchProcessRequest
-        request = BatchProcessRequest(
-            name="test_module",
-            module=model.layer1
-        )
-        
+        request = BatchProcessRequest(name="test_module", module=model.layer1)
+
         # 调用preprocess方法，应该不会抛出异常，而是记录警告
         # 因为代码中有try-except处理
         processor.preprocess(request)
-        
+
         # 验证模型没有被修改（因为norm_module为None）
         assert isinstance(model.norm_layer, nn.LayerNorm)
 
@@ -184,24 +173,21 @@ class TestIterSmoothProcessor:
         # 前置操作：创建一个包含无weight属性的norm_module的模型
         model = MockModel()
         model.norm_layer = MockNormWithoutWeight()  # 替换为没有weight的norm
-        
+
         config = IterSmoothProcessorConfig()
         adapter = MockAdapterWithNormWithoutWeight()
-        
+
         processor = IterSmoothProcessor(model, config, adapter)
-        
+
         # 设置adapter_config（模拟pre_run后的状态）
         processor.global_adapter_config = adapter.get_adapter_config_for_subgraph()
-        
+
         # 创建BatchProcessRequest
-        request = BatchProcessRequest(
-            name="test_module",
-            module=model.layer1
-        )
-        
+        request = BatchProcessRequest(name="test_module", module=model.layer1)
+
         # 调用preprocess方法，应该不会抛出异常，而是记录警告
         processor.preprocess(request)
-        
+
         # 验证模型没有被修改（因为norm_module没有weight属性）
         assert isinstance(model.norm_layer, MockNormWithoutWeight)
 
@@ -211,30 +197,30 @@ class TestIterSmoothProcessor:
         model = MockModel()
         config = IterSmoothProcessorConfig()
         adapter = MockAdapter()
-        
+
         processor = IterSmoothProcessor(model, config, adapter)
-        
+
         # 获取stats_hook函数
         stats_hook = processor.stats_collector.create_hook("test_module")
-        
+
         # 创建模拟的Linear模块和输入张量
         linear_module = nn.Linear(10, 20)
         input_tensor = torch.randn(5, 10)  # [batch_size, hidden_dim]
-        
+
         # 调用stats_hook
         stats_hook(linear_module, (input_tensor,), {})
-        
+
         # 验证统计信息被正确收集
         assert "test_module" in processor.stats_collector.act_stats
         stats = processor.stats_collector.act_stats["test_module"]
-        
+
         # 验证各种统计信息都存在
         assert StatKey.TENSOR in stats
         assert StatKey.STAT_KEY_MAX in stats
         assert StatKey.STAT_KEY_MIN in stats
         assert StatKey.STAT_KEY_SHIFT in stats
         assert StatKey.STAT_KEY_SMOOTH_SCALE in stats
-        
+
         # 验证统计信息的形状
         assert stats[StatKey.TENSOR].shape == input_tensor.shape
         assert stats[StatKey.STAT_KEY_MAX].shape == torch.Size([10])  # hidden_dim
@@ -247,27 +233,27 @@ class TestIterSmoothProcessor:
         model = MockModel()
         config = IterSmoothProcessorConfig()
         adapter = MockAdapter()
-        
+
         processor = IterSmoothProcessor(model, config, adapter)
         stats_hook = processor.stats_collector.create_hook("test_module")
-        
+
         linear_module = nn.Linear(10, 20)
-        
+
         # 第一次调用
         input_tensor1 = torch.randn(5, 10)
         stats_hook(linear_module, (input_tensor1,), {})
-        
+
         # 第二次调用
         input_tensor2 = torch.randn(3, 10)
         stats_hook(linear_module, (input_tensor2,), {})
-        
+
         # 验证统计信息被正确更新
         stats = processor.stats_collector.act_stats["test_module"]
-        
+
         # 验证max值被正确更新（应该取两次的最大值）
         expected_max = torch.max(torch.max(input_tensor1, dim=0)[0], torch.max(input_tensor2, dim=0)[0])
         assert torch.allclose(stats[StatKey.STAT_KEY_MAX], expected_max)
-        
+
         # 验证min值被正确更新（应该取两次的最小值）
         expected_min = torch.min(torch.min(input_tensor1, dim=0)[0], torch.min(input_tensor2, dim=0)[0])
         assert torch.allclose(stats[StatKey.STAT_KEY_MIN], expected_min)
@@ -277,9 +263,9 @@ class TestIterSmoothProcessor:
         model = MockModel()
         config = IterSmoothProcessorConfig()
         adapter = MockAdapter()
-        
+
         processor = IterSmoothProcessor(model, config, adapter)
-        
+
         # 验证支持分布式
         assert processor.support_distributed() is True
 

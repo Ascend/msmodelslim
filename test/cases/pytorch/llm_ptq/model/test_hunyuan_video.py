@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,15 +18,17 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from unittest.mock import MagicMock
 import unittest
-import pytest
 
+import pytest  # noqa: F401
 from testing_utils.mock import mock_kia_library
+
 mock_kia_library()
 
-from msmodelslim.pytorch.llm_ptq.model.hunyuan.hunyuan_video import HunyuanVideoAdapter
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig
+from msmodelslim.pytorch.llm_ptq.model.hunyuan.hunyuan_video import HunyuanVideoAdapter  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig  # noqa: E402
 
 
 class TestGetNormLinearSubgraph(unittest.TestCase):

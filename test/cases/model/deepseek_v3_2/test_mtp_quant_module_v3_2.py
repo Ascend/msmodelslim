@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
+
 import os
 import unittest
 from unittest.mock import Mock, patch
@@ -30,7 +32,7 @@ from msmodelslim.model.deepseek_v3_2.mtp_quant_module import (
     DeepseekV3RMSNorm,
     MTPLayer,
     get_mtp_layer,
-    wrap_mtp_decoder
+    wrap_mtp_decoder,
 )
 
 
@@ -71,7 +73,7 @@ class TestDeepseekV3RMSNorm(unittest.TestCase):
         test_cases = [
             (torch.randn(10, 32), (10, 32)),
             (torch.randn(2, 10, 32), (2, 10, 32)),
-            (torch.randn(5, 8, 10, 32), (5, 8, 10, 32))
+            (torch.randn(5, 8, 10, 32), (5, 8, 10, 32)),
         ]
 
         for input_tensor, expected_shape in test_cases:
@@ -166,7 +168,7 @@ class TestGetMtpLayer(unittest.TestCase):
             'model.layers.61.eh_proj.weight': torch.randn(hidden_size, hidden_size * 2),
             'model.layers.61.embed_tokens.weight': torch.randn(vocab_size, hidden_size),
             'model.layers.60.other.weight': torch.randn(10),
-            'unrelated.key': torch.randn(5)
+            'unrelated.key': torch.randn(5),
         }
 
         # 执行测试
@@ -178,8 +180,14 @@ class TestGetMtpLayer(unittest.TestCase):
         mock_load_file.assert_called_once()
 
         # 验证权重过滤
-        expected_keys = {'enorm.weight', 'hnorm.weight', 'shared_head.norm.weight',
-                         'shared_head.head.weight', 'eh_proj.weight', 'embed_tokens.weight'}
+        expected_keys = {
+            'enorm.weight',
+            'hnorm.weight',
+            'shared_head.norm.weight',
+            'shared_head.head.weight',
+            'eh_proj.weight',
+            'embed_tokens.weight',
+        }
         self.assertTrue(expected_keys.issubset(set(mtp_layer.state_dict().keys())))
 
         # 验证日志

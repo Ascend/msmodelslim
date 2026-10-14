@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,12 +18,14 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module
+
 import os
 import stat
 
 import torch
 import pytest
-from transformers import AutoConfig, AutoModelForCausalLM, PreTrainedTokenizerBase, PreTrainedTokenizerBase
+from transformers import AutoConfig, AutoModelForCausalLM, PreTrainedTokenizerBase
 
 from ascend_utils.common.security import file_safe_write, safe_delete_path_if_exists
 from msmodelslim.pytorch.ra_compression import RARopeCompressConfig, RARopeCompressor
@@ -68,10 +70,7 @@ def model_config():
 
 class FakeTokenizer(PreTrainedTokenizerBase):
     def __call__(self, text, return_tensors='pt'):
-        return {
-            "input_ids": torch.arange(32)[None],
-            "attention_mask": torch.zeros([1, 32])
-        }
+        return {"input_ids": torch.arange(32)[None], "attention_mask": torch.zeros([1, 32])}
 
 
 @pytest.mark.skip()

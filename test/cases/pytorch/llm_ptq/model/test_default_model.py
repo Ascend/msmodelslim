@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,16 +18,19 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
+
 from unittest.mock import MagicMock, patch
 import pytest
 import torch
 import torch.nn as nn
 
 from testing_utils.mock import mock_kia_library
+
 mock_kia_library()
 
-from msmodelslim.pytorch.llm_ptq.model.base import DefaultModelAdapter
-from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig
+from msmodelslim.pytorch.llm_ptq.model.base import DefaultModelAdapter  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig  # noqa: E402
 
 
 class TestDefaultModelAdapter:
@@ -54,13 +57,8 @@ class TestDefaultModelAdapter:
         """测试正常情况"""
         # 设置模拟的 DAG 对象
         mock_dag = MagicMock()
-        mock_dag.get_norm_linear_subgraph.return_value = {
-            'norm1': ['linear1', 'linear2'],
-            'norm2': ['linear3']
-        }
-        mock_dag.get_linear_linear_subgraph.return_value = {
-            'linear1': ['linear4']
-        }
+        mock_dag.get_norm_linear_subgraph.return_value = {'norm1': ['linear1', 'linear2'], 'norm2': ['linear3']}
+        mock_dag.get_linear_linear_subgraph.return_value = {'linear1': ['linear4']}
         mock_extract_dag.return_value = mock_dag
 
         adapter = self.create_adapter(3)
@@ -68,9 +66,7 @@ class TestDefaultModelAdapter:
         norm_class = [nn.LayerNorm]
 
         result = adapter.get_norm_linear_subgraph(
-            AntiOutlierConfig(anti_method='m4'),
-            dummy_input=dummy_input,
-            norm_class=norm_class
+            AntiOutlierConfig(anti_method='m4'), dummy_input=dummy_input, norm_class=norm_class
         )
 
         # 验证结果
@@ -83,21 +79,14 @@ class TestDefaultModelAdapter:
         assert result['linear1'] == ['linear4']
 
         # 验证 extract_dag 调用
-        mock_extract_dag.assert_called_once_with(
-            adapter.model,
-            dummy_input,
-            hook_nodes=norm_class,
-            anti_method='m4'
-        )
+        mock_extract_dag.assert_called_once_with(adapter.model, dummy_input, hook_nodes=norm_class, anti_method='m4')
 
     @patch('msmodelslim.pytorch.llm_ptq.anti_outlier.graph_utils.extract_dag')
     def test_without_linear_linear_subgraph(self, mock_extract_dag):
         """测试不需要 linear_linear_subgraph 的情况"""
         # 设置模拟的 DAG 对象
         mock_dag = MagicMock()
-        mock_dag.get_norm_linear_subgraph.return_value = {
-            'norm1': ['linear1', 'linear2']
-        }
+        mock_dag.get_norm_linear_subgraph.return_value = {'norm1': ['linear1', 'linear2']}
         mock_extract_dag.return_value = mock_dag
 
         adapter = self.create_adapter(3)
@@ -107,7 +96,7 @@ class TestDefaultModelAdapter:
         result = adapter.get_norm_linear_subgraph(
             AntiOutlierConfig(anti_method='m1'),  # 使用非 m4/m6 方法
             dummy_input=dummy_input,
-            norm_class=norm_class
+            norm_class=norm_class,
         )
 
         # 验证结果
@@ -148,7 +137,7 @@ class TestModifySmoothArgs:
             norm_name="layer.norm",
             linear_names="dummy",
             args=original_args.copy(),
-            kwargs=original_kwargs.copy()
+            kwargs=original_kwargs.copy(),
         )
 
         # 验证参数没有被修改
@@ -162,11 +151,7 @@ class TestModifySmoothArgs:
         adapter = self.create_adapter(3)
         cfg = self.create_anti_config()
         args, kwargs = adapter.modify_smooth_args(
-            cfg=cfg,
-            norm_name="layer.norm",
-            linear_names="dummy",
-            args=[],
-            kwargs={}
+            cfg=cfg, norm_name="layer.norm", linear_names="dummy", args=[], kwargs={}
         )
 
         # 验证空参数保持不变
@@ -187,7 +172,7 @@ class TestModifySmoothArgs:
             norm_name="layer.norm",
             linear_names="dummy",
             args=original_args.copy(),
-            kwargs=original_kwargs.copy()
+            kwargs=original_kwargs.copy(),
         )
 
         # 验证None值保持不变

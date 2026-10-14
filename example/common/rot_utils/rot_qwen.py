@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=logging-fstring-interpolation,relative-beyond-top-level,unnecessary-comprehension,useless-return
 
 import ctypes
 import gc
@@ -33,12 +34,12 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 parent_directory = os.path.abspath(os.path.join(current_directory, '..', ".."))
 sys.path.append(parent_directory)
 
-from ascend_utils import ResListToRelease
-from msmodelslim.pytorch.llm_ptq.accelerate_adapter import PrepareWeight
-from msmodelslim.pytorch.llm_ptq.accelerate_adapter import replace_device_align_hook_if_needed
-from msmodelslim import logger
+from ascend_utils import ResListToRelease  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.accelerate_adapter import PrepareWeight  # noqa: E402
+from msmodelslim.pytorch.llm_ptq.accelerate_adapter import replace_device_align_hook_if_needed  # noqa: E402
+from msmodelslim import logger  # noqa: E402
 
-from .hadamard_utils import random_hadamard_matrix
+from .hadamard_utils import random_hadamard_matrix  # noqa: E402
 
 GLOBAL_DTYPE = torch.float32
 
@@ -46,6 +47,7 @@ GLOBAL_DTYPE = torch.float32
 @dataclass
 class RotConfig:
     """create_Q函数的配置类"""
+
     size: int
     group_size: int = -1
     mode: str = "hadamard"
@@ -57,6 +59,7 @@ class RotConfig:
 @dataclass
 class CreateRotationMatrixConfig:
     """create_rotation_matrix函数的配置类"""
+
     group_size: int = -1
     rotate_kv: bool = False
     device: str = "cuda"
@@ -67,9 +70,7 @@ class CreateRotationMatrixConfig:
 
 class GraphOpt:
     @staticmethod
-    def set_module(model,
-                   submodule_key,
-                   module):
+    def set_module(model, submodule_key, module):
         tokens = submodule_key.split('.')
         sub_tokens = tokens[:-1]
         cur_mod = model
@@ -105,7 +106,8 @@ def fuse_ln_linear(layernorm: torch.nn.Module, linear_layers: typing.Iterable[to
         if hasattr(layernorm, 'bias'):
             if linear.bias is None:
                 linear.bias = torch.nn.Parameter(
-                    torch.zeros(linear.out_features, dtype=linear_dtype, device=linear.weight.device))
+                    torch.zeros(linear.out_features, dtype=linear_dtype, device=linear.weight.device)
+                )
             ln_bias = linear.bias.data.to(dtype=GLOBAL_DTYPE)
             linear.bias.data = ln_bias + torch.matmul(current_weight, ln_bias)
             linear.bias.data.to(linear_dtype)
@@ -136,9 +138,9 @@ def fuse_layer_norms_module(module, config_hidden_size, fuse_kv_ln=False, idx=No
     modules += [module.input_layernorm]
     prepare_list = [PrepareWeight(ws, post_force=True) for ws in modules]
     with ResListToRelease(*prepare_list):
-
-        fuse_ln_linear(module.input_layernorm,
-                       [module.self_attn.q_proj, module.self_attn.k_proj, module.self_attn.v_proj])
+        fuse_ln_linear(
+            module.input_layernorm, [module.self_attn.q_proj, module.self_attn.k_proj, module.self_attn.v_proj]
+        )
 
         set_bias_to_ones(module.input_layernorm)
 
@@ -155,8 +157,7 @@ def fuse_layer_norms_module(module, config_hidden_size, fuse_kv_ln=False, idx=No
     with ResListToRelease(*prepare_list):
         if hasattr(module.mlp, "experts"):
             for expert in module.mlp.experts:
-                fuse_ln_linear(module.post_attention_layernorm,
-                               [expert.up_proj, expert.gate_proj])
+                fuse_ln_linear(module.post_attention_layernorm, [expert.up_proj, expert.gate_proj])
             fuse_ln_linear(module.post_attention_layernorm, [module.mlp.gate])
         else:
             fuse_ln_linear(module.post_attention_layernorm, [module.mlp.up_proj, module.mlp.gate_proj])
@@ -200,9 +201,7 @@ def rotate_embeddings(model, rot: torch.Tensor) -> None:
     return
 
 
-def rotate_attention_inputs(layer, rot,
-                            q_b_proj_rot=None,
-                            kv_b_proj_rot=None) -> None:
+def rotate_attention_inputs(layer, rot, q_b_proj_rot=None, kv_b_proj_rot=None) -> None:
     """
     Rotate the W q_proj, W q_a_proj, W q_b_proj and W kv_a_proj_with_mqa matrices of the self-attention layer.
     """
@@ -364,13 +363,13 @@ def rotate_head(model, rot: torch.Tensor) -> None:
 def random_hadamard_matrix_block(in_channel, stride, eye_step, device):
     """
     生成对角线上放置Hadamard矩阵的in_channel维矩阵
-    
+
     Args:
         in_channel: 输入通道数
         stride: 块大小
         eye_step: 哪些块使用单位矩阵
         device: 设备
-        
+
     Returns:
         torch.Tensor: 生成的矩阵
     """
@@ -386,8 +385,9 @@ def random_hadamard_matrix_block(in_channel, stride, eye_step, device):
         start_idx = i * stride
         end_idx = start_idx + stride
         if i in eye_step:
-            h_in_channel[start_idx:end_idx, start_idx:end_idx] = torch.eye(stride).to(device=device,
-                                                                                      dtype=torch.float32)
+            h_in_channel[start_idx:end_idx, start_idx:end_idx] = torch.eye(stride).to(
+                device=device, dtype=torch.float32
+            )
         else:
             h_in_channel[start_idx:end_idx, start_idx:end_idx] = h_stride
 
@@ -397,14 +397,14 @@ def random_hadamard_matrix_block(in_channel, stride, eye_step, device):
 def create_rot(config: RotConfig):
     """
     创建旋转矩阵
-    
+
     Args:
         config (RotConfig): 包含所有参数的配置类
-        
+
     Returns:
         torch.Tensor: 旋转矩阵
     """
-    block_size = 32
+    block_size = 32  # noqa: F841
     shift = 16
 
     size = config.size
@@ -452,9 +452,7 @@ def rotate_emb_head(model, rot):
 
 @torch.no_grad()
 def rotate_module(module, rot, rot_att_uv, q_b_proj_rot, kv_b_proj_rot):
-    rotate_attention_inputs(module, rot,
-                            q_b_proj_rot=q_b_proj_rot,
-                            kv_b_proj_rot=kv_b_proj_rot)
+    rotate_attention_inputs(module, rot, q_b_proj_rot=q_b_proj_rot, kv_b_proj_rot=kv_b_proj_rot)
 
     rotate_uv_output(module, rot_att_uv)
     rotate_oproj_input(module, rot_att_uv)
@@ -471,20 +469,15 @@ def rotate_module(module, rot, rot_att_uv, q_b_proj_rot, kv_b_proj_rot):
 
 @torch.no_grad()
 def create_rotation_matrix(model, layer, config: CreateRotationMatrixConfig):
-    group_size = config.group_size
-    rotate_kv = config.rotate_kv
+    group_size = config.group_size  # noqa: F841
+    rotate_kv = config.rotate_kv  # noqa: F841
     device = config.device
     r2_mode = config.r2_mode
-    r2_step = config.r2_step
-    eye_step = config.eye_step
+    r2_step = config.r2_step  # noqa: F841
+    eye_step = config.eye_step  # noqa: F841
 
     v_head_dim = model.config.head_dim
-    rot_att_uv_config = RotConfig(
-        size=v_head_dim,
-        group_size=-1,
-        mode=r2_mode,
-        device=device
-    )
+    rot_att_uv_config = RotConfig(size=v_head_dim, group_size=-1, mode=r2_mode, device=device)
     rot_att_uv = create_rot(rot_att_uv_config)
 
     q_b_proj_rot = None
@@ -502,7 +495,7 @@ def rotate_model(model, group_size=-1, rotate_kv=False, args=None):
         mode=args.r1_mode,
         rot_step=args.r1_step,
         eye_step=args.eye_step,
-        device=device
+        device=device,
     )
     rot = create_rot(r1_config)
 
@@ -514,7 +507,7 @@ def rotate_model(model, group_size=-1, rotate_kv=False, args=None):
         device=device,
         r2_mode=args.r2_mode,
         r2_step=args.r2_step,
-        eye_step=args.eye_step
+        eye_step=args.eye_step,
     )
     rot_att_uv, q_b_proj_rot, kv_b_proj_rot = create_rotation_matrix(model, layers[0], rotation_matrix_config)
 
@@ -563,14 +556,14 @@ def rot_model(model, seed=42):
     torch.backends.cudnn.benchmark = False
 
     from collections import namedtuple
+
     rotate_kv = False
     args = namedtuple('args', ['r1_mode', 'r1_step', 'r2_mode', 'r2_step', 'eye_step'])
     rot_args = args('block_hadamard', 1, 'block_hadamard_shifted', 1, [0, 1])
 
     replace_device_align_hook_if_needed(model)
     fuse_layer_norms(model, fuse_kv_ln=rotate_kv)
-    rot, rot_att_uv, q_b_proj_rot, kv_b_proj_rot = rotate_model(model,
-                                                                group_size=-1,
-                                                                rotate_kv=rotate_kv,
-                                                                args=rot_args)
+    rot, rot_att_uv, q_b_proj_rot, kv_b_proj_rot = rotate_model(
+        model, group_size=-1, rotate_kv=rotate_kv, args=rot_args
+    )
     return rot, rot_att_uv, q_b_proj_rot, kv_b_proj_rot

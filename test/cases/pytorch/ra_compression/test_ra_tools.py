@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,redefined-outer-name,useless-parent-delegation
 
 import os
 import tempfile
@@ -45,10 +46,7 @@ class SequentialModel(nn.Module):
         self.config = MagicMock()
         self.config.hidden_size = hidden_size
         self.config.num_attention_heads = num_attention_heads
-        self.blocks = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size),
-            nn.Linear(hidden_size, hidden_size)
-        )
+        self.blocks = nn.Sequential(nn.Linear(hidden_size, hidden_size), nn.Linear(hidden_size, hidden_size))
 
 
 class InvalidModel(nn.Module):
@@ -92,7 +90,6 @@ def valid_config():
 
 
 class TestRACompressor:
-
     @staticmethod
     def test_init_given_valid_parameters_when_all_checks_pass_then_success(valid_config):
         model = SimpleModel()
@@ -130,8 +127,9 @@ class TestRACompressor:
     @staticmethod
     def test_init_given_invalid_model_when_no_num_attention_heads_then_fail(valid_config):
         model = NoAttentionHeadsModel()
-        with pytest.raises(ValueError,
-                           match="Model must have a `config` attribute with a `num_attention_heads` property"):
+        with pytest.raises(
+            ValueError, match="Model must have a `config` attribute with a `num_attention_heads` property"
+        ):
             if hasattr(model.config, 'num_attention_heads'):
                 delattr(model.config, 'num_attention_heads')
             RACompressor(model, valid_config)
@@ -139,8 +137,9 @@ class TestRACompressor:
     @staticmethod
     def test_init_given_invalid_model_when_zero_num_attention_heads_then_fail(valid_config):
         model = ZeroAttentionHeadsModel()
-        with pytest.raises(ValueError,
-                           match="Model must have a `config` attribute with a `num_attention_heads` property"):
+        with pytest.raises(
+            ValueError, match="Model must have a `config` attribute with a `num_attention_heads` property"
+        ):
             RACompressor(model, valid_config)
 
     @staticmethod
@@ -148,7 +147,8 @@ class TestRACompressor:
     @patch('msmodelslim.pytorch.ra_compression.ra_tools.RACompressor._get_qk_weight_and_reshape_by_num_heads')
     @patch('msmodelslim.pytorch.ra_compression.ra_tools.RACompressor._get_interleave')
     def test_get_alibi_windows_given_valid_path_when_all_operations_succeed_then_success(
-            mock_get_interleave, mock_get_qk_weights, mock_get_wins, valid_config, temp_dir):
+        mock_get_interleave, mock_get_qk_weights, mock_get_wins, valid_config, temp_dir
+    ):
         model = SimpleModel()
         compressor = RACompressor(model, valid_config)
 
@@ -253,7 +253,8 @@ class TestRACompressor:
     @patch('msmodelslim.pytorch.ra_compression.ra_tools.RACompressor._get_attention_mlp_blocks')
     @patch('msmodelslim.pytorch.ra_compression.ra_tools.RACompressor._get_qkv_name')
     def test_get_qk_weight_and_reshape_by_num_heads_given_valid_model_when_weights_found_then_return_qk_list(
-            mock_get_qkv_name, mock_get_attention_mlp_blocks, valid_config):
+        mock_get_qkv_name, mock_get_attention_mlp_blocks, valid_config
+    ):
         model = SimpleModel()
         compressor = RACompressor(model, valid_config)
 
@@ -265,11 +266,7 @@ class TestRACompressor:
         k_weight = torch.randn(768, 768)
         v_weight = torch.randn(768, 768)
 
-        mock_blocks.state_dict.return_value = {
-            "0.q.weight": q_weight,
-            "0.k.weight": k_weight,
-            "0.v.weight": v_weight
-        }
+        mock_blocks.state_dict.return_value = {"0.q.weight": q_weight, "0.k.weight": k_weight, "0.v.weight": v_weight}
 
         result = compressor._get_qk_weight_and_reshape_by_num_heads()
         assert len(result) == 1
@@ -281,7 +278,8 @@ class TestRACompressor:
     @patch('msmodelslim.pytorch.ra_compression.ra_tools.RACompressor._get_attention_mlp_blocks')
     @patch('msmodelslim.pytorch.ra_compression.ra_tools.RACompressor._get_qkv_name')
     def test_get_qk_weight_and_reshape_by_num_heads_given_invalid_model_when_no_linear_nodes_then_fail(
-            mock_get_qkv_name, mock_get_attention_mlp_blocks, valid_config):
+        mock_get_qkv_name, mock_get_attention_mlp_blocks, valid_config
+    ):
         model = SimpleModel()
         compressor = RACompressor(model, valid_config)
 
@@ -296,7 +294,8 @@ class TestRACompressor:
     @patch('msmodelslim.pytorch.ra_compression.ra_tools.RACompressor._get_attention_mlp_blocks')
     @patch('msmodelslim.pytorch.ra_compression.ra_tools.RACompressor._get_qkv_name')
     def test_get_qk_weight_and_reshape_by_num_heads_given_invalid_model_when_too_many_linears_then_fail(
-            mock_get_qkv_name, mock_get_attention_mlp_blocks, valid_config):
+        mock_get_qkv_name, mock_get_attention_mlp_blocks, valid_config
+    ):
         model = SimpleModel()
         compressor = RACompressor(model, valid_config)
 

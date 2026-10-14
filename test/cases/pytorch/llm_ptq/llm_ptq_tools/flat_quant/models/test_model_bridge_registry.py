@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,27 +18,40 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=abstract-method,useless-parent-delegation
 
 import pytest
 from unittest.mock import MagicMock
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.flat_quant.models.model_bridge_registry import model_bridge_registry as global_registry
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.flat_quant.models.model_bridge_registry import (
-    ModelMatcher, ConfigMatcher, ModuleNameMatcher, CompositeMatcher,
-    ModelBridgeRegistry, get_model_bridge
+    model_bridge_registry as global_registry,
 )
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.flat_quant.models.model_bridge_registry import (
+    ConfigMatcher,
+    ModuleNameMatcher,
+    CompositeMatcher,
+    ModelBridgeRegistry,
+    get_model_bridge,
+)
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.flat_quant.models.model_bridge_registry import (
+    ModelMatcher,  # noqa: F401
+)  # noqa: F401
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.flat_quant.models.model_utils import ModelStructureBridge
+
 
 # Dummy bridge for registration
 def make_dummy_bridge():
     class DummyBridge(ModelStructureBridge):
         def __init__(self, model, config=None):
             super().__init__(model, config)
+
     return DummyBridge
+
 
 # Dummy model/config for matcher
 def make_dummy_model(config_attrs=None, module_names=None):
     class DummyConfig:
         pass
+
     class DummyModel:
         def __init__(self):
             self.config = DummyConfig()
@@ -46,9 +59,12 @@ def make_dummy_model(config_attrs=None, module_names=None):
                 for k, v in config_attrs.items():
                     setattr(self.config, k, v)
             self._modules = module_names or []
+
         def named_modules(self):
             return [(name, None) for name in self._modules]
+
     return DummyModel()
+
 
 def test_config_matcher_exact_and_regex():
     # exact value
@@ -75,6 +91,7 @@ def test_config_matcher_exact_and_regex():
     m7 = make_dummy_model({'foo': 'bar'})
     assert not matcher.match(m7)
 
+
 def test_module_name_matcher_all_and_any():
     # match_all True
     matcher = ModuleNameMatcher(['foo', 'bar'], match_all=True)
@@ -87,6 +104,7 @@ def test_module_name_matcher_all_and_any():
     assert matcher2.match(m)
     m3 = make_dummy_model(module_names=['baz'])
     assert not matcher2.match(m3)
+
 
 def test_composite_matcher_and_or():
     m = make_dummy_model({'model_type': 'a'}, ['foo'])
@@ -107,6 +125,7 @@ def test_composite_matcher_and_or():
     with pytest.raises(ValueError):
         CompositeMatcher([matcher1], logic='XOR')
 
+
 def test_model_bridge_registry_register_and_priority():
     registry = ModelBridgeRegistry()
     DummyBridge = make_dummy_bridge()
@@ -118,10 +137,14 @@ def test_model_bridge_registry_register_and_priority():
     DummyBridge2 = make_dummy_bridge()
     registry.register(DummyBridge2, matcher, priority=2)
     assert registry._priority_registry[0][2] == DummyBridge2
+
     # 类型校验
-    class NotBridge: pass
+    class NotBridge:
+        pass
+
     with pytest.raises(TypeError):
         registry.register(NotBridge, matcher)
+
 
 def test_model_bridge_registry_get_bridge_and_clear():
     registry = ModelBridgeRegistry()
@@ -140,6 +163,7 @@ def test_model_bridge_registry_get_bridge_and_clear():
     with pytest.raises(ValueError):
         registry.get_bridge(m)
 
+
 def test_get_model_bridge_global():
     DummyBridge = make_dummy_bridge()
     matcher = ConfigMatcher({'model_type': 'gtest'})
@@ -149,4 +173,4 @@ def test_get_model_bridge_global():
     m = make_dummy_model({'model_type': 'gtest'})
     bridge = get_model_bridge(m)
     assert isinstance(bridge, DummyBridge)
-    global_registry.clear() 
+    global_registry.clear()

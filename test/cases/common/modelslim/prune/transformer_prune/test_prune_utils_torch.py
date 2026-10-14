@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,14 +18,15 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-dict-items
 
 import pytest
 import torch
 import os
-import shutil
+import shutil  # noqa: F401
 from unittest.mock import MagicMock, patch
-from ascend_utils.common.prune.transformer_prune.prune_utils_torch import PruneUtilsTorch, QKV_NUMS
-from ascend_utils.common.security.pytorch import safe_torch_load
+from ascend_utils.common.security.pytorch import safe_torch_load  # noqa: F401
+from ascend_utils.common.prune.transformer_prune.prune_utils_torch import PruneUtilsTorch, QKV_NUMS  # noqa: F401
 
 # Mock data paths
 FAKE_WEIGHT_PATH = "./fake_weight.pth"
@@ -61,6 +62,7 @@ def setup_and_teardown():
     if os.path.exists(FAKE_WEIGHT_PATH):
         os.remove(FAKE_WEIGHT_PATH)
 
+
 def test_find_linear_diff_dim_given_2d_weights_when_shapes_mismatch_dim0_then_return_0():
     w1 = torch.randn(768, 768)
     w2 = torch.randn(512, 768)
@@ -80,6 +82,7 @@ def test_find_linear_diff_dim_given_invalid_dims_when_called_then_raise_exceptio
     w2 = torch.randn(1, 1, 1)
     with pytest.raises(Exception):
         PruneUtilsTorch.find_linear_diff_dim(w1, w2)
+
 
 def test_get_state_dict_given_valid_path_when_file_exists_then_returns_dict():
     ckpt = PruneUtilsTorch.get_state_dict(FAKE_WEIGHT_PATH)
@@ -114,6 +117,7 @@ def test_prune_vit_intra_block_given_missing_qkv_keys_when_called_then_raise_exc
     with pytest.raises(Exception):
         pruner.prune_vit_intra_block(model, STATE_DICT.copy(), {})
 
+
 def test_prune_vit_intra_block_given_unsupported_dim_when_called_then_raise_exception():
     model = MagicMock()
     model.state_dict.return_value = {**MODEL_STATE_DICT, "extra.tensor": torch.randn(2, 2, 2)}
@@ -121,6 +125,7 @@ def test_prune_vit_intra_block_given_unsupported_dim_when_called_then_raise_exce
     pruner = PruneUtilsTorch()
     with pytest.raises(NotImplementedError):
         pruner.prune_vit_intra_block(model, {**STATE_DICT, "extra.tensor": torch.randn(3, 3, 3)}, model_config)
+
 
 def test_prune_combined_qkv_weight_given_invalid_axis_when_called_then_raise_exception():
     name = "bert.encoder.layer.0.attention.self.query.weight"

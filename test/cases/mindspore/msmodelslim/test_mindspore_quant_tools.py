@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -20,12 +20,12 @@ See the Mulan PSL v2 for more details.
 """
 
 import os
-import sys
+import sys  # noqa: F401
 import shutil
 
 from resources.sample_net_mindspore import MsSparseModel
+import numpy as np  # noqa: F401
 
-import numpy as np
 import mindspore as ms
 from mindformers.models.configuration_utils import PretrainedConfig
 
@@ -46,15 +46,18 @@ def test_mindspore_sparse_run():
     fraction = 0.011
     disable_names = [
         "lm_head",
-        "model.layers.1.feed_forward.w1", "model.layers.1.feed_forward.w11", "model.layers.1.feed_forward.w3",
-        "model.layers.2.feed_forward.w1", "model.layers.2.feed_forward.w11", "model.layers.2.feed_forward.w3",
-        "model.layers.3.feed_forward.w1", "model.layers.3.feed_forward.w11", "model.layers.3.feed_forward.w3"
+        "model.layers.1.feed_forward.w1",
+        "model.layers.1.feed_forward.w11",
+        "model.layers.1.feed_forward.w3",
+        "model.layers.2.feed_forward.w1",
+        "model.layers.2.feed_forward.w11",
+        "model.layers.2.feed_forward.w3",
+        "model.layers.3.feed_forward.w1",
+        "model.layers.3.feed_forward.w11",
+        "model.layers.3.feed_forward.w3",
     ]
 
-    quant_config = QuantConfig(
-        disable_names=disable_names,
-        fraction=fraction
-    )
+    quant_config = QuantConfig(disable_names=disable_names, fraction=fraction)
     calibrator = Calibrator(
         quant_config,
         model,
@@ -62,10 +65,10 @@ def test_mindspore_sparse_run():
     )
 
     calibrator.run()
-    
+
     if os.path.exists(tmp_sparse_weight_ckpt):
         os.remove(tmp_sparse_weight_ckpt)
-    
+
     calibrator.save(tmp_sparse_weight_ckpt)
 
     fake_model = calibrator.fake_quantize_model()

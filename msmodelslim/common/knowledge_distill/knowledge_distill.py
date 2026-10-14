@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,useless-object-inheritance
 
 from ascend_utils.common.security import check_type
 from ascend_utils.common.security import check_element_type
@@ -84,8 +85,11 @@ class KnowledgeDistillConfig(object):
                 try:
                     func_instance = distill_loss_func[loss_name](*loss_param)
                 except TypeError as ex:
-                    logger.error("Please check loss_param and loss_name, current loss_param is: %r, loss_name is: %r",
-                                 loss_param, loss_name)
+                    logger.error(
+                        "Please check loss_param and loss_name, current loss_param is: %r, loss_name is: %r",
+                        loss_param,
+                        loss_name,
+                    )
                     raise ex
             loss_func["func_instance"] = func_instance
 
@@ -111,7 +115,8 @@ class KnowledgeDistillConfig(object):
         for name, loss_func in custom_loss_func.items():
             if not isinstance(loss_func, func_type):
                 raise TypeError(
-                    "Custom loss func \"{}\" must be a {}, not {}".format(name, type(func_type), type(loss_func)))
+                    "Custom loss func \"{}\" must be a {}, not {}".format(name, type(func_type), type(loss_func))
+                )
             if distill_loss_func.get(name):
                 loss_func_list = list(distill_loss_func.keys())
                 logger.warning("loss function name in %r. default %r will be overwritten.", str(loss_func_list), name)
@@ -146,6 +151,7 @@ class KnowledgeDistillConfig(object):
         is_valid = False
         try:
             import torch.nn as nn
+
             if isinstance(instance, nn.Module):
                 is_valid = True
         except ImportError:  # PyTorch未安装时跳过
@@ -154,6 +160,7 @@ class KnowledgeDistillConfig(object):
         if not is_valid:  # 如果PyTorch校验未通过，检查MindSpore
             try:
                 import mindspore.nn as nn_ms
+
                 if isinstance(instance, nn_ms.Cell):
                     is_valid = True
             except ImportError:  # MindSpore未安装时跳过
@@ -291,8 +298,12 @@ class KnowledgeDistillConfig(object):
             raise ValueError("loss_func must have func_weight")
 
         if loss_func.get("temperature"):
-            check_type(loss_func.get("temperature"), (int, float), param_name="temperature",
-                       additional_check_func=lambda x: x > 0)
+            check_type(
+                loss_func.get("temperature"),
+                (int, float),
+                param_name="temperature",
+                additional_check_func=lambda x: x > 0,
+            )
         elif not loss_func.get("temperature"):
             loss_func["temperature"] = None
 
@@ -326,8 +337,10 @@ def get_distill_model(teacher, student, config: KnowledgeDistillConfig):
     backend = check_model_backend(teacher)
     if backend == "mindspore":
         from msmodelslim.mindspore.knowledge_distill.knowledge_distill_ms import get_distill_model_ms
+
         return get_distill_model_ms(teacher, student, config)
     elif backend == "pytorch":
         from msmodelslim.pytorch.knowledge_distill.knowledge_distill_torch import get_distill_model_torch
+
         return get_distill_model_torch(teacher, student, config)
     raise TypeError("Only support MindSpore and PyTorch!")

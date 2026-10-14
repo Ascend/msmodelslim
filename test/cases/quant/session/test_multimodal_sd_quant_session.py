@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,11 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,global-variable-undefined,super-with-arguments,undefined-variable
 
 import sys
 import unittest
 from typing import Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+from unittest.mock import patch  # noqa: F401
 import torch.nn as nn
 from pydantic import BaseModel
 from importlib import import_module
@@ -85,7 +87,6 @@ class MockCalibrator:
 
 
 class TestMultiModal_SD_Quant_Session(unittest.TestCase):
-
     def setUp(self):
         # 1.备份模块
         self._original_module = {}
@@ -109,13 +110,11 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
         sys.modules['msmodelslim.pytorch.llm_ptq'] = self.llm_ptq_mock
         # 子模块 'anti_outlier'
         self.llm_ptq_mock.anti_outlier = MagicMock(
-            AntiOutlierConfig=MockAntiOutlierConfig,
-            AntiOutlier=MagicMock(spec=MockAntiOutlier)
+            AntiOutlierConfig=MockAntiOutlierConfig, AntiOutlier=MagicMock(spec=MockAntiOutlier)
         )
         # 子模块 'llm_ptq_tools'
         self.llm_ptq_mock.llm_ptq_tools = MagicMock(
-            QuantConfig=MockQuantConfig,
-            Calibrator=MagicMock(spec=MockCalibrator)
+            QuantConfig=MockQuantConfig, Calibrator=MagicMock(spec=MockCalibrator)
         )
 
         # 深层模块 'anti_utils'
@@ -125,20 +124,36 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
         sys.modules['msmodelslim.pytorch.llm_ptq'] = self.llm_ptq_mock
         sys.modules['msmodelslim.pytorch.llm_ptq.llm_ptq_tools'] = self.llm_ptq_mock.llm_ptq_tools
         sys.modules['msmodelslim.pytorch.llm_ptq.anti_outlier'] = self.llm_ptq_mock.anti_outlier
-        sys.modules['msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils'] = (
-            self.llm_ptq_mock.anti_outlier.anti_utils
-        )
+        sys.modules['msmodelslim.pytorch.llm_ptq.anti_outlier.anti_utils'] = self.llm_ptq_mock.anti_outlier.anti_utils
 
         global llm_ptq_mock
         llm_ptq_mock = self.llm_ptq_mock
 
         self.seesion_module = import_module('msmodelslim.quant.session.session')
         global_vars = [
-            'process_session_cfg', 'quant_model', 'SessionConfig',
-            'M3ProcessorConfig', 'M4ProcessorConfig', 'M6Config', 'M6ProcessorConfig', 'W8A8QuantConfig',
-            'W8A8ProcessorConfig', 'FA3ProcessorConfig', 'W8A8DynamicQuantConfig', 'W8A8DynamicProcessorConfig',
-            'W8A8TimeStepQuantConfig', 'W8A8TimeStepProcessorConfig', 'SaveProcessorConfig',
-            'M3', 'M4', 'M6', 'W8A8', 'FA3', 'W8A8_DYNAMIC', 'W8A8_TIMESTEP', 'SAVE'
+            'process_session_cfg',
+            'quant_model',
+            'SessionConfig',
+            'M3ProcessorConfig',
+            'M4ProcessorConfig',
+            'M6Config',
+            'M6ProcessorConfig',
+            'W8A8QuantConfig',
+            'W8A8ProcessorConfig',
+            'FA3ProcessorConfig',
+            'W8A8DynamicQuantConfig',
+            'W8A8DynamicProcessorConfig',
+            'W8A8TimeStepQuantConfig',
+            'W8A8TimeStepProcessorConfig',
+            'SaveProcessorConfig',
+            'M3',
+            'M4',
+            'M6',
+            'W8A8',
+            'FA3',
+            'W8A8_DYNAMIC',
+            'W8A8_TIMESTEP',
+            'SAVE',
         ]
         for var in global_vars:
             globals()[var] = getattr(self.seesion_module, var)
@@ -150,33 +165,51 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
                 sys.modules[module] = self._original_module[module]
             else:
                 del sys.modules[module]
-        
+
         # 清理测试导入的模块
         if 'msmodelslim.quant.session.session' in sys.modules:
             del sys.modules['msmodelslim.quant.session.session']
 
         # 清理全局变量
         global_vars = [
-            'process_session_cfg', 'quant_model', 'SessionConfig',
-            'M3ProcessorConfig', 'M4ProcessorConfig', 'M6Config', 'M6ProcessorConfig', 'W8A8QuantConfig',
-            'W8A8ProcessorConfig', 'FA3ProcessorConfig', 'W8A8DynamicQuantConfig', 'W8A8DynamicProcessorConfig',
-            'W8A8TimeStepQuantConfig', 'W8A8TimeStepProcessorConfig', 'SaveProcessorConfig',
-            'M3', 'M4', 'M6', 'W8A8', 'FA3', 'W8A8_DYNAMIC', 'W8A8_TIMESTEP', 'SAVE'
+            'process_session_cfg',
+            'quant_model',
+            'SessionConfig',
+            'M3ProcessorConfig',
+            'M4ProcessorConfig',
+            'M6Config',
+            'M6ProcessorConfig',
+            'W8A8QuantConfig',
+            'W8A8ProcessorConfig',
+            'FA3ProcessorConfig',
+            'W8A8DynamicQuantConfig',
+            'W8A8DynamicProcessorConfig',
+            'W8A8TimeStepQuantConfig',
+            'W8A8TimeStepProcessorConfig',
+            'SaveProcessorConfig',
+            'M3',
+            'M4',
+            'M6',
+            'W8A8',
+            'FA3',
+            'W8A8_DYNAMIC',
+            'W8A8_TIMESTEP',
+            'SAVE',
         ]
         for var in global_vars:
             globals()[var] = None
 
     def test_process_session_cfg_with_m3_anti_outlier(self):
         # Arrange
-        processor_cfg_map = {M3: M3ProcessorConfig()}
-        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')
+        processor_cfg_map = {M3: M3ProcessorConfig()}  # noqa: F821
+        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')  # noqa: F821
         expected_anti_cfg = MockAntiOutlierConfig(dev_type='npu', dev_id=0)
-        expected_anti_cfg.anti_method = M3
-        expected_quant_cfg = None
-        expected_save_cfg = None
+        expected_anti_cfg.anti_method = M3  # noqa: F821
+        expected_quant_cfg = None  # noqa: F841
+        expected_save_cfg = None  # noqa: F841
 
         # Act
-        result = process_session_cfg(session_cfg, device_id=0)
+        result = process_session_cfg(session_cfg, device_id=0)  # noqa: F821
 
         # Assert
         self.assertEqual(result[0].dev_type, expected_anti_cfg.dev_type)
@@ -187,15 +220,15 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
 
     def test_process_session_cfg_with_m4_anti_outlier(self):
         # Arrange
-        processor_cfg_map = {M4: M4ProcessorConfig()}
-        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')
+        processor_cfg_map = {M4: M4ProcessorConfig()}  # noqa: F821
+        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')  # noqa: F821
         expected_anti_cfg = MockAntiOutlierConfig(dev_type='npu', dev_id=0)
-        expected_anti_cfg.anti_method = M4
-        expected_quant_cfg = None
-        expected_save_cfg = None
+        expected_anti_cfg.anti_method = M4  # noqa: F821
+        expected_quant_cfg = None  # noqa: F841
+        expected_save_cfg = None  # noqa: F841
 
         # Act
-        result = process_session_cfg(session_cfg, device_id=0)
+        result = process_session_cfg(session_cfg, device_id=0)  # noqa: F821
 
         # Assert
         self.assertEqual(result[0].dev_type, expected_anti_cfg.dev_type)
@@ -206,18 +239,18 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
 
     def test_process_session_cfg_with_m6_anti_outlier(self):
         # Arrange
-        m6_config = M6Config(alpha=0.5, beta=0.7)
-        m6_processor_config = M6ProcessorConfig(cfg=m6_config)
-        processor_cfg_map = {M6: m6_processor_config}
-        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')
+        m6_config = M6Config(alpha=0.5, beta=0.7)  # noqa: F821
+        m6_processor_config = M6ProcessorConfig(cfg=m6_config)  # noqa: F821
+        processor_cfg_map = {M6: m6_processor_config}  # noqa: F821
+        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')  # noqa: F821
         expected_anti_cfg = MockAntiOutlierConfig(dev_type='npu', dev_id=0)
-        expected_anti_cfg.anti_method = M6
+        expected_anti_cfg.anti_method = M6  # noqa: F821
         expected_anti_cfg.flex_config = {'alpha': 0.5, 'beta': 0.7}
-        expected_quant_cfg = None
-        expected_save_cfg = None
+        expected_quant_cfg = None  # noqa: F841
+        expected_save_cfg = None  # noqa: F841
 
         # Act
-        result = process_session_cfg(session_cfg, device_id=0)
+        result = process_session_cfg(session_cfg, device_id=0)  # noqa: F821
 
         # Assert
         self.assertEqual(result[0].dev_type, expected_anti_cfg.dev_type)
@@ -229,16 +262,18 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
 
     def test_process_session_cfg_with_w8a8_quantization(self):
         # Arrange
-        w8a8_config = W8A8QuantConfig(act_method='minmax')
-        w8a8_processor_config = W8A8ProcessorConfig(cfg=w8a8_config, disable_names=['layer1'])
-        processor_cfg_map = {W8A8: w8a8_processor_config}
-        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')
-        expected_anti_cfg = None
-        expected_quant_cfg = MockQuantConfig(dev_type='npu', dev_id=0, is_dynamic=False, mm_tensor=False, act_method=1, disable_names=['layer1'])
-        expected_save_cfg = None
+        w8a8_config = W8A8QuantConfig(act_method='minmax')  # noqa: F821
+        w8a8_processor_config = W8A8ProcessorConfig(cfg=w8a8_config, disable_names=['layer1'])  # noqa: F821
+        processor_cfg_map = {W8A8: w8a8_processor_config}  # noqa: F821
+        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')  # noqa: F821
+        expected_anti_cfg = None  # noqa: F841
+        expected_quant_cfg = MockQuantConfig(
+            dev_type='npu', dev_id=0, is_dynamic=False, mm_tensor=False, act_method=1, disable_names=['layer1']
+        )
+        expected_save_cfg = None  # noqa: F841
 
         # Act
-        result = process_session_cfg(session_cfg, device_id=0)
+        result = process_session_cfg(session_cfg, device_id=0)  # noqa: F821
 
         # Assert
         self.assertIsNone(result[0])
@@ -252,17 +287,19 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
 
     def test_process_session_cfg_with_fa3_quantization(self):
         # Arrange
-        w8a8_dynamic_config = W8A8DynamicQuantConfig(act_method='histogram')
-        w8a8_dynamic_processor_config = W8A8DynamicProcessorConfig(cfg=w8a8_dynamic_config, disable_names=['layer2'])
-        fa3_processor_config = FA3ProcessorConfig()
-        processor_cfg_map = {W8A8_DYNAMIC: w8a8_dynamic_processor_config, FA3: fa3_processor_config}
-        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')
-        expected_anti_cfg = None
-        expected_quant_cfg = MockQuantConfig(dev_type='npu', dev_id=0, is_dynamic=True, mm_tensor=False, act_method=2, disable_names=['layer2'])
-        expected_save_cfg = None
+        w8a8_dynamic_config = W8A8DynamicQuantConfig(act_method='histogram')  # noqa: F821
+        w8a8_dynamic_processor_config = W8A8DynamicProcessorConfig(cfg=w8a8_dynamic_config, disable_names=['layer2'])  # noqa: F821
+        fa3_processor_config = FA3ProcessorConfig()  # noqa: F821
+        processor_cfg_map = {W8A8_DYNAMIC: w8a8_dynamic_processor_config, FA3: fa3_processor_config}  # noqa: F821
+        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')  # noqa: F821
+        expected_anti_cfg = None  # noqa: F841
+        expected_quant_cfg = MockQuantConfig(
+            dev_type='npu', dev_id=0, is_dynamic=True, mm_tensor=False, act_method=2, disable_names=['layer2']
+        )
+        expected_save_cfg = None  # noqa: F841
 
         # Act
-        result = process_session_cfg(session_cfg, device_id=0)
+        result = process_session_cfg(session_cfg, device_id=0)  # noqa: F821
 
         # Assert
         self.assertIsNone(result[0])
@@ -276,17 +313,21 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
 
     def test_process_session_cfg_with_w8a8_timestep_quantization(self):
         # Arrange
-        w8a8_timestep_config = W8A8TimeStepQuantConfig(act_method='minmax')
-        w8a8_timestep_processor_config = W8A8TimeStepProcessorConfig(cfg=w8a8_timestep_config, disable_names=['layer3'], timestep_sep=10)
-        processor_cfg_map = {W8A8_TIMESTEP: w8a8_timestep_processor_config}
-        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')
-        expected_anti_cfg = None
-        expected_quant_cfg = MockQuantConfig(dev_type='npu', dev_id=0, is_dynamic=False, mm_tensor=False, act_method=1, disable_names=['layer3'])
+        w8a8_timestep_config = W8A8TimeStepQuantConfig(act_method='minmax')  # noqa: F821
+        w8a8_timestep_processor_config = W8A8TimeStepProcessorConfig(  # noqa: F821
+            cfg=w8a8_timestep_config, disable_names=['layer3'], timestep_sep=10
+        )
+        processor_cfg_map = {W8A8_TIMESTEP: w8a8_timestep_processor_config}  # noqa: F821
+        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')  # noqa: F821
+        expected_anti_cfg = None  # noqa: F841
+        expected_quant_cfg = MockQuantConfig(
+            dev_type='npu', dev_id=0, is_dynamic=False, mm_tensor=False, act_method=1, disable_names=['layer3']
+        )
         expected_quant_cfg.timestep_sep = 10
-        expected_save_cfg = None
+        expected_save_cfg = None  # noqa: F841
 
         # Act
-        result = process_session_cfg(session_cfg, device_id=0)
+        result = process_session_cfg(session_cfg, device_id=0)  # noqa: F821
 
         # Assert
         self.assertIsNone(result[0])
@@ -301,15 +342,15 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
 
     def test_process_session_cfg_with_save(self):
         # Arrange
-        save_processor_config = SaveProcessorConfig(output_path='/path/to/save')
-        processor_cfg_map = {SAVE: save_processor_config}
-        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')
-        expected_anti_cfg = None
-        expected_quant_cfg = None
+        save_processor_config = SaveProcessorConfig(output_path='/path/to/save')  # noqa: F821
+        processor_cfg_map = {SAVE: save_processor_config}  # noqa: F821
+        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')  # noqa: F821
+        expected_anti_cfg = None  # noqa: F841
+        expected_quant_cfg = None  # noqa: F841
         expected_save_cfg = save_processor_config
 
         # Act
-        result = process_session_cfg(session_cfg, device_id=0)
+        result = process_session_cfg(session_cfg, device_id=0)  # noqa: F821
 
         # Assert
         self.assertIsNone(result[0])
@@ -318,13 +359,13 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
 
     def test_process_session_cfg_with_invalid_processor(self):
         # Arrange
-        invalid_processor_config = M3ProcessorConfig()
+        invalid_processor_config = M3ProcessorConfig()  # noqa: F821
         processor_cfg_map = {'invalid': invalid_processor_config}
-        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')
+        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu')  # noqa: F821
 
         # Act & Assert
         with self.assertRaises(SchemaValidateError) as context:
-            process_session_cfg(session_cfg, device_id=0)
+            process_session_cfg(session_cfg, device_id=0)  # noqa: F821
         self.assertTrue("The processor_cfg_map in session_config is not supported" in str(context.exception))
 
     def test_quant_model_with_anti_outlier_and_quantization(self):
@@ -335,25 +376,21 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
                 self.device = MagicMock(index=0)
 
         dummy_model = DummyModel()
-        m6_config = M6Config(alpha=0.5, beta=0.7)
-        m6_processor_config = M6ProcessorConfig(cfg=m6_config)
-        w8a8_config = W8A8QuantConfig(act_method='minmax')
-        w8a8_processor_config = W8A8ProcessorConfig(cfg=w8a8_config, disable_names=['layer1'])
-        save_processor_config = SaveProcessorConfig(output_path='/path/to/save')
-        processor_cfg_map = {
-            M6: m6_processor_config,
-            W8A8: w8a8_processor_config,
-            SAVE: save_processor_config
-        }
+        m6_config = M6Config(alpha=0.5, beta=0.7)  # noqa: F821
+        m6_processor_config = M6ProcessorConfig(cfg=m6_config)  # noqa: F821
+        w8a8_config = W8A8QuantConfig(act_method='minmax')  # noqa: F821
+        w8a8_processor_config = W8A8ProcessorConfig(cfg=w8a8_config, disable_names=['layer1'])  # noqa: F821
+        save_processor_config = SaveProcessorConfig(output_path='/path/to/save')  # noqa: F821
+        processor_cfg_map = {M6: m6_processor_config, W8A8: w8a8_processor_config, SAVE: save_processor_config}  # noqa: F821
 
         # 重置 mock 调用计数
         llm_ptq_mock.anti_outlier.AntiOutlier.reset_mock()
         llm_ptq_mock.llm_ptq_tools.Calibrator.reset_mock()
 
-        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu', calib_data=[1, 2, 3])
+        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu', calib_data=[1, 2, 3])  # noqa: F821
 
         # Act
-        quant_model(dummy_model, session_cfg)
+        quant_model(dummy_model, session_cfg)  # noqa: F821
 
         # Assert
         # 1. 检查 AntiOutlier
@@ -367,7 +404,7 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
         cal_call_args = llm_ptq_mock.llm_ptq_tools.Calibrator.call_args
         self.assertEqual(cal_call_args[0][0], dummy_model)
         self.assertEqual(cal_call_args[0][2], [1, 2, 3])
-        
+
         # 3. 检查方法调用
         calibrator_instance = llm_ptq_mock.llm_ptq_tools.Calibrator.return_value
         calibrator_instance.run.assert_called_once()
@@ -376,7 +413,7 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
             safetensors_name=None,
             json_name=None,
             save_type=['safe_tensor'],
-            part_file_size=None
+            part_file_size=None,
         )
 
     def test_quant_model_without_save(self):
@@ -387,23 +424,20 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
                 self.device = MagicMock(index=0)
 
         dummy_model = DummyModel()
-        m6_config = M6Config(alpha=0.5, beta=0.7)
-        m6_processor_config = M6ProcessorConfig(cfg=m6_config)
-        w8a8_config = W8A8QuantConfig(act_method='minmax')
-        w8a8_processor_config = W8A8ProcessorConfig(cfg=w8a8_config, disable_names=['layer1'])
-        processor_cfg_map = {
-            M6: m6_processor_config,
-            W8A8: w8a8_processor_config
-        }
+        m6_config = M6Config(alpha=0.5, beta=0.7)  # noqa: F821
+        m6_processor_config = M6ProcessorConfig(cfg=m6_config)  # noqa: F821
+        w8a8_config = W8A8QuantConfig(act_method='minmax')  # noqa: F821
+        w8a8_processor_config = W8A8ProcessorConfig(cfg=w8a8_config, disable_names=['layer1'])  # noqa: F821
+        processor_cfg_map = {M6: m6_processor_config, W8A8: w8a8_processor_config}  # noqa: F821
 
         # 重置 mock 调用计数
         llm_ptq_mock.anti_outlier.AntiOutlier.reset_mock()
         llm_ptq_mock.llm_ptq_tools.Calibrator.reset_mock()
 
-        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu', calib_data=[1, 2, 3])
+        session_cfg = SessionConfig(processor_cfg_map=processor_cfg_map, device='npu', calib_data=[1, 2, 3])  # noqa: F821
 
         # Act
-        quant_model(dummy_model, session_cfg)
+        quant_model(dummy_model, session_cfg)  # noqa: F821
 
         # Assert
         # 1. 检查 AntiOutlier
@@ -417,7 +451,7 @@ class TestMultiModal_SD_Quant_Session(unittest.TestCase):
         cal_call_args = llm_ptq_mock.llm_ptq_tools.Calibrator.call_args
         self.assertEqual(cal_call_args[0][0], dummy_model)
         self.assertEqual(cal_call_args[0][2], [1, 2, 3])
-        
+
         # 3. 检查方法调用
         calibrator_instance = llm_ptq_mock.llm_ptq_tools.Calibrator.return_value
         calibrator_instance.run.assert_called_once()

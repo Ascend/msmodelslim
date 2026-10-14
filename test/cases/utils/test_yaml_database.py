@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,20 +18,22 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement,redefined-outer-name,reimported,unspecified-encoding
+
 """
 msmodelslim.utils.yaml_database 模块的单元测试
 """
-from pathlib import Path
-import yaml
-import pytest
-from unittest.mock import patch
+from pathlib import Path  # noqa: E402
+import yaml  # noqa: E402
+import pytest  # noqa: E402
+from unittest.mock import patch  # noqa: E402
 
-from msmodelslim.utils.exception import (
+from msmodelslim.utils.exception import (  # noqa: E402
     SchemaValidateError,
     SecurityError,
     UnsupportedError,
 )
-from msmodelslim.utils.yaml_database import YamlDatabase
+from msmodelslim.utils.yaml_database import YamlDatabase  # noqa: E402
 
 
 # 辅助函数：创建测试用YAML文件
@@ -120,6 +122,7 @@ def test_yaml_database_setitem_pass_json_safe_dict_to_yaml_dump_when_basemodel_h
 
     class DecimalRecord(BaseModel):
         """BaseModel 须在 import msmodelslim（含 patch_pydantic）之后绑定。"""
+
         score: Decimal
 
     captured: dict = {}

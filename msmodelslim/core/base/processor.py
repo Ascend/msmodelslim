@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -27,10 +27,10 @@ from msmodelslim.core.base.protocol import BatchProcessRequest
 class BaseProcessor:
     """
     处理器的基类，用于处理模型推理过程中的特定事件。
-    
+
     处理器负责在模型推理的不同阶段执行特定的操作，如数据预处理、后处理等。
     所有具体的处理器实现都应该继承此类并实现抽象方法。
-    
+
     """
 
     def __init__(self, model: nn.Module):
@@ -39,10 +39,10 @@ class BaseProcessor:
     def process(self, request: BatchProcessRequest) -> None:
         """
         处理请求并返回响应。
-        
+
         该方法根据请求中的事件类型、目标模块和相关数据，执行相应的处理操作，
         并返回处理结果和控制选项，指导后续处理流程。
-        
+
         参数:
             request: 处理请求，包含事件类型、目标模块和相关数据
         """

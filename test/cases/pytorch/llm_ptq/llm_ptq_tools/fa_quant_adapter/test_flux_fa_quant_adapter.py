@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module,redefined-outer-name
 
 import logging
 from types import SimpleNamespace
@@ -31,7 +32,7 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux import (
     _install_forward_adapter,
     install_for_flux_model,
     flux_attn_processor_adapter,
-    flux_attn_single_processor_adapter
+    flux_attn_single_processor_adapter,
 )
 
 
@@ -91,7 +92,7 @@ def mock_model():
     model.named_modules.return_value = [
         ('transformer.blocks.0', transformer_block),
         ('transformer.blocks.1', single_transformer_block),
-        ('unknown', unknown_module)
+        ('unknown', unknown_module),
     ]
 
     return model
@@ -141,14 +142,12 @@ class TestInstallForwardAdapter:
 
         mock_forward_adapter = Mock(return_value=lambda self, *args, **kwargs: None)
 
-        with patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.ForwardFactory.get_forward_adapter',
-                   return_value=mock_forward_adapter):
+        with patch(
+            'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.ForwardFactory.get_forward_adapter',
+            return_value=mock_forward_adapter,
+        ):
             _install_forward_adapter(
-                mock_module,
-                'FluxTransformerBlock',
-                'FluxAttnProcessor2_0',
-                'test_module',
-                mock_logger
+                mock_module, 'FluxTransformerBlock', 'FluxAttnProcessor2_0', 'test_module', mock_logger
             )
 
             mock_logger.info.assert_called_with("Successfully installed FAQuantizer for module test_module")
@@ -161,13 +160,7 @@ class TestInstallForwardAdapter:
             delattr(mock_module, 'processor')
 
         with pytest.raises(Exception):
-            _install_forward_adapter(
-                mock_module,
-                'InvalidModule',
-                'InvalidProcessor',
-                'test_module',
-                mock_logger
-            )
+            _install_forward_adapter(mock_module, 'InvalidModule', 'InvalidProcessor', 'test_module', mock_logger)
 
         mock_logger.error.assert_called()
         call_args = mock_logger.error.call_args
@@ -180,29 +173,24 @@ class TestInstallForwardAdapter:
         mock_module.processor.__call__ = Mock()
         mock_module.processor.__class__ = type('Processor', (), {})
 
-        with patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.ForwardFactory.get_forward_adapter',
-                   side_effect=Exception("Adapter not found")):
+        with patch(
+            'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.ForwardFactory.get_forward_adapter',
+            side_effect=Exception("Adapter not found"),
+        ):
             with pytest.raises(Exception, match="Adapter not found"):
-                _install_forward_adapter(
-                    mock_module,
-                    'InvalidModule',
-                    'InvalidProcessor',
-                    'test_module',
-                    mock_logger
-                )
+                _install_forward_adapter(mock_module, 'InvalidModule', 'InvalidProcessor', 'test_module', mock_logger)
 
 
 class TestInstallForFluxModel:
     @staticmethod
-    def test_install_for_flux_model_given_valid_model_when_install_then_pass(mock_model, mock_config,
-                                                                             mock_logger):
-        with patch(
-                'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.get_flux_config'
-        ) as mock_get_config, \
-                patch(
-                    'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux._install_forward_adapter'
-                ) as mock_install_adapter, \
-                patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.FAQuantizer') as mock_quantizer:
+    def test_install_for_flux_model_given_valid_model_when_install_then_pass(mock_model, mock_config, mock_logger):
+        with (
+            patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.get_flux_config') as mock_get_config,
+            patch(
+                'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux._install_forward_adapter'
+            ) as mock_install_adapter,
+            patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.FAQuantizer') as mock_quantizer,
+        ):
             mock_get_config.return_value = SimpleNamespace()
             mock_quantizer.return_value = Mock()
 
@@ -240,9 +228,10 @@ class TestInstallForFluxModel:
 
     @staticmethod
     def test_install_for_flux_model_given_skip_layers_when_skip_then_pass(mock_model, mock_config, mock_logger):
-        with patch(
-                'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.get_flux_config') as mock_get_config, \
-                patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.FAQuantizer') as mock_quantizer:
+        with (
+            patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.get_flux_config') as mock_get_config,
+            patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.FAQuantizer') as mock_quantizer,
+        ):
             mock_get_config.return_value = SimpleNamespace()
             mock_quantizer.return_value = Mock()
 
@@ -263,25 +252,25 @@ class TestInstallForFluxModel:
         transformer_block.attn.fa_quantizer = Mock()  # Already has quantizer
         transformer_block.processor = Mock()
 
-        mock_model_with_quantizer.named_modules.return_value = [
-            ('transformer.blocks.0', transformer_block)
-        ]
+        mock_model_with_quantizer.named_modules.return_value = [('transformer.blocks.0', transformer_block)]
 
         with patch(
-                'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.get_flux_config') as mock_get_config:
+            'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.get_flux_config'
+        ) as mock_get_config:
             mock_get_config.return_value = SimpleNamespace()
 
             install_for_flux_model(mock_model_with_quantizer, mock_config, mock_logger, [])
 
             mock_logger.warning.assert_called_with(
-                "Module transformer.blocks.0.attn already has FAQuantizer installed.")
+                "Module transformer.blocks.0.attn already has FAQuantizer installed."
+            )
 
     @staticmethod
-    def test_install_for_flux_model_given_unknown_module_type_when_skip_then_pass(mock_model, mock_config,
-                                                                                  mock_logger):
-        with patch(
-                'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.get_flux_config') as mock_get_config, \
-                patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.FAQuantizer') as mock_quantizer:
+    def test_install_for_flux_model_given_unknown_module_type_when_skip_then_pass(mock_model, mock_config, mock_logger):
+        with (
+            patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.get_flux_config') as mock_get_config,
+            patch('msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.FAQuantizer') as mock_quantizer,  # noqa: F841
+        ):
             mock_get_config.return_value = SimpleNamespace()
 
             install_for_flux_model(mock_model, mock_config, mock_logger, [])
@@ -315,8 +304,10 @@ class TestFluxAttnProcessorAdapter:
         mock_attention_instance.add_q_proj = Mock(return_value=torch.randn(2, 5, 512))
         mock_attention_instance.add_k_proj = Mock(return_value=torch.randn(2, 5, 512))
         mock_attention_instance.add_v_proj = Mock(return_value=torch.randn(2, 5, 512))
-        mock_attention_instance.to_out = [Mock(return_value=torch.randn(2, 10, 512)),
-                                          Mock(return_value=torch.randn(2, 10, 512))]
+        mock_attention_instance.to_out = [
+            Mock(return_value=torch.randn(2, 10, 512)),
+            Mock(return_value=torch.randn(2, 10, 512)),
+        ]
         mock_attention_instance.to_add_out = Mock(return_value=torch.randn(2, 5, 512))
         mock_attention_instance.is_tp = False
         mock_attention_instance.heads = 8
@@ -329,7 +320,8 @@ class TestFluxAttnProcessorAdapter:
         mock_attention_instance.fa_quantizer.quant = Mock(side_effect=lambda x, qkv: x)
 
         with patch(
-                'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.import_module') as mock_import_module:
+            'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.import_module'
+        ) as mock_import_module:
             mock_module = Mock()
             mock_module.apply_rotary_emb_mindspeed = mock_apply_rotary
             mock_module.apply_fa = mock_apply_fa
@@ -345,12 +337,7 @@ class TestFluxAttnProcessorAdapter:
             image_rotary_emb = None
 
             result = adapter_func(
-                Mock(),
-                mock_attention_instance,
-                hidden_states,
-                encoder_hidden_states,
-                attention_mask,
-                image_rotary_emb
+                Mock(), mock_attention_instance, hidden_states, encoder_hidden_states, attention_mask, image_rotary_emb
             )
 
             assert len(result) == 2
@@ -387,7 +374,8 @@ class TestFluxAttnSingleProcessorAdapter:
         mock_attention_instance.fa_quantizer.quant = Mock(side_effect=lambda x, qkv: x)
 
         with patch(
-                'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.import_module') as mock_import_module:
+            'msmodelslim.pytorch.llm_ptq.llm_ptq_tools.fa_quant_adapter.flux.import_module'
+        ) as mock_import_module:
             mock_module = Mock()
             mock_module.apply_rotary_emb_mindspeed = mock_apply_rotary
             mock_module.apply_fa = mock_apply_fa
@@ -403,12 +391,7 @@ class TestFluxAttnSingleProcessorAdapter:
             image_rotary_emb = None
 
             result = adapter_func(
-                Mock(),
-                mock_attention_instance,
-                hidden_states,
-                encoder_hidden_states,
-                attention_mask,
-                image_rotary_emb
+                Mock(), mock_attention_instance, hidden_states, encoder_hidden_states, attention_mask, image_rotary_emb
             )
 
             # Result should maintain original 4D shape

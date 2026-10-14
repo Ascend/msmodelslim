@@ -1,6 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+"""
+
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -17,19 +35,26 @@ from msmodelslim.utils.exception import InvalidDatasetError
 
 @pytest.fixture(autouse=True)
 def mock_security_check():
-    fake = lambda p, *args, **kwargs: p
-    with patch(
-        "msmodelslim.infra.dataset_loader.vlm_dataset_loader.get_valid_read_path",
-        side_effect=fake,
-    ), patch(
-        "msmodelslim.infra.dataset_loader.jsonl_dataset_loader.get_valid_read_path",
-        side_effect=fake,
-    ), patch(
-        "msmodelslim.infra.dataset_loader.indexed_directory_dataset_loader.get_valid_read_path",
-        side_effect=fake,
-    ), patch(
-        "msmodelslim.infra.dataset_loader.legacy_directory_dataset_loader.get_valid_read_path",
-        side_effect=fake,
+    def fake(p, *args, **kwargs):
+        return p
+
+    with (
+        patch(
+            "msmodelslim.infra.dataset_loader.vlm_dataset_loader.get_valid_read_path",
+            side_effect=fake,
+        ),
+        patch(
+            "msmodelslim.infra.dataset_loader.jsonl_dataset_loader.get_valid_read_path",
+            side_effect=fake,
+        ),
+        patch(
+            "msmodelslim.infra.dataset_loader.indexed_directory_dataset_loader.get_valid_read_path",
+            side_effect=fake,
+        ),
+        patch(
+            "msmodelslim.infra.dataset_loader.legacy_directory_dataset_loader.get_valid_read_path",
+            side_effect=fake,
+        ),
     ):
         yield
 
@@ -69,9 +94,7 @@ class TestVlmDatasetLoader:
         assert result.exists()
         assert result.name == "rel.json"
 
-    def test_resolve_dataset_path_return_joined_path_when_short_name_under_dataset_dir(
-        self, tmp_path: Path
-    ):
+    def test_resolve_dataset_path_return_joined_path_when_short_name_under_dataset_dir(self, tmp_path: Path):
         dataset_dir = tmp_path / "lab_calib"
         dataset_dir.mkdir()
         data_dir = dataset_dir / "calibData"
@@ -96,6 +119,7 @@ class TestVlmDatasetLoader:
         dataset_dir = tmp_path / "other"
         dataset_dir.mkdir()
         from msmodelslim.infra.dataset_loader import vlm_dataset_loader as vlm_mod
+
         with patch.object(vlm_mod.Path, "exists", side_effect=[False, False, True]):
             result = _resolve_dataset_path("rel_name", dataset_dir)
         assert result.name == "rel_name"
@@ -137,9 +161,7 @@ class TestVlmDatasetLoader:
         assert len(data) == 1
         assert data[0].text == "hello-dir"
 
-    def test_get_dataset_by_name_return_samples_when_with_indexed_dir_and_index_jsonl(
-        self, tmp_path: Path
-    ):
+    def test_get_dataset_by_name_return_samples_when_with_indexed_dir_and_index_jsonl(self, tmp_path: Path):
         dir_path = tmp_path / "data"
         dir_path.mkdir()
         _write_jsonl(dir_path / "index.jsonl", [{"text": "indexed dir"}])
@@ -147,9 +169,7 @@ class TestVlmDatasetLoader:
         assert len(data) == 1
         assert data[0].text == "indexed dir"
 
-    def test_get_dataset_by_name_return_legacy_default_text_when_with_image_directory(
-        self, tmp_path: Path
-    ):
+    def test_get_dataset_by_name_return_legacy_default_text_when_with_image_directory(self, tmp_path: Path):
         d = tmp_path / "img"
         d.mkdir()
         (d / "a.jpg").write_bytes(b"a")
@@ -173,9 +193,7 @@ class TestVlmDatasetLoader:
         assert len(data) == 1
         assert data[0].text == "legacy jsonl"
 
-    def test_get_dataset_by_name_return_samples_when_short_name_under_dataset_dir(
-        self, tmp_path: Path
-    ):
+    def test_get_dataset_by_name_return_samples_when_short_name_under_dataset_dir(self, tmp_path: Path):
         dataset_dir = tmp_path / "lab_calib"
         dataset_dir.mkdir()
         calib_dir = dataset_dir / "calibData"
@@ -186,9 +204,7 @@ class TestVlmDatasetLoader:
         assert len(data) == 1
         assert data[0].text == "Describe this image in detail."
 
-    def test_get_dataset_by_name_use_indexed_loader_when_dir_has_index_and_images(
-        self, tmp_path: Path
-    ):
+    def test_get_dataset_by_name_use_indexed_loader_when_dir_has_index_and_images(self, tmp_path: Path):
         dir_path = tmp_path / "data"
         dir_path.mkdir()
         (dir_path / "img.jpg").write_bytes(b"img")
@@ -197,9 +213,7 @@ class TestVlmDatasetLoader:
         assert len(data) == 1
         assert data[0].text == "indexed"
 
-    def test_get_dataset_by_name_return_samples_with_audio_when_index_jsonl_has_audio(
-        self, tmp_path: Path
-    ):
+    def test_get_dataset_by_name_return_samples_with_audio_when_index_jsonl_has_audio(self, tmp_path: Path):
         audio_file = tmp_path / "audio.wav"
         audio_file.write_bytes(b"audio")
         index_jsonl = tmp_path / "index.jsonl"
@@ -209,9 +223,7 @@ class TestVlmDatasetLoader:
         assert data[0].audio is not None
         assert "audio.wav" in data[0].audio
 
-    def test_get_dataset_by_name_return_samples_with_video_when_indexed_dir_has_video(
-        self, tmp_path: Path
-    ):
+    def test_get_dataset_by_name_return_samples_with_video_when_indexed_dir_has_video(self, tmp_path: Path):
         dir_path = tmp_path / "videos"
         dir_path.mkdir()
         (dir_path / "video.mp4").write_bytes(b"video")
@@ -220,20 +232,21 @@ class TestVlmDatasetLoader:
         assert len(data) == 1
         assert data[0].video is not None
 
-    def test_get_dataset_by_name_return_mixed_modalities_when_indexed_dir_has_mixed(
-        self, tmp_path: Path
-    ):
+    def test_get_dataset_by_name_return_mixed_modalities_when_indexed_dir_has_mixed(self, tmp_path: Path):
         dir_path = tmp_path / "mixed"
         dir_path.mkdir()
         (dir_path / "img.jpg").write_bytes(b"img")
         (dir_path / "audio.wav").write_bytes(b"audio")
         (dir_path / "video.mp4").write_bytes(b"video")
-        _write_jsonl(dir_path / "index.jsonl", [
-            {"text": "text only"},
-            {"text": "with image", "image": "img.jpg"},
-            {"text": "with audio", "audio": "audio.wav"},
-            {"text": "with video", "video": "video.mp4"},
-        ])
+        _write_jsonl(
+            dir_path / "index.jsonl",
+            [
+                {"text": "text only"},
+                {"text": "with image", "image": "img.jpg"},
+                {"text": "with audio", "audio": "audio.wav"},
+                {"text": "with video", "video": "video.mp4"},
+            ],
+        )
         data = VLMDatasetLoader().get_dataset_by_name(str(dir_path))
         assert len(data) == 4
         assert data[0].image is None
@@ -241,17 +254,18 @@ class TestVlmDatasetLoader:
         assert data[2].audio is not None
         assert data[3].video is not None
 
-    def test_get_dataset_by_name_return_legacy_mixed_when_dir_has_images_and_jsonl(
-        self, tmp_path: Path
-    ):
+    def test_get_dataset_by_name_return_legacy_mixed_when_dir_has_images_and_jsonl(self, tmp_path: Path):
         dir_path = tmp_path / "legacy"
         dir_path.mkdir()
         (dir_path / "img1.jpg").write_bytes(b"1")
         (dir_path / "img2.jpg").write_bytes(b"2")
-        _write_jsonl(dir_path / "data.jsonl", [
-            {"text": "text only"},
-            {"image": "img1.jpg", "text": "custom text"},
-        ])
+        _write_jsonl(
+            dir_path / "data.jsonl",
+            [
+                {"text": "text only"},
+                {"image": "img1.jpg", "text": "custom text"},
+            ],
+        )
         data = VLMDatasetLoader().get_dataset_by_name(str(dir_path))
         assert len(data) == 3
         text_only = [s for s in data if s.image is None]

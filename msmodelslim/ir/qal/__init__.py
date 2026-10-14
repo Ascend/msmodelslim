@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
 
 """
 Quantization Abstract Layer，量化抽象层，简称QAL，是针对量化业务进行抽象的模块，将量化业务划分为业务逻辑与计算逻辑两部分。
@@ -35,7 +36,7 @@ QAL主要包含两部分：
 2、动态加载实现，使用register注册实现，实现可以动态加载接口实现。
 3、动态分发机制，基于dispatch_key的动态函数分发，便于管理相近语义的多个函数版本的实现。
 4、一定程度解决组合爆炸问题，。对于包含多个维度拓展的组合函数，实际上并非所有组合都是合法的，基于动态函数分发，可以方便的管理有效组合。
-    
+
 """
 
 __all__ = [
@@ -44,10 +45,9 @@ __all__ = [
     "QStorage",
     "QScope",
     "QScheme",
-
     "QFuncRegistry",
     "QABCRegistry",
 ]
 
-from .qbase import QDType, QParam, QStorage, QScope, QScheme
-from .qregistry import QFuncRegistry, QABCRegistry
+from .qbase import QDType, QParam, QStorage, QScope, QScheme  # noqa: E402
+from .qregistry import QFuncRegistry, QABCRegistry  # noqa: E402

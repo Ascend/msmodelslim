@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 import unittest
 from unittest.mock import Mock, patch
 import numpy as np
-import acl
+import acl  # noqa: F401
 from ascend_utils.common import acl_inference
 from ascend_utils.common.acl_inference import (
     AclInference,
@@ -33,12 +33,11 @@ from ascend_utils.common.acl_inference import (
     ACL_MEMCPY_HOST_TO_DEVICE,
     ACL_MEMCPY_DEVICE_TO_HOST,
     ACL_MEM_MALLOC_HUGE_FIRST,
-    NodeType
+    NodeType,
 )
 
 
 class TestAclInference(unittest.TestCase):
-
     def setUp(self):
         """测试前准备"""
         self.device_id = 0
@@ -85,12 +84,8 @@ class TestAclInference(unittest.TestCase):
         # 设置模型描述函数返回值
         self.mock_acl.mdl.get_num_inputs.return_value = 1
         self.mock_acl.mdl.get_num_outputs.return_value = 1
-        self.mock_acl.mdl.get_input_dims.side_effect = [
-            (self.mock_input_dims[0], ACL_ERROR_NONE)
-        ]
-        self.mock_acl.mdl.get_output_dims.side_effect = [
-            (self.mock_output_dims[0], ACL_ERROR_NONE)
-        ]
+        self.mock_acl.mdl.get_input_dims.side_effect = [(self.mock_input_dims[0], ACL_ERROR_NONE)]
+        self.mock_acl.mdl.get_output_dims.side_effect = [(self.mock_output_dims[0], ACL_ERROR_NONE)]
         self.mock_acl.mdl.get_input_format.return_value = 0
         self.mock_acl.mdl.get_output_format.return_value = 0
         self.mock_acl.mdl.get_input_size_by_index.return_value = 1024
@@ -155,15 +150,16 @@ class TestAclInference(unittest.TestCase):
 
     def test_acl_inference_init_success(self):
         """测试AclInference初始化成功"""
-        with patch.object(AclInference, '_init_input_device_buffer') as mock_input_buf, \
-                patch.object(AclInference, '_init_output_device_buffer') as mock_output_buf, \
-                patch.object(AclInference, '_init_output_host_buffer') as mock_host_buf:
+        with (
+            patch.object(AclInference, '_init_input_device_buffer') as mock_input_buf,
+            patch.object(AclInference, '_init_output_device_buffer') as mock_output_buf,
+            patch.object(AclInference, '_init_output_host_buffer') as mock_host_buf,
+        ):
             mock_input_buf.return_value = [{"buffer": Mock(), "size": 1024}]
             mock_output_buf.return_value = [{"buffer": Mock(), "size": 4096}]
             mock_host_buf.return_value = ([np.array([0])], [{"buffer": 1234, "size": 4096}])
 
-        with patch('ascend_utils.common.acl_inference.get_valid_read_path',
-                   side_effect=lambda x, **kwargs: x):
+        with patch('ascend_utils.common.acl_inference.get_valid_read_path', side_effect=lambda x, **kwargs: x):
             # 创建实例
             acl_infer = AclInference(self.model_path, self.device_id)
 
@@ -237,9 +233,7 @@ class TestAclInference(unittest.TestCase):
         acl_infer.inputs = [
             NodeType("input1", [1, 3, 224, 224], 0, 1024, 0)  # dtype 0 = float32
         ]
-        acl_infer.outputs = [
-            NodeType("output1", [1, 1000], 0, 4096, 0)
-        ]
+        acl_infer.outputs = [NodeType("output1", [1, 1000], 0, 4096, 0)]
         acl_infer.num_inputs = 1
         acl_infer.num_outputs = 1
         acl_infer.model_desc = Mock()
@@ -250,10 +244,12 @@ class TestAclInference(unittest.TestCase):
         acl_infer.execute_time_ms = 0
 
         # Mock内部方法
-        with patch.object(acl_infer, '_input_data_from_host_to_device') as mock_input, \
-                patch.object(acl_infer, '_create_output_data_device_buffer') as mock_output, \
-                patch.object(acl_infer, '_output_data_from_device_to_host') as mock_output_host, \
-                patch.object(acl_infer, '_destroy_data_buffer') as mock_destroy:
+        with (
+            patch.object(acl_infer, '_input_data_from_host_to_device') as mock_input,
+            patch.object(acl_infer, '_create_output_data_device_buffer') as mock_output,
+            patch.object(acl_infer, '_output_data_from_device_to_host') as mock_output_host,
+            patch.object(acl_infer, '_destroy_data_buffer') as mock_destroy,
+        ):
             mock_input.return_value = Mock()
             mock_output.return_value = Mock()
             mock_output_host.return_value = [np.array([0.1, 0.2])]
@@ -280,9 +276,7 @@ class TestAclInference(unittest.TestCase):
         acl_infer = AclInference.__new__(AclInference)
         acl_infer._init_success = True
         acl_infer.context = None
-        acl_infer.inputs = [
-            NodeType("input1", [1, 3, 224, 224], 0, 1024, 0)
-        ]
+        acl_infer.inputs = [NodeType("input1", [1, 3, 224, 224], 0, 1024, 0)]
         acl_infer.num_inputs = 1
 
         # 形状不匹配的输入数据
@@ -313,7 +307,7 @@ class TestAclInference(unittest.TestCase):
         acl_infer.output_host_bytes_data = [Mock()]
         acl_infer.output_host_buffer = [Mock()]
 
-        with patch.object(acl_infer, '_destroy_data_buffer') as mock_destroy:
+        with patch.object(acl_infer, '_destroy_data_buffer') as mock_destroy:  # noqa: F841
             acl_infer.release_resource()
 
             # 验证内存释放调用
@@ -373,9 +367,7 @@ class TestAclInference(unittest.TestCase):
         acl_infer = AclInference.__new__(AclInference)
         acl_infer.model_desc = self.mock_model_desc
         acl_infer.num_inputs = 1
-        acl_infer.inputs = [
-            NodeType("input1", [1, 3, 224, 224], 0, 1024, 0)
-        ]
+        acl_infer.inputs = [NodeType("input1", [1, 3, 224, 224], 0, 1024, 0)]
         acl_infer.input_data_buffer = [{"buffer": Mock(), "size": 1024}]
 
         input_data = [np.ones([1, 3, 224, 224], dtype=np.float32)]
@@ -392,7 +384,7 @@ class TestAclInference(unittest.TestCase):
         acl_infer.output_data_buffer = [{"buffer": Mock(), "size": 4096}]
 
         with patch.object(acl_infer, '_init_acl_data_buffer') as mock_init_buf:
-            result = acl_infer._create_output_data_device_buffer()
+            result = acl_infer._create_output_data_device_buffer()  # noqa: F841
 
             # 验证数据缓冲区初始化
             mock_init_buf.assert_called_once()
@@ -418,7 +410,7 @@ class TestAclInference(unittest.TestCase):
             1000 * 4,  # 数据大小 (1000个float32元素)
             acl_infer.output_data_buffer[0]["buffer"],
             1000 * 4,
-            ACL_MEMCPY_DEVICE_TO_HOST
+            ACL_MEMCPY_DEVICE_TO_HOST,
         )
         self.assertEqual(len(result), 1)
         self.assertIsInstance(result[0], np.ndarray)

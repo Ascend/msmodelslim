@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-with,invalid-envvar-default,no-name-in-module,possibly-used-before-assignment,redefined-outer-name,ungrouped-imports,unspecified-encoding
 
 import argparse
 import logging
@@ -28,7 +29,7 @@ import sys
 import imageio
 import torch
 from torch import nn
-import torch_npu
+import torch_npu  # noqa: F401
 from diffusers.schedulers import EulerAncestralDiscreteScheduler
 from transformers import T5Tokenizer, MT5EncoderModel
 
@@ -37,7 +38,9 @@ from opensora.models.diffusion.opensora.modeling_opensora import OpenSoraT2V
 from opensora.sample.pipeline_opensora_sp import OpenSoraPipeline
 from utils.parallel_mgr import ParallelConfig, init_parallel_env, finalize_parallel_env, get_sequence_parallel_rank
 from opensora.models.causalvideovae.model.causal_vae.parallel_layers import (
-    register_vae_decode, parallel_full_model_warp)
+    register_vae_decode,
+    parallel_full_model_warp,
+)
 from utils.file_utils import standardize_path
 
 from msmodelslim.quant import quant_model, SessionConfig
@@ -49,17 +52,21 @@ logger = logging.getLogger(__name__)
 
 def load_t2v_checkpoint(model_path):
     logger.info('load_t2v_checkpoint, %r', model_path)
-    transformer_model = OpenSoraT2V.from_pretrained(model_path, cache_dir=args.cache_dir,
-                                                    low_cpu_mem_usage=False, device_map=None,
-                                                    torch_dtype=weight_dtype, local_files_only=True).to("npu")
+    transformer_model = OpenSoraT2V.from_pretrained(
+        model_path,
+        cache_dir=args.cache_dir,
+        low_cpu_mem_usage=False,
+        device_map=None,
+        torch_dtype=weight_dtype,
+        local_files_only=True,
+    ).to("npu")
     transformer_model.eval()
-    pipeline = OpenSoraPipeline(vae=vae,
-                                text_encoder=text_encoder,
-                                tokenizer=tokenizer,
-                                scheduler=scheduler,
-                                transformer=transformer_model).to("npu")
+    pipeline = OpenSoraPipeline(
+        vae=vae, text_encoder=text_encoder, tokenizer=tokenizer, scheduler=scheduler, transformer=transformer_model
+    ).to("npu")
     if args.algorithm == "dit_cache":
         from opensora.models.diffusion.opensora.cache_mgr import CacheManager, DitCacheConfig
+
         config = DitCacheConfig(step_start=20, step_interval=2, block_start=7, num_blocks=21)
         cache = CacheManager(config)
         pipeline.transformer.cache = cache
@@ -68,21 +75,21 @@ def load_t2v_checkpoint(model_path):
 
 def run_model_and_save_images(pipeline, args, save_path):
     positive_prompt = """
-    (masterpiece), (best quality), (ultra-detailed), (unwatermarked), 
-    {}. 
-    emotional, harmonious, vignette, 4k epic detailed, shot on kodak, 35mm photo, 
+    (masterpiece), (best quality), (ultra-detailed), (unwatermarked),
+    {}.
+    emotional, harmonious, vignette, 4k epic detailed, shot on kodak, 35mm photo,
     sharp focus, high budget, cinemascope, moody, epic, gorgeous
     """
 
     negative_prompt = """
-    nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, 
+    nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality,
     low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry.
     """
 
     if not isinstance(args.text_prompt, list):
         args.text_prompt = [positive_prompt.format(args.text_prompt)]
     if len(args.text_prompt) == 1 and args.text_prompt[0].endswith('txt'):
-        text_prompt = open(args.text_prompt[0], 'r').readlines()
+        text_prompt = open(args.text_prompt[0], 'r').readlines()  # noqa: SIM115
         args.text_prompt = [positive_prompt.format(i.strip()) for i in text_prompt]
 
     if args.batch_size > 1:
@@ -90,9 +97,9 @@ def run_model_and_save_images(pipeline, args, save_path):
         group = len(args.text_prompt) // args.batch_size
         tail = len(args.text_prompt) % args.batch_size
         for index in range(group):
-            prompt_list.append(args.text_prompt[index * args.batch_size: (index + 1) * args.batch_size])
+            prompt_list.append(args.text_prompt[index * args.batch_size : (index + 1) * args.batch_size])
         if tail > 0:
-            prompt_list.append(args.text_prompt[: -tail])
+            prompt_list.append(args.text_prompt[:-tail])
     else:
         prompt_list = args.text_prompt
 
@@ -105,19 +112,20 @@ def run_model_and_save_images(pipeline, args, save_path):
 
     if not args.test_time:
         for index, prompt in enumerate(prompt_list):
-            videos = pipeline(prompt,
-                              negative_prompt=negative_prompt,
-                              num_frames=args.num_frames,
-                              height=args.height,
-                              width=args.width,
-                              num_inference_steps=args.num_sampling_steps,
-                              guidance_scale=args.guidance_scale,
-                              num_images_per_prompt=1,
-                              mask_feature=True,
-                              max_sequence_length=args.max_sequence_length,
-                              seed=args.seed,
-                              **kwargs
-                              ).images
+            videos = pipeline(
+                prompt,
+                negative_prompt=negative_prompt,
+                num_frames=args.num_frames,
+                height=args.height,
+                width=args.width,
+                num_inference_steps=args.num_sampling_steps,
+                guidance_scale=args.guidance_scale,
+                num_images_per_prompt=1,
+                mask_feature=True,
+                max_sequence_length=args.max_sequence_length,
+                seed=args.seed,
+                **kwargs,
+            ).images
             logger.info(videos.shape)
 
             if get_sequence_parallel_rank() <= 0:
@@ -126,26 +134,31 @@ def run_model_and_save_images(pipeline, args, save_path):
                         os.path.join(
                             save_path,
                             f'EulerAncestralDiscrete_{index * args.batch_size + i}'
-                            + f'_final__gs{args.guidance_scale}_s{args.num_sampling_steps}.mp4'
-                        ), videos[i],
-                        fps=args.fps, quality=6, codec='libx264',
-                        output_params=['-threads', '20'])  # highest quality is 10, lowest is 0
+                            + f'_final__gs{args.guidance_scale}_s{args.num_sampling_steps}.mp4',
+                        ),
+                        videos[i],
+                        fps=args.fps,
+                        quality=6,
+                        codec='libx264',
+                        output_params=['-threads', '20'],
+                    )  # highest quality is 10, lowest is 0
 
     else:
         for _ in range(2):
             start_time = time.time()
-            videos = pipeline(prompt_list[0],
-                              negative_prompt=negative_prompt,
-                              num_frames=args.num_frames,
-                              height=args.height,
-                              width=args.width,
-                              num_inference_steps=args.num_sampling_steps,
-                              guidance_scale=args.guidance_scale,
-                              num_images_per_prompt=1,
-                              mask_feature=True,
-                              max_sequence_length=args.max_sequence_length,
-                              **kwargs
-                              ).images
+            videos = pipeline(
+                prompt_list[0],
+                negative_prompt=negative_prompt,
+                num_frames=args.num_frames,
+                height=args.height,
+                width=args.width,
+                num_inference_steps=args.num_sampling_steps,
+                guidance_scale=args.guidance_scale,
+                num_images_per_prompt=1,
+                mask_feature=True,
+                max_sequence_length=args.max_sequence_length,
+                **kwargs,
+            ).images
             torch.npu.synchronize()
             use_time = time.time() - start_time
             logger.info("=========  use time %s", str(use_time))
@@ -186,25 +199,21 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
         _cfg = SessionConfig(
             processor_cfg_map={
                 "w8a8": W8A8ProcessorConfig(
-                    cfg=W8A8QuantConfig(
-                        act_method='minmax'
-                    ),
+                    cfg=W8A8QuantConfig(act_method='minmax'),
                     disable_names=get_disable_layer_names(
-                        model,
-                        layer_include=None,
-                        layer_exclude=('*net.2*', '*adaln_single*')
-                    )
+                        model, layer_include=None, layer_exclude=('*net.2*', '*adaln_single*')
+                    ),
                 ),
                 "save": SaveProcessorConfig(
                     output_path=os.path.dirname(safe_tensor_path),
                     safetensors_name=os.path.basename(safe_tensor_path),
                     json_name=None,
                     save_type=['safe_tensor'],
-                    part_file_size=None
-                )
+                    part_file_size=None,
+                ),
             },
             calib_data=calib_dataset,
-            device='npu'
+            device='npu',
         )
         return _cfg
 
@@ -250,7 +259,11 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=1234)
     parser.add_argument("--vae_parallel", action='store_true')
     parser.add_argument("--do_quant", action="store_true")
-    parser.add_argument("--quant_type", choices=["w8a8"], default="w8a8", )
+    parser.add_argument(
+        "--quant_type",
+        choices=["w8a8"],
+        default="w8a8",
+    )
     parser.add_argument("--quant_weight_save_folder", type=str)
     parser.add_argument("--quant_dump_calib_folder", type=str)
     parser.add_argument("--save_image_flag", action="store_true")
@@ -265,8 +278,9 @@ if __name__ == "__main__":
     world_size = int(os.getenv('WORLD_SIZE', 1))
     if world_size > 1:
         sp_degree = world_size // 2 if args.use_cfg_parallel else world_size
-        parallel_config = ParallelConfig(sp_degree=sp_degree, use_cfg_parallel=args.use_cfg_parallel,
-                                         world_size=world_size)
+        parallel_config = ParallelConfig(
+            sp_degree=sp_degree, use_cfg_parallel=args.use_cfg_parallel, world_size=world_size
+        )
         init_parallel_env(parallel_config)
 
     args.ae_path = standardize_path(args.ae_path)
@@ -290,9 +304,13 @@ if __name__ == "__main__":
         parallel_full_model_warp(vae.vae, parallel_dim)
         vae = register_vae_decode(vae, parallel_dim, parallel_overlap)
 
-    text_encoder = MT5EncoderModel.from_pretrained(args.text_encoder_name, cache_dir=args.cache_dir,
-                                                   low_cpu_mem_usage=True, torch_dtype=weight_dtype,
-                                                   local_files_only=True).to("npu")
+    text_encoder = MT5EncoderModel.from_pretrained(
+        args.text_encoder_name,
+        cache_dir=args.cache_dir,
+        low_cpu_mem_usage=True,
+        torch_dtype=weight_dtype,
+        local_files_only=True,
+    ).to("npu")
     tokenizer = T5Tokenizer.from_pretrained(args.text_encoder_name, cache_dir=args.cache_dir, local_files_only=True)
     text_encoder.eval()
 
@@ -317,25 +335,17 @@ if __name__ == "__main__":
             ],
             infer_kwargs=dict(
                 save_path=os.path.join(args.save_img_path, 'calib_fp'),
-            )
+            ),
         )
 
         if args.save_image_flag:
             # run fake quant
-            run_model_and_save_images(
-                pipeline,
-                args,
-                save_path=os.path.join(args.save_img_path, 'calib_quant')
-            )
+            run_model_and_save_images(pipeline, args, save_path=os.path.join(args.save_img_path, 'calib_quant'))
 
     else:
         if args.save_image_flag:
             # run float inference
-            run_model_and_save_images(
-                pipeline,
-                args,
-                save_path=args.save_img_path
-            )
+            run_model_and_save_images(pipeline, args, save_path=args.save_img_path)
 
     if world_size > 0:
         finalize_parallel_env()

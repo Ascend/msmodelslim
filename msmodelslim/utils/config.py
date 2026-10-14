@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -63,7 +63,7 @@ class ModelSlimConfig(BaseModel):
 
 
 def load_model_adapter_dependencies(
-        file_config: ConfigParser,
+    file_config: ConfigParser,
 ) -> dict[str, dict[str, str]]:
     deps: dict[str, dict[str, str]] = {}
 
@@ -73,9 +73,7 @@ def load_model_adapter_dependencies(
             try:
                 model_dependency = json.loads(dep_str)
             except json.JSONDecodeError as e:
-                raise ValueError(
-                    f"Invalid JSON for model {model_type}: {dep_str}"
-                ) from e
+                raise ValueError(f"Invalid JSON for model {model_type}: {dep_str}") from e
 
             model_list = [m.strip() for m in models.split(",")]
 
@@ -94,41 +92,44 @@ def init_config():
     file_config.read(config_path)
 
     if not file_config.has_section(SECTION_URL):
-        raise ConfigError(f"Invalid config section: {SECTION_URL}",
-                          action=f'Please check the config file {config_path}')
+        raise ConfigError(
+            f"Invalid config section: {SECTION_URL}", action=f'Please check the config file {config_path}'
+        )
 
     if not file_config.has_option(SECTION_URL, KEY_REPO_URL):
-        raise ConfigError(f"Invalid config key: {KEY_REPO_URL}",
-                          action=f'Please check the config file {config_path}')
+        raise ConfigError(f"Invalid config key: {KEY_REPO_URL}", action=f'Please check the config file {config_path}')
 
     if not file_config.has_option(SECTION_URL, KEY_QUESTION_AND_ANSWER_URL):
-        raise ConfigError(f"Invalid config key: {KEY_QUESTION_AND_ANSWER_URL}",
-                          action=f'Please check the config file {config_path}')
+        raise ConfigError(
+            f"Invalid config key: {KEY_QUESTION_AND_ANSWER_URL}", action=f'Please check the config file {config_path}'
+        )
 
     if not file_config.has_section(SECTION_MODEL_ADAPTER):
-        raise ConfigError(f"Invalid config section: {SECTION_MODEL_ADAPTER}",
-                          action=f"Please check the config file {config_path}")
+        raise ConfigError(
+            f"Invalid config section: {SECTION_MODEL_ADAPTER}", action=f"Please check the config file {config_path}"
+        )
 
     if not file_config.has_section(SECTION_MODEL_ADAPTER_DEPENDENCIES):
-        raise ConfigError(f"Invalid config section: {SECTION_MODEL_ADAPTER_DEPENDENCIES}",
-                          action=f"Please check the config file {config_path}")
+        raise ConfigError(
+            f"Invalid config section: {SECTION_MODEL_ADAPTER_DEPENDENCIES}",
+            action=f"Please check the config file {config_path}",
+        )
 
     logger_level = os.getenv(ENV_VAR_LOG_LEVEL, "INFO").lower()
     if logger_level not in VALID_LOG_LEVELS:
-        raise EnvVarError(f"Invalid log level: {logger_level}, must be in {VALID_LOG_LEVELS}",
-                          action=f'Please check the environment variable {ENV_VAR_LOG_LEVEL}')
+        raise EnvVarError(
+            f"Invalid log level: {logger_level}, must be in {VALID_LOG_LEVELS}",
+            action=f'Please check the environment variable {ENV_VAR_LOG_LEVEL}',
+        )
 
     custom_practice_repo = os.getenv(ENV_VAR_CUSTOM_PRACTICE_REPO)
 
     modelslim_config = ModelSlimConfig(
         urls=URLs(
             repository=file_config.get(SECTION_URL, KEY_REPO_URL),
-            question_and_answer=file_config.get(SECTION_URL, KEY_QUESTION_AND_ANSWER_URL)
+            question_and_answer=file_config.get(SECTION_URL, KEY_QUESTION_AND_ANSWER_URL),
         ),
-        env_vars=EnvVars(
-            log_level=logger_level,
-            custom_practice_repo=custom_practice_repo
-        ),
+        env_vars=EnvVars(log_level=logger_level, custom_practice_repo=custom_practice_repo),
         model_adapter_dependencies=load_model_adapter_dependencies(file_config),
     )
     return modelslim_config

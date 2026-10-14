@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
 
 """
 Graph Module for MsModelSlim
@@ -29,7 +30,6 @@ including subgraph types, adapter configurations, and mapping relationships.
 __all__ = [
     # Constants
     "SUPPORTED_SUBGRAPH_TYPES",
-
     # Configuration Classes
     "MappingConfig",
     "FusionConfig",
@@ -37,7 +37,7 @@ __all__ = [
 ]
 
 # Import all components from adapter_types module
-from .adapter_types import (
+from .adapter_types import (  # noqa: E402
     SUPPORTED_SUBGRAPH_TYPES,
     MappingConfig,
     FusionConfig,

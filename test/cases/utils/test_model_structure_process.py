@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,18 +18,18 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
+# pylint: disable=pointless-string-statement,ungrouped-imports
 
 """
 msmodelslim.utils.dag_utils.model_structure_process 模块的单元测试
 """
 
-import unittest
-from unittest.mock import Mock
+import unittest  # noqa: E402
+from unittest.mock import Mock  # noqa: E402
 
-from ascend_utils.core.dag.dag_node import DagNode
-from msmodelslim.utils.dag_utils.model_infos import ModuleType
-from msmodelslim.utils.dag_utils.model_structure_process import StructureProcess
+from msmodelslim.utils.dag_utils.model_infos import ModuleType  # noqa: E402, F401
+from ascend_utils.core.dag.dag_node import DagNode  # noqa: E402, F401
+from msmodelslim.utils.dag_utils.model_structure_process import StructureProcess  # noqa: E402
 
 
 class MockDagNode:

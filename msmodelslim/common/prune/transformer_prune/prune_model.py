@@ -1,4 +1,24 @@
-# Copyright Huawei Technologies Co., Ltd. 2022-2022. All rights reserved.
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+"""
+# pylint: disable=anomalous-backslash-in-string,useless-object-inheritance
 
 from ascend_utils.common.security import check_element_type
 from ascend_utils.common.security import check_type
@@ -19,7 +39,7 @@ class PruneConfig(object):
     def __init__(self):
         self.prune_state_dict_steps = []
         self.prune_blocks_params = []
-    
+
     @staticmethod
     def check_prune_config(config, target_steps: list):
         check_type(config, PruneConfig, param_name="config")
@@ -33,7 +53,7 @@ class PruneConfig(object):
         for step in prune_state_dict_steps:
             if step not in target_steps:
                 raise ValueError("Step {} not exist! Step must in {}".format(step, target_steps))
-    
+
     @staticmethod
     def _check_steps(steps: list):
         if not steps:
@@ -51,8 +71,6 @@ class PruneConfig(object):
         for layer_after, layer_before in layer_id_map.items():
             check_type(layer_after, int, param_name="layer_after")
             check_type(layer_before, int, param_name="layer_before")
-
-
 
     def get(self, config_name: str, default=None):
         if hasattr(self, config_name):
@@ -112,9 +130,11 @@ def prune_model_weight(model, config: PruneConfig, weight_file_path: str):
     backend = check_model_backend(model)
     if backend == "mindspore":
         from msmodelslim.mindspore.prune.transformer_prune.prune_model_ms import prune_model_weight_ms
+
         prune_model_weight_ms(model, config, weight_file_path)
     elif backend == "pytorch":
         from msmodelslim.pytorch.prune.transformer_prune.prune_model_torch import prune_model_weight_torch
+
         prune_model_weight_torch(model, config, weight_file_path)
 
     logger.info("================ Finish pruning the model's weight ===============")

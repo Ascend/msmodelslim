@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,18 +18,22 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import unittest
 import torch
 from unittest.mock import MagicMock
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_modules import (
-    Quantizer,
-    LinearQuantizer,
-    Conv2dQuantizer,
-    LinearNf4Quantizer,
     _layer_wise_activation_calib,
     _layer_wise_weight_only_calib,
-    layer_wise_calib
+    layer_wise_calib,
 )
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_modules import (
+    Quantizer,  # noqa: F401
+    LinearQuantizer,  # noqa: F401
+    Conv2dQuantizer,  # noqa: F401
+    LinearNf4Quantizer,  # noqa: F401
+)  # noqa: F401
+
 
 class TestLayerWiseCalib(unittest.TestCase):
     def setUp(self):
@@ -94,6 +98,7 @@ class TestLayerWiseCalib(unittest.TestCase):
         module.quant_weight.w_hessian = False
         self.quant_model.named_modules.return_value = [('conv1', module)]
         _layer_wise_weight_only_calib(self.all_tensors, module, 'conv1', self.device)
+
 
 if __name__ == '__main__':
     unittest.main()

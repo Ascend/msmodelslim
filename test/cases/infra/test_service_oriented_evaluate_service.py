@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -13,11 +13,12 @@ You may obtain a copy of Mulan PSL v2 at:
          http://license.coscl.org.cn/MulanPSL2
 
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from decimal import Decimal
 
 import pytest
@@ -38,12 +39,14 @@ def _result(dataset: str, accuracy: str) -> EvaluateAccuracy:
 @pytest.mark.parametrize(
     "target,accuracy,tolerance,expected",
     [
-        ("0.95", "0.94", "0.01", True),   # 边界：target - accuracy == tolerance
+        ("0.95", "0.94", "0.01", True),  # 边界：target - accuracy == tolerance
         ("0.95", "0.9401", "0.01", True),  # target - accuracy < tolerance
         ("0.95", "0.9399", "0.01", False),  # target - accuracy > tolerance
     ],
 )
-def test_is_demand_satisfied_return_expected_when_boundary_cases(target: str, accuracy: str, tolerance: str, expected: bool):
+def test_is_demand_satisfied_return_expected_when_boundary_cases(
+    target: str, accuracy: str, tolerance: str, expected: bool
+):
     demand = [_expectation(dataset="test_dataset", target=target, tolerance=tolerance)]
     evaluate_result = [_result(dataset="test_dataset", accuracy=accuracy)]
     assert is_demand_satisfied(demand=demand, evaluate_result=evaluate_result) is expected

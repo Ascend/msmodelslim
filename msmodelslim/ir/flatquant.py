@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,28 +18,27 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
+# pylint: disable=attribute-defined-outside-init,bad-classmethod-argument
 
 import torch
 from torch import nn
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Tuple
+from typing import List, Optional  # noqa: F401
 from .wrapper import WrapperIR, HookIR
 
 
 class FlatQuantOnlineWrapper(WrapperIR):
     """
     按Kronecker Product方式进行旋转的包装器。
-    
+
     该类继承自WrapperIR，包装AutoFakeQuantLinear实例，使用全局共享的旋转矩阵，
     通过Kronecker Product组合后进行旋转运算。
     """
-    def __init__(
-            self,
-            module: nn.Module
-    ):
+
+    def __init__(self, module: nn.Module):
         """
         初始化FlatQuantOnlineWrapper包装器。
-        
+
         Args:
             module: 被包装的AutoFakeQuantLinear实例
             layer_name: 层名称，用于保存时标识
@@ -51,7 +50,7 @@ class FlatQuantOnlineWrapper(WrapperIR):
         self.left_trans = None
         self.right_trans = None
         self.save_trans = None
-    
+
     @staticmethod
     def is_atomic() -> bool:
         """
@@ -63,7 +62,7 @@ class FlatQuantOnlineWrapper(WrapperIR):
     def _add_clip(self, clip_factor: torch.Tensor):
         self.clip_factor = nn.Parameter(clip_factor, requires_grad=False)
 
-    def _add_flat(self, save_trans:Dict[str, torch.Tensor]):
+    def _add_flat(self, save_trans: Dict[str, torch.Tensor]):
         if save_trans is None:
             return
         self.save_trans = save_trans
@@ -77,17 +76,17 @@ class FlatQuantOnlineWrapper(WrapperIR):
             self.right_trans = torch.nn.Parameter(right_trans, requires_grad=False)
             self.save_trans["right_trans"] = self.right_trans
 
-    def _apply_clip(self,hidden_states: torch.Tensor) -> torch.Tensor:
+    def _apply_clip(self, hidden_states: torch.Tensor) -> torch.Tensor:
         """
         可学习激活值裁剪(lac)
 
         Args:
             hidden_states: 激活值
-        
+
         Returns:
             经过可学习激活值裁剪，裁剪之后的激活值。
         """
-        init_shape = hidden_states.shape
+        init_shape = hidden_states.shape  # noqa: F841
         reshaped_hidden_states = hidden_states.reshape((-1, hidden_states.shape[-1]))
 
         h_max, h_min = reshaped_hidden_states.amax(1, keepdim=True), reshaped_hidden_states.amin(1, keepdim=True)
@@ -100,13 +99,13 @@ class FlatQuantOnlineWrapper(WrapperIR):
 
         return h_clamped
 
-    def _apply_flat(self, hidden_states: torch.Tensor)-> torch.Tensor:
+    def _apply_flat(self, hidden_states: torch.Tensor) -> torch.Tensor:
         """
         仿射变换，对激活值进行Kronecker积
 
         Args:
             hidden_states: 激活值
-        
+
         Returns:
             经过仿射变换之后的激活值。
         """
@@ -129,10 +128,10 @@ class FlatQuantOnlineWrapper(WrapperIR):
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         """
         前向传播，在AutoFakeQuantLinear前添加Flat运算(可能包括 lac，smooth以及仿射变换)。
-        
+
         Args:
             hidden_states: 输入张量
-        
+
         Returns:
             经过Flat运算和线性变换的输出张量
         """
@@ -154,39 +153,39 @@ class FlatQuantOnlineWrapper(WrapperIR):
         """
         if self.left_trans is not None and self.right_trans is not None:
             return f"kronecker_rotation(Left:{self.left_trans.shape[0]}x{self.left_trans.shape[1]}, Right:{self.right_trans.shape[0]}x{self.right_trans.shape[1]})"
-        return f"No affine transformation was performed."
+        return "No affine transformation was performed."
 
 
 class FlatQuantOnlineHookIR(HookIR):
     """
     FlatQuant HookIR实现，用于在线的Kronecker旋转。
-    
+
     该类实现了HookIR抽象基类，将hook信息转换为FlatQuantOnlineWrapper。
     """
 
     def __init__(self, clip_factor, save_trans):
         """
         初始化FlatQuantOnlineHookIR。
-        
+
         Args:
-            
+
         """
         super().__init__()
         self.clip_factor = clip_factor
         self.save_trans = save_trans
 
     def __call__(
-            self,
-            module: nn.Module,
-            args: Tuple[Any, ...],
+        self,
+        module: nn.Module,
+        args: Tuple[Any, ...],
     ) -> Tuple[Any, ...]:
         """
         实现Callable接口，作为hook函数被调用。
-        
+
         Args:
             module: 被hook的模块
             args: 模块的输入
-            
+
         Returns:
             处理后的输入
         """
@@ -196,10 +195,10 @@ class FlatQuantOnlineHookIR(HookIR):
     def wrapper_module(self, module: nn.Module) -> WrapperIR:
         """
         实现HookIR抽象方法，返回FlatQuantOnlineWrapper。
-        
+
         Args:
             module: 要包装的模块
-            
+
         Returns:
             FlatQuantOnlineWrapper实例
         """

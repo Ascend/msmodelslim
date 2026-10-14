@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,11 +18,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import pytest
 import torch
-import torch.nn as nn
 
+import torch.nn as nn  # noqa: F401
 from ascend_utils.pytorch.knowledge_distill.distill_losses_func_torch import (
     update_logits_by_temperature_pt,
     KDMse,
@@ -30,7 +31,7 @@ from ascend_utils.pytorch.knowledge_distill.distill_losses_func_torch import (
     HardKDCrossEntropy,
     HiddenMse,
     MMD,
-    DISTILL_LOSS_FUNC_TORCH
+    DISTILL_LOSS_FUNC_TORCH,
 )
 
 
@@ -122,6 +123,7 @@ def test_MMD_given_valid_states_when_forward_then_loss_computed():
     loss = criterion(state_s, state_t)
     assert isinstance(loss, torch.Tensor)
     assert loss.dim() == 0
+
 
 def test_DISTILL_LOSS_FUNC_TORCH_contains_KDCrossEntropy():
     assert "KDCrossEntropy" in DISTILL_LOSS_FUNC_TORCH

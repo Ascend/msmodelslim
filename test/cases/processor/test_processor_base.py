@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=expression-not-assigned,no-name-in-module
 
 import unittest
 from typing import Tuple, Dict, Optional
@@ -104,13 +105,7 @@ class TestProcessorBase(unittest.TestCase):
 
     def create_test_input(self, text: str = "Hello world", max_length: int = 10) -> Dict[str, torch.Tensor]:
         """创建测试输入"""
-        inputs = self.tokenizer(
-            text,
-            return_tensors="pt",
-            max_length=max_length,
-            padding="max_length",
-            truncation=True
-        )
+        inputs = self.tokenizer(text, return_tensors="pt", max_length=max_length, padding="max_length", truncation=True)
         return inputs
 
     def run_model_forward(self, inputs: Dict[str, torch.Tensor]) -> torch.Tensor:
@@ -134,7 +129,7 @@ class TestProcessorBase(unittest.TestCase):
             if key in current_state_dict:
                 self.assertFalse(
                     torch.allclose(original_state_dict[key], current_state_dict[key]),
-                    f"Parameter {key} should have changed"
+                    f"Parameter {key} should have changed",
                 )
 
     def assert_model_parameters_unchanged(self, original_state_dict: Dict[str, torch.Tensor]):
@@ -144,7 +139,7 @@ class TestProcessorBase(unittest.TestCase):
             if key in current_state_dict:
                 self.assertTrue(
                     torch.allclose(original_state_dict[key], current_state_dict[key]),
-                    f"Parameter {key} should not have changed"
+                    f"Parameter {key} should not have changed",
                 )
 
     def assert_linear_layers_quantized(self, model: PreTrainedModel, expected_quantized_layers: list):
@@ -200,18 +195,20 @@ class TestProcessorBase(unittest.TestCase):
         except Exception as e:
             self.fail(f"Model should run without error, but got: {e}")
 
-    def assert_outputs_close(self, outputs1: torch.Tensor, outputs2: torch.Tensor, rtol: float = 1e-3,
-                             atol: float = 1e-3):
+    def assert_outputs_close(
+        self, outputs1: torch.Tensor, outputs2: torch.Tensor, rtol: float = 1e-3, atol: float = 1e-3
+    ):
         """断言两个输出张量接近"""
         self.assertTrue(
             torch.allclose(outputs1, outputs2, rtol=rtol, atol=atol),
-            f"Outputs should be close with rtol={rtol}, atol={atol}"
+            f"Outputs should be close with rtol={rtol}, atol={atol}",
         )
 
-    def assert_outputs_not_close(self, outputs1: torch.Tensor, outputs2: torch.Tensor, rtol: float = 1e-3,
-                                 atol: float = 1e-3):
+    def assert_outputs_not_close(
+        self, outputs1: torch.Tensor, outputs2: torch.Tensor, rtol: float = 1e-3, atol: float = 1e-3
+    ):
         """断言两个输出张量不接近"""
         self.assertFalse(
             torch.allclose(outputs1, outputs2, rtol=rtol, atol=atol),
-            f"Outputs should not be close with rtol={rtol}, atol={atol}"
+            f"Outputs should not be close with rtol={rtol}, atol={atol}",
         )

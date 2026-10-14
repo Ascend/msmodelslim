@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from typing import Any, Dict, Optional, Tuple, Set, Callable
 
 import torch
@@ -38,8 +39,10 @@ CONST_PAST_KEY_VALUE = 'past_key_value'
 class KVCacheListener:
     def __init__(self, listen_helper: Callable[[int, torch.Tensor, torch.Tensor], None], cache: Cache):
         if cache is None:
-            raise SpecError("Cache cannot be None. KVCacheListener requires a valid Cache instance.",
-                            action="Please provide a valid Cache instance.")
+            raise SpecError(
+                "Cache cannot be None. KVCacheListener requires a valid Cache instance.",
+                action="Please provide a valid Cache instance.",
+            )
         self.cache = cache
         self.listen_helper = listen_helper
 
@@ -50,7 +53,9 @@ class KVCacheListener:
         """
         # 这些属性必须从当前实例直接获取，避免递归与功能错误
         if name in (
-                'update', 'cache', 'listen_helper',
+            'update',
+            'cache',
+            'listen_helper',
         ) or name.startswith('__'):
             return object.__getattribute__(self, name)
 
@@ -63,17 +68,19 @@ class KVCacheListener:
             return object.__getattribute__(self, name)
 
     def update(
-            self,
-            key_states: torch.Tensor,
-            value_states: torch.Tensor,
-            layer_idx: int,
-            cache_kwargs: Optional[Dict[str, Any]] = None,
+        self,
+        key_states: torch.Tensor,
+        value_states: torch.Tensor,
+        layer_idx: int,
+        cache_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         self.listen_helper(layer_idx, key_states, value_states)
         if not hasattr(self.cache, 'update'):
-            raise SpecError("Cache does not have update method. KVCacheListener requires a valid Cache instance.",
-                            action="Please provide a valid Cache instance "
-                                   "with update(key_states, value_states, layer_idx, cache_kwargs) method.")
+            raise SpecError(
+                "Cache does not have update method. KVCacheListener requires a valid Cache instance.",
+                action="Please provide a valid Cache instance "
+                "with update(key_states, value_states, layer_idx, cache_kwargs) method.",
+            )
         return key_states, value_states
 
 
@@ -82,8 +89,9 @@ class KVCacheListenerManager:
         super().__init__()
         self.remove_handlers: Set[RemovableHandle] = set()
 
-    def attach_listener_to_module(self, module: nn.Module,
-                                  listen_helper: Callable[[int, torch.Tensor, torch.Tensor], None]) -> None:
+    def attach_listener_to_module(
+        self, module: nn.Module, listen_helper: Callable[[int, torch.Tensor, torch.Tensor], None]
+    ) -> None:
         def pre_hook(_: nn.Module, args: Any, kwargs: Dict[str, Any]) -> Tuple[Any, Dict[str, Any]]:
             if CONST_PAST_KEY_VALUES in kwargs and kwargs[CONST_PAST_KEY_VALUES] is not None:
                 kwargs[CONST_PAST_KEY_VALUES] = KVCacheListener(listen_helper, cache=kwargs[CONST_PAST_KEY_VALUES])
@@ -93,7 +101,7 @@ class KVCacheListenerManager:
                 raise SpecError(
                     f"{CONST_PAST_KEY_VALUES} and {CONST_PAST_KEY_VALUE} both are None or missing. "
                     f"KVCacheListener requires a valid Cache instance.",
-                    action="Please pass a valid transformers.Cache instance via past_key_values/past_key_value."
+                    action="Please pass a valid transformers.Cache instance via past_key_values/past_key_value.",
                 )
             return args, kwargs
 

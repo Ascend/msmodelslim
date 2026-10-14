@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=super-with-arguments,use-implicit-booleaness-not-comparison,useless-parent-delegation
 
 import pytest
 import numpy as np
@@ -26,7 +27,7 @@ from mindspore import Tensor, nn, context
 from mindspore import dtype as mstype
 from mindspore.common.initializer import Normal
 
-from ascend_utils.common.knowledge_distill.utils import replace_module
+from ascend_utils.common.knowledge_distill.utils import replace_module  # noqa: F401
 from ascend_utils.mindspore.knowledge_distill.distill_losses_manager_ms import (
     SaveOutputShapeModule,
     GetOutputShapeModule,
@@ -35,12 +36,13 @@ from ascend_utils.mindspore.knowledge_distill.distill_losses_manager_ms import (
     LossModuleBase,
     LossModule,
     DistillLossesManagerBase,
-    DistillLossesManager
+    DistillLossesManager,
 )
 
 
 class SimpleNet(nn.Cell):
     """简单的测试网络"""
+
     def __init__(self):
         super(SimpleNet, self).__init__()
         self.conv = nn.Conv2d(3, 16, 3, has_bias=True, weight_init=Normal(0.02))
@@ -54,6 +56,7 @@ class SimpleNet(nn.Cell):
 
 class MultiOutputNet(nn.Cell):
     """多输出测试网络"""
+
     def __init__(self):
         super(MultiOutputNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, has_bias=True, weight_init=Normal(0.02))
@@ -79,6 +82,7 @@ class SimpleLoss(nn.Cell):
 
 class TestConfig:
     """测试配置类"""
+
     def __init__(self):
         self.inter_matches = []
         self.output_matches = []
@@ -211,10 +215,10 @@ class TestLossModuleBase:
         match = {
             "loss_func": [
                 {"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": None},
-                {"func_instance": SimpleLoss(), "func_weight": 0.5, "temperature": 2.0}
+                {"func_instance": SimpleLoss(), "func_weight": 0.5, "temperature": 2.0},
             ],
             "s_output_idx": 0,
-            "t_output_idx": 0
+            "t_output_idx": 0,
         }
 
         loss_module = LossModuleBase(match)
@@ -232,11 +236,9 @@ class TestLossModuleBase:
     def test_calc_loss():
         """测试损失计算"""
         match = {
-            "loss_func": [
-                {"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": None}
-            ],
+            "loss_func": [{"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": None}],
             "s_output_idx": 0,
-            "t_output_idx": 0
+            "t_output_idx": 0,
         }
 
         loss_module = LossModuleBase(match)
@@ -254,11 +256,9 @@ class TestLossModuleBase:
     def test_calc_loss_with_temperature():
         """测试带温度参数的损失计算"""
         match = {
-            "loss_func": [
-                {"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": 2.0}
-            ],
+            "loss_func": [{"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": 2.0}],
             "s_output_idx": 0,
-            "t_output_idx": 0
+            "t_output_idx": 0,
         }
 
         loss_module = LossModuleBase(match)
@@ -291,11 +291,9 @@ class TestLossModule:
         t_save_module = SaveOutputModule(module, "t_test", None, output_shape)
 
         match = {
-            "loss_func": [
-                {"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": None}
-            ],
+            "loss_func": [{"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": None}],
             "s_output_idx": 0,
-            "t_output_idx": 0
+            "t_output_idx": 0,
         }
 
         loss_module = LossModule(match, t_save_module, s_save_module)
@@ -311,11 +309,9 @@ class TestLossModule:
     def test_construct_with_direct_outputs():
         """测试直接使用输出的构造方法"""
         match = {
-            "loss_func": [
-                {"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": None}
-            ],
+            "loss_func": [{"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": None}],
             "s_output_idx": 0,
-            "t_output_idx": 0
+            "t_output_idx": 0,
         }
 
         loss_module = LossModule(match)
@@ -420,11 +416,9 @@ class TestDistillLossesManager:
         """测试计算损失（MindSpore模式）"""
         # 添加输出匹配
         output_match = {
-            "loss_func": [
-                {"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": None}
-            ],
+            "loss_func": [{"func_instance": SimpleLoss(), "func_weight": 1.0, "temperature": None}],
             "s_output_idx": 0,
-            "t_output_idx": 0
+            "t_output_idx": 0,
         }
         config = TestConfig()
         s_model = SimpleNet()
@@ -445,12 +439,7 @@ class TestDistillLossesManager:
     def test_get_module_output_shapes():
         """测试获取模块输出形状"""
         # 添加中间匹配
-        inter_match = {
-            "t_module": "conv",
-            "s_module": "conv",
-            "s_output_idx": 0,
-            "t_output_idx": 0
-        }
+        inter_match = {"t_module": "conv", "s_module": "conv", "s_output_idx": 0, "t_output_idx": 0}
         config = TestConfig()
         s_model = SimpleNet()
         t_model = SimpleNet()

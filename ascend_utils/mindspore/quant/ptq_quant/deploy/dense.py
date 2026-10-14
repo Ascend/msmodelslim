@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -33,8 +33,7 @@ class DenseDeployQuant(DeployQuant):
     def __init__(self, simulated_quant_cell):
         super().__init__(simulated_quant_cell)
         self.activation = simulated_quant_cell.compute_cell.activation
-        self.activation_flag = simulated_quant_cell.compute_cell. \
-            activation_flag
+        self.activation_flag = simulated_quant_cell.compute_cell.activation_flag
         self.op_core = P.MatMul()
 
     def construct(self, input_x):

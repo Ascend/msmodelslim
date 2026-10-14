@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -29,11 +29,18 @@ import torch
 from .base import invoke_test, is_npu_available
 
 
-@pytest.mark.parametrize("test_device, test_dtype", [
-    pytest.param("cpu", torch.float32),
-    pytest.param("npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-    pytest.param("npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")),
-])
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
 @pytest.mark.smoke
 def test_w8a8_dynamic_per_channel_quantization(test_device: str, test_dtype: torch.dtype):
     """测试W8A8 per_token量化功能（act: per_token, weight: per_channel）"""
@@ -41,7 +48,7 @@ def test_w8a8_dynamic_per_channel_quantization(test_device: str, test_dtype: tor
     tmp_dir = tempfile.mkdtemp()
 
     try:
-        model_adapter = invoke_test("kv_smooth.yaml", tmp_dir, device=test_device)
+        model_adapter = invoke_test("kv_smooth.yaml", tmp_dir, device=test_device)  # noqa: F841
     finally:
         # 清理临时目录
         if os.path.exists(tmp_dir):

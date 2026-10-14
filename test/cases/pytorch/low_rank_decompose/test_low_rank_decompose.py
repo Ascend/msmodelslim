@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=redefined-outer-name
 
 from resources.sample_net_torch import LrdSampleNetwork
 import numpy as np
@@ -125,7 +126,7 @@ def test_decompose_network_given_datasets_when_any_then_pass(source_model):
     if hasattr(source_model, "npu"):
         try:
             delattr(source_model, "npu")  # Force using CPU only
-        except AttributeError as ee:
+        except AttributeError:
             pass  # will just run on NPU, but may be slow
     decompose_info = {'embedding.1': 16, 'feature.0': (16, 16), 'feature.2': (16, 16), 'inner': 16, 'classifier.0': 16}
     datasets = [[torch.from_numpy(np.random.uniform(size=[2, 16, 16]).astype('int64'))] for _ in range(10)]

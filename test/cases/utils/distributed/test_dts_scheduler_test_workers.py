@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,no-name-in-module,pointless-string-statement,redefined-outer-name,reimported,useless-return
 
 """
 DistributedTaskScheduler（分波调度器）的单元测试
@@ -29,25 +30,24 @@ DistributedTaskScheduler（分波调度器）的单元测试
 ``torch.multiprocessing.spawn`` 拉起；子进程内统一 ``gloo`` + ``file://`` 初始化与销毁。
 """
 
-import os
-import unittest
-from typing import Any, Dict, List, Tuple
-from unittest.mock import MagicMock
+import os  # noqa: E402
+import unittest  # noqa: E402, F401
+from typing import Any, Dict, List, Tuple  # noqa: E402, F401
+from unittest.mock import MagicMock  # noqa: E402, F401
 
 # 多进程 spawn 会在子进程重新 import 本模块；部分环境装了 torch_npu 但缺少运行时库时，
 # torch 的 device backend auto-load 会导致 import torch 直接失败。这里统一关闭自动加载。
 os.environ.setdefault("TORCH_DEVICE_BACKEND_AUTOLOAD", "0")
 
-import torch
-import torch.nn as nn
+import torch  # noqa: E402
+import torch.nn as nn  # noqa: E402
 
-from msmodelslim.utils.distributed import (
+from msmodelslim.utils.distributed import (  # noqa: E402
     DistributedTaskScheduler,
     TaskExecutionRecord,
     TaskSyncContext,
 )
-from test.cases.utils.distributed.dts_test_internals import _TaskSpec
-
+from test.cases.utils.distributed.dts_test_internals import _TaskSpec  # noqa: E402
 
 
 def _run_sync_worker_fn(
@@ -60,8 +60,6 @@ def _run_sync_worker_fn(
 ):
     """分布式同步测试：由 ``run_distributed_spawn`` 在子进程内 init gloo 后调用。"""
     import traceback
-
-    import torch
 
     from test.cases.utils.distributed.dts_test_internals import default_module_state_sync
 
@@ -126,15 +124,12 @@ def _run_sync_worker_fn(
             pass
 
 
-
 def _run_disable_parallel_worker(rank: int, world_size: int, results_queue) -> None:
     """验证 disable_parallel 控制的 shared 执行与同步跳过语义（由 ``run_distributed_spawn`` 拉起）。"""
-    import torch
     import torch.distributed as dist
     from torch import nn
 
     from msmodelslim.utils.distributed import (
-        DistributedTaskScheduler,
         TaskExecutionRecord,
         clear_distributed_task_work_queue,
     )
@@ -202,10 +197,16 @@ def _run_disable_parallel_worker(rank: int, world_size: int, results_queue) -> N
     model = _Root()
     scheduler = _DtsMultiRankParallelWaveScheduler(model=model)
     with scheduler:
-        scheduler.submit(_fn, args=({"slot": 1},), dependencies=[],
+        scheduler.submit(
+            _fn,
+            args=({"slot": 1},),
+            dependencies=[],
             sync_fn=_make_shared_sync_default(1),
         )
-        scheduler.submit(_fn, args=({"slot": 2},), dependencies=[],
+        scheduler.submit(
+            _fn,
+            args=({"slot": 2},),
+            dependencies=[],
             sync_fn=_make_shared_sync_default(2),
         )
         _ = scheduler.run()
@@ -220,10 +221,16 @@ def _run_disable_parallel_worker(rank: int, world_size: int, results_queue) -> N
     model = _Root()
     scheduler = _DtsSequentialWaveScheduler(model=model)
     with scheduler:
-        scheduler.submit(_fn, args=({"slot": 1},), dependencies=[],
+        scheduler.submit(
+            _fn,
+            args=({"slot": 1},),
+            dependencies=[],
             sync_fn=_shared_sync_should_not_run,
         )
-        scheduler.submit(_fn, args=({"slot": 2},), dependencies=[],
+        scheduler.submit(
+            _fn,
+            args=({"slot": 2},),
+            dependencies=[],
             sync_fn=_shared_sync_should_not_run,
         )
         _ = scheduler.run()
@@ -241,10 +248,16 @@ def _run_disable_parallel_worker(rank: int, world_size: int, results_queue) -> N
         disable_parallel=False,
     )
     with wave_scheduler:
-        wave_scheduler.submit(_fn, args=({"slot": 1},), dependencies=[],
+        wave_scheduler.submit(
+            _fn,
+            args=({"slot": 1},),
+            dependencies=[],
             sync_fn=_make_shared_sync_default(1),
         )
-        wave_scheduler.submit(_fn, args=({"slot": 2},), dependencies=[],
+        wave_scheduler.submit(
+            _fn,
+            args=({"slot": 2},),
+            dependencies=[],
             sync_fn=_make_shared_sync_default(2),
         )
         _ = wave_scheduler.run()
@@ -262,10 +275,16 @@ def _run_disable_parallel_worker(rank: int, world_size: int, results_queue) -> N
         disable_parallel=True,
     )
     with wave_scheduler:
-        wave_scheduler.submit(_fn, args=({"slot": 1},), dependencies=[],
+        wave_scheduler.submit(
+            _fn,
+            args=({"slot": 1},),
+            dependencies=[],
             sync_fn=_shared_sync_should_not_run,
         )
-        wave_scheduler.submit(_fn, args=({"slot": 2},), dependencies=[],
+        wave_scheduler.submit(
+            _fn,
+            args=({"slot": 2},),
+            dependencies=[],
             sync_fn=_shared_sync_should_not_run,
         )
         _ = wave_scheduler.run()
@@ -295,8 +314,6 @@ def _run_dts_multirank_perf_worker(
     """
     import time
     import traceback
-
-    from torch import nn
 
     from msmodelslim.utils.distributed import (
         TaskExecutionRecord,
@@ -372,16 +389,14 @@ def _run_dts_dp_serial_oracle_equivalence_worker(
 ) -> None:
     """多卡：串行 oracle 与 ``DistributedTaskScheduler``（并行波次 + 默认同步）终态 ``state_dict`` 应对齐。
 
-各 rank 使用相同随机种子生成任务序列并执行相同 ``submit`` 顺序；oracle 在本地独立重放以得到 ref。
+    各 rank 使用相同随机种子生成任务序列并执行相同 ``submit`` 顺序；oracle 在本地独立重放以得到 ref。
     """
     import random
     import traceback
 
-    import torch
     from torch import nn
 
     from msmodelslim.utils.distributed import (
-        DistributedTaskScheduler,
         clear_distributed_task_work_queue,
     )
 
@@ -513,8 +528,6 @@ def _run_dts_dp_serial_oracle_equivalence_worker(
 def _run_dts_submit_hash_mismatch_worker(rank: int, world_size: int, results_queue) -> None:
     """多卡：rank 间 submit 语义不同（args）应在 run 前报错。"""
     import traceback
-    from torch import nn
-    from msmodelslim.utils.distributed import DistributedTaskScheduler
 
     try:
         model = nn.Module()
@@ -534,9 +547,7 @@ def _run_dts_submit_hash_mismatch_worker(rank: int, world_size: int, results_que
 def _run_dts_submit_hash_tensor_meta_worker(rank: int, world_size: int, results_queue) -> None:
     """多卡：tensor 值不同但元信息相同时，语义哈希应一致并可正常运行。"""
     import traceback
-    import torch
     from torch import nn
-    from msmodelslim.utils.distributed import DistributedTaskScheduler
 
     try:
         model = nn.Module()
@@ -554,8 +565,6 @@ def _run_dts_submit_hash_tensor_meta_worker(rank: int, world_size: int, results_
 def _run_dts_heterogeneous_submit_supported_worker(rank: int, world_size: int, results_queue) -> None:
     """多卡：异构提交顺序（2 local + 8 shared vs 8 shared + 2 local）应可执行且不报错。"""
     import traceback
-    from torch import nn
-    from msmodelslim.utils.distributed import DistributedTaskScheduler
     from test.cases.utils.distributed.dts_test_internals import dts_waves
 
     try:
@@ -586,5 +595,3 @@ def _run_dts_heterogeneous_submit_supported_worker(rank: int, world_size: int, r
         )
     except Exception:
         results_queue.put({"ok": False, "rank": rank, "error": traceback.format_exc()})
-
-

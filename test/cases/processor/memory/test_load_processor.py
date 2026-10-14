@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import unittest
 
@@ -33,11 +34,7 @@ class TestLoadProcessor(unittest.TestCase):
 
     def setUp(self):
         """测试前的准备工作"""
-        self.model = nn.Sequential(
-            nn.Linear(10, 20),
-            nn.ReLU(),
-            nn.Linear(20, 5)
-        )
+        self.model = nn.Sequential(nn.Linear(10, 20), nn.ReLU(), nn.Linear(20, 5))
         self.sample_module = nn.Linear(5, 3)
 
     def test_load_processor_initialization(self):
@@ -62,12 +59,7 @@ class TestLoadProcessor(unittest.TestCase):
 
         self.sample_module.to("cpu")
 
-        request = BatchProcessRequest(
-            name="test_module",
-            module=self.sample_module,
-            datas=None,
-            outputs=None
-        )
+        request = BatchProcessRequest(name="test_module", module=self.sample_module, datas=None, outputs=None)
 
         processor.preprocess(request)
 
@@ -94,12 +86,7 @@ class TestLoadProcessor(unittest.TestCase):
         config = LoadProcessorConfig(device="cpu")
         processor = LoadProcessor(self.model, config)
 
-        request = BatchProcessRequest(
-            name="none_module",
-            module=None,
-            datas=None,
-            outputs=None
-        )
+        request = BatchProcessRequest(name="none_module", module=None, datas=None, outputs=None)
 
         try:
             processor.preprocess(request)

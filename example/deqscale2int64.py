@@ -4,10 +4,10 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
-You may use this software according to the terms and conditions of the Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
 You may obtain a copy of Mulan PSL v2 at:
 
          http://license.coscl.org.cn/MulanPSL2
@@ -49,6 +49,7 @@ def _deqscale2int64(scale: torch.Tensor) -> torch.Tensor:
     scale = scale.cpu().numpy()
     scale = np.frombuffer(scale.tobytes(), dtype=np.int32).astype(np.int64)
     return torch.tensor(scale)
+
 
 ASCENDV1_DESC_JSON_NAME = "quant_model_description.json"
 ASCENDV1_SAFETENSORS_NAME = "quant_model_weights.safetensors"

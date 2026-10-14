@@ -1,7 +1,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -10,11 +10,13 @@ You may obtain a copy of Mulan PSL v2 at:
          http://license.coscl.org.cn/MulanPSL2
 
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
 MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=implicit-str-concat,logging-fstring-interpolation
+
 import re
 from abc import ABC, abstractmethod
 from decimal import Decimal
@@ -111,7 +113,7 @@ class NormalCharRatioCheckItem(GarbledTextCheckItem):
             return False
 
         # 匹配中英文、数字、常见标点符号
-        normal_chars = re.findall(r'[\u4e00-\u9fff\w\s，。！？、；：""''（）【】《》.,!?;:()\\[\\]{}"\'-]', text)
+        normal_chars = re.findall(r'[\u4e00-\u9fff\w\s，。！？、；：""' '（）【】《》.,!?;:()\\[\\]{}"\'-]', text)
         normal_ratio = len(normal_chars) / text_len
 
         if normal_ratio < self.min_ratio:
@@ -191,14 +193,13 @@ def get_all_check_item_names() -> List[str]:
 
 class TestCaseConfig(BaseModel):
     """测试用例配置"""
-    message: Annotated[
-        str,
-        AfterValidator(non_empty_string),
-        AfterValidator(validate_str_length())
-    ] = Field(description="Test message, must be a non-empty string")
+
+    message: Annotated[str, AfterValidator(non_empty_string), AfterValidator(validate_str_length())] = Field(
+        description="Test message, must be a non-empty string"
+    )
     items: List[str] = Field(
         default_factory=lambda: list(_CHECK_ITEM_REGISTRY.keys()),
-        description="List of check item names to enable for this test case. If not specified, all items are enabled."
+        description="List of check item names to enable for this test case. If not specified, all items are enabled.",
     )
 
     @field_validator('items', mode='after')
@@ -209,7 +210,7 @@ class TestCaseConfig(BaseModel):
             if item_name not in available_items:
                 raise SchemaValidateError(
                     f"Unknown check item: '{item_name}'. Available items: {available_items}",
-                    action=f"Please use one of the available check items: {available_items}"
+                    action=f"Please use one of the available check items: {available_items}",
                 )
         return v
 
@@ -217,11 +218,11 @@ class TestCaseConfig(BaseModel):
 def parse_test_case(value: Any) -> TestCaseConfig:
     """解析测试用例，只支持字典格式：{"message": "...", "items": [...]}"""
     if not isinstance(value, dict):
-        raise ValueError(f"Test case must be a dict with 'message' and 'items' fields")
+        raise ValueError("Test case must be a dict with 'message' and 'items' fields")
 
     message = value.get("message")
     if not message:
-        raise ValueError(f"Test case must contain 'message' field")
+        raise ValueError("Test case must contain 'message' field")
 
     items = value.get("items")
     if items is None:
@@ -236,10 +237,10 @@ def parse_test_case(value: Any) -> TestCaseConfig:
 
 class GarbledTextPrecheckConfig(BasePrecheckConfig):
     """基本乱码检测预检查配置"""
+
     type: Literal["garbled_text"] = "garbled_text"
     test_cases: Optional[List[TestCaseConfig]] = Field(
-        default=None,
-        description="List of test cases. Each case contains a message and enabled check items."
+        default=None, description="List of test cases. Each case contains a message and enabled check items."
     )
 
     @field_validator('test_cases', mode='before')
@@ -256,8 +257,7 @@ class GarbledTextPrecheckConfig(BasePrecheckConfig):
     def validate_test_cases(cls, v: List[TestCaseConfig]) -> List[TestCaseConfig]:
         if not v:
             raise SchemaValidateError(
-                "test_cases must contain at least one test case",
-                action="Please provide at least one test case"
+                "test_cases must contain at least one test case", action="Please provide at least one test case"
             )
         return v
 
@@ -278,11 +278,7 @@ class GarbledTextRule(BasePrecheckRule):
         return False
 
     def check(
-            self,
-            host: str,
-            port: int,
-            served_model_name: str,
-            datasets: List[str]
+        self, host: str, port: int, served_model_name: str, datasets: List[str]
     ) -> Optional[List[EvaluateAccuracy]]:
         """执行乱码检测预检查"""
         if not self.config.test_cases:
@@ -290,7 +286,8 @@ class GarbledTextRule(BasePrecheckRule):
             return None
 
         get_logger().info(
-            f"Testing model with {len(self.config.test_cases)} test case(s) for garbled text detection...")
+            f"Testing model with {len(self.config.test_cases)} test case(s) for garbled text detection..."
+        )
 
         for idx, test_case in enumerate(self.config.test_cases, 1):
             try:
@@ -304,7 +301,7 @@ class GarbledTextRule(BasePrecheckRule):
                     port=port,
                     served_model_name=served_model_name,
                     test_message=test_case.message,
-                    max_tokens=self.config.max_tokens
+                    max_tokens=self.config.max_tokens,
                 )
                 get_logger().debug(f"test_response: {test_response}")
 

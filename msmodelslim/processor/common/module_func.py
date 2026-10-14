@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=logging-fstring-interpolation
+
 from typing import Callable, Optional, Literal
 
 from torch import nn
@@ -40,10 +42,10 @@ class ModuleFuncProcessorConfig(AutoProcessorConfig):
 @logger_setter(prefix="msmodelslim.processor.module_func")
 class ModuleFuncProcessor(AutoSessionProcessor):
     def __init__(
-            self,
-            model: nn.Module,
-            config: ModuleFuncProcessorConfig,
-            _: Optional[object] = None,
+        self,
+        model: nn.Module,
+        config: ModuleFuncProcessorConfig,
+        _: Optional[object] = None,
     ):
         super().__init__(model)
         self.config = config
@@ -58,7 +60,7 @@ class ModuleFuncProcessor(AutoSessionProcessor):
     def is_data_free(self) -> bool:
         """
         判断处理器是否需要数据。
-        
+
         Returns:
             True，因为加载处理器不需要输入数据
         """

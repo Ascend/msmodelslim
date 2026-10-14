@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,12 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-member
 
 import os
 import stat
-import json 
+import json
 
-import yaml 
+import yaml
 import pytest
 
 from ascend_utils.common import security
@@ -37,24 +38,17 @@ USER_NOT_PERMITTED_WRITE_FILE = TEST_DIR + "testfile_not_writable/foo"
 JSON_FILE = TEST_DIR + "testfile.json"
 YAML_FILE = TEST_DIR + "testfile.yaml"
 TEST_FILE = TEST_DIR + "testfile.test"
-ORI_DATA = {
-    "a_long_key_name": 1,
-    12: "b",
-    3.14: "",
-    "c": {"d": 3, "e": 4},
-    True: "true",
-    False: "false",
-    None: "null"
-}
+ORI_DATA = {"a_long_key_name": 1, 12: "b", 3.14: "", "c": {"d": 3, "e": 4}, True: "true", False: "false", None: "null"}
 OVER_WRITE_DATA = {"hello": "world"}
 
 
 def setup_module():
     os.makedirs(TEST_DIR, mode=int('700', 8), exist_ok=True)
 
-    default_mode = stat.S_IWUSR | stat.S_IRUSR # 600
-    with os.fdopen(os.open(TEST_READ_FILE_NAME, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode=default_mode), "w") \
-            as temp_file:
+    default_mode = stat.S_IWUSR | stat.S_IRUSR  # 600
+    with os.fdopen(
+        os.open(TEST_READ_FILE_NAME, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode=default_mode), "w"
+    ) as temp_file:
         temp_file.write("a_test_file_name_for_testing_automl_common")
 
     with os.fdopen(os.open(USER_NOT_PERMITTED_READ_FILE, os.O_CREAT, mode=000), "w"):
@@ -65,7 +59,7 @@ def setup_module():
     os.chmod(OTHERS_READABLE_READ_FILE, int('755', 8))
 
     with os.fdopen(os.open(OTHERS_WRITABLE_READ_FILE, os.O_CREAT, mode=default_mode), "w"):
-        pass 
+        pass
     os.chmod(OTHERS_WRITABLE_READ_FILE, int('666', 8))
 
     dir_name = os.path.dirname(USER_NOT_PERMITTED_WRITE_FILE)
@@ -73,10 +67,10 @@ def setup_module():
 
     with os.fdopen(os.open(JSON_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode=default_mode), "w") as json_file:
         json.dump(ORI_DATA, json_file)
-    
+
     with os.fdopen(os.open(YAML_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode=default_mode), "w") as yaml_file:
         yaml.dump(ORI_DATA, yaml_file)
-    
+
 
 def teardown_module():
     os.remove(TEST_READ_FILE_NAME)
@@ -93,7 +87,7 @@ def teardown_module():
     os.remove(YAML_FILE)
     if os.path.exists(TEST_FILE):
         os.remove(TEST_FILE)
-    
+
     os.removedirs(TEST_DIR)
 
 
@@ -120,7 +114,7 @@ def test_get_valid_read_path_given_valid_when_any_then_pass():
 
 def test_get_valid_read_path_given_invalid_when_any_then_value_error():
     with pytest.raises(ValueError):
-        security.get_valid_read_path('./not_exist') # ValueError: The file ... doesn't exist or not a file.
+        security.get_valid_read_path('./not_exist')  # ValueError: The file ... doesn't exist or not a file.
     with pytest.raises(ValueError):
         # ValueError: The filename ... doesn't endswith ".json"
         security.get_valid_read_path(TEST_READ_FILE_NAME, extensions='.json')
@@ -129,7 +123,7 @@ def test_get_valid_read_path_given_invalid_when_any_then_value_error():
         security.get_valid_read_path(TEST_READ_FILE_NAME, size_max=1)
     with pytest.raises(ValueError):
         # ValueError: Current user doesn't have read permission to the file ....
-        security.get_valid_read_path(USER_NOT_PERMITTED_READ_FILE) 
+        security.get_valid_read_path(USER_NOT_PERMITTED_READ_FILE)
     with pytest.raises(ValueError):
         # ValueError: The file ... has others writable permission.
         security.get_valid_read_path(OTHERS_WRITABLE_READ_FILE)
@@ -158,7 +152,7 @@ def test_get_valid_write_path_when_directory_not_exists():
 
 @pytest.mark.skipif(
     os.geteuid() == 0,  # 直接判断：如果是 root 用户（UID=0）
-    reason="root 用户跳过此用例"
+    reason="root 用户跳过此用例",
 )
 def test_get_valid_write_path_when_no_write_permission():
     with pytest.raises(ValueError):
@@ -225,7 +219,7 @@ def test_safe_copy_file_given_valid_when_over_write_then_pass():
 def test_safe_write_umask_given_valid_when_any_then_pass():
     security.safe_delete_path_if_exists(TEST_FILE)
     default_flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
-    fake_mode = stat.S_IWUSR | stat.S_IRUSR | stat.S_IWGRP | stat.S_IRGRP | stat.S_IWOTH | stat.S_IROTH # 666
+    fake_mode = stat.S_IWUSR | stat.S_IRUSR | stat.S_IWGRP | stat.S_IRGRP | stat.S_IWOTH | stat.S_IROTH  # 666
     with security.SafeWriteUmask(), os.fdopen(os.open(TEST_FILE, default_flags, mode=fake_mode), "w") as write_file:
         write_file.write("")
     assert os.stat(TEST_FILE).st_mode & (stat.S_IWGRP | stat.S_IWOTH | stat.S_IROTH | stat.S_IXOTH) == 0

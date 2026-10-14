@@ -1,6 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 """量化配置接口文档驱动脚本：控制具体抽取目标与后处理（模板 05 架构结论）。
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
+量化配置接口文档驱动脚本：控制具体抽取目标与后处理（模板 05 架构结论）。
 
 基础抽取能力在 gen_quant_config_docs.py（--targets / --expand-nested），
 本脚本按《接口文档架构结论》确定目标与后处理：

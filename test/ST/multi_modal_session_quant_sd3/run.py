@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=redefined-outer-name,unspecified-encoding
 
 import argparse
 import os
@@ -45,7 +46,11 @@ def parse_args(namespace=None):
     parser.add_argument("--save_path", type=str, default="./results", help="path to save image output")
 
     parser.add_argument("--do_quant", action="store_true")
-    parser.add_argument("--quant_type", choices=["w8a8"], default="w8a8", )
+    parser.add_argument(
+        "--quant_type",
+        choices=["w8a8"],
+        default="w8a8",
+    )
     parser.add_argument("--quant_weight_save_folder", type=str)
     parser.add_argument("--quant_dump_calib_folder", type=str)
 
@@ -87,7 +92,7 @@ def inference(args):
                 width=args.width,
                 height=args.height,
                 num_inference_steps=args.infer_steps,
-                guidance_scale=7.0
+                guidance_scale=7.0,
             ).images
             for i, img in enumerate(images):
                 img.save(os.path.join(save_path, f"{cnt}_{i}.png"))
@@ -101,21 +106,19 @@ def inference(args):
             infer_func=inference_func,
             infer_args=[],
             infer_kwargs=dict(
-                save_path=os.path.join(args.save_path, 'calib_fp'),
-                desc='Dump calib data by float model inference'
-            )
+                save_path=os.path.join(args.save_path, 'calib_fp'), desc='Dump calib data by float model inference'
+            ),
         )
 
         # run fake quant
-        inference_func(save_path=os.path.join(args.save_path, 'calib_quant'),
-                       desc='Run fake quant using calib data')
+        inference_func(save_path=os.path.join(args.save_path, 'calib_quant'), desc='Run fake quant using calib data')
 
     else:
         raise ValueError("Please --do_quant to True")
 
 
 def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
-    from example.multimodal_sd.utils import get_disable_layer_names, get_rank, DumperManager
+    from example.multimodal_sd.utils import get_disable_layer_names, get_rank, DumperManager  # noqa: F401
 
     dump_calib_folder = args.quant_dump_calib_folder  # 用于存放校准数据的文件夹
     safe_tensor_folder = args.quant_weight_save_folder  # 用于存放量化模型的文件夹
@@ -148,21 +151,18 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
         _cfg = SessionConfig(
             processor_cfg_map={
                 "w8a8": W8A8ProcessorConfig(
-                    cfg=W8A8QuantConfig(
-                        act_method='minmax'
-                    ),
-                    disable_names=['context_embedder']
+                    cfg=W8A8QuantConfig(act_method='minmax'), disable_names=['context_embedder']
                 ),
                 "save": SaveProcessorConfig(
                     output_path=os.path.dirname(safe_tensor_path),
                     safetensors_name=os.path.basename(safe_tensor_path),
                     json_name=None,
                     save_type=['safe_tensor'],
-                    part_file_size=None
-                )
+                    part_file_size=None,
+                ),
             },
             calib_data=calib_dataset,
-            device='npu'
+            device='npu',
         )
         return _cfg
 

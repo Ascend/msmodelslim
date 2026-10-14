@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import unittest
 from unittest.mock import patch, MagicMock
@@ -47,11 +48,7 @@ class TestFloatSparseProcessorConfig(unittest.TestCase):
 
     def test_custom_config(self):
         """测试自定义配置"""
-        config = FloatSparseProcessorConfig(
-            sparse_ratio=0.5,
-            include=["layer1", "layer2"],
-            exclude=["layer3"]
-        )
+        config = FloatSparseProcessorConfig(sparse_ratio=0.5, include=["layer1", "layer2"], exclude=["layer3"])
 
         self.assertEqual(config.sparse_ratio, 0.5)
         self.assertEqual(config.include, ["layer1", "layer2"])
@@ -89,15 +86,11 @@ class TestFloatSparseProcessor(TestProcessorBase):
         self.linear_layer_names = self.get_linear_layer_names(self.model)
         self.assertGreater(len(self.linear_layer_names), 0, "Model should have at least one linear layer")
 
-    def create_processor_config(self, sparse_ratio: float = 0.3,
-                                include: list = None,
-                                exclude: list = None) -> FloatSparseProcessorConfig:
+    def create_processor_config(
+        self, sparse_ratio: float = 0.3, include: list = None, exclude: list = None
+    ) -> FloatSparseProcessorConfig:
         """创建处理器配置"""
-        return FloatSparseProcessorConfig(
-            sparse_ratio=sparse_ratio,
-            include=include or ["*"],
-            exclude=exclude or []
-        )
+        return FloatSparseProcessorConfig(sparse_ratio=sparse_ratio, include=include or ["*"], exclude=exclude or [])
 
     def test_processor_initialization(self):
         """测试处理器初始化"""
@@ -117,7 +110,7 @@ class TestFloatSparseProcessor(TestProcessorBase):
         config = self.create_processor_config(sparse_ratio=0.3)
 
         # 运行处理器
-        runner = self.run_processor_with_cfg(config)
+        runner = self.run_processor_with_cfg(config)  # noqa: F841
 
         # 验证模型仍能正常运行
         inputs = self.create_test_input()
@@ -180,11 +173,7 @@ class TestFloatSparseProcessor(TestProcessorBase):
             self.skipTest("Model needs at least 3 linear layers for this test")
 
         excluded_layer = self.linear_layer_names[0]
-        config = self.create_processor_config(
-            sparse_ratio=0.3,
-            include=["*"],
-            exclude=[excluded_layer]
-        )
+        config = self.create_processor_config(sparse_ratio=0.3, include=["*"], exclude=[excluded_layer])
 
         self.run_processor_with_cfg(config)
 
@@ -234,10 +223,7 @@ class TestFloatSparseProcessor(TestProcessorBase):
 
     def test_invalid_layer_patterns(self):
         """测试无效的层模式"""
-        config = self.create_processor_config(
-            sparse_ratio=0.3,
-            include=["nonexistent_layer"]
-        )
+        config = self.create_processor_config(sparse_ratio=0.3, include=["nonexistent_layer"])
 
         self.run_processor_with_cfg(config)
 
@@ -248,10 +234,7 @@ class TestFloatSparseProcessor(TestProcessorBase):
 
     def test_warning_unmatched_include_patterns(self):
         """测试未匹配的包含模式警告"""
-        config = self.create_processor_config(
-            sparse_ratio=0.3,
-            include=["nonexistent_layer", "another_fake_layer"]
-        )
+        config = self.create_processor_config(sparse_ratio=0.3, include=["nonexistent_layer", "another_fake_layer"])
 
         with self.assertLogs('msmodelslim.processor.float_sparse', level='WARNING') as log_context:
             self.run_processor_with_cfg(config)
@@ -264,9 +247,7 @@ class TestFloatSparseProcessor(TestProcessorBase):
     def test_warning_unmatched_exclude_patterns(self):
         """测试未匹配的排除模式警告"""
         config = self.create_processor_config(
-            sparse_ratio=0.3,
-            include=["*"],
-            exclude=["nonexistent_layer", "another_fake_layer"]
+            sparse_ratio=0.3, include=["*"], exclude=["nonexistent_layer", "another_fake_layer"]
         )
 
         with self.assertLogs('msmodelslim.processor.float_sparse', level='WARNING') as log_context:
@@ -283,10 +264,7 @@ class TestFloatSparseProcessor(TestProcessorBase):
             self.skipTest("Model needs at least 1 linear layer for this test")
 
         existing_layer = self.linear_layer_names[0]
-        config = self.create_processor_config(
-            sparse_ratio=0.3,
-            include=[existing_layer, "nonexistent_layer"]
-        )
+        config = self.create_processor_config(sparse_ratio=0.3, include=[existing_layer, "nonexistent_layer"])
 
         with self.assertLogs('msmodelslim.processor.float_sparse', level='WARNING') as log_context:
             self.run_processor_with_cfg(config)
@@ -337,7 +315,7 @@ class TestFloatSparseProcessor(TestProcessorBase):
         test_inputs = [
             self.create_test_input("Short", 5),
             self.create_test_input("Medium length text", 15),
-            self.create_test_input("This is a longer text for testing", 20)
+            self.create_test_input("This is a longer text for testing", 20),
         ]
 
         for inputs in test_inputs:
@@ -355,12 +333,10 @@ class TestFloatSparseProcessor(TestProcessorBase):
         current_module_count = len(current_module_names)
 
         # 验证模块名称结构保持不变（模块被替换但名称结构应该一样）
-        self.assertEqual(original_module_names, current_module_names,
-                         "模块名称结构应该保持不变")
+        self.assertEqual(original_module_names, current_module_names, "模块名称结构应该保持不变")
 
         # 验证模块数量保持不变
-        self.assertEqual(original_module_count, current_module_count,
-                         "模块数量应该保持不变")
+        self.assertEqual(original_module_count, current_module_count, "模块数量应该保持不变")
 
         # 验证模型仍能正常运行
         inputs = self.create_test_input()
@@ -384,14 +360,15 @@ class TestFloatSparseProcessor(TestProcessorBase):
 
         # 验证调用次数
         actual_calls = mock_admm_pruner_class.call_count
-        self.assertEqual(actual_calls, actual_linear_count,
-                         f"应该为{actual_linear_count}个线性层创建ADMM稀疏器，实际创建了{actual_calls}个")
+        self.assertEqual(
+            actual_calls,
+            actual_linear_count,
+            f"应该为{actual_linear_count}个线性层创建ADMM稀疏器，实际创建了{actual_calls}个",
+        )
 
         # 验证mock实例的方法被调用
-        self.assertTrue(mock_admm_pruner.fasterprune.called,
-                        "fasterprune方法应该被调用")
-        self.assertTrue(mock_admm_pruner.free.called,
-                        "free方法应该被调用进行清理")
+        self.assertTrue(mock_admm_pruner.fasterprune.called, "fasterprune方法应该被调用")
+        self.assertTrue(mock_admm_pruner.free.called, "free方法应该被调用进行清理")
 
         # 验证fasterprune被调用时传入了正确的参数
         mock_admm_pruner.fasterprune.assert_called_with(sparse_ratio=0.3)
@@ -582,8 +559,7 @@ class TestQuantizeL2(unittest.TestCase):
     def test_quantize_l2_extreme_values(self):
         """测试极值处理"""
         # 测试极大值和极小值
-        para = torch.tensor([[np.float16('inf'), np.float16('-inf')],
-                             [1e-10, 1e10]], dtype=torch.float16)
+        para = torch.tensor([[np.float16('inf'), np.float16('-inf')], [1e-10, 1e10]], dtype=torch.float16)
         keep_mask = torch.zeros_like(para, dtype=torch.bool)
 
         result = quantize_l2(keep_mask, para, threshold=2, rtn=True)
@@ -713,8 +689,9 @@ class TestSplitHalf(unittest.TestCase):
 
         # 验证无穷大值的指数被设置为16
         # 注意：需要使用半精度比较
-        inf_mask = (para == torch.tensor(float('inf'), dtype=torch.float16)) | \
-                   (para == torch.tensor(float('-inf'), dtype=torch.float16))
+        inf_mask = (para == torch.tensor(float('inf'), dtype=torch.float16)) | (
+            para == torch.tensor(float('-inf'), dtype=torch.float16)
+        )
         if torch.any(inf_mask):
             self.assertTrue(torch.all(exp[inf_mask] == 16))
 

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=redefined-outer-name,unspecified-encoding
 
 import argparse
 import os
@@ -32,10 +33,10 @@ cur_file_dir = os.path.dirname(os.path.abspath(__file__))
 example_base_dir = os.path.abspath(os.path.join(cur_file_dir, "..", "..", ".."))
 sys.path.append(example_base_dir)
 
-from example.common.security.pytorch import safe_torch_load
-from example.common.security.path import get_valid_read_path, get_write_directory
-from msmodelslim.quant import quant_model, SessionConfig
-from msmodelslim.quant import W8A8ProcessorConfig, W8A8QuantConfig, SaveProcessorConfig
+from example.common.security.pytorch import safe_torch_load  # noqa: E402
+from example.common.security.path import get_valid_read_path, get_write_directory  # noqa: E402
+from msmodelslim.quant import quant_model, SessionConfig  # noqa: E402
+from msmodelslim.quant import W8A8ProcessorConfig, W8A8QuantConfig, SaveProcessorConfig  # noqa: E402
 
 
 def parse_args(namespace=None):
@@ -51,7 +52,11 @@ def parse_args(namespace=None):
     parser.add_argument("--save_path", type=str, default="./results", help="path to save image output")
 
     parser.add_argument("--do_quant", action="store_true")
-    parser.add_argument("--quant_type", choices=["w8a8"], default="w8a8", )
+    parser.add_argument(
+        "--quant_type",
+        choices=["w8a8"],
+        default="w8a8",
+    )
     parser.add_argument("--quant_weight_save_folder", type=str)
     parser.add_argument("--quant_dump_calib_folder", type=str)
     parser.add_argument("--do_save_img", action="store_true", help="whether to save image output")
@@ -99,7 +104,7 @@ def inference(args):
                 width=args.width,
                 height=args.height,
                 num_inference_steps=args.infer_steps,
-                guidance_scale=7.0
+                guidance_scale=7.0,
             ).images
             for i, img in enumerate(images):
                 img.save(os.path.join(save_path, f"{cnt}_{i}.png"))
@@ -113,22 +118,22 @@ def inference(args):
             infer_func=inference_func,
             infer_args=[],
             infer_kwargs=dict(
-                save_path=os.path.join(args.save_path, 'calib_fp'),
-                desc='Dump calib data by float model inference'
-            )
+                save_path=os.path.join(args.save_path, 'calib_fp'), desc='Dump calib data by float model inference'
+            ),
         )
 
         if args.do_save_img:
             # run fake quant
-            inference_func(save_path=os.path.join(args.save_path, 'calib_quant'),
-                           desc='Run fake quant using calib data')
+            inference_func(
+                save_path=os.path.join(args.save_path, 'calib_quant'), desc='Run fake quant using calib data'
+            )
 
     else:
         raise ValueError("Please --do_quant to True")
 
 
 def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
-    from example.multimodal_sd.utils import get_disable_layer_names, get_rank, DumperManager, get_rank_suffix_file
+    from example.multimodal_sd.utils import get_disable_layer_names, get_rank, DumperManager, get_rank_suffix_file  # noqa: F401
 
     dump_calib_folder = args.quant_dump_calib_folder  # 用于存放校准数据的文件夹
     safe_tensor_folder = args.quant_weight_save_folder  # 用于存放量化模型的文件夹
@@ -136,8 +141,10 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
     rank = get_rank()
     is_distributed = rank >= 0  # 标记是否为分布式环境
 
-    dump_data_path = os.path.join(dump_calib_folder, get_rank_suffix_file(base_name="calib_data", ext="pth",
-                                                                          is_distributed=is_distributed, rank=rank))
+    dump_data_path = os.path.join(
+        dump_calib_folder,
+        get_rank_suffix_file(base_name="calib_data", ext="pth", is_distributed=is_distributed, rank=rank),
+    )
 
     # ***************************** 加载模型 *****************************
     if not isinstance(model, nn.Module):
@@ -161,28 +168,27 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
     calib_dataset = safe_torch_load(dump_data_path, map_location=f'npu:{rank if is_distributed else 0}')
 
     def get_w8a8_cfg():
-        safetensors_name = get_rank_suffix_file(base_name='quant_model_weight_w8a8', ext='safetensors',
-                                                is_distributed=is_distributed, rank=rank)
-        json_name = get_rank_suffix_file(base_name='quant_model_description_w8a8', ext='json',
-                                         is_distributed=is_distributed, rank=rank)
+        safetensors_name = get_rank_suffix_file(
+            base_name='quant_model_weight_w8a8', ext='safetensors', is_distributed=is_distributed, rank=rank
+        )
+        json_name = get_rank_suffix_file(
+            base_name='quant_model_description_w8a8', ext='json', is_distributed=is_distributed, rank=rank
+        )
         _cfg = SessionConfig(
             processor_cfg_map={
                 "w8a8": W8A8ProcessorConfig(
-                    cfg=W8A8QuantConfig(
-                        act_method='minmax'
-                    ),
-                    disable_names=['context_embedder']
+                    cfg=W8A8QuantConfig(act_method='minmax'), disable_names=['context_embedder']
                 ),
                 "save": SaveProcessorConfig(
                     output_path=safe_tensor_folder,
                     safetensors_name=safetensors_name,
                     json_name=json_name,
                     save_type=['safe_tensor'],
-                    part_file_size=None
-                )
+                    part_file_size=None,
+                ),
             },
             calib_data=calib_dataset,
-            device='npu'
+            device='npu',
         )
         return _cfg
 
@@ -201,4 +207,3 @@ def do_multimodal_quant(args, model, infer_func, infer_args, infer_kwargs):
 if __name__ == "__main__":
     args = parse_args()
     inference(args)
-

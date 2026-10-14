@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -39,12 +39,7 @@ from msmodelslim.utils.exception import SchemaValidateError
 @QFuncRegistry.register(dispatch_key=(QDType.INT4, QScope.PER_TOKEN, False), api_name="calculate_qparam")
 @QFuncRegistry.register(dispatch_key=(QDType.INT4, QScope.PER_TOKEN, True), api_name="calculate_qparam")
 def calculate_int_qparam(
-        min_val: torch.Tensor,
-        max_val: torch.Tensor,
-        q_dtype: QDType,
-        q_scope: QScope,
-        symmetric: bool,
-        **kwargs
+    min_val: torch.Tensor, max_val: torch.Tensor, q_dtype: QDType, q_scope: QScope, symmetric: bool, **kwargs
 ) -> QParam:
     eps = torch.tensor([torch.finfo(torch.float32).eps]).type_as(min_val)
     min_val = torch.min(min_val, torch.zeros_like(min_val))
@@ -61,7 +56,7 @@ def calculate_int_qparam(
         raise TypeError("q_dtype: {} is not in [QDType.INT4, QDType.INT8]".format(q_dtype))
 
     if not symmetric:
-        max_bound = 2 ** quant_bitwidth - 1 if max_bound is None else max_bound
+        max_bound = 2**quant_bitwidth - 1 if max_bound is None else max_bound
         # asymmetric quantization
         scale = max_val / max_bound - min_val / max_bound
         scale = torch.max(scale, eps)
@@ -90,10 +85,7 @@ def calculate_int_qparam(
             scope=q_scope,
             symmetric=symmetric,
         ),
-        ext={
-            "scale": scale,
-            "offset": offset
-        }
+        ext={"scale": scale, "offset": offset},
     )
 
 
@@ -102,12 +94,7 @@ def calculate_int_qparam(
 @QFuncRegistry.register(dispatch_key=(QDType.INT4, QScope.PER_GROUP, False), api_name="calculate_qparam")
 @QFuncRegistry.register(dispatch_key=(QDType.INT4, QScope.PER_GROUP, True), api_name="calculate_qparam")
 def int_per_group_param(
-        min_val: torch.Tensor,
-        max_val: torch.Tensor,
-        q_dtype: QDType,
-        q_scope: QScope,
-        symmetric: bool,
-        **kwargs
+    min_val: torch.Tensor, max_val: torch.Tensor, q_dtype: QDType, q_scope: QScope, symmetric: bool, **kwargs
 ) -> QParam:
     q_param = calculate_int_qparam(min_val, max_val, q_dtype, q_scope, symmetric, **kwargs)
     # 此处无法获取group_size，需要在外层填充group_size值
@@ -188,8 +175,10 @@ def int_dequantize(tensor: QStorage, q_param: QParam) -> QStorage:
 def int8_per_group_quantize(tensor: QStorage, q_param: QParam) -> QStorage:
     group_size = q_param.ext.get("group_size", -1)
     if group_size < 0:
-        raise SchemaValidateError(f"group quantize group_size must be greater than 0 but got group_size = {group_size}",
-                                  action=f"Please make sure group_size is greater than 0")
+        raise SchemaValidateError(
+            f"group quantize group_size must be greater than 0 but got group_size = {group_size}",
+            action="Please make sure group_size is greater than 0",
+        )
     tmp_tensor = tensor.value.t()
     org_shape = tmp_tensor.shape
     tensor_reshaped = tmp_tensor.reshape(-1, group_size)
@@ -198,8 +187,8 @@ def int8_per_group_quantize(tensor: QStorage, q_param: QParam) -> QStorage:
         ext={
             "scale": q_param.ext["scale"].view(-1, 1),
             "offset": q_param.ext["offset"].view(-1, 1),
-            "group_size": group_size
-        }
+            "group_size": group_size,
+        },
     )
     tensor_q = int_quantize(tensor.same_like(tensor_reshaped), q_param_reshaped)
     tensor_q.value = tensor_q.value.reshape(org_shape)
@@ -214,8 +203,10 @@ def int8_per_group_quantize(tensor: QStorage, q_param: QParam) -> QStorage:
 def int_per_group_dequantize(tensor: QStorage, q_param: QParam) -> QStorage:
     group_size = q_param.ext.get("group_size", -1)
     if group_size < 0:
-        raise SchemaValidateError(f"group quantize group_size must be greater than 0 but got group_size = {group_size}",
-                                  action=f"Please make sure group_size is greater than 0")
+        raise SchemaValidateError(
+            f"group quantize group_size must be greater than 0 but got group_size = {group_size}",
+            action="Please make sure group_size is greater than 0",
+        )
     tmp_tensor = tensor.value.t()
     org_shape = tmp_tensor.shape
     tensor_reshaped = tmp_tensor.reshape(-1, group_size)
@@ -224,8 +215,8 @@ def int_per_group_dequantize(tensor: QStorage, q_param: QParam) -> QStorage:
         ext={
             "scale": q_param.ext["scale"].view(-1, 1),
             "offset": q_param.ext["offset"].view(-1, 1),
-            "group_size": group_size
-        }
+            "group_size": group_size,
+        },
     )
     tensor_q = int_dequantize(tensor.same_like(tensor_reshaped), q_param_reshaped)
     tensor_q.value = tensor_q.value.reshape(org_shape)

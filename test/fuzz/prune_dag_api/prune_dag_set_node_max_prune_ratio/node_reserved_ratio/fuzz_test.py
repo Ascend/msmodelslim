@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=pointless-string-statement
 
 """
 Usage:
@@ -25,15 +26,15 @@ TEST_PATH=test/fuzz/onnx_ptq_api/run_quantize/file_name
 python3 -m coverage run ${TEST_PATH}/fuzz_test.py ${TEST_PATH}/samples/ -atheris_runs=1000
 """
 
-import os
-import sys
+import os  # noqa: E402
+import sys  # noqa: E402
 
-import atheris
-import torch
-from torch import nn
+import atheris  # noqa: E402
+import torch  # noqa: E402
+from torch import nn  # noqa: E402
+from scipy.optimize import minimize_scalar as _  # noqa: E402, F401
+import sympy as _  # noqa: E402, F401, F811
 # Need to import these first, otherwise `atheris.instrument_imports` will take a long time
-import sympy as _
-from scipy.optimize import minimize_scalar as _
 
 with atheris.instrument_imports():
     from msmodelslim.pytorch.prune.prune_torch import PruneTorch

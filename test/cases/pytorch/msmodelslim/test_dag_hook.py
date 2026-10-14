@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import inspect
 import unittest
@@ -30,7 +31,8 @@ from ascend_utils.common.utils import OperatorAttrName
 from ascend_utils.core.dag.dag_node import DagNode
 
 # 导入待测试的类
-from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_hook import DagHook, DagModelHook
+from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_hook import DagHook
+from msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_hook import DagModelHook  # noqa: F401
 
 
 class MockDagHook(DagHook):
@@ -71,14 +73,9 @@ def post_forward_hook_func(module, inputs, outputs):
 
 
 class TestDagHook(unittest.TestCase):
-
     def setUp(self):
         """设置测试环境"""
-        self.mock_network = nn.Sequential(
-            nn.Linear(10, 5),
-            nn.ReLU(),
-            nn.Linear(5, 1)
-        )
+        self.mock_network = nn.Sequential(nn.Linear(10, 5), nn.ReLU(), nn.Linear(5, 1))
         self.mock_inputs = torch.randn(2, 10)
 
     def test_init(self):
@@ -100,9 +97,11 @@ class TestDagHook(unittest.TestCase):
         with patch.object(MockDagHook, '_parse_network_with_hook'):
             hook = MockDagHook(self.mock_network, self.mock_inputs)
 
-        with patch.object(hook, '_before_parse') as mock_before, \
-                patch.object(hook, '_reparse_network') as mock_reparse, \
-                patch.object(hook, '_after_parse') as mock_after:
+        with (
+            patch.object(hook, '_before_parse') as mock_before,
+            patch.object(hook, '_reparse_network') as mock_reparse,
+            patch.object(hook, '_after_parse') as mock_after,
+        ):
             with hook as h:
                 self.assertIs(h, hook)
                 mock_before.assert_called_once()
@@ -260,7 +259,7 @@ class TestDagHook(unittest.TestCase):
         node_id = id(old_node)
         hook._structure_tree[node_id] = {
             "name_in_network": "mock_network.0",
-            "parent_module_info": [(self.mock_network, "0")]
+            "parent_module_info": [(self.mock_network, "0")],
         }
 
         # 创建DagNode
@@ -302,9 +301,7 @@ class TestDagHook(unittest.TestCase):
         dag_node = DagNode(fake_node, "fake_node", "Fake", [], [])
 
         fake_node_id = id(fake_node)
-        hook._structure_tree[fake_node_id] = {
-            "parent_module_info": [("parent1", "name1"), ("parent2", "name2")]
-        }
+        hook._structure_tree[fake_node_id] = {"parent_module_info": [("parent1", "name1"), ("parent2", "name2")]}
 
         with self.assertRaises(ValueError) as context:
             hook.replace_node(dag_node, nn.Linear(1, 1))
@@ -320,9 +317,7 @@ class TestDagHook(unittest.TestCase):
         dag_node = DagNode(fake_node, "fake_node", "Fake", [], [])
 
         fake_node_id = id(fake_node)
-        hook._structure_tree[fake_node_id] = {
-            "parent_module_info": None
-        }
+        hook._structure_tree[fake_node_id] = {"parent_module_info": None}
 
         with self.assertRaises(ValueError) as context:
             hook.replace_node(dag_node, nn.Linear(1, 1))
@@ -431,7 +426,7 @@ class TestDagHook(unittest.TestCase):
 
         # 创建一个替换节点
         old_node = self.mock_network[0]
-        new_node = nn.Linear(10, 8)
+        new_node = nn.Linear(10, 8)  # noqa: F841
         dag_node = DagNode(old_node, "test_node", "Linear", [], [])
 
         hook._replaced_nodes.add(dag_node)
@@ -453,7 +448,7 @@ class TestDagHook(unittest.TestCase):
         # 设置一些钩子操作
         hook._hook_ops = [
             (self.mock_network[0], (type(self.mock_network[0]), '0'), 'Linear'),
-            (self.mock_network[2], (type(self.mock_network[2]), '2'), 'Linear')
+            (self.mock_network[2], (type(self.mock_network[2]), '2'), 'Linear'),
         ]
 
         # 完全模拟 _parse_network_with_hook 方法
@@ -471,9 +466,7 @@ class TestDagHook(unittest.TestCase):
             hook = MockDagHook(self.mock_network, self.mock_inputs)
 
         # 设置一些钩子操作
-        hook._hook_ops = [
-            (self.mock_network[0].forward, (type(self.mock_network[0]), 'forward'), 'Linear')
-        ]
+        hook._hook_ops = [(self.mock_network[0].forward, (type(self.mock_network[0]), 'forward'), 'Linear')]
 
         # 模拟网络执行
         with patch.object(hook.network, 'forward', return_value=torch.randn(2, 5)):
@@ -491,9 +484,7 @@ class TestDagHook(unittest.TestCase):
         # 模拟accelerate初始化的网络
         hook.network.hf_device_map = {"linear": 0}  # 模拟device map
 
-        hook._hook_ops = [
-            (self.mock_network[0].forward, (type(self.mock_network[0]), 'forward'), 'Linear')
-        ]
+        hook._hook_ops = [(self.mock_network[0].forward, (type(self.mock_network[0]), 'forward'), 'Linear')]
 
         # 模拟网络执行
         with patch.object(hook.network, 'forward', return_value=torch.randn(2, 5)):
@@ -506,9 +497,7 @@ class TestDagHook(unittest.TestCase):
             hook = MockDagHook(self.mock_network, self.mock_inputs)
 
         # 设置一些钩子操作，但模拟网络执行会出错
-        hook._hook_ops = [
-            (self.mock_network[0], (type(self.mock_network[0]), '0'), 'Linear')
-        ]
+        hook._hook_ops = [(self.mock_network[0], (type(self.mock_network[0]), '0'), 'Linear')]
 
         # 使用无效输入，但模拟DagModelHook以避免实际执行
         invalid_input = "invalid_input"
@@ -573,13 +562,7 @@ class TestDagHook(unittest.TestCase):
         self.assertGreaterEqual(len(hook._structure_tree), 1)  # 空模块本身
 
         # 测试复杂嵌套结构
-        complex_network = nn.Sequential(
-            nn.Sequential(
-                nn.Linear(10, 5),
-                nn.ReLU()
-            ),
-            nn.Linear(5, 1)
-        )
+        complex_network = nn.Sequential(nn.Sequential(nn.Linear(10, 5), nn.ReLU()), nn.Linear(5, 1))
 
         with patch.object(MockDagHook, '_parse_network_with_hook'):
             hook2 = MockDagHook(complex_network, torch.randn(2, 10))
@@ -592,9 +575,7 @@ class TestDagHook(unittest.TestCase):
             hook = MockDagHook(self.mock_network, self.mock_inputs)
 
         # 设置钩子操作
-        hook._hook_ops = [
-            (self.mock_network[0], (type(self.mock_network[0]), '0'), 'Linear')
-        ]
+        hook._hook_ops = [(self.mock_network[0], (type(self.mock_network[0]), '0'), 'Linear')]
 
         # 模拟DagModelHook
         with patch('msmodelslim.pytorch.llm_ptq.anti_outlier.dag_utils.dag_hook.DagModelHook') as mock_dag_model_hook:

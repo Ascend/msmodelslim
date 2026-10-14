@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,8 +18,9 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-import copy
+# pylint: disable=useless-import-alias
 
+import copy  # noqa: F401
 import torch
 from torch import nn as nn
 
@@ -50,6 +51,7 @@ class NonFusionSmoothQuantWrapper(WrapperIR):
             x = x[0]
         scale = self.scales.to(device=x.device, dtype=x.dtype)
         return self.wrapped_module(x * scale)
+
 
 class NonFusionSmoothQuantHookIR(HookIR):
     """
@@ -83,7 +85,7 @@ class NonFusionSmoothQuantHookIR(HookIR):
         x = args
         if isinstance(x, tuple):
             x = x[0]
-        
+
         inv_scale = (1.0 / self.scales).to(device=x.device, dtype=x.dtype)
         return x * inv_scale
 

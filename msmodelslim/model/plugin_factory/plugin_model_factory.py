@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=logging-fstring-interpolation,no-member
+
 import sys
 from importlib.metadata import entry_points
 from pathlib import Path
@@ -45,10 +47,7 @@ class PluginModelFactory(IModelFactory):
             else:
                 eps = entry_points().get(MODEL_ADAPTER_ENTRY_POINTS, [])
             cls._model_map = {ep.name: ep for ep in eps}
-            get_logger().info(
-                f"Found {len(cls._model_map)} model adapters: "
-                f"{list(cls._model_map.keys())}"
-            )
+            get_logger().info(f"Found {len(cls._model_map)} model adapters: {list(cls._model_map.keys())}")
         return cls._model_map
 
     @staticmethod
@@ -56,19 +55,17 @@ class PluginModelFactory(IModelFactory):
         return f"{MODEL_ADAPTER_ENTRY_POINTS}:{model_type}"
 
     def create(
-            self,
-            model_type: str,
-            model_path: Path,
-            trust_remote_code: bool = False,
+        self,
+        model_type: str,
+        model_path: Path,
+        trust_remote_code: bool = False,
     ) -> IModel:
         model_map = self._get_model_map()
         model_name = model_type
 
         if model_type not in model_map:
             if DEFAULT in model_map:
-                get_logger().warning(
-                    f"Model adapter '{model_type}' not found, trying default adapter..."
-                )
+                get_logger().warning(f"Model adapter '{model_type}' not found, trying default adapter...")
                 model_type = DEFAULT
             else:
                 raise UnsupportedError(
@@ -93,10 +90,7 @@ class PluginModelFactory(IModelFactory):
             adapter_class = loaded_obj
             plugin_name = self._plugin_name(model_type)
             if plugin_name in msmodelslim_config.model_adapter_dependencies:
-                DependencyChecker.set_plugin(
-                    plugin_name,
-                    msmodelslim_config.model_adapter_dependencies[plugin_name]
-                )
+                DependencyChecker.set_plugin(plugin_name, msmodelslim_config.model_adapter_dependencies[plugin_name])
             DependencyChecker.set_plugin(plugin_name, get_require_packages(adapter_class))
             DependencyChecker.check_plugin(plugin_name)
         else:

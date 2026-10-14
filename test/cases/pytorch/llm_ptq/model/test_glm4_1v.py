@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 from unittest.mock import MagicMock
 import pytest
 
@@ -33,6 +34,7 @@ class TestGetNormLinearSubgraph:
     def create_adapter(num_layers):
         """创建模拟的预训练模型"""
         from msmodelslim.pytorch.llm_ptq.model.glm.glm4_1v import GLM41VAdapter
+
         model = MagicMock()
         model.config = MagicMock()
         model.config.text_config.num_hidden_layers = num_layers
@@ -43,6 +45,7 @@ class TestGetNormLinearSubgraph:
         """测试当模型层为3层 覆盖全分支情形"""
         adapter = self.create_adapter(3)
         from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig
+
         result = adapter.get_norm_linear_subgraph(AntiOutlierConfig(anti_method='m2'))
 
         # 检查总共有3层 3*2=6
@@ -74,6 +77,7 @@ class TestGetNormLinearSubgraph:
         """测试边界条件：模型最少层数"""
         adapter = self.create_adapter(1)
         from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig
+
         result = adapter.get_norm_linear_subgraph(AntiOutlierConfig(anti_method='m2'))
 
         assert len(result) == 2
@@ -89,6 +93,7 @@ class TestGetNormLinearSubgraph:
         """测试边界条件：模型最多层数"""
         adapter = self.create_adapter(999)
         from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig
+
         result = adapter.get_norm_linear_subgraph(AntiOutlierConfig(anti_method='m2'))
 
         # 检查最后一层
@@ -102,6 +107,7 @@ class TestGetNormLinearSubgraph:
     def test_invalid_layers_zero(self):
         """测试边界条件：模型层数小于条件值"""
         from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig
+
         adapter = self.create_adapter(0)
         with pytest.raises(ValueError) as excinfo:
             adapter.get_norm_linear_subgraph(AntiOutlierConfig(anti_method='m2'))
@@ -110,6 +116,7 @@ class TestGetNormLinearSubgraph:
     def test_invalid_layers_exceed(self):
         """测试边界条件：模型层数大于条件值"""
         from msmodelslim.pytorch.llm_ptq.anti_outlier import AntiOutlierConfig
+
         adapter = self.create_adapter(1000)
         with pytest.raises(ValueError) as excinfo:
             adapter.get_norm_linear_subgraph(AntiOutlierConfig(anti_method='m2'))

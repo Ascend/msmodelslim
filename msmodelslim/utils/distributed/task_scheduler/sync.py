@@ -1,7 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-"""模块级分布式同步：DTSMixin、默认参数/buffer 同步与张量 broadcast 原语。"""
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
+模块级分布式同步：DTSMixin、默认参数/buffer 同步与张量 broadcast 原语。
+"""
+# pylint: disable=unsubscriptable-object
 
 from abc import ABC, abstractmethod
 from typing import Optional
@@ -41,9 +60,9 @@ class DTSMixin(ABC):
 
     @staticmethod
     def default_state_sync(
-            record: TaskExecutionRecord,
-            sync_ctx: TaskSyncContext,
-            module: Optional[nn.Module],
+        record: TaskExecutionRecord,
+        sync_ctx: TaskSyncContext,
+        module: Optional[nn.Module],
     ) -> None:
         """调用 DTS 默认的模块参数/缓冲区同步实现。"""
         default_module_state_sync(record, sync_ctx, module)
@@ -55,9 +74,9 @@ class DTSMixin(ABC):
 
 
 def default_module_state_sync(
-        record: TaskExecutionRecord,
-        sync_ctx: TaskSyncContext,
-        module: Optional[nn.Module] = None,
+    record: TaskExecutionRecord,
+    sync_ctx: TaskSyncContext,
+    module: Optional[nn.Module] = None,
 ) -> None:
     if module is None or not dist.is_initialized() or sync_ctx.world_size <= 1:
         return
@@ -71,8 +90,9 @@ def default_module_state_sync(
             return b.device
         return torch.device("cpu")
 
-    def _sync_named_tensor(is_param: bool, name: str, tensor_like: Optional[torch.Tensor],
-                           requires_grad: bool = False) -> None:
+    def _sync_named_tensor(
+        is_param: bool, name: str, tensor_like: Optional[torch.Tensor], requires_grad: bool = False
+    ) -> None:
         meta = [None]
         if sync_ctx.rank == owner_rank:
             if tensor_like is None:
@@ -89,8 +109,9 @@ def default_module_state_sync(
 
         current = tensor_like
         if current is None or tuple(current.shape) != owner_meta["shape"] or current.dtype != owner_meta["dtype"]:
-            new_tensor = torch.empty(owner_meta["shape"], dtype=owner_meta["dtype"],
-                                     device=_infer_module_device(module))
+            new_tensor = torch.empty(
+                owner_meta["shape"], dtype=owner_meta["dtype"], device=_infer_module_device(module)
+            )
             if is_param:
                 new_param = nn.Parameter(new_tensor, requires_grad=owner_meta["requires_grad"])
                 setattr(module, name, new_param)
@@ -110,8 +131,9 @@ def default_module_state_sync(
 
     for pname in owner_param_names[0] or []:
         p = module._parameters.get(pname)
-        _sync_named_tensor(is_param=True, name=pname, tensor_like=p,
-                           requires_grad=p.requires_grad if p is not None else False)
+        _sync_named_tensor(
+            is_param=True, name=pname, tensor_like=p, requires_grad=p.requires_grad if p is not None else False
+        )
     for bname in owner_buffer_names[0] or []:
         b = module._buffers.get(bname)
         _sync_named_tensor(is_param=False, name=bname, tensor_like=b)

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import,pointless-statement,redefined-outer-name,super-with-arguments
+
 import pytest
 
 # 第三方库
@@ -168,6 +170,7 @@ class Network2Search(torch.nn.Module):
         x_out = self.forward_group7(x_out)
         return x_out
 
+
 @pytest.fixture(scope="module")
 def inputs_of_model():
     return torch.from_numpy(np.random.uniform(size=[2, 16, 16]).astype('long'))
@@ -185,7 +188,7 @@ def dag_to_search(inputs_of_model):
     return DagTorchHook(model, inputs_of_model, hook_ops=[FakeModuleAA, FakeModuleBB, FakeModuleCC, FakeModuleDD])
 
 
-class TestNetworkParse():
+class TestNetworkParse:
     def test_parse_network_given_sample_network_when_any_pass(self, dag):
         # first node:Embedding
         first_node: DagNode = dag.dag_node_list[0]
@@ -274,7 +277,7 @@ class TestNetworkParse():
     def test_get_node_by_name_type_given_embedding_3_when_any_pass(self, dag):
         assert isinstance(dag.get_node_by_name("embedding.2").node, nn.ReLU)
 
-    def test_get_node_by_name_type_given_classifier_0_when_any_pass(self, dag): 
+    def test_get_node_by_name_type_given_classifier_0_when_any_pass(self, dag):
         assert isinstance(dag.get_node_by_name("classifier.0").node, nn.Linear)
 
     def test_get_node_by_name_type_given_classifier_1_when_any_pass(self, dag):
@@ -301,13 +304,13 @@ class TestNetworkParse():
         assert isinstance(next(gen_feature).node, nn.ReLU)
 
 
-class TestNetworkModify():
+class TestNetworkModify:
     def test_replace_node_given_leakyrelu_when_embedding_2_pass(self, dag, inputs_of_model):
         model = dag.network
         relu_node = dag.get_node_by_name("embedding.2")
         new_leaky_relu_node = torch.nn.LeakyReLU(0.1)
         dag.replace_node(relu_node, new_leaky_relu_node)
-        output = model(inputs_of_model)
+        output = model(inputs_of_model)  # noqa: F841
 
         assert relu_node.node == new_leaky_relu_node
         assert torch.nn.LeakyReLU in [type(module) for _, module in model.named_modules()]
@@ -320,7 +323,7 @@ class TestNetworkModify():
         ori_node_count = len(dag.dag_node_list)
         with dag:
             dag.add_node_before(embedding_node, new_fake_node)
-        output = model(inputs_of_model)
+        output = model(inputs_of_model)  # noqa: F841
 
         assert new_fake_node in [module for _, module in model.named_modules()]
         assert ori_node_count + 1 == len(dag.dag_node_list)
@@ -335,8 +338,8 @@ class TestNetworkModify():
         ori_node_count = len(dag.dag_node_list)
         with dag:
             dag.add_node_after(embedding_node, new_fake_node)
-        output = model(inputs_of_model)
-        
+        output = model(inputs_of_model)  # noqa: F841
+
         assert new_fake_node in [module for _, module in model.named_modules()]
         assert dag.get_node_by_name("embedding.2.0").node == ori_embedding_module
         assert dag.get_node_by_name("embedding.2.1").node == new_fake_node
@@ -350,21 +353,17 @@ class TestNetworkModify():
             for relu_node in dag.search_nodes_by_op_type("ReLU"):
                 remove_cnt += 1
                 dag.remove_node(relu_node)
-        out_put = model(inputs_of_model)
+        out_put = model(inputs_of_model)  # noqa: F841
 
         assert nn.ReLU not in [type(module) for _, module in model.named_modules()]
         assert ori_node_count == len(dag.dag_node_list) + remove_cnt
-
 
     def test_like_quant_given_any_when_any_pass(self, dag, inputs_of_model):
         model = dag.network
         linear_node = dag.get_node_by_name("embedding.1")
         with dag:
-            dag.replace_node(linear_node, nn.Sequential(
-                FakeModuleAA(),
-                linear_node.node,
-                FakeModuleAA()))
-        output = model(inputs_of_model)
+            dag.replace_node(linear_node, nn.Sequential(FakeModuleAA(), linear_node.node, FakeModuleAA()))
+        output = model(inputs_of_model)  # noqa: F841
 
         assert dag.get_node_by_name("embedding.1.0").op_type == "FakeModuleAA"
         assert dag.get_node_by_name("embedding.1.1").op_type == "Linear"
@@ -377,7 +376,7 @@ class TestNetworkModify():
         with dag:
             dag.replace_node(conv1_node, torch.nn.Conv2d(64, 32, 3, 1, 1))
             dag.replace_node(conv2_node, torch.nn.Conv2d(32, 64, 3, 1, 1))
-        output = model(inputs_of_model)
+        output = model(inputs_of_model)  # noqa: F841
 
         assert dag.get_node_by_name("feature.0").op_type == "Conv2d"
         assert dag.get_node_by_name("feature.0").node.out_channels == 32
@@ -390,11 +389,14 @@ class TestNetworkModify():
         model = dag.network
         linear_node = dag.get_node_by_name("classifier.0")
         with dag:
-            dag.replace_node(linear_node, torch.nn.Sequential(
-                nn.Linear(512, 16),
-                nn.Linear(16, 256),
-            ))
-        output = model(inputs_of_model)
+            dag.replace_node(
+                linear_node,
+                torch.nn.Sequential(
+                    nn.Linear(512, 16),
+                    nn.Linear(16, 256),
+                ),
+            )
+        output = model(inputs_of_model)  # noqa: F841
 
         assert dag.get_node_by_name("classifier.0.0").op_type == "Linear"
         assert dag.get_node_by_name("classifier.0.1").op_type == "Linear"
@@ -402,7 +404,7 @@ class TestNetworkModify():
         assert [module.in_features for name, module in model.named_modules() if name == "classifier.0.1"] == [16]
 
 
-class TestNetworkSearchGraph(): 
+class TestNetworkSearchGraph:
     def test_search_given_abca_when_any_pass(self, dag_to_search):
         node_a = DagNode(op_type="FakeModuleAA", name="node_a")
         node_b = DagNode(op_type="FakeModuleBB", name="node_b")
@@ -410,7 +412,7 @@ class TestNetworkSearchGraph():
         node_a2 = DagNode(op_type="FakeModuleAA", name="node_a2")
 
         node_a >> node_b >> node_c >> node_a2
-        
+
         search_list = list(dag_to_search.search_sub_graph([node_a2, node_b, node_c, node_a]))
         assert len(search_list) == 1
         assert search_list[0]["node_a"].name == "g1_a1"
@@ -451,7 +453,7 @@ class TestNetworkSearchGraph():
             assert sub_graph_in_network["node_a1"].op_type == "FakeModuleAA"
             assert sub_graph_in_network["node_b"].op_type == "FakeModuleBB"
             assert sub_graph_in_network["node_b1"].op_type == "FakeModuleBB"
-            
+
     def test_search_given_abab_when_any_pass(self, dag_to_search):
         node_a = DagNode(op_type="FakeModuleAA", name="node_a")
         node_b = DagNode(op_type="FakeModuleBB", name="node_b")
@@ -504,12 +506,18 @@ class TestNetworkSearchGraph():
             assert sub_graph["node_b1"].op_type == "FakeModuleBB"
             assert sub_graph["node_b2"].op_type == "FakeModuleBB"
             assert sub_graph["node_d"].op_type == "FakeModuleDD"
-            name_list.append([sub_graph["node_a"].name, sub_graph["node_b1"].name, sub_graph["node_b2"].name, 
-                                sub_graph["node_d"].name])
-            
+            name_list.append(
+                [
+                    sub_graph["node_a"].name,
+                    sub_graph["node_b1"].name,
+                    sub_graph["node_b2"].name,
+                    sub_graph["node_d"].name,
+                ]
+            )
+
         name_list.sort()
         assert name_list == [["g5_a1", "g5_b1", "g5_b2", "g5_d1"], ["g5_a1", "g5_b2", "g5_b1", "g5_d1"]]
-        
+
     def test_search_given_a_bc_d_when_any_pass(self, dag_to_search):
         node_a = DagNode(op_type="FakeModuleAA", name="node_a")
         node_c = DagNode(op_type="FakeModuleCC", name="node_c")

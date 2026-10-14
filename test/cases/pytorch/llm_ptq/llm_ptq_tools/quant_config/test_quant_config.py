@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,13 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=arguments-out-of-order
 
 import pytest
 
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools.quant_config import QuantConfig
 from .old_quant_config import OldQuantConfig
-from .compare_old_and_new_config import \
-    compare_config_parameters
+from .compare_old_and_new_config import compare_config_parameters
 
 
 class TestQuantConfig:
@@ -47,7 +47,7 @@ class TestQuantConfig:
             act_method=3,
             pr=1.0,
             w_sym=True,
-            mm_tensor=False
+            mm_tensor=False,
         )
         old_config = OldQuantConfig(
             a_bit=8,
@@ -57,7 +57,7 @@ class TestQuantConfig:
             act_method=3,
             pr=1.0,
             w_sym=True,
-            mm_tensor=False
+            mm_tensor=False,
         )
         assert compare_config_parameters(new_config, old_config) is True
 
@@ -70,7 +70,7 @@ class TestQuantConfig:
             act_method=3,
             pr=1.0,
             w_sym=True,
-            mm_tensor=False
+            mm_tensor=False,
         )
         old_config = OldQuantConfig(
             a_bit=8,
@@ -80,111 +80,65 @@ class TestQuantConfig:
             act_method=3,
             pr=1.0,
             w_sym=True,
-            mm_tensor=False
+            mm_tensor=False,
         )
         assert compare_config_parameters(new_config, old_config) is False
 
     def test_old_w8a16_quant_config_should_compatible_when_given_equal_w8a16_param(self):
-        new_config = QuantConfig(
-            a_bit=16,
-            w_bit=8,
-            disable_names=[],
-            dev_type='cpu',
-            w_sym=True,
-            mm_tensor=False
-        )
-        old_config = OldQuantConfig(
-            a_bit=16,
-            w_bit=8,
-            disable_names=[],
-            dev_type='cpu',
-            w_sym=True,
-            mm_tensor=False
-        )
+        new_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', w_sym=True, mm_tensor=False)
+        old_config = OldQuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', w_sym=True, mm_tensor=False)
         assert compare_config_parameters(new_config, old_config) is True
 
     def test_old_w8a16_quant_config_should_not_compatible_when_given_not_equal_w8a16_param(self):
-        new_config = QuantConfig(
-            a_bit=16,
-            w_bit=8,
-            disable_names=[],
-            dev_type='cpu',
-            w_sym=True,
-            mm_tensor=False
-        )
-        old_config = OldQuantConfig(
-            a_bit=16,
-            w_bit=8,
-            disable_names=[],
-            dev_type='cpu',
-            w_sym=True,
-            mm_tensor=True
-        )
+        new_config = QuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', w_sym=True, mm_tensor=False)
+        old_config = OldQuantConfig(a_bit=16, w_bit=8, disable_names=[], dev_type='cpu', w_sym=True, mm_tensor=True)
         assert compare_config_parameters(new_config, old_config) is False
 
     def test_old_sparse_quant_config_should_compatible_when_given_equal_sparse_param(self):
         new_config = QuantConfig(
-            act_method=3,
-            pr=2.0,
-            fraction=0.011,
-            nonuniform=False,
-            mm_tensor=False,
-            co_sparse=True
+            act_method=3, pr=2.0, fraction=0.011, nonuniform=False, mm_tensor=False, co_sparse=True
         )
         old_config = OldQuantConfig(
-            act_method=3,
-            pr=2.0,
-            fraction=0.011,
-            nonuniform=False,
-            mm_tensor=False,
-            co_sparse=True
+            act_method=3, pr=2.0, fraction=0.011, nonuniform=False, mm_tensor=False, co_sparse=True
         )
         assert compare_config_parameters(new_config, old_config) is True
 
     def test_old_sparse_quant_config_should_not_compatible_when_given_not_equal_sparse_param(self):
         new_config = QuantConfig(
-            act_method=3,
-            pr=2.0,
-            fraction=0.011,
-            nonuniform=False,
-            mm_tensor=False,
-            co_sparse=True
+            act_method=3, pr=2.0, fraction=0.011, nonuniform=False, mm_tensor=False, co_sparse=True
         )
         old_config = OldQuantConfig(
-            act_method=3,
-            pr=2.0,
-            fraction=0.012,
-            nonuniform=False,
-            mm_tensor=False,
-            co_sparse=True
+            act_method=3, pr=2.0, fraction=0.012, nonuniform=False, mm_tensor=False, co_sparse=True
         )
         assert compare_config_parameters(new_config, old_config) is False
 
     def test_old_sparse_quant_config_should_compatible_when_given_equal_low_bit_param(self):
         new_config = QuantConfig(
-            disable_names=['lm_head',
-                           'model.layers.0.self_attn.q_proj',
-                           'model.layers.0.self_attn.k_proj',
-                           'model.layers.0.self_attn.v_proj',
-                           'model.layers.0.self_attn.o_proj',
-                           'model.layers.0.mlp.gate_proj',
-                           'model.layers.0.mlp.up_proj',
-                           'model.layers.0.mlp.down_proj',
-                           ],
+            disable_names=[
+                'lm_head',
+                'model.layers.0.self_attn.q_proj',
+                'model.layers.0.self_attn.k_proj',
+                'model.layers.0.self_attn.v_proj',
+                'model.layers.0.self_attn.o_proj',
+                'model.layers.0.mlp.gate_proj',
+                'model.layers.0.mlp.up_proj',
+                'model.layers.0.mlp.down_proj',
+            ],
             do_smooth=False,
             is_lowbit=True,
             use_sigma=False,
         )
         old_config = OldQuantConfig(
-            disable_names=['lm_head',
-                           'model.layers.0.self_attn.q_proj',
-                           'model.layers.0.self_attn.k_proj',
-                           'model.layers.0.self_attn.v_proj',
-                           'model.layers.0.self_attn.o_proj',
-                           'model.layers.0.mlp.gate_proj',
-                           'model.layers.0.mlp.up_proj',
-                           'model.layers.0.mlp.down_proj',
-                           ],
+            disable_names=[
+                'lm_head',
+                'model.layers.0.self_attn.q_proj',
+                'model.layers.0.self_attn.k_proj',
+                'model.layers.0.self_attn.v_proj',
+                'model.layers.0.self_attn.o_proj',
+                'model.layers.0.mlp.gate_proj',
+                'model.layers.0.mlp.up_proj',
+                'model.layers.0.mlp.down_proj',
+            ],
             do_smooth=False,
             is_lowbit=True,
             use_sigma=False,
@@ -193,29 +147,31 @@ class TestQuantConfig:
 
     def test_old_sparse_quant_config_should_not_compatible_when_given_not_equal_low_bit_param(self):
         new_config = QuantConfig(
-            disable_names=['lm_head',
-                           'model.layers.0.self_attn.q_proj',
-                           'model.layers.0.self_attn.k_proj',
-                           'model.layers.0.self_attn.v_proj',
-                           'model.layers.0.self_attn.o_proj',
-                           'model.layers.0.mlp.gate_proj',
-                           'model.layers.0.mlp.up_proj',
-                           'model.layers.0.mlp.down_proj',
-                           ],
+            disable_names=[
+                'lm_head',
+                'model.layers.0.self_attn.q_proj',
+                'model.layers.0.self_attn.k_proj',
+                'model.layers.0.self_attn.v_proj',
+                'model.layers.0.self_attn.o_proj',
+                'model.layers.0.mlp.gate_proj',
+                'model.layers.0.mlp.up_proj',
+                'model.layers.0.mlp.down_proj',
+            ],
             do_smooth=False,
             is_lowbit=True,
             use_sigma=False,
         )
         old_config = OldQuantConfig(
-            disable_names=['lm_head',
-                           'model.layers.0.self_attn.q_proj',
-                           'model.layers.0.self_attn.k_proj',
-                           'model.layers.0.self_attn.v_proj',
-                           'model.layers.0.self_attn.o_proj',
-                           'model.layers.0.mlp.gate_proj',
-                           'model.layers.0.mlp.up_proj',
-                           'model.layers.0.mlp.down_proj',
-                           ],
+            disable_names=[
+                'lm_head',
+                'model.layers.0.self_attn.q_proj',
+                'model.layers.0.self_attn.k_proj',
+                'model.layers.0.self_attn.v_proj',
+                'model.layers.0.self_attn.o_proj',
+                'model.layers.0.mlp.gate_proj',
+                'model.layers.0.mlp.up_proj',
+                'model.layers.0.mlp.down_proj',
+            ],
             do_smooth=True,
             is_lowbit=True,
             use_sigma=False,
@@ -233,7 +189,7 @@ class TestQuantConfig:
             pr=1.0,
             w_sym=True,
             mm_tensor=False,
-            use_kvcache_quant=True
+            use_kvcache_quant=True,
         )
         old_config = OldQuantConfig(
             a_bit=8,
@@ -245,7 +201,7 @@ class TestQuantConfig:
             pr=1.0,
             w_sym=True,
             mm_tensor=False,
-            use_kvcache_quant=True
+            use_kvcache_quant=True,
         )
         assert compare_config_parameters(new_config, old_config) is True
 
@@ -260,7 +216,7 @@ class TestQuantConfig:
             pr=1.0,
             w_sym=True,
             mm_tensor=False,
-            use_kvcache_quant=True
+            use_kvcache_quant=True,
         )
         old_config = OldQuantConfig(
             a_bit=16,
@@ -272,7 +228,7 @@ class TestQuantConfig:
             pr=1.0,
             w_sym=True,
             mm_tensor=False,
-            use_kvcache_quant=True
+            use_kvcache_quant=True,
         )
         assert compare_config_parameters(new_config, old_config) is False
 
@@ -317,18 +273,10 @@ class TestQuantConfig:
             fraction=0.011,
             nonuniform=False,
             mm_tensor=False,
-            co_sparse=True
+            co_sparse=True,
         )
-        new_usage = QuantConfig(
-            a_bit=8,
-            w_bit=4,
-            disable_names=[],
-            dev_type='cpu',
-            mm_tensor=False
-        ).sparse_quant(
-            act_method=3,
-            fraction=0.011,
-            nonuniform=False
+        new_usage = QuantConfig(a_bit=8, w_bit=4, disable_names=[], dev_type='cpu', mm_tensor=False).sparse_quant(
+            act_method=3, fraction=0.011, nonuniform=False
         )
         assert compare_config_parameters(old_usage, new_usage) is True
 
@@ -343,18 +291,10 @@ class TestQuantConfig:
             fraction=0.011,
             nonuniform=False,
             mm_tensor=False,
-            co_sparse=True
+            co_sparse=True,
         )
-        new_usage = QuantConfig(
-            a_bit=8,
-            w_bit=4,
-            disable_names=[],
-            dev_type='cpu',
-            mm_tensor=False
-        ).sparse_quant(
-            act_method=1,
-            fraction=0.012,
-            nonuniform=False
+        new_usage = QuantConfig(a_bit=8, w_bit=4, disable_names=[], dev_type='cpu', mm_tensor=False).sparse_quant(
+            act_method=1, fraction=0.012, nonuniform=False
         )
         assert compare_config_parameters(old_usage, new_usage) is False
 
@@ -370,20 +310,10 @@ class TestQuantConfig:
             use_sigma=True,
             sigma_factor=3.0,
             is_lowbit=True,
-            mm_tensor=False
+            mm_tensor=False,
         )
-        new_usage = QuantConfig(
-            a_bit=8,
-            w_bit=4,
-            disable_names=[],
-            dev_type='cpu',
-            mm_tensor=False
-        ).sparse_quant(
-            is_lowbit=True,
-            act_method=2,
-            use_sigma=True,
-            sigma_factor=3.0,
-            do_smooth=True
+        new_usage = QuantConfig(a_bit=8, w_bit=4, disable_names=[], dev_type='cpu', mm_tensor=False).sparse_quant(
+            is_lowbit=True, act_method=2, use_sigma=True, sigma_factor=3.0, do_smooth=True
         )
         assert compare_config_parameters(old_usage, new_usage) is True
 
@@ -399,41 +329,20 @@ class TestQuantConfig:
             use_sigma=True,
             sigma_factor=3.0,
             is_lowbit=True,
-            mm_tensor=False
+            mm_tensor=False,
         )
-        new_usage = QuantConfig(
-            a_bit=8,
-            w_bit=4,
-            disable_names=[],
-            dev_type='cpu',
-            mm_tensor=False
-        ).sparse_quant(
-            is_lowbit=False,
-            act_method=2,
-            use_sigma=True,
-            sigma_factor=3.0,
-            do_smooth=True
+        new_usage = QuantConfig(a_bit=8, w_bit=4, disable_names=[], dev_type='cpu', mm_tensor=False).sparse_quant(
+            is_lowbit=False, act_method=2, use_sigma=True, sigma_factor=3.0, do_smooth=True
         )
         assert compare_config_parameters(old_usage, new_usage) is False
 
     def test_new_weight_activation_quant_config_should_equal_to_old_config_when_given_w8a8_param(self):
         old_usage = QuantConfig(
-            a_bit=8,
-            w_bit=8,
-            disable_names=["test_linear"],
-            dev_type='cpu',
-            act_method=3,
-            mm_tensor=False
+            a_bit=8, w_bit=8, disable_names=["test_linear"], dev_type='cpu', act_method=3, mm_tensor=False
         )
         new_usage = QuantConfig(
-            a_bit=8,
-            w_bit=8,
-            disable_names=["test_linear"],
-            dev_type='cpu',
-            mm_tensor=False
-        ).weight_activation_quant(
-            act_method=3
-        )
+            a_bit=8, w_bit=8, disable_names=["test_linear"], dev_type='cpu', mm_tensor=False
+        ).weight_activation_quant(act_method=3)
         assert compare_config_parameters(old_usage, new_usage) is True
 
     def test_new_weight_activation_quant_config_should_equal_to_old_config_when_given_per_token_w8a8_param(self):
@@ -444,42 +353,25 @@ class TestQuantConfig:
             dev_type='cpu',
             act_method=3,
             mm_tensor=False,
-            is_dynamic=True
+            is_dynamic=True,
         )
         new_usage = QuantConfig(
-            a_bit=8,
-            w_bit=8,
-            disable_names=["test_linear"],
-            dev_type='cpu',
-            mm_tensor=False
-        ).weight_activation_quant(
-            act_method=3,
-            is_dynamic=True
-        )
+            a_bit=8, w_bit=8, disable_names=["test_linear"], dev_type='cpu', mm_tensor=False
+        ).weight_activation_quant(act_method=3, is_dynamic=True)
         assert compare_config_parameters(old_usage, new_usage) is True
 
     def test_new_weight_activation_quant_config_should_not_equal_to_old_config_when_given_fault_w8a8_param(self):
         old_usage = QuantConfig(
-            a_bit=8,
-            w_bit=8,
-            disable_names=["test_linear"],
-            dev_type='cpu',
-            act_method=3,
-            mm_tensor=False
+            a_bit=8, w_bit=8, disable_names=["test_linear"], dev_type='cpu', act_method=3, mm_tensor=False
         )
         new_usage = QuantConfig(
-            a_bit=8,
-            w_bit=8,
-            disable_names=["test_linear"],
-            dev_type='cpu',
-            mm_tensor=False
-        ).weight_activation_quant(
-            act_method=1
-        )
+            a_bit=8, w_bit=8, disable_names=["test_linear"], dev_type='cpu', mm_tensor=False
+        ).weight_activation_quant(act_method=1)
         assert compare_config_parameters(old_usage, new_usage) is False
 
     def test_new_weight_activation_quant_config_should_not_equal_to_old_config_when_given_fault_per_token_w8a8_param(
-            self):
+        self,
+    ):
         old_usage = QuantConfig(
             a_bit=8,
             w_bit=8,
@@ -487,18 +379,11 @@ class TestQuantConfig:
             dev_type='cpu',
             act_method=3,
             mm_tensor=False,
-            is_dynamic=True
+            is_dynamic=True,
         )
         new_usage = QuantConfig(
-            a_bit=8,
-            w_bit=8,
-            disable_names=[""],
-            dev_type='cpu',
-            mm_tensor=False
-        ).weight_activation_quant(
-            act_method=3,
-            is_dynamic=True
-        )
+            a_bit=8, w_bit=8, disable_names=[""], dev_type='cpu', mm_tensor=False
+        ).weight_activation_quant(act_method=3, is_dynamic=True)
         assert compare_config_parameters(old_usage, new_usage) is False
 
     def test_pdmix_flag_should_raise_error_when_given_non_w8a8_param(self):

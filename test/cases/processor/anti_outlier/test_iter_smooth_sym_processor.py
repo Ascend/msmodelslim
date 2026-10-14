@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=assignment-from-no-return,consider-using-from-import,logging-not-lazy,redefined-outer-name
 
 from typing import List
 
@@ -62,7 +63,7 @@ def test_iter_smooth_processor_with_hooks():
             alpha=0.9,
             enable_subgraph_type=["norm-linear", "linear-linear", "ov", "up-down"],
             include=[],
-            exclude=[]
+            exclude=[],
         )
 
         # Create ModelAdapter
@@ -73,49 +74,40 @@ def test_iter_smooth_processor_with_hooks():
                     # Norm-Linear mapping config 1: input layernorm to QKV projection
                     norm_linear_mapping_config1 = MappingConfig(
                         source=f"model.layers.{layer_idx}.input_layernorm",
-                        targets=[f"model.layers.{layer_idx}.self_attn.k_proj",
-                                 f"model.layers.{layer_idx}.self_attn.q_proj",
-                                 f"model.layers.{layer_idx}.self_attn.v_proj"]
+                        targets=[
+                            f"model.layers.{layer_idx}.self_attn.k_proj",
+                            f"model.layers.{layer_idx}.self_attn.q_proj",
+                            f"model.layers.{layer_idx}.self_attn.v_proj",
+                        ],
                     )
 
                     # Norm-Linear mapping config 2: post attention layernorm to MLP projection
                     norm_linear_mapping_config2 = MappingConfig(
                         source=f"model.layers.{layer_idx}.post_attention_layernorm",
-                        targets=[f"model.layers.{layer_idx}.mlp.gate_proj",
-                                 f"model.layers.{layer_idx}.mlp.up_proj"]
+                        targets=[f"model.layers.{layer_idx}.mlp.gate_proj", f"model.layers.{layer_idx}.mlp.up_proj"],
                     )
 
                     # OV mapping config (QKV to output projection)
                     ov_mapping_config = MappingConfig(
                         source=f"model.layers.{layer_idx}.self_attn.v_proj",
-                        targets=[f"model.layers.{layer_idx}.self_attn.o_proj"]
+                        targets=[f"model.layers.{layer_idx}.self_attn.o_proj"],
                     )
 
                     # Up-Down mapping config
                     up_down_mapping_config = MappingConfig(
                         source=f"model.layers.{layer_idx}.mlp.up_proj",
-                        targets=[f"model.layers.{layer_idx}.mlp.down_proj"]
+                        targets=[f"model.layers.{layer_idx}.mlp.down_proj"],
                     )
 
                     # Add 4 configs for current layer
-                    adapter_config.extend([
-                        AdapterConfig(
-                            subgraph_type="norm-linear",
-                            mapping=norm_linear_mapping_config1
-                        ),
-                        AdapterConfig(
-                            subgraph_type="norm-linear",
-                            mapping=norm_linear_mapping_config2
-                        ),
-                        AdapterConfig(
-                            subgraph_type="ov",
-                            mapping=ov_mapping_config
-                        ),
-                        AdapterConfig(
-                            subgraph_type="up-down",
-                            mapping=up_down_mapping_config
-                        )
-                    ])
+                    adapter_config.extend(
+                        [
+                            AdapterConfig(subgraph_type="norm-linear", mapping=norm_linear_mapping_config1),
+                            AdapterConfig(subgraph_type="norm-linear", mapping=norm_linear_mapping_config2),
+                            AdapterConfig(subgraph_type="ov", mapping=ov_mapping_config),
+                            AdapterConfig(subgraph_type="up-down", mapping=up_down_mapping_config),
+                        ]
+                    )
                 return adapter_config
 
         adapter = IterSmoothModelAdapter()
@@ -151,11 +143,7 @@ def test_iter_smooth_processor_with_hooks():
         msmodelslim_logger.info("=" * 50)
 
         # Create BatchProcessRequest - using same test data format as helper_test_anti_outlier_numeric
-        request = BatchProcessRequest(
-            module=model,
-            name="model.layers.0",
-            datas=dataset_calib
-        )
+        request = BatchProcessRequest(module=model, name="model.layers.0", datas=dataset_calib)
 
         # Call preprocess to install statistics hooks
         iter_smooth_processor.preprocess(request)
@@ -172,8 +160,7 @@ def test_iter_smooth_processor_with_hooks():
                 if hasattr(module, '_forward_hooks') and module._forward_hooks:
                     hook_count += len(module._forward_hooks)
                     msmodelslim_logger.info(
-                        "Module %s has %d forward hooks installed",
-                        name, len(module._forward_hooks)
+                        "Module %s has %d forward hooks installed", name, len(module._forward_hooks)
                     )
 
         msmodelslim_logger.info("Total %d statistics hooks installed", hook_count)
@@ -185,28 +172,31 @@ def test_iter_smooth_processor_with_hooks():
 
         output_logits_before_anti = model(test_prompt[KEY_INPUT_IDS]).logits
         msmodelslim_logger.info("Output shape before processing: %s", output_logits_before_anti.shape)
-        msmodelslim_logger.info("Output stats before processing: mean=%.6f, std=%.6f",
-                                output_logits_before_anti.mean().item(),
-                                output_logits_before_anti.std().item())
+        msmodelslim_logger.info(
+            "Output stats before processing: mean=%.6f, std=%.6f",
+            output_logits_before_anti.mean().item(),
+            output_logits_before_anti.std().item(),
+        )
 
         # Check collected statistics
         msmodelslim_logger.info("\n" + "=" * 50)
         msmodelslim_logger.info("Checking collected statistics")
         msmodelslim_logger.info("=" * 50)
 
-        if (hasattr(iter_smooth_processor.stats_collector, 'act_stats') and
-                iter_smooth_processor.stats_collector.act_stats):
+        if (
+            hasattr(iter_smooth_processor.stats_collector, 'act_stats')
+            and iter_smooth_processor.stats_collector.act_stats
+        ):
             msmodelslim_logger.info(
                 "Successfully collected statistics from %d modules",
-                len(iter_smooth_processor.stats_collector.act_stats)
+                len(iter_smooth_processor.stats_collector.act_stats),
             )
             for module_name, stats in iter_smooth_processor.stats_collector.act_stats.items():
                 msmodelslim_logger.info("Statistics for module %s:", module_name)
                 for stat_key, stat_value in stats.items():
                     if isinstance(stat_value, torch.Tensor):
                         msmodelslim_logger.info(
-                            "  %s: shape=%s, device=%s",
-                            stat_key, stat_value.shape, stat_value.device
+                            "  %s: shape=%s, device=%s", stat_key, stat_value.shape, stat_value.device
                         )
                     else:
                         msmodelslim_logger.info("  %s: %s", stat_key, stat_value)
@@ -227,7 +217,7 @@ def test_iter_smooth_processor_with_hooks():
             if iter_smooth_processor.stats_collector.act_stats:
                 msmodelslim_logger.info(
                     "Remaining statistics after smooth processing: %d modules",
-                    len(iter_smooth_processor.stats_collector.act_stats)
+                    len(iter_smooth_processor.stats_collector.act_stats),
                 )
             else:
                 msmodelslim_logger.info("Statistics cleaned up after smooth processing")
@@ -239,15 +229,18 @@ def test_iter_smooth_processor_with_hooks():
 
         output_logits_after_anti = model(test_prompt[KEY_INPUT_IDS]).logits
         msmodelslim_logger.info("Output shape after processing: %s", output_logits_after_anti.shape)
-        msmodelslim_logger.info("Output stats after processing: mean=%.6f, std=%.6f",
-                                output_logits_after_anti.mean().item(),
-                                output_logits_after_anti.std().item())
+        msmodelslim_logger.info(
+            "Output stats after processing: mean=%.6f, std=%.6f",
+            output_logits_after_anti.mean().item(),
+            output_logits_after_anti.std().item(),
+        )
 
         # Compare output differences before and after processing
         # First check if shapes match
         if output_logits_before_anti.shape != output_logits_after_anti.shape:
             error_msg = "Output shapes do not match: before=%s, after=%s" % (
-                output_logits_before_anti.shape, output_logits_after_anti.shape
+                output_logits_before_anti.shape,
+                output_logits_after_anti.shape,
             )
             msmodelslim_logger.error(error_msg)
             raise AssertionError(error_msg)
@@ -267,13 +260,11 @@ def test_iter_smooth_processor_with_hooks():
         tolerance = 1e-5
         if torch.allclose(output_logits_before_anti, output_logits_after_anti, atol=tolerance):
             msmodelslim_logger.info(
-                "✓ IterSmoothProcessor output difference is within acceptable range (atol=%.1e)",
-                tolerance
+                "✓ IterSmoothProcessor output difference is within acceptable range (atol=%.1e)", tolerance
             )
         else:
             msmodelslim_logger.error(
-                "✗ IterSmoothProcessor output difference exceeds acceptable range (atol=%.1e)",
-                tolerance
+                "✗ IterSmoothProcessor output difference exceeds acceptable range (atol=%.1e)", tolerance
             )
 
             # Calculate relative differences
@@ -285,11 +276,12 @@ def test_iter_smooth_processor_with_hooks():
             msmodelslim_logger.info("  Maximum relative difference: %.6f", max_rel_diff)
             msmodelslim_logger.info("  Mean relative difference: %.6f", mean_rel_diff)
 
-            error_msg = ("IterSmoothProcessor symmetric mode output difference is too large:\n"
-                         "  max_diff=%.6e, mean_diff=%.6e, tolerance=%.6e\n"
-                         "  Note: Symmetric mode should maintain numerical consistency (pure linear transformation)" % (
-                             max_diff, mean_diff, tolerance
-                         ))
+            error_msg = (
+                "IterSmoothProcessor symmetric mode output difference is too large:\n"
+                "  max_diff=%.6e, mean_diff=%.6e, tolerance=%.6e\n"
+                "  Note: Symmetric mode should maintain numerical consistency (pure linear transformation)"
+                % (max_diff, mean_diff, tolerance)
+            )
             msmodelslim_logger.error(error_msg)
             raise AssertionError(error_msg)
 
@@ -301,6 +293,7 @@ def test_iter_smooth_processor_with_hooks():
     except Exception as e:
         msmodelslim_logger.error("Test IterSmoothProcessor failed: %s", e)
         import traceback
+
         traceback.print_exc()
         # Re-raise exception so pytest can recognize test failure
         raise
@@ -314,8 +307,7 @@ if __name__ == "__main__":
     try:
         # Test 1: Complete IterSmoothProcessor functionality test
         msmodelslim_logger.info(
-            "\n1. Complete test of IterSmoothProcessor functionality "
-            "(including statistics hook collection)..."
+            "\n1. Complete test of IterSmoothProcessor functionality (including statistics hook collection)..."
         )
         iter_smooth_processor = test_iter_smooth_processor_with_hooks()
 

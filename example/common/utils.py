@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module
 
 import os
 import argparse
@@ -28,10 +29,11 @@ from typing import Any, Dict, Union
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
 try:
-    import torch_npu
-    from torch_npu.contrib import transfer_to_npu
+    import torch_npu  # noqa: F401
+    from torch_npu.contrib import transfer_to_npu  # noqa: F401
 except ImportError:
     from msmodelslim import logger
+
     logger.warning("torch_npu is not available, if you are using NPU, please install torch_npu")
 
 from example.common.security.path import json_safe_load, json_safe_dump
@@ -50,7 +52,7 @@ class SafeGenerator:
     def get_config_from_pretrained(model_path, **kwargs):
         model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=True)
         try:
-            config = AutoConfig.from_pretrained(model_path, local_files_only=True, **kwargs)
+            config = AutoConfig.from_pretrained(model_path, local_files_only=True, **kwargs)  # nosec B615
         except EnvironmentError as env_err:
             raise EnvironmentError(
                 f"Get model from pretrained failed, please check model weights files in the model path. "
@@ -69,7 +71,7 @@ class SafeGenerator:
     def get_model_from_pretrained(model_path, **kwargs):
         model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=True)
         try:
-            model = AutoModelForCausalLM.from_pretrained(model_path, local_files_only=True, **kwargs)
+            model = AutoModelForCausalLM.from_pretrained(model_path, local_files_only=True, **kwargs)  # nosec B615
         except EnvironmentError as env_err:
             raise EnvironmentError(
                 f"Get model from pretrained failed, please check model weights files in the model path. "
@@ -88,7 +90,7 @@ class SafeGenerator:
     def get_tokenizer_from_pretrained(model_path, **kwargs):
         model_path = get_valid_read_path(model_path, is_dir=True, check_user_stat=True)
         try:
-            tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True, **kwargs)
+            tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True, **kwargs)  # nosec B615
         except EnvironmentError as env_err:
             raise EnvironmentError(
                 f"Get model from pretrained failed, please check model weights files in the model path. "
@@ -114,8 +116,9 @@ class SafeGenerator:
         filenames = os.listdir(model_dir)
         max_file_num = 1024
         if len(filenames) > max_file_num:
-            raise argparse.ArgumentTypeError(f"The file num in dir is {len(filenames)}, "
-                                            f"which exceeds the limit {max_file_num}.")
+            raise argparse.ArgumentTypeError(
+                f"The file num in dir is {len(filenames)}, which exceeds the limit {max_file_num}."
+            )
         for filename in filenames:
             need_move = False
             file_names = ['tokenizer', 'tokenization', 'special_token_map', 'generation', 'configuration', 'tiktoken']
@@ -137,14 +140,14 @@ class SafeGenerator:
         dest_dir = get_valid_write_path(dest_dir, is_dir=True)
 
         if args.mindie_format:
-            dest_quant_description_filepath = os.path.join(dest_dir, \
-                f"quant_model_description_{quantize_type.lower()}.json")
+            dest_quant_description_filepath = os.path.join(
+                dest_dir, f"quant_model_description_{quantize_type.lower()}.json"
+            )
         else:
-            dest_quant_description_filepath = os.path.join(dest_dir, \
-                f"quant_model_description.json")
+            dest_quant_description_filepath = os.path.join(dest_dir, "quant_model_description.json")
         dest_quant_description_filepath = get_valid_write_path(dest_quant_description_filepath, is_dir=False)
         quant_description_data = json_safe_load(dest_quant_description_filepath, check_user_stat=True)
-        
+
         data['torch_dtype'] = str(torch_dtype).split(".")[1]
         if args.mindie_format:
             data['quantize'] = quantize_type
@@ -169,35 +172,33 @@ class SafeGenerator:
                 'mm_tensor': False,
                 'w_sym': args.w_sym,
                 'open_outlier': args.open_outlier,
-                'is_dynamic': args.is_dynamic
+                'is_dynamic': args.is_dynamic,
             }
             if hasattr(args, 'pdmix') and args.pdmix:
                 quantization_config.update({"pdmix": args.pdmix})
             if args.use_reduce_quant:
                 quantization_config.update({"reduce_quant_type": "per_channel"})
             quant_description_data.update(quantization_config)
-            
+
             if args.mindie_format:
                 data['quantization_config'] = quantization_config
 
         dest_config_filepath = os.path.join(dest_dir, 'config.json')
         json_safe_dump(data, dest_config_filepath, 4)
 
-
     @staticmethod
     def load_jsonl(dataset_path, key_name='inputs_pretokenized'):
         dataset = []
         if dataset_path == "humaneval_x.jsonl":
             key_name = 'prompt'
-        with os.fdopen(os.open(dataset_path, os.O_RDONLY, 0o600),
-                    'r', encoding='utf-8') as file:
+        with os.fdopen(os.open(dataset_path, os.O_RDONLY, 0o600), 'r', encoding='utf-8') as file:
             lines = file.readlines()
             for line in lines:
                 data = json.loads(line)
                 text = data.get(key_name, line)
                 dataset.append(text)
         return dataset
-    
+
 
 class ArgumentValidator:
     context = None
@@ -242,8 +243,9 @@ class ArgumentParser(argparse.ArgumentParser):
         self.argument_validators = {}
         super().__init__(*args, **kwargs)
 
-    def add_argument(self, *args, validator: Union[ArgumentValidator, Dict[Any, ArgumentValidator]] = None,
-                    **kwargs) -> argparse.Action:
+    def add_argument(
+        self, *args, validator: Union[ArgumentValidator, Dict[Any, ArgumentValidator]] = None, **kwargs
+    ) -> argparse.Action:
         arguments = super().add_argument(*args, **kwargs)
         if validator is not None:
             self.argument_validators.update({arguments.dest: validator})
@@ -265,8 +267,10 @@ class ArgumentParser(argparse.ArgumentParser):
                         if type_of_value_to_validate in validator:
                             validator[type_of_value_to_validate].validate(value)
                         else:
-                            raise argparse.ArgumentTypeError(f"Validation failed for argument '{arg}': \
-                                type {type_of_value_to_validate} not supported")
+                            raise argparse.ArgumentTypeError(
+                                f"Validation failed for argument '{arg}': \
+                                type {type_of_value_to_validate} not supported"
+                            )
                     else:
                         validator.validate(value)
                 except argparse.ArgumentTypeError as e:
@@ -309,7 +313,7 @@ def cmd_bool(cmd_arg):
         return False
     raise ValueError(f"{cmd_arg} should be True or False")
 
- 
+
 def parse_tokenizer_args(input_str, default=None):
     default = {} if default is None else default
     try:

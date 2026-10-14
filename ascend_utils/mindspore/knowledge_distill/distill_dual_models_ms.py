@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=super-with-arguments
 
 import logging
 
@@ -36,7 +37,8 @@ class DistillDualModelsMs(Cell):
         self.distill_loss = 0
 
         self.distill_losses_manager = DistillLossesManager(
-            config, self.student_model, self.teacher_model, output_shapes)
+            config, self.student_model, self.teacher_model, output_shapes
+        )
 
         logging.info("DistillDualModels inited.")
 
@@ -73,4 +75,3 @@ class DistillDualModelsMs(Cell):
     def _construct_student(self, *args, **kwargs):
         output = self.student_model(*args, **kwargs)
         return output
-

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -30,10 +30,10 @@ from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import QuantConfig, Calibrator
 class Fake_dag:
     def get_allreduce_linear(self):
         return ['l1']
-    
+
     def get_kv_linears(self):
         return [], 0
-    
+
     def get_llm_network_pattern_auto(self):
         return [], [], [], [], []
 
@@ -174,11 +174,7 @@ class TestParallelLinear:
 
     def test_fp_model_allreduce_quant(self):
         TEST_SAVE_PATH = "simulate_tp_save_path"
-        q = QuantConfig(
-            w_bit=8,
-            a_bit=8,
-            disable_names=['l1']
-        )
+        q = QuantConfig(w_bit=8, a_bit=8, disable_names=['l1'])
         q.simulate_tp(tp_size=4, enable_per_device_quant=True, enable_communication_quant=True)
         model = OneLinearTorchModel()
         model.config = Model_Config(torch_dtype=torch.float16)
@@ -190,11 +186,7 @@ class TestParallelLinear:
 
     def test_w8a8_model_allreduce_quant(self):
         TEST_SAVE_PATH = "simulate_tp_save_path"
-        q = QuantConfig(
-            w_bit=8,
-            a_bit=8,
-            disable_names=[]
-        )
+        q = QuantConfig(w_bit=8, a_bit=8, disable_names=[])
         q.simulate_tp(tp_size=4, enable_per_device_quant=False, enable_communication_quant=True)
         model = OneLinearTorchModel()
         model.config = Model_Config(torch_dtype=torch.float16)

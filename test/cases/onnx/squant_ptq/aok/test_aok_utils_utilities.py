@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -58,6 +58,7 @@ class TestONNXUtils(unittest.TestCase):
     def tearDown(self):
         # 清理临时目录
         import shutil
+
         shutil.rmtree(self.temp_dir)
 
     def test_create_empty_folder(self):
@@ -202,7 +203,6 @@ class TestONNXUtils(unittest.TestCase):
             _get_bytearray(init_input, np_dtype)
         self.assertIn("Unsupported data type of input!", str(context.exception))
 
-
     def test_node_io_operations(self):
         """测试节点输入输出操作"""
         node = helper.make_node('Add', ['A', 'B'], ['C'])
@@ -244,7 +244,7 @@ class TestONNXUtils(unittest.TestCase):
         Y = helper.make_tensor_value_info('Y', TensorProto.FLOAT, [1, 3])
         node = helper.make_node('Relu', ['X'], ['Y'], name='relu_node')
         graph = helper.make_graph([node], "test_graph", [X], [Y])
-        model = helper.make_model(graph)
+        model = helper.make_model(graph)  # noqa: F841
 
         logger = MagicMock()
         result = aok_utilities.check_topology_sorting(graph, logger)
@@ -259,7 +259,7 @@ class TestONNXUtils(unittest.TestCase):
         node1 = helper.make_node('Relu', ['X'], ['Y'], name='relu_node')
         node2 = helper.make_node('Add', ['Y'], ['Z'], name='add_node')
         graph = helper.make_graph([node1, node2], "test_graph", [X], [Y])
-        model = helper.make_model(graph)
+        model = helper.make_model(graph)  # noqa: F841
 
         # 修改图，使拓扑排序错误
         graph.node[1].input[0] = 'non_existent_input'

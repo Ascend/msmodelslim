@@ -1,6 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+"""
+# pylint: disable=consider-using-from-import
+
 from typing import List
 
 import pytest
@@ -64,15 +83,17 @@ class MockDecoderLayer(nn.Module):
 class MockModel(nn.Module):
     def __init__(self, hidden_size=64, intermediate_size=128, num_layers=2):
         super().__init__()
-        self.config = type("Config", (), {
-            "num_hidden_layers": num_layers,
-            "num_attention_heads": 4,
-            "num_key_value_heads": 4,
-            "hidden_size": hidden_size,
-        })()
-        layers = nn.ModuleList([
-            MockDecoderLayer(hidden_size, intermediate_size) for _ in range(num_layers)
-        ])
+        self.config = type(
+            "Config",
+            (),
+            {
+                "num_hidden_layers": num_layers,
+                "num_attention_heads": 4,
+                "num_key_value_heads": 4,
+                "hidden_size": hidden_size,
+            },
+        )()
+        layers = nn.ModuleList([MockDecoderLayer(hidden_size, intermediate_size) for _ in range(num_layers)])
         self.model = nn.Module()
         self.model.layers = layers
 
@@ -91,28 +112,34 @@ class MockAdapter(AWQInterface):
         configs = []
         for i in range(self.num_layers):
             prefix = f"model.layers.{i}"
-            configs.append(AdapterConfig(
-                subgraph_type="norm-linear",
-                mapping=MappingConfig(
-                    source=f"{prefix}.post_attention_layernorm",
-                    targets=[f"{prefix}.mlp.gate_proj", f"{prefix}.mlp.up_proj"],
-                ),
-            ))
-            configs.append(AdapterConfig(
-                subgraph_type="up-down",
-                mapping=MappingConfig(
-                    source=f"{prefix}.mlp.up_proj",
-                    targets=[f"{prefix}.mlp.down_proj"],
-                ),
-            ))
-            if self.include_non_fusion:
-                configs.append(AdapterConfig(
+            configs.append(
+                AdapterConfig(
                     subgraph_type="norm-linear",
                     mapping=MappingConfig(
-                        source=None,
+                        source=f"{prefix}.post_attention_layernorm",
                         targets=[f"{prefix}.mlp.gate_proj", f"{prefix}.mlp.up_proj"],
                     ),
-                ))
+                )
+            )
+            configs.append(
+                AdapterConfig(
+                    subgraph_type="up-down",
+                    mapping=MappingConfig(
+                        source=f"{prefix}.mlp.up_proj",
+                        targets=[f"{prefix}.mlp.down_proj"],
+                    ),
+                )
+            )
+            if self.include_non_fusion:
+                configs.append(
+                    AdapterConfig(
+                        subgraph_type="norm-linear",
+                        mapping=MappingConfig(
+                            source=None,
+                            targets=[f"{prefix}.mlp.gate_proj", f"{prefix}.mlp.up_proj"],
+                        ),
+                    )
+                )
         return configs
 
 
@@ -122,22 +149,14 @@ class MockInvalidAdapter:
 
 def _make_default_qconfig():
     return LinearQConfig(
-        act=QConfig(
-            dtype=QDType.FLOAT,
-            scope=QScope.PER_TENSOR,
-            symmetric=True,
-            method="none"
-        ),
-        weight=QConfig(
-            dtype=QDType.INT8,
-            scope=QScope.PER_CHANNEL,
-            symmetric=True,
-            method="minmax"
-        )
+        act=QConfig(dtype=QDType.FLOAT, scope=QScope.PER_TENSOR, symmetric=True, method="none"),
+        weight=QConfig(dtype=QDType.INT8, scope=QScope.PER_CHANNEL, symmetric=True, method="minmax"),
     )
 
 
-def _make_processor(num_layers=2, n_grid=2, enable_subgraph_type=None, include_non_fusion=False) -> tuple[AWQProcessor, MockModel, MagicMock]:
+def _make_processor(
+    num_layers=2, n_grid=2, enable_subgraph_type=None, include_non_fusion=False
+) -> tuple[AWQProcessor, MockModel, MagicMock]:
     model = MockModel(num_layers=num_layers)
     config = AWQProcessorConfig(
         weight_qconfig=_make_default_qconfig().weight,
@@ -146,7 +165,7 @@ def _make_processor(num_layers=2, n_grid=2, enable_subgraph_type=None, include_n
     )
     adapter = MockAdapter(num_layers=num_layers, include_non_fusion=include_non_fusion)
     processor = AWQProcessor(model, config, adapter)
-    
+
     mock_searcher = MagicMock()
 
     def _mock_search(linears, *_args, **_kwargs):
@@ -155,12 +174,11 @@ def _make_processor(num_layers=2, n_grid=2, enable_subgraph_type=None, include_n
 
     mock_searcher.search.side_effect = _mock_search
     processor.awq_config.awq_searcher = mock_searcher
-    
+
     return processor, model, mock_searcher
 
 
 class TestAWQProcessorConfig:
-
     def test_default_config(self):
         config = AWQProcessorConfig(weight_qconfig=_make_default_qconfig().weight)
         assert config.n_grid == 20
@@ -179,7 +197,6 @@ class TestAWQProcessorConfig:
 
 
 class TestAWQProcessorInit:
-
     def test_init_with_valid_adapter(self):
         processor, _, _ = _make_processor()
         assert isinstance(processor, AWQProcessor)
@@ -194,7 +211,6 @@ class TestAWQProcessorInit:
 
 
 class TestAWQProcessorPreRun:
-
     def test_pre_run_populates_global_adapter_config(self):
         processor, _, _ = _make_processor()
         assert processor.global_adapter_config is None
@@ -204,7 +220,6 @@ class TestAWQProcessorPreRun:
 
 
 class TestAWQProcessorPreprocess:
-
     def test_preprocess_filters_by_scope(self):
         processor, model, _ = _make_processor(num_layers=2)
         processor.pre_run()
@@ -236,7 +251,6 @@ class TestAWQProcessorPreprocess:
 
 
 class TestAWQProcessorPostprocess:
-
     def test_postprocess_clears_state(self):
         processor, model, mock_searcher = _make_processor()
         processor.pre_run()
@@ -271,10 +285,11 @@ class TestAWQProcessorPostprocess:
 
 
 class TestAWQProcessorNonFusion:
-
     def test_non_fusion_subgraph_calls_search(self):
         processor, model, mock_searcher = _make_processor(
-            num_layers=1, n_grid=2, include_non_fusion=True,
+            num_layers=1,
+            n_grid=2,
+            include_non_fusion=True,
             enable_subgraph_type=["norm-linear", "up-down"],
         )
         processor.pre_run()

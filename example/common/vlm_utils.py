@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=arguments-differ
 
 import os
 import shutil
@@ -32,22 +33,24 @@ from example.common.utils import SafeGenerator
 @dataclass
 class ModifyConfigParams:
     """修改配置文件的参数封装"""
+
     model_dir: str
     dest_dir: str
     torch_dtype: Any
     quantize_type: str
     args: Optional[Any] = None
     quantize_config_parts: Optional[List[str]] = None
-    
+
     def __post_init__(self):
         """后初始化处理"""
         if self.quantize_config_parts is None:
             self.quantize_config_parts = []
 
 
-@dataclass 
+@dataclass
 class CopyTokenizerParams:
     """复制tokenizer文件的参数封装"""
+
     model_dir: str
     dest_dir: str
 
@@ -64,7 +67,7 @@ class VlmSafeGenerator(SafeGenerator):
         'open_outlier': True,
         'is_dynamic': False,
     }
-    
+
     # 支持的文件扩展名和排除的文件名
     SUPPORTED_EXTENSIONS = {'.json', '.py'}
     EXCLUDED_FILES = {'config.json', 'model.safetensors.index.json'}
@@ -76,11 +79,11 @@ class VlmSafeGenerator(SafeGenerator):
         # 验证路径
         model_dir = get_valid_read_path(params.model_dir, is_dir=True, check_user_stat=True)
         dest_dir = get_valid_write_path(params.dest_dir, is_dir=True)
-        
+
         # 加载源配置
         src_config_filepath = os.path.join(model_dir, 'config.json')
         data = json_safe_load(src_config_filepath, check_user_stat=True)
-        
+
         # 生成量化描述文件路径
         dest_quant_description_filepath = VlmSafeGenerator._get_quantization_filename(
             dest_dir, params.quantize_type, getattr(params.args, 'mindie_format', False)
@@ -90,20 +93,20 @@ class VlmSafeGenerator(SafeGenerator):
 
         # 更新配置
         data['torch_dtype'] = str(params.torch_dtype).split('.')[1]
-        
+
         # 处理mindie格式
         if params.args and getattr(params.args, 'mindie_format', False):
             data['quantize'] = params.quantize_type
             for config_part in params.quantize_config_parts:
                 data[config_part]['quantize'] = params.quantize_type
-        
+
         # 构建量化配置
         quantization_config = VlmSafeGenerator._build_quantization_config(params.args)
         if quantization_config:
             quant_description_data.update(quantization_config)
             if params.args and getattr(params.args, 'mindie_format', False):
                 data['quantization_config'] = quantization_config
-        
+
         # 保存配置
         dest_config_filepath = os.path.join(dest_dir, 'config.json')
         json_safe_dump(data, dest_config_filepath, 4)
@@ -112,31 +115,30 @@ class VlmSafeGenerator(SafeGenerator):
     def copy_tokenizer_files(params: CopyTokenizerParams):
         """复制tokenizer文件"""
         model_dir = get_valid_read_path(params.model_dir, is_dir=True, check_user_stat=True)
-        
+
         # 确保目标目录存在
         if not os.path.exists(params.dest_dir):
             os.makedirs(params.dest_dir, mode=0o750, exist_ok=True)
         dest_dir = get_valid_write_path(params.dest_dir, is_dir=True)
-        
+
         # 检查文件数量限制
         filenames = os.listdir(model_dir)
         if len(filenames) > VlmSafeGenerator.MAX_FILE_NUM:
             raise argparse.ArgumentTypeError(
-                f"The file num in dir is {len(filenames)}, "
-                f"which exceeds the limit {VlmSafeGenerator.MAX_FILE_NUM}."
+                f"The file num in dir is {len(filenames)}, which exceeds the limit {VlmSafeGenerator.MAX_FILE_NUM}."
             )
-        
+
         # 复制符合条件的文件
         for filename in filenames:
             # 检查文件扩展名
             _, ext = os.path.splitext(filename)
             if ext not in VlmSafeGenerator.SUPPORTED_EXTENSIONS:
                 continue
-                
+
             # 跳过排除的文件
             if filename in VlmSafeGenerator.EXCLUDED_FILES:
                 continue
-            
+
             # 复制文件
             src_filepath = os.path.join(model_dir, filename)
             dest_filepath = os.path.join(dest_dir, filename)
@@ -157,12 +159,12 @@ class VlmSafeGenerator(SafeGenerator):
         """构建量化配置字典"""
         if args is None:
             return {}
-            
+
         # 使用getattr获取属性值，提供默认值
         config = {}
         for key, default_value in VlmSafeGenerator.DEFAULT_QUANTIZATION_CONFIG.items():
             config[key] = getattr(args, key, default_value)
-        
+
         # 特殊处理必需的属性
         required_attrs = ['w_bit', 'a_bit', 'device_type']
         for attr in required_attrs:
@@ -171,11 +173,10 @@ class VlmSafeGenerator(SafeGenerator):
                     config['dev_type'] = getattr(args, attr)
                 else:
                     config[attr] = getattr(args, attr)
-        
+
         # 特殊逻辑：当is_lowbit为True且open_outlier为False时，group_size生效
-        if (hasattr(args, 'group_size') and hasattr(args, 'is_lowbit') and 
-            hasattr(args, 'open_outlier')):
+        if hasattr(args, 'group_size') and hasattr(args, 'is_lowbit') and hasattr(args, 'open_outlier'):
             if args.is_lowbit and not args.open_outlier:
                 config['group_size'] = args.group_size
-        
+
         return config

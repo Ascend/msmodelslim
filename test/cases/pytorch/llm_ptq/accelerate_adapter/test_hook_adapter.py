@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,8 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module,redefined-outer-name,use-a-generator
+
 import os
 import shutil
 from typing import Dict, Union, Optional
@@ -46,9 +48,11 @@ if accelerate_version != '0.28.0':
     pytestmark = pytest.mark.skip(reason=f"accelerate version is {accelerate_version}, required version is 0.28.0")
 
 from msmodelslim.pytorch.llm_ptq.accelerate_adapter.hook_adapter import UpdateWeightsMapHook
-from msmodelslim.pytorch.llm_ptq.accelerate_adapter.hook_adapter import (replace_device_align_hook_if_needed,
-                                                                         move_update_weight_hook_if_need,
-                                                                         PrepareWeight)
+from msmodelslim.pytorch.llm_ptq.accelerate_adapter.hook_adapter import (
+    replace_device_align_hook_if_needed,
+    move_update_weight_hook_if_need,
+    PrepareWeight,
+)
 from msmodelslim.pytorch.llm_ptq.accelerate_adapter.utils import HF_HOOK
 
 ALL_CPU_DEVICE_MAP = {
@@ -79,8 +83,7 @@ def clear_offload_dir():
 
 
 def get_fake_dispatched_llama_model(
-        device_map: Dict[str, Union[str, int, torch.device]] = None,
-        main_device: Optional[torch.device] = None
+    device_map: Dict[str, Union[str, int, torch.device]] = None, main_device: Optional[torch.device] = None
 ):
     """
     获取一个随机的、非常小的Llama模型，并将其dispatch至相应的设备
@@ -99,7 +102,7 @@ def get_fake_dispatched_llama_model(
             device_map=device_map,
             main_device=main_device,
             state_dict=model.state_dict(),
-            offload_dir=OFFLOAD_DIR
+            offload_dir=OFFLOAD_DIR,
         )
     finally:
         # 4. 无论是否出错，都恢复原始 umask
@@ -109,7 +112,6 @@ def get_fake_dispatched_llama_model(
 
 def check_all_hook(model: PreTrainedModel, target_hook_type, allow_none: bool = True):
     for _, module in model.named_modules():
-
         hook = getattr(module, HF_HOOK, None)
 
         if allow_none and hook is None:

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=not-callable,redefined-outer-name
 # Note: This file is copied and modified from Open-Sora-Plan repo v1.2: opensora.sample.sample_t2v_sp
 
 import os
@@ -49,6 +50,7 @@ def search_restep(pipeline, args):
 
     # set restep search config
     from msmodelslim.pytorch.multi_modal.sampling_optimization import ReStepSearchConfig, ReStepAdaptor
+
     config = ReStepSearchConfig(
         videos_path=args.videos_path,
         save_dir=args.save_dir,
@@ -72,40 +74,41 @@ def search_dit_cache(pipeline, args):
 
     def run_pipeline_and_save_videos(pipeline) -> List[torch.Tensor]:
         """
-            Args:
-                pipeline:
+        Args:
+            pipeline:
 
-            Returns:
-                List[torch.Tensor]:  B, num_frames, h, w, c
+        Returns:
+            List[torch.Tensor]:  B, num_frames, h, w, c
         """
 
         positive_prompt = """
-        (masterpiece), (best quality), (ultra-detailed), (unwatermarked), 
-        {}. 
-        emotional, harmonious, vignette, 4k epic detailed, shot on kodak, 35mm photo, 
+        (masterpiece), (best quality), (ultra-detailed), (unwatermarked),
+        {}.
+        emotional, harmonious, vignette, 4k epic detailed, shot on kodak, 35mm photo,
         sharp focus, high budget, cinemascope, moody, epic, gorgeous
         """
 
         negative_prompt = """
-        nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, 
+        nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality,
         low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry.
         """
 
         all_videos = []
         for _, prompt in enumerate(args.text_prompt):
             npu_config.seed_everything(42)
-            videos = pipeline(positive_prompt.format(prompt),
-                              negative_prompt=negative_prompt,
-                              num_frames=args.num_frames,
-                              height=args.height,
-                              width=args.width,
-                              num_inference_steps=args.num_sampling_steps,
-                              guidance_scale=args.guidance_scale,
-                              num_images_per_prompt=1,
-                              mask_feature=True,
-                              device=f"npu:{torch.cuda.current_device()}",
-                              max_sequence_length=args.max_sequence_length,
-                              ).images
+            videos = pipeline(
+                positive_prompt.format(prompt),
+                negative_prompt=negative_prompt,
+                num_frames=args.num_frames,
+                height=args.height,
+                width=args.width,
+                num_inference_steps=args.num_sampling_steps,
+                guidance_scale=args.guidance_scale,
+                num_images_per_prompt=1,
+                mask_feature=True,
+                device=f"npu:{torch.cuda.current_device()}",
+                max_sequence_length=args.max_sequence_length,
+            ).images
 
             if dist.get_rank() > 0:
                 continue
@@ -116,12 +119,9 @@ def search_dit_cache(pipeline, args):
         torch.npu.empty_cache()
         return all_videos
 
-
     block_num = len(getattr(pipeline.transformer, "transformer_blocks"))
     config = DitCacheSearchConfig(
-        num_sampling_steps=args.num_sampling_steps,
-        cache_ratio=args.cache_ratio,
-        dit_block_num=block_num
+        num_sampling_steps=args.num_sampling_steps, cache_ratio=args.cache_ratio, dit_block_num=block_num
     )
 
     if args.cache_save_path is None:
@@ -132,9 +132,9 @@ def search_dit_cache(pipeline, args):
 
     cache_adaptor = DitCacheAdaptor(pipeline, config)
     cache_adaptor.set_timestep_idx(0)
-    searched_config: DitCacheConfig = \
-        cache_adaptor.search(run_pipeline_and_save_videos=run_pipeline_and_save_videos,
-                             prompts_num=len(args.text_prompt))
+    searched_config: DitCacheConfig = cache_adaptor.search(
+        run_pipeline_and_save_videos=run_pipeline_and_save_videos, prompts_num=len(args.text_prompt)
+    )
 
     if dist.get_rank() == 0:
         safe_delete_path_if_exists(args.cache_save_path)

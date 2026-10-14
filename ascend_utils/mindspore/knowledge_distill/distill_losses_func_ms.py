@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=self-assigning-variable,super-with-arguments,useless-parent-delegation
 
 import mindspore
 from mindspore import nn, ops
@@ -80,6 +81,7 @@ class Mse(Cell):
     """
     Do not use now.
     """
+
     def __init__(self):
         super(Mse, self).__init__()
         self.mse = nn.MSE()
@@ -111,6 +113,7 @@ class HardKDCrossEntropy(Cell):
     """
     Do not use now.
     """
+
     def __int__(self):
         super(HardKDCrossEntropy, self).__init__()
 
@@ -144,6 +147,7 @@ class MMD(Cell):
     """
     Do not use now.
     """
+
     def __init__(self, batch_size):
         super(MMD, self).__init__()
         self.batch_size = batch_size
@@ -187,6 +191,4 @@ class MMD(Cell):
         return loss
 
 
-DISTILL_LOSS_FUNC_MS = {
-    "KDCrossEntropy": KDCrossEntropy
-}
+DISTILL_LOSS_FUNC_MS = {"KDCrossEntropy": KDCrossEntropy}

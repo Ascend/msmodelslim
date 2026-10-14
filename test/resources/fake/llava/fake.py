@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module
 
 import os
 
@@ -48,9 +49,7 @@ class FakeLlavaCreator:
         """
         获取一个随机的、非常小的LlavaDecoderLayer，用于验证工具中某些流程的正确性
         """
-        rotary_emb = LlamaRotaryEmbedding(
-            config=cls.text_config
-        )
+        rotary_emb = LlamaRotaryEmbedding(config=cls.text_config)
         layer = LlamaDecoderLayer(config=cls.text_config, layer_idx=0)
         layer.self_attn.rotary_emb = rotary_emb
         layer.self_attn.num_heads = cls.text_config.num_attention_heads

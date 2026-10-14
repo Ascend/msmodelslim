@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=anomalous-backslash-in-string,pointless-string-statement
 
 """
 Usage:
@@ -26,20 +27,20 @@ coverage report -i  # coverage rate
 coverage html -d foo -i  # coverage rate + code execution in a html
 """
 
-import sys
-import logging
-import os
-import random
+import sys  # noqa: E402
+import logging  # noqa: E402
+import os  # noqa: E402
+import random  # noqa: E402
 
-import atheris
+import atheris  # noqa: E402
 
-from test.fuzz.common.utils import random_change_dict_value
+from test.fuzz.common.utils import random_change_dict_value  # noqa: E402
 
-from msmodelslim.common.prune.transformer_prune.prune_model import PruneConfig
+from msmodelslim.common.prune.transformer_prune.prune_model import PruneConfig  # noqa: E402
+
 
 @atheris.instrument_func
 def fuzz_test(input_bytes):
-
     fuzz_value = input_bytes.decode('utf-8', 'ignore').strip()
 
     patten = "uniter\.encoder\.encoder\.blocks\.(\d+)\."

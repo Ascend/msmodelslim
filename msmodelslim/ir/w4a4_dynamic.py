@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-from-import
 
 import torch
 import torch.nn as nn
@@ -41,13 +42,13 @@ from .const import (
         (int4_per_token_sym, int4_per_channel_sym),
         (int4_per_token_sym, int4_per_channel_asym),
     ],
-    abc_type=AutoFakeQuantLinear
+    abc_type=AutoFakeQuantLinear,
 )
 @logger_setter()
 class W4A4DynamicPerChannelFakeQuantLinear(AutoFakeQuantLinear):
     """
     W4A4 动态量化方式的伪量化IR。
-    
+
     W4A4 动态量化方式可以用以下参数描述：
         weight_scale: 权重张量的量化参数，类型为torch.Tensor, dtype为torch.float32
         weight_offset: 权重张量的量化参数，类型为torch.Tensor, dtype为torch.int32
@@ -55,13 +56,7 @@ class W4A4DynamicPerChannelFakeQuantLinear(AutoFakeQuantLinear):
         bias: 偏置张量，类型为torch.Tensor, dtype为torch.float32
     """
 
-    def __init__(
-            self,
-            x_q_param: QParam,
-            w_q_param: QParam,
-            w_q: QStorage,
-            bias: torch.Tensor
-    ):
+    def __init__(self, x_q_param: QParam, w_q_param: QParam, w_q: QStorage, bias: torch.Tensor):
         super().__init__()
         self.w_scheme = w_q_param.scheme
         self.weight_scale = nn.Parameter(w_q_param.ext.pop("scale"), requires_grad=False)
@@ -84,7 +79,7 @@ class W4A4DynamicPerChannelFakeQuantLinear(AutoFakeQuantLinear):
             ext={
                 "scale": self.weight_scale,
                 "offset": self.weight_offset,
-            }
+            },
         )
         w_q_storage = QStorage(dtype=QDType.INT4, value=self.weight)
         weight_q_dq = dequantize(w_q_storage.T, w_q_param).T
@@ -96,7 +91,7 @@ class W4A4DynamicPerChannelFakeQuantLinear(AutoFakeQuantLinear):
         (int4_per_token_sym, int4_per_group_sym),
         (int4_per_token_sym, int4_per_group_asym),
     ],
-    abc_type=AutoFakeQuantLinear
+    abc_type=AutoFakeQuantLinear,
 )
 @logger_setter()  # use module path as logger name (msmodelslim.ir.w4a4_dynamic)
 class W4A4DynamicPerGroupFakeQuantLinear(AutoFakeQuantLinear):
@@ -110,13 +105,7 @@ class W4A4DynamicPerGroupFakeQuantLinear(AutoFakeQuantLinear):
         bias: 偏置张量，类型为torch.Tensor, dtype为torch.float32
     """
 
-    def __init__(
-            self,
-            x_q_param: QParam,
-            w_q_param: QParam,
-            w_q: QStorage,
-            bias: torch.Tensor
-    ):
+    def __init__(self, x_q_param: QParam, w_q_param: QParam, w_q: QStorage, bias: torch.Tensor):
         super().__init__()
         self.group_size = w_q_param.ext.pop("group_size")
         self.w_scheme = w_q_param.scheme
@@ -137,11 +126,7 @@ class W4A4DynamicPerGroupFakeQuantLinear(AutoFakeQuantLinear):
         x_q_dq = fake_quantize(QStorage(QDType.FLOAT, x_reshape), x_q_param)
         w_q_param = QParam(
             scheme=self.w_scheme,
-            ext={
-                "scale": self.weight_scale,
-                "offset": self.weight_offset,
-                "group_size": self.group_size
-            }
+            ext={"scale": self.weight_scale, "offset": self.weight_offset, "group_size": self.group_size},
         )
         w_q_storage = QStorage(dtype=QDType.INT4, value=self.weight)
         weight_q_dq = dequantize(w_q_storage, w_q_param)

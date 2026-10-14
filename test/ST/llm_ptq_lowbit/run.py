@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,8 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module,pointless-string-statement,redefined-outer-name
+
 import torch
 import os
+
 # os.environ['CUDA_VISIBLE_DEVICES'] = '4'
 import torch.utils.data
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -37,21 +40,18 @@ def generate_max_memory(max_memory=None, gpu_num=8, unit='MiB'):
 
 SEQ_LEN_OUT = 12
 
-max_memory = generate_max_memory({
-            "cpu": 457403
-        })
+max_memory = generate_max_memory({"cpu": 457403})
 load_path = f"{os.environ['PROJECT_PATH']}/resource/llm_ptq/llama2_7b/"
-tokenizer = AutoTokenizer.from_pretrained(load_path, 
-                                          trust_remote_code=True, 
-                                          local_files_only=True,
-                                          use_fast=False)
+tokenizer = AutoTokenizer.from_pretrained(load_path, trust_remote_code=True, local_files_only=True, use_fast=False)
 
-model = AutoModelForCausalLM.from_pretrained(load_path,
-                                             trust_remote_code=True,
-                                             device_map='auto',
-                                             torch_dtype=torch.float32,
-                                             max_memory=max_memory, 
-                                             local_files_only=True)
+model = AutoModelForCausalLM.from_pretrained(
+    load_path,
+    trust_remote_code=True,
+    device_map='auto',
+    torch_dtype=torch.float32,
+    max_memory=max_memory,
+    local_files_only=True,
+)
 model.eval()
 
 '''
@@ -71,12 +71,14 @@ test_prompt = "Common sense questions and answers\n\nQuestion: What is the capit
 test_input = tokenizer(test_prompt, return_tensors="pt")
 print("model is inferring...")
 model.eval()
-generate_ids = model.generate(test_input.input_ids, attention_mask=test_input.attention_mask, max_new_tokens=SEQ_LEN_OUT)
+generate_ids = model.generate(
+    test_input.input_ids, attention_mask=test_input.attention_mask, max_new_tokens=SEQ_LEN_OUT
+)
 res = tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
 for idx, item in enumerate(res):
     print(item)
 
-    
+
 def get_calib_dataset(tokenizer, calib_list):
     calib_dataset = []
     for calib_data in calib_list:
@@ -87,21 +89,23 @@ def get_calib_dataset(tokenizer, calib_list):
 
 
 dataset_calib = get_calib_dataset(tokenizer, calib_list)
-from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import QuantConfig, Calibrator
+from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import QuantConfig, Calibrator  # noqa: E402
 
-quant_config = QuantConfig(disable_names=['lm_head',
-                                            'model.layers.0.self_attn.q_proj',
-                                            'model.layers.0.self_attn.k_proj',
-                                            'model.layers.0.self_attn.v_proj',
-                                            'model.layers.0.self_attn.o_proj',
-                                            'model.layers.0.mlp.gate_proj',
-                                            'model.layers.0.mlp.up_proj',
-                                            'model.layers.0.mlp.down_proj',
-                                            ],
-                            do_smooth=False,
-                            is_lowbit=True,
-                            use_sigma=False,
-                            )
+quant_config = QuantConfig(
+    disable_names=[
+        'lm_head',
+        'model.layers.0.self_attn.q_proj',
+        'model.layers.0.self_attn.k_proj',
+        'model.layers.0.self_attn.v_proj',
+        'model.layers.0.self_attn.o_proj',
+        'model.layers.0.mlp.gate_proj',
+        'model.layers.0.mlp.up_proj',
+        'model.layers.0.mlp.down_proj',
+    ],
+    do_smooth=False,
+    is_lowbit=True,
+    use_sigma=False,
+)
 calibrator = Calibrator(model, quant_config, calib_data=dataset_calib)
 calibrator.run()
 

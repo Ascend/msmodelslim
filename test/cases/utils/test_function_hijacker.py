@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,19 +18,24 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-
+# pylint: disable=consider-using-generator,keyword-arg-before-vararg,pointless-string-statement
 
 """
 msmodelslim.utils.function_hijacker 模块的单元测试
 """
 
-import unittest
-from unittest.mock import patch, MagicMock
+import unittest  # noqa: E402
+from unittest.mock import patch, MagicMock  # noqa: E402
 
-from msmodelslim.utils.function_hijacker import (
-    _get_target_id, _create_kwargs_wrapper, FunctionHijacker,
-    hijack_function, restore_function, restore_all_hijacked,
-    get_original_function, _hijacker
+from msmodelslim.utils.function_hijacker import (  # noqa: E402
+    _get_target_id,
+    _create_kwargs_wrapper,
+    FunctionHijacker,
+    hijack_function,
+    restore_function,
+    restore_all_hijacked,
+    get_original_function,
+    _hijacker,
 )
 
 
@@ -58,8 +63,9 @@ def replacement_func_with_args_kwargs(**kwargs):
         args_sum = sum([x for x in kwargs.get('args', ()) if isinstance(x, (int, float))])
 
     kwargs_sum = sum([v for v in kwargs.get('kwargs', {}).values() if isinstance(v, (int, float))])
-    other_sum = sum([v for k, v in kwargs.items() if
-                     k not in ['args', 'kwargs', '_raw_args'] and isinstance(v, (int, float))])
+    other_sum = sum(
+        [v for k, v in kwargs.items() if k not in ['args', 'kwargs', '_raw_args'] and isinstance(v, (int, float))]
+    )
 
     return args_sum + kwargs_sum + other_sum
 
@@ -169,9 +175,7 @@ class TestCreateKwargsWrapper(unittest.TestCase):
 
     def test_wrapper_with_args(self):
         """测试包含位置参数的包装器"""
-        wrapper = _create_kwargs_wrapper(
-            original_func_with_args_kwargs, replacement_func_with_args_kwargs
-        )
+        wrapper = _create_kwargs_wrapper(original_func_with_args_kwargs, replacement_func_with_args_kwargs)
 
         result = wrapper(1, 2, 3, x=4, y=5)
         self.assertEqual(result, 15)
@@ -182,9 +186,7 @@ class TestCreateKwargsWrapper(unittest.TestCase):
         original_func.__name__ = 'test_func'
 
         with patch('inspect.signature', side_effect=TypeError("Cannot inspect")):
-            wrapper = _create_kwargs_wrapper(
-                original_func, replacement_func_for_inspection_error
-            )
+            wrapper = _create_kwargs_wrapper(original_func, replacement_func_for_inspection_error)
 
             result = wrapper(x=1, y=2)
             self.assertEqual(result, 3)
@@ -195,9 +197,7 @@ class TestCreateKwargsWrapper(unittest.TestCase):
         original_func.__name__ = 'test_func'
 
         with patch('inspect.signature', side_effect=TypeError("Cannot inspect")):
-            wrapper = _create_kwargs_wrapper(
-                original_func, replacement_func_for_inspection_error
-            )
+            wrapper = _create_kwargs_wrapper(original_func, replacement_func_for_inspection_error)
 
             result = wrapper(1, 2, 3, x=4, y=5)
             self.assertEqual(result, 15)
@@ -292,7 +292,7 @@ class TestFunctionHijacker(unittest.TestCase):
             return x * y
 
         def replacement_func2(x, y=10):
-            return x ** y
+            return x**y
 
         target = (self.container, 'original_func')
 
@@ -333,7 +333,7 @@ class TestFunctionHijacker(unittest.TestCase):
             return x * y
 
         def replacement_func2(z):
-            return z ** 2
+            return z**2
 
         target1 = (self.container, 'original_func')
         target2 = (self.container, 'another_func')
@@ -476,10 +476,10 @@ class TestGlobalFunctions(unittest.TestCase):
             return x * y
 
         def replacement_func2(x, y=10):
-            return x ** y
+            return x**y
 
         target1 = (self.container, 'original_func')
-        target2 = (self.container, 'original_func')
+        target2 = (self.container, 'original_func')  # noqa: F841
 
         hijack_function(target1, replacement_func1)
         hijack_function(target1, replacement_func2)
@@ -605,8 +605,12 @@ class TestEdgeCases(unittest.TestCase):
                 kw_arg_val = kwargs_dict.get('kw_arg', 1)
                 extra_val = kwargs_dict.get('extra', 0)
 
-                return first_arg * kw_arg_val * (sum([x for x in args_val if isinstance(x, (int, float))]) + 1) * (
-                            extra_val + 1)
+                return (
+                    first_arg
+                    * kw_arg_val
+                    * (sum([x for x in args_val if isinstance(x, (int, float))]) + 1)
+                    * (extra_val + 1)
+                )
             else:
                 return 0
 
@@ -617,9 +621,7 @@ class TestEdgeCases(unittest.TestCase):
 
     def test_inspect_signature_with_complex_function(self):
         """测试复杂函数的签名检查"""
-        wrapper = _create_kwargs_wrapper(
-            complex_func_for_test, replacement_func_for_complex_test
-        )
+        wrapper = _create_kwargs_wrapper(complex_func_for_test, replacement_func_for_complex_test)
 
         result = wrapper(42, "test")
         self.assertEqual(result, "replaced-42-test")

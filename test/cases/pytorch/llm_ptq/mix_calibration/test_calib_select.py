@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=no-name-in-module,pointless-string-statement,redefined-outer-name,unspecified-encoding
 
 import json
 import os
@@ -33,7 +34,7 @@ from msmodelslim.pytorch.llm_ptq.mix_calibration.calib_select import (
     CalibHandler,
     CalibrationData,
     SUPPORTED_DATASET_NAME,
-    CEval5ShotProcessor
+    CEval5ShotProcessor,
 )
 
 
@@ -58,22 +59,10 @@ def tmp_path():
         """创建临时测试配置文件"""
         config = {
             "configurations": [
-                {
-                    "dataset_name": "boolq",
-                    "dataset_path": str(os.path.join(tmp, "boolq", "boolq.jsonl"))
-                },
-                {
-                    "dataset_name": "ceval_5_shot",
-                    "dataset_path": str(os.path.join(tmp, "ceval_5_shot"))
-                },
-                {
-                    "dataset_name": "gsm8k",
-                    "dataset_path": str(os.path.join(tmp, "gsm8k", "GSM8K.jsonl"))
-                },
-                {
-                    "dataset_name": "mmlu",
-                    "dataset_path": str(os.path.join(tmp, "mmlu"))
-                }
+                {"dataset_name": "boolq", "dataset_path": str(os.path.join(tmp, "boolq", "boolq.jsonl"))},
+                {"dataset_name": "ceval_5_shot", "dataset_path": str(os.path.join(tmp, "ceval_5_shot"))},
+                {"dataset_name": "gsm8k", "dataset_path": str(os.path.join(tmp, "gsm8k", "GSM8K.jsonl"))},
+                {"dataset_name": "mmlu", "dataset_path": str(os.path.join(tmp, "mmlu"))},
             ]
         }
 
@@ -99,33 +88,32 @@ def tmp_path():
 
             # 创建示例数据文件
             with open(os.path.join(tmp, "boolq", "boolq.jsonl"), "w") as f:
-                f.write(json.dumps({
-                    "title": "Test Title",
-                    "question": "Is this a test?",
-                    "passage": "This is a test passage",
-                    "answer": True
-                }) + "\n")
+                f.write(
+                    json.dumps(
+                        {
+                            "title": "Test Title",
+                            "question": "Is this a test?",
+                            "passage": "This is a test passage",
+                            "answer": True,
+                        }
+                    )
+                    + "\n"
+                )
 
             # 创建ceval测试数据
             subject_map = {}
             with open(os.path.join(tmp, "ceval_5_shot", "subject_mapping.json"), "w") as f:
                 json.dump(subject_map, f)
 
-            dev_data = [
-                ["Q1", "A", "B", "C", "D", "A"],
-                ["Q2", "A", "B", "C", "D", "A"]
-            ]
-            val_data = [
-                ["Q1", "A", "B", "C", "D", "A"],
-                ["Q2", "A", "B", "C", "D", "A"]
-            ]
+            dev_data = [["Q1", "A", "B", "C", "D", "A"], ["Q2", "A", "B", "C", "D", "A"]]
+            val_data = [["Q1", "A", "B", "C", "D", "A"], ["Q2", "A", "B", "C", "D", "A"]]
 
-            pd.DataFrame(dev_data).to_csv(os.path.join(tmp, "ceval_5_shot", "dev", "test_subject_dev.csv"),
-                                          header=False,
-                                          index=False)
-            pd.DataFrame(val_data).to_csv(os.path.join(tmp, "ceval_5_shot", "val", "test_subject_val.csv"),
-                                          header=False,
-                                          index=False)
+            pd.DataFrame(dev_data).to_csv(
+                os.path.join(tmp, "ceval_5_shot", "dev", "test_subject_dev.csv"), header=False, index=False
+            )
+            pd.DataFrame(val_data).to_csv(
+                os.path.join(tmp, "ceval_5_shot", "val", "test_subject_val.csv"), header=False, index=False
+            )
 
             # 创建mmlu测试数据
             subject_map = {"mmlu_all_sets": []}
@@ -134,10 +122,7 @@ def tmp_path():
 
             # 创建gsm8k测试数据
             with open(os.path.join(tmp, "gsm8k", "GSM8K.jsonl"), "w") as f:
-                f.write(json.dumps({
-                    "question": "What is 2 + 2?",
-                    "answer": "The answer is <<2+2=4>>4#### 4"
-                }) + "\n")
+                f.write(json.dumps({"question": "What is 2 + 2?", "answer": "The answer is <<2+2=4>>4#### 4"}) + "\n")
         finally:
             # 4. 无论是否出错，都恢复原始 umask
             os.umask(original_umask)
@@ -152,22 +137,22 @@ class TestDatasetFactory:
             "boolq": str(os.path.join(tmp_path, "boolq", "boolq.jsonl")),
             "ceval_5_shot": str(os.path.join(tmp_path, "ceval_5_shot")),
             "gsm8k": str(os.path.join(tmp_path, "gsm8k", "GSM8K.jsonl")),
-            "mmlu": str(os.path.join(tmp_path, "mmlu"))
+            "mmlu": str(os.path.join(tmp_path, "mmlu")),
         }
 
         processor = DatasetFactory.create_dataset_processor(
-            dataset_name=dataset_name,
-            dataset_path=config[dataset_name],
-            customized_dataset_processor={}
+            dataset_name=dataset_name, dataset_path=config[dataset_name], customized_dataset_processor={}
         )
         assert processor is not None
-        assert processor.__class__.__name__ == f"{dataset_name.capitalize()}Processor" if dataset_name != "ceval_5_shot" else processor.__class__.__name__ == "CEval5ShotProcessor"
+        assert (
+            processor.__class__.__name__ == f"{dataset_name.capitalize()}Processor"
+            if dataset_name != "ceval_5_shot"
+            else processor.__class__.__name__ == "CEval5ShotProcessor"
+        )
 
     def test_create_invalid_processor(self):
         processor = DatasetFactory.create_dataset_processor(
-            dataset_name="invalid_dataset",
-            dataset_path="",
-            customized_dataset_processor={}
+            dataset_name="invalid_dataset", dataset_path="", customized_dataset_processor={}
         )
         assert processor is None
 
@@ -176,14 +161,10 @@ class TestCalibHandler:
     def test_basic_sampling(self, mock_tokenizer, tmp_path):
         # 初始化boolq processor
         processor = DatasetFactory.create_dataset_processor(
-            "boolq", str(os.path.join(tmp_path, "boolq", "boolq.jsonl")), {}, mock_tokenizer)
-
-        handler = CalibHandler(
-            dataset_name="boolq",
-            dataset_processor=processor,
-            shuffle_seed=42,
-            batch_size=2
+            "boolq", str(os.path.join(tmp_path, "boolq", "boolq.jsonl")), {}, mock_tokenizer
         )
+
+        handler = CalibHandler(dataset_name="boolq", dataset_processor=processor, shuffle_seed=42, batch_size=2)
         handler.set_sample_size(1)
 
         samples = handler.run()
@@ -198,14 +179,10 @@ class TestCalibHandler:
         mock_model.device = "cpu"
 
         processor = DatasetFactory.create_dataset_processor(
-            "gsm8k", str(os.path.join(tmp_path, "gsm8k", "GSM8K.jsonl")), {}, mock_tokenizer, mock_model)
-
-        handler = CalibHandler(
-            dataset_name="gsm8k",
-            dataset_processor=processor,
-            shuffle_seed=42,
-            batch_size=2
+            "gsm8k", str(os.path.join(tmp_path, "gsm8k", "GSM8K.jsonl")), {}, mock_tokenizer, mock_model
         )
+
+        handler = CalibHandler(dataset_name="gsm8k", dataset_processor=processor, shuffle_seed=42, batch_size=2)
         handler.set_sample_size(1)
 
         samples = handler.run(need_positive_prompt=True)
@@ -214,10 +191,7 @@ class TestCalibHandler:
 
 class TestCalibrationData:
     def test_config_loading(self, tmp_path, mock_tokenizer):
-        calib = CalibrationData(
-            config_path=str(os.path.join(tmp_path, "test_config.json")),
-            tokenizer=mock_tokenizer
-        )
+        calib = CalibrationData(config_path=str(os.path.join(tmp_path, "test_config.json")), tokenizer=mock_tokenizer)
 
         assert len(calib.handlers) == 4
         assert "boolq" in calib.handlers
@@ -226,9 +200,7 @@ class TestCalibrationData:
     def test_mixed_dataset_generation(self, tmp_path, mock_tokenizer):
         save_path = str(os.path.join(tmp_path, "output.json"))
         calib = CalibrationData(
-            config_path=str(os.path.join(tmp_path, "test_config.json")),
-            tokenizer=mock_tokenizer,
-            save_path=save_path
+            config_path=str(os.path.join(tmp_path, "test_config.json")), tokenizer=mock_tokenizer, save_path=save_path
         )
         calib.set_sample_size({"boolq": 1, "ceval_5_shot": 1})
 
@@ -241,7 +213,7 @@ class TestCalibrationData:
             CalibrationData(
                 config_path=str(os.path.join(tmp_path, "test_config.json")),
                 tokenizer=MagicMock(),
-                model="invalid_model_type"
+                model="invalid_model_type",
             )
 
 
@@ -252,14 +224,12 @@ def test_dataset_processors(tmp_path, dataset_name):
         "boolq": str(os.path.join(tmp_path, "boolq", "boolq.jsonl")),
         "ceval_5_shot": str(os.path.join(tmp_path, "ceval_5_shot")),
         "gsm8k": str(os.path.join(tmp_path, "gsm8k", "GSM8K.jsonl")),
-        "mmlu": str(os.path.join(tmp_path, "mmlu"))
+        "mmlu": str(os.path.join(tmp_path, "mmlu")),
     }
 
     # 初始化processor
     processor = DatasetFactory.create_dataset_processor(
-        dataset_name=dataset_name,
-        dataset_path=config[dataset_name],
-        customized_dataset_processor={}
+        dataset_name=dataset_name, dataset_path=config[dataset_name], customized_dataset_processor={}
     )
 
     # 验证基础属性
@@ -273,7 +243,7 @@ class TestCEval5ShotProcessor:
     # ============================== 测试方法（使用内部 fixture） ==============================
     @staticmethod
     def test___init___given_valid_dataset_when_columns_sufficient_then_ori_populated(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -285,44 +255,44 @@ class TestCEval5ShotProcessor:
 
     @staticmethod
     def test___init___given_valid_dataset_when_val_df_columns_insufficient_then_skip_task(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model, mocker
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model, mocker
     ):
         mock_logger = mocker.patch("msmodelslim.pytorch.llm_ptq.mix_calibration.calib_select.msmodelslim_logger")
         CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
         )
-        mock_logger.warning.assert_has_calls([
-            call("val_df has only 5 columns, but requires at least 6 columns. Skipping task math.")
-        ], any_order=False)
+        mock_logger.warning.assert_has_calls(
+            [call("val_df has only 5 columns, but requires at least 6 columns. Skipping task math.")], any_order=False
+        )
 
     @staticmethod
     def test___init___given_missing_subject_mapping_when_init_then_raise_error(
-            test_ceval_missing_subject_mapping_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_missing_subject_mapping_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         with pytest.raises(ValueError) as excinfo:
             CEval5ShotProcessor(
                 dataset_path=test_ceval_missing_subject_mapping_dataset,
                 tokenizer=test_ceval_mock_tokenizer,
-                model=test_ceval_mock_model
+                model=test_ceval_mock_model,
             )
         assert "subject_mapping.json" in str(excinfo.value)
 
     @staticmethod
     def test___init___given_missing_dev_csv_when_init_then_raise_error(
-            test_ceval_missing_dev_csv_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_missing_dev_csv_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         with pytest.raises(FileNotFoundError) as excinfo:
             CEval5ShotProcessor(
                 dataset_path=test_ceval_missing_dev_csv_dataset,
                 tokenizer=test_ceval_mock_tokenizer,
-                model=test_ceval_mock_model
+                model=test_ceval_mock_model,
             )
         assert "physics_dev.csv" in str(excinfo.value)
 
     # ------------------------------ Test get_subject_mapping ------------------------------
     @staticmethod
     def test_get_subject_mapping_given_valid_dataset_when_call_then_return_correct_mapping(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -332,7 +302,7 @@ class TestCEval5ShotProcessor:
 
     @staticmethod
     def test_get_subject_mapping_given_non_existent_path_when_call_then_raise_error(
-            tmp_path, test_ceval_mock_tokenizer, test_ceval_mock_model
+        tmp_path, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         with pytest.raises(FileNotFoundError):
             non_exist_path = os.path.join(tmp_path, "non_exist")
@@ -344,14 +314,12 @@ class TestCEval5ShotProcessor:
     # ------------------------------ Test load_csv_by_task_name ------------------------------
     @staticmethod
     def test_load_csv_by_task_name_given_valid_task_when_call_then_return_correct_dfs(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
         )
-        dev_df, val_df = processor.load_csv_by_task_name(
-            task_name="physics", dataset_path=test_ceval_tmp_dataset
-        )
+        dev_df, val_df = processor.load_csv_by_task_name(task_name="physics", dataset_path=test_ceval_tmp_dataset)
         assert dev_df.shape == (5, 6)
         assert val_df.shape == (2, 6)
         assert dev_df.iloc[0, 5] == "A"
@@ -359,7 +327,7 @@ class TestCEval5ShotProcessor:
 
     @staticmethod
     def test_load_csv_by_task_name_given_missing_val_csv_when_call_then_raise_error(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -371,7 +339,7 @@ class TestCEval5ShotProcessor:
     # ------------------------------ Test format_subject ------------------------------
     @staticmethod
     def test_format_subject_given_underscored_subject_when_call_then_return_space_separated(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -379,14 +347,14 @@ class TestCEval5ShotProcessor:
         test_cases = [
             ("math_algebra", " math algebra"),
             ("physics_quantum_mechanics", " physics quantum mechanics"),
-            ("computer_science_ai", " computer science ai")
+            ("computer_science_ai", " computer science ai"),
         ]
         for input_subj, expected in test_cases:
             assert processor.format_subject(subject=input_subj) == expected
 
     @staticmethod
     def test_format_subject_given_no_underscore_subject_when_call_then_return_single_word(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -397,7 +365,7 @@ class TestCEval5ShotProcessor:
 
     @staticmethod
     def test_format_subject_given_empty_string_when_call_then_return_space(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -407,7 +375,7 @@ class TestCEval5ShotProcessor:
     # ------------------------------ Test format_example ------------------------------
     @staticmethod
     def test_format_example_given_valid_df_when_include_answer_true_then_prompt_has_answer(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -421,7 +389,7 @@ class TestCEval5ShotProcessor:
 
     @staticmethod
     def test_format_example_given_insufficient_columns_when_call_then_raise_index_error(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -432,7 +400,7 @@ class TestCEval5ShotProcessor:
 
     @staticmethod
     def test_format_example_given_out_of_range_idx_when_call_then_raise_index_error(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -444,7 +412,7 @@ class TestCEval5ShotProcessor:
     # ------------------------------ Test gen_prompt ------------------------------
     @staticmethod
     def test_gen_prompt_given_valid_train_df_when_k_negative_then_use_all_rows(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -456,7 +424,7 @@ class TestCEval5ShotProcessor:
 
     @staticmethod
     def test_gen_prompt_given_valid_train_df_when_k_positive_then_use_k_rows(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -468,7 +436,7 @@ class TestCEval5ShotProcessor:
     # ------------------------------ Test process_data ------------------------------
     @staticmethod
     def test_process_data_given_out_of_range_index_when_call_then_raise_index_error(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -478,7 +446,7 @@ class TestCEval5ShotProcessor:
 
     @staticmethod
     def test_process_data_given_empty_indexs_when_call_then_return_empty(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer, test_ceval_mock_model
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=test_ceval_mock_model
@@ -488,7 +456,7 @@ class TestCEval5ShotProcessor:
     # ------------------------------ Test verify_positive_prompt ------------------------------
     @staticmethod
     def test_verify_positive_prompt_given_model_not_initialized_when_call_then_raise_attribute_error(
-            test_ceval_tmp_dataset, test_ceval_mock_tokenizer
+        test_ceval_tmp_dataset, test_ceval_mock_tokenizer
     ):
         processor = CEval5ShotProcessor(
             dataset_path=test_ceval_tmp_dataset, tokenizer=test_ceval_mock_tokenizer, model=None
@@ -523,14 +491,14 @@ class TestCEval5ShotProcessor:
             [2, "E=mc² means?", "Force=mass×acceleration", "Energy=mass×c²", "Power=V×I", "Work=F×d", "B"],
             [3, "P=VI means?", "Force=mass×acceleration", "Energy=mass×c²", "Power=V×I", "Work=F×d", "C"],
             [4, "W=Fd means?", "Force=mass×acceleration", "Energy=mass×c²", "Power=V×I", "Work=F×d", "D"],
-            [5, "V=IR means?", "Ohm's Law", "Newton's Law", "Kepler's Law", "Boyle's Law", "A"]
+            [5, "V=IR means?", "Ohm's Law", "Newton's Law", "Kepler's Law", "Boyle's Law", "A"],
         ]
         pd.DataFrame(dev_physics_data).to_csv(dev_dir / "physics_dev.csv", index=False, header=False)
 
         val_physics_data = [
             [0, "Question", "Option A", "Option B", "Option C", "Option D", "Answer"],
             [1, "Test Q1: Gravity law?", "F=GMm/r²", "F=ma", "E=mc²", "P=VI", "A"],
-            [2, "Test Q2: Ohm's law?", "V=IR", "F=ma", "E=mc²", "P=VI", "A"]
+            [2, "Test Q2: Ohm's law?", "V=IR", "F=ma", "E=mc²", "P=VI", "A"],
         ]
         pd.DataFrame(val_physics_data).to_csv(val_dir / "physics_val.csv", index=False, header=False)
 
@@ -538,27 +506,27 @@ class TestCEval5ShotProcessor:
         dev_math_data = [
             [0, "Question", "Option A", "Option B", "Option C", "Option D"],
             [1, "2+2=?", "3", "4", "5", "6"],
-            [2, "3×3=?", "6", "7", "8", "9"]
+            [2, "3×3=?", "6", "7", "8", "9"],
         ]
         pd.DataFrame(dev_math_data).to_csv(dev_dir / "math_dev.csv", index=False, header=False)
 
         val_math_data = [
             [0, "Question", "Option A", "Option B", "Option C", "Option D"],
             [1, "2+2=?", "3", "4", "5", "6"],
-            [2, "3×3=?", "6", "7", "8", "9"]
+            [2, "3×3=?", "6", "7", "8", "9"],
         ]
         pd.DataFrame(val_math_data).to_csv(val_dir / "math_val.csv", index=False, header=False)
 
         # ---------------- Valid Task: Chemistry ----------------
         dev_chem_data = [
             ["Question", "A", "B", "C", "D", "Answer"],
-            ["H2O is?", "Water", "Oxygen", "Hydrogen", "Carbon", "A"]
+            ["H2O is?", "Water", "Oxygen", "Hydrogen", "Carbon", "A"],
         ]
         pd.DataFrame(dev_chem_data).to_csv(dev_dir / "chemistry_dev.csv", index=False, header=False)
 
         val_chem_data = [
             ["Question", "A", "B", "C", "D", "Answer"],
-            ["CO2 is?", "Carbon Dioxide", "Oxygen", "Carbon", "Water", "A"]
+            ["CO2 is?", "Carbon Dioxide", "Oxygen", "Carbon", "Water", "A"],
         ]
         pd.DataFrame(val_chem_data).to_csv(val_dir / "chemistry_val.csv", index=False, header=False)
 
@@ -571,7 +539,7 @@ class TestCEval5ShotProcessor:
         def tokenize_side_effect(text, **kwargs):
             return {
                 "input_ids": torch.tensor([[101] + [100 + i for i in range(len(text.split()))] + [102]]),
-                "attention_mask": torch.tensor([[1] * (len(text.split()) + 2)])
+                "attention_mask": torch.tensor([[1] * (len(text.split()) + 2)]),
             }
 
         def decode_side_effect(token_ids, **kwargs):
@@ -585,7 +553,7 @@ class TestCEval5ShotProcessor:
         def pad_side_effect(batch, **kwargs):
             return {
                 "input_ids": torch.cat([x["input_ids"] for x in batch]),
-                "attention_mask": torch.cat([x["attention_mask"] for x in batch])
+                "attention_mask": torch.cat([x["attention_mask"] for x in batch]),
             }
 
         tokenizer = Mock(spec=PreTrainedTokenizerBase)
@@ -600,15 +568,10 @@ class TestCEval5ShotProcessor:
         """内部 fixture：Mock Model（加前缀避免冲突）"""
 
         def generate_side_effect(**kwargs):
-            return torch.cat([
-                kwargs["input_ids"],
-                torch.tensor([[103]] * kwargs["input_ids"].shape[0])
-            ], dim=1)
+            return torch.cat([kwargs["input_ids"], torch.tensor([[103]] * kwargs["input_ids"].shape[0])], dim=1)
 
         def model_side_effect(**kwargs):
-            return Mock(
-                logits=torch.randn(kwargs["input_ids"].shape[0], kwargs["input_ids"].shape[1], 1000)
-            )
+            return Mock(logits=torch.randn(kwargs["input_ids"].shape[0], kwargs["input_ids"].shape[1], 1000))
 
         model = Mock(spec=PreTrainedModel)
         model.device = torch.device("cpu")

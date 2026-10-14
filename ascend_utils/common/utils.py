@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=consider-using-generator,consider-using-set-comprehension
 
 import copy
 from typing import Callable, Any, List, Optional, Generator
@@ -46,15 +47,15 @@ class FullPermutation:
     @classmethod
     def get_all_permutations(cls, max_index: int) -> Generator[List, None, None]:
         """
-            Get all possible permutations.
+        Get all possible permutations.
 
-            Args:
-                max_index: max index.
+        Args:
+            max_index: max index.
 
-            Examples:
-                >>> x = FullPermutation.get_all_permutations(3)
-                >>> print(list(x))
-                [[2, 1, 0], [1, 2, 0], [1, 0, 2], [2, 0, 1], [0, 2, 1], [0, 1, 2]]
+        Examples:
+            >>> x = FullPermutation.get_all_permutations(3)
+            >>> print(list(x))
+            [[2, 1, 0], [1, 2, 0], [1, 0, 2], [2, 0, 1], [0, 2, 1], [0, 1, 2]]
         """
         if not isinstance(max_index, int) or max_index < 0:
             raise ValueError("index must be int")
@@ -70,15 +71,15 @@ class FullPermutation:
     @classmethod
     def get_all_combinations(cls, cnt_list: List[int]) -> Generator[List, None, None]:
         """
-            Get all possible combinations.
+        Get all possible combinations.
 
-            Args:
-                cnt_list: max index list.
+        Args:
+            cnt_list: max index list.
 
-            Examples:
-                >>> x = FullPermutation.get_all_combinations([1, 2, 3])
-                >>> print(list(x))
-                [[0, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [0, 0, 2], [0, 1, 2]]
+        Examples:
+            >>> x = FullPermutation.get_all_combinations([1, 2, 3])
+            >>> print(list(x))
+            [[0, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [0, 0, 2], [0, 1, 2]]
         """
         if cnt_list is None or len(cnt_list) == 0:
             yield []

@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=anomalous-backslash-in-string,broad-exception-raised,no-else-continue
 
 import re
 
@@ -42,9 +43,9 @@ class PruneUtilsBase:
             if weight_shape == model_weight_shape:
                 continue
             if model_weight.dim() == 1:
-                state_dict[name] = st_weight[:model_weight_shape[0]]
+                state_dict[name] = st_weight[: model_weight_shape[0]]
             elif model_weight.dim() == 2:
-                state_dict[name] = st_weight[:model_weight_shape[0], :model_weight_shape[1]]
+                state_dict[name] = st_weight[: model_weight_shape[0], : model_weight_shape[1]]
             else:
                 raise NotImplementedError('Other dimension is not implemented')
             if is_parameter and not isinstance(state_dict[name], parameter):
@@ -82,7 +83,7 @@ class PruneUtilsBase:
         for weight_name in state_dict.keys():
             if len(weight_name) > 512:
                 raise ValueError("Length of {} key exceeds limitation {}.".format(weight_name, 512))
-                
+
             match_flag = False
             for pruning_pass in pruning_passes:
                 pattern = pruning_pass['pattern']

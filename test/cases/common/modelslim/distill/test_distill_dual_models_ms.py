@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,20 +18,21 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+# pylint: disable=super-with-arguments
 
 import logging
 import unittest
 from unittest.mock import Mock, patch
 import pytest
 import numpy as np
-import mindspore
+import mindspore  # noqa: F401
 from mindspore import Tensor, nn, context
 from mindspore import dtype as mstype
 from mindspore.common.initializer import Normal
 
 # 导入被测试的类
+from ascend_utils.mindspore.knowledge_distill.distill_losses_manager_ms import DistillLossesManager  # noqa: F401
 from ascend_utils.mindspore.knowledge_distill.distill_dual_models_ms import DistillDualModelsMs
-from ascend_utils.mindspore.knowledge_distill.distill_losses_manager_ms import DistillLossesManager
 
 
 class SimpleStudentModel(nn.Cell):
@@ -89,6 +90,7 @@ class TestConfig:
 
 class TestDistillDualModelsMs(unittest.TestCase):
     """测试DistillDualModelsMs类"""
+
     def setUp(self):
         """设置测试环境"""
         context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
@@ -106,12 +108,7 @@ class TestDistillDualModelsMs(unittest.TestCase):
         mock_distill_manager.return_value = mock_manager_instance
 
         # 创建测试实例
-        distill_model = DistillDualModelsMs(
-            self.config,
-            self.student_model,
-            self.teacher_model,
-            self.output_shapes
-        )
+        distill_model = DistillDualModelsMs(self.config, self.student_model, self.teacher_model, self.output_shapes)
 
         # 验证属性设置
         assert distill_model.student_model == self.student_model
@@ -121,10 +118,7 @@ class TestDistillDualModelsMs(unittest.TestCase):
 
         # 验证DistillLossesManager被正确初始化
         mock_distill_manager.assert_called_once_with(
-            self.config,
-            self.student_model,
-            self.teacher_model,
-            self.output_shapes
+            self.config, self.student_model, self.teacher_model, self.output_shapes
         )
 
         # 验证日志记录
@@ -139,12 +133,7 @@ class TestDistillDualModelsMs(unittest.TestCase):
         mock_distill_manager.return_value = mock_manager_instance
 
         # 创建测试实例
-        distill_model = DistillDualModelsMs(
-            self.config,
-            self.student_model,
-            self.teacher_model,
-            self.output_shapes
-        )
+        distill_model = DistillDualModelsMs(self.config, self.student_model, self.teacher_model, self.output_shapes)
 
         # 模拟输入数据
         test_input = Tensor(np.random.randn(2, 3, 8, 8).astype(np.float32))
@@ -165,21 +154,13 @@ class TestDistillDualModelsMs(unittest.TestCase):
         mock_manager_instance = Mock()
         mock_distill_manager.return_value = mock_manager_instance
 
-        distill_model = DistillDualModelsMs(
-            self.config,
-            self.student_model,
-            self.teacher_model,
-            self.output_shapes
-        )
+        distill_model = DistillDualModelsMs(self.config, self.student_model, self.teacher_model, self.output_shapes)
 
         # 获取学生模型
         result = distill_model.get_student_model()
 
         # 验证模块恢复被调用
-        mock_manager_instance.restore_modules.assert_called_once_with(
-            self.student_model,
-            self.teacher_model
-        )
+        mock_manager_instance.restore_modules.assert_called_once_with(self.student_model, self.teacher_model)
 
         # 验证返回正确的学生模型
         assert result == self.student_model
@@ -196,12 +177,7 @@ class TestDistillDualModelsMs(unittest.TestCase):
 
         mock_manager_instance.construct.return_value = (Tensor(1.5, dtype=mstype.float32), {})
 
-        distill_model = DistillDualModelsMs(
-            self.config,
-            multi_student,
-            multi_teacher,
-            self.output_shapes
-        )
+        distill_model = DistillDualModelsMs(self.config, multi_student, multi_teacher, self.output_shapes)
 
         # 执行前向计算
         test_input = Tensor(np.random.randn(2, 3, 8, 8).astype(np.float32))
@@ -216,12 +192,7 @@ class TestDistillDualModelsMs(unittest.TestCase):
     @patch('ascend_utils.mindspore.knowledge_distill.distill_dual_models_ms.DistillLossesManager')
     def test_property_access(self, mock_distill_manager):
         """测试属性访问"""
-        distill_model = DistillDualModelsMs(
-            self.config,
-            self.student_model,
-            self.teacher_model,
-            self.output_shapes
-        )
+        distill_model = DistillDualModelsMs(self.config, self.student_model, self.teacher_model, self.output_shapes)
 
         # 验证属性可访问
         assert distill_model.student_model == self.student_model
@@ -232,23 +203,13 @@ class TestDistillDualModelsMs(unittest.TestCase):
     def test_edge_cases(self, mock_distill_manager):
         """测试边界情况"""
         # 测试空输出形状
-        distill_model = DistillDualModelsMs(
-            self.config,
-            self.student_model,
-            self.teacher_model,
-            output_shapes=None
-        )
+        distill_model = DistillDualModelsMs(self.config, self.student_model, self.teacher_model, output_shapes=None)
 
         assert distill_model.distill_losses_manager is not None
 
         # 测试零hard_label_loss_weight
         self.config.hard_label_loss_weight = 0.0
-        distill_model = DistillDualModelsMs(
-            self.config,
-            self.student_model,
-            self.teacher_model,
-            self.output_shapes
-        )
+        distill_model = DistillDualModelsMs(self.config, self.student_model, self.teacher_model, self.output_shapes)
 
         assert distill_model.hard_label_loss_weight == 0.0
 
@@ -259,24 +220,17 @@ class TestDistillDualModelsMs(unittest.TestCase):
         mock_distill_manager.return_value = mock_manager_instance
 
         # 模拟返回详细损失信息
-        loss_details = {
-            "kd_loss": Tensor(1.0, dtype=mstype.float32),
-            "hard_loss": Tensor(0.5, dtype=mstype.float32)
-        }
+        loss_details = {"kd_loss": Tensor(1.0, dtype=mstype.float32), "hard_loss": Tensor(0.5, dtype=mstype.float32)}
         mock_manager_instance.construct.return_value = (Tensor(1.5, dtype=mstype.float32), loss_details)
 
-        distill_model = DistillDualModelsMs(
-            self.config,
-            self.student_model,
-            self.teacher_model,
-            self.output_shapes
-        )
+        distill_model = DistillDualModelsMs(self.config, self.student_model, self.teacher_model, self.output_shapes)
 
         test_input = Tensor(np.random.randn(2, 3, 8, 8).astype(np.float32))
         result = distill_model.construct(test_input)
 
         # 验证总损失正确
         assert result.asnumpy() == 1.5
+
 
 if __name__ == "__main__":
     # 设置日志级别避免测试时输出过多信息
