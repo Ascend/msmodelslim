@@ -65,7 +65,7 @@ class DeepSeekV4DSparkModelAdapter(DeepSeekV4ModelAdapter):  # pylint: disable=t
     """DeepSeek-V4-Flash/Pro-DSpark：主模型 + 多层 DSpark draft 量化。"""
 
     def get_model_pedigree(self) -> str:
-        return "deepseek_v4_dspark"
+        return "deepseek_v4"
 
     def init_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
         """加载主模型后立刻缓存旋转前的 embed/head，供 MTP 复制与落盘。"""
