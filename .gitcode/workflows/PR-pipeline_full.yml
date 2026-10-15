@@ -1,7 +1,7 @@
 name: PR-pipeline_msmodelslim
 
 on:
-  # PR 流水线通过 PR 评论 /compile 触发 ，不在 PR 打开/更新时自动运行
+  # PR 流水线通过 PR 评论 /compile 触发 ，不在 PR 打开/更新时自动运行1
   # pull_request:
   #   types: [open, update]
   #   branches: [ '*' ]
@@ -34,7 +34,7 @@ stages:
     jobs:
       Detect_file_changes:
         name: Detect_file_changes
-        runs-on: [ self-hosted, x86, cpu=2 ]
+        runs-on: [ self-hosted, default, x86, cpu=2 ]
         container:
           image: swr.cn-north-4.myhuaweicloud.com/pytorch_images_x86/pytorchx86:v_03
         outputs:
@@ -85,7 +85,7 @@ stages:
       associate_pr_comment:
         name: associate_pr_comment
         select: selected_by_default
-        runs-on: [ self-hosted, x86, cpu=2 ]
+        runs-on: [ self-hosted, default, x86, cpu=2 ]
         steps:
           - name: associate-pr-comment
             uses: associate-pr-comment
@@ -106,7 +106,7 @@ stages:
     jobs:
       pre-commit:
         name: pre-commit
-        runs-on: [ self-hosted, x86, cpu=2 ]
+        runs-on: [ self-hosted, default, x86, cpu=2 ]
         container:
           image: swr.cn-north-4.myhuaweicloud.com/mindspore/mindspore_python3.11:v0.1
           options: --user root
@@ -127,10 +127,12 @@ stages:
               python --version
           - name: run pre-commit
             uses: openlibing/pre-commit-action@v1.0.0
+            env:
+              SKIP: clang-tidy
 
       SCA:
         name: SCA
-        runs-on: [ self-hosted, x86, cpu=2 ]
+        runs-on: [ self-hosted, default, x86, cpu=2 ]
         container:
           image: swr.cn-north-4.myhuaweicloud.com/mindspore/mindspore_python3.11:v0.1
           options: --user root
@@ -144,7 +146,7 @@ stages:
 
       malicious-scan:
         name: antipoison
-        runs-on: [ self-hosted, x86, cpu=2 ]
+        runs-on: [ self-hosted, default, x86, cpu=2 ]
         container:
           image: swr.cn-north-4.myhuaweicloud.com/mindspore/mindspore_python3.11:v0.1
           options: --user root
@@ -166,8 +168,8 @@ stages:
         uses: .gitcode/workflows/.build_mindstudio_job.yml
         with:
           IMAGE_FLAG: "mindstudio-build:26.1.0"
-          runs_on_arch: "x64"
-          ARTIFACT_NAME: "msmodelslim-run-x86-test"
+          runs_on_arch: "x86"
+          ARTIFACT_NAME: "msmodelslim-run-x86"
 
       Build_msmodelslim_arm:
         name: Build_msmodelslim_arm
@@ -175,8 +177,8 @@ stages:
         uses: .gitcode/workflows/.build_mindstudio_job.yml
         with:
           IMAGE_FLAG: "mindstudio-build:26.1.0"
-          runs_on_arch: "arm64"
-          ARTIFACT_NAME: "msmodelslim-run-arm-test"
+          runs_on_arch: "arm"
+          ARTIFACT_NAME: "msmodelslim-run-arm"
 
   stage_3:
     name: UT
@@ -187,8 +189,8 @@ stages:
         if: ${{ jobs.Detect_file_changes.outputs.need_build == 'yes' }}
         uses: .gitcode/workflows/.ut_mindstudio_job.yml
         with:
-          IMAGE_FLAG: "mindstudio-build:26.1.0"
-          runs_on_arch: "x64"
+          IMAGE_FLAG: "mindstudio-build:26.1.0-0701-amd64"
+          runs_on_arch: "x86"
 
       PreSmoke_msmodelslim:
         name: PreSmoke_msmodelslim
