@@ -87,31 +87,48 @@ class BuildManager:
                 logging.info("Archiving: %s -> %s", artifact, destination)
                 shutil.copy2(artifact, destination)
 
-    def _prepare_runtime_dependencies(self):
-        """安装运行时依赖（来源 requirements.txt，由 install.sh 完成）。"""
-        self._execute_command(["bash", "install.sh"], cwd=self.project_root)
+    def _install_runtime_package(self, skip_dependencies: bool = False):
+        """安装 msmodelslim 包，可选跳过依赖解析。"""
+        env = os.environ.copy()
+        if skip_dependencies:
+            env["MSMODELSLIM_NO_DEPS"] = "1"
+        self._execute_command(["bash", "install.sh"], cwd=self.project_root, env=env)
 
     def _prepare_test_dependencies(self):
-        """安装测试专用依赖（在运行时依赖之上额外安装，来源 test/requirements.txt）。"""
+        """安装测试专用依赖（来源 test/requirements.txt）。"""
         self._execute_command(
             ["pip", "install", "-r", str(self.project_root / "test" / "requirements.txt")],
             cwd=self.project_root,
         )
 
     def _prepare_all_dependencies(self):
-        """安装全量依赖（来源 requirements_all.txt + mindformers --no-deps）。
+        """安装全量 UT 依赖，并避免运行时依赖重复解析。
 
+        torch CPU wheel 单独从 PyTorch CPU 索引安装，避免 extra-index 污染
+        numpy 等普通依赖的源选择；其余依赖统一从华为云源安装。
         mindformers==1.3.2 依赖 tokenizers==0.15.0，但 UT 环境需要 tokenizers==0.21.2，
-        此处先以 --no-deps 安装 mindformers 再安装 requirements_all.txt，避免版本冲突。
+        因此先安装 requirements_all.txt，再以 --no-deps 安装 mindformers，避免版本冲突。
         """
         self._execute_command(
-            ["pip", "install", "mindformers==1.3.2"],
+            [
+                "pip",
+                "install",
+                "--no-deps",
+                "torch==2.7.1+cpu",
+                "--index-url",
+                "https://download.pytorch.org/whl/cpu",
+            ],
             cwd=self.project_root,
         )
         self._execute_command(
             ["pip", "install", "-r", str(self.project_root / "test" / "requirements_all.txt")],
             cwd=self.project_root,
         )
+        self._execute_command(
+            ["pip", "install", "--no-deps", "mindformers==1.3.2"],
+            cwd=self.project_root,
+        )
+        self._install_runtime_package(skip_dependencies=True)
 
     def _check_torch_npu_conflict(self):
         """检测环境是否安装了 torch_npu，存在则告警。
@@ -142,15 +159,13 @@ class BuildManager:
 
         # 在非 local 场景下按需更新依赖；在 local 场景下仅使用本地已有代码，不更新依赖。
         if not is_local:
-            self._prepare_runtime_dependencies()
-            if is_full_ut:
+            if is_test and is_full_ut:
                 self._prepare_all_dependencies()
             elif is_test:
-                # 测试：先安装测试专用依赖，再安装运行时依赖，可减少一些重复安装
                 self._prepare_test_dependencies()
+                self._install_runtime_package()
             else:
-                # 构建：setup.py bdist_wheel 直接读取 requirements.txt 作为 install_requires，无需预先安装
-                pass
+                self._install_runtime_package()
 
         if is_test:
             if is_full_ut:

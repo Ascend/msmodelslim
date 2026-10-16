@@ -25,12 +25,9 @@ import pytest
 import numpy as np
 import mindspore as ms
 
-import atheris
-
-with atheris.instrument_imports():
-    from ascend_utils.common.utils import count_parameters
-    from msmodelslim.mindspore.low_rank_decompose import low_rank_decompose
-    from resources.sample_net_mindspore import LrdSampleNetwork
+from ascend_utils.common.utils import count_parameters
+from msmodelslim.mindspore.low_rank_decompose import low_rank_decompose
+from resources.sample_net_mindspore import LrdSampleNetwork
 
 
 @pytest.fixture(scope="module", autouse=True)

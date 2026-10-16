@@ -2,17 +2,27 @@
 # 全量依赖清单（用于 python build.py test -e FULL_UT=true）
 # ============================================================================
 
+--index-url https://repo.huaweicloud.com/repository/pypi/simple/
+
 # ---------- 测试框架 ----------
 coverage
 pytest
 pytest-mock
 
 # ---------- 核心 ML 框架 ----------
-torch==2.7.1
 mindspore==2.6.0
 accelerate==1.8.1
 transformers==4.51.0
 tokenizers==0.21.2
+
+# ---------- torch CPU 运行依赖 ----------
+# torch wheel 本体由 build.py 单独安装，此处依赖统一走华为云源。
+filelock
+typing-extensions>=4.10.0
+sympy>=1.13.3
+networkx
+jinja2
+fsspec
 
 # ---------- ONNX ----------
 onnx==1.17.0
@@ -39,3 +49,20 @@ diffusers==0.34.0
 
 # ---------- 通用工具 ----------
 pydantic
+easydict==1.13
+einops
+requests
+pyyaml
+
+# ---------- mindformers 1.3.2 导入必需 ----------
+# mindformers 使用 --no-deps 安装以避免 tokenizers 版本回退，此处补齐其模块导入所需依赖。
+ftfy
+jieba
+mindpet==1.0.4
+nltk
+opencv-python-headless==4.10.0.84
+pyarrow==12.0.1
+rouge_chinese
+sentencepiece
+six
+tiktoken

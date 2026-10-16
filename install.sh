@@ -23,6 +23,10 @@ rm -rf build/ dist/ *.egg-info/
 echo "uninstalling existing msmodelslim package"
 pip uninstall msmodelslim -y
 
-# 重新安装包（不使用缓存）
+# 重新安装包（不使用缓存；FULL UT 场景由构建入口跳过依赖解析）
 echo "installing msmodelslim package without cache"
-umask 027 && pip install . --no-cache-dir
+install_args=(install . --no-cache-dir)
+if [[ "${MSMODELSLIM_NO_DEPS:-0}" == "1" ]]; then
+  install_args+=(--no-deps)
+fi
+umask 027 && pip "${install_args[@]}"
