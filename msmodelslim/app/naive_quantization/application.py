@@ -252,6 +252,12 @@ class NaiveQuantizationApplication:
             config = PracticeConfig.model_validate(yaml_safe_load(str(config_path)))
             get_logger().info("Naive Quant apply config_path: %s", config_path)
             check_model_type_transformers(model_adapter, config)
+            # spec.model_adapter 与 spec 其他字段一起在权重加载前完成校验
+            self._apply_model_adapter_spec(
+                model_adapter,
+                getattr(model_adapter, 'get_model_type', lambda: None)(),
+                config.spec,
+            )
             return config
 
         if not isinstance(model_adapter, ModelInfoInterface):
@@ -282,7 +288,39 @@ class NaiveQuantizationApplication:
                 )
         # 自动匹配场景：选中后立即做全量强校验（metadata + spec 一次报全，先于权重加载）
         config = PracticeConfig.model_validate(raw_dict)
+        # spec.model_adapter 与 spec 其他字段一起在权重加载前完成校验
+        self._apply_model_adapter_spec(model_adapter, model_type, config.spec)
         return config
+
+    def _apply_model_adapter_spec(self, model_adapter: IModel, model_type: Optional[str], spec) -> None:
+        """校验并应用 ``spec.model_adapter``。
+
+        校验发生在 best-practice 预检阶段（与 spec 其他字段同一时机、先于权重加载）：
+        ``model_adapter`` 声明为普通 dict 时，若内容不符合适配器 Loader 提供的
+        pydantic 配置类，在此一次报出，而不是到流水线中途才暴露。
+        """
+        adapter_spec = getattr(spec, 'model_adapter', None)
+        if not isinstance(adapter_spec, dict) or not adapter_spec:
+            return
+        if not hasattr(model_adapter, 'apply_adapter_config'):
+            raise SchemaValidateError(
+                "spec.model_adapter is declared but the model adapter does not accept model-adapter control parameters",
+                action="Remove spec.model_adapter, or make the adapter loader "
+                "provide a config class via get_adapter_config_class().",
+            )
+        config_cls = self.model_factory.get_adapter_config_class(model_type)
+        if config_cls is None:
+            raise SchemaValidateError(
+                "spec.model_adapter is declared but the adapter loader does not provide a config class",
+                action="Implement get_adapter_config_class() on the adapter loader, or remove spec.model_adapter.",
+            )
+        adapter_config = config_cls.model_validate(adapter_spec)
+        model_adapter.apply_adapter_config(adapter_config)
+        get_logger().info(
+            "Applied spec.model_adapter to %s: %s",
+            model_adapter.__class__.__name__,
+            adapter_config,
+        )
 
     def get_config(
         self,

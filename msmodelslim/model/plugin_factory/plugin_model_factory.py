@@ -54,6 +54,21 @@ class PluginModelFactory(IModelFactory):
     def _plugin_name(model_type: str) -> str:
         return f"{MODEL_ADAPTER_ENTRY_POINTS}:{model_type}"
 
+    def get_adapter_config_class(self, model_type: str):
+        """pydantic model the practice ``spec.model_adapter`` is validated against, or None."""
+        model_map = self._get_model_map()
+        if model_type not in model_map:
+            if DEFAULT in model_map:
+                model_type = DEFAULT
+            else:
+                return None
+        loaded = model_map[model_type].load()
+        if isinstance(loaded, type) and issubclass(loaded, AdapterLoaderInterface):
+            loaded = loaded()
+        if isinstance(loaded, AdapterLoaderInterface):
+            return loaded.get_adapter_config_class()
+        return None
+
     def create(
         self,
         model_type: str,

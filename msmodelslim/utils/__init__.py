@@ -18,3 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
+from msmodelslim.utils.device import AscendDeviceType, bind_npu_cpus, get_current_device_type
+
+__all__ = ["AscendDeviceType", "get_current_device_type", "bind_npu_cpus"]

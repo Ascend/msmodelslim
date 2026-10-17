@@ -4,7 +4,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+Copyright (c) 2025 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -18,12 +18,10 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=consider-merging-isinstance
 
 from typing import List, Any, Optional, Tuple, Dict
 from enum import Enum
 import math
-import random  # noqa: F401
 import torch
 from torch import nn
 from msmodelslim.utils.exception import UnsupportedError
@@ -113,13 +111,31 @@ def create_rot(
     return rot
 
 
+def _rotation_device(weight_device: torch.device) -> torch.device:
+    """Where to run the rotation product.
+
+    The Ascend images ship OMP_NUM_THREADS=1, so a hidden-size rotation on the host
+    is a single-core float32 matmul that runs for minutes (256 cores sit idle);
+    the accelerator finishes the same product in well under a second.  Only
+    redirect tensors that are already on the host, and only when this process
+    really has an NPU open.
+    """
+    if weight_device.type != "cpu":
+        return weight_device
+    npu = getattr(torch, "npu", None)
+    if npu is None or not npu.is_available() or not npu.is_initialized():
+        return weight_device
+    return torch.device(f"npu:{npu.current_device()}")
+
+
 def rotate_linear(linear: torch.nn.Linear, rot: Any, right_rotate: bool = True) -> None:
-    if isinstance(rot, list) or isinstance(rot, tuple):
+    if isinstance(rot, (list, tuple)):
         rot = torch.block_diag(*rot)
     dtype = linear.weight.data.dtype
     device = linear.weight.device
+    compute_device = _rotation_device(device)
 
-    weight_data = linear.weight.data.to(device=device, dtype=GLOBAL_DTYPE)
+    weight_data = linear.weight.data.to(device=compute_device, dtype=GLOBAL_DTYPE)
     dim_size = weight_data.shape[1] if right_rotate else weight_data.shape[0]
     # support diag block rotate automatically
     if dim_size != rot.shape[0]:
@@ -131,21 +147,22 @@ def rotate_linear(linear: torch.nn.Linear, rot: Any, right_rotate: bool = True) 
             )
         rot = torch.block_diag(*[rot] * block_num)
     if right_rotate:
-        linear.weight.data = torch.matmul(weight_data, rot.to(weight_data)).to(dtype=dtype)
+        linear.weight.data = torch.matmul(weight_data, rot.to(weight_data)).to(device=device, dtype=dtype)
     else:
-        linear.weight.data = torch.matmul(rot.T.to(weight_data), weight_data).to(dtype=dtype)
+        linear.weight.data = torch.matmul(rot.T.to(weight_data), weight_data).to(device=device, dtype=dtype)
         if linear.bias is not None:
-            bias_data = linear.bias.data.to(device=device, dtype=GLOBAL_DTYPE)
-            linear.bias.data = torch.matmul(rot.T.to(weight_data), bias_data).to(dtype=dtype)
+            bias_data = linear.bias.data.to(device=compute_device, dtype=GLOBAL_DTYPE)
+            linear.bias.data = torch.matmul(rot.T.to(weight_data), bias_data).to(device=device, dtype=dtype)
 
 
 def rotate_weight(weight: torch.Tensor, rot: Any, right_rotate: bool = True) -> None:
-    if isinstance(rot, list) or isinstance(rot, tuple):
+    if isinstance(rot, (list, tuple)):
         rot = torch.block_diag(*rot)
     dtype = weight.data.dtype
     device = weight.device
+    compute_device = _rotation_device(device)
 
-    weight_data = weight.data.to(device=device, dtype=GLOBAL_DTYPE)
+    weight_data = weight.data.to(device=compute_device, dtype=GLOBAL_DTYPE)
     dim_size = weight_data.shape[1] if right_rotate else weight_data.shape[0]
     # support diag block rotate automatically
     if dim_size != rot.shape[0]:
@@ -157,9 +174,9 @@ def rotate_weight(weight: torch.Tensor, rot: Any, right_rotate: bool = True) -> 
             )
         rot = torch.block_diag(*[rot] * block_num)
     if right_rotate:
-        weight.data = torch.matmul(weight_data, rot.to(weight_data)).to(dtype=dtype)
+        weight.data = torch.matmul(weight_data, rot.to(weight_data)).to(device=device, dtype=dtype)
     else:
-        weight.data = torch.matmul(rot.T.to(weight_data), weight_data).to(dtype=dtype)
+        weight.data = torch.matmul(rot.T.to(weight_data), weight_data).to(device=device, dtype=dtype)
 
 
 def fuse_ln_linear(layernorms: List[torch.nn.Module], linear_layers: List[torch.nn.Linear]) -> None:
@@ -249,7 +266,6 @@ def online_rotate_o_proj_input(
         identity = torch.eye(o_proj.weight.shape[1] // num_attn_heads, dtype=dtype, device=device)
         rot_online = rot_online.to(device)
         h_full = torch.kron(rot_online, identity)
-        weight = o_proj.weight.to(device=device, dtype=torch.float32)  # noqa: F841
         rotate_linear(o_proj, h_full.to(device))
         del h_full
 

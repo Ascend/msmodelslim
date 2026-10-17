@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 
 # pylint: disable=duplicate-code
 
-from typing import List, Literal
+from typing import Any, Dict, List, Literal
 
 from pydantic import BaseModel, Field, field_validator
 from typing_extensions import Self
@@ -65,6 +65,11 @@ class MultimodalVLMServiceConfig(BaseModel):
     default_text: str = Field(
         default="Describe this image in detail.",
         description="校准数据缺少文本模态时，图像类样本使用的默认提示词。",
+    )
+    model_adapter: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="传递给模型适配器的控制参数（结构由适配器 Loader 提供的 pydantic 配置类校验，见 "
+        "``BaseModelAdapterLoader.get_adapter_config_class``），与 `modelslim_v1` 一致。",
     )
 
     @field_validator("default_text")

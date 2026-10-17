@@ -19,7 +19,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from typing import List, Literal, Optional, Annotated
+from typing import Any, Dict, List, Literal, Optional, Annotated
 from pydantic import BaseModel, Field, AfterValidator
 from typing_extensions import Self
 
@@ -59,6 +59,11 @@ class ModelslimV1ServiceConfig(BaseModel):
     dataset: Annotated[str, AfterValidator(validate_str_length(max_len=4096))] = Field(
         default='mix_calib.jsonl',
         description="校准数据集名称（`lab_calib` 下的文件名）或数据集路径，用于量化的参数估计与敏感性校准。",
+    )
+    model_adapter: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="传递给模型适配器的控制参数（结构由适配器 Loader 提供的 pydantic 配置类校验，见 "
+        "``BaseModelAdapterLoader.get_adapter_config_class``）。",
     )
 
 

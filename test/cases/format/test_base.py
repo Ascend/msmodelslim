@@ -25,6 +25,7 @@ from __future__ import annotations
 
 # pylint: disable=no-name-in-module
 
+import gc
 from typing import Callable, Dict, Set, Type
 
 from torch import nn
@@ -139,3 +140,22 @@ class TestQuantFormatBase:
 
         fmt.finalize_export(model)
         fmt.merge_ranks()
+
+    def test_processed_modules_must_not_retain_dropped_module(self, tmp_path):
+        """memo 只用于遍历去重；它不能成为已写模块（连同权重张量）的最后一个强引用。
+
+        实测：强引用版本下 host RSS 随产出线性上涨（约 2x 输出体积），因为 convert 落盘后
+        把树节点换成空模块，而 memo 仍然把整份产出钉在内存里。
+        """
+        ctx = ExportContext(save_directory=tmp_path)
+        fmt = DummyFormat(QuantFormatConfig(), ctx)
+        model = nn.Module()
+        model.quant = make_w8a8_static_module()
+
+        fmt.process_module_tensors("", model)
+        assert len(fmt.processed_modules) > 0
+
+        del model
+        gc.collect()
+
+        assert len(fmt.processed_modules) == 0

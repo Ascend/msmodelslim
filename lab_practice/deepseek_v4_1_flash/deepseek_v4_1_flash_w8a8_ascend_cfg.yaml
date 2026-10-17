@@ -1,0 +1,108 @@
+# DeepSeek-V4.1-Flash W8A8 最佳实践（数据无关）。
+#
+# 与同目录 w4a8 配方的差异：
+#   1. label 为 w8a8；去掉 flex_awq_ssz（int4 AWQ 仅用于 W4A8 路由专家）
+#   2. 注意力 / 路由专家 / 共享专家全部走 W8A8（per-token int8 act + per-channel
+#      int8 weight，minmax）
+#   3. 只保留 quarot -> linear_quant（W8A8 不需要 flex_smooth_quant）；模块分组与
+#      exclude（*attn.wq_a / *attn.wkv 保持 bf16、engram*/vision*/aligner* 不量化）
+#      与 w4a8 配方一致
+#   4. 草稿块 mtp 一并量化（W4A8 配方排除 mtp*）——按 dspark W8A8 模板量化
+#      mtp 注意力投影与专家（wo_a/wo_b、gate、main_proj 等保持 bf16）。
+apiversion: modelslim_v1
+metadata:
+  config_id: deepseek_v4_1_flash_w8a8_ascend_cfg
+  score: 90
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: false
+    kv_cache: false
+  verified_model_types:
+    - DeepSeek-V4.1-Flash
+  verified_tags:
+    DeepSeek-V4.1-Flash:
+      - - vLLM-Ascend
+        - Atlas_A2_Inference
+      - - vLLM-Ascend
+        - Atlas_A3_Inference
+# 全模型 W8A8
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+spec:
+  runner: auto
+  process:
+    - type: "quarot"
+      block_size: 32
+    # 注意力投影 -> W8A8（*attn.wq_a / *attn.wkv 保持 bf16，与 w4a8 配方一致）
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*attn*"
+      exclude:
+        - "*attn.wq_a"
+        - "*attn.wkv"
+        - "*wo_a"
+        - "*wo_b"
+        - "*compressor.wgate"
+        - "*compressor.wkv"
+        - "*indexer.weights_proj"
+        - "*indexer.wk"
+        - "*indexer.wq_a"
+        - "mtp*"
+        - "*engram*"
+        - "*vision*"
+        - "*aligner*"
+    # 路由专家 -> W8A8
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*ffn*"
+      exclude:
+        - "*gate"
+        - "*shared_experts*"
+        - "mtp*"
+        - "*engram*"
+        - "*vision*"
+        - "*aligner*"
+    # 共享专家 -> W8A8
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*ffn.shared_experts*"
+      exclude:
+        - "mtp*"
+        - "*engram*"
+        - "*vision*"
+        - "*aligner*"
+    # 草稿块 mtp -> W8A8（W4A8 配方不量化 mtp；W8A8 按 dspark 模板量化
+    # mtp 的注意力投影与专家，wo_a/wo_b、gate、main_proj 等保持 bf16）
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "mtp.*.attn.wq_a"
+        - "mtp.*.attn.wq_b"
+        - "mtp.*.attn.wkv"
+        - "mtp.*.ffn.shared_experts.w1"
+        - "mtp.*.ffn.shared_experts.w2"
+        - "mtp.*.ffn.shared_experts.w3"
+        - "mtp.*.ffn.experts.*.w1"
+        - "mtp.*.ffn.experts.*.w2"
+        - "mtp.*.ffn.experts.*.w3"
+  dataset: mix_calib.jsonl
+  model_adapter:
+    engram_quant_type: int8_sym
+    dspark: true
+    export_embedding_storage: true
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4

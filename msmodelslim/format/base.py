@@ -21,11 +21,13 @@ See the Mulan PSL v2 for more details.
 
 from __future__ import annotations
 
-from typing import Callable, Dict, Literal, Set, Type
+from typing import Callable, Dict, Literal, Type
 
 from abc import abstractmethod
 from pydantic import BaseModel, Field
 from torch import nn
+
+import weakref
 
 import msmodelslim.ir as qir
 from msmodelslim.format.interface import ExportContext, IFormat
@@ -55,7 +57,14 @@ class QuantFormatBase(IFormat):
     def __init__(self, config: QuantFormatConfig, ctx: ExportContext) -> None:
         self.config = config
         self.ctx = ctx
-        self.processed_modules: Set[nn.Module] = set()
+        # Traversal memo only. Strong references here would pin every module this
+        # format has written -- and with it every converted tensor -- for the whole
+        # run: the saver's release hook (``release_processed_modules``) looks for
+        # ``processed_modules`` on the *save processor*, which never defines it on the
+        # compressed-tensors path, so nothing ever clears this set. Weak references
+        # keep the "already processed" semantics while letting the memory go once the
+        # caller drops the module (convert replaces the tree node after saving).
+        self.processed_modules: weakref.WeakSet[nn.Module] = weakref.WeakSet()
         self._module_handler_map = self.build_module_handler_map()
 
     def process_module_tensors(self, prefix: str, module: nn.Module) -> None:

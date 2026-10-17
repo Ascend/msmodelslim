@@ -1,0 +1,143 @@
+# 作者配方（chiro2001/DeepSeek-V4.1-Flash-w4a8-Ascend 的
+# release/msmodelslim/recipes/deepseek_v4_1_flash_w4a8.yaml），
+# 逐项一致，两处差异：
+#   1. dataset 用仓库内置的 lab_calib/mix_calib.jsonl（相对名，由 dataset_dir 解析）
+#   2. exclude 增加 *attn.wq_a / *attn.wkv —— 这两个投影不量化，保持 bf16
+#
+# 照抄 chiro2001/DeepSeek-V4.1-Flash-w4a8-Ascend 的
+# release/msmodelslim/recipes/deepseek_v4_1_flash_w4a8.yaml
+#
+# 逐项一致：quarot(32) -> flex_awq_ssz(include "*") -> flex_smooth_quant(norm-linear)
+# -> linear_quant ×3（attn W8A8 / 路由专家 W4A8 / 共享专家 W8A8）。
+#
+# runner 保持我们的 auto（多卡管线参数，不属于量化配置）。
+apiversion: modelslim_v1
+metadata:
+  config_id: deepseek_v4_1_flash_w4a8_ascend_cfg
+  score: 0.0
+  label:
+    w_bit: 4
+    a_bit: 8
+    is_sparse: false
+    kv_cache: false
+  verified_model_types:
+    - DeepSeek-V4.1-Flash
+  verified_tags:
+    DeepSeek-V4.1-Flash:
+      - - vLLM-Ascend
+        - Atlas_A2_Inference
+      - - vLLM-Ascend
+        - Atlas_A3_Inference
+# 路由专家：W4A8（int4 per-channel SSZ + int8 per-token）
+default_w4a8_dynamic: &default_w4a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int4"
+    symmetric: True
+    method: "ssz"
+# 注意力/共享专家：W8A8
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_token"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_channel"
+    dtype: "int8"
+    symmetric: True
+    method: "minmax"
+spec:
+  runner: auto
+  process:
+    - type: "quarot"
+      block_size: 32
+    - type: "flex_awq_ssz"
+      qconfig:
+        act:
+          scope: "per_token"
+          dtype: "int8"
+          symmetric: True
+          method: "minmax"
+        weight:
+          scope: "per_channel"
+          dtype: "int4"
+          symmetric: True
+          method: "ssz"
+          ext:
+            step: 10
+      enable_subgraph_type:
+        - "up-down"
+      include:
+        - "*"
+      exclude:
+        - "*.ffn.shared_experts.*"
+        - "mtp*"
+        - "*engram*"
+        - "*vision*"
+        - "*aligner*"
+    - type: "flex_smooth_quant"
+      enable_subgraph_type:
+        - "norm-linear"
+      include:
+        - "*"
+      exclude:
+        - "*ffn_norm*"
+        - "mtp*"
+        - "*engram*"
+        - "*vision*"
+        - "*aligner*"
+    # 注意力投影 -> W8A8
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*attn*"
+      exclude:
+        - "*attn.wq_a"
+        - "*attn.wkv"
+        - "*wo_a"
+        - "*wo_b"
+        - "*compressor.wgate"
+        - "*compressor.wkv"
+        - "*indexer.weights_proj"
+        - "*indexer.wk"
+        - "*indexer.wq_a"
+        - "mtp*"
+        - "*engram*"
+        - "*vision*"
+        - "*aligner*"
+    # 路由专家 -> W4A8
+    - type: "linear_quant"
+      qconfig: *default_w4a8_dynamic
+      include:
+        - "*ffn*"
+      exclude:
+        - "*gate"
+        - "*shared_experts*"
+        - "mtp*"
+        - "*engram*"
+        - "*vision*"
+        - "*aligner*"
+    # 共享专家 -> W8A8
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*ffn.shared_experts*"
+      exclude:
+        - "mtp*"
+        - "*engram*"
+        - "*vision*"
+        - "*aligner*"
+  dataset: mix_calib.jsonl
+  model_adapter:
+    engram_quant_type: int8_sym
+    dspark: true
+    export_embedding_storage: true
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4

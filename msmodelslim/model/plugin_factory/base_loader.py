@@ -48,6 +48,17 @@ class BaseModelAdapterLoader(AdapterLoaderInterface):
     def get_loader_requirements(self) -> Dict[str, str]:
         return get_require_packages(self)
 
+    def get_adapter_config_class(self):
+        """Optional pydantic model the practice ``spec.model_adapter`` is validated against.
+
+        A loader that accepts control parameters in the practice config (e.g.
+        whether the Engram table is stored int8 or plain bf16) returns its
+        ``BaseModel`` subclass here; the quantization pre-check validates the
+        declared ``spec.model_adapter`` dict against it and applies the typed
+        config to the adapter.  ``None`` means the adapter takes no spec.
+        """
+        return None
+
     def check_requirements(
         self,
         plugin_name: str,

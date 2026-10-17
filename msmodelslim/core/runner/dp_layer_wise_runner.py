@@ -32,6 +32,7 @@ from msmodelslim.core.runner.pipeline_interface import PipelineInterface
 from msmodelslim.processor import AutoProcessorConfig
 from msmodelslim.processor.base import AutoSessionProcessor
 from msmodelslim.utils.config import msmodelslim_config
+from msmodelslim.utils.device import bind_npu_cpus
 from msmodelslim.utils.distributed import find_free_port, setup_distributed
 from msmodelslim.utils.logging import logger_setter, get_logger, set_logger_level
 from msmodelslim.core.runner.generated_runner import get_input_datas
@@ -137,6 +138,9 @@ class DPLayerWiseRunner(LayerWiseRunner):
                 setup_distributed(
                     rank, world_size, self.backend, device_index=actual_device_idx, master_port=master_port
                 )
+                # Bind this worker to its own NPU's CPU slice (keyed on the current
+                # device, independent of the process group) before anything heavy runs.
+                bind_npu_cpus()
 
                 if work_queue is not None:
                     set_distributed_task_work_queue(work_queue)
