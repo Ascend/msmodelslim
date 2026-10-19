@@ -7,11 +7,11 @@
 #   3. 只保留 quarot -> linear_quant（W8A8 不需要 flex_smooth_quant）；模块分组与
 #      exclude（*attn.wq_a / *attn.wkv 保持 bf16、engram*/vision*/aligner* 不量化）
 #      与 w4a8 配方一致
-#   4. 草稿块 mtp 一并量化（W4A8 配方排除 mtp*）——按 dspark W8A8 模板量化
-#      mtp 注意力投影与专家（wo_a/wo_b、gate、main_proj 等保持 bf16）。
+#   4. 草稿块 mtp 一并量化（W4A8 配方排除 mtp*）——量化 mtp 的 wq_b 与专家
+#      （wq_a/wkv 与 backbone 一致保持 bf16；wo_a/wo_b、gate、main_proj 等保持 bf16）。
 apiversion: modelslim_v1
 metadata:
-  config_id: deepseek_v4_1_flash_w8a8_ascend_cfg
+  config_id: deepseek_v4_1_flash_w8a8
   score: 90
   label:
     w_bit: 8
@@ -85,13 +85,12 @@ spec:
         - "*vision*"
         - "*aligner*"
     # 草稿块 mtp -> W8A8（W4A8 配方不量化 mtp；W8A8 按 dspark 模板量化
-    # mtp 的注意力投影与专家，wo_a/wo_b、gate、main_proj 等保持 bf16）
+    # mtp 的注意力投影与专家；mtp 的 wq_a/wkv 与 backbone 一致保持 bf16，
+    # wo_a/wo_b、gate、main_proj 等也保持 bf16）
     - type: "linear_quant"
       qconfig: *default_w8a8_dynamic
       include:
-        - "mtp.*.attn.wq_a"
         - "mtp.*.attn.wq_b"
-        - "mtp.*.attn.wkv"
         - "mtp.*.ffn.shared_experts.w1"
         - "mtp.*.ffn.shared_experts.w2"
         - "mtp.*.ffn.shared_experts.w3"

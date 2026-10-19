@@ -10,6 +10,8 @@ import struct
 import torch
 from safetensors import safe_open
 
+from msmodelslim.model.common.tensor_stream import TensorInput, TensorOutput, TensorStreamProcessor
+
 if not __debug__:
     raise RuntimeError('Do not use Python -O: conversion requires validation assertions')
 
@@ -125,7 +127,7 @@ def write_shard(path, tensors):
     return {
         'sha256': digest.hexdigest(),
         'payload_bytes': offset,
-        'file_bytes': path.stat().st_size,
+        'file_bytes': Path(path).stat().st_size,
         'tensors': {k: v for k, v in header.items() if k != '__metadata__'},
     }
 
@@ -190,103 +192,94 @@ def _e8m0_scale(grouped: torch.Tensor) -> torch.Tensor:
     return torch.exp2(exponent)
 
 
-def write_engram_int8(path, model_path, key, group=32):
-    """Write one int8 table plus its per-group scale.
+def _decode_engram_rows(w_block, s_block) -> torch.Tensor:
+    """Decode one FP8 (E4M3 + E8M0 scale) or BF16 Engram row block to BF16."""
+    dtype = str(w_block.dtype)
+    if dtype in ('torch.float8_e4m3fn', 'torch.int8'):
+        return (w_block.float().reshape(-1, 8, 32) * s_block.float().unsqueeze(-1)).reshape(-1, 256).bfloat16()
+    return w_block.bfloat16()
+
+
+def write_engram_int8(path, model_path, key, group=32, block_rows=1 << 20):
+    """Write one int8 table plus its per-group scale, streaming row-blocks.
 
     The source stores MXFP8 -- E4M3 against an E8M0 scale per ``group`` values --
-    so the table is dequantized first (loaded whole through safe_open), then
-    re-quantized symmetrically to int8 over the same groups.  Out comes the pair
-    the serving contract describes for ``int8_sym``: I8 [rows, width] and an
-    ``ENGRAM_SCALE_DTYPE`` [rows, width // group] scale -- the same shared
-    exponent the source carries, one byte per group, which keeps the export
-    under half the bytes of the bf16 table.
+    so each row-block is decoded to BF16, re-quantized symmetrically to int8 over
+    the same groups, and its bytes streamed straight to the file via
+    :class:`~msmodelslim.model.common.tensor_stream.TensorStreamProcessor`.  Only one
+    block's decode and the output scale bytes are held in memory at once, instead
+    of the whole ~100GB table.  ``tqdm`` reports progress over rows.
 
-    The table is read, dequantized and re-quantized in full; safetensors wants
-    each tensor's bytes contiguous, so the int8 weights are written first, then
-    their scales.
+    Out comes the pair the serving contract describes for ``int8_sym``: I8
+    [rows, width] and an ``ENGRAM_SCALE_DTYPE`` [rows, width // group] scale --
+    the same shared exponent the source carries, one byte per group, which keeps
+    the export under half the bytes of the bf16 table.
     """
     shape, _ = tensor_spec(model_path, key)
     rows, width = shape
     assert width % group == 0, f'{key}: width {width} not divisible by group {group}'  # nosec
     groups = width // group
     scale_key = key.removesuffix('.weight') + '.scale'
-    weight_bytes = rows * width * 1  # int8
-    scale_bytes = rows * groups * 1  # E8M0, one byte per group
-    header = {
-        '__metadata__': {'format': 'pt'},
-        key: {'dtype': 'I8', 'shape': [rows, width], 'data_offsets': [0, weight_bytes]},
-        scale_key: {
-            'dtype': ENGRAM_SCALE_DTYPE,
-            'shape': [rows, groups],
-            'data_offsets': [weight_bytes, weight_bytes + scale_bytes],
-        },
-    }
-    raw = json.dumps(header, separators=(',', ':')).encode()
-    raw += b' ' * (-len(raw) % 8)
-    temp = Path(str(path) + '.partial')
-    digest = hashlib.sha256()
-    values = decode_tensor(model_path, key).float()
-    assert torch.isfinite(values).all().item(), key  # nosec
-    grouped = values.view(-1, groups, group)
-    scale = _e8m0_scale(grouped)
-    quant = (grouped / scale.clamp_min(1e-30).unsqueeze(-1)).round()
-    weights = quant.clamp_(-127, 127).to(torch.int8).contiguous()
-    # The exponent byte itself; ``view(uint8)`` is a bit cast, and every value
-    # here is an exact power of two, so it round-trips exactly.
-    scales = scale.to(DTYPES[ENGRAM_SCALE_DTYPE]).contiguous()
-    with temp.open('wb') as stream:
-        for data in (struct.pack('<Q', len(raw)), raw):
-            stream.write(data)
-            digest.update(data)
-        for data in (weights.view(torch.uint8).numpy().tobytes(), scales.view(torch.uint8).numpy().tobytes()):
-            stream.write(data)
-            digest.update(data)
-        stream.flush()
-        os.fsync(stream.fileno())
-    assert temp.stat().st_size == 8 + len(raw) + weight_bytes + scale_bytes  # nosec
-    temp.replace(path)
+    root = Path(model_path)
+    index = checkpoint_index(root)
+    inputs = [TensorInput(root / index[key], key, shape)]
+    has_scale = scale_key in index
+    if has_scale:
+        inputs.append(TensorInput(root / index[scale_key], scale_key, (rows, groups)))
+
+    def quant(w_block, s_block=None):
+        values = _decode_engram_rows(w_block, s_block).float()
+        assert torch.isfinite(values).all().item(), key  # nosec
+        grouped = values.view(-1, groups, group)
+        scale = _e8m0_scale(grouped)
+        quant = (grouped / scale.clamp_min(1e-30).unsqueeze(-1)).round()
+        weights = quant.clamp_(-127, 127).to(torch.int8).contiguous()
+        scales = scale.to(DTYPES[ENGRAM_SCALE_DTYPE]).contiguous()
+        return [weights, scales]
+
+    outputs = [
+        TensorOutput(path, key, 'I8', shape),
+        TensorOutput(path, scale_key, ENGRAM_SCALE_DTYPE, (rows, groups)),
+    ]
+    result = TensorStreamProcessor(block_rows=block_rows).process(inputs, outputs, quant, desc=key)
+    entry = result[str(Path(path))]
     return {
-        'sha256': digest.hexdigest(),
-        'payload_bytes': weight_bytes + scale_bytes,
-        'file_bytes': path.stat().st_size,
-        'tensors': {key: header[key], scale_key: header[scale_key]},
+        'sha256': entry['sha256'],
+        'payload_bytes': rows * width + rows * groups,
+        'file_bytes': Path(path).stat().st_size,
+        'tensors': entry['tensors'],
     }
 
 
-def write_engram_bf16(path, model_path, key):
-    """Write one original-name BF16 table.
+def write_engram_bf16(path, model_path, key, block_rows=1 << 20):
+    """Write one original-name BF16 table, streaming row-blocks.
 
-    The table is read in full through safe_open and re-emitted under the same
-    name.  If an identical share already exists under $ENGRAM_SHARE_DIR (keyed
-    by tensor name), symlink to it instead of re-streaming the (potentially
-    ~200GB) BF16 table.  Engram memory tables are written unrotated and
-    byte-for-byte identical across exports of the same source, so the symlink
-    is exact.
+    The source table is decoded block by block through row slices and re-emitted
+    under the same name via :class:`~msmodelslim.model.common.tensor_stream.TensorStreamProcessor`,
+    so only one block is in memory at once instead of the whole (potentially
+    ~200GB) BF16 table.  ``tqdm`` reports progress over rows.
     """
     shape, _ = tensor_spec(model_path, key)
-    payload = math.prod(shape) * 2
-    spec = {'dtype': 'BF16', 'shape': shape, 'data_offsets': [0, payload]}
-    header = {'__metadata__': {'format': 'pt'}, key: spec}
-    raw = json.dumps(header, separators=(',', ':')).encode()
-    raw += b' ' * (-len(raw) % 8)
-    temp = Path(str(path) + '.partial')
-    digest = hashlib.sha256()
-    values = decode_tensor(model_path, key).contiguous()
-    assert values.dtype == torch.bfloat16 and torch.isfinite(values).all().item(), key  # nosec
-    with temp.open('wb') as stream:
-        for data in (struct.pack('<Q', len(raw)), raw):
-            stream.write(data)
-            digest.update(data)
-        data = values.view(torch.uint8).numpy().tobytes()
-        stream.write(data)
-        digest.update(data)
-        stream.flush()
-        os.fsync(stream.fileno())
-    assert temp.stat().st_size == 8 + len(raw) + payload  # nosec
-    temp.replace(path)
+    rows, width = shape
+    scale_key = key.removesuffix('.weight') + '.scale'
+    root = Path(model_path)
+    index = checkpoint_index(root)
+    inputs = [TensorInput(root / index[key], key, shape)]
+    has_scale = scale_key in index
+    if has_scale:
+        inputs.append(TensorInput(root / index[scale_key], scale_key, (rows, width // 32)))
+
+    def passthrough(w_block, s_block=None):
+        values = _decode_engram_rows(w_block, s_block).contiguous()
+        assert values.dtype == torch.bfloat16 and torch.isfinite(values).all().item(), key  # nosec
+        return [values]
+
+    outputs = [TensorOutput(path, key, 'BF16', shape)]
+    result = TensorStreamProcessor(block_rows=block_rows).process(inputs, outputs, passthrough, desc=key)
+    entry = result[str(Path(path))]
     return {
-        'sha256': digest.hexdigest(),
-        'payload_bytes': payload,
-        'file_bytes': path.stat().st_size,
-        'tensors': {key: spec},
+        'sha256': entry['sha256'],
+        'payload_bytes': math.prod(shape) * 2,
+        'file_bytes': Path(path).stat().st_size,
+        'tensors': entry['tensors'],
     }

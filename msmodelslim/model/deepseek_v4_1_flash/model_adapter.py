@@ -21,8 +21,7 @@ Quant settings
   through ``generate_model_visit`` only — no forward is required.
 * Calibration-based processors (``flex_awq_ssz``) need a live text backbone
   forward.  The checkpoint ships ``inference/model.py``; wiring it into
-  ``generate_model_forward`` is the documented extension point (see
-  see ``lab_practice/deepseek_v4_1_flash/README.md``).
+  ``generate_model_forward`` is the documented extension point.
 """
 
 import collections
@@ -1416,24 +1415,21 @@ class DeepSeekV41FlashModelAdapter(
     def _write_engram_description(self, save_dir: Path, engram_tensors: Dict[str, Dict[str, Any]]) -> None:
         """Describe each Engram table's quant type in quant_model_description.json.
 
-        Aligned with how attention tensors are described -- one
-        ``layers.N.engram.embed.quant_type`` entry per table (describing the
-        table itself): ``INT8_SYM`` when the saver quantizes it
-        (``spec.model_adapter.engram_quant_type: int8_sym``), ``FLOAT`` when it
-        is stored plain bf16.  When ``export_embedding_storage`` is set, the
-        legacy ``optional.embedding_storage`` block is emitted alongside it for
+        One ``layers.N.engram.embed.quant_type`` entry per table only when the
+        saver quantizes it (``spec.model_adapter.engram_quant_type: int8_sym``);
+        a plain bf16 table carries no such key.  When ``export_embedding_storage``
+        is set, the legacy ``optional.embedding_storage`` block is emitted for
         old serving contracts.
         """
         path = save_dir / 'quant_model_description.json'
         description = json.loads(path.read_text()) if path.exists() else {}
-        quant_type = 'INT8_SYM' if self._engram_quant_type == 'int8_sym' else 'FLOAT'
-        for key in engram_tensors:
-            if key.endswith('.engram.embed.weight'):
-                layer = key.split('.')[1]
-                description[f'layers.{layer}.engram.embed.quant_type'] = quant_type
+        if self._engram_quant_type == 'int8_sym':
+            for key in engram_tensors:
+                if key.endswith('.engram.embed.weight'):
+                    layer = key.split('.')[1]
+                    description[f'layers.{layer}.engram.embed.quant_type'] = 'INT8_SYM'
         if self._export_embedding_storage:
             description.setdefault('optional', {})['embedding_storage'] = engram_source_description(engram_tensors)
-        description.setdefault('model_quant_type', 'W8A8_DYNAMIC')
         write_json(path, description)
 
     @staticmethod

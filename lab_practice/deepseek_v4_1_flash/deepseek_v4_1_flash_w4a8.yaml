@@ -13,7 +13,7 @@
 # runner 保持我们的 auto（多卡管线参数，不属于量化配置）。
 apiversion: modelslim_v1
 metadata:
-  config_id: deepseek_v4_1_flash_w4a8_ascend_cfg
+  config_id: deepseek_v4_1_flash_w4a8
   score: 0.0
   label:
     w_bit: 4
