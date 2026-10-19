@@ -98,6 +98,7 @@ nav:
       - 精度调优案例:
           - 量化精度调优指南: "zh/user_guide/process_quantization_precision_tuning.md"
           - Qwen3-32B W8A8 调优案例: "zh/best_practices/qwen3_32b_w8a8_precision_tuning_case.md"
+          - Qwen3.5-35B-A3B W8A8 多模态量化实践: "zh/best_practices/qwen3_5_35b_quantization_case.md"
           - 基础案例: "zh/best_practices/README.md"
       - 权重转换与使用:
           - 权重转换案例 (AutoAWQ/AutoGPTQ): "zh/best_practices/msmodelslim_quantized_weight_to_autoawq_autogptq.md"
