@@ -1,0 +1,28 @@
+apiversion: modelslim_convert
+
+# Weight layout (calibrated against qwen3-8b-fp8 model.safetensors.index.json):
+#   - Prefix: model.layers.* (dense, 36 layers: layer 0–35)
+#   - 7 FP8_BLOCK linear layers per transformer layer (each with .weight_scale_inv):
+#       self_attn.{q,k,v,o}_proj + mlp.{gate,up,down}_proj
+#   - q_norm / k_norm / layernorm use bf16 and lack .weight_scale_inv, so they are excluded from linears
+#   - Non-linear weights (e.g., embed_tokens / lm_head) are preserved verbatim and persisted to disk
+#   - Total: 2 safetensors shards (model-00001/00002-of-00002)
+spec:
+  linears:
+    - match:
+        - "model.layers.*.self_attn.q_proj"
+        - "model.layers.*.self_attn.k_proj"
+        - "model.layers.*.self_attn.v_proj"
+        - "model.layers.*.self_attn.o_proj"
+        - "model.layers.*.mlp.gate_proj"
+        - "model.layers.*.mlp.up_proj"
+        - "model.layers.*.mlp.down_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+  save:
+    - type: ascend_v1
+      part_file_size: 4
+
+  parallel:
+    workers: 8

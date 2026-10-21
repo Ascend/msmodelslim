@@ -27,11 +27,11 @@ Thank you for submitting a PR. To streamline the review process, please follow t
 
 Follow our PR [template and guidelines](https://gitcode.com/Ascend/msmodelslim/blob/master/.gitcode/PULL_REQUEST_TEMPLATE.md).
 
-Refer to the developer documentation [LLM Integration Guide](../development_guide/integrating_models.md).
+See the developer documentation [LLM Integration Guide](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md).
 
-Refer to the [Coding Standards](../common/coding_standards.md) in the developer documentation.
+See the developer documentation [Coding Standards](development_guide/coding_standards.md).
 
-Before submitting code, ensure all pre-commit checks pass locally. First-time developers should run `pre-commit install` (see the [Coding Standards](../common/coding_standards.md) for details).
+Before submitting code, you must pass the pre-commit check locally (for first-time development, run `pre-commit install`; for details, see [Coding Standards](development_guide/coding_standards.md)).
 
 For changes that affect user-facing features, update the corresponding user and developer documentation at the same time.
 
@@ -122,7 +122,7 @@ git push --force-with-lease origin your-branch-name
 
 ### 3.3 Unit Testing Guide
 
-For instructions on running or writing msModelSlim unit tests, refer to the detailed [Developer Testing Guide](../common/testing_guide.md). It covers:
+If you need to run or write msModelSlim unit tests, see the detailed [Developer Testing Guide](development_guide/testing_guide.md). The guide covers:
 
 - Environment preparation and dependency installation
 - **Executing Unit Tests** – Executing tests for the `modelslim_v1` module.

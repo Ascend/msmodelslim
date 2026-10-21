@@ -1,0 +1,25 @@
+apiversion: modelslim_convert
+
+# Weight Structure (calibrated against `qwen3-8b-fp8` `model.safetensors.index.json`)
+#   - 252 `FP8_BLOCK` linear layers (7×36), identical to the `mxfp8` configuration
+#   - Dequantized only to `FLOAT(bf16)`; MXFP8 quantization is not applied
+#   - Persisted in `HuggingFace` / `compressed_tensors` format for HuggingFace-side inference
+spec:
+  linears:
+    - match:
+        - "model.layers.*.self_attn.q_proj"
+        - "model.layers.*.self_attn.k_proj"
+        - "model.layers.*.self_attn.v_proj"
+        - "model.layers.*.self_attn.o_proj"
+        - "model.layers.*.mlp.gate_proj"
+        - "model.layers.*.mlp.up_proj"
+        - "model.layers.*.mlp.down_proj"
+      target: FLOAT
+      route: auto
+
+  save:
+    - type: huggingface
+      part_file_size: 4
+
+  parallel:
+    workers: 8

@@ -12,7 +12,7 @@ You are advised to enable the **address space layout randomization** (ASLR) (lev
 
  2. Before installing or using the tools, ensure the user's `umask` is set to `0027` or a more restrictive value. Otherwise, issues may occur, such as source code compilation failures, configuration file read failures, or excessive permissions for generated directories and files.
 
- 3. All tools in this repository are designed to run with minimal permissions. For security reasons, do not use `root` or other privileged accounts. Always install and execute tools as a regular user.
+ 3. Tools in this repository are designed to be installed and used with low privileges. For security and least privilege purposes, no tool should be used with a high-privilege account such as root. You are advised to install and run them with a common user account.
 
  4. If a tool depends on CANN, use the CANN package installed by the same non-privileged user. After running the `source` command, do not modify environment variables in `set_env.sh`.
 
@@ -61,7 +61,7 @@ The following sections explain the vulnerability reporting, assessment, and disc
 ### Vulnerability Reporting
 
 You can contact the MindStudio community team by submitting an issue. We will arrange for a security vulnerability specialist to contact you promptly.
-Note that to ensure security, do not include specific information about security privacy in the issue.
+Note that to ensure security, do not include specific security- or privacy-sensitive information in the issue.
 
 #### Response to Reports
 
@@ -69,7 +69,7 @@ Note that to ensure security, do not include specific information about security
 2. The MindStudio security team will assign confirmed security vulnerability issues to dedicated personnel and follow up on them.
 3. During the process of classifying, confirming, and fixing security vulnerabilities, as well as releasing patches, we will provide timely updates on the report.
 
-### Vulnerability assessment
+### Vulnerability Assessment
 
 The industry widely uses the CVSS standard to assess vulnerability severity. When using CVSS v3.1 for vulnerability assessment, MindStudio sets specific attack scenarios and performs assessments based on the actual impact within those scenarios. Vulnerability severity assessment involves assessing the difficulty of exploitation as well as the impact on confidentiality, integrity, and availability after exploitation, resulting in a numerical score.
 
@@ -134,6 +134,10 @@ No vulnerability notices are currently available for third-party open-source com
 
 Loading and saving data during the use of the tools may involve data risks.
 
+## Development and Debugging Security Statement
+
+This repository provides reference configurations for vscode and devcontainer to facilitate development and debugging. They are intended only for developing and debugging this repository in a secure debugging environment. In addition, check the security of the configurations yourself and adjust them as needed.
+
 ## Build Security Statement
 
 To reduce security risks, you can perform permission control on files within the source code directory. During the build process, you can modify build scripts as needed to avoid security risks and ensure the security of the build results.
@@ -161,4 +165,4 @@ While unsafe functions are not forcibly disabled, you are advised to use their s
 | No.| Code Repository        | Function      | Source Device | Source IP Address        | Source Port| Destination Device| Destination IP Address       | Destination Port<br>(Listening)| Protocol| Port Description          | Port Configuration    | Listening Port Configurable (Yes/No)         | Authentication Mode| Encryption Mode| Plane   | Version    | Special Scenarios| Remarks|
 |:---|:------------|:---------|:-----|:------------| :----- |:-----|:------------|:--------------| :--- |:---------------|:---------|:-------------------| :------- | :------- |:--------|:-------|:-----| :--- |
 | 1  | msModelSlim | Inter-card communication for quantization| Single-node multi-device| 127.0.0.1 |        | Single-node multi-device| 127.0.0.1 | Dynamic search. The default value is 29500-29599. The value ranges from 1024 to 65535.   | TCP  | Dynamically searches for an available port for inter-card communication. Search starts at 29500 by default, and the tool tries up to 100 ports. You can specify the port through the `MASTER_PORT` environment variable. The port must be in the range from 1024 to 65535.| N/A     | Yes (using the `MASTER_PORT` environment variable)               |  |   | Service plane    | master | None   |      |
-| 2  | msModelSlim | Multi-process context sharing| Local on a single node| N/A (Unix domain socket)|        | Local on a single node| N/A (Unix domain socket)| N/A (using the Linux abstract namespace) | Unix domain socket | Shares Inter-process context data via Unix Domain Sockets. By default, the Linux abstract namespace is used (`@peercred_manager_<pid>_<timestamp>`), so no socket file is created on the filesystem. Authentication is performed at the kernel level using `SO_PEERCRED`, allowing connections only from processes with the same UID. | N/A| The abstract socket name can be specified programmatically. | Kernel-level UID authentication with `SO_PEERCRED`| N/A (local communication)| Service plane| master | Linux only|      |
+| 2  | msModelSlim | Multi-process context sharing| Local on a single node| N/A (Unix domain socket)|        | Local on a single node| N/A (Unix domain socket)| N/A (using the Linux abstract namespace) | Unix domain socket | Shares inter-process context data through Unix domain sockets. By default, the Linux abstract namespace is used (`@peercred_manager_<pid>_<timestamp>`), so no socket file is created on the filesystem. Authentication is performed at the kernel level using `SO_PEERCRED`, allowing connections only from processes with the same UID. | N/A| The abstract socket name can be specified programmatically. | Kernel-level UID authentication with `SO_PEERCRED`| N/A (local communication)| Service plane| master | Linux only|      |

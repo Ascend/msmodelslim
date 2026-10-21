@@ -1,5 +1,3 @@
-<!-- md-trans-meta sourceCommit=652caa58cbf1feddc29ea6bd484adddf6557db00 translatedAt=2026-08-21T06:10:49.731Z pushedAt=2026-08-21T06:21:55.322Z -->
-
 <h1 align="center"> MindStudio ModelSlim</h1>
 <div align="center">
   <br />
@@ -8,162 +6,167 @@
     <em>Simple, fast, and lean—msModelSlim is all you need.</em>
   </p>
   <p><b><span style="font-size:24px;">Ascend Model Compression Tool</span></b></p>
-
-  <!-- Use a divider instead of a background -->
+  <!-- Use a divider instead of the background -->
 
  [![Quick Start](https://badgen.net/badge/Quick%20Start/QuickStart/blue)](./docs/en/quick_start/quantization_quick_start.md)
- [![AI Q&A (DeepWiki)](https://badgen.net/badge/AI%20Q%26A/DeepWiki/blue)](https://deepwiki.com/Keithwwa/msmodelslim)
- [![AI Q&A (ZRead)](https://badgen.net/badge/AI%20Q%26A/ZRead/blue)](https://zread.ai/mindstudio-docs/master)
- [![Ascend Community](https://badgen.net/badge/Ascend%20Community/Community/blue)](https://www.hiascend.com/en/developer/software/mindstudio)
+ [![AI FAQ (DeepWiki)](https://badgen.net/badge/AI%20FAQ/DeepWiki/blue)](https://deepwiki.com/Keithwwa/msmodelslim)
+ [![AI FAQ (ZRead)](https://badgen.net/badge/AI%20FAQ/ZRead/blue)](https://zread.ai/mindstudio-docs/26.2.0)
+ [![Ascend Community](https://badgen.net/badge/Ascend%20Community/Community/blue)](https://www.hiascend.com/eng/developer/software/mindstudio)
  [![Report Issues](https://badgen.net/badge/Report%20Issues/Issues/blue)](https://gitcode.com/Ascend/msmodelslim/issues/new)
 
 </div>
 
-English | [简体中文](./README.md)
+ English | [简体中文](./README.md)
 
 ## ✨ Latest News
 
 <span style="font-size:14px;">
 
+🔹 **[2026.09.03]**
+
+- New support for quantization of the `Step-3.7-Flash` (W8A8 MXFP8) multimodal model
+
+🔹 **[2026.08.07]**
+
+- Multimodal understanding models now support multi-card distributed layer-by-layer quantization, improving quantization efficiency for multimodal understanding models
+- New support for quantization of the `Kimi-K3` (W4A8) model
+
+🔹 **[2026.09.02]**
+
+- Improved the MXFP8/MXFP4 mixed quantization best practices for Gemma4 Dense `gemma-4-31B-it`
+- Improved the MXFP8/MXFP4 mixed quantization best practices for Gemma4 MoE `gemma-4-26B-A4B-it`
+
+🔹 **[2026.07.15]**
+
+- New support for quantization of the Gemma4 Dense `gemma-4-31B-it` (W8A8) and Gemma4 MoE `gemma-4-26B-A4B-it` (W8A8) models
+
+</span>
+
+<details>
+<summary>🗂️ More historical updates (click to expand)</summary>
+
+🔹 **[2026.07.07]**
+
+- New support for quantization of the Tencent Hunyuan `Hy3` (W8A8) model
+
 🔹 **[2026.06.01]**
 
-- Added quantization support for the `InternVL3_5-38B` (W8A8) and `InternVL3_5-241B-A28B` (W8A8) models
-
+- New Support for quantization of the `InternVL3_5-38B` (W8A8) and `InternVL3_5-241B-A28B` (W8A8) models
 - Added quantization support for the `Kimi-K2.6` (W4A8) model
 
 🔹 **[2026.04.01]**
 
 - Added quantization support for the `DeepSeek-V4-Flash` (W8A8) model
-
 - Added quantization support for the `Kimi-K2.5` (W4A8) model
 
-🔹 **[2026.03.01]**
-
-- Newly Support quantization for the `GLM-4.6V` (W8A8) model
-
-</span>
-
-<details>
-<summary>🗂️ Historical Updates (click to expand)</summary>
-
-**February 2026**
-
-- msModelSlim supports W8A8 quantization for Qwen3-Omni-30B-A3B-Thinking and Qwen3-Omni-30B-A3B-Instruct
-
-- msModelSlim supports W8A8 quantization for Qwen2.5-Omni-7B
-
-- msModelSlim supports W8A8 quantization for Qwen3.5-397B-A17B
-
-- msModelSlim supports W4A8 quantization for GLM-5
-
-- msModelSlim optimizes One-Click Quantization scenario recommendation
-
-**January 2026**
-
-- msModelSlim supports Qwen3-VL-32B-Instruct W8A8 quantization
-
-**December 2025**
-
-- msModelSlim supports quantization accuracy feedback auto-tuning, which can automatically search for the optimal quantization configuration based on accuracy requirements
-
-- msModelSlim supports Custom Quantization for multimodal understanding models, enabling quantization integration of multimodal understanding models
-
-- msModelSlim One-Click Quantization supports multi-card quantization and distributed layer-by-layer quantization, improving the quantization efficiency of large models
-
-- msModelSlim supports DeepSeek-V3.2 W8A8 quantization, which can be executed on a single card with 64 GB video memory and 100 GB memory
-
-- msModelSlim supports DeepSeek-V3.2-Exp W4A8 quantization, which can be executed on a single card with 64 GB video memory and 100 GB memory
-
-- msModelSlim supports Qwen3-VL-235B-A22B W8A8 quantization
-
-**November 2025**
-
-- msModelSlim model adaptation supports plugin-based and configuration registration, and supports dependency pre-check
-
-**October 2025**
-
-- msModelSlim supports Qwen3-235B-A22B W4A8 and Qwen3-30B-A3B W4A8 quantization, and vLLM-Ascend supports inference deployment of quantized models
-
-### 🗓️ September 2025
-
-- msModelSlim supports DeepSeek-V3.2-Exp W8A8 quantization, which can be executed with a single card with 64GB video memory and 100GB memory only
-
-- msModelSlim has resolved the issue of frequent abnormal tokens such as "game copies" in Qwen3-235B-A22B under W8A8 quantization
-
-- msModelSlim supports DeepSeek R1 W4A8 per-channel quantization [Prototype]
-
-- msModelSlim supports sensitivity analysis for large model quantization
-
-**August 2025**
-
-- msModelSlim supports One-Click Quantization for the Wan2.1 model
-
-- msModelSlim supports layer-wise quantization for large models, significantly reducing memory usage during large model quantization
-
-- msModelSlim supports the SSZ weight quantization algorithm for large models, which improves quantization accuracy by iteratively searching for the optimal scaling factors and offsets
+📄 For more historical updates, see [Release Notes](https://gitcode.com/Ascend/msmodelslim/releases).
 
 </details>
 
-## ℹ️ Overview
+---
 
-**MindStudio ModelSlim (msModelSlim)** is a high-performance model compression tool in the Ascend ecosystem. It supports quantization and compression of dense LLMs, MoE models, and multimodal models. Developers can quickly tune models through the msModelSlim tool and export models adapted to frameworks such as MindIE and vLLM-Ascend for efficient deployment on Ascend AI Processors.
+## ℹ️ Introduction
 
-## ⚙️ Feature Introduction
+**MindStudio ModelSlim (msModelSlim)** is a high-performance model compression tool in the Ascend ecosystem. It supports quantization and compression of dense LLMs, MoE models, and multimodal models. Developers can quickly tune models through the command line and configuration and export models adapted to frameworks such as MindIE and vLLM-Ascend for efficient deployment on Ascend AI Processors.
 
-| Feature Name | Description |
-|---------|--------|
-| **One-Click Quantization** | Integrates best practices for mainstream large model quantization, supports multiple quantization types such as W4A8, W8A8, and W8A16, automatically matches the optimal configuration, and works out of the box. |
-| **Custom Quantization** | Provides a standard integration framework, allowing developers to quickly integrate their own LLMs and multimodal models into the one-click quantization workflow. |
-| **Sensitivity Analysis** | Evaluates the quantization sensitivity of each layer from multiple dimensions, accurately locates layers that should be rolled back or have their bit width increased, and provides data support for quantization configuration tuning. |
-| **Auto-Tuning** | Automatically iterates and searches quantization configurations based on accuracy targets, automating the entire quantization and evaluation process without repeated manual parameter adjustment. |
-| **Weight Conversion** | Performs format and precision conversion on existing quantized weights offline without a calibration set (for example, FP8→BF16, BF16→MXFP8). |
+**What it can bring to you:**
 
-> **Model Support Overview**: For details about the models and quantization types supported by each feature, see [Model Support Matrix](./docs/en/user_guide/model_support/foundation_model_support_matrix.md).
+- 🚀 **Inference Acceleration**: Quantization significantly reduces memory usage, improving inference throughput and deployment cost efficiency (for example, the original weights of the Qwen3.6-27B model exceed 50 GB, and after W8A8 quantization they are reduced to 30+ GB, saving 40% of memory).
+- 🎯 **Out of the box**: Integrates best practices for mainstream large model quantization. A single `msmodelslim quant` command completes quantization.
+- 🔧 **Controllable precision**: Provides sensitive layer analysis, automatic tuning, and a closed-loop precision feedback mechanism, making quantization precision measurable and tunable.
+- 🧩 **Ecosystem-friendly**: The exported quantized weights seamlessly integrate with mainstream inference frameworks such as vLLM-Ascend.
+
+---
 
 ## 🚀 Quick Start
 
-To help users quickly complete large model quantization, see [msModelSlim Quick Start](./docs/en/quick_start/quantization_quick_start.md).
+**A step-by-step guide to end-to-end model quantization**. See *[Quick Start](./docs/en/quick_start/quantization_quick_start.md)*.
+
+---
 
 ## 📦 Installation Guide
 
-Describes the environment dependencies and installation methods of the tool. See [msModelSlim Tool Installation Guide](./docs/en/install_guide/install_guide.md).
+msModelSlim has been published to PyPI and can be installed directly via pip.
 
-## 📘 Usage Guide
+```bash
+# Install msModelSlim (the latest version has been updated to the PyPI source)
+<!-- md-trans-meta sourceCommit=26957a5bae8af69f15670791c8a66e6cb2d0f974 translatedAt=2026-10-14T08:54:10.562Z pushedAt=2026-10-14T09:02:58.550Z -->
 
-For detailed usage of the tool, see [msModelSlim User Guide](./docs/en/user_guide/msmodelslim_user_guide.md).
+pip install msmodelslim
+
+# Verify the installation: printing the command-line help information indicates successful installation
+msmodelslim --help
+```
+
+> For more installation methods, see *[Installation Guide](./docs/en/install_guide/install_guide.md)*.
+
+---
+
+## 📘 User Guide
+
+**Want to know how to use msModelSlim?** Choose an entry point as needed:
+
+| Business Process | Corresponding Tool/Feature |
+|---------|--------------|
+| *[New Model Quantization Tuning Process](./docs/en/user_guide/process_new_model_quantization_tuning.md)* | [Weight Quantization](./docs/en/user_guide/usage_weight_quantization.md), [Sensitive Layer Analysis](./docs/en/user_guide/usage_sensitive_linear_analysis.md) |
+| *[Precision Tuning Methods](./docs/en/user_guide/process_quantization_precision_tuning.md)* | [Sensitive Layer Analysis](./docs/en/user_guide/usage_sensitive_linear_analysis.md), [Auto Tuning](./docs/en/user_guide/usage_auto_precision_tuning.md), [Debug Mode](./docs/en/user_guide/usage_debug_mode.md) |
+| *[Mainstream Model Quantization Deployment](./docs/en/user_guide/process_mainstream_model_deployment.md)* | *[One-Click Quantization](./docs/en/user_guide/usage_one_click_quantization.md)* |
+| *[Locating Quantization Inference Accuracy Anomalies](./docs/en/user_guide/process_quantization_accuracy_anomaly_locating.md)* | [Debug Mode](./docs/en/user_guide/usage_debug_mode.md) |
+
+> For more usage guides, see *[User Guide](./docs/en/user_guide/README.md)*.
+
+---
+
+## 📚 Knowledge Base
+
+**Unfamiliar with quantization terms such as `W4A8`/`W8A8`?** See *[Inference Acceleration Knowledge Base](./docs/en/knowledge_base/README.md)*.
+
+---
 
 ## 💡 Typical Cases
 
-To help users understand and master the tool through typical problem scenarios, see [msModelSlim Typical Cases](./docs/en/best_practices/basic_cases.md).
+**Looking for typical scenarios for model quantization tuning?** See *[msModelSlim Typical Cases](./docs/en/best_practices/README.md)*.
+
+---
 
 ## ❓ FAQs
 
-For common issues and solutions, see [FAQs](./docs/en/support/faq.md).
+**Encountering a problem?** See *[FAQs](./docs/en/support/faq.md)*.
+
+---
 
 ## 🌌 Intelligent Search
 
 To improve document retrieval efficiency, we provide multiple efficient search methods:<br>
-🔹 [AI Q&A (DeepWiki)](https://deepwiki.com/Keithwwa/msmodelslim): natural language Q&A to quickly grasp the project architecture and module relationships.<br>
-🔹 [Precise Search (ReadTheDocs)](https://www.hiascend.com/document/detail/en/mindstudio/latest/TITools/msModelSlim/docs/en/getting_started/quantization_quick_start.md): full-text keyword search to directly access interfaces, parameters, and error messages.<br>
+🔹 [AI Agent (msagent)](https://gitcode.com/Ascend/msagent/blob/26.2.0/docs/en/agent_guide/quantizer.md): The msModelSlim quantization capability has been integrated into the msagent agent, enabling automatic model quantization tasks through natural language interaction.<br>
+🔹 [AI Q&A (DeepWiki)](https://deepwiki.com/Keithwwa/msmodelslim): Natural language Q&A for quickly grasping the project architecture and module relationships.<br>
+
+---
 
 ## 🛠️ Contribution Guide
 
-For details, see [Contribution Guide](./docs/en/contributing/contributing_guide.md).
+**Want to contribute?** For details, see *[Contribution Guide](./docs/en/contributing/contributing_guide.md)*.
+
+---
 
 ## ⚖️ Related Notes
 
-🔹 [Release Notes](https://gitcode.com/Ascend/msmodelslim/releases)<br>
-🔹 [License Notice](docs/en/legal/license_notice.md)<br>
-🔹 [Security Statement](docs/en/legal/SECURITY.md)<br>
-🔹 [Disclaimer](docs/en/legal/disclaimer.md)<br>
+🔹 *[Release Notes](https://gitcode.com/Ascend/msmodelslim/releases)*<br>
+🔹 *[License Notice](docs/en/legal/license_notice.md)*<br>
+🔹 *[Security Statement](docs/en/legal/SECURITY.md)*<br>
+🔹 *[Disclaimer](docs/en/legal/disclaimer.md)*<br>
+
+---
 
 ## 🤝 Suggestions and Communication
 
-You are welcome to contribute to the community. If you have any questions or suggestions, submit them to [Issues](https://gitcode.com/Ascend/msmodelslim/issues), and we will reply as soon as possible. Thank you for your support.
+Everyone is welcome to contribute to the community. If you have any questions or suggestions, please submit them to [Issues](https://gitcode.com/Ascend/msmodelslim/issues), and we will respond as soon as possible. Thank you for your support.
 
-|                                                                         Instant Interaction (WeChat Group)                                                                          |                                                                               Official News (Official Account)                                                                                | In-depth Support (Assistant/Forum)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-|:----------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|                                                                         Real-time Interaction (WeChat Group)                                                                          |                                                                               Official Updates (Official Account)                                                                                | In-depth Support (Assistant/Forum)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+|:----------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | <img src="https://raw.gitcode.com/Ascend/docs/files/master/common/Writing_Template/figures/qr_code_wechat_work.png" width="120"><br><sub>*Scan the QR code to join the technical exchange group*</sub> | <img src="https://raw.gitcode.com/Ascend/docs/files/master/common/Writing_Template/figures/qr_code_wechat_official_account.png" width="120"><br><sub>*Scan the QR code to follow the official account*</sub> | Scan the QR code to join the group and follow the official account for the fastest communication platform for MindStudio users and developers:<br> **Quick Questions:** Discuss technical issues with community members in real time<br>**Stay Updated:** Get version release and feature update notifications as soon as possible<br> **Experience Sharing:** Exchange best practices and hands-on insights with developers  <br> <br> **More Support Channels**:👉 Ascend Assistant: [![WeChat](https://img.shields.io/badge/WeChat-07C160?style=flat-square&logo=wechat&logoColor=white)](https://gitcode.com/Ascend/msit/blob/master/docs/zh/figures/readme/xiaozhushou.png) 👉 Ascend Forum: [![Website](https://img.shields.io/badge/Website-%231e37ff?style=flat-square&logo=RSS&logoColor=white)](https://www.hiascend.com/forum/) |
+
+---
 
 ## 🙏 Acknowledgments
 
@@ -173,4 +176,4 @@ This tool is jointly contributed by the following departments of Huawei:<br>
 🔹 Ascend Computing Technology Development Department<br>
 🔹 2012 Laboratories<br>
 
-Thanks to every PR from the community. Contributions are welcome!
+Thanks for every PR from the community. Contributions are welcome!
