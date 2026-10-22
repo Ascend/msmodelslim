@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-KVCache-PerChannel 量化是对注意力机制缓存的 K/V 张量做 [INT8](../../quantization_basic/term_int8.md) per-channel 量化。KVCache 是历史 token 的 Key/Value 投影跨时间步缓存下来的**特殊激活**，显存随序列长度线性增长，是长上下文推理的主要显存瓶颈；量化 K/V 使缓存显存减半。它是[KVCache 量化](README.md)类别当前唯一的模式，模式名中PerChannel表示按隐藏维度（通道）共享量化参数。
+KVCache-PerChannel 量化是对注意力机制缓存的 K/V 张量做 [INT8](../../dtype_ops/term_int8.md) per-channel 量化。KVCache 是历史 token 的 Key/Value 投影跨时间步缓存下来的**特殊激活**，显存随序列长度线性增长，是长上下文推理的主要显存瓶颈；量化 K/V 使缓存显存减半。它是[KVCache 量化](README.md)类别当前唯一的模式，模式名中PerChannel表示按隐藏维度（通道）共享量化参数。
 
 ---
 

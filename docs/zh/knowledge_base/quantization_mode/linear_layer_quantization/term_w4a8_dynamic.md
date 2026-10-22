@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-W4A8 动态量化是权重压到 [INT4](../../quantization_basic/term_int4.md)、激活保持 [INT8](../../quantization_basic/term_int8.md) 的**混合位宽**线性层方案，激活量化参数逐 token 在线计算。它在压缩与精度之间取折中：权重是每 token 都要整体读取的静态数据，压到 4bit 把权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4；激活是量化误差最敏感的一方，保留 8bit 分辨率并逐 token 动态量化，是权重使劲压、激活保精度的典型配置。
+W4A8 动态量化是权重压到 [INT4](../../dtype_ops/term_int4.md)、激活保持 [INT8](../../dtype_ops/term_int8.md) 的**混合位宽**线性层方案，激活量化参数逐 token 在线计算。它在压缩与精度之间取折中：权重是每 token 都要整体读取的静态数据，压到 4bit 把权重访存降至 [FP16/BF16](../../dtype_ops/term_fp16_bf16.md) 的 1/4；激活是量化误差最敏感的一方，保留 8bit 分辨率并逐 token 动态量化，是权重使劲压、激活保精度的典型配置。
 
 ---
 
@@ -18,7 +18,7 @@ W4A8 动态量化是权重压到 [INT4](../../quantization_basic/term_int4.md)�
 | 维度 | 取值 | 说明 |
 |------|------|------|
 | 量化对象 | 权重 W、激活 A | 线性层矩阵乘两侧的张量 |
-| 位宽 | W 4bit，A 8bit | 混合位宽，权重访存降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4、激活降至 1/2 |
+| 位宽 | W 4bit，A 8bit | 混合位宽，权重访存降至 [FP16/BF16](../../dtype_ops/term_fp16_bf16.md) 的 1/4、激活降至 1/2 |
 | 数据类型 | 权重 INT4；激活 INT8 | 整数格式，权重以 INT8 容器打包存储（2个 INT4 装入 1字节） |
 | 参数获取方式 | 激活动态 / 权重静态 | 激活逐 token 在线求 min/max 并计算 scale；权重 scale 在量化阶段固化 |
 | 量化粒度 | 权重 per-channel；激活 per-token | 权重逐输出通道共享 scale；激活逐 token 共享 scale |

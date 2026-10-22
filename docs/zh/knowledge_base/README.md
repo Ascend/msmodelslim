@@ -4,7 +4,7 @@
 |--------|------|
 | `model` | 《[大模型支持矩阵](model/README.md)》 |
 | `quantization_algorithms` | 《[量化算法](quantization_algorithms/README.md)》 |
-| `quantization_basic` | 《[量化基础](quantization_basic/README.md)》 |
+| `dtype_ops` | 《[量化数据格式](dtype_ops/README.md)》 |
 | `quantization_mode` | 《[量化模式](quantization_mode/README.md)》 |
 | `tuning_strategies` | 《[调优策略](tuning_strategies/README.md)》 |
 | `quantization_format` | 《[量化格式](quantization_format/README.md)》 |

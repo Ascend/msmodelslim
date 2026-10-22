@@ -9,7 +9,7 @@
 
 ## 1. 概述
 
-FA MXFP4 动态量化是对送入 Flash Attention 的 Q/K/V 激活统一沿 head_dim 按 32 元素分块、块级共享 E8M0 指数做 [MXFP4](../../quantization_basic/term_mxfp.md) 动态量化的整体组合模式。量化参数在线计算、免校准，块级共享指数保留浮点动态范围。它比 per-token 粒度更细（能捕捉 head_dim 内部分布差异），是 FA 量化中“带宽、计算收益最大”的一档。
+FA MXFP4 动态量化是对送入 Flash Attention 的 Q/K/V 激活统一沿 head_dim 按 32 元素分块、块级共享 E8M0 指数做 [MXFP4](../../dtype_ops/term_mxfp4.md) 动态量化的整体组合模式。量化参数在线计算、免校准，块级共享指数保留浮点动态范围。它比 per-token 粒度更细（能捕捉 head_dim 内部分布差异），是 FA 量化中“带宽、计算收益最大”的一档。
 
 ---
 

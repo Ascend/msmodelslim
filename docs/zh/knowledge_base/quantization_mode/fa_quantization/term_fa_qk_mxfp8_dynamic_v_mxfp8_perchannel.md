@@ -9,7 +9,7 @@
 
 ## 1. 概述
 
-FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化是混合整体模式：Q/K 分支沿 head_dim 按 32 元素分块、块级共享 E8M0 指数做 [MXFP8](../../quantization_basic/term_mxfp.md) 动态量化，V 分支沿 `(head, dim)` 通道共享 E8M0 指数做 MXFP8 per-channel 静态量化（见 [FA 量化](README.md)）。该模式以 MXFP8 承接 Q/K/V 三分支的量化：Q/K 动态免校准，V 静态按通道离线校准；K/V 承接缓存压缩（[KVCache 量化](../kv_cache_quantization/README.md)），Q 使能低精度注意力矩阵运算。
+FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化是混合整体模式：Q/K 分支沿 head_dim 按 32 元素分块、块级共享 E8M0 指数做 [MXFP8](../../dtype_ops/term_mxfp8.md) 动态量化，V 分支沿 `(head, dim)` 通道共享 E8M0 指数做 MXFP8 per-channel 静态量化（见 [FA 量化](README.md)）。该模式以 MXFP8 承接 Q/K/V 三分支的量化：Q/K 动态免校准，V 静态按通道离线校准；K/V 承接缓存压缩（[KVCache 量化](../kv_cache_quantization/README.md)），Q 使能低精度注意力矩阵运算。
 
 ---
 

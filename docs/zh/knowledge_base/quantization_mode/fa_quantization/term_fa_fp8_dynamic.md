@@ -9,7 +9,7 @@
 
 ## 1. 概述
 
-FA FP8 动态量化是对送入 Flash Attention 的 Q/K/V 激活统一按 token 逐行动态量化到 [FP8（E4M3）](../../quantization_basic/term_fp8.md) 的整体组合模式。量化参数在线计算、免校准，每个 token 的激活分辨率贴合自身数值范围。它是多模态生成、长序列解码等场景中免校准注意力量化的常用模式，K/V 承接缓存压缩（[KVCache 量化](../kv_cache_quantization/README.md)），Q 使能低精度矩阵运算。
+FA FP8 动态量化是对送入 Flash Attention 的 Q/K/V 激活统一按 token 逐行动态量化到 [FP8（E4M3）](../../dtype_ops/term_fp8.md) 的整体组合模式。量化参数在线计算、免校准，每个 token 的激活分辨率贴合自身数值范围。它是多模态生成、长序列解码等场景中免校准注意力量化的常用模式，K/V 承接缓存压缩（[KVCache 量化](../kv_cache_quantization/README.md)），Q 使能低精度矩阵运算。
 
 ---
 

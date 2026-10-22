@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-W4A8 MX 动态量化是把 W4A8 位宽搭配换成 MX 格式：权重用 [MXFP4](../../quantization_basic/term_mxfp.md)（1符号 + 2指数 + 1尾数）拿 4bit 压缩、激活用 [MXFP8](../../quantization_basic/term_mxfp.md)（E4M3）保8bit精度，两侧都按 32元素块共享 E8M0 指数。相比 [INT4](../../quantization_basic/term_int4.md)/[INT8](../../quantization_basic/term_int8.md) 组合，MX 浮点格式对离群值更耐受；相比全 4bit 方案，激活保持 8bit 显著降低精度风险，是权重极致压缩 + 激活保精度的 MX 版折中。
+W4A8 MX 动态量化是把 W4A8 位宽搭配换成 MX 格式：权重用 [MXFP4](../../dtype_ops/term_mxfp4.md)（1符号 + 2指数 + 1尾数）拿 4bit 压缩、激活用 [MXFP8](../../dtype_ops/term_mxfp8.md)（E4M3）保8bit精度，两侧都按 32元素块共享 E8M0 指数。相比 [INT4](../../dtype_ops/term_int4.md)/[INT8](../../dtype_ops/term_int8.md) 组合，MX 浮点格式对离群值更耐受；相比全 4bit 方案，激活保持 8bit 显著降低精度风险，是权重极致压缩 + 激活保精度的 MX 版折中。
 
 ---
 

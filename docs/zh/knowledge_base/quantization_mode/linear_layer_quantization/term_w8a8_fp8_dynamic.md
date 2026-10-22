@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-W8A8 FP8 动态量化是**[FP8（E4M3）](../../quantization_basic/term_fp8.md) 版本**的 W8A8 动态量化：权重与激活都以 [FP8（E4M3）](../../quantization_basic/term_fp8.md) 存储，激活量化参数逐 token 在线计算。与 [INT8](../../quantization_basic/term_int8.md) 相比，E4M3 的 4bit 指数保留了浮点动态范围，对数值跨度大、离群值多的激活更耐受，无需先做离群值抑制；位宽同为 8bit，访存收益与 [INT8](../../quantization_basic/term_int8.md) 一致。代价是必须依赖支持 [FP8](../../quantization_basic/term_fp8.md) [GEMM](../term_gemm.md) 的硬件算子。模式名按家族 `W{位宽}A{位宽} + 数据类型` 记法，`W8A8 FP8` 表示 W 与 A 均为 8bit、数据类型为 [FP8（E4M3）](../../quantization_basic/term_fp8.md)。
+W8A8 FP8 动态量化是**[FP8（E4M3）](../../dtype_ops/term_fp8.md) 版本**的 W8A8 动态量化：权重与激活都以 [FP8（E4M3）](../../dtype_ops/term_fp8.md) 存储，激活量化参数逐 token 在线计算。与 [INT8](../../dtype_ops/term_int8.md) 相比，E4M3 的 4bit 指数保留了浮点动态范围，对数值跨度大、离群值多的激活更耐受，无需先做离群值抑制；位宽同为 8bit，访存收益与 [INT8](../../dtype_ops/term_int8.md) 一致。代价是必须依赖支持 [FP8](../../dtype_ops/term_fp8.md) [GEMM](../term_gemm.md) 的硬件算子。模式名按家族 `W{位宽}A{位宽} + 数据类型` 记法，`W8A8 FP8` 表示 W 与 A 均为 8bit、数据类型为 [FP8（E4M3）](../../dtype_ops/term_fp8.md)。
 
 ---
 

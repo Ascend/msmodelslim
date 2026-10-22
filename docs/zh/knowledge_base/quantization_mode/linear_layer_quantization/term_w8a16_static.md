@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-W8A16 静态量化是只把线性层的权重压到 [INT8](../../quantization_basic/term_int8.md)，激活保持 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 不量化。它面向激活精度敏感、不宜量化激活的场景。权重是每 token 都要整体读取的静态数据，压到 [INT8](../../quantization_basic/term_int8.md) 使权重访存减半；激活不量化则完全规避激活量化误差，是精度最稳的线性层方案之一。代价是激活不量化意味着矩阵乘需把 [INT8](../../quantization_basic/term_int8.md) 权重反量化回浮点执行，没有[整数 GEMM](../term_gemm.md) 加速。
+W8A16 静态量化是只把线性层的权重压到 [INT8](../../dtype_ops/term_int8.md)，激活保持 [FP16/BF16](../../dtype_ops/term_fp16_bf16.md) 不量化。它面向激活精度敏感、不宜量化激活的场景。权重是每 token 都要整体读取的静态数据，压到 [INT8](../../dtype_ops/term_int8.md) 使权重访存减半；激活不量化则完全规避激活量化误差，是精度最稳的线性层方案之一。代价是激活不量化意味着矩阵乘需把 [INT8](../../dtype_ops/term_int8.md) 权重反量化回浮点执行，没有[整数 GEMM](../term_gemm.md) 加速。
 
 ---
 
@@ -37,7 +37,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 ### 2.3 与其他模式的关系
 
 - **与 [W8A8 静态量化](term_w8a8_static.md)（激活是否量化不同）**
-  - 本模式：优势是激活保持 `FP16`、零量化误差，是精度最稳的基线之一，适合激活存在离群值或对量化敏感的层；劣势是激活不量化，矩阵乘需把 [INT8](../../quantization_basic/term_int8.md) 权重反量化回浮点执行，无整数 GEMM 带来的计算加速，性能较差，整体压缩低于 `W8A8`。
+  - 本模式：优势是激活保持 `FP16`、零量化误差，是精度最稳的基线之一，适合激活存在离群值或对量化敏感的层；劣势是激活不量化，矩阵乘需把 [INT8](../../dtype_ops/term_int8.md) 权重反量化回浮点执行，无整数 GEMM 带来的计算加速，性能较差，整体压缩低于 `W8A8`。
   - `W8A8`：优势是激活亦量化为 INT8、可走整数 GEMM，计算吞吐更高、压缩更彻底；劣势是激活引入量化误差。
 
 - **与 [W4A8 动态量化](term_w4a8_dynamic.md)（位宽搭配不同）**

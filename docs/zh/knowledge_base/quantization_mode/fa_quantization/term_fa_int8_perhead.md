@@ -9,7 +9,7 @@
 
 ## 1. 概述
 
-FA INT8 PerHead 量化是对送入 Flash Attention 的 Q/K/V 激活统一按注意力头（per-head）静态量化到 [INT8](../../quantization_basic/term_int8.md) 的整体组合模式，是 FA 量化中三分支统一 per-head 静态的典型模式。它在量化 K/V（[KVCache 量化](../kv_cache_quantization/README.md)，压缩缓存显存）的基础上进一步量化 Q，使注意力得分计算（Q 与 K 的点乘）与加权求和（softmax 后与 V 点乘）的参与张量均为低比特，从而在继承 KV 显存收益之外使能低精度矩阵运算。
+FA INT8 PerHead 量化是对送入 Flash Attention 的 Q/K/V 激活统一按注意力头（per-head）静态量化到 [INT8](../../dtype_ops/term_int8.md) 的整体组合模式，是 FA 量化中三分支统一 per-head 静态的典型模式。它在量化 K/V（[KVCache 量化](../kv_cache_quantization/README.md)，压缩缓存显存）的基础上进一步量化 Q，使注意力得分计算（Q 与 K 的点乘）与加权求和（softmax 后与 V 点乘）的参与张量均为低比特，从而在继承 KV 显存收益之外使能低精度矩阵运算。
 
 ---
 

@@ -9,7 +9,7 @@
 
 ## 1. 概述
 
-FA INT8 动态量化是对送入 Flash Attention 的 Q/K/V 激活统一按 token 逐行动态量化到 [INT8](../../quantization_basic/term_int8.md) 的整体组合模式。量化参数在线计算、免校准，每个 token 的激活分辨率贴合自身数值范围。它是 FA 量化中"动态免校准"一档的 INT8 模式，K/V 承接缓存压缩（[KVCache 量化](../kv_cache_quantization/README.md)），Q 一并量化后使注意力得分计算可走低精度矩阵运算。
+FA INT8 动态量化是对送入 Flash Attention 的 Q/K/V 激活统一按 token 逐行动态量化到 [INT8](../../dtype_ops/term_int8.md) 的整体组合模式。量化参数在线计算、免校准，每个 token 的激活分辨率贴合自身数值范围。它是 FA 量化中"动态免校准"一档的 INT8 模式，K/V 承接缓存压缩（[KVCache 量化](../kv_cache_quantization/README.md)），Q 一并量化后使注意力得分计算可走低精度矩阵运算。
 
 ---
 

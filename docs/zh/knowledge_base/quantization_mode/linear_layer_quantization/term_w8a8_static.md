@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-W8A8 静态量化是对线性层的权重与激活都做 [INT8](../../quantization_basic/term_int8.md) 静态量化。模式名按[量化模式](../README.md)的命名法则解码：W8A8 表示权重（W）与激活（A）均为 8bit（[INT8](../../quantization_basic/term_int8.md)）；静态指量化参数（scale/offset）在离线校准阶段确定并固化，推理时直接使用、零在线开销。它是[线性层量化](README.md)中最基础、应用最广的线性层量化模式。
+W8A8 静态量化是对线性层的权重与激活都做 [INT8](../../dtype_ops/term_int8.md) 静态量化。模式名按[量化模式](../README.md)的命名法则解码：W8A8 表示权重（W）与激活（A）均为 8bit（[INT8](../../dtype_ops/term_int8.md)）；静态指量化参数（scale/offset）在离线校准阶段确定并固化，推理时直接使用、零在线开销。它是[线性层量化](README.md)中最基础、应用最广的线性层量化模式。
 
 ---
 

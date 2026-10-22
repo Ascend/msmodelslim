@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-W8A8 MX 动态量化是**[MXFP8](../../quantization_basic/term_mxfp.md) 版本**的 W8A8：权重与激活都按 32元素分块，每块共享一个 8bit 指数（E8M0），元素为 8bit 浮点（E4M3）。块级共享指数把缩放参数开销从每元素一份摊薄到每32元素一份，同时保留浮点动态范围——相比 [INT8](../../quantization_basic/term_int8.md) 均匀分档对离群值更耐受，相比普通 [FP8（E4M3）](../../quantization_basic/term_fp8.md) 每元素 scale 参数开销更低。
+W8A8 MX 动态量化是**[MXFP8](../../dtype_ops/term_mxfp8.md) 版本**的 W8A8：权重与激活都按 32元素分块，每块共享一个 8bit 指数（E8M0），元素为 8bit 浮点（E4M3）。块级共享指数把缩放参数开销从每元素一份摊薄到每32元素一份，同时保留浮点动态范围——相比 [INT8](../../dtype_ops/term_int8.md) 均匀分档对离群值更耐受，相比普通 [FP8（E4M3）](../../dtype_ops/term_fp8.md) 每元素 scale 参数开销更低。
 
 ---
 

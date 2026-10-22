@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-W4A4 MX 动态量化是双 4bit 的 MX 超低位宽方案：权重与激活都按 32元素块共享 E8M0 指数、元素为 [MXFP4](../../quantization_basic/term_mxfp.md)。它在 4bit 位宽下用块级共享指数保留浮点动态范围，权重与激活访存都降至 [FP16/BF16](../../quantization_basic/term_fp16_bf16.md) 的 1/4，是压缩比最高的一类线性层方案；对离群值比 [INT4](../../quantization_basic/term_int4.md) 均匀分档更耐受，但激活 4bit 的固有精度风险依然存在。
+W4A4 MX 动态量化是双 4bit 的 MX 超低位宽方案：权重与激活都按 32元素块共享 E8M0 指数、元素为 [MXFP4](../../dtype_ops/term_mxfp4.md)。它在 4bit 位宽下用块级共享指数保留浮点动态范围，权重与激活访存都降至 [FP16/BF16](../../dtype_ops/term_fp16_bf16.md) 的 1/4，是压缩比最高的一类线性层方案；对离群值比 [INT4](../../dtype_ops/term_int4.md) 均匀分档更耐受，但激活 4bit 的固有精度风险依然存在。
 
 ---
 
@@ -34,7 +34,7 @@ $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \ma
 ### 2.3 与其他模式的关系
 
 - **与 [W4A4 动态量化](term_w4a4_dynamic.md)（同为 W4A4，数据类型不同）**
-  - 本模式（MXFP4）：优势是块级共享指数保留浮点动态范围、对离群值比 [INT4](../../quantization_basic/term_int4.md) 均匀分档更耐受；劣势是依赖硬件 MX 支持、最后一维（如 in_dim / head_dim）长度须为 32 的倍数。
+  - 本模式（MXFP4）：优势是块级共享指数保留浮点动态范围、对离群值比 [INT4](../../dtype_ops/term_int4.md) 均匀分档更耐受；劣势是依赖硬件 MX 支持、最后一维（如 in_dim / head_dim）长度须为 32 的倍数。
   - INT4：优势是整数 GEMM 生态成熟、实现简单；劣势是均匀分档对离群值敏感，需更细粒度与离群抑制兜底。
 
 - **与 [W4A4 MX 双 Scale 量化](term_w4a4_mx_dualscale.md)（同为 MXFP4，缩放层级不同）**

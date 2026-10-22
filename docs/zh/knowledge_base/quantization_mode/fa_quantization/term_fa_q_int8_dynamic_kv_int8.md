@@ -9,7 +9,7 @@
 
 ## 1. 概述
 
-FA Q-INT8 动态 K/V-INT8 静态量化是混合整体模式：Q 分支按 token 动态量化、K/V 分支按注意力头静态量化到 [INT8](../../quantization_basic/term_int8.md)（见 [FA 量化](README.md)）。Q 逐 token 在线算 scale、免校准，保证得分计算输入贴合实际分布；K/V 走 per-head 静态（承接缓存压缩，[KVCache 量化](../kv_cache_quantization/README.md)）。相比三分支统一动态，K/V 静态化使缓存参数离线确定、降低在线开销；相比三分支统一静态，Q 动态化免去对 Q 的校准依赖。
+FA Q-INT8 动态 K/V-INT8 静态量化是混合整体模式：Q 分支按 token 动态量化、K/V 分支按注意力头静态量化到 [INT8](../../dtype_ops/term_int8.md)（见 [FA 量化](README.md)）。Q 逐 token 在线算 scale、免校准，保证得分计算输入贴合实际分布；K/V 走 per-head 静态（承接缓存压缩，[KVCache 量化](../kv_cache_quantization/README.md)）。相比三分支统一动态，K/V 静态化使缓存参数离线确定、降低在线开销；相比三分支统一静态，Q 动态化免去对 Q 的校准依赖。
 
 ---
 
