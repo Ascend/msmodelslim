@@ -3,7 +3,7 @@
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
-Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+Copyright (c) 2025 Huawei Technologies Co.,Ltd.
 
 MindStudio is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
@@ -51,6 +51,7 @@ from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInt
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.graph import AdapterConfig, MappingConfig
 from msmodelslim.model.common.layer_wise_forward import generated_decoder_layer_visit_func
+from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.model.interface_hub import (
     IterSmoothInterface,
     FlexSmoothQuantInterface,
@@ -108,15 +109,13 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
     IterSmoothInterface,
     FlexSmoothQuantInterface,
     FA3QuantAdapterInterface,
+    QuaRotInterface,
     LayerWiseOffloadOptionalInterface,
     AscendV1SaveInterface,
     FakeQuantInferenceInterface,
 ):
     """
-    Dual-pipeline adapter for Qwen3.5 Dense / MoE multimodal models.
-
-    - V1 (W8A8): layer-wise loading, FA3 / AscendV1 save / offload / fake-quant
-    - V0 (W8A8S): full-model load + Calibrator is_lowbit sparse path
+    V1 Framework adapter for Qwen3-VL-MoE models.
 
     Key features:
     - Layer-wise loading for text decoder
@@ -240,6 +239,9 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
                     'pixel_values_videos',
                     'image_grid_thw',
                     'video_grid_thw',
+                    # Required by Qwen3_5Model.get_rope_index (text=0 / image=1 / video=2 grouping).
+                    # Returned by the processor next to input_ids.
+                    'mm_token_type_ids',
                     'cache_position',
                     'logits_to_keep',
                 ],
@@ -533,6 +535,42 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
         get_logger().info("Processing text decoder layers...")
         yield from generated_decoder_layer_visit_func(model, transformer_blocks=self.generate_decoder_layer(model))
 
+    @staticmethod
+    def _resolve_mm_token_type_ids(model: nn.Module, sample: Dict[str, Any], input_ids: torch.Tensor) -> torch.Tensor:
+        """Return ``mm_token_type_ids`` (text=0 / image=1 / video=2) for ``get_rope_index``.
+
+        transformers>=5.5 needs it to group the modality spans; the pinned transformers==5.2.0 derives the
+        modality from ``input_ids`` itself and ignores the kwarg. The processor emits the tensor together
+        with ``input_ids``; if it is absent it is derived from the placeholder tokens instead.
+        """
+        mm_token_type_ids = sample.get('mm_token_type_ids')
+        if mm_token_type_ids is not None:
+            return mm_token_type_ids
+
+        get_logger().warning("mm_token_type_ids missing from processor outputs; deriving it from input_ids")
+        mm_token_type_ids = torch.zeros_like(input_ids)
+        mm_token_type_ids[input_ids == model.config.image_token_id] = 1
+        mm_token_type_ids[input_ids == model.config.video_token_id] = 2
+        return mm_token_type_ids
+
+    def _decoder_layer_type(self, layer: nn.Module, name: str) -> Optional[str]:
+        """Return the token-mixer type of a decoder layer (``linear_attention`` / ``full_attention``).
+
+        transformers<=5.5.x exposes it as ``Qwen3_5DecoderLayer.layer_type``; newer versions use the
+        same attribute under the name ``block_type``. Falls back to ``config.layer_types[idx]``
+        parsed from the layer name (``model.language_model.layers.<idx>``).
+        """
+        for attr in ('layer_type', 'block_type'):
+            layer_type = getattr(layer, attr, None)
+            if layer_type:
+                return layer_type
+
+        index = name.rsplit('.', 1)[-1]
+        layer_types = getattr(self.config.text_config, 'layer_types', None)
+        if index.isdigit() and layer_types and int(index) < len(layer_types):
+            return layer_types[int(index)]
+        return None
+
     def generate_model_forward(self, model: nn.Module, inputs: Any) -> Generator[ProcessRequest, Any, None]:
         """
         Generate model forward pipeline for calibration.
@@ -585,15 +623,22 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
         # 3. Prepare inputs for text decoder
         cache_position = torch.arange(0, inputs_embeds.shape[1], device=inputs_embeds.device)
 
-        # Get position ids
+        # Get position ids (mRoPE)
+        # NOTE: transformers>=5.5 requires `mm_token_type_ids` (groups text/image/video spans); the pinned
+        # transformers==5.2.0 derives the modality from input_ids and absorbs the kwarg through **kwargs.
+        mm_token_type_ids = self._resolve_mm_token_type_ids(model, sample, input_ids)
         position_ids, rope_deltas = model.model.get_rope_index(
-            input_ids=input_ids, image_grid_thw=image_grid_thw, attention_mask=attention_mask
+            input_ids=input_ids,
+            mm_token_type_ids=mm_token_type_ids,
+            image_grid_thw=image_grid_thw,
+            attention_mask=attention_mask,
         )
 
         # Expand position_ids if needed (3D format for mROPE)
         if position_ids.ndim == 2:
             position_ids = position_ids[None, ...].expand(3, position_ids.shape[0], -1)
 
+        # Mirrors Qwen3_5TextModel.forward
         if position_ids.ndim == 3 and position_ids.shape[0] == 4:
             text_position_ids = position_ids[0]
             position_ids = position_ids[1:]
@@ -601,17 +646,21 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
             text_position_ids = position_ids[0]
 
         # CRITICAL: Convert 2D attention_mask to 4D causal mask
-        # This is what Qwen3VLMoeTextModel.forward does internally
+        # This is what Qwen3_5TextModel.forward does internally
+        # NOTE: keep the kwargs `inputs_embeds` (5.2.0 deprecates `input_embeds`, removed in 5.6) and
+        # `cache_position` (required positional argument of create_causal_mask in the pinned 5.2.0).
         causal_mask = create_causal_mask(
             config=model.config.text_config,
-            input_embeds=inputs_embeds,
+            inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
             cache_position=cache_position,
             past_key_values=None,
             position_ids=text_position_ids,
         )
 
-        # Align with text model behavior for linear-attention layers.
+        # Align with Qwen3_5TextModel._update_linear_attn_mask(attention_mask, cache_position): the
+        # linear-attention layers only need the raw 2D padding mask, and no mask at all when every token
+        # is attended to (or when continuing from a cache).
         linear_attn_mask = attention_mask
         if cache_position[0] > 0 or (attention_mask is not None and torch.all(attention_mask == 1)):
             linear_attn_mask = None
@@ -635,9 +684,11 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
                 hidden_states = yield ProcessRequest(name=name, module=layer, args=(hidden_states,), kwargs=mtp_kwargs)
             else:
                 layer_mask = (
-                    linear_attn_mask if getattr(layer, "layer_type", None) == "linear_attention" else causal_mask
+                    linear_attn_mask if self._decoder_layer_type(layer, name) == "linear_attention" else causal_mask
                 )
                 # Yield layer result
+                # kwargs mirror Qwen3_5TextModel.forward (transformers==5.2.0 passes both the 3D `position_ids`
+                # and `cache_position` down to the decoder layer; both are top-level params there).
                 hidden_states = yield ProcessRequest(
                     name=name,
                     module=layer,
@@ -1078,9 +1129,10 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
         mtp_cache_position = torch.arange(0, seq_len, device=input_embeds_mtp.device)
         text_position_ids = mtp_position_ids[0]
         attention_mask = inputs.get('attention_mask').to('npu')
+        # `cache_position` is a required positional argument of create_causal_mask in transformers==5.2.0
         causal_mask = create_causal_mask(
             config=self.config.text_config,
-            input_embeds=input_embeds_mtp,
+            inputs_embeds=input_embeds_mtp,
             attention_mask=attention_mask,
             cache_position=mtp_cache_position,
             past_key_values=None,
@@ -1095,3 +1147,264 @@ class Qwen3_5ModelAdapter(  # pylint: disable=too-many-ancestors
             'past_key_values': None,
         }
         return pre_hidden_states, kwargs
+
+    def get_ln_fuse_map(self):
+        """
+        Get LayerNorm-Linear fusion mapping for QuaRot.
+
+        For Qwen3.5-MoE, LayerNorm (RMSNorm) fusion is applied to text decoder layers:
+        - input_layernorm → QKV projections
+        - post_attention_layernorm → MLP/MoE gate_proj, up_proj, and router
+        - Final norm → lm_head
+
+        Returns:
+            Tuple of (pre_run_fused_ln, fused_map)
+        """
+        return {}, _qwen3_5_moe_get_ln_fuse_map(self.config.text_config)
+
+    def get_bake_names(self):
+        """
+        Get bake mean names for QuaRot.
+
+        Qwen3.5-MoE uses RMSNorm, so no bake mean is needed.
+
+        Returns:
+            Tuple of (pre_run_bake_names, bake_names)
+        """
+        return [], []
+
+    def get_rotate_map(self, block_size):
+        """
+        Get rotation mapping for QuaRot on Qwen3.5-MoE.
+
+        Args:
+            block_size: Block size for Hadamard rotation
+
+        Returns:
+            Tuple of (pre_run_pairs, rotate_pairs)
+        """
+        pre_run, rot_pairs = _qwen3_5_moe_get_rotate_map(self.config, block_size)
+        return [pre_run], list(rot_pairs.values())
+
+
+def _qwen3_5_moe_get_ln_fuse_map(config):
+    """
+    Get LayerNorm-Linear fusion mapping for Qwen3.5 text decoder.
+
+    Handles mixed attention types (linear_attn + full attention), MoE experts (for MoE models),
+    standard MLP (for dense models), and MTP.
+
+    Args:
+        config: Text config (config.text_config)
+
+    Returns:
+        Dict mapping LayerNorm names to Linear layer names
+    """
+    ln_linear_map = {}
+
+    full_attn_interval = getattr(config, 'full_attention_interval', None)
+    is_moe = hasattr(config, 'num_experts') and getattr(config, 'num_experts', 0) > 0
+
+    for layer_idx in range(config.num_hidden_layers):
+        is_full_attn = full_attn_interval and (layer_idx % full_attn_interval == full_attn_interval - 1)
+
+        if is_full_attn:
+            ln_linear_map[f"model.language_model.layers.{layer_idx}.input_layernorm"] = [
+                f"model.language_model.layers.{layer_idx}.self_attn.q_proj",
+                f"model.language_model.layers.{layer_idx}.self_attn.k_proj",
+                f"model.language_model.layers.{layer_idx}.self_attn.v_proj",
+            ]
+        else:
+            ln_linear_map[f"model.language_model.layers.{layer_idx}.input_layernorm"] = [
+                f"model.language_model.layers.{layer_idx}.linear_attn.in_proj_a",
+                f"model.language_model.layers.{layer_idx}.linear_attn.in_proj_b",
+                f"model.language_model.layers.{layer_idx}.linear_attn.in_proj_qkv",
+                f"model.language_model.layers.{layer_idx}.linear_attn.in_proj_z",
+            ]
+
+        if is_moe:
+            routed_experts = [
+                f"model.language_model.layers.{layer_idx}.mlp.experts.{i}.{proj}"
+                for proj in ["gate_proj", "up_proj"]
+                for i in range(config.num_experts)
+            ]
+            shared_experts = [
+                f"model.language_model.layers.{layer_idx}.mlp.shared_expert.{proj}" for proj in ["gate_proj", "up_proj"]
+            ]
+            expert_gate = [f"model.language_model.layers.{layer_idx}.mlp.gate"]
+            shared_expert_gate = [f"model.language_model.layers.{layer_idx}.mlp.shared_expert_gate"]
+
+            ln_linear_map[f"model.language_model.layers.{layer_idx}.post_attention_layernorm"] = (
+                routed_experts + shared_experts + expert_gate + shared_expert_gate
+            )
+        else:
+            ln_linear_map[f"model.language_model.layers.{layer_idx}.post_attention_layernorm"] = [
+                f"model.language_model.layers.{layer_idx}.mlp.gate_proj",
+                f"model.language_model.layers.{layer_idx}.mlp.up_proj",
+            ]
+
+    ln_linear_map["model.language_model.norm"] = ['lm_head']
+
+    mtp_num_layers = getattr(config, 'mtp_num_hidden_layers', 0)
+    if mtp_num_layers > 0:
+        ln_linear_map[("mtp.pre_fc_norm_embedding", "mtp.pre_fc_norm_hidden")] = ["mtp.fc"]
+
+        for mtp_layer_idx in range(mtp_num_layers):
+            ln_linear_map[f"mtp.layers.{mtp_layer_idx}.input_layernorm"] = [
+                f"mtp.layers.{mtp_layer_idx}.self_attn.q_proj",
+                f"mtp.layers.{mtp_layer_idx}.self_attn.k_proj",
+                f"mtp.layers.{mtp_layer_idx}.self_attn.v_proj",
+            ]
+
+            if is_moe:
+                mtp_routed_experts = [
+                    f"mtp.layers.{mtp_layer_idx}.mlp.experts.{i}.{proj}"
+                    for proj in ["gate_proj", "up_proj"]
+                    for i in range(config.num_experts)
+                ]
+                mtp_shared_experts = [
+                    f"mtp.layers.{mtp_layer_idx}.mlp.shared_expert.{proj}" for proj in ["gate_proj", "up_proj"]
+                ]
+                mtp_expert_gate = [f"mtp.layers.{mtp_layer_idx}.mlp.gate"]
+
+                ln_linear_map[f"mtp.layers.{mtp_layer_idx}.post_attention_layernorm"] = (
+                    mtp_routed_experts + mtp_shared_experts + mtp_expert_gate
+                )
+            else:
+                ln_linear_map[f"mtp.layers.{mtp_layer_idx}.post_attention_layernorm"] = [
+                    f"mtp.layers.{mtp_layer_idx}.mlp.gate_proj",
+                    f"mtp.layers.{mtp_layer_idx}.mlp.up_proj",
+                ]
+
+    return ln_linear_map
+
+
+def _qwen3_5_moe_get_rotate_map(config, block_size):
+    """
+    Get rotation mapping for Qwen3.5 model (text decoder + visual projections + MTP).
+
+    Supports both MoE and Dense model variants.
+
+    Mathematical Framework:
+    ----------------------
+    We apply a global rotation R to the residual stream (hidden states).
+    - Text embeddings: W_new = W_old @ R (right rotation)
+    - Visual outputs: W_new = R^T @ W_old (left rotation)
+    - Text layers: Mixed attention types require careful handling
+    - MTP: Fusion layer uses block_diag for concat inputs
+
+    Special Considerations:
+    -----------------------
+    1. Mixed Attention Types:
+       - Full attention layers (every 4th layer): Standard QKV/O rotation
+       - Linear attention layers: Rotate inputs (in_proj_*) and output (out_proj)
+       - Linear attention internal ops (conv1d, norm) run in unrotated space
+
+    2. Model Variants:
+       - MoE: Routed experts (256) + shared expert + router gate
+       - Dense: Standard MLP with gate_proj, up_proj, down_proj
+
+    3. Vision Integration:
+       - Visual merger output must be rotated to match text embedding space
+
+    4. MTP (Multi-Token Prediction):
+       - FC layer receives concat([norm_embedding, norm_hidden])
+       - Use block_diag rotation for FC layer input
+       - MTP layers use full attention + MLP/MoE (similar to main model)
+
+    Args:
+        config: Full model config (Qwen3_5MoeConfig or Qwen3_5Config)
+        block_size: Block size for rotation
+
+    Returns:
+        Tuple of (pre_run, rot_pairs)
+    """
+    text_config = config.text_config
+
+    rot = QuaRotInterface.get_rotate_command(
+        size=text_config.hidden_size,
+        mode=QuaRotInterface.QuaRotMode.HADAMARD,
+        block_size=block_size,
+    )
+
+    pre_run_left = {}
+    pre_run_right = {}
+
+    pre_run_right["model.language_model.embed_tokens"] = rot
+
+    if hasattr(config, 'vision_config'):
+        pre_run_left["model.visual.merger.linear_fc2"] = rot
+
+    pre_run = QuaRotInterface.RotatePair(left_rot=pre_run_left, right_rot=pre_run_right)
+
+    rot_pairs = {}
+
+    left_rot = {}
+    right_rot = {}
+    right_rot["lm_head"] = rot
+
+    full_attn_interval = getattr(text_config, 'full_attention_interval', None)
+    is_moe = hasattr(text_config, 'num_experts') and getattr(text_config, 'num_experts', 0) > 0
+
+    for layer_idx in range(text_config.num_hidden_layers):
+        is_full_attn = full_attn_interval and (layer_idx % full_attn_interval == full_attn_interval - 1)
+
+        if is_full_attn:
+            right_rot[f"model.language_model.layers.{layer_idx}.self_attn.q_proj"] = rot
+            right_rot[f"model.language_model.layers.{layer_idx}.self_attn.k_proj"] = rot
+            right_rot[f"model.language_model.layers.{layer_idx}.self_attn.v_proj"] = rot
+            left_rot[f"model.language_model.layers.{layer_idx}.self_attn.o_proj"] = rot
+        else:
+            right_rot[f"model.language_model.layers.{layer_idx}.linear_attn.in_proj_qkv"] = rot
+            right_rot[f"model.language_model.layers.{layer_idx}.linear_attn.in_proj_z"] = rot
+            right_rot[f"model.language_model.layers.{layer_idx}.linear_attn.in_proj_b"] = rot
+            right_rot[f"model.language_model.layers.{layer_idx}.linear_attn.in_proj_a"] = rot
+            left_rot[f"model.language_model.layers.{layer_idx}.linear_attn.out_proj"] = rot
+
+        if is_moe:
+            for i in range(text_config.num_experts):
+                right_rot[f"model.language_model.layers.{layer_idx}.mlp.experts.{i}.gate_proj"] = rot
+                right_rot[f"model.language_model.layers.{layer_idx}.mlp.experts.{i}.up_proj"] = rot
+                left_rot[f"model.language_model.layers.{layer_idx}.mlp.experts.{i}.down_proj"] = rot
+
+            right_rot[f"model.language_model.layers.{layer_idx}.mlp.shared_expert.gate_proj"] = rot
+            right_rot[f"model.language_model.layers.{layer_idx}.mlp.shared_expert.up_proj"] = rot
+            right_rot[f"model.language_model.layers.{layer_idx}.mlp.shared_expert_gate"] = rot
+            left_rot[f"model.language_model.layers.{layer_idx}.mlp.shared_expert.down_proj"] = rot
+
+            right_rot[f"model.language_model.layers.{layer_idx}.mlp.gate"] = rot
+        else:
+            right_rot[f"model.language_model.layers.{layer_idx}.mlp.gate_proj"] = rot
+            right_rot[f"model.language_model.layers.{layer_idx}.mlp.up_proj"] = rot
+            left_rot[f"model.language_model.layers.{layer_idx}.mlp.down_proj"] = rot
+
+    mtp_num_layers = getattr(text_config, 'mtp_num_hidden_layers', 0)
+    if mtp_num_layers > 0:
+        right_rot["mtp.fc"] = torch.block_diag(*[rot, rot])
+        left_rot["mtp.fc"] = rot
+
+        for mtp_layer_idx in range(mtp_num_layers):
+            right_rot[f"mtp.layers.{mtp_layer_idx}.self_attn.q_proj"] = rot
+            right_rot[f"mtp.layers.{mtp_layer_idx}.self_attn.k_proj"] = rot
+            right_rot[f"mtp.layers.{mtp_layer_idx}.self_attn.v_proj"] = rot
+            left_rot[f"mtp.layers.{mtp_layer_idx}.self_attn.o_proj"] = rot
+
+            if is_moe:
+                for i in range(text_config.num_experts):
+                    right_rot[f"mtp.layers.{mtp_layer_idx}.mlp.experts.{i}.gate_proj"] = rot
+                    right_rot[f"mtp.layers.{mtp_layer_idx}.mlp.experts.{i}.up_proj"] = rot
+                    left_rot[f"mtp.layers.{mtp_layer_idx}.mlp.experts.{i}.down_proj"] = rot
+
+                right_rot[f"mtp.layers.{mtp_layer_idx}.mlp.shared_expert.gate_proj"] = rot
+                right_rot[f"mtp.layers.{mtp_layer_idx}.mlp.shared_expert.up_proj"] = rot
+                left_rot[f"mtp.layers.{mtp_layer_idx}.mlp.shared_expert.down_proj"] = rot
+
+                right_rot[f"mtp.layers.{mtp_layer_idx}.mlp.gate"] = rot
+            else:
+                right_rot[f"mtp.layers.{mtp_layer_idx}.mlp.gate_proj"] = rot
+                right_rot[f"mtp.layers.{mtp_layer_idx}.mlp.up_proj"] = rot
+                left_rot[f"mtp.layers.{mtp_layer_idx}.mlp.down_proj"] = rot
+
+    rot_pairs['rot'] = QuaRotInterface.RotatePair(left_rot=left_rot, right_rot=right_rot)
+
+    return pre_run, rot_pairs

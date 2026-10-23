@@ -1,0 +1,70 @@
+# Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+apiversion: multimodal_vlm_modelslim_v1
+metadata:
+  config_id: qwen3_8_27b_w8a8c8
+  score: 90
+  verified_tags:
+    Qwen3.8-27B:
+      - - vLLM-Ascend
+        - Ascend_950
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: False
+    kv_cache: True
+
+default_w8a8_dynamic: &default_w8a8_dynamic
+  act:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+  weight:
+    scope: "per_block"
+    dtype: "mxfp8"
+    symmetric: True
+    method: "minmax"
+
+spec:
+  process:
+    - type: "quarot"
+      block_size: 32
+    - type: "flex_smooth_quant"
+      enable_subgraph_type:
+        - "norm-linear"
+        - "linear-linear"
+        - "ov"
+        - "up-down"
+      include: ["*"]
+      exclude: []
+    - type: "linear_quant"
+      qconfig: *default_w8a8_dynamic
+      include:
+        - "*"
+    - type: "fa3_quant"
+      details:
+        fa_q:
+          dtype: "mxfp8"
+          scope: "per_block"
+          symmetric: True
+          method: "minmax"
+        fa_k:
+          dtype: "mxfp8"
+          scope: "per_block"
+          symmetric: True
+          method: "minmax"
+        fa_v:
+          dtype: "mxfp8"
+          scope: "per_channel"
+          symmetric: True
+          method: "minmax"
+      include:
+        - "*self_attn*"
+      exclude:
+        - "*linear_attn*"
+        - "mtp*"
+        - "*visual*"
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4
+  dataset: "qwen3_cot_vlm_text"
