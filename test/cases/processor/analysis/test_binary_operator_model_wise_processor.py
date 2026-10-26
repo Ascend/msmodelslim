@@ -27,7 +27,7 @@ from msmodelslim.utils.exception import UnexpectedError, UnsupportedError
 
 
 class TinyIdentity(nn.Module):
-    def forward(self, x):
+    def forward(self, x, **_kwargs):
         return x
 
 
@@ -51,7 +51,7 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
 
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
-    def test_processor_init_shouldSetEmptyState_whenConfigValid(self, mock_create_method, mock_from_config):
+    def test_processor_init_sets_empty_state_when_config_valid(self, mock_create_method, mock_from_config):
         """测试 Processor 初始化：config 合法时状态清空，并按 metrics 创建分析方法。"""
         from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
             BinaryOperatorModelWiseProcessor,
@@ -76,7 +76,7 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.get_current_context")
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
-    def test_processor_preRun_shouldRaiseUnexpectedError_whenContextMissing(
+    def test_processor_pre_run_raises_unexpected_error_when_context_missing(
         self, mock_create_method, mock_from_config, mock_get_current_context
     ):
         """测试 Processor.pre_run：上下文缺失时抛 UnexpectedError。"""
@@ -95,10 +95,117 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.get_current_context")
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
-    def test_processor_postRun_shouldRaiseUnexpectedError_whenMergedOutputsLengthInvalid(
+    def test_processor_pre_run_raises_unsupported_error_when_multi_device_not_supported(
         self, mock_create_method, mock_from_config, mock_get_current_context
     ):
-        """测试 Processor.post_run：merged_outputs 数量不足时抛 UnexpectedError。"""
+        """多卡环境且指标未声明 supports_distributed 时，pre_run fail-fast。"""
+        from msmodelslim.processor.analysis import distributed_utils
+        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
+            BinaryOperatorModelWiseProcessor,
+        )
+
+        fake_method = self._build_fake_method()
+        fake_method.supports_distributed = False
+        mock_create_method.return_value = fake_method
+        mock_from_config.return_value = MagicMock()
+        mock_get_current_context.return_value = {"layer_analysis": SimpleNamespace(debug={})}
+
+        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
+        with (
+            patch.object(distributed_utils.dist, "is_initialized", return_value=True),
+            patch.object(distributed_utils.dist, "get_world_size", return_value=2),
+        ):
+            with self.assertRaises(UnsupportedError):
+                p.pre_run()
+
+    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
+    def test_processor_lifecycle_writes_scores_to_context_when_one_block_chains(
+        self, mock_create_method, mock_from_config, mock_get_current_context
+    ):
+        """公开 lifecycle 跑通后，post_run 把当前链层分数与 quant_modules 写入 ctx。"""
+        from msmodelslim.core.base.protocol import BatchProcessRequest
+        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
+            BinaryOperatorModelWiseProcessor,
+        )
+
+        fake_method = self._build_fake_method()
+        fake_method.name = "mse_model_wise"
+        mock_create_method.return_value = fake_method
+        mock_from_config.return_value = MagicMock()
+        ctx = {"layer_analysis": SimpleNamespace(debug={})}
+        mock_get_current_context.return_value = ctx
+
+        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
+        request = BatchProcessRequest(
+            name="model.layers.0",
+            module=self.model,
+            datas=[((torch.zeros(2, 3),), {})],
+        )
+
+        p.preprocess(request)
+        p.process(request)
+        p.postprocess(request)
+        p.post_run()
+
+        self.assertEqual(p._base_data_count, 1)
+        self.assertEqual(p._block_names, ["model.layers.0"])
+        # [ref, layer0_out]
+        self.assertEqual(len(p._merged_outputs), 2)
+        fake_method.compute_score.assert_called_once()
+        self.assertEqual(
+            ctx["layer_analysis"].debug["layer_scores"],
+            [{"name": "model.layers.0", "score": 0.1}],
+        )
+        self.assertEqual(ctx["layer_analysis"].debug["method"], "mse_model_wise")
+        self.assertEqual(ctx["layer_analysis"].debug["quant_modules"], list(self.config.quant_modules))
+
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
+    def test_processor_preprocess_chains_previous_output_when_hidden_states_match(
+        self, mock_create_method, mock_from_config
+    ):
+        """前一 block 输出与当前输入 hidden_states 一致时，preprocess 重建链式输入并保留非 hidden kwargs。"""
+        from msmodelslim.core.base.protocol import BatchProcessRequest
+        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
+            BinaryOperatorModelWiseProcessor,
+        )
+
+        mock_create_method.return_value = self._build_fake_method()
+        mock_from_config.return_value = MagicMock()
+
+        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
+        hidden = torch.zeros(2, 3)
+        first = BatchProcessRequest(
+            name="model.layers.0",
+            module=self.model,
+            datas=[((hidden,), {})],
+        )
+        p.preprocess(first)
+
+        chained = BatchProcessRequest(
+            name="model.layers.1",
+            module=self.model,
+            datas=[((hidden.clone(),), {"attention_mask": True})],
+        )
+        p.preprocess(chained)
+
+        self.assertEqual(p._block_names, ["model.layers.0", "model.layers.1"])
+        self.assertEqual(p._base_data_count, 1)
+        args, kwargs = chained.datas[0]
+        self.assertIsInstance(args[0], torch.Tensor)
+        self.assertTrue(torch.equal(args[0], hidden))
+        self.assertEqual(kwargs, {"attention_mask": True})
+
+    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
+    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
+    def test_processor_post_run_validates_merged_outputs_when_input_chain_broken(
+        self, mock_create_method, mock_from_config, mock_get_current_context
+    ):
+        """链断裂时会话结束再 post_run 应抛 UnexpectedError，避免写出不完整分数。"""
+        from msmodelslim.core.base.protocol import BatchProcessRequest
         from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
             BinaryOperatorModelWiseProcessor,
         )
@@ -108,121 +215,16 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         mock_get_current_context.return_value = {"layer_analysis": SimpleNamespace(debug={})}
 
         p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
-        p._base_data_count = 2
-        p._block_names = ["block0", "block1"]
-        p._merged_outputs = [torch.zeros(1)]  # expected 2 * (2+1) = 6
+        request = BatchProcessRequest(
+            name="model.layers.0",
+            module=self.model,
+            datas=[((torch.zeros(2, 3),), {})],
+        )
+        p.preprocess(request)
 
+        # 量化链中断：postprocess 未落地 merged outputs，会话结束校验应失败
         with self.assertRaises(UnexpectedError):
             p.post_run()
-
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
-    def test_processor_replaceDatas_shouldRaiseUnsupportedError_whenHiddenStatesMismatch(
-        self, mock_create_method, mock_from_config
-    ):
-        """测试 replace_datas：hidden_states 不一致时抛 UnsupportedError。"""
-        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
-            BinaryOperatorModelWiseProcessor,
-        )
-
-        mock_create_method.return_value = self._build_fake_method()
-        mock_from_config.return_value = MagicMock()
-
-        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
-        p._base_data_count = 1
-
-        datas = [((torch.zeros(2, 3),), {})]
-        # previous merged output has different tensor => should raise
-        p._merged_outputs = [torch.ones(2, 3)]
-
-        with self.assertRaises(UnsupportedError):
-            p._replace_request_datas_with_merged_outputs_if_need(datas)
-
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
-    def test_processor_replaceDatas_shouldKeepOriginalRows_whenBoundaryNotChainable(
-        self, mock_create_method, mock_from_config
-    ):
-        """visual 等非链式边界：无法从上一 block 输出注入 hidden 时保留 generator datas。"""
-        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
-            BinaryOperatorModelWiseProcessor,
-        )
-
-        mock_create_method.return_value = self._build_fake_method()
-        mock_from_config.return_value = MagicMock()
-
-        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
-        p._base_data_count = 1
-
-        hidden = torch.zeros(2, 3)
-        datas = [((hidden,), {"attention_mask": torch.ones(2, 8)})]
-        p._merged_outputs = [{"pooler_output": torch.ones(4, 5)}]
-
-        new_rows, chained = p._replace_request_datas_with_merged_outputs_if_need(datas)
-        self.assertIs(new_rows, datas)
-        self.assertFalse(chained)
-
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
-    def test_processor_replaceDatas_shouldReturnRebuiltRows_whenHiddenStatesMatch(
-        self, mock_create_method, mock_from_config
-    ):
-        """测试 replace_datas：hidden_states 一致时返回按 merged_outputs 重建的 datas。"""
-        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
-            BinaryOperatorModelWiseProcessor,
-        )
-
-        mock_create_method.return_value = self._build_fake_method()
-        mock_from_config.return_value = MagicMock()
-
-        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
-        p._base_data_count = 1
-
-        x = torch.zeros(2, 3)
-        datas = [((x,), {"foo": "bar"})]
-        p._merged_outputs = [x.clone()]
-
-        new_rows, chained = p._replace_request_datas_with_merged_outputs_if_need(datas)
-        self.assertTrue(chained)
-        self.assertEqual(len(new_rows), 1)
-        (args, kwargs) = new_rows[0]
-        self.assertTrue(torch.allclose(args[0], x))
-        self.assertEqual(kwargs, {"foo": "bar"})
-
-    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
-    def test_processor_postRun_shouldWriteContextAndAnnotateNames_whenScoresReady(
-        self, mock_create_method, mock_from_config, mock_get_current_context
-    ):
-        """测试 Processor.post_run：分数可计算时写入 ctx.debug（含 quant_modules）。"""
-        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
-            BinaryOperatorModelWiseProcessor,
-        )
-
-        fake_method = self._build_fake_method()
-        fake_method.name = "mse_model_wise"
-        mock_create_method.return_value = fake_method
-        mock_from_config.return_value = MagicMock()
-
-        ctx = {"layer_analysis": SimpleNamespace(debug={})}
-        mock_get_current_context.return_value = ctx
-
-        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
-        p._base_data_count = 1
-        p._block_names = ["model.layers.0"]
-        # layout: [ref0, layer0_out0]
-        p._merged_outputs = [torch.zeros(1), torch.ones(1)]
-
-        p.post_run()
-
-        self.assertIn("layer_scores", ctx["layer_analysis"].debug)
-        self.assertEqual(ctx["layer_analysis"].debug["method"], "mse_model_wise")
-        self.assertEqual(ctx["layer_analysis"].debug["quant_modules"], list(self.config.quant_modules))
-        self.assertEqual(len(ctx["layer_analysis"].debug["layer_scores"]), 1)
-        row = ctx["layer_analysis"].debug["layer_scores"][0]
-        self.assertEqual(row["name"], "model.layers.0")
-        self.assertEqual(row["score"], 0.1)
 
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.maybe_barrier_before_linear_quant")
     @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
@@ -238,117 +240,16 @@ class TestBinaryOperatorModelWiseProcessor(unittest.TestCase):
         mock_from_config.return_value = qp
 
         processor = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
-        processor._quant_inputs = [((torch.zeros(1),), {})]
-        request = BatchProcessRequest(name="block", module=self.model, datas=[])
-
+        request = BatchProcessRequest(
+            name="block",
+            module=self.model,
+            datas=[((torch.zeros(1),), {})],
+        )
+        processor.preprocess(request)
         processor.process(request)
 
         mock_barrier.assert_called_once()
         qp.preprocess.assert_called_once_with(request)
-
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
-    def test_preprocess_shouldRestartSegment_whenVisualLanguageBoundary(self, mock_create_method, mock_from_config):
-        """visual→language 断链：密封旧 segment 分数并清空链状态，当前层作为新链起点。"""
-        from msmodelslim.core.base.protocol import BatchProcessRequest
-        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
-            BinaryOperatorModelWiseProcessor,
-        )
-
-        fake_method = self._build_fake_method()
-        mock_create_method.return_value = fake_method
-        mock_from_config.return_value = MagicMock()
-
-        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
-        p._base_data_count = 1
-        p._block_names = ["model.visual"]
-        # valid 1-layer segment: [ref, cand]
-        p._merged_outputs = [torch.zeros(1), torch.ones(1)]
-
-        lang_hidden = torch.zeros(2, 3)
-        request = BatchProcessRequest(
-            name="model.language_model.layers.0",
-            module=self.model,
-            datas=[((lang_hidden,), {})],
-        )
-
-        with patch.object(p, "_run_forward_if_need") as mock_fwd:
-
-            def _fake_fwd(req):
-                req.outputs = [torch.zeros(2, 3)]
-
-            mock_fwd.side_effect = _fake_fwd
-            p.preprocess(request)
-
-        self.assertEqual(p._segment_layer_scores, [{"name": "model.visual", "score": 0.1}])
-        self.assertEqual(p._block_names, ["model.language_model.layers.0"])
-        self.assertEqual(p._base_data_count, 1)
-        self.assertEqual(p._merged_outputs, [])
-        fake_method.compute_score.assert_called_once()
-
-    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
-    def test_postRun_shouldMergeSegmentScores_whenPriorSegmentFinalized(
-        self, mock_create_method, mock_from_config, mock_get_current_context
-    ):
-        """post_run 应合并已密封 segment 与当前链上的层分数。"""
-        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
-            BinaryOperatorModelWiseProcessor,
-        )
-
-        fake_method = self._build_fake_method()
-        fake_method.name = "mse_model_wise"
-        mock_create_method.return_value = fake_method
-        mock_from_config.return_value = MagicMock()
-
-        ctx = {"layer_analysis": SimpleNamespace(debug={})}
-        mock_get_current_context.return_value = ctx
-
-        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
-        p._segment_layer_scores = [{"name": "model.visual", "score": 0.2}]
-        p._base_data_count = 1
-        p._block_names = ["model.language_model.layers.0", "mtp"]
-        # 2 layers: [ref, L0, mtp] => length 3
-        p._merged_outputs = [torch.zeros(1), torch.ones(1), torch.full((1,), 2.0)]
-
-        p.post_run()
-
-        scores = ctx["layer_analysis"].debug["layer_scores"]
-        self.assertEqual(len(scores), 3)
-        self.assertEqual(scores[0]["name"], "model.visual")
-        self.assertEqual(scores[0]["score"], 0.2)
-        self.assertEqual(scores[1]["name"], "model.language_model.layers.0")
-        self.assertEqual(scores[2]["name"], "mtp")
-
-    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.AutoSessionProcessor.from_config")
-    @patch("msmodelslim.processor.analysis.binary_operator_model_wise.processor.ModelWiseMethodFactory.create_method")
-    def test_postRun_shouldPass_whenLanguageChainMatchesQwenStyleCounts(
-        self, mock_create_method, mock_from_config, mock_get_current_context
-    ):
-        """复现日志计数：语言链 41 层 merged=168 时校验应通过（不再把 visual 算进同一条链）。"""
-        from msmodelslim.processor.analysis.binary_operator_model_wise.processor import (
-            BinaryOperatorModelWiseProcessor,
-        )
-
-        fake_method = self._build_fake_method()
-        fake_method.name = "mse_model_wise"
-        mock_create_method.return_value = fake_method
-        mock_from_config.return_value = MagicMock()
-        mock_get_current_context.return_value = {"layer_analysis": SimpleNamespace(debug={})}
-
-        p = BinaryOperatorModelWiseProcessor(self.model, self.config, adapter=self.adapter)
-        p._segment_layer_scores = [{"name": "model.visual", "score": 0.01}]
-        p._base_data_count = 4
-        # layers.0..39 + mtp
-        p._block_names = [f"model.language_model.layers.{i}" for i in range(40)] + ["mtp"]
-        p._merged_outputs = [torch.zeros(1) for _ in range(168)]  # 4 * (41 + 1)
-
-        p.post_run()  # should not raise
-
-        self.assertEqual(len(p._block_names), 41)
-        self.assertEqual(len(p._merged_outputs), 4 * (len(p._block_names) + 1))
 
 
 if __name__ == "__main__":

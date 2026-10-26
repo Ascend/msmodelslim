@@ -18,7 +18,6 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=arguments-differ,function-redefined
 
 import unittest
 
@@ -28,7 +27,7 @@ from msmodelslim.processor.flat_quant.flat_quant_interface import FlatQuantInter
 class MockFlatQuantAdapter(FlatQuantInterface):
     """用于测试的 FlatQuantInterface 模拟实现"""
 
-    def get_flatquant_subgraph(self):
+    def get_flatquant_subgraph(self):  # pylint: disable=arguments-differ
         """返回模拟的结构配置"""
         from msmodelslim.processor.flat_quant.flat_quant_utils.structure_pair import (
             AttnNormLinearPair,
@@ -60,30 +59,6 @@ class MockFlatQuantAdapter(FlatQuantInterface):
 
 
 class TestFlatQuantInterface(unittest.TestCase):
-    """Unit tests for FlatQuantInterface."""
-
-    def test_FlatQuantInterface_has_method_get_flatquant_subgraph(self):
-        """FlatQuantInterface-检查-包含get_flatquant_subgraph方法"""
-        self.assertTrue(hasattr(FlatQuantInterface, 'get_flatquant_subgraph'))
-
-    def test_FlatQuantInterface_get_flatquant_subgraph_is_callable(self):
-        """FlatQuantInterface-检查-get_flatquant_subgraph可调用"""
-        self.assertTrue(callable(FlatQuantInterface.get_flatquant_subgraph))
-
-
-class TestFlatQuantInterface(unittest.TestCase):  # noqa: F811
-    """Unit tests for FlatQuantInterface."""
-
-    def test_FlatQuantInterface_has_method_get_flatquant_subgraph(self):
-        """FlatQuantInterface-检查-包含get_flatquant_subgraph方法"""
-        self.assertTrue(hasattr(FlatQuantInterface, 'get_flatquant_subgraph'))
-
-    def test_FlatQuantInterface_get_flatquant_subgraph_is_callable(self):
-        """FlatQuantInterface-检查-get_flatquant_subgraph可调用"""
-        self.assertTrue(callable(FlatQuantInterface.get_flatquant_subgraph))
-
-
-class TestFlatQuantInterface(unittest.TestCase):  # noqa: F811
     """测试 FlatQuantInterface 类 - FlatQuant适配器接口"""
 
     def test_FlatQuantInterface_has_method_get_flatquant_subgraph(self):

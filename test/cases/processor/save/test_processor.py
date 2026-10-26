@@ -70,23 +70,16 @@ class TestQuantSaveProcessorConfig(unittest.TestCase):
 class TestConvertHookirToWrapper(unittest.TestCase):
     """测试 _convert_hookir_to_wrapper 函数"""
 
-    def test_should_handle_module_without_hooks(self):
-        """测试没有 hook 的模块"""
+    def test_convert_hookir_to_wrapper_keeps_plain_linear_when_no_hookir(self):
+        """给定无 HookIR 的普通 Linear，期望函数原子对象不变且不注册任何 hook。"""
         model = nn.Module()
         linear = nn.Linear(4, 2)
         model.sub = linear
 
-        # 不应该抛出异常
-        _convert_hookir_to_wrapper(model)
-
-    def test_should_handle_module_with_empty_hooks(self):
-        """测试空 hook 的模块"""
-        model = nn.Module()
-        linear = nn.Linear(4, 2)
-        model.sub = linear
-        linear._forward_pre_hooks = {}
-
-        _convert_hookir_to_wrapper(model)
+        self.assertIsNone(_convert_hookir_to_wrapper(model))
+        self.assertIs(model.sub, linear)
+        self.assertEqual(len(model.sub._forward_pre_hooks), 0)
+        self.assertEqual(len(model.sub._forward_hooks), 0)
 
 
 def _make_format_mock():

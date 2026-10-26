@@ -89,11 +89,7 @@ class TestAdaptRotationProcessor(unittest.TestCase):
         mock_model = MagicMock()
         config = AdaptRotationProcessorConfig.model_validate({"type": "adapt_rotation", "stage": 1})
         mock_adapter = MockQuaRotAdapter()
-        with unittest.mock.patch.object(AdaptRotationProcessor, '__init__', lambda s, m, c, a, **kw: None):
-            proc = AdaptRotationProcessor.__new__(AdaptRotationProcessor)
-            proc.model = mock_model
-            proc.config = config
-            proc._inner = AdaptRotationStage1Processor(mock_model, config.stage_config, mock_adapter)
+        proc = AdaptRotationProcessor(mock_model, config, mock_adapter)
         self.assertIsInstance(proc._inner, AdaptRotationStage1Processor)
 
     def test_init_create_stage2_inner_processor_when_config_stage_is_2(self):
@@ -101,16 +97,14 @@ class TestAdaptRotationProcessor(unittest.TestCase):
         mock_model = MagicMock()
         config = AdaptRotationProcessorConfig.model_validate({"type": "adapt_rotation", "stage": 2})
         mock_adapter = MockQuaRotAdapter()
-        with unittest.mock.patch.object(AdaptRotationProcessor, '__init__', lambda s, m, c, a, **kw: None):
-            proc = AdaptRotationProcessor.__new__(AdaptRotationProcessor)
-            proc.model = mock_model
-            proc.config = config
-            proc._inner = AdaptRotationStage2Processor(mock_model, config.stage_config, mock_adapter)
+        proc = AdaptRotationProcessor(mock_model, config, mock_adapter)
         self.assertIsInstance(proc._inner, AdaptRotationStage2Processor)
 
     def test_all_delegate_to_inner_processor(self):
         """测试各方法均委托给内部处理器"""
         mock_request = MagicMock()
+        config = AdaptRotationProcessorConfig.model_validate({"type": "adapt_rotation", "stage": 1})
+        proc = AdaptRotationProcessor(MagicMock(), config, MockQuaRotAdapter())
         cases = [
             ("support_distributed", True, lambda p, m: (p.support_distributed(), m.support_distributed), None),
             ("is_data_free", False, lambda p, m: (p.is_data_free(), m.is_data_free), None),
@@ -126,13 +120,11 @@ class TestAdaptRotationProcessor(unittest.TestCase):
                 mock_inner = MagicMock()
                 if expected_return is not None:
                     getattr(mock_inner, name).return_value = expected_return
-                with unittest.mock.patch.object(AdaptRotationProcessor, "__init__", lambda s, m, c, a, **kw: None):
-                    proc = AdaptRotationProcessor.__new__(AdaptRotationProcessor)
-                    proc._inner = mock_inner
-                result, inner_method = run(proc, mock_inner)
-                if expected_return is not None:
-                    self.assertEqual(result, expected_return, msg=name)
-                if call_arg is None:
-                    inner_method.assert_called_once()
-                else:
-                    inner_method.assert_called_once_with(call_arg)
+                with unittest.mock.patch.object(proc, "_inner", mock_inner):
+                    result, inner_method = run(proc, mock_inner)
+                    if expected_return is not None:
+                        self.assertEqual(result, expected_return, msg=name)
+                    if call_arg is None:
+                        inner_method.assert_called_once()
+                    else:
+                        inner_method.assert_called_once_with(call_arg)

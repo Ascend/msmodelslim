@@ -28,104 +28,88 @@ from msmodelslim.processor.flat_quant.flat_quant_utils.structure_pair import Str
 from msmodelslim.utils.exception import SchemaValidateError
 
 
-class _FakeStructurePair(StructurePair):
-    """最简 StructurePair 子类，跳过真实 wrap/rollback 逻辑。"""
+class _RecordingStructurePair(StructurePair, register=False):
+    _name = "recording"
 
-    pair_type = "fake"
-
-    def __init__(self, name="fake_pair"):  # pylint: disable=super-init-not-called
-        # 跳过父类 __init__ 避免 torch 参数注册要求
-        self.name = name
-        self.wrap_called = False
-        self.rollback_called = False
+    def __init__(self, config, sources, targets, prefix_name, model, **kwargs):
+        super().__init__(sources, targets, prefix_name, model)
+        self.config = config
+        self.extra_config = kwargs
+        self.wrap_called = 0
+        self.rollback_called_with = None
         self.mode_changed = None
 
     def wrap_linear(self):
-        self.wrap_called = True
+        self.wrap_called += 1
 
     def rollback_trans(self, pair_name=""):
-        self.rollback_called = True
+        self.rollback_called_with = pair_name
 
     def change_mode(self, mod):
         self.mode_changed = mod
 
 
-class TestFlatQuantLayerManager:
-    """Test suite for FlatQuantLayerManager — 逐层管理结构对。"""
+class _Model(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear = nn.Linear(4, 4)
 
-    def _build_manager(self):
-        module = nn.Linear(4, 4)
-        return FlatQuantLayerManager(module)
 
-    # ---------- 正常情形 ----------
+def _build_manager(monkeypatch):
+    monkeypatch.setattr(StructurePair, "support_structure_pairs", [_RecordingStructurePair])
+    manager = FlatQuantLayerManager(_Model())
+    manager.register_layer_pairs(
+        [{"source": "linear", "targets": ["linear"], "pair_class": _RecordingStructurePair}],
+        layer_name="",
+    )
+    return manager
 
-    def test_register_structure_pair_adds_pair_to_map_when_called_with_valid_pair(self):
-        """主路径：注册合法 pair 应加入 _structure_pair_map。"""
-        manager = self._build_manager()
-        pair = _FakeStructurePair("p1")
 
-        manager.register_structure_pair(pair)
+def test_flat_quant_layer_manager_registers_pair_when_source_matches(monkeypatch):
+    manager = _build_manager(monkeypatch)
+    manager.wrap_linear(device="cpu")
+    pair = manager._layer_pairs_list[0]
+    assert pair.wrap_called == 1
+    assert pair.source_modules == "linear"
 
-        assert "_FakeStructurePair" in manager._structure_pair_map
-        assert pair in manager._structure_pair_map["_FakeStructurePair"]
 
-    def test_register_structure_pair_dedups_when_same_pair_registered_twice(self):
-        """主路径：相同 pair 不应重复注册。"""
-        manager = self._build_manager()
-        pair = _FakeStructurePair("p1")
+def test_flat_quant_layer_manager_calls_wrap_when_wrap_linear_invoked(monkeypatch):
+    manager = _build_manager(monkeypatch)
+    pair = manager._layer_pairs_list[0]
+    manager.wrap_linear(device="cpu")
+    assert pair.wrap_called == 1
 
-        manager.register_structure_pair(pair)
-        manager.register_structure_pair(pair)
 
-        assert len(manager._structure_pair_map["_FakeStructurePair"]) == 1
+def test_flat_quant_layer_manager_passes_pair_name_when_rollback_invoked(monkeypatch):
+    manager = _build_manager(monkeypatch)
+    pair = manager._layer_pairs_list[0]
+    manager.rollback_trans("linear")
+    assert pair.rollback_called_with == "linear"
 
-    def test_wrap_linear_invokes_method_on_each_pair_when_called(self):
-        """主路径：wrap_linear 应调用每个 pair 的 wrap_linear。"""
-        manager = self._build_manager()
-        p1, p2 = _FakeStructurePair("p1"), _FakeStructurePair("p2")
-        manager.register_structure_pair(p1)
-        manager.register_structure_pair(p2)
-        # 强制加入 _layer_pairs_list
-        manager._layer_pairs_list = [p1, p2]
 
-        manager.wrap_linear(device="cpu")
+def test_flat_quant_layer_manager_passes_mode_when_change_mode_invoked(monkeypatch):
+    manager = _build_manager(monkeypatch)
+    pair = manager._layer_pairs_list[0]
+    manager.change_mode(ForwardMode.CALIB)
+    assert pair.mode_changed is ForwardMode.CALIB
 
-        assert p1.wrap_called is True
-        assert p2.wrap_called is True
 
-    def test_rollback_trans_invokes_method_on_each_pair_when_called(self):
-        """主路径：rollback_trans 应调用每个 pair 的 rollback。"""
-        manager = self._build_manager()
-        p1 = _FakeStructurePair()
-        manager._layer_pairs_list = [p1]
+def test_flat_quant_layer_manager_dedups_pair_when_same_pair_registered_twice():
+    manager = FlatQuantLayerManager(nn.Linear(4, 4))
+    pair = _RecordingStructurePair(None, "linear", ["linear"], "", manager.module)
 
-        manager.rollback_trans()
+    manager.register_structure_pair(pair)
+    manager.register_structure_pair(pair)
 
-        assert p1.rollback_called is True
+    assert manager._structure_pair_map["_RecordingStructurePair"] == [pair]
 
-    def test_change_mode_passes_mode_to_each_pair_when_called(self):
-        """主路径：change_mode 应将 mod 传给每个 pair。"""
-        manager = self._build_manager()
-        p1 = _FakeStructurePair()
-        manager._layer_pairs_list = [p1]
-        mod = ForwardMode.CALIB
 
-        manager.change_mode(mod)
+def test_flat_quant_layer_manager_raises_schema_validate_error_when_pair_type_is_invalid():
+    manager = FlatQuantLayerManager(nn.Linear(4, 4))
 
-        assert p1.mode_changed is mod
+    with pytest.raises(SchemaValidateError, match="pair must be an instance of StructurePair"):
+        manager.register_structure_pair("not a pair")  # type: ignore[arg-type]
 
-    def test_match_pair_is_a_no_op_when_called(self):
-        """边界：match_pair 当前是预留 no-op。"""
-        manager = self._build_manager()
 
-        # 不应抛错
-        manager.match_pair("any_name")
-
-    # ---------- 异常情形 ----------
-
-    def test_register_structure_pair_raises_schema_validate_error_when_not_pair_instance(self):
-        """异常：非 StructurePair 实例应抛 SchemaValidateError。"""
-        manager = self._build_manager()
-
-        with pytest.raises(SchemaValidateError):
-            manager.register_structure_pair("not a pair")  # type: ignore[arg-type]
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__]))

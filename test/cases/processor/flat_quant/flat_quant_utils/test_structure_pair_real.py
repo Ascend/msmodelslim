@@ -96,7 +96,7 @@ class TestAttnNormLinearPair:
         """主路径：构造时应记录 config、source、target。"""
         pair = self._make_pair(_AttnModel())
 
-        assert pair.config is not None
+        assert isinstance(pair.config, FlatQuantProcessorConfig)
         assert "Q.attn_norm" in pair.source_modules
         assert "Q.q_proj" in pair.target_modules
         assert "Q.k_proj" in pair.target_modules
@@ -164,12 +164,17 @@ class TestAttnNormLinearPair:
 
         assert pair.linear_trans.left_trans._eval_mode is False
 
-    def test_rollback_trans_does_not_raise_when_called(self):
-        """主路径：rollback_trans 是预留 no-op（不抛错）。"""
+    def test_rollback_trans_keeps_wrapped_structure_when_pair_name_not_contained(self):
+        """边界：pair_name 不属于目标模块时，rollback_trans 不应改变包装结构。"""
         pair = self._make_pair(_AttnModel())
         pair.wrap_linear()
+        wrapped_norm = pair.model.attn_norm
+        wrapped_q_proj = pair.model.q_proj
 
         pair.rollback_trans("attn_norm")
+
+        assert pair.model.attn_norm is wrapped_norm
+        assert pair.model.q_proj is wrapped_q_proj
 
 
 class TestAttnLinearLinearPair:
@@ -207,13 +212,17 @@ class TestAttnLinearLinearPair:
 
         assert isinstance(pair.model.up_proj, FlatFakeQuantLinear)
 
-    def test_rollback_trans_does_not_raise_when_called(self):
-        """主路径：rollback_trans 应能处理 pre_linear_name 在目标列表中的情况。"""
+    def test_rollback_trans_clears_linear_transforms_when_pair_name_is_target(self):
+        """主路径：pair_name 命中目标模块时，rollback_trans 应清空前后 Linear 的 trans。"""
         pair = self._make_pair()
         pair.wrap_linear()
 
-        # rollback_trans 检查 pair_name 是否在 target_modules 中
-        pair.rollback_trans("Q.up_proj")  # 不抛错
+        pair.rollback_trans("Q.up_proj")
+
+        assert pair.model.q_proj.weight_out_trans is None
+        assert pair.model.up_proj.weight_in_trans is None
+        assert pair.model.up_proj.act_in_trans is None
+        assert pair.model.up_proj.save_trans is None
 
 
 class TestMLPLinearLinearPair:
@@ -237,7 +246,7 @@ class TestMLPLinearLinearPair:
         """主路径：构造时应记录 config。"""
         pair = self._make_pair()
 
-        assert pair.config is not None
+        assert isinstance(pair.config, FlatQuantProcessorConfig)
         assert "Q.gate_proj" in pair.source_modules
         assert "Q.up_proj" in pair.target_modules
 
@@ -249,9 +258,13 @@ class TestMLPLinearLinearPair:
 
         assert isinstance(pair.model.up_proj, FlatFakeQuantLinear)
 
-    def test_rollback_trans_does_not_raise_when_called(self):
-        """主路径：rollback_trans 应能处理 pre_linear_name 在目标列表中的情况。"""
+    def test_rollback_trans_clears_linear_transforms_when_pair_name_is_target(self):
+        """主路径：pair_name 命中目标模块时，rollback_trans 应清空后置 Linear 的 trans。"""
         pair = self._make_pair()
         pair.wrap_linear()
 
         pair.rollback_trans("Q.up_proj")
+
+        assert pair.model.up_proj.weight_in_trans is None
+        assert pair.model.up_proj.act_in_trans is None
+        assert pair.model.up_proj.save_trans is None

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+# pylint: disable=no-member
+
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
@@ -70,7 +72,7 @@ class TestLayerAnalysisProcessor(unittest.TestCase):
         self.request = BatchProcessRequest(
             name="layers.0",
             module=self.model.layers[0],
-            datas=[torch.randn(1, 4)],
+            datas=[((torch.randn(1, 4),), {})],
         )
 
     def _build_fake_method(self):
@@ -222,27 +224,29 @@ class TestLayerAnalysisProcessor(unittest.TestCase):
     @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
     @patch("msmodelslim.processor.analysis.binary_operator_layer_wise.processor.AutoSessionProcessor.from_config")
     @patch("msmodelslim.processor.analysis.binary_operator_layer_wise.processor.LayerWiseMethodFactory.create_method")
-    def test_post_run_call_quant_processors_and_set_context_when_scores_ready(
+    def test_post_run_publishes_layer_scores_and_calls_quant_processors_when_scores_ready(
         self, mock_create_method, mock_from_config, mock_get_current_context
     ):
         fake_method = self._build_fake_method()
         fake_method.name = "mse_layer_wise"
+        fake_method.compute_score.return_value = 0.0
         qp = MagicMock()
         mock_create_method.return_value = fake_method
         mock_from_config.return_value = qp
-
-        processor = BinaryOperatorLayerWiseProcessor(self.model, self.config, adapter=self.adapter)
-        processor._layer_scores = [{"name": "layers.0", "score": 1.0}]
         fake_ctx = {"layer_analysis": SimpleNamespace(debug={})}
         mock_get_current_context.return_value = fake_ctx
+
+        processor = BinaryOperatorLayerWiseProcessor(self.model, self.config, adapter=self.adapter)
+        processor.process(self.request)
 
         processor.post_run()
 
         qp.post_run.assert_called_once()
+        self.assertEqual(processor._layer_scores, [{"name": "layers.0", "score": 0.0}])
         self.assertEqual(fake_ctx["layer_analysis"].debug["layer_scores"], processor._layer_scores)
         self.assertEqual(fake_ctx["layer_analysis"].debug["method"], "mse_layer_wise")
         self.assertEqual(fake_ctx["layer_analysis"].debug["quant_modules"], self.config.quant_modules)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

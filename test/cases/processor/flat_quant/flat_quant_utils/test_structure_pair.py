@@ -83,12 +83,16 @@ class TestStructurePairRegistration:
 
     def test_subclass_is_registered_in_support_structure_pairs_by_default(self):
         """主路径：默认情况下子类应被加入 support_structure_pairs。"""
+        before = list(StructurePair.support_structure_pairs)
 
         class _Registered(StructurePair, register=True):
             pass
 
-        # 不应抛错
-        assert True  # 注册可能影响，不强制验证
+        try:
+            assert _Registered in StructurePair.support_structure_pairs
+        finally:
+            # 清理类级共享状态，避免影响其他用例
+            StructurePair.support_structure_pairs[:] = before
 
     def test_subclass_with__register_false_is_not_registered(self):
         """主路径：_register=False 类属性时子类不应被加入。"""

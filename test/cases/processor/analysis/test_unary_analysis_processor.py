@@ -23,6 +23,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import torch
 from torch import nn
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
@@ -45,44 +46,42 @@ class TinyBlock(nn.Module):
 
 
 class TestUnaryAnalysisProcessor(unittest.TestCase):
-    """测试 UnaryAnalysisProcessor。"""
+    """Unit tests for UnaryAnalysisProcessor public lifecycle."""
 
     def setUp(self):
         self.model = TinyBlock()
         self.config = UnaryAnalysisProcessorConfig(metrics="std", patterns=["*.linear1", "*.relu"])
         self.request = BatchProcessRequest(name="block", module=self.model, datas=[])
 
-    def _build_fake_method(self):
+    @staticmethod
+    def build_fake_method():
         fake_method = MagicMock()
         fake_method.name = "std"
-        fake_method.get_hook.return_value = lambda module, input_tensor, output_tensor, layer_name, stats_dict: None
-        # Default: local score path (e.g. ra_compress).
         fake_method.pack_stats_for_distributed_merge.return_value = None
+        fake_method.compute_score.return_value = 0.75
+        fake_method.merge_distributed_stats.side_effect = lambda values: {
+            "t_max": max(value["t_max"] for value in values),
+            "t_min": min(value["t_min"] for value in values),
+            "std": max(value["std"] for value in values),
+        }
+        fake_method.set_forward_kwargs = None
         return fake_method
 
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_init_return_empty_state_when_config_valid(self, mock_create_method):
-        fake_method = self._build_fake_method()
+    def test_init_returns_empty_scores_when_config_valid(self, mock_create_method):
+        fake_method = self.build_fake_method()
         mock_create_method.return_value = fake_method
 
         processor = UnaryAnalysisProcessor(self.model, self.config)
 
-        mock_create_method.assert_called_once_with(
-            "std",
-            adapter=None,
-        )
-        self.assertEqual(processor.config, self.config)
-        self.assertIs(processor._analysis_method, fake_method)
-        self.assertEqual(processor._target_layers, [])
-        self.assertEqual(processor._layer_stats, {})
-        self.assertEqual(processor._pending_packed_stats, {})
-        self.assertEqual(processor._layer_scores, [])
-        self.assertEqual(processor._hook_handles, {})
+        mock_create_method.assert_called_once_with("std", adapter=None)
+        self.assertIs(processor.config, self.config)
+        self.assertTrue(processor.support_distributed())
+        self.assertEqual(processor.get_layer_scores(), [])
 
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_init_forward_metric_params_when_metrics_ra_compress(self, mock_create_method):
-        """metric_params 作为关键字参数透传给 ra_compress 分析方法。"""
-        fake_method = self._build_fake_method()
+    def test_init_passes_metric_params_when_metrics_ra_compress(self, mock_create_method):
+        fake_method = self.build_fake_method()
         mock_create_method.return_value = fake_method
         config = UnaryAnalysisProcessorConfig(
             metrics="ra_compress",
@@ -99,121 +98,95 @@ class TestUnaryAnalysisProcessor(unittest.TestCase):
             echo_head_ratio=0.05,
         )
 
-    def test_config_raise_error_when_metric_params_used_by_other_metrics(self):
-        """非 ra_compress 指标不接受 metric_params。"""
+    def test_config_raises_schema_error_when_metric_params_used_by_other_metrics(self):
         with self.assertRaises(SchemaValidateError) as ctx:
             UnaryAnalysisProcessorConfig(metrics="std", metric_params={"induction_head_ratio": 0.2})
+
         self.assertIn("does not accept metric_params", str(ctx.exception))
 
-    def test_config_raise_error_when_metric_params_key_unknown(self):
-        """ra_compress 的 metric_params 出现未知 key 时报错。"""
+    def test_config_raises_schema_error_when_metric_params_key_unknown(self):
         with self.assertRaises(SchemaValidateError) as ctx:
             UnaryAnalysisProcessorConfig(metrics="ra_compress", metric_params={"head_ratio": 0.2})
+
         self.assertIn("Unsupported metric_params", str(ctx.exception))
 
-    def test_config_raise_error_when_ratio_out_of_range(self):
-        """比例类 metric_params 的取值必须在 [0, 1] 内。"""
+    def test_config_raises_schema_error_when_ratio_out_of_range(self):
         with self.assertRaises(SchemaValidateError) as ctx:
             UnaryAnalysisProcessorConfig(metrics="ra_compress", metric_params={"induction_head_ratio": 1.5})
+
         self.assertIn("must be a number in [0, 1]", str(ctx.exception))
 
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_preprocess_return_hook_handles_when_target_linear_layers_matched(self, mock_create_method):
-        fake_method = self._build_fake_method()
-        fake_method.get_target_layers.return_value = [
-            "block.linear1",
-            "block.linear2",
-        ]
+    def test_preprocess_registers_only_filtered_linear_hooks_when_patterns_match(self, mock_create_method):
+        fake_method = self.build_fake_method()
+        seen_layers = []
+
+        def hook(module, input_tensor, output_tensor, layer_name, stats_dict):
+            del module, input_tensor, output_tensor, stats_dict
+            seen_layers.append(layer_name)
+
+        fake_method.get_target_layers.return_value = ["block.linear1", "block.linear2"]
         fake_method.filter_layers_by_patterns.return_value = ["block.linear1"]
+        fake_method.get_hook.return_value = hook
         mock_create_method.return_value = fake_method
 
         processor = UnaryAnalysisProcessor(self.model, self.config)
         processor.preprocess(self.request)
+        self.model(torch.randn(1, 4))
 
         fake_method.get_target_layers.assert_called_once_with(self.model, "block")
         fake_method.filter_layers_by_patterns.assert_called_once_with(
             ["block.linear1", "block.linear2"],
             self.config.patterns,
         )
-        self.assertEqual(processor._target_layers, ["block.linear1"])
-        self.assertIn("block.linear1", processor._hook_handles)
-        self.assertNotIn("block.linear2", processor._hook_handles)
-        self.assertEqual(len(processor._hook_handles), 1)
+        self.assertEqual(seen_layers, ["block.linear1"])
 
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_postprocess_return_scores_and_clear_stats_when_target_stats_exist(self, mock_create_method):
-        fake_method = self._build_fake_method()
-        fake_method.compute_score.return_value = 0.75
+    def test_postprocess_returns_score_when_local_stats_are_collected(self, mock_create_method):
+        fake_method = self.build_fake_method()
+
+        def hook(module, input_tensor, output_tensor, layer_name, stats_dict):
+            del module, input_tensor, output_tensor
+            stats_dict[layer_name] = {"tensor": [1]}
+
+        fake_method.get_target_layers.return_value = ["block.linear1"]
+        fake_method.filter_layers_by_patterns.return_value = ["block.linear1"]
+        fake_method.get_hook.return_value = hook
         mock_create_method.return_value = fake_method
 
         processor = UnaryAnalysisProcessor(self.model, self.config)
-        handle_linear1 = MagicMock()
-        handle_linear2 = MagicMock()
-
-        processor._target_layers = ["block.linear1"]
-        processor._hook_handles = {
-            "block.linear1": handle_linear1,
-            "block.linear2": handle_linear2,
-        }
-        processor._layer_stats = {
-            "block.linear1": {"tensor": [1]},
-            "block.linear2": {"tensor": [2]},
-        }
-
+        processor.preprocess(self.request)
+        self.model(torch.randn(1, 4))
         processor.postprocess(self.request)
 
-        handle_linear1.remove.assert_called_once()
-        handle_linear2.remove.assert_called_once()
+        self.assertEqual(processor.get_layer_scores(), [{"name": "block.linear1", "score": 0.75}])
         fake_method.compute_score.assert_called_once_with({"tensor": [1]})
-        self.assertEqual(processor._layer_scores, [{"name": "block.linear1", "score": 0.75}])
-        self.assertEqual(processor._pending_packed_stats, {})
-        self.assertNotIn("block.linear1", processor._layer_stats)
-        self.assertIn("block.linear2", processor._layer_stats)
-        self.assertEqual(processor._hook_handles, {})
+        self.assertEqual(fake_method.pack_stats_for_distributed_merge.call_count, 1)
 
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_postprocess_packs_stats_when_method_supports_distributed_merge(self, mock_create_method):
-        fake_method = self._build_fake_method()
-        fake_method.pack_stats_for_distributed_merge.return_value = {"t_max": 1.0, "t_min": -1.0, "std": 0.5}
-        mock_create_method.return_value = fake_method
-
-        processor = UnaryAnalysisProcessor(self.model, self.config)
-        handle_linear1 = MagicMock()
-        processor._target_layers = ["block.linear1"]
-        processor._hook_handles = {"block.linear1": handle_linear1}
-        processor._layer_stats = {"block.linear1": {"t_max": 1.0, "t_min": -1.0, "std": 0.5}}
-
-        processor.postprocess(self.request)
-
-        handle_linear1.remove.assert_called_once()
-        fake_method.pack_stats_for_distributed_merge.assert_called_once()
-        fake_method.compute_score.assert_not_called()
-        self.assertEqual(processor._layer_scores, [])
-        self.assertEqual(
-            processor._pending_packed_stats,
-            {"block.linear1": {"t_max": 1.0, "t_min": -1.0, "std": 0.5}},
-        )
-        self.assertNotIn("block.linear1", processor._layer_stats)
-
-    @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
-    @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_post_run_merges_packed_stats_then_scores(self, mock_create_method, mock_get_current_context):
-        fake_method = self._build_fake_method()
-        fake_method.name = "std"
-        fake_method.merge_distributed_stats.side_effect = lambda xs: {
-            "t_max": max(s["t_max"] for s in xs),
-            "t_min": min(s["t_min"] for s in xs),
-            "std": max(s["std"] for s in xs),
+    def test_post_run_merges_packed_stats_when_distributed_stats_pending(self, mock_create_method):
+        fake_method = self.build_fake_method()
+        fake_method.pack_stats_for_distributed_merge.return_value = {
+            "t_max": 2.0,
+            "t_min": -1.0,
+            "std": 0.5,
         }
         fake_method.compute_score.return_value = 4.0
+
+        def hook(module, input_tensor, output_tensor, layer_name, stats_dict):
+            del module, input_tensor, output_tensor
+            stats_dict[layer_name] = {"t_max": 2.0, "t_min": -1.0, "std": 0.5}
+
+        fake_method.get_target_layers.return_value = ["block.linear1"]
+        fake_method.filter_layers_by_patterns.return_value = ["block.linear1"]
+        fake_method.get_hook.return_value = hook
         mock_create_method.return_value = fake_method
 
         processor = UnaryAnalysisProcessor(self.model, self.config)
-        processor._pending_packed_stats = {
-            "block.linear1": {"t_max": 2.0, "t_min": -1.0, "std": 0.5},
-        }
-        fake_ctx = {"layer_analysis": SimpleNamespace(state={}, debug={})}
-        mock_get_current_context.return_value = fake_ctx
+        processor.preprocess(self.request)
+        self.model(torch.randn(1, 4))
+        processor.postprocess(self.request)
+        self.assertEqual(processor.get_layer_scores(), [])
 
         with patch(
             "msmodelslim.processor.analysis.unary_operator.processor.merge_packed_layer_stats_across_ranks",
@@ -223,55 +196,41 @@ class TestUnaryAnalysisProcessor(unittest.TestCase):
 
         mock_merge.assert_called_once()
         fake_method.compute_score.assert_called_once_with({"t_max": 2.0, "t_min": -1.0, "std": 0.5})
-        self.assertEqual(processor._layer_scores, [{"name": "block.linear1", "score": 4.0}])
-        self.assertEqual(processor._pending_packed_stats, {})
-        self.assertEqual(fake_ctx["layer_analysis"].debug["layer_scores"], processor._layer_scores)
-
-    @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_postprocess_return_remaining_hooks_when_request_scope_filtered(self, mock_create_method):
-        fake_method = self._build_fake_method()
-        mock_create_method.return_value = fake_method
-
-        processor = UnaryAnalysisProcessor(self.model, self.config)
-        handle_block = MagicMock()
-        handle_other = MagicMock()
-
-        processor._hook_handles = {
-            "block.linear1": handle_block,
-            "other.linear": handle_other,
-        }
-
-        processor.postprocess(self.request)
-
-        handle_block.remove.assert_called_once()
-        handle_other.remove.assert_not_called()
-        self.assertNotIn("block.linear1", processor._hook_handles)
-        self.assertIn("other.linear", processor._hook_handles)
+        self.assertEqual(processor.get_layer_scores(), [{"name": "block.linear1", "score": 4.0}])
 
     @patch("msmodelslim.processor.analysis.distributed_utils.get_current_context")
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_post_run_set_context_state_when_scores_ready(self, mock_create_method, mock_get_current_context):
-        fake_method = self._build_fake_method()
-        fake_method.name = "std"
+    def test_post_run_writes_context_when_local_scores_ready(self, mock_create_method, mock_get_current_context):
+        fake_method = self.build_fake_method()
+
+        def hook(module, input_tensor, output_tensor, layer_name, stats_dict):
+            del module, input_tensor, output_tensor
+            stats_dict[layer_name] = {"tensor": [1]}
+
+        fake_method.get_target_layers.return_value = ["block.linear1"]
+        fake_method.filter_layers_by_patterns.return_value = ["block.linear1"]
+        fake_method.get_hook.return_value = hook
         mock_create_method.return_value = fake_method
 
         processor = UnaryAnalysisProcessor(self.model, self.config)
-        processor._layer_scores = [{"name": "block.linear1", "score": 1.23}]
-
-        fake_ctx = {"layer_analysis": SimpleNamespace(debug={})}
+        processor.preprocess(self.request)
+        self.model(torch.randn(1, 4))
+        processor.postprocess(self.request)
+        fake_ctx = {"layer_analysis": SimpleNamespace(state={}, debug={})}
         mock_get_current_context.return_value = fake_ctx
 
         processor.post_run()
 
-        self.assertEqual(fake_ctx["layer_analysis"].debug["layer_scores"], processor._layer_scores)
-        self.assertEqual(fake_ctx["layer_analysis"].debug["method"], "std")
-        self.assertEqual(fake_ctx["layer_analysis"].debug["patterns"], self.config.patterns)
+        expected = [{"name": "block.linear1", "score": 0.75}]
+        self.assertEqual(processor.get_layer_scores(), expected)
+        self.assertEqual(fake_ctx["layer_analysis"].state["layer_scores"], expected)
+        self.assertEqual(fake_ctx["layer_analysis"].state["method"], "std")
+        self.assertEqual(fake_ctx["layer_analysis"].state["patterns"], self.config.patterns)
 
     @patch("msmodelslim.processor.analysis.unary_operator.processor.get_current_context")
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
     def test_pre_run_raises_unexpected_error_when_context_is_none(self, mock_create_method, mock_get_current_context):
-        """上下文缺失时 pre_run 抛 UnexpectedError（异常场景）。"""
-        fake_method = self._build_fake_method()
+        fake_method = self.build_fake_method()
         mock_create_method.return_value = fake_method
         mock_get_current_context.return_value = None
 
@@ -281,37 +240,36 @@ class TestUnaryAnalysisProcessor(unittest.TestCase):
 
     @patch("msmodelslim.processor.analysis.unary_operator.processor.get_current_context")
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_post_run_returns_silently_when_context_is_none(self, mock_create_method, mock_get_current_context):
-        """上下文缺失时 post_run 静默返回，不抛异常（边界场景）。"""
-        fake_method = self._build_fake_method()
+    def test_post_run_returns_empty_scores_when_context_is_none(self, mock_create_method, mock_get_current_context):
+        fake_method = self.build_fake_method()
         mock_create_method.return_value = fake_method
         mock_get_current_context.return_value = None
 
         processor = UnaryAnalysisProcessor(self.model, self.config)
-        processor.post_run()  # 不抛异常即通过
+        processor.post_run()
+
+        self.assertEqual(processor.get_layer_scores(), [])
 
     @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_get_layer_scores_return_scores_when_called(self, mock_create_method):
-        fake_method = self._build_fake_method()
-        mock_create_method.return_value = fake_method
+    def test_get_layer_scores_returns_lifecycle_scores_when_called(self, mock_create_method):
+        fake_method = self.build_fake_method()
+        fake_method.compute_score.return_value = 2.0
 
-        processor = UnaryAnalysisProcessor(self.model, self.config)
-        processor._layer_scores = [{"name": "block.linear1", "score": 2.0}]
+        def hook(module, input_tensor, output_tensor, layer_name, stats_dict):
+            del module, input_tensor, output_tensor
+            stats_dict[layer_name] = {"tensor": [1]}
 
-        self.assertEqual(processor.get_layer_scores(), [{"name": "block.linear1", "score": 2.0}])
-
-    @patch("msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisMethodFactory.create_method")
-    def test_preprocess_return_no_hooks_when_no_matching_layers(self, mock_create_method):
-        fake_method = self._build_fake_method()
-        fake_method.get_target_layers.return_value = ["block.linear1", "block.linear2"]
-        fake_method.filter_layers_by_patterns.return_value = []
+        fake_method.get_target_layers.return_value = ["block.linear1"]
+        fake_method.filter_layers_by_patterns.return_value = ["block.linear1"]
+        fake_method.get_hook.return_value = hook
         mock_create_method.return_value = fake_method
 
         processor = UnaryAnalysisProcessor(self.model, self.config)
         processor.preprocess(self.request)
+        self.model(torch.randn(1, 4))
+        processor.postprocess(self.request)
 
-        self.assertEqual(processor._target_layers, [])
-        self.assertEqual(processor._hook_handles, {})
+        self.assertEqual(processor.get_layer_scores(), [{"name": "block.linear1", "score": 2.0}])
 
 
 if __name__ == "__main__":

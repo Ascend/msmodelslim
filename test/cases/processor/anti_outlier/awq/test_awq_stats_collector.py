@@ -22,10 +22,11 @@ See the Mulan PSL v2 for more details.
 
 import pytest
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.core.context import ContextFactory, ContextManager
 from msmodelslim.processor.anti_outlier.awq.awq_stats_collector import AWQStatsCollector
+from msmodelslim.processor.anti_outlier.common import HookManager
 
 
 class SimpleBlock(nn.Module):
@@ -71,7 +72,7 @@ class TestAWQStatsCollectorInit:
 
     def test_init_creates_hook_manager(self):
         collector, _ = _make_collector()
-        assert collector.hook_manager is not None
+        assert isinstance(collector.hook_manager, HookManager)
         assert len(collector.hook_manager.hook_handles) == 0
 
 
@@ -82,8 +83,7 @@ class TestObserveActivation:
         x = torch.randn(2, 4, 16)
         model(x)
         mean = collector.get_activation_mean("block.fc")
-        assert mean is not None
-        assert isinstance(mean, torch.Tensor)
+        assert mean.shape == (16,)
 
     def test_multiple_forwards_accumulate_mean(self):
         collector, model = _make_collector(in_features=16)
@@ -93,14 +93,14 @@ class TestObserveActivation:
         x1 = torch.ones(1, 1, 16)
         model(x1)
         mean_after_first = collector.get_activation_mean("block.fc")
-        assert mean_after_first is not None
+        assert mean_after_first.shape == (16,)
         mean_after_first = mean_after_first.clone()
 
         # Second forward: all twos → abs mean = 2.0
         x2 = torch.full((1, 1, 16), 2.0)
         model(x2)
         mean_after_second = collector.get_activation_mean("block.fc")
-        assert mean_after_second is not None
+        assert mean_after_second.shape == (16,)
 
         # Running mean should differ from first-batch-only mean
         assert not torch.equal(mean_after_first, mean_after_second)
@@ -112,7 +112,7 @@ class TestObserveActivation:
         collector.observe_activation("block.fc")
         model(torch.randn(1, 4, 32))
         mean = collector.get_activation_mean("block.fc")
-        assert mean is not None
+        assert mean.dtype == torch.float32
         assert mean.shape == (32,)
 
     def test_mean_is_on_cpu(self):
@@ -120,7 +120,7 @@ class TestObserveActivation:
         collector.observe_activation("block.fc")
         model(torch.randn(1, 4, 16))
         mean = collector.get_activation_mean("block.fc")
-        assert mean is not None
+        assert mean.dtype == torch.float32
         assert mean.device == torch.device("cpu")
 
 
@@ -130,8 +130,9 @@ class TestObserveKwargs:
         collector.observe_kwargs("block")
         model(torch.randn(1, 4, 16))
         kwargs = collector.get_block_kwargs("block")
-        assert kwargs is not None
         assert isinstance(kwargs, list)
+        assert set(kwargs[0]) == {"x"}
+        assert kwargs[0]["x"].shape == (1, 4, 16)
         assert len(kwargs) == 1
 
     def test_multiple_forwards_append_kwargs(self):
@@ -140,7 +141,9 @@ class TestObserveKwargs:
         model(torch.randn(1, 4, 16))
         model(torch.randn(1, 4, 16))
         kwargs = collector.get_block_kwargs("block")
-        assert kwargs is not None
+        assert isinstance(kwargs, list)
+        assert set(kwargs[0]) == {"x"}
+        assert kwargs[0]["x"].shape == (1, 4, 16)
         assert len(kwargs) == 2
 
     def test_duplicate_observe_kwargs_is_idempotent(self):
@@ -180,7 +183,7 @@ class TestStopObserving:
         collector.observe_activation("block.fc")
         model(torch.randn(1, 4, 16))
         mean_before = collector.get_activation_mean("block.fc")
-        assert mean_before is not None
+        assert mean_before.shape == (16,)
         mean_before = mean_before.clone()
 
         collector.stop_observing()
@@ -197,7 +200,7 @@ class TestStopObserving:
         model(torch.randn(1, 4, 16))
 
         collector.stop_observing()
-        assert collector.get_activation_mean("block.fc") is not None
+        assert collector.get_activation_mean("block.fc").shape == (16,)
 
 
 class TestClearStats:
@@ -221,4 +224,4 @@ class TestClearStats:
 
         # Hooks still active — new forward repopulates stats
         model(torch.randn(1, 4, 16))
-        assert collector.get_activation_mean("block.fc") is not None
+        assert collector.get_activation_mean("block.fc").shape == (16,)

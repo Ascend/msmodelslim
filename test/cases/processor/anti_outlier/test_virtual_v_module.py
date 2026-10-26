@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 
 import pytest
 import torch
-import torch.nn as nn
+from torch import nn
 
 from msmodelslim.processor.anti_outlier.common import VirtualVModuleFromQKVFused
 
@@ -57,9 +57,9 @@ class TestVirtualVModule:
         assert virtual_v.num_key_value_heads == 8
         assert virtual_v.qkv_module is qkv_module_with_bias
 
-        # 验证V部分权重和偏置被正确提取
-        assert virtual_v.weight is not None
-        assert virtual_v.bias is not None
+        # 验证V部分权重和偏置被正确提取为可训练参数
+        assert isinstance(virtual_v.weight, nn.Parameter)
+        assert isinstance(virtual_v.bias, nn.Parameter)
         assert virtual_v.weight.shape == (512, 512)  # V部分: 8 * 64 = 512维
         assert virtual_v.bias.shape == (512,)
 
@@ -162,9 +162,9 @@ class TestVirtualVModule:
             qkv_module=qkv_module_with_bias, num_attention_heads=8, num_key_value_heads=8
         )
 
-        # 验证V部分权重和偏置被正确提取
-        assert virtual_v.weight is not None
-        assert virtual_v.bias is not None
+        # 验证V部分权重和偏置被正确提取为可训练参数
+        assert isinstance(virtual_v.weight, nn.Parameter)
+        assert isinstance(virtual_v.bias, nn.Parameter)
 
         # 验证权重形状
         assert virtual_v.weight.shape == (512, 512)  # V部分: 8 * 64 = 512维
@@ -184,8 +184,8 @@ class TestVirtualVModule:
             qkv_module=qkv_module_without_bias, num_attention_heads=8, num_key_value_heads=8
         )
 
-        # 验证V部分权重被正确提取，偏置为None
-        assert virtual_v.weight is not None
+        # 验证V部分权重被正确提取为可训练参数，偏置为None
+        assert isinstance(virtual_v.weight, nn.Parameter)
         assert virtual_v.bias is None
 
         # 验证权重形状
@@ -215,8 +215,9 @@ class TestVirtualVModule:
         # 更新权重
         virtual_v.update_weights()
 
-        # 验证QKV模块现在有了偏置
-        assert virtual_v.qkv_module.bias is not None
+        # 验证QKV模块现在有了形状为(1536,)的偏置
+        assert isinstance(virtual_v.qkv_module.bias, nn.Parameter)
+        assert virtual_v.qkv_module.bias.shape == (1536,)
 
         # 验证V部分的权重和偏置被正确更新
         head_dim = 64

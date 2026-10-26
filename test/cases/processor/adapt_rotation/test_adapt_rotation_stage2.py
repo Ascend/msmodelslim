@@ -18,24 +18,21 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=pointless-string-statement
 
-"""
-msmodelslim.processor.adapt_rotation.adapt_rotation_stage2 模块的单元测试
-"""
-import unittest  # noqa: E402
-from unittest.mock import MagicMock, patch  # noqa: E402
+# msmodelslim.processor.adapt_rotation.adapt_rotation_stage2 模块的单元测试
+import unittest
+from unittest.mock import MagicMock, patch
 
-import torch  # noqa: E402
+import torch
 
-from msmodelslim.processor.adapt_rotation.adapt_rotation_stage2 import (  # noqa: E402
+from msmodelslim.processor.adapt_rotation.adapt_rotation_stage2 import (
     AdaptRotationStage2ProcessorConfig,
     AdaptRotationStage2Processor,
 )
-from msmodelslim.processor.quarot.offline_quarot.quarot_interface import RotatePair  # noqa: E402
-from msmodelslim.utils.exception import SchemaValidateError  # noqa: E402
+from msmodelslim.processor.quarot.offline_quarot.quarot_interface import RotatePair
+from msmodelslim.utils.exception import SchemaValidateError
 
-from .common import MockQuaRotAdapter  # noqa: E402
+from .common import MockQuaRotAdapter
 
 
 class TestAdaptRotationStage2ProcessorConfig(unittest.TestCase):
@@ -119,27 +116,35 @@ class TestAdaptRotationStage2ProcessorOverlayAdaptedMatrix(unittest.TestCase):
 class TestAdaptRotationStage2ProcessorPreRun(unittest.TestCase):
     """测试 AdaptRotationStage2Processor.pre_run 方法"""
 
+    def _mock_rotate_methods(self, proc):
+        """打桩实例的 _fuse_norm/_bake_mean/_rotate（重活），随测试结束自动还原。"""
+        mocks = {}
+        for name in ("_fuse_norm", "_bake_mean", "_rotate"):
+            mocked_method = MagicMock()
+            patcher = patch.object(proc, name, mocked_method)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+            mocks[name] = mocked_method
+        return proc, mocks
+
     def _make_proc_with_mocked_fuse_bake_rotate(self):
         model = MagicMock()
         config = AdaptRotationStage2ProcessorConfig(type="_adapt_rotation_stage2")
         proc = AdaptRotationStage2Processor(model, config, MockQuaRotAdapter())
-        proc._fuse_norm = MagicMock()
-        proc._bake_mean = MagicMock()
-        proc._rotate = MagicMock()
-        return proc
+        return self._mock_rotate_methods(proc)
 
     def test_pre_run_without_adapted_matrix_in_context(self):
         """测试 context 为 None 或缺少 adapt_rotation/adapted_matrix 时走默认旋转路径"""
         for ctx_value in (None, {}):
             with self.subTest(ctx=ctx_value):
-                proc = self._make_proc_with_mocked_fuse_bake_rotate()
+                proc, mocks = self._make_proc_with_mocked_fuse_bake_rotate()
                 with patch(
                     "msmodelslim.processor.adapt_rotation.adapt_rotation_stage2.get_current_context",
                     return_value=ctx_value,
                 ):
                     proc.pre_run()
-                proc._fuse_norm.assert_called_once()
-                proc._bake_mean.assert_called_once()
+                mocks["_fuse_norm"].assert_called_once()
+                mocks["_bake_mean"].assert_called_once()
                 self.assertEqual(proc.rotate_commands, [])
 
     def test_pre_run_when_context_has_adapted_matrix_overlays_onto_rotations(self):
@@ -158,9 +163,7 @@ class TestAdaptRotationStage2ProcessorPreRun(unittest.TestCase):
         proc = AdaptRotationStage2Processor(
             MagicMock(), AdaptRotationStage2ProcessorConfig(type="_adapt_rotation_stage2"), AdapterWithPairs()
         )
-        proc._fuse_norm = MagicMock()
-        proc._bake_mean = MagicMock()
-        proc._rotate = MagicMock()
+        _, mocks = self._mock_rotate_methods(proc)
         ns = type("NS", (), {"state": {"adapted_matrix": adapted}})()
         with patch(
             "msmodelslim.processor.adapt_rotation.adapt_rotation_stage2.get_current_context",
@@ -169,30 +172,28 @@ class TestAdaptRotationStage2ProcessorPreRun(unittest.TestCase):
             proc.pre_run()
         self.assertTrue(torch.equal(pair.left_rot["l"], adapted))
         self.assertTrue(torch.equal(pair.right_rot["r"], adapted))
-        proc._fuse_norm.assert_called_once()
-        proc._rotate.assert_called()
+        mocks["_fuse_norm"].assert_called_once()
+        mocks["_rotate"].assert_called()
 
     def test_pre_run_when_online_true_calls_online_processor_pre_run(self):
         """测试 config.online=True 时调用 online_processor.pre_run"""
         model = MagicMock()
-        config = AdaptRotationStage2ProcessorConfig(type="_adapt_rotation_stage2", online=True)
-        adapter = MockQuaRotAdapter()
-        with patch.object(AdaptRotationStage2Processor, "__init__", lambda s, m, c, a, **kw: None):
-            proc = AdaptRotationStage2Processor.__new__(AdaptRotationStage2Processor)
-            proc.model = model
-            proc.config = config
-            proc.adapter = adapter
-            proc.fused_map = {}
-            proc.bake_names = []
-            proc.rotate_commands = []
-            proc.rotate_pairs = []
-            proc.online_processor = MagicMock()
-            proc._fuse_norm = MagicMock()
-            proc._bake_mean = MagicMock()
-            proc._rotate = MagicMock()
+        config = AdaptRotationStage2ProcessorConfig(type="_adapt_rotation_stage2")
+        proc = AdaptRotationStage2Processor(model, config, MockQuaRotAdapter())
+        self._mock_rotate_methods(proc)
+        # 真实 __init__ 在 online=False 时不创建 online_processor；此处以可自动还原的 patch
+        # 注入 online 分支依赖（公开构造在此场景会因适配器未实现在线旋转接口而不可用）。
+        online_processor = MagicMock()
+        online_patcher = patch.object(proc, "online_processor", online_processor, create=True)
+        online_patcher.start()
+        self.addCleanup(online_patcher.stop)
+        online_config = AdaptRotationStage2ProcessorConfig(type="_adapt_rotation_stage2", online=True)
+        config_patcher = patch.object(proc, "config", online_config)
+        config_patcher.start()
+        self.addCleanup(config_patcher.stop)
         with patch("msmodelslim.processor.adapt_rotation.adapt_rotation_stage2.get_current_context", return_value=None):
             with patch(
                 "msmodelslim.processor.adapt_rotation.adapt_rotation_stage2.get_rotate_command", return_value=[]
             ):
                 proc.pre_run()
-        proc.online_processor.pre_run.assert_called_once()
+        online_processor.pre_run.assert_called_once()
