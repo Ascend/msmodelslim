@@ -108,7 +108,7 @@ class TestPipelineAnalysisService:
             )
 
         mock_lw_cls.assert_called_once_with(adapter=mock_model_adapter)
-        assert result is not None
+        assert isinstance(result, AnalysisResult)
         assert result.layer_scores == [{"name": "layer1", "score": 1.0}]
         assert result.method == "std"
         assert result.patterns == ["*"]

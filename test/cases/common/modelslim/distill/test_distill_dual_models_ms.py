@@ -18,20 +18,17 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=super-with-arguments
 
 import logging
 import unittest
 from unittest.mock import Mock, patch
 import pytest
 import numpy as np
-import mindspore  # noqa: F401
 from mindspore import Tensor, nn, context
 from mindspore import dtype as mstype
 from mindspore.common.initializer import Normal
 
 # 导入被测试的类
-from ascend_utils.mindspore.knowledge_distill.distill_losses_manager_ms import DistillLossesManager  # noqa: F401
 from ascend_utils.mindspore.knowledge_distill.distill_dual_models_ms import DistillDualModelsMs
 
 
@@ -39,7 +36,7 @@ class SimpleStudentModel(nn.Cell):
     """简单的学生模型用于测试"""
 
     def __init__(self):
-        super(SimpleStudentModel, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(3, 16, 3, has_bias=True, weight_init=Normal(0.02))
         self.relu = nn.ReLU()
 
@@ -53,7 +50,7 @@ class SimpleTeacherModel(nn.Cell):
     """简单的教师模型用于测试"""
 
     def __init__(self):
-        super(SimpleTeacherModel, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(3, 32, 3, has_bias=True, weight_init=Normal(0.02))
         self.relu = nn.ReLU()
 
@@ -67,7 +64,7 @@ class MultiOutputModel(nn.Cell):
     """多输出模型用于测试"""
 
     def __init__(self):
-        super(MultiOutputModel, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, has_bias=True, weight_init=Normal(0.02))
         self.conv2 = nn.Conv2d(16, 32, 3, has_bias=True, weight_init=Normal(0.02))
 
@@ -205,7 +202,7 @@ class TestDistillDualModelsMs(unittest.TestCase):
         # 测试空输出形状
         distill_model = DistillDualModelsMs(self.config, self.student_model, self.teacher_model, output_shapes=None)
 
-        assert distill_model.distill_losses_manager is not None
+        assert distill_model.distill_losses_manager is mock_distill_manager.return_value
 
         # 测试零hard_label_loss_weight
         self.config.hard_label_loss_weight = 0.0

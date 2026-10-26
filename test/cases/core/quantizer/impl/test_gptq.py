@@ -31,7 +31,7 @@ from msmodelslim.core.quantizer.impl.gptq import (
     calculate_hessian_inv,
     get_ext_value,
 )
-from msmodelslim.ir.qal.qbase import QDType, QScope, QScheme, QStorage
+from msmodelslim.ir.qal.qbase import QDType, QScope, QScheme, QStorage, QParam
 from msmodelslim.utils.exception import SpecError
 
 
@@ -196,7 +196,7 @@ class TestWeightPerChannelGPTQ:  # pylint: disable=attribute-defined-outside-ini
         x = torch.randn(2, 3, 8)
         out = quantizer(x)
 
-        assert quantizer.hessian is not None
+        assert isinstance(quantizer.hessian, torch.Tensor)
         assert quantizer.hessian.shape == (8, 8)
         assert quantizer.nsamples == 6
         # forward 返回原始权重
@@ -231,8 +231,8 @@ class TestWeightPerChannelGPTQ:  # pylint: disable=attribute-defined-outside-ini
         q_storage = quantizer.get_q_storage()
         q_param = quantizer.get_q_param()
 
-        assert q_storage is not None
-        assert q_param is not None
+        assert isinstance(q_storage, QStorage)
+        assert isinstance(q_param, QParam)
         assert q_param.scheme == self.config.to_scheme()
         assert "scale" in q_param.ext
         assert "offset" in q_param.ext
@@ -287,7 +287,7 @@ class TestWeightPerGroupGPTQ:  # pylint: disable=attribute-defined-outside-init
         x = torch.randn(2, 3, 8)
         out = quantizer(x)
 
-        assert quantizer.hessian is not None
+        assert isinstance(quantizer.hessian, torch.Tensor)
         assert quantizer.hessian.shape == (8, 8)
         assert quantizer.nsamples == 6
         assert torch.allclose(out, weight.value)
@@ -320,8 +320,8 @@ class TestWeightPerGroupGPTQ:  # pylint: disable=attribute-defined-outside-init
         q_storage = quantizer.get_q_storage()
         q_param = quantizer.get_q_param()
 
-        assert q_storage is not None
-        assert q_param is not None
+        assert isinstance(q_storage, QStorage)
+        assert isinstance(q_param, QParam)
         assert q_param.scheme == self.config.to_scheme()
         assert "scale" in q_param.ext
         assert "offset" in q_param.ext

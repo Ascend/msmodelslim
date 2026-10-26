@@ -193,8 +193,8 @@ class TestVirtualModelTreeBuilder:
         context = ConvertContext(config=config)
         context.reader = MagicMock()
         tree = VirtualModelTreeBuilder().build(context, catalog)
-        assert tree.get_submodule("model.layers.0.q_proj") is not None  # 校验子模块 linear
-        assert tree.get_submodule("lm_head") is not None  # 校验余量 passthrough
+        assert isinstance(tree.get_submodule("model.layers.0.q_proj"), ModelFreeLinear)  # 校验子模块 linear
+        assert isinstance(tree.get_submodule("lm_head"), PassthroughModule)  # 校验余量 passthrough
 
     def test_build_attach_passthrough_for_unmatched_catalog_keys(self):
         catalog = TensorCatalog()

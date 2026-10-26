@@ -16,7 +16,8 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,no-name-in-module
+import os
 from unittest.mock import patch
 
 import pytest
@@ -74,6 +75,73 @@ class SingleOpModel(nn.Module):
 
     def forward(self, x):
         return self.linear(x)
+
+
+TINY_QWEN2_VOCAB_SIZE = 64
+
+
+def _tiny_qwen2_vocab():
+    """Small whitespace vocabulary that keeps every token id below the tiny vocab size."""
+    base = ["<pad>", "<bos>", "<eos>", "."]
+    filler = ["tok{}".format(i) for i in range(TINY_QWEN2_VOCAB_SIZE - len(base))]
+    return {token: index for index, token in enumerate(base + filler)}
+
+
+def _write_tiny_qwen2_weights(model_dir):
+    """Materialize a tiny random-weight Qwen2 causal LM (no network, no real checkpoint)."""
+    from transformers import Qwen2Config, Qwen2ForCausalLM
+
+    config = Qwen2Config(
+        vocab_size=TINY_QWEN2_VOCAB_SIZE,
+        hidden_size=16,
+        intermediate_size=32,
+        num_hidden_layers=2,
+        num_attention_heads=2,
+        num_key_value_heads=1,
+        max_position_embeddings=32,
+        tie_word_embeddings=False,
+    )
+    Qwen2ForCausalLM(config).save_pretrained(str(model_dir))
+
+
+def _write_tiny_qwen2_tokenizer(model_dir):
+    """Materialize a minimal fast tokenizer that shares the tiny model vocabulary."""
+    try:
+        from tokenizers import Tokenizer, models, pre_tokenizers
+    except ImportError:  # pragma: no cover - optional dependency of transformers
+        return False
+
+    from transformers import PreTrainedTokenizerFast
+
+    backend = Tokenizer(models.WordLevel(vocab=_tiny_qwen2_vocab(), unk_token="<pad>"))
+    backend.pre_tokenizer = pre_tokenizers.Whitespace()
+    tokenizer = PreTrainedTokenizerFast(
+        tokenizer_object=backend,
+        unk_token="<pad>",
+        pad_token="<pad>",
+        eos_token="<eos>",
+        bos_token="<bos>",
+    )
+    tokenizer.save_pretrained(str(model_dir))
+    return True
+
+
+def _ensure_offline_model_env():
+    """Block hub access so a missing file fails loudly instead of downloading weights."""
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
+
+@pytest.fixture(scope="session")
+def tiny_model_dir(tmp_path_factory):
+    """Path to a self-contained tiny Qwen2 checkpoint, usable by from_pretrained offline."""
+    pytest.importorskip("transformers", reason="transformers is required to load local checkpoints")
+    model_dir = tmp_path_factory.mktemp("tiny_qwen2")
+    if not _write_tiny_qwen2_tokenizer(model_dir):
+        pytest.skip("tokenizers backend unavailable for building a local tiny tokenizer")
+    _write_tiny_qwen2_weights(model_dir)
+    _ensure_offline_model_env()
+    return str(model_dir)
 
 
 @pytest.fixture

@@ -26,7 +26,7 @@ from msmodelslim import ir as qir
 from msmodelslim.core.observer.histogram import HistogramObserver, SearchMethod
 from msmodelslim.core.quantizer.base import AutoActQuantizer, QConfig
 from msmodelslim.core.quantizer.impl.histogram import ActPerTensorHistogram
-from msmodelslim.ir.qal.qbase import QDType, QScheme, QScope
+from msmodelslim.ir.qal.qbase import QDType, QScheme, QScope, QParam
 from msmodelslim.utils.exception import SpecError
 
 
@@ -68,7 +68,6 @@ class TestActPerTensorHistogram:
         result = quantizer(x)
 
         q_param = quantizer.get_q_param()
-        assert q_param
         assert q_param.scheme == config.to_scheme()
         assert isinstance(q_param.ext, dict)
         assert "scale" in q_param.ext
@@ -118,7 +117,7 @@ class TestActPerTensorHistogram:
         x = torch.randn(8, 8)
         quantizer(x)
         q_param = quantizer.get_q_param()
-        assert q_param is not None
+        assert isinstance(q_param, QParam)
         assert isinstance(q_param.ext, dict)
         assert "scale" in q_param.ext
         assert "offset" in q_param.ext

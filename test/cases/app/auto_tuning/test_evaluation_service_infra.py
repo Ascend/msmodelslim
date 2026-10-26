@@ -108,4 +108,4 @@ class TestEvaluateServiceInfra:
 
         # 完整实现后不应再抛 TypeError
         instance = _Concrete()
-        assert instance is not None
+        assert isinstance(instance, EvaluateServiceInfra)

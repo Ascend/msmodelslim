@@ -64,8 +64,8 @@ class TestHistogramObserver:
         observer = HistogramObserver(HistogramObserverConfig())
         observer.update(torch.tensor([0.0, 1.0, 2.0, 3.0, 4.0]))
         clip_min, clip_max = observer.get_clip_bounds()
-        assert clip_min is not None
-        assert clip_max is not None
+        assert isinstance(clip_min, torch.Tensor)
+        assert isinstance(clip_max, torch.Tensor)
         assert clip_min <= clip_max
 
     def test_get_clip_bounds_raises_spec_error_when_not_updated(self):

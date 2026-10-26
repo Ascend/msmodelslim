@@ -24,7 +24,7 @@ import torch
 from pydantic import ValidationError
 
 from msmodelslim.ir.api import calculate_qparam
-from msmodelslim.ir.qal.qbase import QStorage, QDType, QScheme, QScope
+from msmodelslim.ir.qal.qbase import QStorage, QDType, QScheme, QScope, QParam
 from msmodelslim import ir as qir
 from msmodelslim.core.observer import MsMinMaxObserver
 from msmodelslim.core.quantizer.base import QConfig
@@ -67,10 +67,6 @@ class TestWeightPerChannelSsz:  # pylint: disable=attribute-defined-outside-init
             self.config,
             quantizer.config,
         )
-        assert quantizer.minmax_observer is not None, "minmax_observer is not correct, expected: %s, actual: %s" % (
-            MsMinMaxObserver,
-            quantizer.minmax_observer,
-        )
         assert isinstance(quantizer.minmax_observer, MsMinMaxObserver), (
             "minmax_observer is not correct, expected: %s, actual: %s"
             % (MsMinMaxObserver, type(quantizer.minmax_observer))
@@ -112,8 +108,11 @@ class TestWeightPerChannelSsz:  # pylint: disable=attribute-defined-outside-init
         quantizer()
         q_storage = quantizer.get_q_storage()
         q_param = quantizer.get_q_param()
-        assert q_storage is not None, "q_storage is not correct, expected: %s, actual: %s" % (None, q_storage)
-        assert q_param is not None, "q_param is not correct, expected: %s, actual: %s" % (None, q_param)
+        assert isinstance(q_storage, QStorage), "q_storage is not correct, expected: %s, actual: %s" % (
+            QStorage,
+            q_storage,
+        )
+        assert isinstance(q_param, QParam), "q_param is not correct, expected: %s, actual: %s" % (QParam, q_param)
 
     def test_forward_before_init_weight(self):
         """测试在初始化权重之前前向传播"""
@@ -143,7 +142,7 @@ class TestWeightPerChannelSsz:  # pylint: disable=attribute-defined-outside-init
 
         # 验证q_param被设置
         q_param = quantizer.get_q_param()
-        assert q_param is not None, "q_param is not correct, expected: %s, actual: %s" % (None, q_param)
+        assert isinstance(q_param, QParam), "q_param is not correct, expected: %s, actual: %s" % (QParam, q_param)
         assert q_param.scheme == self.config.to_scheme(), "q_param.scheme is not correct, expected: %s, actual: %s" % (
             self.config.to_scheme(),
             q_param.scheme,
@@ -179,7 +178,10 @@ class TestWeightPerChannelSsz:  # pylint: disable=attribute-defined-outside-init
 
         # 验证q_storage被设置
         q_storage = quantizer.get_q_storage()
-        assert q_storage is not None, "q_storage is not correct, expected: %s, actual: %s" % (None, q_storage)
+        assert isinstance(q_storage, QStorage), "q_storage is not correct, expected: %s, actual: %s" % (
+            QStorage,
+            q_storage,
+        )
 
         # 验证输出形状
         assert result.shape == weight.value.shape, "result.shape is not correct, expected: %s, actual: %s" % (
@@ -224,7 +226,7 @@ class TestWeightPerChannelSsz:  # pylint: disable=attribute-defined-outside-init
                 weight.value.shape,
                 result.shape,
             )
-            assert q_param is not None, "q_param is not correct, expected: %s, actual: %s" % (None, q_param)
+            assert isinstance(q_param, QParam), "q_param is not correct, expected: %s, actual: %s" % (QParam, q_param)
             assert q_param.scheme == self.config.to_scheme(), (
                 "q_param.scheme is not correct, expected: %s, actual: %s" % (self.config.to_scheme(), q_param.scheme)
             )
@@ -306,8 +308,8 @@ class TestWeightPerChannelSszDistributedSync:  # pylint: disable=attribute-defin
         # 验证状态被正确重建
         assert new_quantizer.is_quantized is True, "quantizer should be marked as quantized"
         assert new_quantizer.weight is None, "weight should be released after loading quantized state"
-        assert new_quantizer.w_q_param is not None, "w_q_param should be set"
-        assert new_quantizer.w_q_storage is not None, "w_q_storage should be set"
+        assert isinstance(new_quantizer.w_q_param, QParam), "w_q_param should be set"
+        assert isinstance(new_quantizer.w_q_storage, QStorage), "w_q_storage should be set"
 
         # 验证量化参数一致
         assert torch.equal(get_ext_scale(new_quantizer.w_q_param), ref_scale), "scale should match reference"
@@ -457,8 +459,8 @@ class TestWeightPerChannelSszDistributedSync:  # pylint: disable=attribute-defin
         # 验证非 owner 的 load_quantized_from_broadcast_tensors 被调用后
         # quantizer 状态正确
         assert quantizer.is_quantized is True, "non-owner quantizer should be quantized after broadcast"
-        assert quantizer.w_q_param is not None, "non-owner quantizer should have q_param"
-        assert quantizer.w_q_storage is not None, "non-owner quantizer should have q_storage"
+        assert isinstance(quantizer.w_q_param, QParam), "non-owner quantizer should have q_param"
+        assert isinstance(quantizer.w_q_storage, QStorage), "non-owner quantizer should have q_storage"
 
     @mock.patch("msmodelslim.core.quantizer.impl.ssz.dist")
     @mock.patch("msmodelslim.core.quantizer.impl.ssz.broadcast_tensor_process_group_safe")
@@ -545,7 +547,7 @@ class TestWeightPerChannelSszDistributedSync:  # pylint: disable=attribute-defin
         with pytest.raises(SpecError, match="data-free"):
             q.distributed_sync(record, sync_ctx)
 
-    def test_distributed_sync_data_free_quantizer_does_not_raise(self):
+    def test_distributed_sync_pass_when_quantizer_is_data_free(self):
         """验证 data-free quantizer 调用 distributed_sync 不抛出异常"""
         from msmodelslim.core.quantizer.base import AutoWeightQuantizer
 
@@ -605,7 +607,10 @@ class TestSszCalculateQparam:  # pylint: disable=attribute-defined-outside-init
         result_q_param = ssz_calculate_qparam(weight.T, initial_q_param)
 
         # 验证返回的q_param
-        assert result_q_param is not None, "q_param is not correct, expected: %s, actual: %s" % (None, result_q_param)
+        assert isinstance(result_q_param, QParam), "q_param is not correct, expected: %s, actual: %s" % (
+            QParam,
+            result_q_param,
+        )
         assert result_q_param.scheme == self.symmetric_config.to_scheme(), (
             "q_param.scheme is not correct, expected: %s, actual: %s"
             % (self.symmetric_config.to_scheme(), result_q_param.scheme)
@@ -659,7 +664,10 @@ class TestSszCalculateQparam:  # pylint: disable=attribute-defined-outside-init
         result_q_param = ssz_calculate_qparam(weight.T, initial_q_param)
 
         # 验证返回的q_param
-        assert result_q_param is not None, "q_param is not correct, expected: %s, actual: %s" % (None, result_q_param)
+        assert isinstance(result_q_param, QParam), "q_param is not correct, expected: %s, actual: %s" % (
+            QParam,
+            result_q_param,
+        )
         assert result_q_param.scheme == self.asymmetric_config.to_scheme(), (
             "q_param.scheme is not correct, expected: %s, actual: %s"
             % (self.asymmetric_config.to_scheme(), result_q_param.scheme)

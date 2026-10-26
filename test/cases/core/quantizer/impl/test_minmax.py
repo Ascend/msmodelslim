@@ -23,7 +23,7 @@ import pytest
 import torch
 from pydantic import ValidationError
 
-from msmodelslim.ir.qal.qbase import QStorage, QDType, QScheme, QScope
+from msmodelslim.ir.qal.qbase import QStorage, QDType, QScheme, QScope, QParam
 from msmodelslim import ir as qir
 from msmodelslim.core.observer import MsMinMaxObserver
 from msmodelslim.core.quantizer.base import QConfig, AutoActQuantizer, AutoWeightQuantizer
@@ -77,7 +77,6 @@ class TestActPerTensorMinmax:
 
         # 验证q_param被设置
         q_param = quantizer.get_q_param()
-        assert q_param
         assert q_param.scheme == config.to_scheme()
         assert isinstance(q_param.ext, dict)
         assert "scale" in q_param.ext
@@ -140,7 +139,6 @@ class TestActPerTokenMinmax:
 
         # 验证q_param被设置
         q_param = quantizer.get_q_param()
-        assert q_param
         assert q_param.scheme == config.to_scheme()
 
         # 验证输出形状保持不变
@@ -217,7 +215,6 @@ class TestWeightPerChannelMinmax:  # pylint: disable=attribute-defined-outside-i
 
         # 验证q_param被设置
         q_param = quantizer.get_q_param()
-        assert q_param
         assert q_param.scheme == self.config.to_scheme()
         assert isinstance(q_param.ext, dict)
         assert "scale" in q_param.ext
@@ -230,7 +227,7 @@ class TestWeightPerChannelMinmax:  # pylint: disable=attribute-defined-outside-i
 
         # 验证q_storage被设置
         q_storage = quantizer.get_q_storage()
-        assert q_storage is not None
+        assert isinstance(q_storage, QStorage)
 
         # 验证输出形状
         assert result.shape == weight.value.shape
@@ -251,7 +248,7 @@ class TestWeightPerChannelMinmax:  # pylint: disable=attribute-defined-outside-i
             q_param = quantizer.get_q_param()
 
             assert result.shape == weight.value.shape
-            assert q_param is not None
+            assert isinstance(q_param, QParam)
             assert q_param.scheme == self.config.to_scheme()
             assert q_param.ext["scale"].shape == (shape[0],)
             assert q_param.ext["offset"].shape == (shape[0],)
@@ -274,7 +271,7 @@ class TestWeightPerChannelMinmax:  # pylint: disable=attribute-defined-outside-i
         weight = QStorage(QDType.FLOAT, torch.randn(10, 20))
         quantizer.init_weight(weight)
         storage = quantizer.get_q_storage()
-        assert storage is not None
+        assert isinstance(storage, QStorage)
 
     def test_get_q_param_returns_qparam_when_not_forwarded(self):
         """边界：未执行 forward 时 get_q_param 应自动触发量化。"""
@@ -283,7 +280,7 @@ class TestWeightPerChannelMinmax:  # pylint: disable=attribute-defined-outside-i
         weight = QStorage(QDType.FLOAT, torch.randn(10, 20))
         quantizer.init_weight(weight)
         qp = quantizer.get_q_param()
-        assert qp is not None
+        assert isinstance(qp, QParam)
 
 
 class TestActPerChannelMinmax:
@@ -299,7 +296,7 @@ class TestActPerChannelMinmax:
         out = quantizer(x)
         assert out.shape == x.shape
         assert torch.isfinite(out).all()
-        assert quantizer.get_q_param() is not None
+        assert isinstance(quantizer.get_q_param(), QParam)
         assert quantizer.get_q_param().scheme == qir.mxfp8_per_channel_sym
 
 
@@ -595,4 +592,4 @@ class TestMXActPerBlockMinmax:
         quantizer = AutoActQuantizer.from_config(config)
         quantizer.q_param = None
         qp = quantizer.get_q_param()
-        assert qp is not None
+        assert isinstance(qp, QParam)

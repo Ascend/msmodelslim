@@ -37,6 +37,13 @@ class CustomInvalidType:
         self.name = name
 
 
+def _make_context_from_state(**state):
+    """Build an uninitialized context through its public pickle restoration path."""
+    ctx = SharedDictContext.__new__(SharedDictContext)
+    ctx.__setstate__(state)
+    return ctx
+
+
 def _worker_read_ns(shared_ctx, ev, ns_key, expected, tensor_keys):
     ev.wait(timeout=10)
     ns = shared_ctx[ns_key]
@@ -166,31 +173,31 @@ class TestSharedDictContext:
         mock_mgr.dict.return_value = {}
         mock_mgr.validated_dict = MagicMock(return_value=MagicMock())
 
-        ctx = SharedDictContext.__new__(SharedDictContext)
-        ctx._enable_debug = False
-        ctx._manager = mock_mgr
-        ctx._address = "/tmp/fake.sock"
-        ctx._namespaces = {}
+        ctx = _make_context_from_state(
+            _enable_debug=False,
+            _address="/tmp/fake.sock",
+            _namespaces={},
+        )
 
-        ns = ctx["ns1"]
-        assert isinstance(ns, SharedNamespace)
-        assert "ns1" in ctx._namespaces
+        with patch.object(ctx, "_manager", mock_mgr):
+            ns = ctx["ns1"]
+            assert isinstance(ns, SharedNamespace)
+            assert "ns1" in ctx._namespaces
 
     def test_getstate_clears_manager_when_pickled(self):
         """场景：__getstate__。预期：_manager 置 None。"""
-        ctx = SharedDictContext.__new__(SharedDictContext)
-        ctx._manager = MagicMock()
-        ctx._address = "/tmp/x.sock"
-        ctx._namespaces = {}
-        ctx._enable_debug = True
-        state = ctx.__getstate__()
-        assert state["_manager"] is None
+        ctx = _make_context_from_state(
+            _address="/tmp/x.sock",
+            _namespaces={},
+            _enable_debug=True,
+        )
+        with patch.object(ctx, "_manager", MagicMock()):
+            state = ctx.__getstate__()
+            assert state["_manager"] is None
 
     def test_ensure_manager_reconnects_when_manager_none(self):
         """场景：_manager 为 None 时 _ensure_manager。预期：重建 PeercredManager。"""
-        ctx = SharedDictContext.__new__(SharedDictContext)
-        ctx._manager = None
-        ctx._address = "/tmp/recon.sock"
+        ctx = _make_context_from_state(_address="/tmp/recon.sock", _namespaces={})
         with patch("msmodelslim.core.context.shared_dict_context.context.PeercredManager") as mock_cls:
             mock_cls.return_value = MagicMock()
             mgr = ctx._ensure_manager()
@@ -199,8 +206,7 @@ class TestSharedDictContext:
 
     def test_repr_shows_context_type_when_called(self):
         """场景：SharedDictContext.__repr__。预期：含 SharedContext。"""
-        ctx = SharedDictContext.__new__(SharedDictContext)
-        ctx._namespaces = MagicMock()
+        ctx = _make_context_from_state(_namespaces=MagicMock())
         ctx._namespaces.keys.return_value = ["a"]
         assert "SharedContext" in repr(ctx)
 

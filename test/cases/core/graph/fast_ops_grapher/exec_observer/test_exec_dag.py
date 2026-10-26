@@ -16,7 +16,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,no-name-in-module
 import pytest
 import torch
 import networkx as nx
@@ -118,12 +118,12 @@ class TestGraphEdge:
 
     def test_get_source_node_returns_correct_node_in_graph(self, graph_with_two_nodes):
         source = graph_with_two_nodes[3].get_source_node()
-        assert source is not None
+        assert isinstance(source, GraphNode)
         assert source.id == 0
 
     def test_get_target_node_returns_correct_node_in_graph(self, graph_with_two_nodes):
         target = graph_with_two_nodes[3].get_target_node()
-        assert target is not None
+        assert isinstance(target, GraphNode)
         assert target.id == 1
 
     def test_format_info_returns_tensor_details(self, sample_tensor_info):
@@ -332,8 +332,8 @@ class TestTraceToGraph:
         trace = trace_module(simple_model, args=(sample_input,))
         graph = trace_to_graph(trace)
         for edge in graph.iter_edges():
-            assert graph.get_node(edge.source_node_id) is not None
-            assert graph.get_node(edge.target_node_id) is not None
+            assert isinstance(graph.get_node(edge.source_node_id), GraphNode)
+            assert isinstance(graph.get_node(edge.target_node_id), GraphNode)
 
     def test_trace_to_graph_result_is_directed_acyclic_graph(self, simple_model, sample_input):
         trace = trace_module(simple_model, args=(sample_input,))

@@ -197,7 +197,7 @@ class TestStandingHighStrategy:
             gen = strategy.generate_practice(model, device=DeviceType.NPU)
             practice = next(gen)
 
-        assert practice is not None
+        assert practice.apiversion == "modelslim_v1"
         assert practice.metadata.config_id.startswith("standing_high_float_")
         linear_procs = [p for p in practice.spec.process if getattr(p, "type", None) == "linear_quant"]
         assert linear_procs, "全回退 practice 应至少保留一个 linear_quant"
@@ -281,7 +281,7 @@ class TestStandingHighStrategy:
             anti_outlier,
             linear_quant_exclude=["layer.0.linear"],
         )
-        assert practice.spec is not None
+        assert isinstance(practice.spec, ModelslimV1ServiceConfig)
         linear_procs = [p for p in practice.spec.process if getattr(p, "type", None) == "linear_quant"]
         assert len(linear_procs) >= 1
         excludes = linear_procs[0].exclude or []
@@ -340,14 +340,14 @@ class TestStandingHighStrategy:
 
             # zero 不满足 → 进入二分搜索
             p3 = gen.send(unsatisfied)
-            assert p3 is not None
+            assert p3.apiversion == "modelslim_v1"
 
             # 二分搜索满足 → 进入摸高循环
             p4 = gen.send(satisfied)
-            assert p4 is not None
+            assert p4.apiversion == "modelslim_v1"
 
             p5 = gen.send(satisfied)
-            assert p5 is not None
+            assert p5.apiversion == "modelslim_v1"
 
             with pytest.raises(StopIteration):
                 gen.send(None)
@@ -365,32 +365,42 @@ class TestStandingHighStrategy:
         """场景：disable_level=0。预期：空列表。"""
         strategy = StandingHighStrategy.__new__(StandingHighStrategy)
         strategy.config = self._make_config()
-        strategy._analysis_layer_scores = [
-            {"name": "model.layers.2", "score": 0.9},
-            {"name": "model.layers.1", "score": 0.5},
-        ]
-        assert strategy.select_layers_by_disable_level(0) == []
+        with patch.object(
+            strategy,
+            "_analysis_layer_scores",
+            [
+                {"name": "model.layers.2", "score": 0.9},
+                {"name": "model.layers.1", "score": 0.5},
+            ],
+            create=True,
+        ):
+            assert strategy.select_layers_by_disable_level(0) == []
 
     def test_select_layers_returns_top_k_names_when_disable_level_positive(self):
         """场景：disable_level=1。预期：最高分一层。"""
         strategy = StandingHighStrategy.__new__(StandingHighStrategy)
         strategy.config = self._make_config()
-        strategy._analysis_layer_scores = [
-            {"name": "model.layers.2", "score": 0.9},
-            {"name": "model.layers.1", "score": 0.5},
-        ]
-        names = strategy.select_layers_by_disable_level(1)
-        assert names == ["model.layers.2"]
+        with patch.object(
+            strategy,
+            "_analysis_layer_scores",
+            [
+                {"name": "model.layers.2", "score": 0.9},
+                {"name": "model.layers.1", "score": 0.5},
+            ],
+            create=True,
+        ):
+            names = strategy.select_layers_by_disable_level(1)
+            assert names == ["model.layers.2"]
 
     def test_build_practice_config_appends_wildcard_exclude_when_layers_given(self):
         """场景：指定回退层。预期：linear_quant exclude 含通配符。"""
         strategy = StandingHighStrategy.__new__(StandingHighStrategy)
         strategy.config = self._make_config()
-        strategy._StandingHighStrategy__counter = 0
-        practice = strategy._build_practice_config(
-            strategy.config.anti_outlier_strategies[0],
-            ["model.layers.1"],
-        )
+        with patch.object(strategy, "_StandingHighStrategy__counter", 0, create=True):
+            practice = strategy._build_practice_config(
+                strategy.config.anti_outlier_strategies[0],
+                ["model.layers.1"],
+            )
         linear_procs = [p for p in practice.spec.process if p.type == "linear_quant"]
         assert any("*model.layers.1.*" in (p.exclude or []) for p in linear_procs)
 
@@ -398,7 +408,9 @@ class TestStandingHighStrategy:
         """场景：_permute 首次 yield。预期：返回配置中的策略列表。"""
         strategy = StandingHighStrategy.__new__(StandingHighStrategy)
         strategy.config = self._make_config()
-        strategy._StandingHighStrategy__counter = 0
-        strategy._current_index = 0
-        chosen = next(strategy._permute())
+        with (
+            patch.object(strategy, "_StandingHighStrategy__counter", 0, create=True),
+            patch.object(strategy, "_current_index", 0, create=True),
+        ):
+            chosen = next(strategy._permute())
         assert chosen is strategy.config.anti_outlier_strategies[0]

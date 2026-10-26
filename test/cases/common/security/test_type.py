@@ -24,7 +24,7 @@ import pytest
 from ascend_utils.common import security
 
 
-def test_check_type_given_valid_when_any_then_pass():
+def test_check_type_pass_when_valid_types():
     security.check_type(12, value_type=int)
     security.check_type(1.0, value_type=(int, float), additional_check_func=lambda xx: xx > 0)
     security.check_type(["aa", "bb"], value_type=list, additional_check_func=lambda xx: isinstance(xx, str))
@@ -56,7 +56,7 @@ def test_check_type_given_list_tuple_check_when_fail_then_error():
         )
 
 
-def test_check_number_given_valid_when_any_then_pass():
+def test_check_number_pass_when_number():
     security.check_number(12, value_type=int)
     security.check_number(12.0, value_type=float, min_value=0)
     security.check_number(1, value_type=(int, float), max_value=12)
@@ -77,7 +77,7 @@ def test_check_number_given_valid_when_min_max_invalid_then_error():
         security.check_number(4.2, value_type=(int, float), max_value=1, param_name="test")
 
 
-def test_check_int_given_valid_when_any_then_pass():
+def test_check_int_pass_when_int():
     security.check_int(12)
     security.check_int(12, min_value=0)
     security.check_int(1, max_value=12)
@@ -89,7 +89,7 @@ def test_check_int_given_float_when_any_then_error():
         security.check_int(12.0, param_name="test")
 
 
-def test_check_element_type_given_valid_when_any_then_pass():
+def test_check_element_type_pass_when_element_types_matched():
     security.check_element_type([12], element_type=int)
     security.check_element_type(["aa", "bb"], element_type=str)
     security.check_element_type([], element_type=int)
@@ -111,7 +111,7 @@ def test_check_element_type_given_invalid_element_when_any_then_error():
         security.check_element_type(("12", "13", 14), element_type=(int, float), param_name="test")
 
 
-def test_check_character_given_valid_when_any_then_pass():
+def test_check_character_pass_when_valid_characters():
     security.check_character(11)
     security.check_character("11")
     security.check_character(["11", "12"])
@@ -119,7 +119,7 @@ def test_check_character_given_valid_when_any_then_pass():
     security.check_character(["11", [11, "12"]])
 
 
-def test_check_character_given_invalid_when_any_then_pass():
+def test_check_character_raise_value_error_when_invalid_characters():
     with pytest.raises(ValueError):
         # ValueError: test contains invalid characters.
         security.check_character("$", param_name="test")
@@ -128,7 +128,7 @@ def test_check_character_given_invalid_when_any_then_pass():
         security.check_character(["$"], param_name="test")
 
 
-def test_check_dict_character_given_valid_when_any_then_pass():
+def test_check_dict_character_pass_when_valid_dict():
     security.check_dict_character({})
     security.check_dict_character({'aa': 11})
     security.check_dict_character({'aa': {'bb': 12}})

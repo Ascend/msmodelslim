@@ -32,11 +32,11 @@ from unittest.mock import MagicMock, patch
 
 from testing_utils.mock import mock_init_config
 
-from msmodelslim.core.analysis_service import AnalysisResult
-from msmodelslim.core.const import DeviceType
-from msmodelslim.utils.exception import SchemaValidateError, SecurityError
-
 mock_init_config()
+
+from msmodelslim.core.analysis_service import AnalysisResult  # noqa: E402
+from msmodelslim.core.const import DeviceType  # noqa: E402
+from msmodelslim.utils.exception import SchemaValidateError, SecurityError  # noqa: E402
 
 
 class TestComprehensiveAnalysisCoverage(unittest.TestCase):

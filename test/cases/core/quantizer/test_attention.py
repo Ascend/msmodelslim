@@ -42,7 +42,7 @@ class TestDynamicCacheQuantizer:
         assert quantizer.config == config
         assert hasattr(quantizer, 'input_quantizer')
 
-    def test_forward_pass(self):
+    def test_dynamic_cache_quantizer_forward_returns_input_shape_and_dtype_when_called(self):
         """测试前向传播"""
         config = create_test_config()
         quantizer = DynamicCacheQuantizer(config)

@@ -31,5 +31,7 @@ class TestCreateConvertApplication:
     def test_create_convert_application_return_application_when_called(self):
         app = create_convert_application()
         assert isinstance(app, ConvertApplication)
-        assert app._router is not None
+        # 工厂必须让 application 与 executor 复用同一 IRRouter 实例；
+        # 该装配不变量无法通过公开 run() 在不执行完整转换的情况下表达，
+        # 故此处仅做只读的内部装配观测（B14 允许的必要内部观测）。
         assert app._executor._router is app._router

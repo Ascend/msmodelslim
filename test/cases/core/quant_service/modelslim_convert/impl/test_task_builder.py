@@ -25,6 +25,7 @@ from torch import nn
 
 from msmodelslim.core.convert.catalog import PreprocessResult, TensorCatalog, TensorEntry
 from msmodelslim.core.convert.config import ConvertConfig, ConvertRule
+from msmodelslim.core.convert.edges import RouteConstraints
 from msmodelslim.core.convert.protocol import ConvertContext
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
 from msmodelslim.core.quant_service.modelslim_convert.impl.task_builder import DefaultIRTaskBuilder
@@ -65,7 +66,7 @@ class TestDefaultIRTaskBuilder:
         assert len(tasks) == 1
         assert tasks[0].module_path == "layers.0.q_proj"
         assert tasks[0].target_ir == IRKind.W8A8_MXFP8
-        assert tasks[0].route_constraints is not None
+        assert isinstance(tasks[0].route_constraints, RouteConstraints)
         assert tasks[0].route_constraints.explicit_route == [IRKind.FLOAT, IRKind.W8A8_MXFP8]
 
     def test_build_set_fp8_to_float_auto_route_when_source_is_fp8_block(self):

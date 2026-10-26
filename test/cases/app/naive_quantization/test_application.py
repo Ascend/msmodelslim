@@ -28,11 +28,11 @@ from unittest.mock import MagicMock, patch
 
 from testing_utils.mock import mock_init_config
 
-from msmodelslim.core.const import QuantType
-from msmodelslim.core.practice.interface import Metadata
-from msmodelslim.utils.exception import SchemaValidateError, ToDoError, UnsupportedError
-
 mock_init_config()
+
+from msmodelslim.core.const import QuantType  # noqa: E402
+from msmodelslim.core.practice.interface import Metadata  # noqa: E402
+from msmodelslim.utils.exception import SchemaValidateError, ToDoError, UnsupportedError  # noqa: E402
 
 
 class TestNaiveQuantizationAppBase(unittest.TestCase):

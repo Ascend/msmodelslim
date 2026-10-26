@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 import pytest
 import torch
 
-from msmodelslim.ir.qal import QStorage, QDType
+from msmodelslim.ir.qal import QStorage, QDType, QParam
 from msmodelslim.core.quantizer.base import QConfig
 
 from msmodelslim.core.quantizer.impl.fouroversix import WeightFouroverSixQuantizer
@@ -81,8 +81,8 @@ class TestWeightFouroverSixQuantizer:
         weight_storage = QStorage(QDType.FLOAT, weight_tensor)
         quantizer.init_weight(weight_storage)
 
-        assert quantizer.w_q_storage is not None
-        assert quantizer.w_q_param.ext["scale"] is not None
+        assert isinstance(quantizer.w_q_storage, QStorage)
+        assert isinstance(quantizer.w_q_param.ext["scale"], torch.Tensor)
         assert "scale" in quantizer.w_q_param.ext
 
     def test_init_weight_selects_best_scale_based_on_mse(self, standard_config):
@@ -93,8 +93,8 @@ class TestWeightFouroverSixQuantizer:
         weight_storage = QStorage(QDType.FLOAT, weight_tensor)
         quantizer.init_weight(weight_storage)
 
-        assert quantizer.w_q_storage is not None
-        assert quantizer.w_q_param.ext["scale"] is not None
+        assert isinstance(quantizer.w_q_storage, QStorage)
+        assert isinstance(quantizer.w_q_param.ext["scale"], torch.Tensor)
         selected_scale = quantizer.w_q_param.ext["scale"]
         assert selected_scale.dim() > 0
 
@@ -105,8 +105,8 @@ class TestWeightFouroverSixQuantizer:
         weight_storage = QStorage(QDType.FLOAT, weight_tensor)
         quantizer.init_weight(weight_storage)
 
-        assert quantizer.w_q_storage is not None
-        assert quantizer.w_q_param.ext["scale"] is not None
+        assert isinstance(quantizer.w_q_storage, QStorage)
+        assert isinstance(quantizer.w_q_param.ext["scale"], torch.Tensor)
 
     def test_forward_return_dequantized_value(self, standard_config):
         """测试前向传播能够正确反量化权重"""
@@ -117,7 +117,7 @@ class TestWeightFouroverSixQuantizer:
         quantizer.init_weight(weight_storage)
 
         output = quantizer(x=None)
-        assert output is not None
+        assert isinstance(output, torch.Tensor)
         assert output.shape == weight_tensor.shape
 
     def test_forward_raise_error_when_not_initialized(self, standard_config):
@@ -134,7 +134,7 @@ class TestWeightFouroverSixQuantizer:
         quantizer.init_weight(weight_storage)
 
         q_storage = quantizer.get_q_storage()
-        assert q_storage is not None
+        assert isinstance(q_storage, QStorage)
         assert isinstance(q_storage, QStorage)
 
     def test_get_q_storage_return_none_before_init(self, standard_config):
@@ -147,7 +147,7 @@ class TestWeightFouroverSixQuantizer:
         """测试 get_q_param 返回有效的 QParam"""
         quantizer = WeightFouroverSixQuantizer(standard_config)
         q_param = quantizer.get_q_param()
-        assert q_param is not None
+        assert isinstance(q_param, QParam)
         assert q_param.scheme.dtype.name == "MXFP4"
         assert q_param.scheme.scope.name == "PER_BLOCK"
 
@@ -180,7 +180,7 @@ class TestWeightFouroverSixQuantizer:
         weight_storage = QStorage(QDType.FLOAT, weight_tensor)
         quantizer.init_weight(weight_storage)
 
-        assert quantizer.w_q_storage is not None
+        assert isinstance(quantizer.w_q_storage, QStorage)
         selected_scale = quantizer.w_q_param.ext["scale"]
         assert selected_scale.shape[1] == 2  # 两个块
 

@@ -21,6 +21,7 @@ See the Mulan PSL v2 for more details.
 msmodelslim.core.quant_service.modelslim_convert.impl.save_adapter 模块的单元测试
 """
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -33,6 +34,15 @@ from msmodelslim.core.quant_service.modelslim_convert.impl.save_adapter import (
 )
 from msmodelslim.format.compressed_tensors_format.compressed_tensors import CompressedTensorsQuantFormat
 from msmodelslim.processor.save.processor import QuantSaveProcessor
+
+
+def _hf_saver(writer):
+    format_mock = MagicMock(spec=CompressedTensorsQuantFormat)
+    format_mock.written_safetensors_writer.return_value = writer
+    config = SimpleNamespace(format=MagicMock(), save_directory="")
+    adapter = SimpleNamespace(model_path="")
+    with patch("msmodelslim.processor.save.processor.QuantFormatFactory.create", return_value=format_mock):
+        return QuantSaveProcessor(nn.Module(), config, adapter)
 
 
 def _context(dst_format: str, part_file_size: int = 4) -> ConvertContext:
@@ -266,9 +276,7 @@ class TestSaveProcessorAdapter:
         adapter = SaveProcessorAdapter()
         closed_writer = MagicMock()
         closed_writer.saved_keys_map = {"model.norm.weight": "model-00001-of-00001.safetensors"}
-        mock_saver = MagicMock(spec=QuantSaveProcessor)
-        mock_saver._format = MagicMock(spec=CompressedTensorsQuantFormat)
-        mock_saver._format.written_safetensors_writer.return_value = closed_writer
+        mock_saver = _hf_saver(closed_writer)
         with (
             patch(
                 "msmodelslim.core.quant_service.modelslim_convert.impl.save_adapter.QuantSaveProcessor",

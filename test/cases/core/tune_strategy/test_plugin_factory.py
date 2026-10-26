@@ -19,7 +19,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from msmodelslim.core.tune_strategy.plugin_factory import PluginTuningStrategyFactory
 
@@ -32,11 +32,11 @@ class TestPluginTuningStrategyFactory:
         dataset_loader = MagicMock()
         factory = PluginTuningStrategyFactory(dataset_loader=dataset_loader)
         expected_strategy = MagicMock()
-        factory._factory = MagicMock()
-        factory._factory.create.return_value = expected_strategy
         strategy_config = MagicMock()
 
-        result = factory.create_strategy(strategy_config)
+        with patch.object(factory, "_factory") as mock_factory:
+            mock_factory.create.return_value = expected_strategy
+            result = factory.create_strategy(strategy_config)
 
-        factory._factory.create.assert_called_once_with(strategy_config, dataset_loader=dataset_loader)
+        mock_factory.create.assert_called_once_with(strategy_config, dataset_loader=dataset_loader)
         assert result is expected_strategy

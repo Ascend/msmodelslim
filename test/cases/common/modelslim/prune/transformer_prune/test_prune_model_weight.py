@@ -18,11 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=redefined-outer-name,useless-object-inheritance
+
+# pylint: disable=redefined-outer-name
 
 import os
 
-import stat  # noqa: F401
 from resources.sample_net_prune import TorchPrunedModel
 from resources.sample_net_prune import TorchOriModel
 from resources.sample_net_prune import MsPrunedModel
@@ -84,14 +84,14 @@ def ms_ori_weight_path():
         os.remove(weight_file_path)
 
 
-class TestPruneModelWeight(object):
+class TestPruneModelWeight:
     @pytest.mark.filterwarnings("ignore:TypedStorage is deprecated:UserWarning")
-    def test_prune_model_weight_given_valid_when_pytorch_then_pass(
+    def test_prune_model_weight_pass_when_pytorch_model_given(
         self, torch_ori_weight_path, torch_pruned_model, prune_config
     ):
         prune_model_weight(torch_pruned_model, prune_config, torch_ori_weight_path)
 
-    def test_prune_model_weight_given_valid_when_mindspore_then_pass(
+    def test_prune_model_weight_pass_when_mindspore_model_given(
         self, ms_ori_weight_path, ms_pruned_model, prune_config
     ):
         prune_model_weight(ms_pruned_model, prune_config, ms_ori_weight_path)

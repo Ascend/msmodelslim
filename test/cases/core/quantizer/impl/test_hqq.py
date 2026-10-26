@@ -106,8 +106,8 @@ class TestWeightPerChannelHQQ:  # pylint: disable=attribute-defined-outside-init
         quantizer.init_weight(random_weight_qstorage())
         quantizer.forward(None)
 
-        assert quantizer.get_q_storage() is not None, "q_storage 不应为 None"
-        assert quantizer.get_q_param() is not None, "q_param 不应为 None"
+        assert isinstance(quantizer.get_q_storage(), QStorage), "q_storage 不应为 None"
+        assert isinstance(quantizer.get_q_param(), QParam), "q_param 不应为 None"
 
     def test_get_q_param_offset_negated(self):
         """非对称量化：get_q_param 的 offset 应被取反（匹配 vllm 语义），且 scheme 为 neg_offset。"""
@@ -116,7 +116,7 @@ class TestWeightPerChannelHQQ:  # pylint: disable=attribute-defined-outside-init
         quantizer.forward(None)
 
         q_param = quantizer.get_q_param()
-        assert q_param.ext["offset"] is not None
+        assert isinstance(q_param.ext["offset"], torch.Tensor)
         assert torch.equal(q_param.ext["offset"], -quantizer.w_q_param.ext["offset"]), "非对称 offset 应被取反"
         # 返回 NEG_OFFSET 专用 scheme，使 AutoFakeQuantLinear.create 命中 neg_offset IR
         assert q_param.scheme == qir.int8_per_channel_asym_neg_offset, "get_q_param 应返回 neg_offset 专用 scheme"

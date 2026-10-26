@@ -96,42 +96,28 @@ class TestWeightManager:
 
         assert wm.offload_device == "cpu"
 
-    def test_decoder_pre_hook_hydrates_and_aligns_when_layer_known(self):
+    def test_decoder_hooks_hydrate_and_align_when_forward_layer_known(self):
         model = _Model()
         loader = Mock()
         wm = _make_manager(loader)
-        wm._model = model
-        wm._decoder_name_by_id = {id(model.layers[0]): "layers.0"}
+        wm.install_hooks(model)
         x = torch.randn(2, 4)
 
-        args, kwargs = wm._decoder_pre_hook(model.layers[0], (x,), {})
+        output = model.layers[0](x)
 
         loader.hydrate.assert_called_once_with(model, prefix="layers.0")
-        assert len(args) == 1
-        assert torch.equal(args[0], x)
+        assert output.shape == x.shape
 
-    def test_decoder_pre_hook_falls_back_to_lookup_when_unknown_id(self):
-        model = _Model()
-        loader = Mock()
-        wm = _make_manager(loader)
-        wm._model = model
-        x = torch.randn(2, 4)
-
-        args, _ = wm._decoder_pre_hook(model.layers[1], (x,), {})
-
-        loader.hydrate.assert_called_once_with(model, prefix="layers.1")
-
-    def test_decoder_post_hook_offloads_and_returns_output_when_layer(self):
+    def test_decoder_post_hook_offloads_and_returns_output_when_forward_layer_known(self):
         model = _Model()
         wm = _make_manager()
-        wm._model = model
-        wm._decoder_name_by_id = {id(model.layers[0]): "layers.0"}
-        output = torch.randn(2, 4)
+        wm.install_hooks(model)
+        x = torch.randn(2, 4)
 
         with patch("msmodelslim.core.infer_engine.fake_quant.weight_manager._empty_device_cache") as mock_empty:
-            returned = wm._decoder_post_hook(model.layers[0], (torch.randn(2, 4),), output)
+            output = model.layers[0](x)
 
-        assert returned is output
+        assert output.shape == x.shape
         mock_empty.assert_called_once()
         assert model.layers[0].net.weight.device.type == "meta"
 
@@ -153,13 +139,6 @@ class TestWeightManager:
         assert wm._is_shared_module("embed", model.embed, []) is True
         assert wm._is_shared_module("embed.lin", Mock(), []) is True
         assert wm._is_shared_module("head", model.head, []) is False
-
-    def test_lookup_module_name_returns_name_when_module_present(self):
-        model = _Model()
-        wm = _make_manager()
-        wm._model = model
-
-        assert wm._lookup_module_name(model.layers[1]) == "layers.1"
 
     def test_lookup_module_name_returns_none_when_no_model(self):
         wm = _make_manager()

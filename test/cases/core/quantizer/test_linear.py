@@ -28,6 +28,7 @@ from torch import nn
 
 from msmodelslim.core.quantizer.base import QConfig
 from msmodelslim.core.quantizer.linear import LinearQConfig, LinearQuantizer
+from msmodelslim import ir as qir
 from msmodelslim.ir.qal.qbase import QDType, QScope
 from msmodelslim.utils.exception import SchemaValidateError, SpecError
 
@@ -113,7 +114,7 @@ class TestLinearQuantizer:
         with patch("msmodelslim.core.quantizer.linear.qir.AutoFakeQuantLinear.create") as mock_create:
             mock_create.return_value = nn.Linear(4, 3)
             deployed = quantizer.deploy()
-            assert deployed is not None
+            assert deployed is mock_create.return_value
             mock_create.assert_called_once()
 
     def test_setup_raises_validation_error_when_module_none(self):
@@ -141,4 +142,4 @@ class TestLinearQuantizer:
         quantizer.setup(nn.Linear(10, 10))
         quantizer(torch.randn((10,)))
         deployed_quantizer = quantizer.deploy()
-        assert deployed_quantizer is not None
+        assert isinstance(deployed_quantizer, qir.W8A8StaticFakeQuantLinear)

@@ -92,7 +92,7 @@ def mock_acl_module():
 
 
 @patch("ascend_utils.common.acl_inference.acl")
-def test_check_ret_given_success_when_called_then_no_exception(mock_acl):
+def test_check_ret_pass_when_ret_is_success(mock_acl):
     acl_inf._check_ret("Test message", ACL_ERROR_NONE)
 
 

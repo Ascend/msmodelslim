@@ -715,7 +715,7 @@ class TestAnalysisMethods(unittest.TestCase):
             UnaryAnalysisMethodFactory.create_method('invalid_method')
 
         # 测试register_method方法
-        from msmodelslim.processor.analysis.methods_base import LayerAnalysisMethod
+        from msmodelslim.processor.analysis.methods_base import BaseMethodFactory, LayerAnalysisMethod
 
         class TestMethod(LayerAnalysisMethod):
             @property
@@ -728,14 +728,16 @@ class TestAnalysisMethods(unittest.TestCase):
             def compute_score(self, layer_data):
                 return 0.0
 
-        UnaryAnalysisMethodFactory.register_method('test', TestMethod)
-        method = UnaryAnalysisMethodFactory.create_method('test')
+        # 注册类用例必须隔离：UnaryAnalysisMethodFactory 是模块级全局单例，
+        # 直接在它上面注册会污染其它用例（例如精确校验内置方法集合的用例），
+        # 因此这里改用独立的 factory 实例验证 register_method/get_supported_methods（B13）。
+        scoped_factory = BaseMethodFactory[LayerAnalysisMethod]()
+        scoped_factory.register_method('test', TestMethod)
+        method = scoped_factory.create_method('test')
         self.assertIsInstance(method, TestMethod)
 
         # 测试get_supported_methods方法
-        supported = UnaryAnalysisMethodFactory.get_supported_methods()
-        self.assertIn('std', supported)
-        self.assertIn('test', supported)
+        self.assertEqual(scoped_factory.get_supported_methods(), ['test'])
 
     def test_kurtosis_function(self):
         """测试kurtosis函数"""

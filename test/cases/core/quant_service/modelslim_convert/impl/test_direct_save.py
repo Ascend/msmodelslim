@@ -23,7 +23,8 @@ direct_save：merge 合同与写后释放引用。
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
 from safetensors.torch import save_file
@@ -98,11 +99,14 @@ class TestMergeStagedOutput:
         assert desc["group_size"] == 0
 
 
-def _hf_saver(writer):
-    saver = MagicMock(spec=QuantSaveProcessor)
-    saver._format = MagicMock(spec=CompressedTensorsQuantFormat)
-    saver._format.written_safetensors_writer.return_value = writer
-    return saver
+def _hf_saver(writer, format_mock=None):
+    if format_mock is None:
+        format_mock = MagicMock(spec=CompressedTensorsQuantFormat)
+    format_mock.written_safetensors_writer.return_value = writer
+    config = SimpleNamespace(format=MagicMock(), save_directory="")
+    adapter = SimpleNamespace(model_path="")
+    with patch("msmodelslim.processor.save.processor.QuantFormatFactory.create", return_value=format_mock):
+        return QuantSaveProcessor(nn.Module(), config, adapter)
 
 
 class TestCollectSaverMeta:
@@ -205,7 +209,8 @@ class TestWriteResult:
         saver.postprocess.assert_called_once()
 
     def test_write_result_release_format_refs_when_hf_saver(self):
-        saver = _hf_saver(MagicMock())
+        format_mock = MagicMock(spec=CompressedTensorsQuantFormat)
+        saver = _hf_saver(MagicMock(), format_mock=format_mock)
         saver.processed_modules = set()
         write_result(saver, "layers.0.q_proj", nn.Module())
-        saver._format.release_module_refs.assert_called_once()
+        format_mock.release_module_refs.assert_called_once()

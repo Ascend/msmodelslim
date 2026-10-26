@@ -63,8 +63,8 @@ class TestMsMinMaxObserver:
         observer.update(torch.tensor([1.0, 3.0]))
         observer.update(torch.tensor([2.0, 4.0]))
         min_val, max_val = observer.get_min_max()
-        assert min_val is not None
-        assert max_val is not None
+        assert min_val.item() == pytest.approx(1.5)
+        assert max_val.item() == pytest.approx(3.5)
 
     def test_max_aggregation_merges_min_max_when_second_update(self):
         """场景：aggregation_type=max 两次 update。预期：min/max 取全局极值。"""

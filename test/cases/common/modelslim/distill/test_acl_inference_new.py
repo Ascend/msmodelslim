@@ -22,7 +22,6 @@ See the Mulan PSL v2 for more details.
 import unittest
 from unittest.mock import Mock, patch
 import numpy as np
-import acl  # noqa: F401
 from ascend_utils.common import acl_inference
 from ascend_utils.common.acl_inference import (
     AclInference,
@@ -227,7 +226,6 @@ class TestAclInference(unittest.TestCase):
 
         # 创建AclInference实例
         acl_infer = AclInference.__new__(AclInference)
-        acl_infer._init_success = True
         acl_infer.context = Mock()
         acl_infer.model_id = Mock()
         acl_infer.inputs = [
@@ -274,7 +272,6 @@ class TestAclInference(unittest.TestCase):
     def test_call_input_shape_mismatch(self):
         """测试输入形状不匹配"""
         acl_infer = AclInference.__new__(AclInference)
-        acl_infer._init_success = True
         acl_infer.context = None
         acl_infer.inputs = [NodeType("input1", [1, 3, 224, 224], 0, 1024, 0)]
         acl_infer.num_inputs = 1
@@ -307,7 +304,7 @@ class TestAclInference(unittest.TestCase):
         acl_infer.output_host_bytes_data = [Mock()]
         acl_infer.output_host_buffer = [Mock()]
 
-        with patch.object(acl_infer, '_destroy_data_buffer') as mock_destroy:  # noqa: F841
+        with patch.object(acl_infer, '_destroy_data_buffer'):
             acl_infer.release_resource()
 
             # 验证内存释放调用
@@ -384,7 +381,7 @@ class TestAclInference(unittest.TestCase):
         acl_infer.output_data_buffer = [{"buffer": Mock(), "size": 4096}]
 
         with patch.object(acl_infer, '_init_acl_data_buffer') as mock_init_buf:
-            result = acl_infer._create_output_data_device_buffer()  # noqa: F841
+            acl_infer._create_output_data_device_buffer()
 
             # 验证数据缓冲区初始化
             mock_init_buf.assert_called_once()

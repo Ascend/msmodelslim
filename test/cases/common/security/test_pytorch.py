@@ -22,12 +22,12 @@ See the Mulan PSL v2 for more details.
 
 import pytest
 
-import torch.nn as nn
+from torch import nn
 
 from ascend_utils.common.security.pytorch import check_torch_module
 
 
-def test_check_torch_module_given_valid_when_any_then_pass():
+def test_check_torch_module_pass_when_valid_module():
     model = nn.Linear(1, 1)
     check_torch_module(model)
 

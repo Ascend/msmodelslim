@@ -21,6 +21,7 @@ See the Mulan PSL v2 for more details.
 
 # pylint: disable=redefined-outer-name
 
+import contextlib
 import inspect
 import json
 import shutil
@@ -629,12 +630,16 @@ class TestAscendV1PostRunArtifacts:
         prefix, module, expected_key = _build_post_run_case_module(method_name)
         expected_desc_value, expected_group_size = _expected_desc_value_and_group_size(method_name)
 
-        if method_name in {"on_flat_clip_wrapper", "on_non_fusion_smooth_quant_wrapper"}:
-            saver_ins._process_module = lambda p, m: saver_ins.write_tensor(
-                f"{p}.weight", "W8A8_DYNAMIC", torch.ones(2, 2)
-            )
-
-        getattr(saver_ins, method_name)(prefix, module)
+        with contextlib.ExitStack() as stack:
+            if method_name in {"on_flat_clip_wrapper", "on_non_fusion_smooth_quant_wrapper"}:
+                stack.enter_context(
+                    patch.object(
+                        saver_ins,
+                        "_process_module",
+                        lambda p, m: saver_ins.write_tensor(f"{p}.weight", "W8A8_DYNAMIC", torch.ones(2, 2)),
+                    )
+                )
+            getattr(saver_ins, method_name)(prefix, module)
         with patch(
             "msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.safe_copy_file",
             side_effect=_copy_file_stub,

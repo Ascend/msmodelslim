@@ -126,8 +126,8 @@ class TestAutoSaverProcessor:
         def _track(prefix, module):
             calls.append(type(module).__name__)
 
-        saver._process_module = _track
-        saver.on_wrapper_ir("w", wrapper)
+        with patch.object(saver, "_process_module", _track):
+            saver.on_wrapper_ir("w", wrapper)
         assert calls == ["MagicMock"]
 
     def test_on_wrapper_ir_non_atomic_processes_wrapped_first_when_atomic_false(self, saver):
@@ -141,8 +141,8 @@ class TestAutoSaverProcessor:
         def _track(prefix, module):
             calls.append(type(module).__name__)
 
-        saver._process_module = _track
-        saver.on_wrapper_ir("w", wrapper)
+        with patch.object(saver, "_process_module", _track):
+            saver.on_wrapper_ir("w", wrapper)
         assert "Linear" in calls[0]
 
     def test_postprocess_invokes_process_for_submodules_when_called(self, saver):

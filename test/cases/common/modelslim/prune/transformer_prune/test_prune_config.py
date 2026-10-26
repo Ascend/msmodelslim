@@ -25,8 +25,8 @@ import pytest
 from msmodelslim.common.prune.transformer_prune.prune_model import PruneConfig
 
 
-class TestPruneConfig(object):
-    def test_prune_config_given_valid_when_any_then_pass(self):
+class TestPruneConfig:
+    def test_prune_config_pass_when_set_and_get_valid_params(self):
         prune_config = PruneConfig()
         prune_config.set_steps(['prune_blocks', 'prune_bert_intra_block'])
         prune_config.add_blocks_params('test_name', {0: 1})

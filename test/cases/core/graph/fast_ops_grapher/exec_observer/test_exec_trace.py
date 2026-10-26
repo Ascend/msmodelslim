@@ -16,7 +16,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,no-name-in-module
 import pytest
 import torch
 
@@ -107,7 +107,6 @@ class TestExecutionTracer:
     def test_trace_method_creates_empty_execution_trace(self):
         tracer = _ExecutionTracer()
         _ = tracer.trace()
-        assert tracer.execution_trace is not None
         assert isinstance(tracer.execution_trace, ExecutionTrace)
         assert not tracer.execution_trace.operators
 

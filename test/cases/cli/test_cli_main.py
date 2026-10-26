@@ -213,12 +213,16 @@ class TestMainDispatcher:
         mock_t_main.assert_called_once()
 
     @patch("msmodelslim.cli.__main__.sys")
-    def test_main_prints_help_when_no_command_given(self, mock_sys):
-        """边界：未指定子命令时应正常退出（调用 parser.print_help()，不抛错）。"""
+    def test_main_prints_help_when_no_command_given(self, mock_sys, capsys):
+        """边界：未指定子命令时应打印顶层帮助且正常退出。"""
         mock_sys.argv = ["msmodelslim"]
 
-        # 不应抛错（parser.print_help 内部 stdout 打印）
         main()
+
+        out = capsys.readouterr().out
+        assert "Usage:" in out
+        assert "msmodelslim <command> [options]" in out
+        assert "quant" in out
 
 
 class TestAnalyzeAttnHeadExcludedParams:
@@ -275,3 +279,45 @@ class TestAnalyzeAttnHeadExcludedParams:
 
         assert exc_info.value.code != 0
         assert "unrecognized arguments" in capsys.readouterr().err
+
+
+class TestHelpPlaceholderFormatting:
+    """公开 CLI 帮助输出：占位符格式（单值 <NAME>，多值 [<NAME> ...]）与短/长选项折叠。"""
+
+    @staticmethod
+    def _help(monkeypatch, capsys, argv):
+        import msmodelslim.cli.__main__ as cli_main
+
+        monkeypatch.setattr(cli_main.sys, "argv", argv)
+        with pytest.raises(SystemExit) as exc_info:
+            cli_main.main()
+        assert exc_info.value.code == 0
+        return capsys.readouterr().out
+
+    @pytest.mark.parametrize("command", ["quant", "tune"])
+    def test_help_shows_helpers(self, monkeypatch, capsys, command):
+        """主路径：quant/tune 帮助中短选项折叠为 '-v, --verbose'。"""
+        out = self._help(monkeypatch, capsys, ["msmodelslim", command, "--help"])
+
+        assert "-v, --verbose" in out
+
+    @pytest.mark.parametrize("command", ["quant", "tune"])
+    def test_help_shows_multi_value_placeholder(self, monkeypatch, capsys, command):
+        """主路径：quant/tune 帮助中多值选项展示为 '--device_id [<ID> ...]'。"""
+        out = self._help(monkeypatch, capsys, ["msmodelslim", command, "--help"])
+
+        assert "--device_id [<ID> ...]" in out
+
+    @pytest.mark.parametrize("command", ["quant", "tune"])
+    def test_help_shows_single_value_placeholder(self, monkeypatch, capsys, command):
+        """主路径：quant/tune 帮助中单值选项保留显式 metavar，不加方括号。"""
+        out = self._help(monkeypatch, capsys, ["msmodelslim", command, "--help"])
+
+        assert "--model_path <PATH>" in out
+        assert "--save_path <PATH>" in out
+
+    def test_quant_help_shows_optional_bool_placeholder(self, monkeypatch, capsys):
+        """主路径：quant 帮助中可选布尔量展示为 '<BOOL>'。"""
+        out = self._help(monkeypatch, capsys, ["msmodelslim", "quant", "--help"])
+
+        assert "--trust_remote_code <BOOL>" in out

@@ -26,6 +26,7 @@ from unittest.mock import MagicMock, patch
 
 
 from msmodelslim.cli.naive_quantization.__main__ import get_dataset_dir, get_practice_dir, main
+from msmodelslim.infra.debug_info_persistence import DebugInfoPersistence
 
 
 class TestGetPracticeDir:
@@ -139,7 +140,9 @@ class TestMainDispatch:
         # QuantServiceProxy 应被调用，配置中应含 debug_info_persistence
         mock_qs_cls.assert_called_once()
         call_kwargs = mock_qs_cls.call_args.kwargs
-        assert call_kwargs["debug_info_persistence"] is not None
+        persistence = call_kwargs["debug_info_persistence"]
+        assert isinstance(persistence, DebugInfoPersistence)
+        assert persistence.save_dir == Path(tmp) / "debug_info"
 
     @patch("msmodelslim.cli.naive_quantization.__main__.NaiveQuantizationApplication")
     @patch("msmodelslim.cli.naive_quantization.__main__.QuantServiceProxy")

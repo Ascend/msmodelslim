@@ -18,19 +18,17 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=consider-using-from-import,useless-object-inheritance
 
 import pytest
-import torch  # Not using here, just import before mindspore, or will throw error in later tests...  # noqa: F401
-import mindspore.nn as nn
+from mindspore import nn
 from mindspore.nn.cell import Cell
 
 from ascend_utils.mindspore.knowledge_distill.distill_losses_func_ms import DISTILL_LOSS_FUNC_MS
 from msmodelslim.common.knowledge_distill.knowledge_distill import KnowledgeDistillConfig
 
 
-class TestPruneKnowledgeDistillConfig(object):
-    def test_distill_config_given_valid_when_any_then_pass(self):
+class TestPruneKnowledgeDistillConfig:
+    def test_distill_config_pass_when_configured_with_valid_labels(self):
         distill_config = KnowledgeDistillConfig()
         distill_config.set_hard_label(0.5, 0).add_inter_soft_label(
             {

@@ -100,7 +100,7 @@ class TestQuantProcessComplete:  # pylint: disable=attribute-defined-outside-ini
         self.model_adapter.transformer = Mock()
 
         # 3. 测试固定参数
-        self.save_path = Path("/tmp/test_save")
+        self.save_path = tmp_path / "test_save"
         self.device = DeviceType.NPU
 
     def test_backend_name(self):

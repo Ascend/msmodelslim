@@ -25,9 +25,15 @@ from torch import nn
 from msmodelslim.core.runner.model_hook_interface import ModelHookInterface
 
 
+class _RecordingModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.hook_key = None
+
+
 class _HookImpl(ModelHookInterface):
     def load_state_dict_hook(self, key: str, module: nn.Module) -> None:
-        module._hook_key = key
+        module.hook_key = key
 
 
 class TestModelHookInterface:
@@ -35,10 +41,10 @@ class TestModelHookInterface:
 
     def test_load_state_dict_hook_stores_key_when_implemented(self):
         """场景：子类实现 hook。预期：可对模块写入标记。"""
-        module = nn.Linear(2, 2)
+        module = _RecordingModule()
         hook = _HookImpl()
         hook.load_state_dict_hook("layer0", module)
-        assert module._hook_key == "layer0"
+        assert module.hook_key == "layer0"
 
     def test_instantiate_raises_type_error_when_abstract(self):
         """场景：直接实例化接口。预期：TypeError。"""

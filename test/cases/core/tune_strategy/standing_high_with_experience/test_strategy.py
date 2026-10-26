@@ -27,6 +27,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from msmodelslim.core.const import DeviceType, QuantType
+from msmodelslim.core.practice import Metadata
+from msmodelslim.core.quant_service.modelslim_v1.quant_config import ModelslimV1ServiceConfig
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
 from msmodelslim.core.tune_strategy.common.config_builder.expert_experience.expert_experience import (
     ExpertExperienceConfigBuilder,
@@ -224,8 +226,8 @@ class TestStandingHighWithExperienceStrategy:
         call_kw = mock_sh_cls.call_args[1]
         base_config = call_kw["config"]
         assert base_config.type == "standing_high"
-        assert base_config.template is not None
-        assert base_config.anti_outlier_strategies is not None
+        assert isinstance(base_config.template, ModelslimV1ServiceConfig)
+        assert isinstance(base_config.anti_outlier_strategies, list)
 
     @patch("msmodelslim.core.tune_strategy.standing_high_with_experience.strategy.StandingHighStrategy")
     @patch(
@@ -269,9 +271,9 @@ class TestStandingHighWithExperienceStrategy:
         # model=None 时不走 _filter_supported_anti_outlier_strategies，直接使用 builder 产出
         base = strategy._generate_base_config(config, structure_configs, model=None)
         assert base.type == "standing_high"
-        assert base.template is not None
-        assert base.metadata is not None
-        assert base.anti_outlier_strategies is not None
+        assert isinstance(base.template, ModelslimV1ServiceConfig)
+        assert isinstance(base.metadata, Metadata)
+        assert isinstance(base.anti_outlier_strategies, list)
         assert len(base.anti_outlier_strategies) >= 1
 
     def test_generate_base_config_raises_SchemaValidateError_when_builder_returns_no_anti_outlier_strategies(self):

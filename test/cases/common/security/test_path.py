@@ -18,7 +18,6 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=no-member
 
 import os
 import stat
@@ -91,7 +90,7 @@ def teardown_module():
     os.removedirs(TEST_DIR)
 
 
-def test_get_valid_path_given_valid_when_any_then_pass():
+def test_get_valid_path_pass_when_valid_path():
     security.get_valid_path('../anypath')
     security.get_valid_path('../anypath/a')
 
@@ -105,7 +104,7 @@ def test_get_valid_path_given_invalid_when_any_then_value_error():
         security.get_valid_path('../anypath/!a')
 
 
-def test_get_valid_read_path_given_valid_when_any_then_pass():
+def test_get_valid_read_path_pass_when_readable_file():
     security.get_valid_read_path(TEST_READ_FILE_NAME)
     security.get_valid_read_path(TEST_READ_FILE_NAME, extensions='.testfile')
     security.get_valid_read_path(OTHERS_READABLE_READ_FILE)
@@ -129,7 +128,7 @@ def test_get_valid_read_path_given_invalid_when_any_then_value_error():
         security.get_valid_read_path(OTHERS_WRITABLE_READ_FILE)
 
 
-def test_check_write_directory_given_valid_when_any_then_pass():
+def test_check_write_directory_pass_when_valid_directory():
     security.check_write_directory(TEST_DIR)
 
 
@@ -139,7 +138,7 @@ def test_check_write_directory_given_invalid_when_any_then_error():
         security.check_write_directory('not_exists')
 
 
-def test_get_valid_write_path_given_valid_when_any_then_pass():
+def test_get_valid_write_path_pass_when_writable_path():
     security.get_valid_write_path(TEST_READ_FILE_NAME, extensions='.testfile')
     # WARNING: root:... exists. The original file will be overwritten.
 
@@ -151,7 +150,7 @@ def test_get_valid_write_path_when_directory_not_exists():
 
 
 @pytest.mark.skipif(
-    os.geteuid() == 0,  # 直接判断：如果是 root 用户（UID=0）
+    getattr(os, "geteuid", lambda: 0)() == 0,  # 直接判断：如果是 root 用户（UID=0）
     reason="root 用户跳过此用例",
 )
 def test_get_valid_write_path_when_no_write_permission():
@@ -160,7 +159,7 @@ def test_get_valid_write_path_when_no_write_permission():
         security.get_valid_write_path(USER_NOT_PERMITTED_WRITE_FILE)
 
 
-def test_yaml_safe_load_given_valid_when_any_then_pass():
+def test_yaml_safe_load_pass_when_valid_yaml():
     security.yaml_safe_load(YAML_FILE)
 
 
@@ -173,7 +172,7 @@ def test_yaml_safe_load_given_invalid_when_any_then_value_error():
         security.yaml_safe_load(YAML_FILE, key_max_len=2)
 
 
-def test_json_safe_load_given_valid_when_any_then_pass():
+def test_json_safe_load_pass_when_valid_json():
     security.json_safe_load(JSON_FILE)
 
 
@@ -186,7 +185,7 @@ def test_json_safe_load_given_invalid_when_any_then_value_error():
         security.json_safe_load(JSON_FILE, size_max=1)
 
 
-def test_file_safe_write_given_valid_when_any_then_pass():
+def test_file_safe_write_pass_when_valid_content():
     security.file_safe_write("hello world", TEST_FILE, ".test")
 
 
@@ -196,27 +195,27 @@ def test_file_safe_write_given_invalid_when_any_then_type_error():
         security.file_safe_write(ORI_DATA, TEST_FILE, ".test")
 
 
-def test_yaml_safe_dump_given_valid_when_over_write_then_pass():
+def test_yaml_safe_dump_yields_last_value_when_overwritten():
     security.yaml_safe_dump(ORI_DATA, YAML_FILE)
     security.yaml_safe_dump(OVER_WRITE_DATA, YAML_FILE)
     cur_dict = security.yaml_safe_load(YAML_FILE)
     assert cur_dict == OVER_WRITE_DATA
 
 
-def test_json_safe_dump_given_valid_when_over_write_then_pass():
+def test_json_safe_dump_yields_last_value_when_overwritten():
     security.json_safe_dump(ORI_DATA, JSON_FILE, indent=4)
     security.json_safe_dump(OVER_WRITE_DATA, JSON_FILE)
     cur_dict = security.json_safe_load(JSON_FILE)
     assert cur_dict == OVER_WRITE_DATA
 
 
-def test_safe_copy_file_given_valid_when_over_write_then_pass():
+def test_safe_copy_file_pass_when_copy_then_delete():
     dest_path = TEST_READ_FILE_NAME + "_copy"
     security.safe_copy_file(TEST_READ_FILE_NAME, dest_path)
     security.safe_delete_path_if_exists(dest_path)
 
 
-def test_safe_write_umask_given_valid_when_any_then_pass():
+def test_safe_write_umask_strips_group_other_bits_when_writing():
     security.safe_delete_path_if_exists(TEST_FILE)
     default_flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
     fake_mode = stat.S_IWUSR | stat.S_IRUSR | stat.S_IWGRP | stat.S_IRGRP | stat.S_IWOTH | stat.S_IROTH  # 666

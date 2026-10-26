@@ -64,7 +64,6 @@ class TestQuantizationConfig:
         """
         spec = ModelslimV1ServiceConfig(runner="auto", process=[], dataset="d", save=_default_save())
         config = QuantizationConfig(apiversion="v1", spec=spec)
-        assert config.metadata is not None
         assert isinstance(config.metadata, Metadata)
 
 
@@ -88,7 +87,6 @@ class TestTuningSearchSpace:
         """
         strategies: AutoProcessorConfigList = [[{"type": "flex_smooth_quant"}]]
         space = TuningSearchSpace(anti_outlier_strategies=strategies)
-        assert space.anti_outlier_strategies is not None
         assert len(space.anti_outlier_strategies) == 1
         assert len(space.anti_outlier_strategies[0]) == 1
         assert space.anti_outlier_strategies[0][0].type == "flex_smooth_quant"

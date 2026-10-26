@@ -22,6 +22,7 @@ Distributed AscendV1 full E2E tests for merge correctness.
 
 # pylint: disable=redefined-outer-name
 
+import contextlib
 import json
 import shutil
 from pathlib import Path
@@ -46,6 +47,11 @@ def _copy_file_stub(src_path, dest_path):
 class _Adapter:
     def __init__(self, model_path: str):
         self.model_path = Path(model_path)
+
+
+class _Bf16Adapter(_Adapter):
+    def get_global_model_torch_dtype(self):
+        return torch.bfloat16
 
 
 METHODS = [
@@ -371,16 +377,22 @@ class TestDistributedAscendV1ExportFormat:
         saver = DistributedAscendV1Saver(
             nn.Linear(4, 4),
             DistributedAscendV1Config(save_directory=str(save_dir), part_file_size=1),
-            _Adapter(str(model_src)),
+            _Bf16Adapter(str(model_src)),
         )
-        saver._global_torch_dtype_is_bf16 = True
         prefix, module, expected_key, expected_value, expected_group_size, expect_in_index = _build_case(method_name)
 
-        if method_name in {"on_flat_clip_wrapper", "on_non_fusion_smooth_quant_wrapper"}:
-            from functools import partial
+        with contextlib.ExitStack() as stack:
+            if method_name in {"on_flat_clip_wrapper", "on_non_fusion_smooth_quant_wrapper"}:
+                from functools import partial
 
-            saver._process_module = MagicMock(side_effect=partial(mock_process_module, saver_instance=saver))
-        getattr(saver, method_name)(prefix, module)
+                stack.enter_context(
+                    patch.object(
+                        saver,
+                        "_process_module",
+                        MagicMock(side_effect=partial(mock_process_module, saver_instance=saver)),
+                    )
+                )
+            getattr(saver, method_name)(prefix, module)
         rank1_extra_key = _seed_rank1_artifacts(save_dir)
         with (
             patch(

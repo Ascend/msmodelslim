@@ -220,5 +220,5 @@ class TestMXActDualScaleMinmax:
         quantizer.q_param = None
 
         fallback_param = quantizer.get_q_param()
-        assert fallback_param is not None
+        assert isinstance(fallback_param, QParam)
         assert fallback_param.scheme == act_config.to_scheme()

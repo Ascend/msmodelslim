@@ -35,7 +35,7 @@ class _DtypeAdapter(AscendV1GlobalModelDtypeInterface):
 
 class _SaveAdapter(AscendV1SaveInterface):
     def ascendv1_save_postprocess(self, model: nn.Module, save_directory: str) -> None:
-        model._saved_dir = save_directory
+        model.saved_dir = save_directory
 
     def ascendv1_save_module_preprocess(self, prefix: str, module: nn.Module, model: nn.Module):
         return f"pre_{prefix}", module
@@ -58,7 +58,7 @@ class TestAscendV1SaveInterface:
         model = nn.Linear(2, 2)
         adapter = _SaveAdapter()
         adapter.ascendv1_save_postprocess(model, "/tmp/out")
-        assert model._saved_dir == "/tmp/out"
+        assert model.saved_dir == "/tmp/out"
 
     def test_ascendv1_save_module_preprocess_returns_prefixed_name_when_called(self):
         """场景：调用 ascendv1_save_module_preprocess。预期：前缀更新。"""

@@ -93,7 +93,7 @@ class TestExpertExperienceLoader:
         """
         loader = ExpertExperienceLoader()
         qconfig = loader.get_qconfig("w8a8", "MHA")
-        assert qconfig is not None
+        assert isinstance(qconfig, dict)
         assert "act" in qconfig
         assert "weight" in qconfig
 
@@ -244,7 +244,7 @@ class TestExpertExperienceConfigBuilder:
         """
         builder = ExpertExperienceConfigBuilder()
         space = builder.get_tuning_search_space(quant_type="w8a8")
-        assert space.anti_outlier_strategies is not None
+        assert isinstance(space.anti_outlier_strategies, list)
         assert len(space.anti_outlier_strategies) >= 1
 
     def test_build_returns_full_QuantizationConfig_when_valid_quant_type_and_structure_configs(self):

@@ -34,6 +34,7 @@ from msmodelslim.core.context.shared_dict_context.peercred_manager import (
     PeercredSharedDict,
     PeercredValidatedDict,
     generate_default_address,
+    get_peer_credentials,
     make_abstract_address,
 )
 from msmodelslim.utils.exception import (
@@ -354,15 +355,16 @@ class TestPeercredManager:
         return_value=1000,
         create=True,
     )
-    def test_start_raises_misbehavior_error_when_client_mode(self, _mock_getuid):
+    @patch(
+        "msmodelslim.core.context.shared_dict_context.peercred_manager._try_connect_unix",
+        return_value=True,
+    )
+    def test_start_raises_misbehavior_error_when_client_mode(self, _mock_getuid, _mock_connect):
         """场景：client 模式调用 start。预期：MisbehaviorError。"""
-        mgr = PeercredManager.__new__(PeercredManager)
-        mgr._is_client = True
-        mgr.address = make_abstract_address("client_mode_test")
-        mgr.allowed_uids = {0}
-        mgr._process = None
-        mgr._shutdown_called = False
-        mgr._lock = __import__("threading").Lock()
+        mgr = PeercredManager(
+            address=make_abstract_address("client_mode_test"),
+            allowed_uids={0},
+        )
         with pytest.raises(MisbehaviorError, match="Client mode"):
             mgr.start()
 
@@ -371,12 +373,13 @@ class TestPeercredManager:
         return_value=1000,
         create=True,
     )
-    def test_shutdown_noop_when_client_mode(self, _mock_getuid):
+    @patch(
+        "msmodelslim.core.context.shared_dict_context.peercred_manager._try_connect_unix",
+        return_value=True,
+    )
+    def test_shutdown_noop_when_client_mode(self, _mock_getuid, _mock_connect):
         """场景：client 模式重复 shutdown。预期：不抛异常。"""
-        mgr = PeercredManager.__new__(PeercredManager)
-        mgr._is_client = True
-        mgr._shutdown_called = False
-        mgr._lock = __import__("threading").Lock()
+        mgr = PeercredManager(address=make_abstract_address("client_shutdown_test"))
         mgr.shutdown()
         mgr.shutdown()
 
@@ -385,13 +388,7 @@ class TestPeercredManager:
 class TestPeercredPlatformCheck:
     """Tests for platform guard on non-Linux."""
 
-    def test_check_platform_support_raises_unsupported_error_when_not_linux(self):
-        """场景：非 Linux 调用 _check_platform_support。预期：UnsupportedError。"""
-        from msmodelslim.core.context.shared_dict_context import peercred_manager as pm
-
-        pm._platform_checked = False
-        try:
-            with pytest.raises(UnsupportedError, match="not supported"):
-                pm._check_platform_support()
-        finally:
-            pm._platform_checked = False
+    def test_get_peer_credentials_raises_unsupported_error_when_not_linux(self):
+        """场景：非 Linux 调用 get_peer_credentials。预期：UnsupportedError。"""
+        with pytest.raises(UnsupportedError, match="not supported"):
+            get_peer_credentials(object())

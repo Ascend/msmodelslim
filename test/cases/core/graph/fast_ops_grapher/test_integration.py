@@ -16,9 +16,8 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-# pylint: disable=duplicate-code,protected-access,import-outside-toplevel
+# pylint: disable=duplicate-code,protected-access,import-outside-toplevel,no-name-in-module
 import pickle
-import pytest
 import torch
 from torch import nn
 import networkx as nx
@@ -179,13 +178,10 @@ class TestFullPipeline:
 
 
 class TestTransformerIntegration:
-    MODEL_PATH = "Qwen/Qwen3-0.6B"
-
-    @pytest.mark.skip(reason="local model weights needed")
-    def test_transformer_auto_extractor_full_pipeline_works(self):
+    def test_transformer_auto_extractor_full_pipeline_works(self, tiny_model_dir):
         from msmodelslim.core.graph.fast_ops_grapher import TransformerAutoExtractor
 
-        extractor = TransformerAutoExtractor.create(model_path=self.MODEL_PATH)
+        extractor = TransformerAutoExtractor.create(model_path=tiny_model_dir)
         graph = extractor.extract_dag()
 
         assert isinstance(graph, ComputationGraph)
@@ -195,24 +191,22 @@ class TestTransformerIntegration:
         dot_str = graph.format("dot")
         assert "digraph fx_graph {" in dot_str
 
-    @pytest.mark.skip(reason="local model weights needed")
-    def test_transformer_extractor_full_pipeline_with_manual_model_loading_works(self):
+    def test_transformer_extractor_full_pipeline_with_manual_model_loading_works(self, tiny_model_dir):
         from transformers import AutoTokenizer, AutoModelForCausalLM
         from msmodelslim.core.graph.fast_ops_grapher import TransformerExtractor
 
-        tokenizer = AutoTokenizer.from_pretrained(self.MODEL_PATH)
-        model = AutoModelForCausalLM.from_pretrained(self.MODEL_PATH)
+        tokenizer = AutoTokenizer.from_pretrained(tiny_model_dir)
+        model = AutoModelForCausalLM.from_pretrained(tiny_model_dir)
         extractor = TransformerExtractor.create(model=model, tokenizer=tokenizer)
         graph = extractor.extract_dag()
 
         assert isinstance(graph, ComputationGraph)
         assert nx.is_directed_acyclic_graph(graph)
 
-    @pytest.mark.skip(reason="local model weights needed")
-    def test_transformer_computation_graph_supports_pickle_roundtrip(self, tmp_path):
+    def test_transformer_computation_graph_supports_pickle_roundtrip(self, tmp_path, tiny_model_dir):
         from msmodelslim.core.graph.fast_ops_grapher import TransformerAutoExtractor
 
-        extractor = TransformerAutoExtractor.create(model_path=self.MODEL_PATH)
+        extractor = TransformerAutoExtractor.create(model_path=tiny_model_dir)
         graph = extractor.extract_dag()
 
         pkl_path = tmp_path / "transformer_graph.pkl"

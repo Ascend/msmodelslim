@@ -42,7 +42,7 @@ class TestBaseProcessor:
             outputs=None,
         )
         processor.process(request)
-        assert request.outputs is not None
+        assert isinstance(request.outputs, list)
         assert len(request.outputs) == 1
         assert request.outputs[0].shape == (3, 2)
 

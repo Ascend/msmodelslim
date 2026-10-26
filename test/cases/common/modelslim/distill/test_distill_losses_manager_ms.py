@@ -18,16 +18,14 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=super-with-arguments,use-implicit-booleaness-not-comparison,useless-parent-delegation
 
 import pytest
 import numpy as np
 import mindspore
-from mindspore import Tensor, nn, context
+from mindspore import Tensor, nn, context, Parameter
 from mindspore import dtype as mstype
 from mindspore.common.initializer import Normal
 
-from ascend_utils.common.knowledge_distill.utils import replace_module  # noqa: F401
 from ascend_utils.mindspore.knowledge_distill.distill_losses_manager_ms import (
     SaveOutputShapeModule,
     GetOutputShapeModule,
@@ -44,7 +42,7 @@ class SimpleNet(nn.Cell):
     """简单的测试网络"""
 
     def __init__(self):
-        super(SimpleNet, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(3, 16, 3, has_bias=True, weight_init=Normal(0.02))
         self.relu = nn.ReLU()
 
@@ -58,7 +56,7 @@ class MultiOutputNet(nn.Cell):
     """多输出测试网络"""
 
     def __init__(self):
-        super(MultiOutputNet, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, has_bias=True, weight_init=Normal(0.02))
         self.conv2 = nn.Conv2d(16, 32, 3, has_bias=True, weight_init=Normal(0.02))
 
@@ -70,9 +68,6 @@ class MultiOutputNet(nn.Cell):
 
 class SimpleLoss(nn.Cell):
     """简单的损失函数"""
-
-    def __init__(self):
-        super(SimpleLoss, self).__init__()
 
     def construct(self, s_output, t_output, temperature=None):
         if temperature:
@@ -156,8 +151,8 @@ class TestGetOutputShapeModule:
 
         output_shape = get_module.get_output_shape()
 
-        # 检查输出形状是否正确
-        assert output_shape is not None
+        # ReLU 对 (2,3,4,5) 输入输出形状不变
+        assert output_shape.asnumpy().tolist() == [2, 3, 4, 5]
 
 
 class TestSaveOutputModule:
@@ -198,7 +193,8 @@ class TestGetOutputModule:
 
         # 测试获取输出
         output = get_module._get_output()
-        assert output is not None
+        assert isinstance(output, Parameter)
+        assert output.shape == (2, 3, 4, 5)
 
 
 class TestLossModuleBase:
@@ -302,8 +298,8 @@ class TestLossModule:
         dummy_output = (Tensor(np.zeros((1, 1), dtype=np.float32)),)
         loss = loss_module(dummy_output, dummy_output)
 
-        # 检查是否有损失输出
-        assert loss is not None
+        # 两侧输出均为零向量，绝对差均值为 0.0
+        assert abs(loss.asnumpy() - 0.0) < 1e-6
 
     @staticmethod
     def test_construct_with_direct_outputs():
@@ -371,8 +367,10 @@ class TestDistillLossesManagerBase:
 
         result = manager.try_merge_to_ori_output(distill_loss, s_outputs)
 
-        # 检查结果不为None
-        assert result is not None
+        # hard_label_loss_weight=0.5 时 1.0*0.5 + 2.0*(1-0.5) = 1.5，非替换位保持原值
+        assert len(result) == 2
+        assert abs(result[0].asnumpy() - 1.5) < 1e-6
+        assert abs(result[1].asnumpy() - 3.0) < 1e-6
 
     @staticmethod
     def test_add_t_loss():
@@ -386,8 +384,10 @@ class TestDistillLossesManagerBase:
 
         result = manager.add_t_loss(t_outputs, s_outputs)
 
-        # 检查结果不为None
-        assert result is not None
+        # s_outputs[0] + t_outputs = 1.0 + 2.0 = 3.0，非替换位保持原值
+        assert len(result) == 2
+        assert abs(result[0].asnumpy() - 3.0) < 1e-6
+        assert abs(result[1].asnumpy() - 3.0) < 1e-6
 
 
 class TestDistillLossesManager:
@@ -408,8 +408,8 @@ class TestDistillLossesManager:
 
         assert isinstance(manager.s_name2module, dict)
         assert isinstance(manager.t_name2module, dict)
-        assert manager.loss_modules == []
-        assert manager.get_output_shape_modules == []
+        assert isinstance(manager.loss_modules, list) and not manager.loss_modules
+        assert isinstance(manager.get_output_shape_modules, list) and not manager.get_output_shape_modules
 
     @staticmethod
     def test_compute_loss_ms():
@@ -432,8 +432,9 @@ class TestDistillLossesManager:
 
         total_loss, _ = manager.compute_loss_ms(s_output, t_output)
 
-        # 检查损失计算是否成功
-        assert total_loss is not None
+        # 无中间/输出匹配损失，仅硬标签损失：ones*0.5 + 0*0.5 = 0.5
+        assert total_loss.shape == (2, 3)
+        assert np.allclose(total_loss.asnumpy(), 0.5)
 
     @staticmethod
     def test_get_module_output_shapes():

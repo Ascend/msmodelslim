@@ -127,16 +127,16 @@ class TestBaseContext:
         """key 存在时 get 返回对应 namespace."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["a"]  # noqa: F841
+            var = ctx["a"]
             ns = ctx.get("a")
-            assert ns is not None
-            assert ns.state is not None
+            assert ns is var
+            assert ns.state is var.state
 
     def test_delete_removes_namespace_when_key_exists(self):
         """delete 删除已存在的 namespace."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["a"]  # noqa: F841
+            _ = ctx["a"]
             assert "a" in ctx
             ctx.delete("a")
             assert "a" not in ctx
@@ -145,8 +145,8 @@ class TestBaseContext:
         """有 namespace 时 keys 返回所有 key."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["x"]
-            var = ctx["y"]  # noqa: F841
+            _ = ctx["x"]
+            _ = ctx["y"]
             assert set(ctx.keys()) == {"x", "y"}
 
     def test_getitem_creates_and_returns_namespace_when_key_missing(self):
@@ -154,21 +154,21 @@ class TestBaseContext:
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
             ns = ctx["new_ns"]
-            assert ns is not None
+            assert ns is ctx["new_ns"]
             assert "new_ns" in ctx
 
     def test_getitem_returns_existing_namespace_when_key_exists(self):
         """key 已存在时 __getitem__ 返回同一 namespace."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["same"]  # noqa: F841
-            assert ctx["same"] is ctx["same"]
+            ns = ctx["same"]
+            assert ctx["same"] is ns
 
     def test_delitem_removes_namespace_when_key_exists(self):
         """__delitem__ 删除已存在的 namespace."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["d"]  # noqa: F841
+            _ = ctx["d"]
             del ctx["d"]
             assert "d" not in ctx
 
@@ -176,7 +176,7 @@ class TestBaseContext:
         """key 存在时 __contains__ 为 True."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["k"]  # noqa: F841
+            _ = ctx["k"]
             assert "k" in ctx
 
     def test_contains_returns_false_when_key_missing(self):
@@ -190,16 +190,16 @@ class TestBaseContext:
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
             assert len(ctx) == 0
-            var = ctx["a"]
-            var = ctx["b"]  # noqa: F841
+            _ = ctx["a"]
+            _ = ctx["b"]
             assert len(ctx) == 2
 
     def test_iter_returns_keys_iterator(self):
         """__iter__ 可迭代出所有 namespace 的 key."""
         ctx = ContextFactory().create(is_distributed=False)
         with ContextManager(ctx=ctx):
-            var = ctx["p"]
-            var = ctx["q"]  # noqa: F841
+            _ = ctx["p"]
+            _ = ctx["q"]
             assert set(iter(ctx)) == {"p", "q"}
 
 
