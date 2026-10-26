@@ -26,7 +26,10 @@ from __future__ import annotations
 from msmodelslim.format.ascendV1_format import AscendV1QuantFormatConfig as Av1FromInit
 from msmodelslim.format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
 from msmodelslim.format.common import deqscale2int64, deqscale2int64_by_dtype
-from msmodelslim.format.common.deqscale import deqscale2int64 as deq_fn
+from msmodelslim.format.common.deqscale import (
+    deqscale2int64 as deq_fn,
+    deqscale2int64_by_dtype as deq_by_dtype_fn,
+)
 from msmodelslim.format.compressed_tensors_format import (
     CompressedTensorsQuantFormat,
     CompressedTensorsQuantFormatConfig,
@@ -44,7 +47,7 @@ class TestSubpackageInitExports:
 
     def test_common_init_export_deqscale_when_imported(self):
         assert deqscale2int64 is deq_fn
-        assert deqscale2int64_by_dtype is not None
+        assert deqscale2int64_by_dtype is deq_by_dtype_fn
 
     def test_compressed_tensors_init_export_symbols_when_imported(self):
         from msmodelslim.format.compressed_tensors_format.compressed_tensors import (

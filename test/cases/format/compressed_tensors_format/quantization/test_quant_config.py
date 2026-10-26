@@ -72,7 +72,7 @@ class TestQuantizationConfig:
 
         config = QuantizationConfig.from_model(model)
 
-        assert config is not None
+        assert isinstance(config, QuantizationConfig)
         assert config.quantization_status == QuantizationStatus.COMPRESSED
         assert len(config.config_groups) >= 1
 

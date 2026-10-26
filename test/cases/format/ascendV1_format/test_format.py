@@ -20,14 +20,18 @@ See the Mulan PSL v2 for more details.
 msmodelslim/format/ascendV1_format/format.py 的单元测试。
 """
 
+import io
 import json
+import os
+import shutil
+import tempfile
+from unittest.mock import patch
 
 import pytest
 import torch
 from safetensors.torch import save_file
 from torch import nn
 
-from msmodelslim.format.ascendV1_format.decoder import AscendV1FormatDecoder
 from msmodelslim.format.ascendV1_format.format import (
     ASCENDV1_DESC_JSON_NAME,
     ASCENDV1_SAFETENSORS_NAME,
@@ -92,15 +96,30 @@ def _f32_bits(value):
     return torch.tensor([value]).view(torch.int32).to(torch.int64)
 
 
+_FORMAT_TMP_DIRS = []
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_format_tmp_dirs():
+    yield
+    for tmp_dir in _FORMAT_TMP_DIRS:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+    _FORMAT_TMP_DIRS.clear()
+
+
 def _make_format(description, store, adapter=None):
-    fmt = AscendV1Format.__new__(AscendV1Format)
-    fmt.model_path = "/export"
-    fmt.device = torch.device("cpu")
-    fmt.description = description
-    fmt.store = store
-    fmt.group_size = 0
-    fmt._decoder = AscendV1FormatDecoder(store)
-    fmt._adapter = adapter
+    """Build AscendV1Format through its public constructor, patching only the store factory."""
+    model_path = tempfile.mkdtemp(prefix="ascendv1_fmt_").replace(os.sep, "/")
+    _FORMAT_TMP_DIRS.append(model_path)
+    with io.open(os.path.join(model_path, ASCENDV1_DESC_JSON_NAME), "w", encoding="utf-8") as f:
+        json.dump(description, f)
+
+    with patch(
+        "msmodelslim.format.ascendV1_format.tensor_store.AscendV1TensorStore",
+        return_value=store,
+    ):
+        fmt = AscendV1Format(model_path, device="cpu")
+    fmt.bind_adapter(adapter)
     return fmt
 
 

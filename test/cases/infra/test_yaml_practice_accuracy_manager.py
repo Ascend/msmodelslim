@@ -25,6 +25,8 @@ from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from pydantic import BaseModel
 from msmodelslim.infra.yaml_practice_accuracy_manager import (
     YamlTuningAccuracy,
@@ -33,7 +35,6 @@ from msmodelslim.infra.yaml_practice_accuracy_manager import (
 from msmodelslim.core.practice import PracticeConfig
 from msmodelslim.core.tune_strategy import EvaluateResult, EvaluateAccuracy
 from msmodelslim.app.auto_tuning.evaluation_service_infra import EvaluateServiceConfig
-from msmodelslim.utils.hash import calculate_md5
 from msmodelslim.utils.yaml_database import YamlDatabase
 
 
@@ -70,27 +71,28 @@ class TestYamlTuningAccuracy:
 
         assert accuracy.database == str(accuracy_dir)  # 校验database正确设置
         assert accuracy.history_dir == accuracy_dir  # 校验history_dir正确设置
-        assert len(accuracy._accuracy_cache) == 0  # 校验_accuracy_cache为空
         assert accuracy.get_accuracy_count() == 0  # 校验get_accuracy_count返回0
 
     def test_load_accuracy_database_return_cache_when_data_valid_none_invalid(self, tmp_path: Path):
-        """测试数据库中存在有效数据、None数据、无效格式数据时加载精度缓存"""
+        """A valid flat entry loads one record; None / non-dict content loads an empty cache."""
         accuracy_dir = tmp_path / "accuracy"
         accuracy_dir.mkdir()
-        db = YamlDatabase(config_dir=accuracy_dir, read_only=False)
+        accuracy_file = accuracy_dir / "accuracy.yaml"
 
-        accuracy_data = {"eval1-prac1": {"accuracies": [{"dataset": "test1", "accuracy": "0.9"}], "is_satisfied": True}}
-        db["accuracy"] = accuracy_data
+        valid_entry = (
+            "eval-md5-quant-md5:\n  accuracies:\n  - dataset: test1\n    accuracy: 0.9\n  is_satisfied: true\n"
+        )
+        accuracy_file.write_text(valid_entry, encoding="utf-8")
         accuracy = YamlTuningAccuracy(str(accuracy_dir))
-        assert len(accuracy._accuracy_cache) >= 0  # 校验有效数据返回缓存
+        assert accuracy.get_accuracy_count() == 1  # one valid entry loaded
 
-        db["accuracy"] = None
+        accuracy_file.write_text("key: null\n", encoding="utf-8")
         accuracy2 = YamlTuningAccuracy(str(accuracy_dir))
-        assert len(accuracy2._accuracy_cache) == 0  # 校验None数据返回空缓存
+        assert accuracy2.get_accuracy_count() == 0  # None content loads empty cache
 
-        db["accuracy"] = "invalid_string"
+        accuracy_file.write_text("key: invalid_string\n", encoding="utf-8")
         accuracy3 = YamlTuningAccuracy(str(accuracy_dir))
-        assert len(accuracy3._accuracy_cache) == 0  # 校验无效格式返回空缓存
+        assert accuracy3.get_accuracy_count() == 0  # non-dict content loads empty cache
 
     def test_get_accuracy_return_none_when_not_exist_and_return_result_when_exist(self, tmp_path: Path):
         """测试精度缓存为空和已添加精度记录时获取精度"""
@@ -105,30 +107,42 @@ class TestYamlTuningAccuracy:
 
         accuracy.append_accuracy(practice, evaluation_config, evaluate_result)
         result = accuracy.get_accuracy(practice, evaluation_config)
-        assert result is not None  # 校验添加精度后返回结果
+        assert isinstance(result, EvaluateResult)  # 校验添加精度后返回结果
         assert result.accuracies[0].accuracy == Decimal('0.95')  # 校验精度值正确
 
-    def test_append_accuracy_add_new_record_when_first_time_and_overwrite_when_exist(self, tmp_path: Path):
-        """测试首次添加精度记录和覆盖已存在记录"""
+    def test_append_accuracy_adds_new_record_when_first_time(self, tmp_path: Path):
+        """Add one record on first append."""
         accuracy_dir = tmp_path / "accuracy"
         accuracy = YamlTuningAccuracy(str(accuracy_dir))
 
         practice = create_test_practice_config("test_config")
         evaluation_config = create_test_evaluation_config()
-        evaluate_result1 = create_test_evaluate_result(Decimal('0.9'))
-        evaluate_result2 = create_test_evaluate_result(Decimal('0.95'))
+        evaluate_result = create_test_evaluate_result(Decimal('0.9'))
 
-        accuracy.append_accuracy(practice, evaluation_config, evaluate_result1)
-        assert accuracy.get_accuracy_count() == 1  # 校验新增记录时缓存数量为1
+        accuracy.append_accuracy(practice, evaluation_config, evaluate_result)
 
-        evaluation_md5 = calculate_md5(evaluation_config)
-        quant_config_md5 = calculate_md5(practice.extract_quant_config())
-        composite_key = f"{evaluation_md5}-{quant_config_md5}"
-        assert composite_key in accuracy._accuracy_cache  # 校验复合键存在
+        assert accuracy.get_accuracy_count() == 1  # one record stored
+        result = accuracy.get_accuracy(practice, evaluation_config)
+        assert isinstance(result, EvaluateResult)  # retrievable via public API
+        assert result.accuracies[0].accuracy == Decimal('0.9')  # stored value is returned
 
-        accuracy.append_accuracy(practice, evaluation_config, evaluate_result2)
-        cached_result = EvaluateResult.model_validate(accuracy._accuracy_cache[composite_key])
-        assert cached_result.accuracies[0].accuracy == Decimal('0.95')  # 校验覆盖记录时精度值被更新
+    def test_append_accuracy_overwrites_existing_record(self, tmp_path: Path):
+        """Same composite key is overwritten in place without growing the cache."""
+        accuracy_dir = tmp_path / "accuracy"
+        accuracy = YamlTuningAccuracy(str(accuracy_dir))
+
+        practice = create_test_practice_config("test_config")
+        evaluation_config = create_test_evaluation_config()
+        first_result = create_test_evaluate_result(Decimal('0.9'))
+        second_result = create_test_evaluate_result(Decimal('0.95'))
+
+        accuracy.append_accuracy(practice, evaluation_config, first_result)
+        accuracy.append_accuracy(practice, evaluation_config, second_result)
+
+        assert accuracy.get_accuracy_count() == 1  # still one record after overwrite
+        result = accuracy.get_accuracy(practice, evaluation_config)
+        assert isinstance(result, EvaluateResult)  # retrievable via public API
+        assert result.accuracies[0].accuracy == Decimal('0.95')  # overwritten value is returned
 
     def test_get_accuracy_count_return_zero_when_empty_and_return_one_when_added(self, tmp_path: Path):
         """测试精度缓存为空和添加一条精度记录时获取精度缓存数量"""
@@ -156,15 +170,14 @@ class TestYamlTuningAccuracy:
 
         accuracy.append_accuracy(practice, evaluation_config, evaluate_result)
 
-        evaluation_md5 = calculate_md5(evaluation_config)
-        quant_config_md5 = calculate_md5(practice.extract_quant_config())
-        composite_key = f"{evaluation_md5}-{quant_config_md5}"
-        assert composite_key in accuracy._accuracy_cache  # 校验复合键存在于缓存
-        assert len(composite_key.split("-")) == 2  # 校验复合键格式包含两部分
-
         result = accuracy.get_accuracy(practice, evaluation_config)
-        assert result is not None  # 校验能通过复合键获取精度
+        assert isinstance(result, EvaluateResult)  # 校验能通过复合键获取精度
         assert result.accuracies[0].accuracy == Decimal('0.95')  # 校验精度值正确
+
+        reloaded = YamlTuningAccuracy(str(accuracy_dir))
+        persisted_result = reloaded.get_accuracy(practice, evaluation_config)
+        assert isinstance(persisted_result, EvaluateResult)  # persisted record reloads via public API
+        assert persisted_result.accuracies[0].accuracy == Decimal('0.95')  # persisted value matches
 
 
 class TestYamlTuningAccuracyManager:
@@ -186,14 +199,14 @@ class TestYamlTuningAccuracyManager:
         accuracy2 = manager.load_accuracy(str(accuracy_dir))
         assert isinstance(accuracy2, YamlTuningAccuracy)  # 校验能加载包含已存在数据的精度记录
 
+    @patch('msmodelslim.infra.yaml_practice_accuracy_manager.YamlTuningAccuracy')
     @patch('msmodelslim.infra.yaml_practice_accuracy_manager.get_logger')
-    def test_load_accuracy_handle_exception_when_path_is_file(self, tmp_path: Path):
-        """测试路径指向文件而非目录时异常处理"""
-        accuracy_dir = tmp_path / "accuracy"
-        accuracy_dir.write_text("not a directory")
+    def test_load_accuracy_wraps_constructor_failure_in_runtime_error(self, mock_logger, mock_accuracy, tmp_path: Path):
+        """Constructor failures surface as a RuntimeError with a clear message and error log."""
+        mock_accuracy.side_effect = ValueError("boom")
         manager = YamlTuningAccuracyManager()
-        try:
-            accuracy = manager.load_accuracy(str(accuracy_dir))
-            assert isinstance(accuracy, YamlTuningAccuracy)  # 校验不抛出异常时返回实例
-        except RuntimeError:
-            pass  # 校验抛出RuntimeError时正常处理
+
+        with pytest.raises(RuntimeError, match="Failed to create or load accuracy database"):
+            manager.load_accuracy(str(tmp_path / "accuracy"))
+
+        mock_logger.return_value.error.assert_called_once()

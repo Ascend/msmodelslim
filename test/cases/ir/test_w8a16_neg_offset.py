@@ -72,7 +72,8 @@ class TestW8A16PerChannelNegOffsetFakeQuantLinear:
         assert module.weight.dtype == torch.int8, "weight 应为 int8"
         assert module.weight_scale.shape == (32,), f"weight_scale shape 不正确: {module.weight_scale.shape}"
         assert module.weight_offset.shape == (32,), f"weight_offset shape 不正确: {module.weight_offset.shape}"
-        assert module.bias is not None and module.bias.shape == (32,), "bias shape 不正确"
+        assert isinstance(module.bias, torch.nn.Parameter), "bias 应为 nn.Parameter"
+        assert module.bias.shape == (32,), f"bias shape 不正确: {module.bias.shape}"
 
     def test_forward_shape(self):
         """forward 输出 shape 为 [batch, out_features]。"""

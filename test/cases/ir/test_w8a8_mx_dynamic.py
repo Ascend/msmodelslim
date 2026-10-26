@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+"""
+
+import torch
+
+from msmodelslim.ir.const import mxfp8_per_block_sym
+from msmodelslim.ir.qal import QDType, QParam, QStorage
+from msmodelslim.ir.w8a8_mx_dynamic import W8A8MXDynamicPerBlockFakeQuantLinear
+
+_IN_FEATURES = 8
+_OUT_FEATURES = 4
+
+
+def _make_module(weight_value: float, bias=None) -> W8A8MXDynamicPerBlockFakeQuantLinear:
+    x_q_param = QParam(scheme=mxfp8_per_block_sym, ext={"axes": -1})
+    w_q_param = QParam(
+        scheme=mxfp8_per_block_sym,
+        ext={"axes": -1, "scale": torch.ones(1), "offset": torch.zeros(1)},
+    )
+    w_q = QStorage(QDType.MXFP8, torch.full((_OUT_FEATURES, _IN_FEATURES), weight_value))
+    return W8A8MXDynamicPerBlockFakeQuantLinear(x_q_param, w_q_param, w_q, bias)
+
+
+def test_forward_returns_expected_shape_and_value():
+    module = _make_module(1.0)
+    x = torch.ones(2, _IN_FEATURES, dtype=torch.float32)
+
+    output = module(x)
+
+    assert output.shape == (2, _OUT_FEATURES)
+    assert torch.allclose(output, torch.full((2, _OUT_FEATURES), 16.0))
+
+
+def test_forward_scales_with_weight_magnitude():
+    ones = _make_module(1.0)
+    doubled = _make_module(2.0)
+    x = torch.ones(2, _IN_FEATURES, dtype=torch.float32)
+
+    assert torch.allclose(doubled(x), 2 * ones(x))
+
+
+def test_repr_reports_impl_name():
+    module = _make_module(1.0)
+
+    assert "W8A8MXDynamicPerBlockFakeQuantLinear" in repr(module)
+
+
+def test_from_deploy_state_dict_restores_module():
+    state_dict = {
+        "weight": torch.ones(_OUT_FEATURES, _IN_FEATURES),
+        "weight_scale": torch.ones(1),
+        "weight_offset": torch.zeros(1),
+    }
+
+    module = W8A8MXDynamicPerBlockFakeQuantLinear.from_deploy_state_dict(state_dict)
+
+    assert isinstance(module, W8A8MXDynamicPerBlockFakeQuantLinear)
+    assert torch.equal(module.weight_scale, torch.ones(1))
+    assert torch.equal(module.weight, torch.ones(_OUT_FEATURES, _IN_FEATURES))
+    assert module.bias is None

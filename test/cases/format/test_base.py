@@ -95,7 +95,7 @@ class TestQuantFormatBase:
 
         fmt.process_module_tensors("", model)
 
-        assert fmt.float_calls
+        assert fmt.float_calls == ["", "0"]
 
     def test_process_module_tensors_skip_duplicate_when_already_processed(self, tmp_path):
         ctx = ExportContext(save_directory=tmp_path)

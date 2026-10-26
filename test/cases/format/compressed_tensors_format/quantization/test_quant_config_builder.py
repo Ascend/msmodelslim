@@ -47,6 +47,7 @@ from msmodelslim.format.compressed_tensors_format.quantization.quant_config_buil
 )
 from msmodelslim.ir.qal import QDType, QParam, QScheme, QScope
 from msmodelslim.format.compressed_tensors_format.quantization.quant_scheme import (
+    QuantizationScheme,
     preset_name_to_scheme,
 )
 
@@ -88,7 +89,7 @@ class TestBuildSchemeFromModule:
 
         scheme = build_scheme_from_module(module, ["Linear"])
 
-        assert scheme is not None
+        assert isinstance(scheme, QuantizationScheme)
         assert scheme.weights.strategy == QuantizationStrategy.CHANNEL
 
     def test_build_scheme_from_module_return_none_when_module_unsupported(self):

@@ -18,7 +18,6 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=function-redefined
 
 import unittest
 
@@ -120,7 +119,7 @@ class TestMXFP4Quantization(unittest.TestCase):
         x_q = quantize(QStorage(QDType.FLOAT, x), x_q_param)
         self.assertTrue(torch.all(x_q.value == 4.0))
 
-    def test_quantize_with_all_ones_should_return_correct_scale_and_quantized_value(self):  # noqa: F811
+    def test_quantize_with_random_blocks_should_return_correct_scale_and_quantized_value(self):
         """64 个元素随机：与 fake_quantize 用例相同，用 observer 得到 min/max 再 quantize。"""
         # torch.manual_seed(0)
         # x = torch.randn(1, 1, 64) * 10 - 5

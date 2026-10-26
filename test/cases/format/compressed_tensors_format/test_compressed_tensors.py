@@ -132,7 +132,8 @@ class TestCompressedTensorsQuantFormatPrepareExport:
     def test_prepare_export_create_writer_when_infra_configured(self, export_ctx, writer_infra):
         fmt = make_compressed_tensors_quant_format(export_ctx, writer_infra, prepare=True)
 
-        assert fmt.safetensors_writer is not None
+        assert len(writer_infra.created) == 1
+        assert fmt.safetensors_writer is writer_infra.created[0]
         assert writer_infra.last_args == (4, str(export_ctx.save_directory), "model")
 
 

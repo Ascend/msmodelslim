@@ -31,6 +31,7 @@ import torch
 from msmodelslim.format.compressed_tensors_format.quantization.quant_args import (
     ActivationOrdering,
     DynamicType,
+    FP8_E4M3_DATA,
     QuantizationArgs,
     QuantizationStrategy,
     QuantizationType,
@@ -275,7 +276,7 @@ class TestQuantizationArgs:
             dynamic="local",
         )
 
-        assert args.zp_dtype is not None
+        assert args.zp_dtype is FP8_E4M3_DATA.dtype
 
     def test_quantization_args_serialize_dtype_return_none_when_symmetric(self):
         args = QuantizationArgs(

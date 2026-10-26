@@ -18,24 +18,23 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=assignment-from-none,attribute-defined-outside-init,consider-using-from-import,no-value-for-parameter,pointless-string-statement,too-many-lines,unnecessary-dunder-call,unreachable,useless-parent-delegation
 
-"""
-msmodelslim.utils.dag_utils.dag_hook 模块的单元测试
-测试DagHook抽象基类的功能，包括DAG图构建、节点替换等核心功能
-"""
+# pylint: disable=too-many-lines
 
-import unittest  # noqa: E402
-from typing import Any, List, Tuple  # noqa: E402
-from unittest.mock import Mock, patch  # noqa: E402
+# msmodelslim.utils.dag_utils.dag_hook 模块的单元测试
+# 测试DagHook抽象基类的功能，包括DAG图构建、节点替换等核心功能
 
-import torch  # noqa: E402
-import torch.nn as nn  # noqa: E402
+import unittest
+from typing import Any, List, Tuple
+from unittest.mock import Mock, patch
 
-from ascend_utils.common.utils import CallParams  # noqa: E402
-from ascend_utils.core.dag.dag_node import DagNode  # noqa: E402
-from ascend_utils.core.dag.dag_node_io import DagNodeIO  # noqa: E402
-from msmodelslim.utils.dag_utils.dag_hook import DagHook  # noqa: E402
+import torch
+from torch import nn
+
+from ascend_utils.common.utils import CallParams
+from ascend_utils.core.dag.dag_node import DagNode
+from ascend_utils.core.dag.dag_node_io import DagNodeIO
+from msmodelslim.utils.dag_utils.dag_hook import DagHook
 
 
 class ConcreteDagHook(DagHook):
@@ -44,6 +43,8 @@ class ConcreteDagHook(DagHook):
     def __init__(self, network, inputs, hook_ops=None, anti_method=None):
         # 初始化时需要模拟所有抽象方法
         super().__init__(network, inputs, hook_ops, anti_method)
+        self.parse_called = False
+        self.after_parse_called = False
 
     def get_module_cls(self):
         """获取模块类型"""
@@ -217,14 +218,19 @@ class TestDagHook(unittest.TestCase):
 
     def test_get_operator_hook_infos_when_called_then_return_operator_methods(self):
         """测试_get_operator_hook_infos类方法：调用时应该返回运算符方法信息"""
-        test_obj = Mock()
-        test_obj.__add__ = Mock()
-        test_obj.__sub__ = Mock()
 
-        result = DagHook._get_operator_hook_infos(test_obj)
+        class _OperatorHolder:
+            def __add__(self, other):
+                return other
 
-        # 验证返回列表
-        self.assertIsInstance(result, list)
+            def __sub__(self, other):
+                return other
+
+        result = DagHook._get_operator_hook_infos(_OperatorHolder())
+
+        # 应返回自定义的运算符方法
+        result_names = {info[2] for info in result}
+        self.assertTrue({"__add__", "__sub__"}.issubset(result_names))
 
     def test_get_class_hook_infos_when_called_then_return_class_infos(self):
         """测试_get_class_hook_infos类方法：调用时应该返回类信息"""
@@ -236,14 +242,19 @@ class TestDagHook(unittest.TestCase):
 
     def test_get_function_hook_infos_when_called_then_return_function_infos(self):
         """测试_get_function_hook_infos类方法：调用时应该返回函数信息"""
-        test_obj = Mock()
-        test_obj.public_method = Mock()
-        test_obj._private_method = Mock()
 
-        result = DagHook._get_function_hook_infos(test_obj)
+        class _FunctionHolder:
+            def public_method(self):
+                pass
 
-        # 验证返回列表
-        self.assertIsInstance(result, list)
+            def _private_method(self):
+                pass
+
+        result = DagHook._get_function_hook_infos(_FunctionHolder())
+        result_names = [info[2] for info in result]
+
+        # 只应收集公开方法，并排除以下划线开头的私有方法
+        self.assertEqual(result_names, ["public_method"])
 
     def test_get_params_when_network_has_parameters_then_return_total_count(self):
         """测试get_params：当网络有参数时，应该返回参数总数"""
@@ -358,8 +369,10 @@ class TestDagHook(unittest.TestCase):
             dag_hook = ConcreteDagHook(self.network, self.inputs, self.hook_ops)
 
             # 创建有__name__属性的节点
-            node_hook = Mock()
-            node_hook.__name__ = "_TestModule_"
+            def _TestModule_():
+                pass
+
+            node_hook = _TestModule_
 
             result = dag_hook.get_node_name(None, node_hook)
             expected = f"TestModule_{len(dag_hook._dag_node_list)}"
@@ -373,13 +386,11 @@ class TestDagHook(unittest.TestCase):
         ):
             dag_hook = ConcreteDagHook(self.network, self.inputs, self.hook_ops)
 
-            # 创建有name属性的节点
-            node_hook = Mock(spec=['name'])
-            node_hook.name = "_MyNode_"
+            # 创建有name属性但没有__name__属性的节点
+            class _NodeWithName:
+                name = "_MyNode_"
 
-            # 移除__name__属性
-            if hasattr(node_hook, '__name__'):
-                delattr(node_hook, '__name__')
+            node_hook = _NodeWithName()
 
             result = dag_hook.get_node_name(None, node_hook)
             expected = f"MyNode_{len(dag_hook._dag_node_list)}"
@@ -497,19 +508,15 @@ class TestDagHook(unittest.TestCase):
         ):
             dag_hook = ConcreteDagHook(self.network, self.inputs, self.hook_ops)
 
-            # 重新定义方法以测试实际逻辑
-            dag_hook._parse_network_structure_tree = DagHook._parse_network_structure_tree.__get__(dag_hook)
-            dag_hook._structure_tree = {}
-
             # 创建简单的测试模块
             test_module = nn.Linear(10, 5)
 
             # 构建结构树
-            dag_hook._parse_network_structure_tree(test_module, "linear", None, "model.linear")
+            DagHook._parse_network_structure_tree(dag_hook, test_module, "linear", None, "model.linear")
 
             # 验证结构树被更新
-            self.assertGreater(len(dag_hook._structure_tree), 0)
-            self.assertIn(id(test_module), dag_hook._structure_tree)
+            self.assertGreater(len(dag_hook.structure_tree), 0)
+            self.assertIn(id(test_module), dag_hook.structure_tree)
 
     def test_parse_network_structure_tree_when_module_visited_twice_then_handle_correctly(self):
         """测试_parse_network_structure_tree：当模块被访问两次时，应该正确处理"""
@@ -519,23 +526,19 @@ class TestDagHook(unittest.TestCase):
         ):
             dag_hook = ConcreteDagHook(self.network, self.inputs, self.hook_ops)
 
-            # 重新定义方法以测试实际逻辑
-            dag_hook._parse_network_structure_tree = DagHook._parse_network_structure_tree.__get__(dag_hook)
-            dag_hook._structure_tree = {}
-
             # 创建测试模块
             test_module = nn.Linear(10, 5)
             parent1 = Mock()
             parent2 = Mock()
 
             # 第一次访问
-            dag_hook._parse_network_structure_tree(test_module, "linear1", parent1, "model.linear1")
+            DagHook._parse_network_structure_tree(dag_hook, test_module, "linear1", parent1, "model.linear1")
 
             # 第二次访问
-            dag_hook._parse_network_structure_tree(test_module, "linear2", parent2, "model.linear2")
+            DagHook._parse_network_structure_tree(dag_hook, test_module, "linear2", parent2, "model.linear2")
 
             # 验证parent_module_info被更新
-            self.assertIn(id(test_module), dag_hook._structure_tree)
+            self.assertIn(id(test_module), dag_hook.structure_tree)
 
     def test_get_node_input_in_gen_when_argument_in_dict_then_return_existing(self):
         """测试_get_node_input_in_gen：当参数已在字典中时，应该返回现有的DagNodeIO"""
@@ -975,9 +978,13 @@ class TestDagHook(unittest.TestCase):
         ):
             dag_hook = ConcreteDagHook(self.network, self.inputs, self.hook_ops)
 
-            # 创建测试模块并添加_old_module属性（模拟accelerate）
-            test_module = nn.Linear(10, 5)
-            test_module._old_module = Mock()
+            # 创建带_old_module属性的测试模块（模拟accelerate）
+            class _LinearWithOldModule(nn.Linear):
+                def __init__(self):
+                    super().__init__(10, 5)
+                    self._old_module = Mock()
+
+            test_module = _LinearWithOldModule()
 
             # 添加到结构树
             dag_hook._structure_tree[id(test_module)] = {"name_in_network": "test_linear"}

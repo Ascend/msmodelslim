@@ -18,22 +18,19 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=attribute-defined-outside-init,consider-using-from-import,pointless-string-statement
 
-"""
-msmodelslim.utils.dag_utils.dag_torch_hook 模块的单元测试
-测试DagTorchHook类的功能，包括PyTorch模型的DAG图构建和节点操作
-"""
+# msmodelslim.utils.dag_utils.dag_torch_hook 模块的单元测试
+# 测试DagTorchHook类的功能，包括PyTorch模型的DAG图构建和节点操作
 
-import unittest  # noqa: E402
-from unittest.mock import Mock, patch  # noqa: E402
+import unittest
+from unittest.mock import Mock, patch
 
-import torch  # noqa: E402
-import torch.nn as nn  # noqa: E402
+import torch
+from torch import nn
 
-from ascend_utils.common.utils import CallParams  # noqa: E402
-from ascend_utils.core.dag.dag_node import DagNode  # noqa: E402
-from msmodelslim.utils.dag_utils.dag_torch_hook import DagTorchHook  # noqa: E402
+from ascend_utils.common.utils import CallParams
+from ascend_utils.core.dag.dag_node import DagNode
+from msmodelslim.utils.dag_utils.dag_torch_hook import DagTorchHook
 
 
 class ConcreteDagTorchHook(DagTorchHook):
@@ -305,9 +302,7 @@ class TestDagTorchHook(unittest.TestCase):
 
             # 创建测试节点，输入输出数量相同
             old_module = nn.ReLU()
-            dag_node = DagNode(old_module, "test_node", "ReLU")
-            dag_node._inputs = [Mock()]
-            dag_node._outputs = [Mock()]
+            dag_node = DagNode(old_module, "test_node", "ReLU", inputs=[Mock()], outputs=[Mock()])
 
             # 模拟replace_node方法
             with patch.object(dag_hook, 'replace_node') as mock_replace:
@@ -326,9 +321,7 @@ class TestDagTorchHook(unittest.TestCase):
 
             # 创建测试节点，输入输出数量不同
             old_module = nn.Linear(5, 3)
-            dag_node = DagNode(old_module, "test_node", "Linear")
-            dag_node._inputs = [Mock()]
-            dag_node._outputs = [Mock(), Mock()]
+            dag_node = DagNode(old_module, "test_node", "Linear", inputs=[Mock()], outputs=[Mock(), Mock()])
 
             with self.assertRaises(ValueError) as context:
                 dag_hook.remove_node(dag_node, check_io=True)
@@ -345,9 +338,7 @@ class TestDagTorchHook(unittest.TestCase):
 
             # 创建测试节点，输入输出数量不同
             old_module = nn.Linear(5, 3)
-            dag_node = DagNode(old_module, "test_node", "Linear")
-            dag_node._inputs = [Mock()]
-            dag_node._outputs = [Mock(), Mock()]
+            dag_node = DagNode(old_module, "test_node", "Linear", inputs=[Mock()], outputs=[Mock(), Mock()])
 
             # 模拟replace_node方法
             with patch.object(dag_hook, 'replace_node') as mock_replace:
@@ -395,8 +386,8 @@ class TestDagTorchHook(unittest.TestCase):
         ):
             dag_hook = ConcreteDagTorchHook(self.network, self.inputs)
 
-            # 设置临时设备
-            dag_hook._tmp_device = torch.device('cpu')
+            # 通过真实前置流程设置临时设备
+            dag_hook._before_parse()
 
             # 调用_after_parse
             dag_hook._after_parse()

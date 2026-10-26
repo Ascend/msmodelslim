@@ -103,7 +103,7 @@ class TestSchemeForQirModule:
 
         scheme = scheme_for_qir_module(module)
 
-        assert scheme is not None
+        assert isinstance(scheme, QuantizationScheme)
         assert scheme.input_activations.dynamic is False
 
     def test_scheme_for_qir_module_return_scheme_when_dynamic_qir_module(self):
@@ -111,7 +111,7 @@ class TestSchemeForQirModule:
 
         scheme = scheme_for_qir_module(module)
 
-        assert scheme is not None
+        assert isinstance(scheme, QuantizationScheme)
         assert scheme.input_activations.dynamic is True
 
     def test_scheme_for_qir_module_return_none_when_module_unsupported(self):

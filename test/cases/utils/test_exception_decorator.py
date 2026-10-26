@@ -199,14 +199,15 @@ def test_exception_catcher_convert_to_unexpected_error_when_other_exception_occu
 
 def test_exception_catcher_preserve_original_context_when_exception_occurs(exception_decorator_mod):
     """当发生异常时，应保留原始异常上下文"""
+    original_exc = ValueError("原始异常")
 
     @exception_decorator_mod.exception_catcher
     def test_function():
-        raise ValueError("原始异常")
+        raise original_exc
 
     with pytest.raises(UnexpectedError) as exc:
         test_function()
-    assert exc.value.__cause__ is not None
+    assert exc.value.__cause__ is original_exc
     assert isinstance(exc.value.__cause__, ValueError)
     assert "原始异常" in str(exc.value.__cause__)
 
