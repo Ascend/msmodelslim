@@ -507,7 +507,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>transformers==5.2.0</td>
       <td>-</td>
       <td>-</td>
-      <td>-</td>
+      <td>√(一键量化)</td>
       <td>-</td>
       <td>√(一键量化)<sup>4</sup></td>
       <td>-</td>

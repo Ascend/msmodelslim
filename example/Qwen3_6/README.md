@@ -33,7 +33,7 @@ Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 | 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A16 | W4A8 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
 |---------|---------|---------------------------------------------------------------|-----|-----|-----|--------|------|---------|----------|-----------|-----------------------------------------------|
 | **Qwen3.6-Dense** | Qwen3.6-27B | [Qwen3.6-27B](https://modelscope.cn/models/Qwen/Qwen3.6-27B)   | ✅ |  |    |        |   |  |   | ✅ | [W8A8](#Qwen3.6-27B-w8a8)/[W8A8C8](#Qwen3.6-27B-w8a8c8) |
-| **Qwen3.6-MoE** | Qwen3.6-35B-A3B | [Qwen3.6-35B-A3B](https://modelscope.cn/models/Qwen/Qwen3.6-35B-A3B)   | ✅ |  |    |        |   |  | ✅ | ✅ | [W8A8C8](#Qwen3.6-35B-A3B-w8a8c8)|
+| **Qwen3.6-MoE** | Qwen3.6-35B-A3B | [Qwen3.6-35B-A3B](https://modelscope.cn/models/Qwen/Qwen3.6-35B-A3B)   | ✅ |  | ✅  |        |   |  | ✅ | ✅ | [W8A8C8](#Qwen3.6-35B-A3B-w8a8c8)/[W4A8](#Qwen3.6-35B-A3B-w4a8)|
 
 **说明：**
 
@@ -74,4 +74,12 @@ Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
   ```shell
   msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-35B-A3B --quant_type w8a8c8 --trust_remote_code true --tags vLLM-Ascend Ascend_950
+  ```
+
+##### <span id="Qwen3.6-35B-A3B-w4a8">Qwen3.6-35B-A3B W4A8量化</span>
+
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
+
+  ```shell
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.6-35B-A3B --quant_type w4a8 --trust_remote_code true --tags vLLM-Ascend Ascend_950
   ```
