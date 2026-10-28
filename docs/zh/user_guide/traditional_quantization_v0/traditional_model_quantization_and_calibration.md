@@ -425,12 +425,12 @@ import torch_npu   # 若需要在cpu上进行量化，可忽略此步骤
 …
 
 calib_data = []
-    image = cv2.imdecode(np.fromfile("./random_image.jpg", dtype=np.uint8), 1)  #请以数据集实际路径进行配置
-    image = cv2.resize(image, (640, 640), interpolation=cv2.INTER_CUBIC)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image = torch.from_numpy(image).permute(2, 0, 1) / 255
-    image = image.unsqueeze(0)
-    calib_data.append([np.array(image)])
+image = cv2.imdecode(np.fromfile("./random_image.jpg", dtype=np.uint8), 1)  #请以数据集实际路径进行配置
+image = cv2.resize(image, (640, 640), interpolation=cv2.INTER_CUBIC)
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+image = torch.from_numpy(image).permute(2, 0, 1) / 255
+image = image.unsqueeze(0)
+calib_data.append([np.array(image)])
 ```
 
 #### 2.3.3 已验证模型

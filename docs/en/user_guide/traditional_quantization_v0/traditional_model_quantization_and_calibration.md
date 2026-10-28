@@ -603,7 +603,7 @@ If you run the following commands as a non-root user, add `--user` to the end of
     model = nvmodels.build_resnet("resnet50", "classic", is_training=False)
     pretrained_dict = safe_torch_load(args.pretrained, map_location='cpu')["state_dict"]
     model.load_state_dict(pretrained_dict, strict=False)
-# Save the quantized ONNX model
+    # Save the quantized ONNX model
     from msmodelslim.pytorch.quant.qat_tools import save_qsin_qat_model
     #Configure the name of the output model file (in .onnx format), input shape, fake-quantization model weight, and ONNX input name as needed.
     save_onnx_name='./resnet50.onnx'

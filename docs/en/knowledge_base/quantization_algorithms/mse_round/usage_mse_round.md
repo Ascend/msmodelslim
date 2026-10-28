@@ -35,7 +35,7 @@ flowchart LR
 Key details of each stage are as follows:
 
 - **Prerequisite: model adaptation.** Model adaptation must be completed before quantization. The adapter implements interfaces such as `PipelineInterface` (the basic pipeline interface); see the [LLM Model Quantization Integration Guide](../../ptq/llm/integration_guide_large_language_model_quantization.md) for details. Model adaptation must be completed first before the quantization workflow can run.
-- **Determine the MXFP8 per-block scheme**: currently MSE-Round only registers MXFP8 per-block symmetric weight quantization, so the main task on the user side is to confirm the format and the axes layout.
+- **Determine the MXFP8 per-block scheme**: currently MSE_Round only registers MXFP8 per-block symmetric weight quantization, so the main task on the user side is to confirm the format and the axes layout.
 - **Compute the two shared exponent candidates**: the algorithm computes two candidates (round-up/round-down) for the shared exponent of each block, without user intervention.
 - **Compare the reconstruction MSE**: the algorithm automatically compares the reconstruction MSE of the two candidates and selects the rounding result with the smaller error.
 - **Quantize weights**: perform per-block weight quantization according to the selected rounding to improve MXFP8 weight accuracy.
@@ -80,7 +80,7 @@ spec:
 
 | Configuration Item | Meaning (Rationale) | Recommended Configuration | Selection and Tuning Advice |
 | --- | --- | --- | --- |
-| `scope` | Currently MSE-Round only registers MXFP8 per-block weight quantization. | Fixed to `per_block`. | Other scopes are not supported. |
+| `scope` | Currently MSE_Round only registers MXFP8 per-block weight quantization. | Fixed to `per_block`. | Other scopes are not supported. |
 | `dtype` | Currently only `mxfp8` is supported. | Fixed to `mxfp8`. | If MXFP4 is required, the corresponding algorithm should be used. |
 | `symmetric` | Currently registered as symmetric MXFP8. | Fixed to `true`. | Do not tune. |
 | `method` | Fixed to `mse_round`. For the shared exponent of each block, the algorithm compares the two candidates (round-up/round-down) and selects the one with the smaller reconstruction MSE. | Fixed. | The algorithm already performs the local rounding selection automatically, so there is no need to expose a "round-up/round-down ratio" parameter. |
@@ -88,7 +88,7 @@ spec:
 
 ### Parameter Combinations and Selection Order
 
-Inside the MSE-Round algorithm, the two exponent roundings are already compared automatically, so the main task on the user side is to confirm the MXFP8 per-block format and the axes; there is no need to manually add extra search knobs.
+Inside the MSE_Round algorithm, the two exponent roundings are already compared automatically, so the main task on the user side is to confirm the MXFP8 per-block format and the axes; there is no need to manually add extra search knobs.
 
 **Output**: An algorithm parameter plan that completes single-variable tuning, with a clear selection rationale and tuning direction for each key field.
 

@@ -30,7 +30,7 @@ The quantization script is the same as a regular quantization script. For refere
 This guide uses W4A16 quantization as an example. Pay attention to the following points:
 a. In the outlier suppression configuration (`AntiOutlierConfig`), set `a_bit` and `w_bit` according to the quantization mode. When `anti_method` is set to `"m3"`, the AWQ algorithm is used. For GPTQ, you do not need the outlier suppression module, so you can comment out the related configuration.
 
-```python
+```shell
 anti_config = AntiOutlierConfig(anti_method="m3", dev_type="npu", a_bit=16, w_bit=4, dev_id=device_id, w_sym=True)
 anti_outlier = AntiOutlier(model, calib_data=dataset_calib, cfg=anti_config)
 anti_outlier.process()

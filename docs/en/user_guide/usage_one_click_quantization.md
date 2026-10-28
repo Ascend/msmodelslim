@@ -122,7 +122,7 @@ The scenario tag (`--tags`) tells the tool "in which environment the quantized m
 | Hardware form | `Atlas_300I_Duo` | The quantized model runs on Atlas 300I Duo inference cards |
 | Hardware form | `Ascend_950` | The quantized model runs on Ascend 950PR&950DT products |
 
-> For the official documentation corresponding to each inference engine value, see the [MindIE Documentation](https://mindie-motor.readthedocs.io/en/latest/), the [vLLM-Ascend Documentation](https://docs.vllm.ai/projects/ascend/en/latest/index.html), and the [SGLang Documentation](https://docs.sglang.io/); for the product form description corresponding to each hardware form value, see the [Ascend Hardware Form Description](https://www.hiascend.com/document/detail/en/AscendFAQ/ProduTech/productform/hardwaredesc_0001.html).
+> For the official documentation corresponding to each inference engine value, see the [MindIE Documentation](https://mindie-motor.readthedocs.io/zh-cn/latest/), the [vLLM-Ascend Documentation](https://docs.vllm.ai/projects/ascend/en/latest/index.html), and the [SGLang Documentation](https://docs.sglang.io/); for the product form description corresponding to each hardware form value, see the [Ascend Hardware Form Description](https://www.hiascend.com/document/detail/en/AscendFAQ/ProduTech/productform/hardwaredesc_0001.html).
 
 **Note**:
 

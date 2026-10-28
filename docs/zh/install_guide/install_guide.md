@@ -97,7 +97,7 @@ Successfully installed msmodelslim-{version}
    打印如下信息，表示编译成功，生成build文件夹。
 
    ```ColdFusion
-   [100%] Built target compress_excutor
+   [100%] Built target compress_executor
    ```
 
 3. 上一步编译操作会得到build文件夹，给build文件夹相关权限。

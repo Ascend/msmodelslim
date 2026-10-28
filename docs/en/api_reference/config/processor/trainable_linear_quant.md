@@ -137,7 +137,7 @@ Block-level training (block train) hyperparameter configuration.
 | `gradient_accumulate_steps` | `int` | Optional | `8` | ≥1 | Number of gradient accumulation steps, used to adjust the effective batch under limited video memory | None |
 | `lr` | `float` | Optional | `0.01` | >0.0 | Global base learning rate (alias `learning_rate`) | None |
 | `select_best` | `object` | Optional | See the nested configuration default | — | Best-iteration snapshot policy (fields differ by mode: ema / min_loss / last) | This page <a href="#2-4-1-selectbestconfig">§2.4.1</a> |
-| `loss_type` | `string` | Optional | `l1` | `l1`, `custom_outlier` | Block-level training loss: l1 (L1Loss reduction=none), custom_outlier (0.3 * full L1 + 0.7 * L1 over the region within 3σ) | None |
+| `loss_type` | `string` | Optional | `l1` | `l1`, `custom_outlier` | Block-level training loss: l1 (L1Loss reduction=none), custom_outlier (`0.3 * full L1 + 0.7 * L1 over the region within 3σ`) | None |
 | `train_seed` | `int` | Optional | `42` | — | Random seed for block-level training (used for sample shuffling and deterministic operators) | None |
 
 **Configuration Constraints**

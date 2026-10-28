@@ -475,7 +475,7 @@ If the modified modeling file is named `modeling_qwen2_fa3.py` and the `architec
 
 `config = QuantConfig().fa_quant()`
 
-Initialize the core parameters `(w_bit, a_bit, disable_names, disable_last_linear, dev_type, dev_id)` within `QuantConfig`. To enable FlashAttention quantization extensions, call the `fa_quant()` method of the `QuantConfig` instance to complete the configuration.
+Initialize the core parameters `(w_bit, a_bit, disable_names, disable_last_linear, dev_type, dev_id)` within `QuantConfig`. To enable Flash Attention quantization extensions, call the `fa_quant()` method of the `QuantConfig` instance to complete the configuration.
 
 The following table describes the parameters.
 

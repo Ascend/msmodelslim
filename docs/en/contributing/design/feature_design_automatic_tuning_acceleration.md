@@ -617,7 +617,7 @@ Based on the scenario analysis and system decomposition, three key Use Cases are
 
 #### Overall Architecture Diagram
 
-```tex
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    User Command-Line Interface                │
 │                  msmodelslim tune                            │
@@ -708,7 +708,7 @@ The design approach includes:
 
 #### Processing Flow
 
-```ASCII
+```text
 User starts auto tuning
    │
    ▼
@@ -1012,7 +1012,7 @@ The design approach includes:
 
 #### Processing Flow
 
-```ASCII
+```text
 User starts auto tuning (possibly checkpoint resume)
    │
    ▼
@@ -1315,7 +1315,7 @@ The new strategy module can reuse the core logic of the standing_high strategy (
 
 #### Processing Flow
 
-```ASCII
+```text
 User starts auto tuning (using expert_experience strategy)
    │
    ▼
@@ -1384,7 +1384,7 @@ Create StandingHighStrategy instance (reuse reach-high algorithm logic)
 
 #### New Directory Structure
 
-```tex
+```text
 msmodelslim/core/tune_strategy/expert_experience/
 ├── __init__.py
 ├── strategy.py              # ExpertExperienceStrategyConfig and ExpertExperienceStrategy

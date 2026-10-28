@@ -487,7 +487,7 @@ from transformers.models.qwen2.configuration_qwen2 import Qwen2Config
 
 1. 用户自行准备模型、权重文件和校准数据，将修改好的modeling文件和config放入权重目录下，本样例以Qwen2.5-7B为例，目录示例如下：
 
-```bash
+```text
 
 ├── config.json
 ├── modeling_qwen2_fa3.py

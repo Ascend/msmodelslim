@@ -97,7 +97,7 @@ If sparse quantization and compression are required, install CANN 8.2.RC1 or lat
    The following information is printed, indicating that the compilation is successful and the build folder is generated.
 
    ```ColdFusion
-   [100%] Built target compress_excutor
+   [100%] Built target compress_executor
    ```
 
 3. The `build` folder is generated in the previous compilation step. Grant the relevant permissions to the build folder.

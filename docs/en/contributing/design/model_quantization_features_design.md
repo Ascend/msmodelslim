@@ -659,7 +659,7 @@ Based on model types and quantization configurations, the feature implementation
 
 #### Overall Architecture Diagram
 
-```tex
+```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                     User Interface Layer                                     │
 │                    (Command-Line Tool / Python API / YAML Configuration)                     │

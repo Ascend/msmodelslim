@@ -167,7 +167,7 @@ core/                     # Domain layer organizing and managing quantization ca
 │   ├── __init__.py
 │   ├── interface.py              # Definition and protocol for the quantization analysis service
 │   └── pipeline_analysis/        # msModelSlim V1 pipeline-based quantization analysis service
-├── base/                     # Base protocols (to be deprecated; existing implementations will be relocated to respective modules
+├── base/                     # Base protocols (to be deprecated; existing implementations will be relocated to respective modules)
 │   ├── __init__.py
 │   ├── processor.py
 │   └── protocol.py

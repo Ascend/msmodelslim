@@ -15,7 +15,7 @@ Calibrator(cfg: QuantConfig, model, model_ckpt, calib_data=None)
 | Parameter | Input/Return | Description | Constraints |
 | ------ | ------ | ------ | ------ |
 | cfg | Input | The configured QuantConfig class. | Required.<br>Data type: QuantConfig. |
-| model | Input | Model. | Required.<br>Data type: MindFormer model. |
+| model | Input | Model. | Required.<br>Data type: MindSpore model. |
 | model_ckpt | Input | The ckpt file of model weights. | Required.<br>Data type: str. |
 | calib_data | Input | Data for calibrating the Large Language Model (LLM) quantization. Input real data for quantization. | Optional.<br>Data type: object.<br>Default value: None.<br>Input template: \[[input1],[input2],[input3]]. |
 

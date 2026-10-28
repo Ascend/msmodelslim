@@ -138,7 +138,7 @@ msmodelslim --help
 ## 🌌 Intelligent Search
 
 To improve document retrieval efficiency, we provide multiple efficient search methods:<br>
-🔹 [AI Agent (msagent)](https://gitcode.com/Ascend/msagent/blob/26.2.0/docs/en/agent_guide/quantizer.md): The msModelSlim quantization capability has been integrated into the msagent agent, enabling automatic model quantization tasks through natural language interaction.<br>
+🔹 [AI Agent (msagent)](https://gitcode.com/Ascend/msagent/blob/26.2.0/docs/en/agent_guide/Quantizer.md): The msModelSlim quantization capability has been integrated into the msagent agent, enabling automatic model quantization tasks through natural language interaction.<br>
 🔹 [AI Q&A (DeepWiki)](https://deepwiki.com/Keithwwa/msmodelslim): Natural language Q&A for quickly grasping the project architecture and module relationships.<br>
 
 ---
@@ -170,10 +170,5 @@ Everyone is welcome to contribute to the community. If you have any questions or
 
 ## 🙏 Acknowledgments
 
-This tool is jointly contributed by the following departments of Huawei:<br>
-🔹 Ascend Computing MindStudio Development Department<br>
-🔹 Ascend Computing Ecosystem Enablement Department<br>
-🔹 Ascend Computing Technology Development Department<br>
-🔹 2012 Laboratories<br>
-
-Thanks for every PR from the community. Contributions are welcome!
+This tool is jointly contributed by Huawei Technologies Co., Ltd. and developers.<br>
+Thanks for every PR from the community, and contributions are welcome.

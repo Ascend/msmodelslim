@@ -32,7 +32,7 @@ Deep learning training often involves tens of thousands or millions of iteration
 #### 2.1.3 Sample
 
   ```py
-  import os
+import os
 import torch
 import torch_npu
 import apex
