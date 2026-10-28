@@ -355,8 +355,13 @@ msmodelslim quant \
 
 - 其中`MODEL_PATH`为GLM-5.3-Flash模型的路径，`SAVE_PATH`为量化后的权重保存路径。
 - 该一键量化命令匹配使用的量化配置文件为[glm_5_next_w8a8.yaml](../../lab_practice/glm_5_next/glm_5_next_w8a8.yaml)，可以在其中查看具体的量化策略。
+- 量化范围与 FP8 方案对齐：
+  - MLP 主体线性层全量纳入 W8A8，路由 `mlp.gate` 保持浮点。
+  - DSA/MLA 注意力层（第 3,7,11,15,19,23,27,31,35,39,43,45 层）的 `q_a_proj`、`q_b_proj`、`kv_a_proj_with_mqa`、`o_proj` 纳入 W8A8。
+  - KDA（linear_attention）层的注意力投影保持原策略，不纳入本次 W8A8 量化范围。
+- QuaRot、FlexSmoothQuant（`norm-linear`）、校准集 `mix_calib.jsonl` 与 AscendV1 保存格式保持不变。
 
-**说明：** GLM-5.3-Flash 同样支持 W8A8C8 量化。由于 C8（KV Cache）由框架侧在部署时使能，精度损失相对较小，权重侧无需做额外弥补（如针对 KV Cache 的校准选层），因此在不需要选层的情况下，W8A8C8 与 W8A8 的量化方式一致，可直接复用上述同一份量化命令与配置文件。
+**说明：** GLM-5.3-Flash 同样支持 W8A8C8 量化。由于 C8（KV Cache）由框架侧在部署时使能，精度损失相对较小，权重侧无需做额外弥补（如针对 KV Cache 的校准选层），因此在不需要选层的情况下，W8A8C8 与 W8A8 的量化方式一致，可直接复用上述同一份量化命令与配置文件；W8A8C8 的权重侧量化范围也与上述 W8A8 策略一致。
 
 #### GLM-5.3-Flash 浮点权重 转 MXFP8
 

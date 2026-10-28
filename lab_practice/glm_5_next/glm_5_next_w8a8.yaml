@@ -37,10 +37,15 @@ spec:
       include:
         - "*"
 
+    # 量化范围与FP8方案对齐: mlp + MLA层(3,7,...,43,45)的q_a/q_b/kv_a/o_proj
     - type: "linear_quant"
       qconfig: *default_w8a8_dynamic
       include:
         - "*mlp*"
+        - "*self_attn.q_a_proj"
+        - "*self_attn.q_b_proj"
+        - "*self_attn.kv_a_proj_with_mqa"
+        - "*layers.{3,7,11,15,19,23,27,31,35,39,43,45}.self_attn.o_proj"
       exclude:
         - "*gate"
 
