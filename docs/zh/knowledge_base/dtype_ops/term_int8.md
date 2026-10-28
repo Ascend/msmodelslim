@@ -1,12 +1,12 @@
 # INT8
 
-> **词条类别**：量化数据格式（[量化数据格式](README.md)）<br>
+> **词条类别**：量化数据类型（[量化数据类型](README.md)）<br>
 > **英文名称**：INT8<br>
 > **应用领域**：权重、激活、KVCache 量化<br>
 
 ## 1. 概述
 
-**INT8** 是8位有符号整数，取值 $[-128, 127]$，共256个均匀档位。它把浮点张量压到一半访存宽度，并对接整数 [GEMM](../quantization_mode/term_gemm.md)。量化方式是仿射量化：浮点经 scale 以及可选 zero-point 映射到整数网格，按 `roundTiesToEven` 舍入后饱和到 $[-128, 127]$。函数用法见《[量化数据格式 ops 使用流程指南](usage_dtype_ops.md)》。
+**INT8** 是8位有符号整数，取值 $[-128, 127]$，共256个均匀档位。它把浮点张量压到一半访存宽度，并对接整数 [GEMM](../quantization_mode/term_gemm.md)。量化方式是仿射量化：浮点经 scale 以及可选 zero-point 映射到整数网格，按 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229) 的 `roundTiesToEven` 舍入后饱和到 $[-128, 127]$。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
 
 ---
 
@@ -56,7 +56,7 @@ $$s = \frac{x_{\max} - x_{\min}}{2^b - 1}, \qquad z = \mathrm{round}\left(\frac{
 
 ## 3. 关联流程
 
-- 《[量化数据格式 ops 使用流程指南](usage_dtype_ops.md)》：本格式函数的调用步骤。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：本类型函数的调用步骤。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：本格式导致的精度问题可通过该流程排查。
 
@@ -64,7 +64,7 @@ $$s = \frac{x_{\max} - x_{\min}}{2^b - 1}, \qquad z = \mathrm{round}\left(\frac{
 
 ## 4. 关联词条
 
-- [量化数据格式](README.md)：上位概念，本词条所属目录。
+- [量化数据类型](README.md)：上位概念，本词条所属目录。
 - [量化与反量化](term_quantization.md)：前置术语，说明仿射公式、scale 与 zero-point。
 - [FP16 / BF16](term_fp16_bf16.md)：对比术语，未量化 16bit 基准。
 - [INT4](term_int4.md)：同类整数格式，位宽减半。

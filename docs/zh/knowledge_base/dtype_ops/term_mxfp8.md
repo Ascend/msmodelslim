@@ -1,12 +1,12 @@
 # MXFP8
 
-> **词条类别**：量化数据格式（[量化数据格式](README.md)）<br>
+> **词条类别**：量化数据类型（[量化数据类型](README.md)）<br>
 > **英文名称**：MXFP8<br>
 > **应用领域**：权重、激活量化<br>
 
 ## 1. 概述
 
-**MXFP8** 是 OCP MX v1.0 的8位块级格式：每32个元素共享一个 E8M0 指数（2 的幂），块内元素为 E4M3 或 E5M2。对离群值比 [INT8](term_int8.md) 更稳，scale 开销比逐元素 [FP8](term_fp8.md) 更低。公式按 OCP MX §6.3。只有对称路径。函数用法见《[量化数据格式 ops 使用流程指南](usage_dtype_ops.md)》。
+**MXFP8** 是 [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf) 的8位块级格式：每32个元素共享一个 E8M0 指数（2 的幂），块内元素为 E4M3 或 E5M2。对离群值比 [INT8](term_int8.md) 更稳，scale 开销比逐元素 [FP8](term_fp8.md) 更低。公式按 OCP MX §6.3。只有对称路径。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
 
 ---
 
@@ -55,7 +55,7 @@ $$q_i = \mathrm{clamp}(\mathrm{roundTiesToEven\_to\_FP8}(x'_i), \pm\mathrm{max\_
 
 ## 3. 关联流程
 
-- 《[量化数据格式 ops 使用流程指南](usage_dtype_ops.md)》：本格式函数的调用步骤，含 `fmt` 默认 `e4m3`。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：本类型函数的调用步骤，含 `fmt` 默认 `e4m3`。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：本格式导致的精度问题可通过该流程排查。
 
@@ -63,7 +63,7 @@ $$q_i = \mathrm{clamp}(\mathrm{roundTiesToEven\_to\_FP8}(x'_i), \pm\mathrm{max\_
 
 ## 4. 关联词条
 
-- [量化数据格式](README.md)：上位概念，本词条所属目录。
+- [量化数据类型](README.md)：上位概念，本词条所属目录。
 - [量化与反量化](term_quantization.md)：前置术语，说明 scale 与块粒度。
 - [FP8](term_fp8.md)：同类 8bit 浮点格式，逐元素对照。
 - [MXFP4](term_mxfp4.md)：同类 MX 格式，元素为 E2M1。

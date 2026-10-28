@@ -1,8 +1,8 @@
-# 量化数据格式 ops 使用流程指南
+# 量化数据类型 ops 使用流程指南
 
 ## 1. 适用范围
 
-本指南面向需要直接调用 `msmodelslim.ir.qal.dtype_ops` 的开发者。该包按数据格式提供张量级量化、反量化与参数计算函数，不绑定线性层、KVCache 或 FA 结构。
+本指南面向需要直接调用 `msmodelslim.ir.qal.dtype_ops` 的开发者。该包按数据类型提供张量级量化、反量化与参数计算函数，不绑定线性层、KVCache 或 FA 结构。
 
 适用场景：
 
@@ -15,16 +15,16 @@
 - 选择整层量化模式或编写 YAML 配方，请改走《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》与对应模式词条；
 - 存储打包（两个 4bit 打进一个字节），本层不做 pack / unpack。
 
-格式定义见[量化数据格式](README.md)下各词条；公式见[量化与反量化](term_quantization.md)。
+类型定义见[量化数据类型](README.md)下各词条；公式见[量化与反量化](term_quantization.md)。接口清单见《[量化数据类型 ops Python API](../../api_reference/python_api/README.md)》。
 
 ## 2. 流程关系与前置条件
 
-**上级流程**：在量化算法或模式实现中，需要对单个张量做格式级量化时进入本流程。
+**上级流程**：在量化算法或模式实现中，需要对单个张量做类型级量化时进入本流程。
 
 **前置条件**：
 
 - 已安装与当前仓库匹配的 msModelSlim，并能 `import msmodelslim.ir.qal.dtype_ops`；
-- 已确定目标格式、粒度、对称性，以及张量来自权重、激活还是 KV；
+- 已确定目标数据类型、粒度、对称性，以及张量来自权重、激活还是 KV；
 - 输入张量可转为 float32 参与计算。
 
 **后续操作**：把返回的 `q` 与 scale / offset / shared_exp 交给上层模式或落盘逻辑；精度不达标则进入《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》。
@@ -34,7 +34,7 @@
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
 | 输入 | 待量化浮点张量 | 权重、激活或 KV 缓存 | 可在 float32 下统计与计算 | 形状已知，能沿选定轴归约 |
-| 输入 | 格式与粒度选择 | 调用方根据部署目标确定 | INT8/INT4 可选 per_tensor、per_channel、per_group；FP8 仅 per_tensor/per_channel；MX 为块长 32 | 与目标模式一致，见步骤 1 |
+| 输入 | 数据类型与粒度选择 | 调用方根据部署目标确定 | INT8/INT4 可选 per_tensor、per_channel、per_group；FP8 仅 per_tensor/per_channel；MX 为块长 32 | 与目标模式一致，见步骤 1 |
 | 交付件 | 量化网格与量化参数 | 函数返回值 | `q` 默认 float32 同形状网格；INT 对称返回 scale，非对称再加 offset；MX 返回 uint8 E8M0 | 能被对应 `dequantize` 还原，参数可广播 |
 | 交付件 | 反量化浮点张量 | 调用 `dequantize` 的输出 | float32，形状与输入一致 | 与原张量同形状，可用于后续计算或损失 |
 
@@ -42,25 +42,25 @@
 
 ```mermaid
 flowchart LR
-  A[选择格式与粒度] --> B[计算量化参数]
+  A[选择数据类型与粒度] --> B[计算量化参数]
   B --> C[量化]
   C --> D[反量化]
 ```
 
-- **选择格式与粒度**：先定编码家族，再定函数名里的粒度与 `sym` / `asym`。
+- **选择数据类型与粒度**：先定编码家族，再定函数名里的粒度与 `sym` / `asym`。
 - **计算量化参数**：静态路径先 `calc_qparam`；动态路径由 `quantize_dynamic` 内部完成。
 - **量化**：得到 `q` 与原样返回的参数；需要低精度存储时再传 `dtype`。
 - **反量化**：用同一组粒度参数把 `q` 还原为 float32。
 
 ## 5. 操作步骤
 
-### 步骤 1：选择数据格式、粒度与对称性
+### 步骤 1：选择数据类型、粒度与对称性
 
-**目标**：确定要调用的函数名，避免格式、粒度、对称性与张量轴不一致。
+**目标**：确定要调用的函数名，避免数据类型、粒度、对称性与张量轴不一致。
 
-**操作**：从 `msmodelslim.ir.qal.dtype_ops` 导入模块级函数，命名为 `{格式}_{操作}_{粒度}_{sym|asym}`。操作是 `calc_qparam`、`quantize`、`dequantize`、`quantize_dynamic`。类名不对外导出。
+**操作**：从 `msmodelslim.ir.qal.dtype_ops` 导入模块级函数，命名为 `{类型}_{操作}_{粒度}_{sym|asym}`。操作是 `calc_qparam`、`quantize`、`dequantize`、`quantize_dynamic`。类名不对外导出。
 
-| 粒度 | 函数名后缀 | 额外入参 | 适用格式 |
+| 粒度 | 函数名后缀 | 额外入参 | 适用类型 |
 | --- | --- | --- | --- |
 | per-tensor | `_per_tensor_sym` / `_per_tensor_asym` | 无 `axis` | INT8、INT4、FP8；FP8 无 `_asym` |
 | per-channel / per-token | `_per_channel_sym` / `_per_channel_asym` | `axis` | INT8、INT4、FP8；FP8 无 `_asym` |
@@ -185,4 +185,13 @@ y = int8_dequantize_per_channel_sym(q, scale, axis=-1)
 | FP8 | OCP OFP8 逐元素浮点 | [FP8](term_fp8.md) |
 | MXFP8 | OCP MX 8bit 块级格式 | [MXFP8](term_mxfp8.md) |
 | MXFP4 | OCP MX 4bit 块级格式 | [MXFP4](term_mxfp4.md) |
-| 量化模式 | 按对象选用上述格式 | [量化模式](../quantization_mode/README.md) |
+| 量化模式 | 按对象选用上述类型 | [量化模式](../quantization_mode/README.md) |
+
+## 8. 相关文档
+
+| 接口或文档 | 简述 | 链接 |
+| --- | --- | --- |
+| 量化数据类型 ops Python API | `msmodelslim.ir.qal.dtype_ops` 对外接口清单 | 《[量化数据类型 ops Python API](../../api_reference/python_api/README.md)》 |
+| 量化数据类型 | 各类型标准定义与词条索引 | [量化数据类型](README.md) |
+| 一键量化使用指南 | 量化任务的执行入口 | 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》 |
+| 量化精度调优指南 | 数据类型导致的精度问题排查 | 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》 |

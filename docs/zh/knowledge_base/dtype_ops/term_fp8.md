@@ -1,12 +1,12 @@
 # FP8
 
-> **词条类别**：量化数据格式（[量化数据格式](README.md)）<br>
+> **词条类别**：量化数据类型（[量化数据类型](README.md)）<br>
 > **英文名称**：FP8<br>
 > **应用领域**：权重、激活量化<br>
 
 ## 1. 概述
 
-**FP8** 遵循 OCP OFP8：每个元素独立编码，没有块级共享指数。两种元素格式里，E4M3 精度更高（上界 448），E5M2 动态范围更宽（上界 57344）。位宽与 [INT8](term_int8.md) 相同，但对离群值更稳。标准只定义对称路径（实数 scale、没有 zero-point）。函数用法见《[量化数据格式 ops 使用流程指南](usage_dtype_ops.md)》。
+**FP8** 遵循 [OCP OFP8](https://www.opencompute.org/documents/ocp-8-bit-floating-point-specification-ofp8-revision-1-0-2023-12-01-pdf-1)：每个元素独立编码，没有块级共享指数。两种元素格式里，E4M3 精度更高（上界 448），E5M2 动态范围更宽（上界 57344）。位宽与 [INT8](term_int8.md) 相同，但对离群值更稳。标准只定义对称路径（实数 scale、没有 zero-point）。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
 
 ---
 
@@ -56,7 +56,7 @@ $$\mathrm{min\_exp} = 2 - 2^{e_{\mathrm{bits}}-1}, \qquad a \leftarrow \mathrm{r
 
 ## 3. 关联流程
 
-- 《[量化数据格式 ops 使用流程指南](usage_dtype_ops.md)》：本格式函数的调用步骤，含 `fmt` 默认 `e4m3`。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：本类型函数的调用步骤，含 `fmt` 默认 `e4m3`。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：本格式导致的精度问题可通过该流程排查。
 
@@ -64,7 +64,7 @@ $$\mathrm{min\_exp} = 2 - 2^{e_{\mathrm{bits}}-1}, \qquad a \leftarrow \mathrm{r
 
 ## 4. 关联词条
 
-- [量化数据格式](README.md)：上位概念，本词条所属目录。
+- [量化数据类型](README.md)：上位概念，本词条所属目录。
 - [量化与反量化](term_quantization.md)：前置术语，说明 scale 与对称量化。
 - [INT8](term_int8.md)：同类 8bit 格式，整数仿射对照。
 - [MXFP8](term_mxfp8.md)：同类 8bit 浮点格式，块级共享指数。

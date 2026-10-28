@@ -1,12 +1,12 @@
 # FP16 / BF16
 
-> **词条类别**：量化数据格式（[量化数据格式](README.md)）<br>
+> **词条类别**：量化数据类型（[量化数据类型](README.md)）<br>
 > **英文名称**：FP16 / BF16<br>
 > **应用领域**：权重与激活的未量化基准、高精度保留场景<br>
 
 ## 1. 概述
 
-**FP16** 与 **BF16** 都是16位浮点格式，每个元素占2字节。它们是权重和激活常见的未量化格式，也是量化时「减半 / 1/4」这类对比的基准：例如 [INT8](term_int8.md) 的访存减半，就是相对它们而言。FP16 尾数更细，但可表示范围远小于 FP32（最大有限值约 65504）。BF16 的指数范围与 FP32 相同，尾数更粗。量化模式常把它们当作不量化的高精度基线，例如 [W8A16 静态量化](../quantization_mode/linear_layer_quantization/term_w8a16_static.md) 的激活保持 FP16。
+**FP16** 与 **BF16** 都是16位浮点格式，每个元素占2字节，编码遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229)。它们是权重和激活常见的未量化格式，也是量化时「减半 / 1/4」这类对比的基准：例如 [INT8](term_int8.md) 的访存减半，就是相对它们而言。FP16 尾数更细，但可表示范围远小于 FP32（最大有限值约 65504）。BF16 的指数范围与 FP32 相同，尾数更粗。量化模式常把它们当作不量化的高精度基线，例如 [W8A16 静态量化](../quantization_mode/linear_layer_quantization/term_w8a16_static.md) 的激活保持 FP16。
 
 ---
 
@@ -35,7 +35,7 @@
 
 ## 3. 关联流程
 
-- 《[量化数据格式 ops 使用流程指南](usage_dtype_ops.md)》：量化前的 16bit 张量作为本目录函数的输入。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：量化前的 16bit 张量作为本目录函数的输入。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：数据类型与量化方案导致的精度问题可通过该流程排查与调优。
 
@@ -43,7 +43,7 @@
 
 ## 4. 关联词条
 
-- [量化数据格式](README.md)：上位概念，本词条所属目录。
+- [量化数据类型](README.md)：上位概念，本词条所属目录。
 - [量化与反量化](term_quantization.md)：配套术语，量化公式以 FP16/BF16 张量为输入。
 - [INT8](term_int8.md)：配套术语，INT8 的压缩收益以本格式为基准衡量。
 - [FP8](term_fp8.md)：同类 8bit 浮点格式。

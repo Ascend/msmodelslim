@@ -1,12 +1,12 @@
 # 量化与反量化
 
-> **词条类别**：量化数据格式（[量化数据格式](README.md)）<br>
+> **词条类别**：量化数据类型（[量化数据类型](README.md)）<br>
 > **英文名称**：Quantization<br>
 > **应用领域**：大语言模型量化压缩、推理加速、KVCache 压缩<br>
 
 ## 1. 概述
 
-**量化**把高精度浮点张量映射到低精度张量，用更少的比特保存同一批数据；**反量化**是它的逆过程。本词条说明量化公式、scale / zero_point、静态与动态、粒度和对称性。各数据格式如何落到这些公式上，见 [INT8](term_int8.md)、[INT4](term_int4.md)、[FP8](term_fp8.md)、[MXFP8](term_mxfp8.md)、[MXFP4](term_mxfp4.md)。
+**量化**把高精度浮点张量映射到低精度张量，用更少的比特保存同一批数据；**反量化**是它的逆过程。本词条说明量化公式、scale / zero_point、静态与动态、粒度和对称性。各数据类型如何落到这些公式上，见 [INT8](term_int8.md)、[INT4](term_int4.md)、[FP8](term_fp8.md)、[MXFP8](term_mxfp8.md)、[MXFP4](term_mxfp4.md)。
 
 ---
 
@@ -80,7 +80,7 @@ $$x \approx (q - zero\_point) \times scale$$
 
 ## 3. 关联流程
 
-- 《[量化数据格式 ops 使用流程指南](usage_dtype_ops.md)》：把本词条公式落到函数调用。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：把本词条公式落到函数调用。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：数据类型与量化方案导致的精度问题可通过该流程排查与调优。
 
@@ -88,7 +88,7 @@ $$x \approx (q - zero\_point) \times scale$$
 
 ## 4. 关联词条
 
-- [量化数据格式](README.md)：上位概念，本词条所属目录。
+- [量化数据类型](README.md)：上位概念，本词条所属目录。
 - [FP16 / BF16](term_fp16_bf16.md)：配套术语，量化前的 16bit 基准。
 - [GEMM](../quantization_mode/term_gemm.md)：配套术语，量化是整数 GEMM 的前提。
 - [INT8](term_int8.md)：配套术语，量化最常用的目标格式。

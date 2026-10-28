@@ -1,12 +1,12 @@
 # INT4
 
-> **词条类别**：量化数据格式（[量化数据格式](README.md)）<br>
+> **词条类别**：量化数据类型（[量化数据类型](README.md)）<br>
 > **英文名称**：INT4<br>
 > **应用领域**：权重量化、超低比特压缩<br>
 
 ## 1. 概述
 
-**INT4** 是4位有符号整数，取值 $[-8, 7]$，共16个均匀档位。压缩比相对 [INT8](term_int8.md) 再翻一倍，通常只用于权重，并配合分组与重构（[GPTQ](../quantization_algorithms/gptq/term_gptq.md)、[LAOS](../quantization_algorithms/laos/term_laos.md)）。公式与 INT8 相同，只是 $b=4$。函数用法见《[量化数据格式 ops 使用流程指南](usage_dtype_ops.md)》。
+**INT4** 是4位有符号整数，取值 $[-8, 7]$，共16个均匀档位。压缩比相对 [INT8](term_int8.md) 再翻一倍，通常只用于权重，并配合分组与重构（[GPTQ](../quantization_algorithms/gptq/term_gptq.md)、[LAOS](../quantization_algorithms/laos/term_laos.md)）。公式与 INT8 相同，只是 $b=4$。舍入遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229) 的 `roundTiesToEven`。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
 
 ---
 
@@ -48,7 +48,7 @@ $$q_{\min} = -2^{b-1} = -8, \qquad q_{\max} = 2^{b-1} - 1 = 7, \qquad b = 4$$
 
 ## 3. 关联流程
 
-- 《[量化数据格式 ops 使用流程指南](usage_dtype_ops.md)》：本格式函数的调用步骤。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：本类型函数的调用步骤。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：本格式导致的精度问题可通过该流程排查。
 
@@ -56,7 +56,7 @@ $$q_{\min} = -2^{b-1} = -8, \qquad q_{\max} = 2^{b-1} - 1 = 7, \qquad b = 4$$
 
 ## 4. 关联词条
 
-- [量化数据格式](README.md)：上位概念，本词条所属目录。
+- [量化数据类型](README.md)：上位概念，本词条所属目录。
 - [量化与反量化](term_quantization.md)：前置术语，说明仿射公式与分组粒度。
 - [INT8](term_int8.md)：同类整数格式，公式相同、位宽不同。
 - [MXFP4](term_mxfp4.md)：同类 4bit 格式，块级共享指数对照。
