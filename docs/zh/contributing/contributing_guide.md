@@ -29,6 +29,8 @@
 
 参考开发者文档 《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
+向 V1 框架贡献量化 / 压缩 / 分析算法时，请额外遵循 《[算法贡献指南](algorithm_contribution_guide.md)》（先 RFC 论证场景优势，再合入代码）。
+
 参考开发者文档 《[编码规范](development_guide/coding_standards.md)》。
 
 提交代码前须在本地通过 pre-commit 检查（首次开发请执行 `pre-commit install`，详见《[编码规范](development_guide/coding_standards.md)》）。
