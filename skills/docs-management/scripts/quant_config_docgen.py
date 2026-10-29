@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-"""Pydantic 配置模型 → 量化配置文档（模板 04）渲染。
+# pylint: disable=too-many-lines
+"""
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
 Copyright (c) 2026 Huawei Technologies Co.,Ltd.
@@ -21,8 +22,6 @@ Pydantic 配置模型 → 量化配置文档（模板 04）渲染。
 
 本模块不导入 msmodelslim，便于用最小 pydantic 模型做单测。
 """
-
-# pylint: disable=too-many-lines
 
 from __future__ import annotations
 

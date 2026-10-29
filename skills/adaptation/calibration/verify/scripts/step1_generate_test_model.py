@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""步骤1：生成结构覆盖完备的减层随机权重测试模型。
+"""
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
 Copyright (c) 2026 Huawei Technologies Co.,Ltd.

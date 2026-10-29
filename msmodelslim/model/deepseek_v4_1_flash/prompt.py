@@ -1,5 +1,24 @@
-"""DeepSeek-V4.1 对话渲染（文本路径的最小忠实实现）。
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 
+"""
+-------------------------------------------------------------------------
+This file is part of the MindStudio project.
+Copyright (c) 2026 Huawei Technologies Co.,Ltd.
+
+MindStudio is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL v2.
+You may obtain a copy of Mulan PSL v2 at:
+
+         http://license.coscl.org.cn/MulanPSL2
+
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details.
+-------------------------------------------------------------------------
+
+DeepSeek-V4.1 对话渲染（文本路径的最小忠实实现）。
 **不引用模型目录下的代码** —— 官方实现在 `<model>/encoding/encoding.py`，
 按项目约定推理代码要集成进 msmodelslim，所以这里放一份对应实现。
 改动时请对照官方更新。

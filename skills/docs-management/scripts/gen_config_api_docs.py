@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-"""量化配置接口文档驱动脚本：控制具体抽取目标与后处理（模板 05 架构结论）。
+"""
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
 Copyright (c) 2026 Huawei Technologies Co.,Ltd.

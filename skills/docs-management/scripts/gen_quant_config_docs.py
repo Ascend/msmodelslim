@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-"""基础抽取脚本：从 Pydantic 配置模型注解按指定目标生成量化配置接口文档。
+# pylint: disable=too-many-lines
+"""
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
 Copyright (c) 2026 Huawei Technologies Co.,Ltd.
@@ -22,8 +23,6 @@ See the Mulan PSL v2 for more details.
 提供基础能力（--targets 指定特定对象、--expand-nested 控制是否展开嵌套）；
 具体抽取目标与后处理由驱动脚本 gen_config_api_docs.py 控制（见其模块 docstring）。
 """
-
-# pylint: disable=too-many-lines
 
 from __future__ import annotations
 
