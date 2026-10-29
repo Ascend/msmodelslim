@@ -69,7 +69,7 @@ metadata:
 
 - **量化配置文档**：由生成器从 Pydantic 注解生成，修改源码注解后运行 `python3 skills/docs-management/scripts/gen_config_api_docs.py` 重新生成；提交前用 `python3 skills/docs-management/scripts/gen_config_api_docs.py --check` 校验漂移。**不要手工编辑带 `generated-by` 标记的文档**。
 - **CLI 文档**：当前为手工维护（模板 05），修改 `docs/zh/api_reference/cli/*.md` 后按《[命令行 API 文档模板](../../docs/zh/contributing/development_guide/docs_standards/05_cli_api_contract_template.md)》与《[命令行 API 文档校验清单](../../docs/zh/contributing/development_guide/docs_standards/05_cli_api_contract_checklist.md)》校验。
-- 生成器用法见《[接口文档生成器](scripts/README.md)》，设计说明见《[接口文档自动生成设计](../../docs/zh/contributing/design/api_reference_docgen.md)》；接口文档的新增/更新场景见《[更新接口文档](scenarios/update-interface-docs.md)》。
+- 生成器用法见《[接口文档生成器](scripts/README.md)》；接口文档的新增/更新场景见《[更新接口文档](scenarios/update-interface-docs.md)》。
 
 ## 职责 3 — 删除 / 下线资料（完整流程）
 

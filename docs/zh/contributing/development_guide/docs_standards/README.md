@@ -47,7 +47,7 @@
 | 知识层 | `knowledge_base/` | 领域知识：量化算法、调优策略、量化格式等概念及其应用 |
 | 接口层 | `api_reference/` | 接口参考：命令行、配置等 API 文档 |
 | 支撑层 | `support/`（FAQ）、`release_notes/`、`legal/` | 辅助信息：常见问题解答、版本说明与法律声明 |
-| 治理层 | `contributing/` | 治理规范：贡献指南、设计文档、开发规范与资料规范等 |
+| 治理层 | `contributing/` | 治理规范：贡献指南、开发规范与资料规范等 |
 
 ### 2.2 文档类型
 
@@ -97,7 +97,6 @@ docs/zh/
 ├── legal/              # 许可证、声明、免责等所有法律相关文件
 └── contributing/       # 贡献指南目录
     ├── contributing_guide.md    # 贡献指南
-    ├── design/                  # 设计文档
     └── development_guide/       # 技术文档
 ```
 

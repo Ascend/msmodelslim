@@ -4,7 +4,7 @@
 
 命令行 API 文档（模板 05）**不自动抽取**：对照 `msmodelslim.cli` 实现与 `--help`，按《[命令行 API 文档模板](../../../docs/zh/contributing/development_guide/docs_standards/05_cli_api_contract_template.md)》撰写，提交前按《[命令行 API 文档校验清单](../../../docs/zh/contributing/development_guide/docs_standards/05_cli_api_contract_checklist.md)》检查。现稿在 `docs/zh/api_reference/cli/`。
 
-配置生成器的设计说明见《[接口文档自动生成设计](../../../docs/zh/contributing/design/api_reference_docgen.md)》。内部类以 YAML `type` 的 `_` 前缀判定；配置「含义」只来自 `Field(description=)`，跨字段约束只来自 validator docstring。
+内部类以 YAML `type` 的 `_` 前缀判定；配置「含义」只来自 `Field(description=)`，跨字段约束只来自 validator docstring。
 
 ## 量化配置（模板 04）
 
