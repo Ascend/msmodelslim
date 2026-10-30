@@ -1,0 +1,19 @@
+apiversion: modelslim_convert
+
+# Kimi K2.5 INT4 (per_group) -> BF16 weight conversion:
+#   - Source weights: .weight_packed + .weight_scale + .weight_shape
+#   - Matched linear layers are dequantized to FLOAT (bf16)
+#   - Unmatched weights are preserved as-is and written to save_path
+spec:
+  linears:
+    - match:
+        - "language_model.model.layers.*.mlp.experts.*"
+      target: FLOAT
+      route: auto
+
+  save:
+    - type: huggingface
+      part_file_size: 4
+
+  parallel:
+    cpu_workers: 8

@@ -1,104 +1,32 @@
+---
+title: FAQ Overview (Index)
+description: A unified index of msModelSlim frequently asked questions (FAQ), navigating to the corresponding FAQ sub-document by six categories (installation, runtime, hardware, accuracy, deployment, and warnings); this page contains no specific questions or answers.
+keywords: [FAQ, frequently asked questions, troubleshooting, index, Killed, pydantic, DeprecationWarning]
+---
+
 # FAQ
 
-## 1. Why Does the Program Display "Killed" and Exit Abnormally?
+> This document is the unified index of msModelSlim frequently asked questions (FAQ). The FAQ is split into multiple sub-documents by topic to facilitate AI retrieval and quick access; see the corresponding category document for specific questions and answers.
 
-When you use the msModelSlim tool to run inference quantization, you may see an error message like the following:
+## 1. Category Index
 
-```text
-Killed
-...
-[Error] TBE Subprocess[task_distribute] raise error[], main process disappeared!
-...
-```
+| Category | Covered Problems | Document |
+|------|---------|------|
+| 1. Installation and Dependencies | pydantic version conflict, accelerate dependency installation failure | [faq_installation.md](./faq_installation.md) |
+| 2. Runtime and Resources | Process Killed, insufficient NPU memory/system memory (OOM) | [faq_runtime.md](./faq_runtime.md) |
+| 3. Hardware Compatibility | Reserved category (guidance on the hardware environment and operator compatibility) | [faq_hardware.md](./faq_hardware.md) |
+| 4. Accuracy and Tuning | Reserved category (guidance on accuracy tuning and anomaly locating) | [faq_precision.md](./faq_precision.md) |
+| 5. Deployment and Inference | Reserved category (guidance on MindIE / vLLM-Ascend deployment) | [faq_deployment.md](./faq_deployment.md) |
+| 6. Warnings and Notices | Handling of warnings such as DeprecationWarning | [faq_warning.md](./faq_warning.md) |
 
-### Solution
+## 2. Search Guide
 
-First, ensure that no other user has killed your process or taken the same NPU resource. In general, if no other user is competing for system resources, the cause is likely insufficient NPU memory or system memory. You can use the following commands to check system logs, monitor system memory, and free system memory.
+- **Locate by topic**: open the corresponding sub-document from the category index above.
+- **Search by keyword**: use keywords directly (such as `Killed`, `pydantic`, and `DT_BFLOAT16`) to locate the content in each sub-document or in a full-text search.
+- **AI retrieval**: the header of each sub-document contains AI-readable metadata (`title` / `description` / `keywords`), allowing AI to quickly assess document relevance from the metadata and reduce the token overhead of reading the full text.
 
-```shell
-# Use dmesg to view processes terminated by the kernel or by insufficient memory.
-dmesg | grep -A 3 -B 1 -i "killed process\|oom-kill"
+## 3. Revision History
 
-# Monitor system memory.
-watch free -h
-
-# Clear the cache and memory. Some scenarios may require sudo privileges.
-sync && echo 3 > /proc/sys/vm/drop_caches
-
-# Stop all Python processes. Some scenarios may require sudo privileges.
-pkill python
-```
-
-## 2. Why Does Installation Report a pydantic Version Conflict?
-
-msModelSlim depends on `pydantic>=2.10.1`. Make sure the version of pydantic in your environment meets this requirement.
-
-### Error Message During `pip` Installation
-
-```text
-ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
-check-wheel-contents 0.6.0 requires pydantic~=2.0, but you have pydantic 1.0 which is incompatible.
-```
-
-### Solution
-
-Try upgrading pydantic or uninstalling other packages in the environment that depend on older versions of pydantic until there are no version conflicts.
-
-## 3. Why Does msModelSlim Installation Fail?
-
-### 3.1 Error During Automatic Installation of the `accelerate` Dependency
-
-msModelSlim depends on the `accelerate` library for multi-card execution, so it is listed in `requirements.txt` and pip downloads it automatically during installation.
-
-One known cause is that some Python 3.8 environments conflict with `accelerate`. The error message looks like this:
-
-```text
-ERROR: Could not find a version that satisfies the requirement puccinialin (from versions: none)
-```
-
-In this case, you can try upgrading the Python environment to Python 3.9 or later.
-
-If you have already upgraded to Python 3.9 or later and the error still appears, the OS version may be too old, which causes installation of a sub-dependency of `huggingface_hub` to fail. The error message looks like this:
-
-```text
-error: subprocess-exited-with-error
-```
-
-In this case, you can try upgrading the OS version, or use the following commands as a workaround:
-
-```bash
-pip install "huggingface_hub==0.20.3"
-pip install accelerate
-```
-
-Note that `huggingface_hub==0.20.3` is not the version officially recommended by `accelerate`, and it may cause other compatibility issues. Therefore, this workaround is for reference only, and msModelSlim is not responsible for any issues it may cause.
-
-## 4. Why Do I Get an Error When Quantizing Weights: `PTA call acl api failed. *** The param dtype not implemented for DT_BFLOAT16, should be in dtype support list [***]`
-
-Some Ascend hardware, such as the Atlas 300I/300T series, supports only float16 inference. If the model weights use bfloat16 precision for quantization, the quantization process may fail.
-
-### Solution
-
-Set `torch_dtype` to `float16` in `config.json` in the model weights path, then run quantization.
-
-## 5. Why Does Quantizing Weights on 300I/300T Series Hardware Report `RuntimeError: The Inner error is reported as above. The process exits for this inner error, and the current working operator name is InplaceIndexAdd.`
-
-### Cause
-
-When you run traditional quantization (V0) on 300I/300T series hardware, JIT compilation mode is incompatible with this hardware series. As a result, compilation of the `InplaceIndexAdd` operator fails and triggers a runtime error.
-
-### Solution
-
-In the traditional quantization (V0) model quantization scripts in the `msmodelslim/example` directory, add `torch_npu.npu.set_compile_mode(jit_compile=False)` to disable JIT compilation mode.
-
-**Example code:**
-
-```python
-import torch_npu
-
-# Add the following code at the beginning of the quantization script:
-torch_npu.npu.set_compile_mode(jit_compile=False)
-
-# Then run the quantization operation.
-# ... Remaining quantization code
-```
+| Date | Version | Change Description |
+| --- | --- | --- |
+| 2026-08-17 | v1.0 | First release: the FAQ system was restructured in accordance with the *msModelSlim Documentation Standards*, split into six categories of sub-documents (installation, runtime, hardware, accuracy, deployment, and warnings), and this document was established as the unified index; entries were standardized into three sections, with the full forms of abbreviations and links to related documents added; the header of each sub-document uses the three readable metadata fields `title`/`description`/`keywords`. |

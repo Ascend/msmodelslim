@@ -1,0 +1,27 @@
+apiversion: modelslim_convert
+
+# Weight structure (Qwen3-8B dense bf16 checkpoint):
+#   - Prefix: model.layers.* (36 layers, layer 0–35)
+#   - 7 linear per layer: self_attn.{q,k,v,o}_proj + mlp.{gate,up,down}_proj
+#   - Source format: bf16 (FLOAT), .weight only, no weight_scale_inv
+#   - q_norm / k_norm / layernorm are excluded from the linear layers
+#   - Non-linear weights (embed_tokens / lm_head / model.norm, etc.) are preserved as-is and written to disk
+spec:
+  linears:
+    - match:
+        - "model.layers.*.self_attn.q_proj"
+        - "model.layers.*.self_attn.k_proj"
+        - "model.layers.*.self_attn.v_proj"
+        - "model.layers.*.self_attn.o_proj"
+        - "model.layers.*.mlp.gate_proj"
+        - "model.layers.*.mlp.up_proj"
+        - "model.layers.*.mlp.down_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+  save:
+    - type: ascend_v1
+      part_file_size: 4
+
+  parallel:
+    cpu_workers: 8
