@@ -2,7 +2,7 @@
 
 ## 使用前准备
 
-- 使用 MindIE1.0版本 [官方镜像](https://gitcode.com/Ascend/ascend-docker-image/tree/dev/mindie#%E5%90%AF%E5%8A%A8%E5%AE%B9%E5%99%A8)，如1.0.0-800I-A2-py311-openeuler24.03-lts
+- 使用 MindIE1.0版本 [官方镜像](https://www.hiascend.com/developer/ascendhub/detail/af85b724a7e5469ebd7ea13c3439d48f?version=1.0.0-800I-A2-py311-openeuler24.03-lts)，如1.0.0-800I-A2-py311-openeuler24.03-lts
 
 ## 支持的模型版本与量化策略
 
@@ -53,7 +53,7 @@ Atlas 300I DUO  使用以下方法稀疏量化
 - 稀疏量化
 
 ```shell
-  # 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量 
+  # 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量
   cd msmodelslim/example/Llama
   python3 quant_llama.py --model_path {浮点权重路径} --save_directory {W8A8S量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 4 --a_bit 8 --fraction 0.011 --co_sparse True --device_type npu --use_sigma True --is_lowbit True --trust_remote_code True
 ```
@@ -104,7 +104,7 @@ Atlas 300I DUO 使用以下方法稀疏量化
 
 ```shell
 cd msmodelslim/example/Qwen
-# 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量 
+# 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量
 export ASCEND_RT_VISIBLE_DEVICES=0
 python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8S量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 4 --a_bit 8 --fraction 0.011 --co_sparse True --device_type npu --use_sigma True --is_lowbit True --trust_remote_code True
 ```
@@ -134,7 +134,7 @@ Atlas 300I DUO 使用以下方法稀疏量化
 
 ```shell
 cd msmodelslim/example/Qwen
-# 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量 
+# 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量
 export ASCEND_RT_VISIBLE_DEVICES=0
 python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8S量化权重路径} --calib_file ../common/boolq.jsonl --w_bit 4 --a_bit 8 --fraction 0.011 --co_sparse True --device_type npu --use_sigma True --is_lowbit True --trust_remote_code True
 ```
@@ -164,7 +164,7 @@ Atlas 300I DUO 使用以下方法稀疏量化
 
 ```shell
 cd msmodelslim/example/Qwen
-# 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量 
+# 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量
 export ASCEND_RT_VISIBLE_DEVICES=0
 python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8S量化权重路径} --calib_file ../common/cn_en.jsonl --w_bit 4 --a_bit 8 --fraction 0.011 --co_sparse True --device_type npu --use_sigma True --is_lowbit True --sigma_factor 4.0 --anti_method m4 --trust_remote_code True
 ```
@@ -194,7 +194,7 @@ Atlas 300I DUO 使用以下方法稀疏量化
 
 ```shell
 cd msmodelslim/example/Qwen
-# 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量 
+# 指定当前机器上可用的逻辑NPU核心 通过修改convert_quant_weight.sh文件中export ASCEND_RT_VISIBLE_DEVICES值 指定使用卡号及数量
 export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3
 python3 quant_qwen.py --model_path {浮点权重路径} --save_directory {W8A8S量化权重路径} --calib_file ../common/cn_en.jsonl --w_bit 4 --a_bit 8 --fraction 0.011 --co_sparse True --device_type npu --use_sigma True --is_lowbit True --sigma_factor 4.0 --anti_method m4 --trust_remote_code True
 ```

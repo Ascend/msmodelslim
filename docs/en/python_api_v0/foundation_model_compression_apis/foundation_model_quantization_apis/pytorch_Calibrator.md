@@ -27,7 +27,7 @@ When mix_cfg and the existing fallback mechanism are used simultaneously, the **
 
 1. Fallback layers (rollback_names)
 
-    Determined jointly by disable_names/disable_level (automatic fallback logic). disable_names is a parameter of QuantConfig, refer to [QuantConfig Parameter Description](./pytorch_QuantConfig.md# parameter-description).
+    Determined jointly by disable_names/disable_level (automatic fallback logic). disable_names is a parameter of QuantConfig, refer to [QuantConfig Parameter Description](./pytorch_QuantConfig.md#parameters).
     Once matched, it falls back to floating point, and mix_cfg is no longer considered.
 
 2. Explicit layer name specification in mix_cfg
@@ -93,7 +93,7 @@ Complete the configuration of all parameters in the QuantConfig initialization a
 ```python
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 quant_config = QuantConfig(dev_type='cpu', pr=0.5, mm_tensor=False)
-model = AutoModel.from_pretrained('/chatglm2-6b', 
+model = AutoModel.from_pretrained('/chatglm2-6b',
                                   local_files_only=True,
                                   torch_dtype=torch.float32).cpu()   # Configure according to the actual path of the model.
 calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
@@ -107,8 +107,8 @@ Configure all parameters in the QuantConfig initialization according to actual r
 from transformers import AutoModel
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig
 quant_config = QuantConfig(dev_type='cpu', pr=0.5, mm_tensor=False)
-model = AutoModel.from_pretrained('/chatglm2-6b', 
-                                  local_files_only=True, 
+model = AutoModel.from_pretrained('/chatglm2-6b',
+                                  local_files_only=True,
                                   torch_dtype=torch.float32).cpu()   # Configure according to the actual path of the model.
 mix_cfg = {
     "*down*": "w8a16",
