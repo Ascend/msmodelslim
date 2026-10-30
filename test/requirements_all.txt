@@ -10,7 +10,7 @@ pytest
 pytest-mock
 
 # ---------- 核心 ML 框架 ----------
-mindspore==2.6.0
+mindspore==2.7.0
 accelerate==1.8.1
 transformers==4.51.0
 tokenizers==0.21.2
