@@ -143,7 +143,7 @@ stages:
               ln -sf /usr/local/bin/python3.11 /usr/bin/python
               python --version
           - name: run pre-commit
-            uses: openlibing/pre-commit-action@v1.0.0
+            uses: openlibing/pre-commit-action@v1.0.3
             env:
               SKIP: clang-tidy
 
