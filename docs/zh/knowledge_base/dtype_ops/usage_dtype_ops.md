@@ -15,7 +15,7 @@
 - 选择整层量化模式或编写 YAML 配方，请改走《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》与对应模式词条；
 - 存储打包（两个 4bit 打进一个字节），本层不做 pack / unpack。
 
-类型定义见[量化数据类型](README.md)下各词条；公式见[量化与反量化](term_quantization.md)。接口清单见《[量化数据类型 ops Python API](../../api_reference/python_api/README.md)》。
+类型定义见[量化数据类型](README.md)下各词条；公式见[量化与反量化](term_quantization.md)。接口清单见《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》。
 
 ## 2. 流程关系与前置条件
 
@@ -191,7 +191,7 @@ y = int8_dequantize_per_channel_sym(q, scale, axis=-1)
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| 量化数据类型 ops Python API | `msmodelslim.ir.qal.dtype_ops` 对外接口清单 | 《[量化数据类型 ops Python API](../../api_reference/python_api/README.md)》 |
+| 量化数据类型 ops Python API | `msmodelslim.ir.qal.dtype_ops` 对外接口清单 | 《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》 |
 | 量化数据类型 | 各类型标准定义与词条索引 | [量化数据类型](README.md) |
 | 一键量化使用指南 | 量化任务的执行入口 | 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》 |
 | 量化精度调优指南 | 数据类型导致的精度问题排查 | 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》 |

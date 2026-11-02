@@ -103,6 +103,7 @@ nav:
       - 权重转换与使用:
           - 权重转换案例 (AutoAWQ/AutoGPTQ): "zh/best_practices/msmodelslim_quantized_weight_to_autoawq_autogptq.md"
   - 八、Python API:
+      - 量化数据类型 ops: "zh/api_reference/python_api/dtype_ops.md"
       - 传统 V0 API:
           - 公共接口: "zh/api_reference/python_api_v0/common_apis.md"
           - 基础模型压缩 API:

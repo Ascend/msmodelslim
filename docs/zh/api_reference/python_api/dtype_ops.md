@@ -2,7 +2,7 @@
 
 ## 功能说明
 
-`msmodelslim.ir.qal.dtype_ops` 提供张量级量化、反量化与参数计算接口，覆盖 INT8、INT4、FP8、MXFP8、MXFP4。公开入口是模块级函数，类不对外导出。命名、参数与调用步骤见《[量化数据类型 ops 使用流程指南](../../knowledge_base/dtype_ops/usage_dtype_ops.md)》。
+`msmodelslim.ir.qal.dtype_ops` 提供张量级量化、反量化与参数计算接口，覆盖 INT8、INT4、FP8、MXFP8、MXFP4。公开入口是模块级函数，类不对外导出。命名、参数与调用步骤见《[量化数据类型 ops 使用流程指南](../../knowledge_base/dtype_ops/usage_dtype_ops.md)》；概念词条见[量化数据类型](../../knowledge_base/dtype_ops/README.md)。
 
 ## 函数原型
 

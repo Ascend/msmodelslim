@@ -10,7 +10,7 @@
 
 [量化模式](../quantization_mode/README.md)首先区分量化对象（线性层 / KVCache / FA），再在对象上选用上述能力。不同对象、以及同一对象上不同的量化方式和数据类型，对应不同模式。例如线性层 8bit 可以是 [W8A8 静态量化](../quantization_mode/linear_layer_quantization/term_w8a8_static.md)（[INT8](term_int8.md)）、[W8A8 FP8 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md) 或 [W8A8 MX 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_mx_dynamic.md)。
 
-阅读模式词条前，建议先看[量化与反量化](term_quantization.md)里的公式、scale 和粒度，以及未量化基准 [FP16 / BF16](term_fp16_bf16.md)。具体函数怎么调用见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》；接口清单见《[量化数据类型 ops Python API](../../api_reference/python_api/README.md)》。
+阅读模式词条前，建议先看[量化与反量化](term_quantization.md)里的公式、scale 和粒度，以及未量化基准 [FP16 / BF16](term_fp16_bf16.md)。具体函数怎么调用见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》；接口清单见《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》。
 
 ---
 
@@ -28,7 +28,7 @@
 | [MXFP8](term_mxfp8.md) | 词条 | OCP MX，E8M0 + E4M3/E5M2，块长 32 |
 | [MXFP4](term_mxfp4.md) | 词条 | OCP MX，E8M0 + E2M1，块长 32 |
 | 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》 | 流程指南 | 函数命名、粒度、`fmt`、`dtype` 与调用步骤 |
-| 《[量化数据类型 ops Python API](../../api_reference/python_api/README.md)》 | Python API | `dtype_ops` 对外接口清单 |
+| 《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》 | Python API | `dtype_ops` 对外接口清单 |
 
 ### 2.2 三种编码家族
 
@@ -41,7 +41,7 @@
 ## 3. 关联流程
 
 - 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：本目录函数的调用入口。
-- 《[量化数据类型 ops Python API](../../api_reference/python_api/README.md)》：本目录对外接口清单。
+- 《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》：本目录对外接口清单。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：数据类型导致的精度问题可通过该流程排查。
 
