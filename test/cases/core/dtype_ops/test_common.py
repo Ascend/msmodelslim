@@ -23,7 +23,7 @@ import unittest
 
 import torch
 
-from msmodelslim.ir.qal.dtype_ops.common import (
+from msmodelslim.core.dtype_ops.common import (
     align_block_param,
     as_shared_exp,
     blocked_apply,

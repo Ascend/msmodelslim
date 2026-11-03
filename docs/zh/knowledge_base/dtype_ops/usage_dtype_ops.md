@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-本指南面向需要直接调用 `msmodelslim.ir.qal.dtype_ops` 的开发者。该包按数据类型提供张量级量化、反量化与参数计算函数，不绑定线性层、KVCache 或 FA 结构。
+本指南面向需要直接调用 `msmodelslim.core.dtype_ops` 的开发者。该包按数据类型提供张量级量化、反量化与参数计算函数，不绑定线性层、KVCache 或 FA 结构。
 
 适用场景：
 
@@ -23,7 +23,7 @@
 
 **前置条件**：
 
-- 已安装与当前仓库匹配的 msModelSlim，并能 `import msmodelslim.ir.qal.dtype_ops`；
+- 已安装与当前仓库匹配的 msModelSlim，并能 `import msmodelslim.core.dtype_ops`；
 - 已确定目标数据类型、粒度、对称性，以及张量来自权重、激活还是 KV；
 - 输入张量可转为 float32 参与计算。
 
@@ -58,7 +58,7 @@ flowchart LR
 
 **目标**：确定要调用的函数名，避免数据类型、粒度、对称性与张量轴不一致。
 
-**操作**：从 `msmodelslim.ir.qal.dtype_ops` 导入模块级函数，命名为 `{类型}_{操作}_{粒度}_{sym|asym}`。操作是 `calc_qparam`、`quantize`、`dequantize`、`quantize_dynamic`。类名不对外导出。
+**操作**：从 `msmodelslim.core.dtype_ops` 导入模块级函数，命名为 `{类型}_{操作}_{粒度}_{sym|asym}`。操作是 `calc_qparam`、`quantize`、`dequantize`、`quantize_dynamic`。类名不对外导出。
 
 | 粒度 | 函数名后缀 | 额外入参 | 适用类型 |
 | --- | --- | --- | --- |
@@ -94,7 +94,7 @@ flowchart LR
 
 ```python
 import torch
-from msmodelslim.ir.qal.dtype_ops import (
+from msmodelslim.core.dtype_ops import (
     int8_calc_qparam_per_channel_sym, int8_quantize_per_channel_sym, int8_dequantize_per_channel_sym,
     int4_calc_qparam_per_group_sym, int4_quantize_per_group_sym, int4_dequantize_per_group_sym,
     fp8_quantize_dynamic_per_channel_sym, fp8_dequantize_per_channel_sym,
@@ -149,7 +149,7 @@ w_mx = mxfp4_dequantize_sym(q_mx4, se, axis=-1)
 
 ```python
 import torch
-from msmodelslim.ir.qal.dtype_ops import (
+from msmodelslim.core.dtype_ops import (
     int8_calc_qparam_per_channel_sym, int8_quantize_per_channel_sym,
     int8_dequantize_per_channel_sym, int8_quantize_dynamic_per_channel_sym,
 )
@@ -191,7 +191,7 @@ y = int8_dequantize_per_channel_sym(q, scale, axis=-1)
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| 量化数据类型 ops Python API | `msmodelslim.ir.qal.dtype_ops` 对外接口清单 | 《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》 |
+| 量化数据类型 ops Python API | `msmodelslim.core.dtype_ops` 对外接口清单 | 《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》 |
 | 量化数据类型 | 各类型标准定义与词条索引 | [量化数据类型](README.md) |
 | 一键量化使用指南 | 量化任务的执行入口 | 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》 |
 | 量化精度调优指南 | 数据类型导致的精度问题排查 | 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》 |

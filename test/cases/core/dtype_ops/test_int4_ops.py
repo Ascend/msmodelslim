@@ -23,7 +23,7 @@ import unittest
 
 import torch
 
-from msmodelslim.ir.qal.dtype_ops.int4_ops import Int4
+from msmodelslim.core.dtype_ops.int4_ops import Int4
 
 
 def _eq(actual, expected, msg):

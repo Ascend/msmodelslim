@@ -21,12 +21,12 @@ See the Mulan PSL v2 for more details.
 
 import unittest
 
-from msmodelslim.ir.qal import dtype_ops
-from msmodelslim.ir.qal.dtype_ops.fp8_ops import Fp8
-from msmodelslim.ir.qal.dtype_ops.int4_ops import Int4
-from msmodelslim.ir.qal.dtype_ops.int8_ops import Int8
-from msmodelslim.ir.qal.dtype_ops.mxfp4_ops import Mxfp4
-from msmodelslim.ir.qal.dtype_ops.mxfp8_ops import Mxfp8
+from msmodelslim.core import dtype_ops
+from msmodelslim.core.dtype_ops.fp8_ops import Fp8
+from msmodelslim.core.dtype_ops.int4_ops import Int4
+from msmodelslim.core.dtype_ops.int8_ops import Int8
+from msmodelslim.core.dtype_ops.mxfp4_ops import Mxfp4
+from msmodelslim.core.dtype_ops.mxfp8_ops import Mxfp8
 
 
 class TestDtypeOpsInit(unittest.TestCase):

@@ -23,7 +23,7 @@ import unittest
 
 import torch
 
-from msmodelslim.ir.qal.dtype_ops.fp8_ops import Fp8
+from msmodelslim.core.dtype_ops.fp8_ops import Fp8
 
 
 class TestFp8(unittest.TestCase):

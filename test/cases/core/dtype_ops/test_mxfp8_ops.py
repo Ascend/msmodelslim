@@ -24,7 +24,7 @@ import unittest
 
 import torch
 
-from msmodelslim.ir.qal.dtype_ops.mxfp8_ops import Mxfp8
+from msmodelslim.core.dtype_ops.mxfp8_ops import Mxfp8
 
 
 class TestMxfp8(unittest.TestCase):

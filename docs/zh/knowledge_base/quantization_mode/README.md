@@ -28,7 +28,7 @@
 - **张量位宽**：W 与 A 分别表示权重与激活的位宽。位宽越低，访存与计算收益越大，但数值分辨率越低、精度损失风险越高。
 - **参数获取方式**：静态（离线校准得到 scale/offset，推理时固化，如 [W8A8 静态量化](linear_layer_quantization/term_w8a8_static.md)）或动态（推理时在线统计并计算，如 [W8A8 动态量化](linear_layer_quantization/term_w8a8_dynamic.md)、[W4A4 动态量化](linear_layer_quantization/term_w4a4_dynamic.md)）。
 - **量化粒度**：一组元素共享一个量化参数的范围。常用粒度有 per-tensor、per-channel、per-group、per-token、per-head、per-block 等，粗细取决于**每份量化参数覆盖的元素数**——覆盖越少（块越小）越细，数值分布刻画越准、精度越好，但量化参数数量与计算开销越大（如 per-token 见 [W8A8 动态量化](linear_layer_quantization/term_w8a8_dynamic.md)，per-block 见 [W8A8 MX 动态量化](linear_layer_quantization/term_w8a8_mx_dynamic.md)）。
-- **数据类型**：量化后的数值格式，如 INT 整数（INT8/INT4）、FP8 浮点（E4M3）、带块级共享指数的 MXFP8/MXFP4。各数据格式的标准定义与本仓 [`qal/dtype_ops`](../dtype_ops/README.md) 实现的对应关系见 [量化数据格式](../dtype_ops/README.md)。
+- **数据类型**：量化后的数值格式，如 INT 整数（INT8/INT4）、FP8 浮点（E4M3）、带块级共享指数的 MXFP8/MXFP4。各数据格式的标准定义与本仓 [`core/dtype_ops`](../dtype_ops/README.md) 实现的对应关系见 [量化数据格式](../dtype_ops/README.md)。
 
 ---
 
@@ -115,7 +115,7 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 - [线性量化算法](../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，描述线性层量化模式的代码实现。
 - [KVCache Quant 缓存量化算法](../quantization_algorithms/kvcache_quant/term_kvcache_quant.md)：配套术语，描述 KVCache 量化算法。
 - [FA3 Quant 注意力激活量化算法](../quantization_algorithms/fa3_quant/term_fa3_quant.md)：配套术语，描述 FA 量化算法。
-- [量化数据格式](../dtype_ops/README.md)：配套概念，量化模式所采用的 5 种数据格式（[INT8](../dtype_ops/term_int8.md)/[INT4](../dtype_ops/term_int4.md)/[FP8](../dtype_ops/term_fp8.md)/[MXFP8](../dtype_ops/term_mxfp8.md)/[MXFP4](../dtype_ops/term_mxfp4.md)）的标准定义与 [`qal/dtype_ops`](../../../../msmodelslim/ir/qal/dtype_ops/) 实现对应。
+- [量化数据格式](../dtype_ops/README.md)：配套概念，量化模式所采用的 5 种数据格式（[INT8](../dtype_ops/term_int8.md)/[INT4](../dtype_ops/term_int4.md)/[FP8](../dtype_ops/term_fp8.md)/[MXFP8](../dtype_ops/term_mxfp8.md)/[MXFP4](../dtype_ops/term_mxfp4.md)）的标准定义与 [`core/dtype_ops`](../../../../msmodelslim/core/dtype_ops/) 实现对应。
 
 ---
 

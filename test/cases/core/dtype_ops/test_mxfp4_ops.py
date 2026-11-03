@@ -23,7 +23,7 @@ import unittest
 
 import torch
 
-from msmodelslim.ir.qal.dtype_ops.mxfp4_ops import Mxfp4
+from msmodelslim.core.dtype_ops.mxfp4_ops import Mxfp4
 
 
 class TestMxfp4(unittest.TestCase):
