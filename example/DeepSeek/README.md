@@ -43,9 +43,9 @@
 |                    | DeepSeek-V3.2-Exp          | [DeepSeek-V3.2-Exp](https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp)            | ✅    |       | ✅    |        |        |        |      |          |           |       |       | [W8A8](#deepseek-v32-w8a8) / [W4A8](#deepseek-v32-w4a8)                                                                                                                                                                                                                |
 |                    | DeepSeek-V3.2              | [DeepSeek-V3.2](https://huggingface.co/deepseek-ai/DeepSeek-V3.2)                      | ✅    |       |      |        |        |        |      |          |           |       |       | [W8A8](#deepseek-v32-w8a8-quarot)                                                                                                                                                                                                                                             |
 | **DeepSeek-V4** | DeepSeek-V4-Flash         | [DeepSeek-V4-Flash](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash)   | ✅    |       |      |        |        |        |      |          |           |       |       | [W8A8](#deepseek-v4-w8a8-quarot) |
-|                    | DeepSeek-V4-Flash-0731    | [DeepSeek-V4-Flash-0731](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731) |      |       |      |        |        | ✅      |      |          |           |       |       | [W4A4C8](#deepseek-v4-flash-0731-w4a4c8量化) |
+|                    | DeepSeek-V4-Flash-0731    | [DeepSeek-V4-Flash-0731](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731) |      |       |      |        |        | ✅      |      |          |           |       |       | [W4A4C8](#deepseek-v4-flash-0731-w4a4c8量化)<sup>beta</sup> |
 |                    | DeepSeek-V4-Pro           | [DeepSeek-V4-Pro](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro)     | ✅    |       | ✅    |        |        |        |      |          |           |       |       | [W8A8](#deepseek-v4-pro-w8a8-quarot) / [W4A8](#deepseek-v4-pro-w4a8-quarot) |
-|                    | DeepSeek-V4-Pro-0813      | [DeepSeek-V4-Pro-0813](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813)     |      |       |      |        |        | ✅      |      |          |           |       |       | [W4A4C8](#deepseek-v4-pro-0813-w4a4c8量化) |
+|                    | DeepSeek-V4-Pro-0813      | [DeepSeek-V4-Pro-0813](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813)     |      |       |      |        |        | ✅      |      |          |           |       |       | [W4A4C8](#deepseek-v4-pro-0813-w4a4c8量化)<sup>beta</sup>|
 | **DeepSeek-R1**    | DeepSeek-R1                | [DeepSeek-R1](https://huggingface.co/deepseek-ai/DeepSeek-R1)                          | ✅    |       | ✅    |        |        |        |      |          |           | ✅     | ✅     | [W8A8](#deepseek-r1-w8a8-混合量化) / [W4A8](#deepseek-r1-w4a8-混合量化) / [W8A8动态](#deepseek-r1-w8a8-动态量化) / [FA3](#deepseek-r1-w8a8-fa3-混合量化) / [MTP量化](#deepseek-r1-w8a8-混合量化--mtp-量化)                                                          |
 |                    | DeepSeek-R1-0528           | [DeepSeek-R1-0528](https://huggingface.co/deepseek-ai/DeepSeek-R1-0528)                | ✅    |       | ✅    | ✅      | ✅      |        |      |          |           | ✅     | ✅     | [W8A8](#deepseek-r1-0528-w8a8-混合量化--mtp-量化) / [W4A8](#deepseek-r1-0528-w4a8-per-channel量化) / [W8A8C8](#deepseek-r1-0528-w8a8c8-混合量化--mtp-量化) / [W4A8C8](#deepseek-r1-0528-w4a8c8-per-channel量化) / [MTP量化](#deepseek-r1-0528-w8a8-混合量化--mtp-量化) |
 
@@ -389,7 +389,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
    --trust_remote_code true
   ```
 
-#### <span id="deepseek-v4-flash-0731-w4a4c8量化">DeepSeek-V4-Flash-0731 W4A4C8 量化</span>
+#### <span id="deepseek-v4-flash-0731-w4a4c8量化">DeepSeek-V4-Flash-0731 W4A4C8<sup>beta</sup> 量化</span>
 
 - 生成 DeepSeek-V4-Flash-0731 模型 W4A4C8 量化权重（路由专家 MXFP4，Attention/共享专家 MXFP8；MTP 与 `wo_a`/`wo_b` 保持浮点）
 
@@ -406,7 +406,7 @@ DeepSeek-V3模型较大，且存在需要手动适配的点，为了避免浪费
 
 该一键量化命令匹配使用的量化配置文件为[deepseek_v4_flash_w4a4c8.yaml](../../lab_practice/deepseek_v4_dspark/deepseek_v4_flash_w4a4c8.yaml)，可以在其中查看具体的量化策略。已验证场景为 vLLM-Ascend + Ascend_950 与 vLLM-Ascend + Atlas_350，如需指定场景可增加 `--tags vLLM-Ascend Ascend_950` 或 `--tags vLLM-Ascend Atlas_350`。
 
-#### <span id="deepseek-v4-pro-0813-w4a4c8量化">DeepSeek-V4-Pro-0813 W4A4C8 量化</span>
+#### <span id="deepseek-v4-pro-0813-w4a4c8量化">DeepSeek-V4-Pro-0813 W4A4C8<sup>beta</sup> 量化</span>
 
 - 生成 DeepSeek-V4-Pro-0813 模型 W4A4C8 量化权重（路由专家 MXFP4，Attention/共享专家 MXFP8；MTP 与 `wo_a`/`wo_b` 保持浮点）
 

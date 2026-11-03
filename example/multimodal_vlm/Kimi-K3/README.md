@@ -24,7 +24,7 @@ pip install -U fla-core
 | 模型 | 原始权重 | 量化方式 | 推理框架 | 量化命令 |
 |------|---------|---------|---------|---------|
 | Kimi-K3 | [Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3) | W4A8（INT） | vLLM Ascend | [W4A8](#kimi-k3-w4a8-int) |
-| Kimi-K3 | [Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3) | W4A8C8（INT + FA3） | vLLM Ascend | [W4A8C8](#kimi-k3-w4a8c8) |
+| Kimi-K3 | [Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3) | W4A8C8（INT + FA3）<sup>beta</sup> | vLLM Ascend | [W4A8C8](#kimi-k3-w4a8c8) |
 | Kimi-K3 | [Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3) | W4A8（MXFP） | vLLM Ascend | [W4A8 MXFP](#kimi-k3-w4a8-mxfp) |
 
 > [!note]
@@ -52,7 +52,7 @@ msmodelslim quant \
     --trust_remote_code true
 ```
 
-### <span id="kimi-k3-w4a8c8">Kimi-K3 W4A8C8（INT + FA3）量化</span>
+### <span id="kimi-k3-w4a8c8">Kimi-K3 W4A8C8（INT + FA3）量化<sup>beta</sup></span>
 
 推荐实践：[kimi_k3_w4a8c8.yaml](../../../lab_practice/kimi_k3/kimi_k3_w4a8c8.yaml)。
 
