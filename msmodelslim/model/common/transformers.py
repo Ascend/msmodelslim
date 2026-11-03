@@ -22,6 +22,7 @@ See the Mulan PSL v2 for more details.
 
 import re
 from pathlib import Path
+from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -83,7 +84,28 @@ class TransformersModel(BaseModelAdapter, AscendV1GlobalModelDtypeInterface):
             trust_remote_code=trust_remote_code,
         )
 
+    def _load_tokenizer_for_qat(
+        self,
+        *,
+        model_max_length: int = 8192,
+    ) -> PreTrainedTokenizerBase:
+        """QAT path (ModelOpt-aligned): load tokenizer with ``model_max_length``.
+
+        Sets max sequence length used for train truncate / pad (default 8192).
+        Also fills ``pad_token`` from ``eos_token`` when missing.
+        """
+        tokenizer = SafeGenerator.get_tokenizer_from_pretrained(
+            model_path=str(self.model_path),
+            model_max_length=model_max_length,
+        )
+        if getattr(tokenizer, "pad_token", None) is None and getattr(tokenizer, "eos_token", None) is not None:
+            tokenizer.pad_token = tokenizer.eos_token
+        if getattr(tokenizer, "pad_token_id", None) is None and getattr(tokenizer, "eos_token_id", None) is not None:
+            tokenizer.pad_token_id = tokenizer.eos_token_id
+        return tokenizer
+
     def _load_model(self, device: DeviceType) -> PreTrainedModel:
+        """PTQ / Runner path: may set device_map=auto and place on device immediately."""
         device_map = "auto" if device == DeviceType.NPU else "cpu"
         self.config.num_hidden_layers = self.config.num_hidden_layers
 
@@ -94,6 +116,26 @@ class TransformersModel(BaseModelAdapter, AscendV1GlobalModelDtypeInterface):
             low_cpu_mem_usage=True,
             config=self.config,
             trust_remote_code=self.trust_remote_code,
+        )
+
+    def _load_model_for_qat(
+        self,
+        *,
+        torch_dtype: Any = "auto",
+    ) -> PreTrainedModel:
+        """QAT / FSDP path (ModelOpt-aligned): do **not** set device_map.
+
+        Rank placement is handled by Accelerate env
+        (``FSDP_CPU_RAM_EFFICIENT_LOADING``) + Transformers ``from_pretrained``
+        after the process group is initialized. Trainer/FSDP wraps later.
+        """
+        model_kwargs = {}
+        model_kwargs["attn_implementation"] = "flash_attention_2"
+
+        return SafeGenerator.get_model_from_pretrained(
+            model_path=str(self.model_path),
+            torch_dtype=torch_dtype,
+            **model_kwargs,
         )
 
     def _get_model_type(self, model_type: str) -> str:

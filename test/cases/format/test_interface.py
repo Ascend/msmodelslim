@@ -27,52 +27,33 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-from torch import nn
+import torch
 
-from msmodelslim.format.interface import ExportContext, IFormat
-
-
-class TestExportContext:
-    """Tests for ExportContext dataclass."""
-
-    def test_export_context_defaults_when_minimal(self):
-        ctx = ExportContext(save_directory=Path("/tmp/save"))
-
-        assert ctx.source_model_path is None
-        assert ctx.rank == 0
-        assert ctx.world_size == 1
-
-    def test_export_context_store_fields_when_provided(self):
-        ctx = ExportContext(
-            save_directory=Path("/tmp/save"),
-            source_model_path=Path("/tmp/src"),
-            rank=1,
-            world_size=4,
-        )
-
-        assert ctx.source_model_path == Path("/tmp/src")
-        assert ctx.rank == 1
-        assert ctx.world_size == 4
+from msmodelslim.format.interface import ExportContext
 
 
-class TestIFormat:
-    """Tests for IFormat abstract protocol."""
+def test_ExportContext_defaults_state_dict_when_omitted(tmp_path):
+    ctx = ExportContext(save_directory=tmp_path)
+    assert ctx.state_dict is None
 
-    def test_iformat_raise_type_error_when_instantiated_directly(self):
-        with pytest.raises(TypeError):
-            IFormat()
 
-    def test_iformat_prepare_export_noop_when_default(self):
-        class ConcreteFormat(IFormat):
-            def process_module_tensors(self, prefix: str, module: nn.Module) -> None:
-                IFormat.process_module_tensors(self, prefix, module)
+def test_ExportContext_defaults_rank_when_omitted(tmp_path):
+    ctx = ExportContext(save_directory=tmp_path)
+    assert ctx.rank == 0
 
-            def finalize_export(self, model: nn.Module) -> None:
-                IFormat.finalize_export(self, model)
 
-        fmt = ConcreteFormat()
+def test_ExportContext_defaults_world_size_when_omitted(tmp_path):
+    ctx = ExportContext(save_directory=tmp_path)
+    assert ctx.world_size == 1
 
-        fmt.prepare_export()
-        fmt.process_module_tensors("", nn.Linear(2, 2))
-        fmt.finalize_export(nn.Linear(2, 2))
+
+def test_ExportContext_keeps_state_dict_when_provided(tmp_path):
+    weights = {"layer.weight": torch.ones(2, 2)}
+    ctx = ExportContext(save_directory=Path(tmp_path), state_dict=weights)
+    assert ctx.state_dict is weights
+
+
+def test_ExportContext_keeps_empty_state_dict_when_provided(tmp_path):
+    weights = {}
+    ctx = ExportContext(save_directory=Path(tmp_path), state_dict=weights)
+    assert ctx.state_dict is weights

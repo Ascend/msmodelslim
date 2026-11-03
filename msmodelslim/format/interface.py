@@ -24,19 +24,29 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Mapping, Optional
 
+import torch
 from torch import nn
 
 
 @dataclass
 class ExportContext:
-    """导出运行时环境。"""
+    """导出运行时环境。
+
+    ``state_dict`` 可选：QAT 等场景在构造时注入 FSDP gather 后的完整浮点权重
+    （``Mapping[str, torch.Tensor]``，与 ``nn.Module.state_dict()`` 一致），
+    供 ``finalize_export(model)`` 写出；其它格式可忽略。
+
+    Note:
+        当前以平铺字段承载；后续将收敛到更完整的 context 抽象，避免继续扩展散落字段。
+    """
 
     save_directory: Path
     source_model_path: Path | None = None
     rank: int = 0
     world_size: int = 1
+    state_dict: Optional[Mapping[str, torch.Tensor]] = None
 
 
 class IFormat(ABC):

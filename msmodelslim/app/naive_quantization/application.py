@@ -24,8 +24,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional, List, Tuple
 
-import torch
-
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.const import QuantType
 from msmodelslim.core.practice.interface import Metadata, PracticeConfig, ScenarioTagMatch
@@ -40,6 +38,7 @@ from msmodelslim.utils.validation.conversion import (
     convert_to_writable_dir,
     convert_to_readable_dir,
 )
+from msmodelslim.utils.validation.device import validate_device_index
 from msmodelslim.utils.validation.value import validate_str_length
 from .model_info_interface import ModelInfoInterface
 from .practice_manager_infra import PracticeManagerInfra, QuantConfigExportInfra
@@ -105,55 +104,6 @@ def _build_quant_tips(tips_type: TipsType, model_type: str, quant_type: QuantTyp
         )
     else:
         raise UnsupportedError("Get best practice error", action="Please use the correct msmodelslim version.")
-
-
-def validate_device_index(device_index: Optional[List[int]], device_type: DeviceType):
-    """
-    Validate device_index parameter.
-
-    Args:
-        device_index: Device indices to validate
-        device_type: Device type for context validation
-
-    Raises:
-        SchemaValidateError: If device_index is invalid
-    """
-
-    # Value validation: check if indices are non-negative
-    if any(idx < 0 for idx in device_index):
-        negative_indices = [idx for idx in device_index if idx < 0]
-        raise SchemaValidateError(
-            f"Device indices must be non-negative integers, but got negative values: {negative_indices}"
-        )
-
-    # Value validation: check for duplicates
-    if len(device_index) != len(set(device_index)):
-        duplicates = [idx for idx in set(device_index) if device_index.count(idx) > 1]
-        raise SchemaValidateError(f"Device indices must be unique, but found duplicates: {duplicates}")
-
-    # CPU does not support multi-device
-    if device_type == DeviceType.CPU and len(device_index) > 1:
-        raise SchemaValidateError(
-            f"CPU does not support multi-device configuration. "
-            f"Got device indices: {device_index}. "
-            f"Please use NPU for multi-device parallel, or use single CPU device."
-        )
-
-    # Value validation: check device availability
-    if device_type == DeviceType.NPU:
-        max_device_count = torch.npu.device_count()
-    else:
-        # CPU doesn't need device count validation
-        max_device_count = None
-
-    # Check if indices exceed available devices
-    if max_device_count is not None:
-        invalid_indices = [idx for idx in device_index if idx >= max_device_count]
-        if invalid_indices:
-            raise SchemaValidateError(
-                f"Device indices {invalid_indices} exceed maximum available device index "
-                f"({max_device_count - 1}). Available device indices: 0 to {max_device_count - 1}"
-            )
 
 
 def check_model_type_transformers(model_adapter: IModel, config: PracticeConfig):

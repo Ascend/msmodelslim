@@ -29,6 +29,9 @@ from safetensors.torch import save_file
 from msmodelslim.format.ascendV1_format.ascendV1_tensors_writer_factory_infra import (
     AscendV1SafetensorsWriterInfra,
 )
+from msmodelslim.format.checkpoint_format.checkpoint_tensors_writer_factory_infra import (
+    CheckpointSafetensorsWriterInfra,
+)
 from msmodelslim.format.compressed_tensors_format.compressed_tensors_safetensors_writer_factory_infra import (
     CompressedTensorSafetensorsWriterInfra,
 )
@@ -42,6 +45,7 @@ class SafetensorsWriter(
     AscendV1SafetensorsWriterInfra,
     CompressedTensorSafetensorsWriterInfra,
     MindIESafetensorsWriterInfra,
+    CheckpointSafetensorsWriterInfra,
 ):
     def __init__(self, logger, file_path: str) -> None:
         self.logger = logger

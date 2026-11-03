@@ -28,6 +28,10 @@ from msmodelslim.format.ascendV1_format.ascendV1_tensors_writer_factory_infra im
     AscendV1SafetensorsWriterFactoryInfra,
     AscendV1SafetensorsWriterInfra,
 )
+from msmodelslim.format.checkpoint_format.checkpoint_tensors_writer_factory_infra import (
+    CheckpointSafetensorsWriterFactoryInfra,
+    CheckpointSafetensorsWriterInfra,
+)
 from msmodelslim.format.compressed_tensors_format.compressed_tensors_safetensors_writer_factory_infra import (
     CompressedTensorSafetensorsWriterFactoryInfra,
     CompressedTensorSafetensorsWriterInfra,
@@ -42,13 +46,19 @@ class DefaultSafetensorsWriterFactory(
     AscendV1SafetensorsWriterFactoryInfra,
     MindIESafetensorsWriterFactoryInfra,
     CompressedTensorSafetensorsWriterFactoryInfra,
+    CheckpointSafetensorsWriterFactoryInfra,
 ):
     def create_safetensors_writer(
         self,
         part_file_size: int,
         save_directory: str,
         save_prefix: str,
-    ) -> AscendV1SafetensorsWriterInfra | MindIESafetensorsWriterInfra | CompressedTensorSafetensorsWriterInfra:
+    ) -> (
+        AscendV1SafetensorsWriterInfra
+        | MindIESafetensorsWriterInfra
+        | CompressedTensorSafetensorsWriterInfra
+        | CheckpointSafetensorsWriterInfra
+    ):
         from msmodelslim.infra.io.buffered_safetensors_writer import BufferedSafetensorsWriter
         from msmodelslim.infra.io.safetensors_writer import SafetensorsWriter
 

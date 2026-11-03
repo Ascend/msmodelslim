@@ -16,7 +16,7 @@ You may obtain a copy of Mulan PSL v2 at:
 
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
@@ -32,6 +32,9 @@ from msmodelslim.core.convert.types import IRKind, LossLevel, SourceIR, TensorRe
         (IRKind.FLOAT, "FLOAT"),
         (IRKind.FP8_BLOCK, "FP8_BLOCK"),
         (IRKind.W8A8_MXFP8, "W8A8_MXFP8"),
+        (IRKind.PARETOQ_FLOAT, "PARETOQ_FLOAT"),
+        (IRKind.W4A8_DYNAMIC, "W4A8_DYNAMIC"),
+        (IRKind.W4A4_DYNAMIC, "W4A4_DYNAMIC"),
         (TensorRole.MAIN_WEIGHT, "main_weight"),
         (TensorRole.GLOBAL_SCALE, "global_scale"),
         (LossLevel.LOSSLESS, "lossless"),
@@ -58,3 +61,10 @@ def test_source_ir_has_expected_defaults():
     assert source.source_format is None
     assert source.confidence == 1.0
     assert source.evidence == []
+
+
+def test_SourceIR_keeps_kind_when_constructed_with_paretoq():
+    src = SourceIR(kind=IRKind.PARETOQ_FLOAT, source_format="qat_paretoq")
+    assert src.kind is IRKind.PARETOQ_FLOAT
+    assert src.source_format == "qat_paretoq"
+    assert src.confidence == 1.0

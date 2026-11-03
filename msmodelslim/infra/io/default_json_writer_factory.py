@@ -25,6 +25,10 @@ from msmodelslim.format.ascendV1_format.ascendV1_json_writer_factory_infra impor
     AscendV1JsonWriterFactoryInfra,
     AscendV1JsonWriterInfra,
 )
+from msmodelslim.format.checkpoint_format.checkpoint_json_writer_factory_infra import (
+    CheckpointJsonWriterFactoryInfra,
+    CheckpointJsonWriterInfra,
+)
 from msmodelslim.format.compressed_tensors_format.compressed_tensors_json_writer_factory_infra import (
     CompressedTensorJsonWriterFactoryInfra,
     CompressedTensorJsonWriterInfra,
@@ -40,14 +44,15 @@ class DefaultJsonWriterFactory(
     AscendV1JsonWriterFactoryInfra,
     MindIEJsonWriterFactoryInfra,
     CompressedTensorJsonWriterFactoryInfra,
+    CheckpointJsonWriterFactoryInfra,
 ):
-    """描述 JSON 落盘：AscendV1/MindIE 使用聚合 JsonWriter，compressed-tensors 使用 ConfigJsonWriter。"""
+    """JSON writers for AscendV1 / MindIE / compressed-tensors / QAT checkpoint."""
 
     def create_json_writer(
         self,
         save_directory: str,
         file_name: str,
-    ) -> AscendV1JsonWriterInfra | MindIEJsonWriterInfra | CompressedTensorJsonWriterInfra:
+    ) -> AscendV1JsonWriterInfra | MindIEJsonWriterInfra | CompressedTensorJsonWriterInfra | CheckpointJsonWriterInfra:
         return JsonWriter(save_directory, file_name)
 
 

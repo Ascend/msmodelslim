@@ -121,6 +121,14 @@ def bootstrap_convert_worker(
     from msmodelslim.processor.convert.registry import register_convert_processors
 
     router = register_convert_processors()
+    # QAT deploy edges live in the algorithm package; spawn workers re-query them.
+    try:
+        from msmodelslim.processor.paretoq.impl import ParetoQImpl
+
+        for proc in ParetoQImpl.get_convert_processors():
+            router.register_processor(proc)
+    except ImportError:
+        pass
     reader = CheckpointReader(model_path)
     context = ConvertContext(config=config, reader=reader)
     context.resolved_worker_device = device

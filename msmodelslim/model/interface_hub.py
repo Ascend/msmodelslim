@@ -27,6 +27,7 @@ See the Mulan PSL v2 for more details.
 
 from msmodelslim.app.auto_tuning.model_info_interface import ModelInfoInterface as atmi
 from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInterface as nami
+from msmodelslim.core.train.protocol import QATLoadInterface
 from msmodelslim.core.quant_service.modelslim_v0.pipeline_interface import (
     PipelineInterface as ModelSlimPipelineInterfaceV0,
 )
@@ -102,6 +103,8 @@ __all__ = [
     'ModelSlimPipelineInterfaceV1',  # For ModelSlim V1 quant service, describing the pipeline of model inference.
     'LayerWiseOffloadOptionalInterface',  # Optional interface for layer-wise runner offload customization.
     'StandingHighWithExperienceInterface',  # For standing_high_with_experience anti_outlier capability probe.
+    # QAT interface
+    'QATLoadInterface',  # For QAT train: load_tokenizer_for_qat / load_model_for_qat.
     # FA3 activation quantization interface
     'FA3QuantAdapterInterface',  # For FA3 activation quantization, inject placeholders.
     'FA3QuantPlaceHolder',  # For FA3 activation quantization, placeholders.

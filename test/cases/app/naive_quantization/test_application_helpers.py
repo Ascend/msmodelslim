@@ -27,11 +27,11 @@ from msmodelslim.app.naive_quantization.application import (
     DEFAULT_QUANT_TYPE,
     TipsType,
     _build_quant_tips,
-    validate_device_index,
 )
 from msmodelslim.core.const import DeviceType, QuantType
 from msmodelslim.core.practice.interface import Metadata
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
+from msmodelslim.utils.validation.device import validate_device_index
 
 
 class TestBuildQuantTips:

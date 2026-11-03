@@ -28,6 +28,9 @@ from typing import Any
 from msmodelslim.format.ascendV1_format.ascendV1_json_writer_factory_infra import (
     AscendV1JsonWriterInfra,
 )
+from msmodelslim.format.checkpoint_format.checkpoint_json_writer_factory_infra import (
+    CheckpointJsonWriterInfra,
+)
 from msmodelslim.format.mindie_format.mindie_json_writer_factory_infra import (
     MindIEJsonWriterInfra,
 )
@@ -41,6 +44,7 @@ class JsonWriter(
     AscendV1JsonWriterInfra,
     MindIEJsonWriterInfra,
     CompressedTensorJsonWriterInfra,
+    CheckpointJsonWriterInfra,
 ):
     def __init__(self, save_directory: str, file_name: str) -> None:
         self.save_directory = save_directory

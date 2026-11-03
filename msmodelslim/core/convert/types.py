@@ -39,6 +39,11 @@ class IRKind(str, Enum):
     INT4_PACKED = "INT4_PACKED"
     NVFP4_MODELOPT = "NVFP4_MODELOPT"
     HIFP4 = "HIFP4"
+    # QAT float fake-quant shell (W + trained weight_clip_val / α).
+    PARETOQ_FLOAT = "PARETOQ_FLOAT"
+    # Deployable dynamic IR produced from ParetoQ (aligned with module.deploy()).
+    W4A8_DYNAMIC = "W4A8_DYNAMIC"
+    W4A4_DYNAMIC = "W4A4_DYNAMIC"
     UNKNOWN = "UNKNOWN"
 
 

@@ -36,7 +36,11 @@ def register_convert_processors(router: IRRouter | None = None) -> IRRouter:
     r = router or IRRouter.default()
     if _REGISTERED and router is None:
         return r
-    for proc in (DequantToFloatProcessor(), Int4PackedToFloatProcessor(), MxFp8QuantProcessor()):
+    for proc in (
+        DequantToFloatProcessor(),
+        Int4PackedToFloatProcessor(),
+        MxFp8QuantProcessor(),
+    ):
         r.register_processor(proc)
     _REGISTERED = True
     return r

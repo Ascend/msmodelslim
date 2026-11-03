@@ -21,9 +21,9 @@ See the Mulan PSL v2 for more details.
 # pylint: disable=no-name-in-module
 
 from typing import List, Any, Generator, Dict
-
 import torch
 from torch import nn
+from transformers import PreTrainedTokenizerBase
 
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
@@ -47,6 +47,7 @@ from ..interface_hub import (
     FlexSmoothQuantInterface,
     AdaptRotationInterface,
     FakeQuantInferenceInterface,
+    QATLoadInterface,
 )
 
 from msmodelslim.processor.flat_quant import FlatQuantInterface
@@ -75,6 +76,7 @@ class Qwen3ModelAdapter(  # pylint: disable=too-many-ancestors
     AWQInterface,
     FakeQuantInferenceInterface,
     FA3QuantAdapterInterface,
+    QATLoadInterface,
 ):
     def get_flatquant_subgraph(self) -> List[Dict[str, object]]:  # pylint: disable=arguments-differ
         """分析Qwen模型结构并注册所有相关的结构对。"""
@@ -114,6 +116,18 @@ class Qwen3ModelAdapter(  # pylint: disable=too-many-ancestors
 
     def init_model(self, device: DeviceType = DeviceType.NPU) -> nn.Module:
         return self._load_model(device)
+
+    def load_tokenizer_for_qat(self, model_max_length: int) -> PreTrainedTokenizerBase:
+        """Public QAT entry: load tokenizer with YAML ``model_max_length``."""
+        return self._load_tokenizer_for_qat(model_max_length=model_max_length)
+
+    def load_model_for_qat(self) -> nn.Module:
+        """Public QAT entry (PTQ-style): like ``load_model`` → ``_load_model``.
+
+        Qwen3 QAT defaults are fixed here (not from YAML hyperparameters):
+        ``torch_dtype=bfloat16``.
+        """
+        return self._load_model_for_qat(torch_dtype="bfloat16")
 
     def generate_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
         yield from generated_decoder_layer_visit_func(model)
