@@ -79,21 +79,24 @@ class ModelFreeModule(nn.Module):  # pylint: disable=abstract-method
             return
         dev = str(device)
         direct: dict[str, list[str]] = {}
+        logical_to_ckpt: dict[str, str] = {}
         for logical, ref in self.tensor_bindings.items():
             meta = ref.meta or {}
             if meta.get("fused_from"):
                 tensor = load_logical_tensor(reader, ref.key, meta, device=dev)
                 self._register_logical(logical, tensor)
                 continue
-            direct.setdefault(ref.shard, []).append(ref.key)
+            ckpt_key = meta.get("renamed_from") or ref.key
+            logical_to_ckpt[logical] = ckpt_key
+            direct.setdefault(ref.shard, []).append(ckpt_key)
 
         if direct:
             merged = {s: sorted(set(k)) for s, k in direct.items()}
             tensors = reader.load_tensors(merged, device=dev)
             for logical, ref in self.tensor_bindings.items():
-                if ref.meta.get("fused_from"):
+                if (ref.meta or {}).get("fused_from"):
                     continue
-                tensor = tensors.get(ref.key)
+                tensor = tensors.get(logical_to_ckpt.get(logical, ref.key))
                 if tensor is None:
                     continue
                 self._register_logical(logical, tensor)
@@ -147,6 +150,12 @@ class PassthroughModule(ModelFreeModule):  # pylint: disable=abstract-method
                 yield single
                 return
         yield from super().named_parameters(prefix=prefix, recurse=recurse, remove_duplicate=remove_duplicate)
+
+
+def checkpoint_key(ref: TensorRef) -> str:
+    """Physical safetensors key. ``fused_from`` / ``renamed_from`` win over the logical key."""
+    meta = ref.meta or {}
+    return meta.get("fused_from") or meta.get("renamed_from") or ref.key
 
 
 def create_model_free_module(

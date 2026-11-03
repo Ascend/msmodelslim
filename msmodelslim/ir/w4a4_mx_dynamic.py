@@ -48,8 +48,12 @@ class W4A4MXDynamicPerBlockFakeQuantLinear(AutoFakeQuantLinear):
         self.x_mx_finfo = x_q_param.scheme.dtype.mx_finfo
         self.x_axes = x_q_param.ext.get("axes")
 
-        self.weight_scale = nn.Parameter(w_q_param.ext.get("scale"), requires_grad=False)
-        self.weight_offset = nn.Parameter(w_q_param.ext.get("offset"), requires_grad=False)
+        weight_scale = w_q_param.ext.get("scale")
+        weight_offset = w_q_param.ext.get("offset")
+        if weight_offset is None and weight_scale is not None:
+            weight_offset = torch.zeros_like(weight_scale)
+        self.weight_scale = nn.Parameter(weight_scale, requires_grad=False)
+        self.weight_offset = nn.Parameter(weight_offset, requires_grad=False)
         self.weight = nn.Parameter(w_q.value, requires_grad=False)
         self.bias = nn.Parameter(bias, requires_grad=False) if bias is not None else None
 
@@ -58,6 +62,23 @@ class W4A4MXDynamicPerBlockFakeQuantLinear(AutoFakeQuantLinear):
 
     def __repr__(self) -> str:
         return f"W4A4MXDynamicPerBlockFakeQuantLinear(symmetric={self.w_scheme.symmetric})"
+
+    @classmethod
+    def from_deploy_state_dict(cls, state_dict: dict[str, torch.Tensor]) -> "W4A4MXDynamicPerBlockFakeQuantLinear":
+        """从 deploy 后的 state_dict 重建模块（convert 多进程回传）。"""
+        mx_scheme = QScheme(scope=QScope.PER_BLOCK, dtype=QDType.MXFP4, symmetric=True)
+        axes = -1
+        x_q_param = QParam(scheme=mx_scheme, ext={"axes": axes})
+        w_q_param = QParam(
+            scheme=mx_scheme,
+            ext={
+                "axes": axes,
+                "scale": state_dict["weight_scale"],
+                "offset": state_dict["weight_offset"],
+            },
+        )
+        w_q = QStorage(QDType.MXFP4, state_dict["weight"])
+        return cls(x_q_param, w_q_param, w_q, state_dict.get("bias"))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         axes = self.x_axes

@@ -111,11 +111,11 @@
 |----------|------|-----------|--------|----------------|------|----------|
 | `match` | `list[string]` | 可选 | `[]` | — | 匹配的线性层名称模式列表。 | 无 |
 | `target` | `string` | 必选 | 无 | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN` | 转换目标 IR 类型，如 `W8A8_MXFP8`、`INT4_PACKED` 等。 | 无 |
-| `route` | `list[string] / string` | 可选 | `auto` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN`；`auto` | 转换路径：显式 IR 列表（首元素为源 IR），或 `auto` 由虚拟树按权重 dtype 推断。 | 无 |
+| `route` | `list[string] / string` | 可选 | `auto` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`MXFP4_PACKED`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN`；`auto` | 转换路径：显式 IR 列表（首元素为源 IR），或 `auto` 由虚拟树按权重 dtype 推断。 | 无 |
 
 **配置约束**
 
-- 无。
+- `target` 为 `W8A8_MXFP8` 或 `W4A4_MXFP4` 时，`save.type` 必须是 `ascend_v1`（`dst_format: ascendv1`）。
 
 <h4 id="2-2-7-save-config">2.2.7 SaveConfig</h4>
 

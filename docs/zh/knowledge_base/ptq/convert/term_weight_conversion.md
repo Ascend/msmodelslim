@@ -43,8 +43,8 @@ $$ \hat{x} = \text{round}\left(\frac{x}{\Delta_{\text{block}}}\right) $$
 ### 3.2 关键性质
 
 - **Data-free 特性**：无需校准数据集，无需加载模型代码，纯权重离线计算。
-- **无损转换**：`FP8_BLOCK → FLOAT` 和 `INT4_PACKED → FLOAT` 为无损转换（仅反量化）。
-- **有损转换**：`FLOAT → W8A8_MXFP8` 为有损转换（重新量化引入量化误差）。
+- **无损转换**：`FP8_BLOCK → FLOAT`、`INT4_PACKED → FLOAT`、`MXFP4_PACKED → FLOAT`，以及满足条件时的 `FP8_BLOCK → W8A8_MXFP8` 直转。
+- **有损转换**：`FLOAT → W8A8_MXFP8` 与 `FLOAT → W4A4_MXFP4` 为有损转换（重新量化引入量化误差）。不满足直转条件的 `FP8_BLOCK → W8A8_MXFP8` 先反量化再量化，后半段有损。
 - **自动路由**：`route: auto` 时自动推断源 IR 并选择转换路径，支持多步串联。
 - **7 阶段流水线**：从读 catalog 到落盘，全流程无需模型 forward。
 - **多种保存格式**：`ascend_v1`（MXFP8 部署）、`huggingface`（HF 生态）。
@@ -69,7 +69,7 @@ flowchart LR
 - **建虚拟模块树**：按 tick-tock 模式组织模块层次，构建 `ModelFreeModule` 树。
 - **建 IR 任务**：为每个匹配的线性层创建 IR 转换任务。
 - **路由**：按 `route` 配置自动选择转换路径。
-- **执行**：调用对应的 IR 转换处理器（`DequantToFloatProcessor`、`Int4PackedToFloatProcessor`、`MxFp8QuantProcessor`）。
+- **执行**：调用对应的 IR 转换处理器（`Fp8BlockToFloatProcessor`、`Fp8BlockToMxFp8Processor`、`Int4PackedToFloatProcessor`、`Mxfp4PackedToFloatProcessor`、`MxFp8QuantProcessor`、`MxFp4QuantProcessor`）。
 - **保存**：按配置的 `save.type` 落盘（`ascend_v1` 或 `huggingface`）。
 
 ### 4.2 配置示例
@@ -103,7 +103,7 @@ spec:
 
 - **FP8 block 反量化**：将 FP8 量化权重反量化为 BF16，以在 HuggingFace 生态推理。
 - **BF16 离线 MXFP8 量化**：将 BF16 浮点权重离线量化为 W8A8 MXFP8，供昇腾 NPU 推理。
-- **FP8 直接转 MXFP8**：自动路由串联 `FP8_BLOCK → FLOAT → W8A8_MXFP8`，一步完成。
+- **FP8 转 MXFP8**：`route: auto` 在 E4M3 + E8M0 且 FP8 block 的列数是 32 的整数倍时走无损直转 `FP8_BLOCK → W8A8_MXFP8`，否则串联 `FP8_BLOCK → FLOAT → W8A8_MXFP8`。
 - **INT4 packed 反量化**：将 INT4 分组量化权重反量化为 BF16。
 
 ### 5.2 使用限制

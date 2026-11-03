@@ -91,6 +91,27 @@ class TestPrepareResult:
         result = IRResult(module_path="x", final_ir=IRKind.FLOAT, module=mod)
         assert prepare_result(result, return_mode="module") is result  # 校验 module 模式不转换
 
+    def test_prepare_result_keep_mxfp4_weight_bf16_when_state_dict_has_scale_keys(self):
+        """W4A4_MXFP4 与 W8A8_MXFP8 的 state_dict 键相同，不能把 E2M1 网格压成 float8。"""
+        mod = nn.Module()
+        mod.register_parameter("weight", nn.Parameter(torch.ones(2, 4, dtype=torch.bfloat16)))
+        mod.register_parameter("weight_scale", nn.Parameter(torch.zeros(2, 1)))
+        mod.register_parameter("weight_offset", nn.Parameter(torch.zeros(2, 1)))
+        result = IRResult(module_path="experts.0.gate_proj", final_ir=IRKind.W4A4_MXFP4, module=mod)
+        prepared = prepare_result(result, return_mode="state_dict")
+        restored = prepared.state_dict["weight"].to_tensor()
+        assert restored.dtype == torch.bfloat16
+
+    def test_prepare_result_pack_mxfp8_weight_as_float8_when_final_ir_is_mxfp8(self):
+        mod = nn.Module()
+        mod.register_parameter("weight", nn.Parameter(torch.ones(2, 4, dtype=torch.bfloat16)))
+        mod.register_parameter("weight_scale", nn.Parameter(torch.zeros(2, 1)))
+        mod.register_parameter("weight_offset", nn.Parameter(torch.zeros(2, 1)))
+        result = IRResult(module_path="layers.0.q_proj", final_ir=IRKind.W8A8_MXFP8, module=mod)
+        prepared = prepare_result(result, return_mode="state_dict")
+        restored = prepared.state_dict["weight"].to_tensor()
+        assert restored.dtype == torch.float8_e4m3fn
+
 
 class TestEstimateTaskBytes:
     """测试 estimate_task_bytes 函数"""

@@ -31,7 +31,7 @@ from msmodelslim.utils.exception import UnsupportedError
 class TestResolveAutoRoute:
     """测试 resolve_auto_route 函数"""
 
-    def test_resolve_auto_route_return_fp8_to_float_when_src_fp8_dst_float(self):
+    def test_resolve_auto_route_return_fp8_block_to_float_when_src_fp8_block_dst_float(self):
         route = resolve_auto_route(IRKind.FP8_BLOCK, IRKind.FLOAT)
         assert route == [IRKind.FP8_BLOCK, IRKind.FLOAT]
 
@@ -54,3 +54,18 @@ class TestResolveAutoRoute:
     def test_resolve_auto_route_raise_error_when_pair_not_in_table(self):
         with pytest.raises(UnsupportedError, match="No auto route"):
             resolve_auto_route(IRKind.INT4_PACKED, IRKind.W8A8_MXFP8)
+
+    def test_resolve_auto_route_use_direct_mxfp8_only_when_requested(self):
+        assert resolve_auto_route(IRKind.FP8_BLOCK, IRKind.W8A8_MXFP8) == [
+            IRKind.FP8_BLOCK,
+            IRKind.FLOAT,
+            IRKind.W8A8_MXFP8,
+        ]
+        assert resolve_auto_route(IRKind.FP8_BLOCK, IRKind.W8A8_MXFP8, direct_mxfp8=True) == [
+            IRKind.FP8_BLOCK,
+            IRKind.W8A8_MXFP8,
+        ]
+
+    def test_resolve_auto_route_return_mxfp4_edges(self):
+        assert resolve_auto_route(IRKind.MXFP4_PACKED, IRKind.FLOAT) == [IRKind.MXFP4_PACKED, IRKind.FLOAT]
+        assert resolve_auto_route(IRKind.FLOAT, IRKind.W4A4_MXFP4) == [IRKind.FLOAT, IRKind.W4A4_MXFP4]

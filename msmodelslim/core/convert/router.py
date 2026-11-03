@@ -44,6 +44,7 @@ class IRRouter:
     """
 
     _DEFAULT: IRRouter | None = None
+    _LOSS_LEVEL_BY_VALUE: dict[str, LossLevel] = {level.value: level for level in LossLevel}
 
     def __init__(self) -> None:
         self._edges: list[TransformEdge] = []
@@ -72,9 +73,7 @@ class IRRouter:
                 src_ir=processor.src_ir,
                 dst_ir=processor.dst_ir,
                 processor_name=processor.name,
-                loss_level=LossLevel(processor.loss_level)
-                if processor.loss_level in LossLevel._value2member_map_
-                else LossLevel.LOSSY,
+                loss_level=self._LOSS_LEVEL_BY_VALUE.get(processor.loss_level, LossLevel.LOSSY),
             ),
         )
 

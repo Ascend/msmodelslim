@@ -24,8 +24,11 @@ Register data-free convert processors on the global IR router.
 from __future__ import annotations
 
 from msmodelslim.core.convert.router import IRRouter
-from msmodelslim.processor.convert.dequant_to_float import DequantToFloatProcessor
+from msmodelslim.processor.convert.fp8_block_to_float import Fp8BlockToFloatProcessor
+from msmodelslim.processor.convert.fp8_block_to_mxfp8 import Fp8BlockToMxFp8Processor
 from msmodelslim.processor.convert.int4_to_float import Int4PackedToFloatProcessor
+from msmodelslim.processor.convert.mxfp4_quant import MxFp4QuantProcessor
+from msmodelslim.processor.convert.mxfp4_to_float import Mxfp4PackedToFloatProcessor
 from msmodelslim.processor.convert.mxfp8_quant import MxFp8QuantProcessor
 
 _REGISTERED = False
@@ -37,9 +40,12 @@ def register_convert_processors(router: IRRouter | None = None) -> IRRouter:
     if _REGISTERED and router is None:
         return r
     for proc in (
-        DequantToFloatProcessor(),
+        Fp8BlockToFloatProcessor(),
+        Fp8BlockToMxFp8Processor(),
         Int4PackedToFloatProcessor(),
+        Mxfp4PackedToFloatProcessor(),
         MxFp8QuantProcessor(),
+        MxFp4QuantProcessor(),
     ):
         r.register_processor(proc)
     _REGISTERED = True

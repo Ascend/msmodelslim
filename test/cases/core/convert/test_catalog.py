@@ -46,6 +46,15 @@ class TestTensorCatalog:
         catalog.add(TensorEntry(key="x", shard="shard0", dtype="bf16", shape=(1,)))
         assert catalog.to_weight_map() == {"x": "shard0"}
 
+    def test_remove_drop_key_when_present_and_return_none_when_missing(self):
+        catalog = TensorCatalog()
+        entry = TensorEntry(key="x", shard="shard0", dtype="bf16", shape=(1,))
+        catalog.add(entry)
+        assert catalog.remove("x") is entry
+        assert catalog.get("x") is None
+        assert len(catalog) == 0
+        assert catalog.remove("x") is None
+
 
 class TestDependencyMap:
     """测试 DependencyMap 类"""

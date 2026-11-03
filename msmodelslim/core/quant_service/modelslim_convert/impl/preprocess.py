@@ -74,13 +74,24 @@ class PreprocessExecutor(IPreprocessExecutor):
 
 
 def _resolve_num_experts(context: ConvertContext) -> int:
-    """``split_fused_gate_up`` 所需专家数：优先 model ``config.json``，否则默认 256。"""
+    """``split_fused_gate_up`` 所需专家数：优先 model ``config.json`` 的 ``num_experts``，否则默认 256。"""
     cfg = context.reader.read_model_config() if context.reader is not None else {}
+    text_cfg = cfg.get("text_config") or {}
     for candidate in (
         cfg.get("num_experts"),
-        (cfg.get("text_config") or {}).get("num_experts"),
+        text_cfg.get("num_experts"),
         (cfg.get("language_config") or {}).get("num_experts"),
+        _routed_plus_shared_experts(text_cfg),
     ):
         if candidate is not None:
             return int(candidate)
     return 256
+
+
+def _routed_plus_shared_experts(text_cfg: dict) -> int | None:
+    """专家总数是 ``text_config.n_routed_experts + n_shared_experts``。"""
+    routed = text_cfg.get("n_routed_experts")
+    shared = text_cfg.get("n_shared_experts")
+    if routed is None or shared is None:
+        return None
+    return int(routed) + int(shared)

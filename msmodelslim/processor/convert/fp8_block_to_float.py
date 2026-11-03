@@ -38,8 +38,8 @@ from msmodelslim.core.convert.types import IRKind, LossLevel
 from msmodelslim.processor.convert.base import BaseConvertProcessor
 
 
-class DequantToFloatProcessor(BaseConvertProcessor):
-    name = "DequantToFloatProcessor"
+class Fp8BlockToFloatProcessor(BaseConvertProcessor):
+    name = "Fp8BlockToFloatProcessor"
     src_ir = IRKind.FP8_BLOCK
     dst_ir = IRKind.FLOAT
     loss_level = LossLevel.LOSSLESS.value

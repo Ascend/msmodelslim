@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details.
 
 虚拟模块源 IR 推断与 tensor 绑定（convert_design.md §5.3.2）。
 
-``infer_source_ir``：module_rule 显式声明优先，否则按 tensor_bindings 启发式判断 FP8_BLOCK / INT4 / FLOAT。
+``infer_source_ir``：module_rule 显式声明优先，否则按 tensor_bindings 启发式判断 FP8_BLOCK / INT4 / FLOAT / MXFP4。
 ``bind_tensors_for_module``：将 ``tensor_map`` 模板 ``{module}`` 展开为 catalog 中的实际 key。
 """
 
@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import fnmatch
 
+from msmodelslim.core.convert.dtypes import is_e4m3, is_e8m0, is_int8, is_uint8
 from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeModule
 from msmodelslim.core.convert.config import ConvertConfig, ModuleRule
 from msmodelslim.ir.kernels import WEIGHT_SCALE_INV_SUFFIX
@@ -47,13 +48,31 @@ def infer_source_ir(module: ModelFreeModule, config: ConvertConfig) -> SourceIR:
     keys = set(bindings.keys())
     if "weight_scale_inv" in keys or any(k.endswith("scale_inv") for k in keys):
         return SourceIR(kind=IRKind.FP8_BLOCK, evidence=["weight_scale_inv"])
+    if _is_mxfp4_pair(bindings):
+        return SourceIR(kind=IRKind.MXFP4_PACKED, evidence=["mxfp4 dtype pair"])
     if "weight_packed" in keys:
         return SourceIR(kind=IRKind.INT4_PACKED, evidence=["weight_packed"])
-    if "weight" in keys and bindings["weight"].dtype and "float8" in bindings["weight"].dtype.lower():
+    if "weight" in keys and is_e4m3(bindings["weight"].dtype):
         return SourceIR(kind=IRKind.FP8_BLOCK, evidence=[bindings["weight"].dtype])
     if "weight" in keys:
         return SourceIR(kind=IRKind.FLOAT, evidence=[bindings["weight"].dtype])
     return SourceIR(kind=IRKind.UNKNOWN, confidence=0.0)
+
+
+def _is_mxfp4_pair(bindings: dict[str, TensorRef]) -> bool:
+    """``weight_packed`` + ``weight_scale``: uint8/uint8, or int8 + E8M0.
+
+    Checkpoint ``.weight`` / ``.scale`` is not recognized here. Rename those
+    keys to ``weight_packed`` / ``weight_scale`` in the convert YAML first.
+    Shape is checked later, before QAL.
+    """
+    packed = bindings.get("weight_packed")
+    packed_scale = bindings.get("weight_scale")
+    if packed is None or packed_scale is None:
+        return False
+    if is_uint8(packed.dtype) and is_uint8(packed_scale.dtype):
+        return True
+    return is_int8(packed.dtype) and is_e8m0(packed_scale.dtype)
 
 
 def bind_tensors_for_module(module_path: str, rule: ModuleRule, catalog_keys: set[str]) -> dict[str, TensorRef]:

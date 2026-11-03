@@ -37,6 +37,7 @@ class IRKind(str, Enum):
     W4A4_MXFP4 = "W4A4_MXFP4"
     W4A8_MXFP8 = "W4A8_MXFP8"
     INT4_PACKED = "INT4_PACKED"
+    MXFP4_PACKED = "MXFP4_PACKED"
     NVFP4_MODELOPT = "NVFP4_MODELOPT"
     HIFP4 = "HIFP4"
     # QAT float fake-quant shell (W + trained weight_clip_val / α).

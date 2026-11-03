@@ -36,6 +36,7 @@ from dataclasses import dataclass
 
 from msmodelslim.core.convert.catalog import RestoreRule, TensorCatalog, TensorEntry
 from msmodelslim.core.convert.config import WeightMappingRule, WeightOpConfig
+from msmodelslim.utils.exception import SchemaValidateError
 
 
 @dataclass
@@ -93,6 +94,13 @@ def _op_rename(
         if entry is None:
             continue
         new_key = m.expand(tgt_tmpl)
+        if new_key == key:
+            continue
+        if catalog.get(new_key) is not None:
+            raise SchemaValidateError(
+                f"rename target {new_key!r} already exists; source key is {key!r}",
+                action="Keep the existing logical key, or narrow the rename pattern so it does not collide.",
+            )
         catalog.add(
             TensorEntry(
                 key=new_key,
@@ -102,6 +110,7 @@ def _op_rename(
                 meta={**entry.meta, "renamed_from": key},
             ),
         )
+        catalog.remove(key)
         added.append(new_key)
     return added
 
@@ -154,7 +163,7 @@ def _op_split_fused_gate_up(
                 )
                 added.append(logical_key)
 
-        catalog._entries.pop(key, None)
+        catalog.remove(key)
         if rule.reversible:
             restore.append(
                 RestoreRule(

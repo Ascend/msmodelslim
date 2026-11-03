@@ -244,6 +244,24 @@ _SOURCE_IR_BINDINGS: Dict[IRKind, Tuple[str, Dict[str, str]]] = {
         },
     ),
     IRKind.FLOAT: ("bf16", {"weight": "{module}.weight"}),
+    IRKind.MXFP4_PACKED: (
+        "mxfp4_packed",
+        {
+            "weight_packed": "{module}.weight_packed",
+            "weight_scale": "{module}.weight_scale",
+        },
+    ),
+}
+
+
+# route=auto 的默认绑定。
+_AUTO_TENSOR_MAP: Dict[str, str] = {
+    "weight": "{module}.weight",
+    "weight_scale_inv": "{module}.weight_scale_inv",
+    "weight_packed": "{module}.weight_packed",
+    "weight_scale": "{module}.weight_scale",
+    "weight_shape": "{module}.weight_shape",
+    "bias": "{module}.bias",
 }
 
 
@@ -262,14 +280,7 @@ def _module_rule_fields_for_route(
     """Return (source_format, source_ir, tensor_map) for a linear route spec."""
     source_ir = _infer_source_ir(route)
     if source_ir is None:
-        return (
-            None,
-            None,
-            {
-                "weight": "{module}.weight",
-                "weight_scale_inv": "{module}.weight_scale_inv",
-            },
-        )
+        return None, None, dict(_AUTO_TENSOR_MAP)
     source_format, tensor_map = _SOURCE_IR_BINDINGS.get(source_ir, _SOURCE_IR_BINDINGS[IRKind.FLOAT])
     return source_format, source_ir, dict(tensor_map)
 

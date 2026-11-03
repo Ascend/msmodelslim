@@ -44,6 +44,7 @@ from msmodelslim.core.convert.tasks import (
     RoutedTask,
     is_mxfp8_deploy_state,
 )
+from msmodelslim.core.convert.types import IRKind
 from msmodelslim.core.quant_service.modelslim_convert.virtual_module import (
     ModelFreeModule,
 )
@@ -113,10 +114,11 @@ def prepare_result(result: IRResult, return_mode: str) -> IRResult:
     if return_mode != "state_dict" or result.module is None:
         return result
     state_dict = result.module.state_dict()
-    is_mxfp8 = is_mxfp8_deploy_state(state_dict)
+    # 键集合 {weight, weight_scale, weight_offset} 会同时出现在 W8A8_MXFP8 和 W4A4_MXFP4。
+    compress_mxfp8 = result.final_ir == IRKind.W8A8_MXFP8 and is_mxfp8_deploy_state(state_dict)
     packed = {}
     for key, value in state_dict.items():
-        if is_mxfp8 and key == "weight" and value.dtype == torch.bfloat16 and value.ndim == 2:
+        if compress_mxfp8 and key == "weight" and value.dtype == torch.bfloat16 and value.ndim == 2:
             # MXFP8 量化值精确落在 fp8 网格上（bf16->fp8->bf16 无损），
             # 提前转 fp8 可让跨进程结果队列负载减半（AscendV1 落盘时同样转 fp8）。
             # 需先回 CPU 再转：torch_npu 对 fp8 的 dtype 转换（aclnnInplaceCopy）不可用。

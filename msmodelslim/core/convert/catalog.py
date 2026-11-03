@@ -52,6 +52,9 @@ class TensorCatalog:
     def add(self, entry: TensorEntry) -> None:
         self._entries[entry.key] = entry
 
+    def remove(self, key: str) -> TensorEntry | None:
+        return self._entries.pop(key, None)
+
     def get(self, key: str) -> TensorEntry | None:
         return self._entries.get(key)
 
@@ -143,7 +146,7 @@ def build_dependency_map(
     weight_map: dict[str, str],
     catalog: TensorCatalog | None = None,
 ) -> DependencyMap:
-    """构建默认依赖图；``fused_from`` meta 会写入 ``add_dependency``。"""
+    """构建默认依赖图；``fused_from``, ``renamed_from`` meta 会写入 ``add_dependency``。"""
     deps = DependencyMap()
     for key, shard in weight_map.items():
         deps.add_owner(key, shard)
@@ -152,4 +155,7 @@ def build_dependency_map(
             fused = entry.meta.get("fused_from")
             if fused and fused in weight_map:
                 deps.add_dependency(key, fused)
+            renamed = entry.meta.get("renamed_from")
+            if renamed:
+                deps.add_owner(renamed, entry.shard)
     return deps

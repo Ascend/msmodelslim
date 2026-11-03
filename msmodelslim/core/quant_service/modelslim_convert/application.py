@@ -102,8 +102,7 @@ class ConvertApplication:
             context.parallel_mode = "thread"
             # 设备由 CLI 决定（YAML 无设备字段）；thread 后端仅 CPU 并行
             context.resolved_worker_device = "cpu"
-        reader = self._reader_factory(config.model_path)
-        context.reader = reader
+
         # 日志 device 对齐 CLI --device（npu/cpu），不要打印主进程落盘用的 cpu。
         compute_device = "npu" if resolved_multi else "cpu"
         logger.info(
@@ -113,6 +112,9 @@ class ConvertApplication:
             compute_device,
             context.resolved_worker_devices or None,
         )
+
+        reader = self._reader_factory(config.model_path)
+        context.reader = reader
 
         phase_t0 = time.perf_counter()
         with tqdm(total=1, desc="read checkpoint index") as pbar:

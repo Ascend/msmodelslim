@@ -41,7 +41,7 @@ flowchart LR
 
 ### 步骤 1：确认源与目标
 
-**操作**：先确定三件事——源权重当前是什么格式（FP8 block / BF16 / INT4 packed）、目标输出是什么 IR（`W8A8_MXFP8` / `FLOAT`）、目标部署框架是什么（决定 `save` 格式）。权重转换是**纯离线、data-free** 操作，不需要校准集、不需要 `model_type`、不需要 `quant_type`。
+**操作**：先确定三件事——源权重当前是什么格式（FP8 block / BF16 / INT4 packed / MXFP4 packed）、目标输出是什么 IR（`W8A8_MXFP8` / `W4A4_MXFP4` / `FLOAT`）、目标部署框架是什么（决定 `save` 格式）。权重转换是**纯离线、data-free** 操作，不需要校准集、不需要 `model_type`、不需要 `quant_type`。
 
 当前支持的转换：
 
@@ -49,8 +49,10 @@ flowchart LR
 |-------|---------|------|-----------|
 | `FP8_BLOCK` | `FLOAT` | FP8 block 权重反量化为 BF16 | 无损 |
 | `INT4_PACKED` | `FLOAT` | INT4 packed（分组）权重反量化为 BF16 | 无损 |
+| `MXFP4_PACKED` | `FLOAT` | MXFP4 packed（E2M1 + E8M0）权重反量化为 BF16 | 无损 |
 | `FLOAT` | `W8A8_MXFP8` | BF16/FP16 浮点权重离线 MXFP8 量化 | 有损 |
-| `FP8_BLOCK` | `W8A8_MXFP8` | 先反量化再量化为 MXFP8 | 有损（后半段量化） |
+| `FLOAT` | `W4A4_MXFP4` | BF16/FP16 浮点权重离线 MXFP4 量化 | 有损 |
+| `FP8_BLOCK` | `W8A8_MXFP8` | E4M3 + E8M0 且 FP8 block 的列数是 32 的整数倍时直转；否则先反量化再量化 | 直转无损，三段路径有损 |
 
 工具会根据 checkpoint 中的权重自动识别源格式。
 
@@ -117,7 +119,9 @@ spec:
         - "model.layers.*.mlp.up_proj"
         - "model.layers.*.mlp.down_proj"
       target: W8A8_MXFP8
-      # 显式路径：先反量化再量化。不写或写 auto 时工具选同一条最短路径。
+      # auto：E4M3 + E8M0 且在 FP8 block 的列数是 32 的整数倍时走无损直转 FP8_BLOCK -> W8A8_MXFP8；
+      # 其余 FP8（例如 F32 scale）走 FP8_BLOCK -> FLOAT -> W8A8_MXFP8。
+      # 写成下面这条显式三段路径时，即使该层可以直转也保持三段。
       route: [FP8_BLOCK, FLOAT, W8A8_MXFP8]
   save:
     - type: ascend_v1
@@ -167,17 +171,17 @@ msmodelslim quant \
 
 **操作**：先确认转换了哪些层、目标格式和保存格式是否匹配；需要加速时再调并行。
 
-`W8A8_MXFP8` 配 `ascend_v1`，`FLOAT` 配 `huggingface`。
+`W8A8_MXFP8` 和 `W4A4_MXFP4` 配 `ascend_v1`，`FLOAT` 配 `huggingface`。
 
 | 配置项 | 含义 | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |
 | `linears.match` | 待转换的线性层模块路径模式，支持 `*` 通配符。仅匹配到的 Linear 权重参与 IR 转换；**未匹配的权重（如 Norm、Embedding、Head 等）会原样拷贝**到输出目录。 | 列出目标模型中所有 Linear 投影层：`q_proj`/`k_proj`/`v_proj`/`o_proj`/`gate_proj`/`up_proj`/`down_proj`。 | 匹配范围过大会尝试转换非 Linear 层（可能失败），过小则某些 Linear 权重保持原格式。建议先查看 checkpoint 的 `model.safetensors.index.json` 确认 key 名，再按层名前缀与投影名写通配符。 |
-| `linears.target` | 转换目标 IR 类型，决定输出权重的数值格式。当前支持：`FLOAT`（BF16 浮点）、`W8A8_MXFP8`（昇腾 MXFP8）。 | FP8 反量化 → `FLOAT`；昇腾部署 → `W8A8_MXFP8`。 | `target` 必须与 `save.type` 匹配：`W8A8_MXFP8` 必须用 `ascend_v1` 落盘，`FLOAT` 用 `huggingface`。配置校验会检查此项。 |
-| `linears.route` | 源到目标的 IR 转换路径。`auto` 按权重推断源 IR 并走最短路径；也可写成 IR 列表，首元素为源 IR、末元素为 `target`。 | 默认 `auto`。需要固定路径时写列表，例如只反量化 `[FP8_BLOCK, FLOAT]`，或 FP8 转到 MXFP8 `[FP8_BLOCK, FLOAT, W8A8_MXFP8]`。 | 列表中相邻 IR 必须有已注册的转换边。见场景 C。 |
-| `save.type` | 保存格式：`ascend_v1`（昇腾，对应 MXFP8）、`huggingface`/`hf`/`compressed_tensors`（HF 生态，对应 BF16 浮点）。 | `ascend_v1`（目标 IR 为 `W8A8_MXFP8`）；`huggingface`（目标 IR 为 `FLOAT`）。 | 格式与目标 IR 必须严格匹配，配错会导致权重无法被目标框架加载。 |
+| `linears.target` | 转换目标 IR 类型，决定输出权重的数值格式。当前支持：`FLOAT`（BF16 浮点）、`W8A8_MXFP8`（昇腾 MXFP8）、`W4A4_MXFP4`（昇腾 MXFP4）。 | FP8 / MXFP4 反量化 → `FLOAT`；昇腾部署 → `W8A8_MXFP8` 或 `W4A4_MXFP4`。 | `target` 必须与 `save.type` 匹配：`W8A8_MXFP8` 和 `W4A4_MXFP4` 必须用 `ascend_v1` 落盘，`FLOAT` 用 `huggingface`。配置校验会检查此项。 |
+| `linears.route` | 源到目标的 IR 转换路径。`auto` 按最佳路由表选路，特别的是，当源为 `FP8_BLOCK` 目标为 `W8A8_MXFP8` 会进行条件选路：E4M3 + E8M0 且 FP8 block 的列数是 32 的整数倍时，`FP8_BLOCK → W8A8_MXFP8` 走无损直转，否则走三段。也可写成 IR 列表，首元素为源 IR、末元素为 `target`。 | 默认 `auto`。需要固定路径时写列表，例如只反量化 `[FP8_BLOCK, FLOAT]` 或 `[MXFP4_PACKED, FLOAT]`。显式 `[FP8_BLOCK, FLOAT, W8A8_MXFP8]` 即使可以直转也保持三段。 | 显式直转边不满足 E8M0 / 整除条件时直接报错，不会静默退回三段。列表中相邻 IR 必须有已注册的转换边。见场景 C。 |
+| `save.type` | 保存格式：`ascend_v1`（昇腾，对应 MXFP8 / MXFP4）、`huggingface`/`hf`/`compressed_tensors`（HF 生态，对应 BF16 浮点）。 | `ascend_v1`（目标 IR 为 `W8A8_MXFP8` 或 `W4A4_MXFP4`）；`huggingface`（目标 IR 为 `FLOAT`）。 | 格式与目标 IR 必须严格匹配，配错会导致权重无法被目标框架加载。 |
 | `save.part_file_size` | 权重分片文件大小，单位 GB；`0` 表示不分片。 | 默认 `4`（4GB 分片）。 | 小模型可设 `0` 不分片，大模型保持 `4` 便于管理超大 checkpoint。 |
 | `parallel.cpu_workers` | CPU 转换的并行 worker 数：`1` 单进程；`>1` 多进程并行（突破 GIL），默认 `8`。NPU 转换固定每卡一个子进程、组内串行（进程数=卡数），此字段不参与。 | 默认 `8` 适合多数场景；超大模型或 MoE 可适当增大。 | 仅 `--device cpu` 时生效。`cpu_workers` 越大，CPU 并行度越高，但受内存带宽和磁盘 I/O 限制；NPU 多卡并行由 `--device_id` 控制，无需设置。 |
-| `preprocess` | 权重图预处理，在构建虚拟模块树之前对 checkpoint key 做结构性变换。支持 `rename`（重命名 key）和 `convert`（chunk 拆分 fused 权重 / merge 合并权重）。 | 一般不需要；MoE 模型 fused gate_up_proj 拆分时需配置。 | 仅当 checkpoint 中有 fused 权重（如 `gate_up_proj`）需要拆分为独立投影时才需要。参考 `convert/` 目录下的 MoE 示例。 |
+| `preprocess` | 权重图预处理，在构建虚拟模块树之前对 checkpoint key 做结构性变换。支持 `rename`（重命名 key）和 `convert`（chunk 拆分 fused 权重 / merge 合并权重）。 | 一般不需要。工具按这些后缀识别源格式，checkpoint 对不上时再用 `rename` 改成约定名：`FLOAT` 为 `.weight`；`FP8_BLOCK` 为 `.weight`、`.weight_scale_inv`；`MXFP4_PACKED` 为 `.weight_packed`、`.weight_scale`；`INT4_PACKED` 为 `.weight_packed`、`.weight_scale`、`.weight_shape`、`.bias`。常见改名例子：FP8 的 `.scale` → `.weight_scale_inv`，MXFP4 的 `.weight` / `.scale` → `.weight_packed` / `.weight_scale`。MoE 的 fused `gate_up_proj` 拆分仍用 `convert`。 | `rename` 只改 key、不改数值。写 `type: rename`，`patterns` 逐条给出 `from` / `to`：`from` 是对完整 key 的正则，可用 `(?P<prefix>...)` 捕获前缀，`to` 用 `\g<prefix>` 拼出新 key。目标 key 已存在会报错，模式应只覆盖要改名的层。fused 权重拆成独立投影时才配 `convert`，参考 `convert/` 目录下的 MoE 示例。 |
 | `defaults.src_format` | 源权重格式；`auto` 由模型适配器/权重目录自动推断。 | 默认 `auto`。 | 一般不需要改。工具会从 checkpoint 中权重 dtype 自动推断。 |
 | `defaults.dst_format` | 目标保存格式；与 `save.type` 同义，`save` 为空时回退到此值。代码默认值是 `ascendv1`（无下划线），对应 `save.type` 的 `ascend_v1`。 | 默认 `ascendv1`。 | 一般不需要改，直接通过 `save.type` 控制。 |
 | `defaults.dst_ir` | 目标 IR 类型；不设置时由目标格式决定。 | 默认 `null`。 | 一般不需要改，直接通过 `linears.target` 控制。 |

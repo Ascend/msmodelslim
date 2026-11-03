@@ -71,6 +71,52 @@ class TestInferSourceIr:
         result = infer_source_ir(mod, config)
         assert result.kind == IRKind.FLOAT
 
+    def test_infer_source_ir_return_mxfp4_for_uint8_pair_and_int8_e8m0(self):
+        packed = ModelFreeLinear(
+            full_name="layers.0.expert",
+            tensor_bindings={
+                "weight_packed": TensorRef("weight_packed", "p", "s0", "U8", (4, 16)),
+                "weight_scale": TensorRef("weight_scale", "s", "s0", "uint8", (4, 1)),
+            },
+        )
+        int8_e8m0 = ModelFreeLinear(
+            full_name="layers.0.ffn.experts.0.w1",
+            tensor_bindings={
+                "weight_packed": TensorRef("weight_packed", "p", "s0", "I8", (4, 16)),
+                "weight_scale": TensorRef("weight_scale", "s", "s0", "F8_E8M0", (4, 1)),
+            },
+        )
+        renamed_not_applied = ModelFreeLinear(
+            full_name="layers.0.ffn.experts.1.w1",
+            tensor_bindings={
+                "weight": TensorRef("weight", "w", "s0", "I8", (4, 16)),
+                "scale": TensorRef("scale", "s", "s0", "F8_E8M0", (4, 1)),
+            },
+        )
+        config = ConvertConfig(model_path="/m", save_path="/o")
+        assert infer_source_ir(packed, config).kind == IRKind.MXFP4_PACKED
+        assert infer_source_ir(int8_e8m0, config).kind == IRKind.MXFP4_PACKED
+        assert infer_source_ir(renamed_not_applied, config).kind == IRKind.FLOAT
+
+    def test_infer_source_ir_keep_int32_packed_as_int4_and_e4m3_as_fp8(self):
+        int4 = ModelFreeLinear(
+            full_name="layers.0.q_proj",
+            tensor_bindings={
+                "weight_packed": TensorRef("weight_packed", "p", "s0", "I32", (4, 8)),
+                "weight_scale": TensorRef("weight_scale", "s", "s0", "BF16", (4, 1)),
+            },
+        )
+        fp8 = ModelFreeLinear(
+            full_name="layers.0.attn.wq_a",
+            tensor_bindings={
+                "weight": TensorRef("weight", "w", "s0", "F8_E4M3", (32, 64)),
+                "scale": TensorRef("scale", "s", "s0", "F8_E8M0", (1, 2)),
+            },
+        )
+        config = ConvertConfig(model_path="/m", save_path="/o")
+        assert infer_source_ir(int4, config).kind == IRKind.INT4_PACKED
+        assert infer_source_ir(fp8, config).kind == IRKind.FP8_BLOCK
+
 
 class TestBindTensorsForModule:
     """测试 bind_tensors_for_module 函数"""

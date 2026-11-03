@@ -125,3 +125,20 @@ class TestIRResult:
         assert isinstance(mod, nn.Linear)
         assert mod.weight.shape == (2, 4)
         assert mod.weight.dtype == torch.bfloat16
+
+    def test_resolve_module_rebuild_w4a4_from_deploy_state_dict(self):
+        from msmodelslim.ir.w4a4_mx_dynamic import W4A4MXDynamicPerBlockFakeQuantLinear
+
+        scale = torch.zeros(8, 1, 1)
+        result = IRResult(
+            module_path="layers.0.q_proj",
+            final_ir=IRKind.W4A4_MXFP4,
+            state_dict={
+                "weight": torch.zeros(8, 32),
+                "weight_scale": scale,
+                "weight_offset": torch.zeros_like(scale),
+            },
+        )
+        mod = result.resolve_module()
+        assert isinstance(mod, W4A4MXDynamicPerBlockFakeQuantLinear)
+        assert mod.weight.shape == (8, 32)

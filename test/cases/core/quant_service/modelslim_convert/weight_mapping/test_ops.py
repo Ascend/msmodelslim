@@ -26,6 +26,7 @@ import pytest
 from msmodelslim.core.convert.catalog import TensorCatalog, TensorEntry
 from msmodelslim.core.convert.config import WeightMappingRule, WeightOpConfig
 from msmodelslim.core.quant_service.modelslim_convert.weight_mapping.ops import apply_preprocess_ops
+from msmodelslim.utils.exception import SchemaValidateError
 
 
 def _make_catalog(keys: list[str]) -> TensorCatalog:
@@ -91,4 +92,29 @@ class TestApplyPreprocessOps:
             ops=[WeightOpConfig(type="split_fused_gate_up", params={})],
         )
         with pytest.raises(ValueError, match="num_experts"):
+            apply_preprocess_ops(catalog, rule)
+
+    def test_apply_preprocess_ops_rename_drops_source_and_records_renamed_from(self):
+        catalog = _make_catalog(["layers.0.attn.wq_a.scale"])
+        rule = WeightMappingRule(
+            id="rename-scale",
+            source_patterns=[r"(?P<prefix>layers\.\d+\.attn\.wq_a)\.scale"],
+            target_patterns=[r"\g<prefix>.weight_scale_inv"],
+            ops=[WeightOpConfig(type="rename")],
+        )
+        apply_preprocess_ops(catalog, rule)
+        assert "layers.0.attn.wq_a.scale" not in list(catalog.keys())
+        entry = catalog.get("layers.0.attn.wq_a.weight_scale_inv")
+        assert entry is not None
+        assert entry.meta["renamed_from"] == "layers.0.attn.wq_a.scale"
+
+    def test_apply_preprocess_ops_rename_raises_when_target_exists(self):
+        catalog = _make_catalog(["layers.0.attn.wq_a.scale", "layers.0.attn.wq_a.weight_scale_inv"])
+        rule = WeightMappingRule(
+            id="rename-scale",
+            source_patterns=[r"(?P<prefix>layers\.\d+\.attn\.wq_a)\.scale"],
+            target_patterns=[r"\g<prefix>.weight_scale_inv"],
+            ops=[WeightOpConfig(type="rename")],
+        )
+        with pytest.raises(SchemaValidateError, match="already exists"):
             apply_preprocess_ops(catalog, rule)

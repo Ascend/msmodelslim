@@ -76,6 +76,28 @@ class TestModelFreeLinear:
         assert mod.lazy_initialized
         assert mod.weight.shape == (2, 2)
 
+    def test_lazy_init_loads_renamed_from_physical_key(self):
+        mod = ModelFreeLinear(
+            full_name="layers.0.attn.wq_a",
+            tensor_bindings={
+                "weight_scale_inv": TensorRef(
+                    "weight_scale_inv",
+                    "layers.0.attn.wq_a.weight_scale_inv",
+                    "s0",
+                    "F8_E8M0",
+                    (1, 2),
+                    meta={"renamed_from": "layers.0.attn.wq_a.scale"},
+                ),
+            },
+            source_ir=SourceIR(kind=IRKind.FP8_BLOCK),
+        )
+        reader = MagicMock()
+        reader.load_tensors.return_value = {"layers.0.attn.wq_a.scale": torch.ones(1, 2)}
+        mod.lazy_init(reader, device="cpu")
+        loaded = reader.load_tensors.call_args.args[0]
+        assert loaded["s0"] == ["layers.0.attn.wq_a.scale"]
+        assert mod.weight_scale_inv.shape == (1, 2)
+
 
 class TestCreateModelFreeModule:
     """测试 create_model_free_module 工厂函数"""

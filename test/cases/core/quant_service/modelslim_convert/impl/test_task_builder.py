@@ -21,6 +21,7 @@ See the Mulan PSL v2 for more details.
 msmodelslim.core.quant_service.modelslim_convert.impl.task_builder 模块的单元测试
 """
 
+import pytest
 from torch import nn
 
 from msmodelslim.core.convert.catalog import PreprocessResult, TensorCatalog, TensorEntry
@@ -30,6 +31,7 @@ from msmodelslim.core.convert.protocol import ConvertContext
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
 from msmodelslim.core.quant_service.modelslim_convert.impl.task_builder import DefaultIRTaskBuilder
 from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeLinear
+from msmodelslim.utils.exception import UnsupportedError
 
 
 class TestDefaultIRTaskBuilder:
@@ -69,7 +71,7 @@ class TestDefaultIRTaskBuilder:
         assert isinstance(tasks[0].route_constraints, RouteConstraints)
         assert tasks[0].route_constraints.explicit_route == [IRKind.FLOAT, IRKind.W8A8_MXFP8]
 
-    def test_build_set_fp8_to_float_auto_route_when_source_is_fp8_block(self):
+    def test_build_set_fp8_block_to_float_auto_route_when_source_is_fp8_block(self):
         root = nn.Module()
         linear = ModelFreeLinear(
             full_name="layers.0.q_proj",
@@ -104,3 +106,72 @@ class TestDefaultIRTaskBuilder:
 
         tasks = DefaultIRTaskBuilder().build(context, root, catalog)
         assert tasks[0].route_constraints.explicit_route == [IRKind.FP8_BLOCK, IRKind.FLOAT]
+
+
+def _fp8_tree(scale_dtype: str, scale_shape: tuple[int, int], *, layers: int = 1) -> nn.Module:
+    root = nn.Module()
+    container = nn.Module()
+    for index in range(layers):
+        name = f"layers.{index}.attn.wq_a"
+        linear = ModelFreeLinear(
+            full_name=name,
+            tensor_bindings={
+                "weight": TensorRef("weight", f"{name}.weight", "s0", "F8_E4M3", (32, 64)),
+                "weight_scale_inv": TensorRef(
+                    "weight_scale_inv",
+                    f"{name}.weight_scale_inv",
+                    "s0",
+                    scale_dtype,
+                    scale_shape,
+                ),
+            },
+            source_ir=SourceIR(kind=IRKind.FP8_BLOCK),
+        )
+        layer = nn.Module()
+        layer.add_module("attn", nn.Module())
+        layer.attn.add_module("wq_a", linear)
+        container.add_module(str(index), layer)
+    root.add_module("layers", container)
+    return root
+
+
+def _build(root: nn.Module, route):
+    config = ConvertConfig(
+        model_path="/m",
+        save_path="/o",
+        dst_format="ascendv1",
+        convert_rules=[ConvertRule(match="layers.*.attn.wq_a", target_ir=IRKind.W8A8_MXFP8, route=route)],
+    )
+    context = ConvertContext(config=config)
+    context.preprocess_result = PreprocessResult(catalog=TensorCatalog())
+    return DefaultIRTaskBuilder().build(context, root, TensorCatalog())
+
+
+class TestDirectMxfp8Route:
+    """E8M0 且块大小合法时 auto 走直转；显式三段即使可直转也保持三段。"""
+
+    def test_build_use_direct_route_when_e8m0_scale_divides_by_32(self):
+        for dtype in ("F8_E8M0", "float8_e8m0fnu"):
+            tasks = _build(_fp8_tree(dtype, (1, 2)), "auto")
+            assert tasks[0].route_constraints.explicit_route == [IRKind.FP8_BLOCK, IRKind.W8A8_MXFP8]
+
+    def test_build_keep_three_step_when_scale_is_float(self):
+        tasks = _build(_fp8_tree("F32", (1, 2)), "auto")
+        assert tasks[0].route_constraints.explicit_route == [
+            IRKind.FP8_BLOCK,
+            IRKind.FLOAT,
+            IRKind.W8A8_MXFP8,
+        ]
+
+    def test_build_raise_when_explicit_direct_route_is_illegal(self):
+        with pytest.raises(UnsupportedError, match="FP8_BLOCK -> W8A8_MXFP8"):
+            _build(_fp8_tree("F32", (1, 2)), [IRKind.FP8_BLOCK, IRKind.W8A8_MXFP8])
+
+    def test_build_keep_explicit_three_step_when_direct_is_legal(self):
+        root = _fp8_tree("F8_E8M0", (1, 2), layers=2)
+        tasks = _build(root, [IRKind.FP8_BLOCK, IRKind.FLOAT, IRKind.W8A8_MXFP8])
+        assert len(tasks) == 2
+        assert all(
+            task.route_constraints.explicit_route == [IRKind.FP8_BLOCK, IRKind.FLOAT, IRKind.W8A8_MXFP8]
+            for task in tasks
+        )

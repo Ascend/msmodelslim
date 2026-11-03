@@ -38,10 +38,11 @@ from msmodelslim.core.quant_service.modelslim_convert.impl.source_ir import bind
 from msmodelslim.core.quant_service.modelslim_convert.virtual_module import (
     ModelFreeModule,
     PassthroughModule,
+    checkpoint_key,
     create_model_free_module,
     set_submodule_by_path,
 )
-from msmodelslim.core.convert.catalog import TensorCatalog
+from msmodelslim.core.convert.catalog import TensorCatalog, TensorEntry
 from msmodelslim.core.convert.config import ConvertConfig, ModuleRule
 from msmodelslim.ir.kernels import WEIGHT_SCALE_INV_SUFFIX
 from msmodelslim.core.convert.protocol import ConvertContext, IVirtualModelTreeBuilder
@@ -59,9 +60,7 @@ def collect_bound_catalog_keys(tree: nn.Module) -> set[str]:
         if isinstance(mod, ModelFreeModule):
             for ref in mod.tensor_bindings.values():
                 handled.add(ref.key)
-                fused = (ref.meta or {}).get("fused_from")
-                if fused:
-                    handled.add(fused)
+                handled.add(checkpoint_key(ref))
     return handled
 
 
@@ -179,7 +178,7 @@ class VirtualModelTreeBuilder(IVirtualModelTreeBuilder):
                 if entry and entry.meta.get("fused_from"):
                     needed.add(entry.meta["fused_from"])
             with tqdm(total=1, desc="enrich catalog metadata", leave=False) as pbar:
-                reader.enrich_catalog(catalog, keys=needed)
+                _enrich_catalog(reader, catalog, needed)
                 pbar.update(1)
             logger.info("Enriched metadata for %d keys", len(needed))
 
@@ -222,6 +221,51 @@ def _install_rule_modules(
         )
         mod.source_ir = infer_source_ir(mod, context.config)
         set_submodule_by_path(root, module_path, mod)
+
+
+def _enrich_catalog(reader: CheckpointReader, catalog: TensorCatalog, keys: set[str]) -> None:
+    """Fill dtype/shape. Renamed logical keys are read from ``renamed_from``."""
+    temporary: list[str] = []
+    query: set[str] = set()
+    owners: dict[str, list[str]] = {}
+    for key in keys:
+        entry = catalog.get(key)
+        physical = (entry.meta or {}).get("renamed_from") if entry is not None else None
+        if not physical:
+            query.add(key)
+            continue
+        owners.setdefault(physical, []).append(key)
+        query.add(physical)
+        if catalog.get(physical) is None:
+            catalog.add(
+                TensorEntry(
+                    key=physical,
+                    shard=entry.shard,
+                    dtype=entry.dtype,
+                    shape=entry.shape,
+                ),
+            )
+            temporary.append(physical)
+    reader.enrich_catalog(catalog, keys=query)
+    for physical, logical_keys in owners.items():
+        source = catalog.get(physical)
+        if source is None:
+            continue
+        for logical in logical_keys:
+            logical_entry = catalog.get(logical)
+            if logical_entry is None:
+                continue
+            catalog.add(
+                TensorEntry(
+                    key=logical,
+                    shard=logical_entry.shard or source.shard,
+                    dtype=source.dtype,
+                    shape=source.shape,
+                    meta=dict(logical_entry.meta),
+                ),
+            )
+    for physical in temporary:
+        catalog.remove(physical)
 
 
 def _fill_ref(ref: TensorRef, catalog: TensorCatalog) -> TensorRef:
@@ -309,7 +353,7 @@ def _attach_preserve_all_catalog(
 
     reader = context.reader
     if isinstance(reader, CheckpointReader):
-        reader.enrich_catalog(catalog, keys=set(remaining))
+        _enrich_catalog(reader, catalog, set(remaining))
 
     groups: dict[str, dict[str, TensorRef]] = defaultdict(dict)
     for key in remaining:

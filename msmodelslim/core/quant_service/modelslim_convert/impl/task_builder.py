@@ -21,7 +21,8 @@ See the Mulan PSL v2 for more details.
 DefaultIRTaskBuilder（convert_design.md §9.2）。
 
 遍历虚拟树中 ``ModelFreeLinear``，按 ``convert_rules`` 生成 ``IRTask``。
-``inverse_weight_map`` 使用预处理阶段的 ``DependencyMap``；fused 逻辑 key 映射到 ``fused_from`` 物理 key。
+``inverse_weight_map`` 使用预处理阶段的 ``DependencyMap``。
+加载 key 经 ``checkpoint_key`` 取物理名：fused 用 ``fused_from``，rename 用 ``renamed_from``。
 """
 
 from __future__ import annotations
@@ -30,13 +31,16 @@ import fnmatch
 
 from torch import nn
 
-from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeLinear
+from msmodelslim.core.quant_service.modelslim_convert.impl.mxfp8_route import can_direct_mxfp8
+from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeLinear, checkpoint_key
 from msmodelslim.core.convert.auto_routes import resolve_auto_route
 from msmodelslim.core.convert.catalog import DependencyMap, TensorCatalog
 from msmodelslim.core.convert.config import ConvertRule
 from msmodelslim.core.convert.edges import RouteConstraints
 from msmodelslim.core.convert.protocol import ConvertContext, IRTaskBuilder
 from msmodelslim.core.convert.tasks import IRTask
+from msmodelslim.core.convert.types import IRKind
+from msmodelslim.utils.exception import UnsupportedError
 
 
 class DefaultIRTaskBuilder(IRTaskBuilder):
@@ -51,6 +55,9 @@ class DefaultIRTaskBuilder(IRTaskBuilder):
         if context.preprocess_result is None:
             for key, entry in catalog.items():
                 dep_map.add_owner(key, entry.shard)
+                renamed = (entry.meta or {}).get("renamed_from")
+                if renamed:
+                    dep_map.add_owner(renamed, entry.shard)
 
         for name, mod in tree.named_modules():
             if name == "" or not isinstance(mod, ModelFreeLinear):
@@ -61,19 +68,11 @@ class DefaultIRTaskBuilder(IRTaskBuilder):
             if mod.target_ir is None:
                 mod.target_ir = rule.target_ir
 
-            if rule.route == "auto":
-                route = resolve_auto_route(mod.source_ir.kind, rule.target_ir)
-            else:
-                # explicit_route 须以 source_ir 起、target_ir 止。
-                # 若 YAML 的 route 已显式包含起点（如 [FP8_BLOCK, FLOAT, W8A8_MXFP8]），
-                # 直接采用；否则补上 source_ir 作为起点，避免出现 FP8_BLOCK->FP8_BLOCK 自环边。
-                route = list(rule.route)
-                if not route or route[0] != mod.source_ir.kind:
-                    route = [mod.source_ir.kind, *route]
+            route = _select_convert_route(name, mod, rule)
             constraints = RouteConstraints(explicit_route=route)
 
-            # 加载计划使用物理 key（fused 源），lazy_init 再按 meta 切片
-            load_keys = [(ref.meta or {}).get("fused_from") or ref.key for ref in mod.tensor_bindings.values()]
+            # 加载计划使用物理 key（fused / renamed_from），lazy_init 再按 meta 切片
+            load_keys = [checkpoint_key(ref) for ref in mod.tensor_bindings.values()]
             inv_map = dep_map.inverse_load_map(load_keys)
 
             tasks.append(
@@ -87,6 +86,35 @@ class DefaultIRTaskBuilder(IRTaskBuilder):
                 ),
             )
         return tasks
+
+
+def _select_convert_route(module_name: str, module: ModelFreeLinear, rule: ConvertRule) -> list[IRKind]:
+    source = module.source_ir.kind
+    target = rule.target_ir
+    fp8_to_mxfp8 = source == IRKind.FP8_BLOCK and target == IRKind.W8A8_MXFP8
+    if rule.route == "auto":
+        return resolve_auto_route(source, target, direct_mxfp8=fp8_to_mxfp8 and can_direct_mxfp8(module))
+
+    route = normalize_explicit_route(source, list(rule.route))
+    if fp8_to_mxfp8 and _has_direct_mxfp8_edge(route) and not can_direct_mxfp8(module):
+        raise UnsupportedError(
+            f"{module_name}: explicit route FP8_BLOCK -> W8A8_MXFP8 requires E4M3 weight, "
+            "E8M0 weight_scale_inv, and a K-block that is a multiple of 32.",
+            action="Use route: auto to fall back to FP8_BLOCK -> FLOAT -> W8A8_MXFP8, "
+            "or fix the layer dtype and shape.",
+        )
+    return route
+
+
+def normalize_explicit_route(source: IRKind, route: list[IRKind]) -> list[IRKind]:
+    """显式 route 缺起点时补上 source_ir，避免 FP8_BLOCK -> FP8_BLOCK 自环。"""
+    if not route or route[0] != source:
+        return [source, *route]
+    return list(route)
+
+
+def _has_direct_mxfp8_edge(route: list[IRKind]) -> bool:
+    return any(route[i : i + 2] == [IRKind.FP8_BLOCK, IRKind.W8A8_MXFP8] for i in range(len(route) - 1))
 
 
 def _match_convert_rule(module_path: str, rules: list[ConvertRule]) -> ConvertRule | None:

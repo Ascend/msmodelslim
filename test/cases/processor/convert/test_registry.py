@@ -19,7 +19,9 @@ class TestRegisterConvertProcessors:
         returned = register_convert_processors(router)
 
         assert returned is router
-        assert [e.processor_name for e in router.resolve(IRKind.FP8_BLOCK, IRKind.FLOAT)] == ["DequantToFloatProcessor"]
+        assert [e.processor_name for e in router.resolve(IRKind.FP8_BLOCK, IRKind.FLOAT)] == [
+            "Fp8BlockToFloatProcessor"
+        ]
         assert [e.processor_name for e in router.resolve(IRKind.INT4_PACKED, IRKind.FLOAT)] == [
             "Int4PackedToFloatProcessor"
         ]

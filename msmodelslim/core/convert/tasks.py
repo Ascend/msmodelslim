@@ -168,6 +168,14 @@ class IRResult:
 
                 return W8A8MXDynamicPerBlockFakeQuantLinear.from_deploy_state_dict(state_dict)
             return _float_module_from_state_dict(state_dict)
+        if self.final_ir == IRKind.W4A4_MXFP4:
+            if is_mxfp8_deploy_state(state_dict):
+                from msmodelslim.ir.w4a4_mx_dynamic import (
+                    W4A4MXDynamicPerBlockFakeQuantLinear,
+                )
+
+                return W4A4MXDynamicPerBlockFakeQuantLinear.from_deploy_state_dict(state_dict)
+            return _float_module_from_state_dict(state_dict)
         raise ValueError(
             f"Cannot rebuild module for {self.module_path} with final_ir={self.final_ir!r} from state_dict"
         )

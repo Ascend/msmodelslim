@@ -38,7 +38,7 @@ def create_test_router_with_fp8_mxfp8_edges() -> IRRouter:
         TransformEdge(
             src_ir=IRKind.FP8_BLOCK,
             dst_ir=IRKind.FLOAT,
-            processor_name="DequantToFloatProcessor",
+            processor_name="Fp8BlockToFloatProcessor",
             loss_level=LossLevel.LOSSLESS,
         ),
     )
@@ -69,7 +69,7 @@ class TestIRRouter:
         router = create_test_router_with_fp8_mxfp8_edges()
         edges = router.resolve(IRKind.FP8_BLOCK, IRKind.W8A8_MXFP8)
         names = [e.processor_name for e in edges]
-        assert names == ["DequantToFloatProcessor", "MxFp8QuantProcessor"]  # 校验最短路径
+        assert names == ["Fp8BlockToFloatProcessor", "MxFp8QuantProcessor"]  # 校验最短路径
 
     def test_resolve_return_explicit_route_edges_when_constraints_given(self):
         router = create_test_router_with_fp8_mxfp8_edges()
@@ -86,12 +86,12 @@ class TestIRRouter:
     def test_get_processor_return_instance_when_registered(self):
         router = IRRouter()
         mock_proc = MagicMock()
-        mock_proc.name = "DequantToFloatProcessor"
+        mock_proc.name = "Fp8BlockToFloatProcessor"
         mock_proc.src_ir = IRKind.FP8_BLOCK
         mock_proc.dst_ir = IRKind.FLOAT
         mock_proc.requires_forward = False
         mock_proc.requires_calibration = False
         mock_proc.loss_level = "lossless"
         router.register_processor(mock_proc)
-        proc = router.get_processor("DequantToFloatProcessor")
-        assert proc.name == "DequantToFloatProcessor"  # 校验处理器检索
+        proc = router.get_processor("Fp8BlockToFloatProcessor")
+        assert proc.name == "Fp8BlockToFloatProcessor"  # 校验处理器检索

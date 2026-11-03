@@ -31,6 +31,7 @@ from msmodelslim.core.convert.protocol import ConvertContext
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
 from msmodelslim.core.quant_service.modelslim_convert.impl.virtual_tree import (
     VirtualModelTreeBuilder,
+    _resolve_bindings,
     collect_bound_catalog_keys,
 )
 from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeLinear, PassthroughModule
@@ -95,7 +96,7 @@ class TestVirtualModelTreeBuilder:
             TensorEntry(key="layers.0.q_proj.weight", shard="s0", dtype="float8_e4m3fn", shape=(4, 8)),
         )
         catalog.add(
-            TensorEntry(key="layers.0.q_proj.weight_scale_inv", shard="s0", dtype="bf16", shape=(4, 1)),
+            TensorEntry(key="layers.0.q_proj.weight_scale_inv", shard="s0", dtype="bf16", shape=(1, 2)),
         )
         config = ConvertConfig(
             model_path="/m",
@@ -204,3 +205,36 @@ class TestVirtualModelTreeBuilder:
         context.reader = MagicMock()
         tree = VirtualModelTreeBuilder().build(context, catalog)
         assert isinstance(tree.get_submodule("model.embed_tokens"), PassthroughModule)
+
+    def test_resolve_bindings_leave_scale_unbound(self):
+        rule = ModuleRule(match="layers.*.ffn.experts.*", tensor_map={"weight": "{module}.weight"})
+        path = "layers.0.ffn.experts.0.w1"
+
+        def bindings_for(weight_dtype: str):
+            catalog = TensorCatalog()
+            catalog.add(TensorEntry(key=f"{path}.weight", shard="s0", dtype=weight_dtype, shape=(4, 16)))
+            catalog.add(TensorEntry(key=f"{path}.scale", shard="s0", dtype="F8_E8M0", shape=(4, 1)))
+            return _resolve_bindings(path, rule, catalog, set(catalog.keys()))
+
+        assert "scale" not in bindings_for("I8")
+        assert "scale" not in bindings_for("F8_E4M3")
+        assert "scale" not in bindings_for("BF16")
+
+    def test_build_does_not_treat_weight_and_scale_as_mxfp4(self):
+        path = "layers.0.ffn.experts.0.w1"
+        catalog = TensorCatalog()
+        catalog.add(TensorEntry(key=f"{path}.weight", shard="s0", dtype="I8", shape=(4, 16)))
+        catalog.add(TensorEntry(key=f"{path}.scale", shard="s0", dtype="F8_E8M0", shape=(4, 1)))
+        config = ConvertConfig(
+            model_path="/m",
+            save_path="/o",
+            module_rules=[
+                ModuleRule(match="layers.*.ffn.experts.*", tensor_map={"weight": "{module}.weight"}),
+            ],
+        )
+        context = ConvertContext(config=config)
+        context.reader = MagicMock()
+        tree = VirtualModelTreeBuilder().build(context, catalog)
+        mod = tree.get_submodule(path)
+        assert isinstance(mod, ModelFreeLinear)
+        assert mod.source_ir.kind == IRKind.FLOAT

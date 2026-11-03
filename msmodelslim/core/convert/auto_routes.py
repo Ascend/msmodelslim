@@ -39,13 +39,17 @@ _BEST_ROUTES: dict[tuple[IRKind, IRKind], list[IRKind]] = {
         IRKind.W8A8_MXFP8,
     ],
     (IRKind.FLOAT, IRKind.W8A8_MXFP8): [IRKind.FLOAT, IRKind.W8A8_MXFP8],
+    (IRKind.MXFP4_PACKED, IRKind.FLOAT): [IRKind.MXFP4_PACKED, IRKind.FLOAT],
+    (IRKind.FLOAT, IRKind.W4A4_MXFP4): [IRKind.FLOAT, IRKind.W4A4_MXFP4],
 }
 
 
-def resolve_auto_route(src_ir: IRKind, dst_ir: IRKind) -> list[IRKind]:
+def resolve_auto_route(src_ir: IRKind, dst_ir: IRKind, *, direct_mxfp8: bool = False) -> list[IRKind]:
     """Look up the optimal route for (src_ir, dst_ir); raise if unsupported."""
     if src_ir == dst_ir:
         return [src_ir]
+    if direct_mxfp8 and src_ir == IRKind.FP8_BLOCK and dst_ir == IRKind.W8A8_MXFP8:
+        return [IRKind.FP8_BLOCK, IRKind.W8A8_MXFP8]
     route = _BEST_ROUTES.get((src_ir, dst_ir))
     if route is None:
         raise UnsupportedError(

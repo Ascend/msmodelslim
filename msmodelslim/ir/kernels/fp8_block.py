@@ -27,6 +27,8 @@ from __future__ import annotations
 
 import torch
 
+from msmodelslim.utils.exception import SchemaValidateError
+
 # Canonical suffix in HuggingFace / DeepSeek-style FP8 checkpoints.
 WEIGHT_SCALE_INV_SUFFIX = ".weight_scale_inv"
 
@@ -60,3 +62,55 @@ def weight_dequant(
     scale_expanded = scale_expanded[:m, :n]
     out = (weight * scale_expanded).to(torch.bfloat16)
     return out.to(dev) if fp8_on_npu else out
+
+
+def fp8_block_to_mx(
+    weight: torch.Tensor,
+    scale: torch.Tensor,
+    mx_block: int = 32,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Reinterpret an aligned E4M3 + E8M0 block as MXFP8.
+
+    The E4M3 payload is kept. The returned scale is the float32 unbiased shared
+    exponent with shape ``[N, K / mx_block, 1]``, the same dtype QAL uses for
+    ``2**shared_exp``. ``bn`` must be a multiple of ``mx_block`` so one MX group
+    never crosses two source blocks.
+    """
+    if weight.ndim != 2 or scale.ndim != 2:
+        raise SchemaValidateError(
+            f"fp8_block_to_mx expects 2D weight and scale, got {tuple(weight.shape)} and {tuple(scale.shape)}",
+        )
+    if scale.dtype != torch.float8_e8m0fnu:
+        raise SchemaValidateError(
+            f"fp8_block_to_mx scale must be float8_e8m0fnu, got {scale.dtype}",
+        )
+    rows, cols = weight.shape
+    s0, s1 = scale.shape
+    if s0 <= 0 or s1 <= 0 or rows % s0 != 0 or cols % s1 != 0:
+        raise SchemaValidateError(
+            f"FP8 weight {tuple(weight.shape)} is not divisible by scale {tuple(scale.shape)}",
+        )
+    bn = cols // s1
+    if bn % mx_block != 0:
+        raise SchemaValidateError(
+            f"FP8 K-block {bn} is not a multiple of MX block {mx_block}",
+        )
+    if cols % mx_block != 0:
+        raise SchemaValidateError(f"K={cols} is not a multiple of MX block {mx_block}")
+
+    scale_bits = scale.view(torch.uint8).to(torch.int32)
+    if bool((scale_bits == 0xFF).any().item()):
+        raise SchemaValidateError("E8M0 scale contains 0xFF, which is not a finite shared exponent")
+
+    bm = rows // s0
+    n_groups = cols // mx_block
+    row_index = torch.arange(rows, device=scale_bits.device) // bm
+    group_index = (torch.arange(n_groups, device=scale_bits.device) * mx_block) // bn
+    exponent = scale_bits[row_index[:, None], group_index[None, :]] - 127
+    exponent = exponent.unsqueeze(-1).to(torch.float32)
+
+    if str(weight.device).startswith("npu"):
+        weight = weight.to("cpu")
+        exponent = exponent.to("cpu")
+    return weight, exponent

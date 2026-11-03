@@ -42,6 +42,16 @@ class TestConvertConfig:
                 ],
             )
 
+    def test_convert_config_raise_error_when_w4a4_with_non_ascend_dst(self):
+        for dst_format in ("huggingface", "compressed_tensors"):
+            with pytest.raises(SchemaValidateError, match="W4A4_MXFP4 requires dst_format ascendv1"):
+                ConvertConfig(
+                    model_path="/m",
+                    save_path="/o",
+                    dst_format=dst_format,
+                    convert_rules=[ConvertRule(match="layers.*", target_ir=IRKind.W4A4_MXFP4)],
+                )
+
     def test_convert_config_pass_when_mxfp8_with_ascendv1_dst(self):
         cfg = ConvertConfig(
             model_path="/m",
