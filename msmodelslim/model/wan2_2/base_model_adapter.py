@@ -40,6 +40,7 @@ from tqdm import tqdm
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph import AdapterConfig, MappingConfig
+from msmodelslim.ir.quarot import OnlineRotationInfo
 from msmodelslim.model.base import BaseModelAdapter
 from msmodelslim.model.common.layer_wise_forward import (
     TransformersForwardBreak,
@@ -67,6 +68,25 @@ from .expert_sub_adapter import (
     Wan2_2HighNoiseSubAdapter,
     Wan2_2LowNoiseSubAdapter,
 )
+
+
+def _has_active_online_rotation_site(module: Optional[nn.Module]) -> bool:
+    if module is None:
+        return False
+    # The unrotated reference must use the planned RoPE position too.
+    if getattr(module, "_lossless_online_rotation_pending", None):
+        return True
+    if not isinstance(module, nn.Identity) or module.__class__ is not nn.Identity:
+        return True
+    if isinstance(getattr(module, "rotation_info", None), OnlineRotationInfo):
+        return True
+    for hook_group in ("_forward_pre_hooks", "_forward_hooks"):
+        if any(
+            isinstance(getattr(hook, "rotation_info", None), OnlineRotationInfo)
+            for hook in getattr(module, hook_group, {}).values()
+        ):
+            return True
+    return False
 
 
 @logger_setter()
@@ -862,6 +882,13 @@ class Wan2_2BaseModelAdapter(
             if module_type not in ["WanSelfAttention", "WanCrossAttention"]:
                 continue
 
+            # Preserve the projection precision: quantizing a size-128
+            # Hadamard matrix to BF16 breaks orthogonality for FP32 activations.
+            rotation_dtype = next(
+                (parameter.dtype for parameter in module.parameters() if parameter.is_floating_point()),
+                torch.bfloat16,
+            )
+
             # 配置 q_rot
             q_rot_path = f"{name}.q_rot" if name else "q_rot"
             configs[q_rot_path] = OnlineQuaRotInterface.RotationConfig(
@@ -870,7 +897,7 @@ class Wan2_2BaseModelAdapter(
                 rotation_mode=OnlineQuaRotInterface.QuaRotMode.HADAMARD,
                 block_size=-1,
                 seed=shared_seed,
-                dtype=torch.bfloat16,
+                dtype=rotation_dtype,
             )
 
             # 配置 k_rot（使用相同的种子，确保与 q_rot 使用相同的旋转矩阵）
@@ -881,7 +908,7 @@ class Wan2_2BaseModelAdapter(
                 rotation_mode=OnlineQuaRotInterface.QuaRotMode.HADAMARD,
                 block_size=-1,
                 seed=shared_seed,
-                dtype=torch.bfloat16,
+                dtype=rotation_dtype,
             )
 
         return configs
@@ -926,8 +953,8 @@ class Wan2_2BaseModelAdapter(
                     attention_module_path = base_module_path + '.attention'
                     try:
                         wan_attention_module = import_module(attention_module_path)
-                        attention = getattr(wan_attention_module, 'attention', None)
-                        if attention is None:
+                        attention_fn = getattr(wan_attention_module, 'attention', None)
+                        if attention_fn is None:
                             raise AttributeError(f"attention not found in {attention_module_path}")
                     except (ImportError, AttributeError) as e:
                         raise ImportError(f"Could not import attention from {attention_module_path}: {e}")
@@ -965,12 +992,18 @@ class Wan2_2BaseModelAdapter(
 
                 q, k, v = qkv_fn(x)
 
-                # ===== 应用在线旋转（在 FA3 量化之前）=====
+                # A paired head rotation is lossless across attention only after
+                # the position-dependent RoPE transform has been applied.
+                has_rotation_sites = any(
+                    _has_active_online_rotation_site(getattr(self, name, None)) for name in ('q_rot', 'k_rot')
+                )
+                if has_rotation_sites:
+                    q = rope_apply(q, grid_sizes, freqs)
+                    k = rope_apply(k, grid_sizes, freqs)
                 if hasattr(self, 'q_rot'):
                     q = self.q_rot(q)
                 if hasattr(self, 'k_rot'):
                     k = self.k_rot(k)
-                # ==========================================
 
                 # ===== 插入 FA3 占位 =====
                 if hasattr(self, 'fa3_q'):
@@ -983,8 +1016,8 @@ class Wan2_2BaseModelAdapter(
 
                 if use_method_attention:
                     x = self.attention(
-                        q=rope_apply(q, grid_sizes, freqs),
-                        k=rope_apply(k, grid_sizes, freqs),
+                        q=q if has_rotation_sites else rope_apply(q, grid_sizes, freqs),
+                        k=k if has_rotation_sites else rope_apply(k, grid_sizes, freqs),
                         v=v,
                         k_lens=seq_lens,
                         window_size=self.window_size,
@@ -994,9 +1027,9 @@ class Wan2_2BaseModelAdapter(
                         **kwargs,
                     )
                 else:
-                    x = attention(
-                        q=rope_apply(q, grid_sizes, freqs),
-                        k=rope_apply(k, grid_sizes, freqs),
+                    x = attention_fn(
+                        q=q if has_rotation_sites else rope_apply(q, grid_sizes, freqs),
+                        k=k if has_rotation_sites else rope_apply(k, grid_sizes, freqs),
                         v=v,
                         k_lens=seq_lens,
                         window_size=self.window_size,
@@ -1030,8 +1063,8 @@ class Wan2_2BaseModelAdapter(
                     attention_module_path = base_module_path + '.attention'
                     try:
                         wan_attention_module = import_module(attention_module_path)
-                        attention = getattr(wan_attention_module, 'attention', None)
-                        if attention is None:
+                        attention_fn = getattr(wan_attention_module, 'attention', None)
+                        if attention_fn is None:
                             raise AttributeError(f"attention not found in {attention_module_path}")
                     except (ImportError, AttributeError) as e:
                         raise ImportError(f"Could not import attention from {attention_module_path}: {e}")
@@ -1079,7 +1112,7 @@ class Wan2_2BaseModelAdapter(
                 if use_method_attention:
                     x = self.attention(q, k, v, k_lens=context_lens)
                 else:
-                    x = attention(q, k, v, k_lens=context_lens)
+                    x = attention_fn(q, k, v, k_lens=context_lens)
 
                 # output
                 x = x.flatten(2)

@@ -65,6 +65,39 @@ from ..interface_hub import (
 )
 
 
+def _forward_mtp_module(module: nn.Module, value: torch.Tensor) -> torch.Tensor:
+    """Run an offloaded MTP module on NPU when available, otherwise on the input device."""
+    npu = getattr(torch, "npu", None)
+    use_npu = value.device.type == "npu" or (npu is not None and npu.is_available())
+    if not use_npu:
+        return module(value)
+
+    module.to("npu")
+    try:
+        return module(value.to("npu"))
+    finally:
+        module.to("cpu")
+
+
+class _DeepSeekMTPForward(nn.Module):
+    """One real MTP request, exposing its embedding/projection and decoder modules."""
+
+    def __init__(self, decoder: nn.Module):
+        super().__init__()
+        for name, module in decoder.named_children():
+            self.add_module(name, module)
+        # Keep the decoder call itself while exposing its children under their production names.
+        object.__setattr__(self, "_decoder", decoder)
+
+    def forward(self, input_ids, previous_hidden_states, **kwargs):
+        input_embeds = _forward_mtp_module(self.embed_tokens, input_ids)
+        input_embeds = _forward_mtp_module(self.enorm, input_embeds)
+        hidden_states = _forward_mtp_module(self.hnorm, previous_hidden_states)
+        hidden_states = torch.cat([input_embeds, hidden_states], dim=-1)
+        hidden_states = _forward_mtp_module(self.eh_proj, hidden_states)
+        return self._decoder(hidden_states, **kwargs)
+
+
 @contextmanager
 def default_dtype(dtype):
     """自定义默认 dtype 上下文管理器"""
@@ -136,7 +169,68 @@ class DeepSeekV3ModelAdapter(
         return self._get_tokenized_data(dataset, device)
 
     def generate_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
-        return generated_decoder_layer_visit_func(model, transformer_blocks=self.generate_decoder_layer(model))
+        if bool(getattr(self, "_lossless_check_expose_global_requests", False)):
+            return self._generate_lossless_check_model_visit(model)
+        # The adapter's bound generator is exercised by the forward integration tests.
+        return generated_decoder_layer_visit_func(
+            model,
+            transformer_blocks=self.generate_decoder_layer(model),  # pylint: disable=not-callable
+        )
+
+    def _generate_lossless_check_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
+        yield ProcessRequest("model.embed_tokens", model.model.embed_tokens, (), {})
+        final_layer_name = f"model.layers.{self.config.num_hidden_layers - 1}"
+        for name, block in self.generate_decoder_layer(model):  # pylint: disable=not-callable
+            if name == final_layer_name:
+                self._ensure_lossless_mtp_head_norm_hook(model)
+                yield ProcessRequest("lm_head", model.lm_head, (), {})
+                block = self._get_lossless_mtp_forward(block)
+            yield ProcessRequest(name, block, (), {})
+
+    def _enable_lossless_check_global_requests(self):
+        name = "_lossless_check_expose_global_requests"
+        state_name = "_lossless_check_request_mode_state"
+        previous = (hasattr(self, name), getattr(self, name, False))
+        state = getattr(self, state_name, None)
+        if state is None:
+            state = {
+                "previous": previous,
+                "active": [],
+            }
+            setattr(self, state_name, state)
+        state["active"].append(previous)
+        setattr(self, name, True)
+        return previous
+
+    def _restore_lossless_check_global_requests(self, previous) -> None:
+        name = "_lossless_check_expose_global_requests"
+        state_name = "_lossless_check_request_mode_state"
+        state = getattr(self, state_name, None)
+        try:
+            self._clear_lossless_check_request_state()
+        finally:
+            restore_state = None
+            if state is None:
+                if isinstance(previous, tuple) and len(previous) == 2:
+                    restore_state = previous
+            else:
+                try:
+                    state["active"].remove(previous)
+                except ValueError:
+                    pass
+                else:
+                    if state["active"]:
+                        setattr(self, name, True)
+                    else:
+                        delattr(self, state_name)
+                        restore_state = state["previous"]
+
+            if restore_state is not None:
+                existed, value = restore_state
+                if existed:
+                    setattr(self, name, value)
+                elif hasattr(self, name):
+                    delattr(self, name)
 
     # pylint: disable=duplicate-code
     def generate_model_forward(
@@ -144,6 +238,7 @@ class DeepSeekV3ModelAdapter(
         model: nn.Module,
         inputs: Any,
     ) -> Generator[ProcessRequest, Any, None]:
+        expose_global_requests = bool(getattr(self, "_lossless_check_expose_global_requests", False))
         # 存储第一个transformer block的输入
         first_block_input: Optional[Tuple] = None
 
@@ -179,16 +274,127 @@ class DeepSeekV3ModelAdapter(
         # 循环处理每个transformer block
         current_inputs = first_block_input
 
+        if expose_global_requests:
+            input_ids = inputs["input_ids"] if isinstance(inputs, dict) else inputs[0]
+            embedding_output = yield ProcessRequest(
+                "model.embed_tokens",
+                model.model.embed_tokens,
+                (input_ids,),
+                {},
+            )
+            current_inputs = ((embedding_output,), first_block_input[1])
+
         if dist.is_initialized():
             dist.barrier()
 
-        for name, block in self.generate_decoder_layer(model):
+        for name, block in self.generate_decoder_layer(model):  # pylint: disable=not-callable
             args, kwargs = current_inputs
             if name == f'model.layers.{self.config.num_hidden_layers - 1}':
-                args, kwargs = self.mtp_preprocess(model, mtp_decoder=block, inputs=inputs, args=args, kwargs=kwargs)
-            outputs = yield ProcessRequest(name, block, args, kwargs)
+                if expose_global_requests:
+                    pre_hidden_states = args[0]
+                    self._ensure_lossless_mtp_head_norm_hook(model)
+                    logits = yield ProcessRequest(
+                        "lm_head",
+                        model.lm_head,
+                        (pre_hidden_states,),
+                        {},
+                    )
+                    logits = logits.float()
+                    input_ids = inputs["input_ids"] if isinstance(inputs, dict) else inputs[0]
+                    input_ids_mtp = remove_zero_and_shift(input_ids)
+                    input_ids_mtp[:, -1] = logits[:, -1, :].argmax(dim=1)
+                    position_ids = get_mtp_position_ids(input_ids_mtp.shape[-1], input_ids.device)
+                    attention_mask = inputs["attention_mask"] if isinstance(inputs, dict) else inputs[1]
+
+                    # The causal mask helper only needs the shape, dtype, and device of MTP embeddings.
+                    npu = getattr(torch, "npu", None)
+                    mtp_device = (
+                        torch.device("npu") if npu is not None and npu.is_available() else pre_hidden_states.device
+                    )
+                    embedding_weight = block.embed_tokens.weight
+                    mask_embeds = torch.empty(
+                        (*input_ids_mtp.shape, embedding_weight.shape[-1]),
+                        dtype=embedding_weight.dtype,
+                        device=mtp_device,
+                    )
+                    from transformers.modeling_attn_mask_utils import _prepare_4d_causal_attention_mask
+
+                    attention_mask_mtp = _prepare_4d_causal_attention_mask(
+                        attention_mask,
+                        input_ids.shape[:2],
+                        mask_embeds,
+                        0,
+                    )
+                    mtp_kwargs = dict(kwargs)
+                    mtp_kwargs.update(
+                        {
+                            "attention_mask": attention_mask_mtp,
+                            "position_ids": position_ids,
+                            "past_key_value": None,
+                            "output_attentions": False,
+                            "use_cache": False,
+                        }
+                    )
+                    mtp_forward = self._get_lossless_mtp_forward(block)
+                    outputs = yield ProcessRequest(
+                        name,
+                        mtp_forward,
+                        (input_ids_mtp, pre_hidden_states),
+                        mtp_kwargs,
+                    )
+                else:
+                    args, kwargs = self.mtp_preprocess(
+                        model,
+                        mtp_decoder=block,
+                        inputs=inputs,
+                        args=args,
+                        kwargs=kwargs,
+                    )
+                    outputs = yield ProcessRequest(name, block, args, kwargs)
+            else:
+                outputs = yield ProcessRequest(name, block, args, kwargs)
             hidden_states = outputs[0]
             current_inputs = ((hidden_states,), current_inputs[1])
+
+    def _ensure_lossless_mtp_head_norm_hook(self, model: nn.Module) -> None:
+        hooks = getattr(self, "_lossless_check_forward_hooks", None)
+        if hooks is None:
+            hooks = {}
+            setattr(self, "_lossless_check_forward_hooks", hooks)
+        key = id(model.lm_head)
+        if key in hooks:
+            return
+
+        def apply_model_norm(_module, args, kwargs):
+            if not args:
+                return args, kwargs
+            normalized = _forward_mtp_module(model.model.norm, args[0])
+            return (normalized, *args[1:]), kwargs
+
+        hooks[key] = model.lm_head.register_forward_pre_hook(
+            apply_model_norm,
+            with_kwargs=True,
+            prepend=True,
+        )
+
+    def _get_lossless_mtp_forward(self, decoder: nn.Module) -> nn.Module:
+        wrappers = getattr(self, "_lossless_check_mtp_forward_wrappers", None)
+        if wrappers is None:
+            wrappers = {}
+            setattr(self, "_lossless_check_mtp_forward_wrappers", wrappers)
+        key = id(decoder)
+        if key not in wrappers:
+            wrappers[key] = _DeepSeekMTPForward(decoder)
+        return wrappers[key]
+
+    def _clear_lossless_check_request_state(self) -> None:
+        for handle in getattr(self, "_lossless_check_forward_hooks", {}).values():
+            handle.remove()
+        if hasattr(self, "_lossless_check_forward_hooks"):
+            del self._lossless_check_forward_hooks
+        if hasattr(self, "_lossless_check_mtp_forward_wrappers"):
+            self._lossless_check_mtp_forward_wrappers.clear()
+            del self._lossless_check_mtp_forward_wrappers
 
     def mtp_preprocess(
         self,
@@ -201,10 +407,7 @@ class DeepSeekV3ModelAdapter(
         def wrap_device(module: nn.Module):
             # pylint: disable=duplicate-code
             def auto_module(arg):
-                module.to('npu')
-                result = module(arg.to('npu'))
-                module.to('cpu')
-                return result
+                return _forward_mtp_module(module, arg)
 
             return auto_module
 

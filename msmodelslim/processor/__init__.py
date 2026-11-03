@@ -49,6 +49,8 @@ __all__ = [
     "LoadProcessor",
     "GroupProcessorConfig",
     "GroupProcessor",
+    "LosslessCheckProcessorConfig",
+    "LosslessCheckProcessor",
     "DynamicCacheProcessorConfig",
     "DynamicCacheQuantProcessor",
     "FA3QuantProcessorConfig",
@@ -86,7 +88,11 @@ from .anti_outlier import (
     FlexAWQSSZProcessor,
 )
 from .base import AutoProcessorConfig
-from .container.group import GroupProcessorConfig, GroupProcessor
+from .container import (
+    GroupProcessorConfig,
+    GroupProcessor,
+)
+from .lossless import LosslessCheckProcessorConfig, LosslessCheckProcessor
 from .memory.load import LoadProcessorConfig, LoadProcessor
 from .quant.attention import DynamicCacheProcessorConfig, DynamicCacheQuantProcessor
 from .quant.autoround import AutoroundQuantProcessor
@@ -96,7 +102,10 @@ from .trainable_linear_quant import (
 )
 from .quant.fa3 import FA3QuantProcessorConfig, FA3QuantProcessor
 from .quant.linear import LinearProcessorConfig, LinearQuantProcessor
-from .quarot import QuaRotProcessor, QuaRotProcessorConfig
+from .quarot import (
+    QuaRotProcessor,
+    QuaRotProcessorConfig,
+)
 from .adapt_rotation import AdaptRotationProcessor, AdaptRotationProcessorConfig
 from .sparse.float_sparse import FloatSparseProcessorConfig, FloatSparseProcessor
 from .flat_quant import FlatQuantProcessorConfig, FlatQuantProcessor

@@ -18,3 +18,13 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
+__all__ = [
+    "GroupProcessor",
+    "GroupProcessorConfig",
+    "LosslessCheckProcessor",
+    "LosslessCheckProcessorConfig",
+]
+
+from .group import GroupProcessor, GroupProcessorConfig
+from ..lossless import LosslessCheckProcessor, LosslessCheckProcessorConfig

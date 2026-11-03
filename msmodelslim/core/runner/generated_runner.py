@@ -18,6 +18,7 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
+
 import gc
 from typing import List, Optional, Any, Generator
 
@@ -36,20 +37,19 @@ from msmodelslim.utils.cache import to_device
 from msmodelslim.utils.cache.memory import load_cached
 from msmodelslim.utils.exception import ToDoError, UnsupportedError, InvalidDatasetError, SecurityError
 from msmodelslim.utils.logging import get_logger
-from msmodelslim.utils.memory import get_device_allocated_memory, get_device_reserved_memory, \
-    format_memory_size
+from msmodelslim.utils.memory import get_device_allocated_memory, get_device_reserved_memory, format_memory_size
 
 KEY_DATA_LOADER = "data_loader"
 
 
 class GeneratedProcessUnit:
     def __init__(
-            self,
-            model: nn.Module,
-            processor: AutoSessionProcessor,
-            pipeline_interface: PipelineInterface,
-            calib_data: Optional[List[Any]],
-            data_recorder: Optional[DataUnit],
+        self,
+        model: nn.Module,
+        processor: AutoSessionProcessor,
+        pipeline_interface: PipelineInterface,
+        calib_data: Optional[List[Any]],
+        data_recorder: Optional[DataUnit],
     ):
         self.model = model
         self.processor = processor
@@ -76,10 +76,12 @@ class GeneratedProcessUnit:
             if self.calib_data is None:
                 raise InvalidDatasetError(f"Calib data is needed because {self.processor} is not data-free")
             dataloader = get_input_datas(self.pipeline_interface, self.calib_data)
-            self.generators = [self.pipeline_interface.generate_model_forward(self.model,
-                                                                              to_device(data, next(
-                                                                                  self.model.parameters()).device))
-                               for data in dataloader]
+            self.generators = [
+                self.pipeline_interface.generate_model_forward(
+                    self.model, to_device(data, next(self.model.parameters()).device)
+                )
+                for data in dataloader
+            ]
         else:
             self.generators = [self.pipeline_interface.generate_model_visit(self.model)]
 
@@ -96,12 +98,20 @@ class GeneratedProcessUnit:
         if not requests:
             raise SecurityError('requests cannot be empty')
 
-        batch_request = BatchProcessRequest(name=requests[0].name,
-                                            module=requests[0].module,
-                                            datas=[(request.args, request.kwargs,) for request in requests],
-                                            outputs=None)
+        batch_request = BatchProcessRequest(
+            name=requests[0].name,
+            module=requests[0].module,
+            datas=[
+                (
+                    request.args,
+                    request.kwargs,
+                )
+                for request in requests
+            ],
+            outputs=None,
+        )
 
-        get_logger().info(f"Run processor {self.processor} for \"{batch_request.name}\"")
+        get_logger().info('Run processor %s for "%s"', self.processor, batch_request.name)
 
         self.processor.preprocess(batch_request)
         self.processor.process(batch_request)
@@ -117,7 +127,7 @@ class GeneratedProcessUnit:
                 "After make progress for %s: allocated=%s, reserved=%s",
                 self.processor,
                 format_memory_size(get_device_allocated_memory()),
-                format_memory_size(get_device_reserved_memory())
+                format_memory_size(get_device_reserved_memory()),
             )
         elif hasattr(torch, 'cuda'):
             gc.collect()
@@ -126,24 +136,24 @@ class GeneratedProcessUnit:
                 "After make progress for %s: allocated=%s, reserved=%s",
                 self.processor,
                 format_memory_size(get_device_allocated_memory()),
-                format_memory_size(get_device_reserved_memory())
+                format_memory_size(get_device_reserved_memory()),
             )
 
         return True
 
 
 class GeneratedRunner(BaseRunner):
-
     def __init__(
-            self,
-            adapter: PipelineInterface,
+        self,
+        adapter: PipelineInterface,
     ):
         super().__init__()
         self.process_config_list: List[AutoProcessorConfig] = []
         self.adapter = adapter
 
-    def preprocess_processor(self, processor_list: List[AutoProcessorConfig], model: nn.Module,
-                             device: DeviceType = DeviceType.NPU):
+    def preprocess_processor(
+        self, processor_list: List[AutoProcessorConfig], model: nn.Module, device: DeviceType = DeviceType.NPU
+    ):
         pass
 
     def add_processor(self, processor_cfg: AutoProcessorConfig, append: bool = True):
@@ -152,13 +162,14 @@ class GeneratedRunner(BaseRunner):
         else:
             self.process_config_list.insert(0, processor_cfg)
 
-    def build_process_unit(self,
-                           config_list: List[AutoProcessorConfig],
-                           model: nn.Module,
-                           adapter: PipelineInterface,
-                           data_recorder: DataUnit,
-                           calib_data: Optional[List[Any]] = None,
-                           ) -> List[GeneratedProcessUnit]:
+    def build_process_unit(
+        self,
+        config_list: List[AutoProcessorConfig],
+        model: nn.Module,
+        adapter: PipelineInterface,
+        data_recorder: DataUnit,
+        calib_data: Optional[List[Any]] = None,
+    ) -> List[GeneratedProcessUnit]:
         processors: List[AutoSessionProcessor] = []
         for processor_config in config_list:
             processor = AutoSessionProcessor.from_config(model, processor_config, adapter)
@@ -168,18 +179,24 @@ class GeneratedRunner(BaseRunner):
 
         process_unit: List[GeneratedProcessUnit] = []
         for processor in processors:
-            process_unit.append(GeneratedProcessUnit(
-                model=model,
-                processor=processor,
-                pipeline_interface=self.adapter,
-                calib_data=calib_data,
-                data_recorder=data_recorder,
-            ))
+            process_unit.append(
+                GeneratedProcessUnit(
+                    model=model,
+                    processor=processor,
+                    pipeline_interface=self.adapter,
+                    calib_data=calib_data,
+                    data_recorder=data_recorder,
+                )
+            )
         return process_unit
 
-    def run(self, model: nn.Module = None, calib_data: Optional[List[Any]] = None,
-            device: DeviceType = DeviceType.NPU, device_indices: Optional[List[int]] = None):
-
+    def run(
+        self,
+        model: nn.Module = None,
+        calib_data: Optional[List[Any]] = None,
+        device: DeviceType = DeviceType.NPU,
+        device_indices: Optional[List[int]] = None,
+    ):
         # to avoid oom
         _ = get_input_datas(self.adapter, calib_data, device)
 
@@ -192,11 +209,9 @@ class GeneratedRunner(BaseRunner):
         self.preprocess_processor(processor_list, model, device)
 
         data_recorder = DataUnit(None, None)
-        process_unit = self.build_process_unit(processor_list,
-                                               model=model,
-                                               adapter=self.adapter,
-                                               calib_data=calib_data,
-                                               data_recorder=data_recorder)
+        process_unit = self.build_process_unit(
+            processor_list, model=model, adapter=self.adapter, calib_data=calib_data, data_recorder=data_recorder
+        )
 
         self.generated_schedule(process_unit, data_recorder)
 
@@ -213,32 +228,46 @@ class GeneratedRunner(BaseRunner):
             process_unit: 处理单元列表，每个元素包含一个处理器和可选的输入数据
         """
 
-        get_logger().info(f"Scheduler {len(process_unit)} unit: {process_unit}")
+        try:
+            get_logger().info("Scheduler %s unit: %s", len(process_unit), process_unit)
 
-        unit_list = [unit for unit in process_unit]
+            unit_list = list(process_unit)
 
-        _ = [unit.pre_run() for unit in process_unit]
-        _ = [unit.init_generators() for unit in process_unit]
+            _ = [unit.pre_run() for unit in process_unit]
+            _ = [unit.init_generators() for unit in process_unit]
 
-        while unit_list:
+            while unit_list:
+                remove_unit = []
 
-            remove_unit = []
+                for unit in unit_list:
+                    if not unit.make_progress():
+                        remove_unit.append(unit)
 
-            for unit in unit_list:
-                if not unit.make_progress():
-                    remove_unit.append(unit)
+                _ = [unit_list.remove(unit) for unit in remove_unit]
 
-            _ = [unit_list.remove(unit) for unit in remove_unit]
+                data_recorder.input = data_recorder.output
+                data_recorder.output = None
 
-            data_recorder.input = data_recorder.output
-            data_recorder.output = None
-
-        _ = [unit.post_run() for unit in process_unit]
+            _ = [unit.post_run() for unit in process_unit]
+        except BaseException:
+            for unit in process_unit:
+                cleanup = getattr(unit.processor, "abort_lossless_check", None)
+                if not callable(cleanup):
+                    continue
+                try:
+                    cleanup()
+                except BaseException as cleanup_error:
+                    get_logger().error(
+                        "Failed to abort processor %s after generated schedule error (%s)",
+                        unit.processor,
+                        type(cleanup_error).__name__,
+                    )
+            raise
 
 
 def enable_kv_cache(model: nn.Module, adapter: PipelineInterface, processors: List[AutoSessionProcessor]):
     need_kv_cache = any((processor.need_kv_cache() for processor in processors))
-    get_logger().info(f"KV cache requirement: {need_kv_cache}")
+    get_logger().info("KV cache requirement: %s", need_kv_cache)
     try:
         adapter.enable_kv_cache(model, need_kv_cache)
     except (AttributeError, NotImplementedError, ToDoError) as e:
@@ -248,19 +277,19 @@ def enable_kv_cache(model: nn.Module, adapter: PipelineInterface, processors: Li
             get_logger().warning("Failed to disable kv cache, this may cause more memory usage")
 
 
-def get_input_datas(model_adapter: PipelineInterface,
-                    calib_data: Optional[List[Any]] = None,
-                    dev_type: DeviceType = DeviceType.NPU,
-                    ):
-    return load_cached(key=KEY_DATA_LOADER,
-                       init_func=_get_input_datas,
-                       args=(model_adapter, calib_data, dev_type))
+def get_input_datas(
+    model_adapter: PipelineInterface,
+    calib_data: Optional[List[Any]] = None,
+    dev_type: DeviceType = DeviceType.NPU,
+):
+    return load_cached(key=KEY_DATA_LOADER, init_func=_get_input_datas, args=(model_adapter, calib_data, dev_type))
 
 
-def _get_input_datas(model_adapter: PipelineInterface,
-                     calib_data: Optional[List[Any]] = None,
-                     dev_type: DeviceType = DeviceType.NPU,
-                     ) -> DataLoader:
+def _get_input_datas(
+    model_adapter: PipelineInterface,
+    calib_data: Optional[List[Any]] = None,
+    dev_type: DeviceType = DeviceType.NPU,
+) -> DataLoader:
     get_logger().info('Start to handle dataset')
     input_datas = model_adapter.handle_dataset(calib_data, dev_type)
     data_loader = _create_dataloader(input_datas, 0, 1, 1)

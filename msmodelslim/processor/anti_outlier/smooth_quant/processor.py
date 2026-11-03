@@ -78,6 +78,35 @@ class SmoothQuantProcessor(BaseSmoothProcessor):
 
         # 初始化分布式辅助类（延迟到preprocess时创建，因为需要prefix信息）
         self.dist_helper = None
+        self._lossless_check_active = False
+        self._lossless_expected_targets = ()
+        self._lossless_alignments = {}
+
+    def prepare_lossless_check(self):
+        from .lossless import prepare_smooth_quant_lossless_check
+
+        return prepare_smooth_quant_lossless_check(self)
+
+    def create_lossless_check_context(self, request, reference_datas):
+        from .lossless import create_smooth_quant_lossless_context
+
+        return create_smooth_quant_lossless_context(self, request, reference_datas)
+
+    def align_lossless_check_io(self, context, target, reference, processed):
+        from .lossless import align_smooth_quant_lossless_io
+
+        return align_smooth_quant_lossless_io(self, context, target, reference, processed)
+
+    def post_run(self) -> None:
+        self.abort_lossless_check()
+        super().post_run()
+
+    def abort_lossless_check(self) -> None:
+        self._lossless_check_active = False
+        self._lossless_expected_targets = ()
+        self._lossless_alignments.clear()
+        self.stats_collector.clear_stats()
+        self._remove_all_hooks()
 
     def apply_smooth_algorithm(self, subgraph_obj: Any, linear_names: List[str]) -> None:
         subgraph_type = SubgraphRegistry.get_name(type(subgraph_obj))
@@ -100,6 +129,10 @@ class SmoothQuantProcessor(BaseSmoothProcessor):
             )
             return
 
+        if self._lossless_check_active:
+            from .lossless import freeze_smooth_quant_alignment
+
+            freeze_smooth_quant_alignment(self, subgraph_obj, linear_names, smooth_quant_cfg, smooth_context)
         smooth_quant(subgraph_obj, smooth_quant_cfg, smooth_context)
         get_logger().info("Successfully applied SmoothQuant to %s subgraph (shift=%s)", subgraph_type, shift_value)
 

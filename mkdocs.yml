@@ -26,7 +26,7 @@ nav:
   - 三、量化算法:
       - 算法总览: "zh/knowledge_base/quantization_algorithms/README.md"
       - 离群值抑制算法:
-          - QuaRot: "zh/knowledge_base/quantization_algorithms/quarot/quarot.md"
+          - QuaRot: "zh/knowledge_base/quantization_algorithms/quarot/usage_quarot.md"
           - Smooth Quant: "zh/knowledge_base/quantization_algorithms/smooth_quant/smooth_quant.md"
           - Iterative Smooth: "zh/knowledge_base/quantization_algorithms/iterative_smooth/iterative_smooth.md"
           - Flex Smooth Quant: "zh/knowledge_base/quantization_algorithms/flex_smooth_quant/flex_smooth_quant.md"

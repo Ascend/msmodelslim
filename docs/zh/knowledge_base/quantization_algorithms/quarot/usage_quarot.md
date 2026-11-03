@@ -100,13 +100,238 @@ QuaRot 的 `block_size/online/max_tp_size` 主要由部署形态决定。先按�
 
 **输出**：一份可进入后续量化流程的最终参数方案，并保留相对于推荐基线的调整记录。
 
-## 5. 术语
+## 5. 离线 QuaRot 无损自检
+
+QuaRot通过通用`lossless_check`容器完成处理前后自动自检。容器只包装一个子Processor，
+在同一Adapter请求内执行参考前向、一次正式QuaRot处理、处理后前向、Linear语义对齐和指标比较。
+比较完成后立即释放激活、Hook和请求级Context，不累积整网hidden states。
+
+自检不是data-free流程。输入必须经过数据集加载、Adapter的`handle_dataset`和
+`generate_model_forward`。文本、多模态字段、MTP预处理和模型入参均由对应Adapter构造，
+容器不会猜测或生成token、图像、音频或hidden states。
+
+若子Processor未完整实现无损自检协议，或Adapter未实现`generate_model_forward`，
+容器会输出WARNING日志并跳过比较，但仍按原流程执行子Processor，不阻断正常处理。
+这类结果的`passed`为`null`，不能作为自检通过证据。
+
+### 使用前确认
+
+开始配置前先确认三件事：
+
+1. 模型已有可用的QuaRot适配，能够返回离线旋转、Norm融合和bake mean计划。
+2. 模型Adapter实现了`generate_model_forward`，能够使用真实样本生成`BatchProcessRequest`。
+3. 准备了能触发待检查Linear的代表性数据。MoE、多模态或条件路由模型需要覆盖相应路由或模态。
+
+容器没有模型名称白名单，但这不等于所有模型无需适配即可运行。缺少前两项时，容器只会WARNING
+并继续原Processor，结果为`passed: null`，不能作为自检通过证据。
+
+### 最小可用配置
+
+离线QuaRot使用`quarot`子Processor，且必须配置`online: False`。不要在同一流程中再配置
+第二个`quarot`，否则模型权重会被重复处理。
+
+```yaml
+spec:
+  dataset: test.json
+  process:
+    - type: "lossless_check"
+      include:
+        - "model.layers.0.self_attn.{q,k,v,o}_proj"
+      exclude: []
+      metrics:
+        - "numerical_equivalence"
+      configs:
+        - type: "quarot"
+          online: False
+          block_size: -1
+          export_extra_info: True
+```
+
+`dataset`沿用快速量化的标准数据集配置。建议先使用1至2条能触发目标结构的代表性样本；
+条件专家模型和多模态模型应补充覆盖必验路由或模态的样本。样本未触发的理论结构会记录为
+未观察目标，不会被错误计为通过。
+
+### 容器配置
+
+| 字段名 | 类型 | 说明 | 默认值 |
+| --- | --- | --- | --- |
+| type | `string` | 外层固定为`lossless_check` | `"lossless_check"` |
+| configs | `array[object]` | 恰好一个子Processor；禁止嵌套容器 | 无 |
+| include | `array[string]` | 要检查的完整结构名；支持`*`、`?`和brace语法 | `["*"]` |
+| exclude | `array[string]` | 从include结果中排除的结构，优先级高于include | `[]` |
+| metrics | `array[string\|object]` | 必填且非空；按顺序执行的已安装指标 | 无 |
+
+不需要额外参数的指标可以直接填写名称。内置推荐指标使用以下简写即可：
+
+```yaml
+metrics:
+  - "numerical_equivalence"
+```
+
+需要参数的第三方指标使用对象写法：
+
+| 字段名 | 类型 | 说明 | 默认值 |
+| --- | --- | --- | --- |
+| name | `string` | 已安装的指标名 | 无 |
+| 其他字段 | 由指标插件定义 | 例如阈值、比较方向或专用选项 | 由指标插件定义 |
+
+内置`numerical_equivalence`会根据Tensor dtype与数值尺度推导容差，同时记录逐元素接近性
+和分布误差。它是开箱即用的推荐项，不是强制项；不接受手工阈值覆盖，也不会被自动加入配置。
+用户可以只选择已安装的第三方指标，也可以把多个指标组合使用。
+
+所有配置指标都是判定项，任一失败都会立即终止。没有`default_metric_policy`或`gating`
+开关；省略`metrics`、配置空列表、未知名称或重复名称都会在前向前报配置错误。
+
+`cosine_similarity`只用于说明第三方指标可以采用的名称和形态，生产代码没有内置该指标。
+只有先安装了提供`msmodelslim.lossless_metric.plugins`入口点的第三方插件包，下面的配置才可使用：
+
+```yaml
+spec:
+  dataset: test.json
+  process:
+    - type: "lossless_check"
+      include:
+        - "model.layers.0.self_attn.*_proj"
+      metrics:
+        - name: "cosine_similarity"
+          threshold: 0.9999
+      configs:
+        - type: "quarot"
+          online: False
+          block_size: -1
+```
+
+### 接入第三方指标
+
+第三方指标是一个普通Python包。接入方需要提供配置类、指标实现和入口函数；容器、QuaRot和
+模型Adapter都不需要修改。以下示例实现余弦相似度指标：
+
+```python
+from typing import Literal
+
+import torch
+import torch.nn.functional as F
+from pydantic import Field
+
+from msmodelslim.processor.lossless.metrics import (
+    BaseLosslessMetric,
+    LosslessMetricConfig,
+    MetricResult,
+    MetricViolation,
+)
+
+
+class CosineSimilarityMetricConfig(LosslessMetricConfig):
+    name: Literal["cosine_similarity"] = "cosine_similarity"
+    threshold: float = Field(ge=-1.0, le=1.0)
+
+
+class CosineSimilarityMetric(BaseLosslessMetric):
+    def evaluate(self, reference, processed, context):
+        reference = reference.float().reshape(-1)
+        processed = processed.float().reshape(-1)
+        if reference.numel() == 0:
+            value = 1.0
+        else:
+            value = F.cosine_similarity(
+                reference.unsqueeze(0),
+                processed.unsqueeze(0),
+                dim=1,
+                eps=1e-12,
+            ).item()
+        passed = value >= self.config.threshold
+        violations = () if passed else (
+            MetricViolation(
+                name=self.name,
+                value=value,
+                threshold=self.config.threshold,
+                comparison=">=",
+            ),
+        )
+        return MetricResult(
+            name=self.name,
+            passed=passed,
+            value=value,
+            threshold=self.config.threshold,
+            violations=violations,
+        )
+
+
+def get_plugin():
+    return CosineSimilarityMetricConfig, CosineSimilarityMetric
+```
+
+在插件包的`pyproject.toml`中声明入口点：
+
+```toml
+[project.entry-points."msmodelslim.lossless_metric.plugins"]
+cosine_similarity = "my_lossless_metrics.cosine:get_plugin"
+```
+
+安装该包后，前面的`cosine_similarity` YAML配置即可使用。`name`必须与入口点名称和配置类
+的Literal值一致；阈值范围由插件配置类校验；`evaluate`不得修改输入Tensor或模型，并且必须
+返回`MetricResult`。返回结果的`name`必须与当前指标名一致，`passed`必须是`bool`，
+`observations`必须是字典且不能覆盖容器保留字段，`violations`必须是由`MetricViolation`
+组成的元组。未知插件、错误组件类型、缺失阈值和非法阈值会在模型执行前报错；运行时返回
+合同不合法则按`metric_execution_error`立即终止。
+
+### 检查范围与判定
+
+容器在Adapter已有请求范围内捕获目标结构的input和output，并按真实调用顺序逐次比较。
+同一结构被多次调用时，每次调用使用独立的`invocation`编号。离线QuaRot右旋恢复处理后
+input坐标，左旋恢复处理后output坐标；同一目标存在多条旋转命令时按严格逆序恢复。
+Norm融合、bake mean、split旋转和全局旋转也会对齐到共同语义空间。
+
+`include/exclude`只限制Linear比较范围，不改变子Processor的处理范围。未命中的表达式会统一告警；
+范围内理论目标不存在时报告`structure_not_found`。模型中存在但Adapter请求未暴露，
+或两次前向均未执行的结构写入`skipped_targets`。结构只在一次前向执行时，
+以`invocation_count_mismatch`立即失败。
+
+容器保证两次前向可比：比较期间临时使用评估态，处理后前向前回放Python、CPU及
+已初始化加速器的随机状态，退出时逐模块恢复训练状态。内部前向使用`no_grad`；
+成功后随机状态等价于只执行一次正式处理后前向，异常时恢复到请求开始前状态。
+
+指标按YAML顺序执行，常规通过时输出INFO日志。检测到首个指标或结构异常后先写入结果，
+再输出ERROR日志并抛出异常，不继续执行后续指标和结构。日志与结果会标明`processor`、`decoder`、`structure`、
+`structure_type`、`side`、`invocation`、`path`、`reason`、`metric_name`、
+`metric_value`和`threshold`。指标失败时使用四条连续ERROR记录，依次给出结论、失败位置、
+`failed_metrics`和`key_metrics`。其中`failed_metrics`逐项标明未达标子指标的实测值、
+期望比较关系和阈值，`key_metrics`保留本次判定的其他关键观测值。常见`reason`包括：
+
+- `metric_threshold_exceeded`：指标超过阈值。
+- `structure_not_found`：理论目标无法在模型中解析。
+- `invocation_count_mismatch`或`invocation_order_mismatch`：处理前后调用轨迹不一致。
+- `shape_mismatch`、`dtype_mismatch`或`device_mismatch`：Tensor基础属性变化。
+- `non_finite_value`：出现NaN或Inf。
+- `alignment_error`：子Processor无法恢复到共同语义空间。
+- `protocol_contract_invalid`：Processor三方法或Plan/Context返回数据不符合约定。
+
+运行结果写入Context的`lossless_check.state.result`。结果只保存可序列化摘要，
+不保存Tensor、Module、Hook或请求级Context。完整通过时`passed: true`；能力不足或目标未完整覆盖时
+`passed: null`并给出`skip_reason`；指标或结构异常时`passed: false`并记录首个异常。
+
+自检实际启用时，不支持分布式执行，也不支持需要KV Cache的子Processor。若因能力不足跳过自检，
+容器只代理子Processor原有行为。
+
+### 从配置到复验
+
+1. 先用1至2条代表性样本和较小`include`范围运行，确认日志中出现目标Linear的INFO记录。
+2. 查看结果中的`checked_targets`、`skipped_targets`、`missing_targets`、`unmatched_include`和
+   `unmatched_exclude`，只有真正执行指标且无异常时才是`passed: true`。
+3. 若为`passed: null`，根据`skip_reason`补Adapter前向能力或能触发目标的样本，不要把它当作通过。
+4. 若为`passed: false`，从首条ERROR中的processor、decoder、structure、side和metric定位问题。
+5. 修复旋转计划或模型适配后，从干净权重重新运行。异常终止不会事务式回滚已经修改的模型。
+
+当前自检只支持离线QuaRot、单子Processor、非分布式、无需KV Cache的场景，并只验收实际执行的
+Linear输入输出。在线QuaRot和request最终输出比较不在本轮范围内。
+
+## 6. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
 | QuaRot 旋转量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[QuaRot 旋转量化算法 量化术语百科词条](./term_quarot.md)》 |
 
-## 6. 接口文档列表
+## 7. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |

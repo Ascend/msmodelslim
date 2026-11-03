@@ -23,6 +23,7 @@ import json
 import os
 import tempfile
 import unittest
+from importlib import import_module
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -395,7 +396,10 @@ class TestDeepSeekV3ModelAdapter(unittest.TestCase):
 
             with (
                 patch('msmodelslim.model.deepseek_v3.model_adapter.remove_zero_and_shift') as mock_remove,
-                patch('transformers.modeling_attn_mask_utils._prepare_4d_causal_attention_mask') as mock_prepare,
+                patch.object(
+                    import_module('transformers.modeling_attn_mask_utils'),
+                    '_prepare_4d_causal_attention_mask',
+                ) as mock_prepare,
             ):
                 mock_remove.return_value = torch.randint(0, 1000, (1, 10))
                 mock_prepare.return_value = torch.ones(1, 1, 10, 10)
@@ -934,7 +938,7 @@ class TestDeepSeekV3ModelAdapter(unittest.TestCase):
             ):
                 mock_load_decoder.side_effect = mock_load_decoder_func
 
-                layers = list(adapter.generate_decoder_layer(model))
+                layers = list(adapter.generate_decoder_layer(model))  # pylint: disable=not-callable
 
                 # 验证返回了正确数量的层
                 self.assertEqual(len(layers), 3)

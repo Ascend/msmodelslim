@@ -19,7 +19,6 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-
 __all__ = [
     'QuaRotProcessor',
     'QuaRotProcessorConfig',

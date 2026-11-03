@@ -19,6 +19,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
+import operator
 from typing import List, Literal, Dict
 
 import torch
@@ -29,12 +30,25 @@ import msmodelslim.ir as qir
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.ir.qal.qregistry import QABCRegistry
 from msmodelslim.processor.base import AutoProcessorConfig, AutoSessionProcessor
+from msmodelslim.processor.lossless.protocol import LosslessCheckPlan
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.exception import UnsupportedError
 from msmodelslim.utils.logging import get_logger
 from .laos_online import LAOSOnlineRotationProcessor
-from .quarot_interface import QuaRotInterface, RotSide, get_rotate_command
-from ..common.quarot_utils import fuse_ln_linear, rotate_linear, is_power_of_two, bake_mean_into_linear, rotate_weight
+from .quarot_interface import QuaRotInterface, RotSide, RotateCommand, get_rotate_command
+from ..common.quarot_utils import (
+    fuse_ln_linear,
+    rotate_linear,
+    is_power_of_two,
+    bake_mean_into_linear,
+    rotate_weight,
+)
+
+
+def _request_target_matches(target: str, prefix: str) -> bool:
+    if not prefix:
+        return True
+    return target == prefix.rstrip(".") or target.startswith(prefix)
 
 
 class QuaRotProcessorConfig(AutoProcessorConfig):
@@ -56,7 +70,7 @@ class QuaRotProcessorConfig(AutoProcessorConfig):
         default=True, description="是否导出 `optional.quarot.global_rotation` 旋转信息，用于下游部署。"
     )
 
-    @field_validator('max_tp_size')
+    @field_validator("max_tp_size")
     @classmethod
     def validate_max_tp_size(cls, v):
         """校验 max_tp_size：必须大于等于1且为2的幂"""
@@ -64,7 +78,7 @@ class QuaRotProcessorConfig(AutoProcessorConfig):
             raise SchemaValidateError(f"max_tp_size must be a positive power of 2 or equal to 1, got {v}")
         return v
 
-    @field_validator('block_size')
+    @field_validator("block_size")
     @classmethod
     def validate_block_size(cls, v):
         """校验 block_size：取值范围为-1或2的非负整数次幂"""
@@ -77,7 +91,13 @@ class QuaRotProcessorConfig(AutoProcessorConfig):
 
 @QABCRegistry.register(dispatch_key=QuaRotProcessorConfig, abc_class=AutoSessionProcessor)
 class QuaRotProcessor(AutoSessionProcessor):
-    def __init__(self, model: nn.Module, config: QuaRotProcessorConfig, adapter: QuaRotInterface, **kwargs) -> None:
+    def __init__(
+        self,
+        model: nn.Module,
+        config: QuaRotProcessorConfig,
+        adapter: QuaRotInterface,
+        **kwargs,
+    ) -> None:
         super().__init__(model)
         self.config = config
         self.model = model
@@ -85,10 +105,29 @@ class QuaRotProcessor(AutoSessionProcessor):
         self.fused_map = {}
         self.bake_names = []
         self.rotate_commands = []
+        self.rotate_pairs = []
+        self._plan_ready = False
+        self._pre_run_fused_map = {}
+        self._pre_run_bake_names = []
+        self._pre_run_pairs = []
+        self._lossless_pre_run_fused_map = {}
+        self._lossless_pre_run_bake_names = []
+        self._lossless_fused_map = {}
+        self._lossless_bake_names = []
+        self._lossless_pre_run_commands = []
+        self._lossless_rotate_commands = []
+        self._lossless_global_rotation = None
+        self._lossless_check_active = False
+        self._lossless_adapter_request_state = None
+        self._deferred_pre_run_fused_map = {}
+        self._deferred_pre_run_bake_names = []
+        self._deferred_pre_run_commands = []
+        self._deferred_pre_run_export_commands = []
+        self._lossless_export_hook_injected = False
         if not isinstance(adapter, QuaRotInterface):
             raise UnsupportedError(
-                f'{adapter.__class__.__name__} does not support QuaRot',
-                action='Please provide a valid model adapter which implements QuaRotInterface',
+                f"{adapter.__class__.__name__} does not support QuaRot",
+                action="Please provide a valid model adapter which implements QuaRotInterface",
             )
         if self.config.online:
             self.online_processor = LAOSOnlineRotationProcessor(model, config, adapter)
@@ -99,22 +138,89 @@ class QuaRotProcessor(AutoSessionProcessor):
     def is_data_free(self) -> bool:
         return True
 
+    def prepare_lossless_check(self) -> LosslessCheckPlan:
+        if self.config.online:
+            raise UnsupportedError(
+                "Lossless check only supports offline QuaRot",
+                action="Please set online to False in the nested QuaRot config",
+            )
+        self._prepare_plan()
+        if self._lossless_adapter_request_state is None:
+            enable_global_requests = getattr(self.adapter, "_enable_lossless_check_global_requests", None)
+            if callable(enable_global_requests):
+                self._lossless_adapter_request_state = enable_global_requests()
+        self._lossless_check_active = True
+        self._deferred_pre_run_fused_map = _copy_mapping(self._pre_run_fused_map)
+        self._deferred_pre_run_bake_names = list(self._pre_run_bake_names)
+        self._deferred_pre_run_commands = [
+            _clone_rotate_command(command) for command in get_rotate_command(self._pre_run_pairs)
+        ]
+        self._deferred_pre_run_export_commands = [
+            _clone_rotate_command(command) for command in self._deferred_pre_run_commands
+        ]
+        self._lossless_export_hook_injected = False
+        expected_targets = _collect_operation_targets(
+            self._lossless_pre_run_fused_map,
+            self._lossless_pre_run_bake_names,
+            self._lossless_pre_run_commands,
+        )
+        expected_targets.update(
+            _collect_operation_targets(
+                self._lossless_fused_map,
+                self._lossless_bake_names,
+                self._lossless_rotate_commands,
+            )
+        )
+        return LosslessCheckPlan(expected_targets=tuple(sorted(expected_targets)))
+
+    def create_lossless_check_context(self, request: BatchProcessRequest, reference_datas):
+        from .quarot_lossless import create_quarot_lossless_check_context
+
+        if not self._plan_ready:
+            raise UnsupportedError("QuaRot lossless-check plan is not prepared")
+        return create_quarot_lossless_check_context(self, request, reference_datas)
+
+    def align_lossless_check_io(self, context, target, reference, processed):
+        from .quarot_lossless import align_quarot_lossless_check_io
+
+        return align_quarot_lossless_check_io(context, target, reference, processed)
+
     def pre_run(self) -> None:
-        pre_run_fused_ln, self.fused_map = self.adapter.get_ln_fuse_map()
-        pre_run_bake_names, self.bake_names = self.adapter.get_bake_names()
-        pre_run_pairs, self.rotate_pairs = self.adapter.get_rotate_map(block_size=self.config.block_size)  # pylint: disable=attribute-defined-outside-init
-
-        self._record_debug_info(pre_run_pairs, self.rotate_pairs)
-        pre_run_commands = get_rotate_command(pre_run_pairs)
-        self._fuse_norm(pre_run_fused_ln)
-        self._bake_mean(pre_run_bake_names)
+        self._prepare_plan()
+        self._record_debug_info(self._pre_run_pairs, self.rotate_pairs)
+        if self._lossless_check_active:
+            return
+        pre_run_commands = get_rotate_command(self._pre_run_pairs)
+        self._fuse_norm(self._pre_run_fused_map)
+        self._bake_mean(self._pre_run_bake_names)
         self._rotate(pre_run_commands)
-        self.rotate_commands = get_rotate_command(self.rotate_pairs)
-
         self._inject_global_rotation_export_hook(pre_run_commands)
 
         if self.config.online:
             self.online_processor.pre_run()
+
+    def _prepare_plan(self) -> None:
+        if self._plan_ready:
+            return
+        self._pre_run_fused_map, fused_map = self.adapter.get_ln_fuse_map()
+        self._pre_run_bake_names, bake_names = self.adapter.get_bake_names()
+        self._pre_run_pairs, self.rotate_pairs = self.adapter.get_rotate_map(block_size=self.config.block_size)
+        self.fused_map = _copy_mapping(fused_map)
+        self.bake_names = list(bake_names)
+        self.rotate_commands = get_rotate_command(self.rotate_pairs)
+        self._lossless_pre_run_fused_map = _copy_mapping(self._pre_run_fused_map)
+        self._lossless_pre_run_bake_names = list(self._pre_run_bake_names)
+        self._lossless_fused_map = _copy_mapping(fused_map)
+        self._lossless_bake_names = list(bake_names)
+        self._lossless_pre_run_commands = [
+            _clone_rotate_command(command) for command in get_rotate_command(self._pre_run_pairs)
+        ]
+        self._lossless_rotate_commands = [_clone_rotate_command(command) for command in self.rotate_commands]
+        for command in get_rotate_command(self._pre_run_pairs):
+            if command.side == RotSide.RIGHT:
+                self._lossless_global_rotation = _clone_rotation(command.rot)
+                break
+        self._plan_ready = True
 
     def _inject_global_rotation_export_hook(self, pre_run_commands: List) -> None:
         """向首个旋转目标模块注入 QuaRotExtraInfoHookIR，用于导出 optional.quarot.global_rotation。
@@ -141,7 +247,7 @@ class QuaRotProcessor(AutoSessionProcessor):
         ctx = get_current_context()
 
         if ctx is not None and ctx.is_enable_debug():
-            ns = ctx["quarot_rotate_matrices"]  # pylint: disable=unsubscriptable-object
+            ns = operator.getitem(ctx, "quarot_rotate_matrices")
 
             for pre_run in pre_run_pairs:
                 self._record_rotate_pair_mapping(pre_run, ns)
@@ -163,6 +269,21 @@ class QuaRotProcessor(AutoSessionProcessor):
                     ns.debug[key] = rot_tensor.cpu().detach()
 
     def preprocess(self, request: BatchProcessRequest) -> None:
+        if self._lossless_check_active:
+            return
+        self._process_request(request)
+        if self.config.online:
+            self.online_processor.preprocess(request)
+
+    def process(self, request: BatchProcessRequest) -> None:
+        if not self._lossless_check_active:
+            super().process(request)
+            return
+        self._apply_deferred_pre_run()
+        self._process_request(request)
+        request.outputs = None
+
+    def _process_request(self, request: BatchProcessRequest) -> None:
         prefix = request.name
         prefix = f"{prefix}." if prefix != "" else ""
         fused_map = self._filter_fused_map(prefix)
@@ -171,18 +292,55 @@ class QuaRotProcessor(AutoSessionProcessor):
         self._fuse_norm(fused_map)
         self._bake_mean(bake_names)
         self._rotate(rotate_commands)
-        if self.config.online:
-            self.online_processor.preprocess(request)
 
     def post_run(self) -> None:
-        self._fuse_norm(self.fused_map)
-        self.fused_map = {}
-        self._bake_mean(self.bake_names)
-        self.bake_names = []
-        self._rotate(self.rotate_commands)
-        self.rotate_commands = []
-        if self.config.online:
-            self.online_processor.post_run()
+        try:
+            if self._lossless_check_active:
+                self._apply_deferred_pre_run()
+            self._fuse_norm(self.fused_map)
+            self.fused_map = {}
+            self._bake_mean(self.bake_names)
+            self.bake_names = []
+            self._rotate(self.rotate_commands)
+            self.rotate_commands = []
+            if self.config.online:
+                self.online_processor.post_run()
+        finally:
+            self.abort_lossless_check()
+
+    def abort_lossless_check(self) -> None:
+        """Discard deferred self-check work and restore adapter-only request state."""
+        if not self._lossless_check_active and self._lossless_adapter_request_state is None:
+            return
+        try:
+            if self._lossless_adapter_request_state is not None:
+                restore_global_requests = getattr(self.adapter, "_restore_lossless_check_global_requests", None)
+                if callable(restore_global_requests):
+                    restore_global_requests(self._lossless_adapter_request_state)
+        finally:
+            self._lossless_adapter_request_state = None
+            self._lossless_check_active = False
+            self._deferred_pre_run_fused_map = {}
+            self._deferred_pre_run_bake_names = []
+            self._deferred_pre_run_commands = []
+            self._deferred_pre_run_export_commands = []
+            self._lossless_export_hook_injected = False
+            self.fused_map = {}
+            self.bake_names = []
+            self.rotate_commands = []
+
+    def _apply_deferred_pre_run(self) -> None:
+        if not self._lossless_check_active:
+            return
+        self._fuse_norm(self._deferred_pre_run_fused_map)
+        self._deferred_pre_run_fused_map = {}
+        self._bake_mean(self._deferred_pre_run_bake_names)
+        self._deferred_pre_run_bake_names = []
+        self._rotate(self._deferred_pre_run_commands)
+        self._deferred_pre_run_commands = []
+        if not self._lossless_export_hook_injected:
+            self._inject_global_rotation_export_hook(self._deferred_pre_run_export_commands)
+            self._lossless_export_hook_injected = True
 
     def _filter_fused_map(self, prefix: str) -> Dict[str, str]:
         res = {}
@@ -190,10 +348,10 @@ class QuaRotProcessor(AutoSessionProcessor):
             select = False
             if isinstance(value, list):
                 for v in value:
-                    if v.startswith(prefix):
+                    if _request_target_matches(v, prefix):
                         select = True
             else:
-                if value.startswith(prefix):
+                if _request_target_matches(value, prefix):
                     select = True
             if select:
                 res[key] = value
@@ -201,13 +359,13 @@ class QuaRotProcessor(AutoSessionProcessor):
         return res
 
     def _filter_bake_names(self, prefix: str):
-        res = [name for name in self.bake_names if name.startswith(prefix)]
+        res = [name for name in self.bake_names if _request_target_matches(name, prefix)]
         for name in res:
             self.bake_names.remove(name)
         return res
 
     def _filter_commands(self, prefix: str):
-        res = [command for command in self.rotate_commands if command.target.startswith(prefix)]
+        res = [command for command in self.rotate_commands if _request_target_matches(command.target, prefix)]
         for command in res:
             self.rotate_commands.remove(command)
         return res
@@ -232,7 +390,8 @@ class QuaRotProcessor(AutoSessionProcessor):
                 fuse_ln_linear(layernorms, linears)
             except UnsupportedError as e:
                 raise UnsupportedError(
-                    "fuse layer norm and linear error!", action=f"Please check the {key} and {value} size!"
+                    "fuse layer norm and linear error!",
+                    action=f"Please check the {key} and {value} size!",
                 ) from e
             get_logger().debug("successfully fuse layer norm and linear: %s and %s", key, value)
 
@@ -240,7 +399,7 @@ class QuaRotProcessor(AutoSessionProcessor):
         for name in bake_names:
             get_logger().debug("start to bake mean into linear: %s", name)
             mod = self.model.get_submodule(name)
-            if isinstance(mod, torch.nn.Linear):
+            if isinstance(mod, nn.Linear):
                 bake_mean_into_linear(mod)
                 get_logger().debug("successfully bake mean into linear: %s", name)
             else:
@@ -256,8 +415,8 @@ class QuaRotProcessor(AutoSessionProcessor):
                 mod = self.model.get_submodule(command.target)
                 rotate_linear(mod, command.rot, command.side == RotSide.RIGHT)
             except AttributeError:
-                path_list = command.target.split('.')
-                mod = self.model.get_submodule('.'.join(path_list[:-1]))
+                path_list = command.target.split(".")
+                mod = self.model.get_submodule(".".join(path_list[:-1]))
                 weight = getattr(mod, path_list[-1])
                 rotate_weight(weight, command.rot, command.side == RotSide.RIGHT)
             except UnsupportedError as e:
@@ -267,3 +426,44 @@ class QuaRotProcessor(AutoSessionProcessor):
                                     to the rotate matrix size: {command.rot.shape[0]}!",
                 ) from e
             get_logger().debug("%s rotate linear success: %s", command.side.value, command.target)
+
+
+def _copy_mapping(mapping):
+    copied = {}
+    for key, value in mapping.items():
+        if isinstance(value, list):
+            copied[key] = list(value)
+        elif isinstance(value, tuple):
+            copied[key] = tuple(value)
+        else:
+            copied[key] = value
+    return copied
+
+
+def _clone_rotate_command(command):
+    return RotateCommand(
+        target=command.target,
+        rot=_clone_rotation(command.rot),
+        side=command.side,
+    )
+
+
+def _clone_rotation(rotation):
+    if isinstance(rotation, torch.Tensor):
+        return rotation.detach().clone()
+    if isinstance(rotation, list):
+        return [_clone_rotation(item) for item in rotation]
+    if isinstance(rotation, tuple):
+        return tuple(_clone_rotation(item) for item in rotation)
+    return rotation
+
+
+def _collect_operation_targets(fused_map, bake_names, commands):
+    targets = set(bake_names)
+    targets.update(command.target for command in commands)
+    for value in fused_map.values():
+        if isinstance(value, (list, tuple)):
+            targets.update(value)
+        else:
+            targets.add(value)
+    return targets

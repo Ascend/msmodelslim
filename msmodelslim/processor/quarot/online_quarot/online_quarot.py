@@ -28,12 +28,18 @@ import msmodelslim.ir as qir
 from msmodelslim.ir.qal.qregistry import QABCRegistry
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.processor.base import AutoProcessorConfig, AutoSessionProcessor
+from msmodelslim.processor.lossless.protocol import LosslessCheckPlan, LosslessCheckTarget, StructureIORecord
 from msmodelslim.utils.validation.pydantic import validate_str_length
 from msmodelslim.utils.config_map import ConfigSet
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.ir.quarot import RotationType
 from .online_quarot_interface import OnlineQuaRotInterface, RotationConfig
+from .online_quarot_lossless import (
+    align_lossless_check_io as align_online_quarot_lossless_check_io,
+    create_lossless_check_context as create_online_quarot_lossless_check_context,
+    rotation_is_applied,
+)
 from ..common.quarot_utils import create_rot, is_power_of_two, rotate_linear
 
 
@@ -151,6 +157,10 @@ class OnlineQuaRotProcessor(AutoSessionProcessor):
 
         # 存储旋转信息
         self.rotation_infos: Dict[str, qir.OnlineRotationInfo] = {}
+        self._lossless_rotation_infos: Optional[Dict[str, qir.OnlineRotationInfo]] = None
+        self._lossless_applied_targets = set()
+        self._lossless_reference_modules = []
+        self._lossless_reference_token = object()
 
         # 初始化旋转策略映射
         self._rotation_strategies = self._get_rotation_strategies()
@@ -161,51 +171,110 @@ class OnlineQuaRotProcessor(AutoSessionProcessor):
     def is_data_free(self) -> bool:
         return True
 
+    def prepare_lossless_check(self) -> LosslessCheckPlan:
+        """Freeze the configured rotations before the model is changed."""
+
+        self.abort_lossless_check()
+        frozen_infos = {}
+        for module_name, rot_config in self.rotation_configs.items():
+            if self._should_apply_rotation(module_name):
+                frozen_infos[module_name] = self._clone_rotation_info(
+                    self._create_rotation_info(module_name, rot_config)
+                )
+        self._lossless_rotation_infos = frozen_infos
+        self._lossless_applied_targets.clear()
+        for name in frozen_infos:
+            try:
+                module = self.model.get_submodule(name)
+            except AttributeError:
+                continue
+            if module.__class__ is not nn.Identity:
+                continue
+            pending = getattr(module, "_lossless_online_rotation_pending", None)
+            if pending is None:
+                pending = set()
+                setattr(module, "_lossless_online_rotation_pending", pending)
+            pending.add(self._lossless_reference_token)
+            self._lossless_reference_modules.append(module)
+        return LosslessCheckPlan(expected_targets=tuple(sorted(frozen_infos)))
+
+    def create_lossless_check_context(self, request: BatchProcessRequest, reference_datas):
+        return create_online_quarot_lossless_check_context(self, request, reference_datas)
+
+    def align_lossless_check_io(
+        self,
+        context,
+        target: LosslessCheckTarget,
+        reference: StructureIORecord,
+        processed: StructureIORecord,
+    ):
+        return align_online_quarot_lossless_check_io(context, target, reference, processed)
+
+    def abort_lossless_check(self) -> None:
+        """Release frozen check-only expectations after success or failure."""
+
+        for module in self._lossless_reference_modules:
+            pending = getattr(module, "_lossless_online_rotation_pending", None)
+            if pending is not None:
+                pending.discard(self._lossless_reference_token)
+                if not pending:
+                    delattr(module, "_lossless_online_rotation_pending")
+        self._lossless_reference_modules.clear()
+        self._lossless_rotation_infos = None
+        self._lossless_applied_targets.clear()
+
     def pre_run(self) -> None:
         """预处理阶段：初始化旋转矩阵"""
         get_logger().info("Initializing online rotation matrices")
 
-        # 为每个配置生成或验证旋转矩阵
-        for module_name, rot_config in self.rotation_configs.items():
-            if not self._should_apply_rotation(module_name):
-                continue
-
-            # 获取或生成旋转矩阵
-            if rot_config.rotation_matrix is not None:
-                # 用户提供的旋转矩阵
-                rotation_matrix = rot_config.rotation_matrix
-            else:
-                # 自动生成旋转矩阵
-                if rot_config.rotation_mode is None:
-                    raise UnsupportedError(
-                        f"Rotation matrix for {module_name} is not provided and "
-                        "rotation_mode is not specified in RotationConfig",
-                        action="Please provide rotation_matrix or specify rotation_mode in RotationConfig",
-                    )
-
-                rotation_matrix = create_rot(
-                    mode=rot_config.rotation_mode,
-                    size=rot_config.rotation_size,
-                    block_size=rot_config.block_size if rot_config.block_size != -1 else self.config.block_size,
-                    rot_step=rot_config.rot_step,
-                    eye_step=rot_config.eye_step,
-                    seed=rot_config.seed,
-                    dtype=rot_config.dtype,
-                )
-
-            # 将字符串类型的 rotation_type 转换为 RotationType 枚举
-            rotation_type_enum = RotationType(rot_config.rotation_type)
-
-            # 创建旋转信息对象
-            rotation_info = qir.OnlineRotationInfo(
-                rotation_matrix=rotation_matrix,
-                rotation_type=rotation_type_enum,
-                layer_name=module_name,
-                rotation_side=rot_config.rotation_side,
-            )
-            self.rotation_infos[module_name] = rotation_info
+        if self._lossless_rotation_infos is not None:
+            self.rotation_infos = {
+                module_name: self._clone_rotation_info(rotation_info)
+                for module_name, rotation_info in self._lossless_rotation_infos.items()
+            }
+        else:
+            self.rotation_infos = {
+                module_name: self._create_rotation_info(module_name, rot_config)
+                for module_name, rot_config in self.rotation_configs.items()
+                if self._should_apply_rotation(module_name)
+            }
 
         get_logger().info("Initialized %d rotation configurations", len(self.rotation_infos))
+
+    def _create_rotation_info(self, module_name: str, rot_config: RotationConfig) -> qir.OnlineRotationInfo:
+        if rot_config.rotation_matrix is not None:
+            rotation_matrix = rot_config.rotation_matrix
+        else:
+            if rot_config.rotation_mode is None:
+                raise UnsupportedError(
+                    f"Rotation matrix for {module_name} is not provided and "
+                    "rotation_mode is not specified in RotationConfig",
+                    action="Please provide rotation_matrix or specify rotation_mode in RotationConfig",
+                )
+            rotation_matrix = create_rot(
+                mode=rot_config.rotation_mode,
+                size=rot_config.rotation_size,
+                block_size=rot_config.block_size if rot_config.block_size != -1 else self.config.block_size,
+                rot_step=rot_config.rot_step,
+                eye_step=rot_config.eye_step,
+                seed=rot_config.seed,
+                dtype=rot_config.dtype,
+            )
+        return qir.OnlineRotationInfo(
+            rotation_matrix=rotation_matrix,
+            rotation_type=RotationType(rot_config.rotation_type),
+            layer_name=module_name,
+            rotation_side=rot_config.rotation_side,
+        )
+
+    @staticmethod
+    def _clone_rotation_info(rotation_info: qir.OnlineRotationInfo) -> qir.OnlineRotationInfo:
+        return qir.OnlineRotationInfo(
+            rotation_matrix=rotation_info.rotation_matrix.detach().clone(),
+            rotation_type=rotation_info.rotation_type,
+            layer_name=rotation_info.layer_name,
+            rotation_side=rotation_info.rotation_side,
+        )
 
     def preprocess(self, request: BatchProcessRequest) -> None:
         """为每个层应用旋转"""
@@ -224,15 +293,34 @@ class OnlineQuaRotProcessor(AutoSessionProcessor):
         for relative_name, (full_module_name, rot_config) in filtered_configs.items():
             if not self._should_apply_rotation(full_module_name):
                 continue
+            if self._lossless_rotation_infos is not None:
+                if full_module_name in self._lossless_applied_targets:
+                    continue
+                try:
+                    target_module = request.module.get_submodule(relative_name) if relative_name else request.module
+                except AttributeError:
+                    target_module = None
+                if target_module is not None and rotation_is_applied(
+                    target_module,
+                    full_module_name,
+                    self.rotation_infos[full_module_name],
+                ):
+                    self._lossless_applied_targets.add(full_module_name)
+                    continue
             # 获取旋转信息
             rotation_info = self.rotation_infos[full_module_name]
             # 根据旋转类型应用旋转（模块获取逻辑移到各个策略函数中）
             self._apply_rotation(relative_name, full_module_name, rotation_info, request)
+            if self._lossless_rotation_infos is not None:
+                self._lossless_applied_targets.add(full_module_name)
 
     def post_run(self) -> None:
         """后处理阶段：转换 HookIR 为 WrapperIR"""
-        _convert_hookir_to_wrapper(self.model)
-        get_logger().info("Converted all HookIR to WrapperIR")
+        try:
+            _convert_hookir_to_wrapper(self.model)
+            get_logger().info("Converted all HookIR to WrapperIR")
+        finally:
+            self.abort_lossless_check()
 
     def _should_apply_rotation(self, module_name: str) -> bool:
         """
