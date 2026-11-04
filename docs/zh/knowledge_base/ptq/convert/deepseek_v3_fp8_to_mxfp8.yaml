@@ -5,7 +5,7 @@
 #
 # DeepSeek-V3 权重结构（依 model.safetensors.index.json 校准）：
 #   - 前缀 model.layers.*，共 61 层
-#   - 前 first_k_dense_replace（默认 1）层为 Dense FFN：mlp.{gate,up,down}_proj
+#   - 前 first_k_dense_replace（默认 3）层为 Dense FFN：mlp.{gate,up,down}_proj
 #   - 其余层为 MoE FFN：
 #       mlp.gate_proj（路由门控）
 #       mlp.shared_experts.{up,down}_proj（共享专家，默认 1 个）

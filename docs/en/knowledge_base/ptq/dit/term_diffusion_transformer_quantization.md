@@ -29,7 +29,7 @@ Unlike the autoregressive or single-pass forward of LLMs/VLMs, the quantization 
 
 - **Timestep-Aware Calibration**: the dynamic range and magnitude distribution of activations differ strongly and non-stationarily between the early (high-noise) and late (low-noise) stages of denoising. Quantization calibration must uniformly sample the hidden-layer activations of different timesteps across the complete floating-point denoising trajectory to avoid global Scale distortion.
 - **Decoupled independent statistics for multiple experts**: for diffusion architectures that use staged experts, the weight and activation distributions of different experts differ markedly, so the calibration activation distribution must be built and the quantization parameters solved independently for each expert.
-- **High-throughput low-precision floating point preferred**: because denoising iterations exhibit an obvious error accumulation effect, industry practice favours wide-dynamic-range floating-point formats such as MXFP8 and FP8 (with micro-block block scaling), which greatly accelerate dense GEMM computation while tightly controlling the perceptual degradation of images/videos.
+- **High-throughput low-precision floating point preferred**: because denoising iterations exhibit an obvious error accumulation effect, industry practice favours wide-dynamic-range floating-point formats such as MXFP8 and FP8 (with micro-block scaling), which greatly accelerate dense GEMM computation while tightly controlling the perceptual degradation of images/videos.
 
 ---
 

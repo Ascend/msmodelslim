@@ -4,7 +4,7 @@
 
 The original `llm_ptq` module primarily supports the quantization and compression of foundation models based on the Transformers framework. This module provides a quantization adapter for ModelLink models, which enables direct quantization of the MindSpeed-LLM model.
 
-## Preparations
+## 2. Preparations
 
 - This feature is supported only on the following products.
     - Atlas training products
@@ -23,13 +23,13 @@ pip3 install tqdm==4.66.1
 
 - Install the MindSpeed-LLM library. For details, see [MindSpeed LLM Installation](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/en/pytorch/training/install_guide.md).
 
-## Function
+## 3. Function
 
-## Constraints
+## 4. Constraints
 
 Currently, the model adapter is verified to support only w8a8 quantization, alongside the m3 and m5 algorithms of the outlier suppression module. Quantization execution is supported only on the NPU. CPU-based quantization is not supported.
 
-## Quantization Procedure (Using LLaMA2-7B Legacy as an Example)
+## 5. Quantization Procedure (Using LLaMA2-7B Legacy as an Example)
 
 1\. Obtain the open-source weights and convert them into a model supported by MindSpeed-LLM. You can use the MindSpeed-LLM [weight conversion script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/convert_ckpt_v2.py). A conversion script usage tutorial is available [here](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/en/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md).
 

@@ -1,0 +1,66 @@
+# -*- coding: UTF-8 -*-
+
+# Weight conversion configuration: DeepSeek-V3 / DeepSeek-V3.1 (same structure and parameters): FP8 block → W8A8_MXFP8
+# Based on qwen3_8b_fp8_to_mxfp8.yaml, with the match rules adjusted for the DeepSeek-V3 structure (MLA + MoE).
+#
+# DeepSeek-V3 weight structure (verified against model.safetensors.index.json):
+#   - Prefixed with model.layers.*; 61 layers in total
+#   - The first first_k_dense_replace layers (3 by default) are Dense FFN layers: mlp.{gate,up,down}_proj
+#   - The remaining layers are MoE FFN layers:
+#       mlp.gate_proj (routing gate)
+#       mlp.shared_experts.{up,down}_proj (shared experts, 1 by default)
+#       mlp.experts.{0..255}.{up,down}_proj (routed experts, 256 by default)
+#   - MLA attention: self_attn.{q_a,q_b,kv_a_proj_with_mqa,kv_b,o}_proj
+#   - Every linear layer carries a .weight_scale_inv (a hallmark of FP8 block)
+#   - Non-linear weights such as embed_tokens / norm are automatically preserved as-is and written to disk
+# Routing note: with route: auto, the tool automatically chains the shortest conversion path: FP8_BLOCK -> FLOAT -> W8A8_MXFP8
+# Multi-NPU: pass --device npu --device_id 0 1 ... on the CLI; max_group_size can be set to roughly "number of expert tasks per layer divided by the number of devices" (about 96 for 8 devices).
+apiversion: modelslim_convert
+
+spec:
+  linears:
+    # MLA attention projections (5)
+    - match:
+        - "model.layers.*.self_attn.q_a_proj"
+        - "model.layers.*.self_attn.q_b_proj"
+        - "model.layers.*.self_attn.kv_a_proj_with_mqa"
+        - "model.layers.*.self_attn.kv_b_proj"
+        - "model.layers.*.self_attn.o_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+    # Routing gate
+    - match:
+        - "model.layers.*.mlp.gate_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+    # Dense FFN (the first first_k_dense_replace layers)
+    - match:
+        - "model.layers.*.mlp.up_proj"
+        - "model.layers.*.mlp.down_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+    # MoE FFN: shared experts
+    - match:
+        - "model.layers.*.mlp.shared_experts.up_proj"
+        - "model.layers.*.mlp.shared_experts.down_proj"
+        - "model.layers.*.mlp.shared_experts.gate_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+    # MoE FFN: routed experts (256 per layer)
+    - match:
+        - "model.layers.*.mlp.experts.*.up_proj"
+        - "model.layers.*.mlp.experts.*.down_proj"
+        - "model.layers.*.mlp.experts.*.gate_proj"
+      target: W8A8_MXFP8
+      route: auto
+
+  save:
+    - type: ascend_v1
+      part_file_size: 4
+
+  parallel:
+    cpu_workers: 8

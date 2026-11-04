@@ -8,7 +8,7 @@
 
 The documents in this directory are divided into **business process guides** and **tool usage guides**; consult them as needed.
 
-### Business Process Guides
+### 1.1 Business Process Guides
 
 | Function Module | Description | Applicable Scenario |
 |---------|------|---------|
@@ -17,7 +17,7 @@ The documents in this directory are divided into **business process guides** and
 | [Mainstream Model Quantization Deployment](#23-mainstream-model-quantization-deployment) | End-to-end guidance: obtain quantized weights, deploy the inference service, evaluate accuracy, and perform online monitoring | Scenarios where quantized weights have been obtained and need to be deployed in production |
 | [Quantization Inference Accuracy Anomaly Locating](#24-quantization-inference-accuracy-anomaly-locating) | Locate the source of abnormal output by "understanding the input/output format -> logprobs confirmation -> control experiment -> layer-by-layer activation comparison" | More bad cases, abnormal output, or inability to align with the floating-point output after quantization |
 
-### Tool Usage Guides
+### 1.2 Tool Usage Guides
 
 | Function Module | Description | Applicable Scenario |
 |---------|------|---------|

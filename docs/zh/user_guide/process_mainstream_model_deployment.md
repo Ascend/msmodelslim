@@ -77,7 +77,7 @@ flowchart LR
 2. **拉起推理框架服务**：使用目标推理框架拉起推理服务，加载量化权重并对外提供推理接口。各框架的部署方式参见官方文档：
    - 《[vLLM-Ascend 文档](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/quick_start.html)》
    - 《[SGLang 文档](https://docs.sglang.io/docs/get-started/quickstart)》
-   - 《[MindIE Motor 官方文档](https://mindie-motor.readthedocs.io/zh-cn/latest/user_guide/quick_start/#镜像准备)》
+   - 《[MindIE Motor 官方文档](https://www.hiascend.com/document/detail/zh/mindie/320/quickstart/docs/zh/user_guide/quick_start.md#镜像准备 )》
 3. **健康检查**：确认服务日志显示部署成功。
 4. **预热请求验证**：发送一条预热请求验证服务可响应。首次请求可能较慢或返回乱码，属正常现象，需预热后丢弃结果。
 
