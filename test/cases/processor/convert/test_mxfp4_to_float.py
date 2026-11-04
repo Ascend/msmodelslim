@@ -11,7 +11,7 @@ from msmodelslim.core.convert.config import ConvertConfig
 from msmodelslim.core.convert.protocol import ConvertContext
 from msmodelslim.core.convert.types import IRKind, LossLevel, SourceIR, TensorRef
 from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeLinear
-from msmodelslim.processor.convert.mxfp4_to_float import Mxfp4PackedToFloatProcessor
+from msmodelslim.processor.convert.mxfp4_to_float import MxFp4PackedToFloatProcessor
 from msmodelslim.utils.exception import SchemaValidateError
 
 _LUT = torch.tensor([0, 0.5, 1, 1.5, 2, 3, 4, 6, 0, -0.5, -1, -1.5, -2, -3, -4, -6])
@@ -52,7 +52,7 @@ def test_packed_layout_matches_reference_including_bias_and_negative_nibbles():
     bias = torch.tensor([1.5, -2.0], dtype=torch.float32)
     expected = _reference_bf16(packed, scale_bits)
     context = ConvertContext(config=ConvertConfig(model_path="/m", save_path="/o"))
-    proc = Mxfp4PackedToFloatProcessor()
+    proc = MxFp4PackedToFloatProcessor()
 
     compressed = _module(
         {
@@ -84,4 +84,4 @@ def test_transform_rejects_scale_shape_before_dequant():
     )
     context = ConvertContext(config=ConvertConfig(model_path="/m", save_path="/o"))
     with pytest.raises(SchemaValidateError, match="scale shape"):
-        Mxfp4PackedToFloatProcessor().transform(mod, context)
+        MxFp4PackedToFloatProcessor().transform(mod, context)

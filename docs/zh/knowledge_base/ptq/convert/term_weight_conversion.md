@@ -4,11 +4,13 @@
 > **英文名称**：Weight Conversion<br>
 > **应用领域**：已有量化权重的格式/精度变换、离线部署
 
+本文档介绍权重转换（Weight Conversion）这一离线、data-free 量化工具能力，涵盖 IR 抽象、自动路由、虚拟模块树与 7 阶段流水线等核心机制，并给出适用的转换场景与使用限制，适用于需要对已有量化权重做格式或精度变换的开发者与部署人员。
+
 ---
 
 ## 1. 概述
 
-权重转换（Convert）是 msModelSlim 中的离线、data-free 量化工具能力，能在不加载模型代码、不依赖校准数据集的前提下，对已有的 checkpoint 做格式或精度变换。与需要校准数据的常规[训练后量化（PTQ）](../term_ptq.md)不同，权重转换直接操作张量级 IR（Intermediate Representation），通过自动路由机制选择最短转换路径，适用于 FP8 block 反量化、BF16 转 MXFP8、INT4 分组反量化等场景。权重转换通常作为[LLM 量化](../llm/term_large_language_model_quantization.md)的后续步骤，用于调整已有量化权重的落盘格式以适配不同推理框架。
+权重转换（Weight Conversion）是 msModelSlim 中的离线、data-free 量化工具能力，能在不加载模型代码、不依赖校准数据集的前提下，对已有的 checkpoint 做格式或精度变换。与需要校准数据的常规[训练后量化（PTQ）](../term_ptq.md)不同，权重转换直接操作张量级 IR（Intermediate Representation），通过自动路由机制选择最短转换路径，适用于 FP8 block 反量化、BF16 转 MXFP8、INT4 分组反量化等场景。权重转换通常作为[LLM 量化](../llm/term_large_language_model_quantization.md)的后续步骤，用于调整已有量化权重的落盘格式以适配不同推理框架。
 
 ## 2. 词条介绍
 
@@ -32,7 +34,7 @@ $$ x_{\text{bf16}} = x_{\text{fp8}} \cdot s_{\text{scale\_inv}} $$
 
 $$ x_{\text{bf16}} = (x_{\text{int4}} - z) \cdot \Delta $$
 
-其中 $x_{\text{int4}}$ 为分组 INT4 包装格式的权重，$\Delta$ 为分组缩放因子，$z$ 为分组零点。
+其中 $x_{\text{int4}}$ 为分组 INT4 packed 包装格式的权重，$\Delta$ 为分组缩放因子，$z$ 为分组零点。
 
 #### 3.1.3 FLOAT 到 MXFP8 量化（有损）
 
@@ -66,10 +68,10 @@ flowchart LR
 
 - **读 catalog**：扫描 checkpoint 文件，获取所有 tensor key 与 dtype 信息。
 - **预处理**：可选，对 checkpoint key 做结构性变换（如 fused gate/up 拆分）。
-- **建虚拟模块树**：按 tick-tock 模式组织模块层次，构建 `ModelFreeModule` 树。
+- **建虚拟模块树**：按模块层级构建 `ModelFreeModule` 树。
 - **建 IR 任务**：为每个匹配的线性层创建 IR 转换任务。
 - **路由**：按 `route` 配置自动选择转换路径。
-- **执行**：调用对应的 IR 转换处理器（`Fp8BlockToFloatProcessor`、`Fp8BlockToMxFp8Processor`、`Int4PackedToFloatProcessor`、`Mxfp4PackedToFloatProcessor`、`MxFp8QuantProcessor`、`MxFp4QuantProcessor`）。
+- **执行**：调用对应的 IR 转换处理器（`Fp8BlockToFloatProcessor`、`Fp8BlockToMxFp8Processor`、`Int4PackedToFloatProcessor`、`MxFp4PackedToFloatProcessor`、`MxFp8QuantProcessor`、`MxFp4QuantProcessor`）。
 - **保存**：按配置的 `save.type` 落盘（`ascend_v1` 或 `huggingface`）。
 
 ### 4.2 配置示例
@@ -117,14 +119,14 @@ spec:
 
 - 《[权重转换使用指南](./usage_weight_conversion.md)》：权重转换完整的操作流程、命令说明与详细配置协议。
 - 《[msmodelslim quant 命令行](../../../api_reference/cli/msmodelslim_quant.md)》：含可复制的权重转换命令。
-- 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：常规一键量化（含校准）的完整流程。
+- 《[msModelSlim 一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：常规一键量化（含校准）的完整流程。
 
 ## 7. 关联词条
 
-- [LLM 量化](../llm/term_large_language_model_quantization.md)：前置术语，权重转换通常是对 LLM 量化权重的后续处理。
-- [VLM 量化](../vlm/term_vision_transformer_quantization.md)：应用对象，VLM 量化权重也可通过转换调整格式。
-- [DiT 量化](../dit/term_diffusion_transformer_quantization.md)：应用对象，DiT 量化权重也可通过转换调整格式。
-- [PTQ](../term_ptq.md)：上位概念，权重转换属于 PTQ 生态中的工具链环节。
+- 《[大语言模型量化](../llm/term_large_language_model_quantization.md)》：前置术语，权重转换通常是对 LLM 量化权重的后续处理。
+- 《[视觉语言模型量化](../vlm/term_vision_transformer_quantization.md)》：应用对象，VLM 量化权重也可通过转换调整格式。
+- 《[Diffusion Transformer 量化](../dit/term_diffusion_transformer_quantization.md)》：应用对象，DiT 量化权重也可通过转换调整格式。
+- 《[训练后量化（PTQ）](../term_ptq.md)》：上位概念，权重转换属于 PTQ 生态中的工具链环节。
 
 ## 8. 参考文档
 

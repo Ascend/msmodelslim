@@ -28,7 +28,7 @@ from msmodelslim.processor.convert.fp8_block_to_float import Fp8BlockToFloatProc
 from msmodelslim.processor.convert.fp8_block_to_mxfp8 import Fp8BlockToMxFp8Processor
 from msmodelslim.processor.convert.int4_to_float import Int4PackedToFloatProcessor
 from msmodelslim.processor.convert.mxfp4_quant import MxFp4QuantProcessor
-from msmodelslim.processor.convert.mxfp4_to_float import Mxfp4PackedToFloatProcessor
+from msmodelslim.processor.convert.mxfp4_to_float import MxFp4PackedToFloatProcessor
 from msmodelslim.processor.convert.mxfp8_quant import MxFp8QuantProcessor
 
 _REGISTERED = False
@@ -43,7 +43,7 @@ def register_convert_processors(router: IRRouter | None = None) -> IRRouter:
         Fp8BlockToFloatProcessor(),
         Fp8BlockToMxFp8Processor(),
         Int4PackedToFloatProcessor(),
-        Mxfp4PackedToFloatProcessor(),
+        MxFp4PackedToFloatProcessor(),
         MxFp8QuantProcessor(),
         MxFp4QuantProcessor(),
     ):

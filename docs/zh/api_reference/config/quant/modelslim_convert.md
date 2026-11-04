@@ -1,6 +1,8 @@
 <!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.core.quant_service.modelslim_convert.quant_config.ModelslimConvertQuantConfig -->
 # modelslim_convert 配置说明
 
+本文档介绍 modelslim_convert 权重转换任务的配置，说明 ModelslimConvertQuantConfig 配置类中 apiversion、spec、preprocess、linears、save、parallel、defaults 各字段的类型、默认值与取值范围，适用于需要编写 modelslim_convert 权重转换任务 YAML 配置的用户。
+
 ## 1. 配置概述
 
 `modelslim_convert` 量化（权重转换）任务配置，位于 YAML 根节点。
@@ -111,7 +113,7 @@
 |----------|------|-----------|--------|----------------|------|----------|
 | `match` | `list[string]` | 可选 | `[]` | — | 匹配的线性层名称模式列表。 | 无 |
 | `target` | `string` | 必选 | 无 | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN` | 转换目标 IR 类型，如 `W8A8_MXFP8`、`INT4_PACKED` 等。 | 无 |
-| `route` | `list[string] / string` | 可选 | `auto` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`MXFP4_PACKED`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN`；`auto` | 转换路径：显式 IR 列表（首元素为源 IR），或 `auto` 由虚拟树按权重 dtype 推断。 | 无 |
+| `route` | `list[string] / string` | 可选 | `auto` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`MXFP4_PACKED`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN`；`auto` | 转换路径：显式 IR 列表（首元素为源 IR），或 `auto` 由路由器根据权重 dtype 推断。 | 无 |
 
 **配置约束**
 
@@ -136,13 +138,13 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `cpu_workers` | `int` | 可选 | `8` | — | CPU 转换的并行 worker 数：1 表示单进程；大于1 表示组间多进程 + 组内线程。仅 `--device cpu` 时生效；NPU 转换固定每卡一个子进程（由 `--device_id` 决定），无需设置。 | 无 |
+| `cpu_workers` | `int` | 可选 | `8` | — | CPU 转换的并行进程数：1 表示单进程；大于1 表示组间多进程 + 组内线程。仅 `--device cpu` 时生效；NPU 转换固定每卡一个子进程（由 `--device_id` 决定），无需设置。 | 无 |
 | `max_group_size` | `int / null` | 可选 | `null` | — | 单个依赖组的最大任务数，超过则拆成多个子组分散到不同进程；不设置表示不拆分。 | 无 |
 
 **配置约束**
 
 - `cpu_workers` 仅 `--device cpu` 时生效。NPU 用 `--device npu --device_id ...`。
-- `max_group_size`：MoE 等含有大量专家任务的模型，可设置为约「每层专家任务数 / 卡数」（如 8 卡设为 96），防止大组单进程/单卡长尾等待。
+- `max_group_size`：MoE 等含有大量专家任务的模型，可设置为约「每层专家任务数 / 卡数」（如 8 张卡设为 96），防止大组单进程/单卡长尾等待。
 
 <h4 id="2-2-9-convert-defaults">2.2.9 ConvertDefaults</h4>
 

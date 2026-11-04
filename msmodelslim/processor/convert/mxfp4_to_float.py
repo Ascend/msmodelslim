@@ -39,8 +39,8 @@ from msmodelslim.processor.convert.base import BaseConvertProcessor
 from msmodelslim.utils.exception import SchemaValidateError
 
 
-class Mxfp4PackedToFloatProcessor(BaseConvertProcessor):
-    name = "Mxfp4PackedToFloatProcessor"
+class MxFp4PackedToFloatProcessor(BaseConvertProcessor):
+    name = "MxFp4PackedToFloatProcessor"
     src_ir = IRKind.MXFP4_PACKED
     dst_ir = IRKind.FLOAT
     loss_level = LossLevel.LOSSLESS.value
