@@ -30,7 +30,7 @@ See the Mulan PSL v2 for more details.
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 import torch
 from torch import nn
@@ -54,9 +54,11 @@ from msmodelslim.format.checkpoint_format.constants import (
     canonical_module_name,
 )
 from msmodelslim.format.interface import ExportContext
-from msmodelslim.processor.paretoq.impl import ParetoQFakeQuantLinear
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.security import safe_copy_file, set_file_stat
+
+if TYPE_CHECKING:
+    from msmodelslim.processor.paretoq.impl import ParetoQFakeQuantLinear
 
 # Re-export for existing importers.
 _STRUCTURE_FILE = STRUCTURE_FILE
@@ -113,6 +115,8 @@ class CheckpointSaverFormat(QuantFormatBase):
         )
 
     def build_module_handler_map(self) -> Dict[Type[nn.Module], ModuleHandler]:
+        from msmodelslim.processor.paretoq.impl import ParetoQFakeQuantLinear
+
         return {ParetoQFakeQuantLinear: self.on_paretoq_linear}
 
     def on_paretoq_linear(self, prefix: str, module: ParetoQFakeQuantLinear) -> None:
