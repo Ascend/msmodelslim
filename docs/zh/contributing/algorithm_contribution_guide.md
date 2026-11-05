@@ -4,18 +4,19 @@
 
 > **核心原则**：不追求算法数量堆叠。合入的算法须在**至少一个明确场景**下，相对现有方案具备可验证优势（精度、性能、资源、易用性或覆盖缺口中的一项或多项）。无场景优势的重复实现一般不予合入。
 
-通用 PR 与 CI 约定见《[Contributing to Mindstudio ModelSlim](contributing_guide.md)》。
+通用 PR 与 CI 约定见《[Contributing to MindStudio ModelSlim](contributing_guide.md)》。
 
 ## 1. 适用范围
 
-本指南面向向 msModelSlim V1 框架贡献算法组件的开发者与算法工程师，经 SIG 会议完成方案评审与代码检视，并完成代码实现、测试与文档交付后合入主干。
+本指南面向拟向 msModelSlim V1 框架贡献算法组件的开发者与算法工程师，约定贡献算法须经 SIG 会议完成方案评审与代码检视，并在完成代码实现、测试与文档交付后合入主干。
 
 **适用类别**：
 
 | 类别 | 说明 | 示例目录 |
 | --- | --- | --- |
 | 离群值抑制 | 量化前对激活或权重分布整形 | `processor/anti_outlier/`、`processor/quarot/` |
-| 结构量化 | 权重量化、激活量化、KV Cache、FA 等 | `processor/quant/` |
+| 结构量化 | 权重量化、激活量化、KV Cache、Flash Attention（FA）等 | `processor/quant/` |
+| 模型压缩 | 稀疏化等降低参数量或存储占用的算法 | `processor/sparse/` |
 | 敏感层分析 | 为回退、混精、压缩提供敏感度度量 | `processor/analysis/` |
 
 **不适用场景**：
@@ -29,7 +30,7 @@
 
 **前置条件**：
 
-- 已阅读《[Contributing to Mindstudio ModelSlim](contributing_guide.md)》，具备提交 Issue、PR 与签署 CLA 的条件；
+- 已阅读《[Contributing to MindStudio ModelSlim](contributing_guide.md)》，具备提交 Issue、PR 与签署 CLA 的条件；
 - 已对照《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》，确认拟贡献能力与既有算法的定位关系；
 - 已选定至少 1 组对比实验用的模型，以及评测数据或校准数据：模型与数据须可公开获取，或已在本仓库文档、`lab_practice` 中引用；评审与其他贡献者无需私有权重或未公开数据集，即可按同样配置复现；
 - 本地开发环境可运行项目单测与 pre-commit（见《[编码规范](development_guide/coding_standards.md)》、《[开发者测试指南](development_guide/testing_guide.md)》）。
@@ -52,7 +53,7 @@
 
 ## 4. 流程总览
 
-主路径如下。正式 SIG 门禁为两道：**RFC 方案评审**与 **PR 代码检视**。准入自检由贡献者在提案前完成，不是单独会议。不得跳过 SIG 会议直接合入。
+正式 SIG 门禁为两道：**RFC 方案评审**与 **PR 代码检视**。准入自检由贡献者在提案前完成，不是单独会议。不得跳过 SIG 会议直接合入。主路径如下：
 
 ```mermaid
 flowchart TD
@@ -88,7 +89,7 @@ flowchart TD
    | 覆盖 | 填补框架空白（新量化模式、新子图类型、新分析粒度等） |
    | 资源与易用 | 在相近精度下显著降低校准数据量、算力、调参成本 |
 
-   > **精度评测要求：** 宣称精度优势时，评测集须选用社区常用基准，**不建议**仅用过简、过小或自建抽样集作为唯一证据。常用参考：GPQA Diamond、DeepSWE、MMMU Pro；多模态生成类可用 VBench。按目标对象选取与任务匹配的集合，并在自检结论中写明评测集名称与指标。
+   > **精度评测要求：** 宣称精度优势时，评测集须选用社区常用基准，**不建议**仅用过简、过小或自建抽样集作为唯一证据。常用参考：GPQA Diamond、AIME26、DeepSWE、MMMU Pro；多模态生成类可用 VBench。按目标对象选取与任务匹配的集合，并在自检结论中写明评测集名称与指标。
 
 4. **开源落地**：许可、依赖是否可在开源路径落地。
 
@@ -147,7 +148,7 @@ flowchart TD
 
 3. **可初审后补齐**：除上述必填内容外，模板其余章节均可初审通过后再写。
 
-**输出**：标签含 `rfc`、第 1～2 章与 3.1 齐全的算法提案 Issue 。
+**输出**：标签含 `rfc`、第 1～2 章与 3.1 齐全的算法提案 Issue。
 
 **通过条件**：第 1～2 章与 3.1 足以支撑初次 SIG 方案评审，可进入步骤 3。
 
@@ -253,7 +254,7 @@ docs/zh/knowledge_base/quantization_algorithms/<algo_name>/
    - 标题建议：`[Feature][Algorithm] <算法名>：<场景一句话>`；
    - PR 须关联 RFC Issue；描述按仓库《[PR 模板](../../../.gitcode/PULL_REQUEST_TEMPLATE.md)》填写，内容详尽齐全；
    - 一个 PR 聚焦一个算法（或紧密耦合的一组变更）；
-   - 按《[Contributing to Mindstudio ModelSlim](contributing_guide.md)》完成 pre-commit、单测说明，并评论 `compile` 触发 CI。
+   - 按《[Contributing to MindStudio ModelSlim](contributing_guide.md)》完成 pre-commit、单测说明，并评论 `compile` 触发 CI。
 2. **如何预约 SIG 代码检视**：在 PR 中评论申请上会（说明希望进行“算法合入代码检视”），并 @ [仓库管理和维护成员](https://gitcode.com/Ascend/msmodelslim/member)；附上 PR 与 RFC 链接，确认 CI 已通过或说明剩余项。SIG 例会时段以维护者在 PR 中的安排为准。
 3. **须准备的材料**：
    - **完整 RFC**：初次评审允许空缺的章节此时均已补全（含详细设计等）；附 RFC Issue 链接；
@@ -293,8 +294,8 @@ docs/zh/knowledge_base/quantization_algorithms/<algo_name>/
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 量化算法 | 离群值抑制、线性量化、敏感层分析等算法说明 | 《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》 |
-| 量化模式 | 如 w8a8、w4a8 等比特组合策略的命名与约定 | 《[量化模式命名规范](../knowledge_base/model/README.md#量化模式命名规范)》 |
+| 量化算法 | 离群值抑制、结构量化、模型压缩、敏感层分析等算法说明 | 《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》 |
+| 量化模式 | 如 W8A8、W4A8 等比特组合策略的命名与约定 | 《[量化模式命名规范](../knowledge_base/model/README.md#量化模式命名规范)》 |
 
 ## 8. 安全说明
 
