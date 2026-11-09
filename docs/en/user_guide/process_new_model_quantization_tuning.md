@@ -104,7 +104,7 @@ flowchart LR
 1. Review the operator dependencies in the scheme to determine the requirements for single-operator development and fused-operator development.
 2. Complete the necessary operator decomposition, fusion, and mapping so that the quantization graph can be executed on the target inference engine. Operators and deployment implementations usually live on the target inference engine side; refer to:
    - [vLLM Ascend Quantization Adaptation Guide](https://docs.vllm.ai/projects/ascend/en/v0.23.0/developer_guide/Design_Documents/quantization.html)
-   - [Introduction to the CANN Operator Library](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/latest/API/aolapi/operatorlist_00001.html)
+   - [Introduction to the CANN Operator Library](https://www.hiascend.com/en-sg/document/detail/en/CANNCommunityEdition/920/API/aolapi/operatorlist_00001.html)
 3. Complete the structural graph composition and confirm that it is consistent with the export format and the engine's graph optimization path.
 4. Confirm that the inference service can be started normally with this round's quantized weights; record the version number of the inference engine used.
 

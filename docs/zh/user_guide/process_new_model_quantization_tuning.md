@@ -104,7 +104,7 @@ flowchart LR
 1. 对照方案中的算子依赖，确定单算子开发与融合算子开发需求。
 2. 完成必要的算子分解、融合与映射，使量化图可在目标推理引擎执行。算子与部署实现通常落在目标推理引擎侧，可参考：
    - [vLLM Ascend 量化适配指南](https://docs.vllm.ai/projects/ascend/zh-cn/v0.23.0/developer_guide/Design_Documents/quantization.html)
-   - [CANN 算子库介绍](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/latest/API/aolapi/operatorlist_00001.html)
+   - [CANN 算子库介绍](https://gitcode.com/cann/docs/blob/9.2.0/docs/zh/ops-lib/introduction.md)
 3. 完成结构组图，确认与导出格式、引擎图优化路径一致。
 4. 确认可按本轮量化权重正常拉起服务化推理；记录所用推理引擎版本号。
 

@@ -152,4 +152,4 @@ You can perform uninstallation by following these steps:
 ## 5. Upgrade
 
 Upgrade means "uninstall first and then install". Directly run the installation command, and the tool will automatically uninstall the old version and guide you through the overwrite installation.<br>
-You can run the `pip show msmodelslim` command to view the version information of the current environment, and then select the version to upgrade to. When upgrading, pay attention to the version compatibility. For details, see *[Release Notes](https://gitcode.com/Ascend/release-management/blob/master/MindStudio/26.2.0/release_notes.md)*.
+You can run the `pip show msmodelslim` command to view the version information of the current environment, and then select the version to upgrade to. When upgrading, pay attention to the version compatibility. For details, see *[Release Notes](https://gitcode.com/Ascend/release-management/blob/master/MindStudio/26.2.0/release_notes_en.md)*.

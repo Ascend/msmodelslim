@@ -12,11 +12,11 @@
 
 ### 2.1 在线安装
 
-若您的设备具备互联网访问能力，可通过一条命令自动完成工具的下载与安装。请参见昇腾社区MindStudio[下载](https://www.hiascend.com/developer/software/mindstudio/download?versionId=142&ids=45%2C26958bcc909e4cd48fa56d4c4a43ebec%2C90%2C49)页面，选择对应的CANN版本，并在安装方式中选择“在线安装”，系统将引导您完成后续操作。
+若您的设备具备互联网访问能力，可通过一条命令自动完成工具的下载与安装。请参见昇腾社区MindStudio[下载](https://www.hiascend.com/zh/developer/software/mindstudio/download?versionId=142&ids=45%2C26958bcc909e4cd48fa56d4c4a43ebec%2C90%2C49)页面，选择对应的CANN版本，并在安装方式中选择“在线安装”，系统将引导您完成后续操作。
 
 ### 2.2 离线安装
 
-对处于企业内网等无外网环境的设备，请先在可联网的机器上下载完整的离线安装包，再将其传输至目标设备进行安装。请参见昇腾社区MindStudio[下载](https://www.hiascend.com/developer/software/mindstudio/download?versionId=145&ids=45%2C26958bcc909e4cd48fa56d4c4a43ebec%2C90%2C50%2C)页面，选择对应的CANN版本，并在安装方式中选择“离线安装”，获取对应的安装包及操作指引。
+对处于企业内网等无外网环境的设备，请先在可联网的机器上下载完整的离线安装包，再将其传输至目标设备进行安装。请参见昇腾社区MindStudio[下载](https://www.hiascend.com/zh/developer/software/mindstudio/download?versionId=145&ids=45%2C26958bcc909e4cd48fa56d4c4a43ebec%2C90%2C50%2C)页面，选择对应的CANN版本，并在安装方式中选择“离线安装”，获取对应的安装包及操作指引。
 
 ### 2.3 源码安装
 
