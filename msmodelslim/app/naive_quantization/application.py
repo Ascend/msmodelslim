@@ -29,22 +29,37 @@ from msmodelslim.core.const import QuantType
 from msmodelslim.core.practice.interface import Metadata, PracticeConfig, ScenarioTagMatch
 from msmodelslim.core.quant_service import IQuantService
 from msmodelslim.model import IModelFactory, IModel
-from msmodelslim.utils.exception import SchemaValidateError, ToDoError, UnsupportedError
+from msmodelslim.utils.config import CONFIG_FILE_PATH, msmodelslim_config
+from msmodelslim.utils.exception import EnvError, ModelslimError, SchemaValidateError, ToDoError, UnsupportedError
 from msmodelslim.utils.exception_decorator import exception_catcher
 from msmodelslim.utils.logging import logger_setter, get_logger
-from msmodelslim.utils.security import yaml_safe_load, check_read_permission, check_write_permission
-from msmodelslim.utils.validation.conversion import (
-    convert_to_readable_file,
-    convert_to_writable_dir,
-    convert_to_readable_dir,
+from msmodelslim.utils.precheck import (
+    DISK_SPACE_GROUP,
+    NPU_OCCUPANCY_GROUP,
+    PATH_PERMISSION_GROUP,
+    STRING_FIELD_GROUP,
+    PrecheckManager,
+    PrecheckReport,
+    PrecheckResult,
+    PrecheckStatus,
+    check_disk_space,
+    npu_index_check,
+    npu_occupancy_check,
+    precheck_rule,
+    readable_path_check,
+    string_field_check,
+    writable_path_check,
 )
-from msmodelslim.utils.validation.device import validate_device_index
-from msmodelslim.utils.validation.value import validate_str_length
+from msmodelslim.utils.security import yaml_safe_load
+from msmodelslim.utils.validation.conversion import convert_to_writable_dir
 from .model_info_interface import ModelInfoInterface
 from .practice_manager_infra import PracticeManagerInfra, QuantConfigExportInfra
 
 DEFAULT_PEDIGREE = 'default'
 DEFAULT_QUANT_TYPE = QuantType.W8A8
+QUANT_ARGUMENT_GROUP = "quant.arguments"
+# Minimum free-memory ratio; fail occupancy checks below 90% free memory.
+NPU_FREE_MEMORY_RATIO_MIN = 0.9
 
 
 class TipsType(str, Enum):
@@ -120,6 +135,109 @@ def check_model_type_transformers(model_adapter: IModel, config: PracticeConfig)
             "DiT quantization is not supported for model_type transformers",
             action="Please use a dedicated model adapter for multimodal models",
         )
+
+
+@precheck_rule(group=QUANT_ARGUMENT_GROUP, rule_id=QUANT_ARGUMENT_GROUP)
+def check_quant_arguments(device_type, quant_type, config_path, trust_remote_code, tag, model_type):
+    """Validate quantization-specific argument semantics."""
+    if not isinstance(device_type, DeviceType):
+        raise SchemaValidateError(
+            "device_type must be a DeviceType, but got %s" % type(device_type),
+            action="Please use DeviceType.NPU or DeviceType.CPU.",
+        )
+    if quant_type is not None and config_path is not None:
+        raise SchemaValidateError("quant_type and config_path only one can be provided")
+    if quant_type is not None and not isinstance(quant_type, QuantType):
+        raise SchemaValidateError("quant_type must be a QuantType")
+
+    if not isinstance(trust_remote_code, bool):
+        raise SchemaValidateError("trust_remote_code must be a bool")
+    if tag is not None and not isinstance(tag, list):
+        raise SchemaValidateError("tag must be a list or None, but got %s" % type(tag))
+
+    if model_type is None:
+        from msmodelslim.core.quant_service.modelslim_convert.config_detect import is_modelslim_convert_config
+
+        if config_path is None or not is_modelslim_convert_config(config_path):
+            raise SchemaValidateError("model_type is required unless config_path uses apiversion modelslim_convert")
+
+
+def log_skipped_checks(report: PrecheckReport) -> None:
+    """Log configuration skips once per group.
+
+    Only a check disabled by configuration is announced here: a rule that cannot
+    probe the environment returns normally and stays silent, so the precheck output
+    is either this hint or the raised failure. Other applications render the same
+    ``PrecheckReport`` in their own way, which is why the framework itself neither
+    logs nor raises.
+    """
+    logger = get_logger()
+    for item in dict.fromkeys(result.group for result in report.results if result.config_skipped):
+        logger.info("%s skipped; if you want this check, add %s to %s", item, item, CONFIG_FILE_PATH)
+
+
+def _failure_label(result: PrecheckResult) -> str:
+    """Return the short user-facing label of a failed check.
+
+    The group prefix is dropped so ``path.permission.model_path`` is reported as
+    ``model_path`` and ``npu.NPU:3`` as ``NPU:3``; items whose id equals their
+    group (such as ``disk``) keep the full id.
+    """
+    prefix = "%s." % result.group if result.group else ""
+    if prefix and result.check_id.startswith(prefix):
+        return result.check_id[len(prefix) :]
+    return result.check_id
+
+
+def _failure_detail(result: PrecheckResult) -> str:
+    """Render the complete exception behind one failed check."""
+    error = result.error
+    if isinstance(error, ModelslimError):
+        # repr carries type, code, message and action, e.g.
+        # "[SecurityError] Code: 204, Message: ..., TIP: ..."
+        return repr(error)
+    detail = result.reason or ("" if error is None else str(error))
+    if result.suggestion and result.suggestion != detail:
+        detail = "%s, TIP: %s" % (detail, result.suggestion) if detail else "TIP: %s" % result.suggestion
+    return detail
+
+
+def _failure_line(result: PrecheckResult) -> str:
+    """Render one failed check as ``label: <complete exception>``."""
+    detail = _failure_detail(result)
+    label = _failure_label(result)
+    return "%s: %s" % (label, detail) if detail else label
+
+
+def raise_for_report(report: PrecheckReport) -> None:
+    """Abort quantization with this application's failure summary.
+
+    A single failure re-raises its own exception so the precise type is kept.
+    Multiple failures are reported by one ``EnvError``: the outer layer is
+    always ``EnvError`` while the message carries every failed item on its own
+    line together with that item's complete exception (type, code, message and
+    tip). Failed items stay available on ``precheck_failures`` for programmatic
+    callers. This format belongs to the quantization CLI; other applications may
+    raise differently.
+    """
+    failed = [result for result in report.results if result.status == PrecheckStatus.FAIL]
+    if not failed:
+        return
+    if len(failed) == 1 and isinstance(failed[0].error, ModelslimError):
+        error = failed[0].error
+    else:
+        lines = ["Precheck failed"]
+        lines.extend(_failure_line(result) for result in failed)
+        skippable_groups = list(dict.fromkeys(result.group for result in failed if result.skippable))
+        action = ""
+        if skippable_groups:
+            action = "remove %s from quant_precheck_item in %s to skip" % (
+                ", ".join(skippable_groups),
+                CONFIG_FILE_PATH,
+            )
+        error = EnvError("\n".join(lines), action=action)
+    error.precheck_failures = tuple(failed)
+    raise error
 
 
 @logger_setter('msmodelslim.app.naive_quantization')
@@ -386,51 +504,59 @@ class NaiveQuantizationApplication:
             trust_remote_code: bool, whether to trust the remote code
             tag: Optional[List[str]], e.g. ['vLLM-Ascend','Atlas_A2_Inference'], tags to match configs with verified_tags
         """
-        # 字符串类型与长度校验
-        for param_name, value in [("model_path", model_path), ("save_path", save_path)]:
-            if not isinstance(value, str):
-                raise SchemaValidateError(f"{param_name} must be a string, but got {type(value)}")
-            validate_str_length(input_str=value, str_name=param_name)
-        if model_type is not None:
-            if not isinstance(model_type, str):
-                raise SchemaValidateError(f"model_type must be a string, but got {type(model_type)}")
-            validate_str_length(input_str=model_type, str_name="model_type")
+        get_logger().info("===========PRECHECK===========")
+        configured_items = msmodelslim_config.precheck_items.get("quant_precheck_item", set())
+        invalid_items = configured_items - {DISK_SPACE_GROUP, NPU_OCCUPANCY_GROUP}
+        if invalid_items:
+            get_logger().warning(
+                "Ignoring unknown precheck items: %s; supported items are: %s, %s",
+                sorted(invalid_items),
+                DISK_SPACE_GROUP,
+                NPU_OCCUPANCY_GROUP,
+            )
 
-        model_path = convert_to_readable_dir(model_path)
-        if not isinstance(model_path, Path):
-            raise SchemaValidateError(f"model_path must be a Path, but got {type(model_path)}")
-        check_read_permission(model_path)
-        check_write_permission(save_path)
-        save_path = convert_to_writable_dir(save_path)
-        if not isinstance(save_path, Path):
-            raise SchemaValidateError(f"save_path must be a Path, but got {type(save_path)}")
-        if not isinstance(device_type, DeviceType):
-            raise SchemaValidateError(f"device_type must be a DeviceType, but got {type(device_type)}")
-        if device_index is not None:
-            validate_device_index(device_index, device_type)
-        if config_path is not None:
-            validate_str_length(input_str=config_path, str_name='config_path')
-            config_path = convert_to_readable_file(config_path)
-            check_read_permission(config_path)
-        # 允许quant_type和config_path均为空的场景
-        if quant_type is not None and config_path is not None:
-            raise SchemaValidateError("quant_type and config_path only one can be provided")
-        if quant_type is not None and not isinstance(quant_type, QuantType):
-            raise SchemaValidateError("quant_type must be a QuantType")
-        if config_path is not None and not isinstance(config_path, Path):
-            raise SchemaValidateError(f"config_path must be a Path, but got {type(config_path)}")
-        if model_type is None:
-            from msmodelslim.core.quant_service.modelslim_convert.config_detect import is_modelslim_convert_config
+        manager = PrecheckManager()
+        string_id = f"{STRING_FIELD_GROUP}.config_path"
+        path_id = f"{PATH_PERMISSION_GROUP}.config_path"
+        quant_argument_values = (device_type, quant_type, config_path, trust_remote_code, tag, model_type)
+        for name, value in (("model_path", model_path), ("save_path", save_path)):
+            manager.register(string_field_check.bind(value, name, rule_id=f"{STRING_FIELD_GROUP}.{name}"))
+        # model_type is optional: it may be omitted when config_path uses apiversion modelslim_convert.
+        manager.register(
+            string_field_check.bind(
+                model_type, "model_type", skip_when_none=True, rule_id=f"{STRING_FIELD_GROUP}.model_type"
+            )
+        )
+        manager.register(string_field_check.bind(config_path, "config_path", skip_when_none=True, rule_id=string_id))
+        manager.register(readable_path_check.bind(model_path, rule_id=f"{PATH_PERMISSION_GROUP}.model_path"))
+        manager.register(writable_path_check.bind(save_path, rule_id=f"{PATH_PERMISSION_GROUP}.save_path"))
+        manager.register(readable_path_check.bind(config_path, file=True, skip_when_none=True, rule_id=path_id))
+        manager.register(check_quant_arguments.bind(*quant_argument_values))
+        manager.register(check_disk_space.bind(model_path, save_path))
+        manager.register(npu_index_check.bind(device_type, device_index))
+        # Register occupancy per NPU; npu.index reports invalid indices.
+        requested = (device_index or [0]) if device_index is None or isinstance(device_index, list) else []
+        for index in dict.fromkeys(
+            value for value in requested if isinstance(value, int) and not isinstance(value, bool) and value >= 0
+        ):
+            rule_id = f"{NPU_OCCUPANCY_GROUP}.NPU:{index}"
+            manager.register(
+                npu_occupancy_check.bind(
+                    device_type,
+                    index,
+                    free_ratio_min=NPU_FREE_MEMORY_RATIO_MIN,
+                    rule_id=rule_id,
+                )
+            )
 
-            if config_path is None or not is_modelslim_convert_config(config_path):
-                raise SchemaValidateError("model_type is required unless config_path uses apiversion modelslim_convert")
-        if not isinstance(trust_remote_code, bool):
-            raise SchemaValidateError("trust_remote_code must be a bool")
-        if tag is not None:
-            if not isinstance(tag, list):
-                raise SchemaValidateError(f"tag must be a list or None, but got {type(tag)}")
-            if len(tag) == 0:
-                tag = None
+        report = manager.run(configured_items)
+        log_skipped_checks(report)
+        raise_for_report(report)
+
+        model_path = Path(model_path).resolve()
+        config_path = Path(config_path).resolve() if config_path is not None else None
+        save_path = Path(convert_to_writable_dir(save_path))
+        tag = tag or None
 
         # Log parameters
         get_logger().info("quantization with following parameters:")

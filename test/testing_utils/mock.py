@@ -124,6 +124,8 @@ def mock_init_config():
     mock_config.urls.repository = "mocked_url"
     mock_config.env_vars.log_level = "info"
     mock_config.env_vars.custom_practice_repo = None
+    mock_config.precheck_items = {}
+    config_mock.CONFIG_FILE_PATH = "config/config.ini"
 
     # Mock the init_config function to return the mock config
     config_mock.init_config.return_value = mock_config

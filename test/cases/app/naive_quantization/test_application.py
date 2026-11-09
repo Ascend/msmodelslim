@@ -30,15 +30,21 @@ from testing_utils.mock import mock_init_config
 
 mock_init_config()
 
-from msmodelslim.core.const import QuantType  # noqa: E402
+from msmodelslim.core.const import DeviceType, QuantType  # noqa: E402
 from msmodelslim.core.practice.interface import Metadata  # noqa: E402
-from msmodelslim.utils.exception import SchemaValidateError, ToDoError, UnsupportedError  # noqa: E402
+from msmodelslim.utils.exception import EnvError, SchemaValidateError, ToDoError, UnsupportedError  # noqa: E402
 
 
 class TestNaiveQuantizationAppBase(unittest.TestCase):
     """NaiveQuantizationApplication 测试基类"""
 
     def setUp(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        # Default to the mandatory checks only; patch.object restores the shared config on cleanup.
+        config_patcher = patch.object(app_module.msmodelslim_config, "precheck_items", {"quant_precheck_item": set()})
+        config_patcher.start()
+        self.addCleanup(config_patcher.stop)
         original_umask = os.umask(0)
         try:
             os.umask(0o026)
@@ -429,6 +435,294 @@ class TestQuantParameterValidation(TestNaiveQuantizationAppBase):
                 save_path=str(self.save_path),
                 tag="not_a_list",
             )
+
+    def test_quant_device_index_non_list_validation(self):
+        app = self._make_app()
+
+        with self.assertRaises(SchemaValidateError):
+            app.quant(
+                model_type="Qwen2.5-7B",
+                model_path=str(self.model_path),
+                save_path=str(self.save_path),
+                device_type=DeviceType.CPU,
+                device_index="0",
+            )
+
+
+class TestPrecheckIntegration(TestNaiveQuantizationAppBase):
+    """测试量化应用组装通用预检规则"""
+
+    def _make_app(self):
+        from msmodelslim.app.naive_quantization.application import NaiveQuantizationApplication
+
+        app = NaiveQuantizationApplication(
+            practice_manager=MagicMock(),
+            quant_service=MagicMock(),
+            model_factory=MagicMock(),
+        )
+        app._quant = MagicMock()
+        return app
+
+    def test_quant_precheck_normalizes_parameters(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        with patch.object(app_module, "msmodelslim_config") as mock_config:
+            with (
+                patch("msmodelslim.utils.precheck.rules.check_read_permission"),
+                patch("msmodelslim.utils.precheck.rules.check_write_permission"),
+            ):
+                with patch.object(app_module, "convert_to_writable_dir", side_effect=Path):
+                    mock_config.precheck_items = {"quant_precheck_item": set()}
+                    app.quant(
+                        model_type="Qwen2.5-7B",
+                        model_path=str(self.model_path),
+                        save_path=str(self.save_path),
+                        device_type=DeviceType.CPU,
+                        device_index=None,
+                        quant_type=QuantType.W8A8,
+                        config_path=None,
+                        trust_remote_code=False,
+                        tag=[],
+                    )
+
+        args = app._quant.call_args.args
+        self.assertEqual(args[1], self.model_path)
+        self.assertEqual(args[2], self.save_path)
+        self.assertIsNone(args[8])
+
+    def test_quant_precheck_rejects_removed_quant_type(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        with patch.object(app_module, "msmodelslim_config") as mock_config:
+            mock_config.precheck_items = {"quant_precheck_item": set()}
+            with self.assertRaises(SchemaValidateError):
+                app.quant(
+                    model_type="Qwen2.5-7B",
+                    model_path=str(self.model_path),
+                    save_path=str(self.save_path),
+                    device_type=DeviceType.CPU,
+                    device_index=None,
+                    quant_type="w8a8",
+                    config_path=None,
+                    trust_remote_code=False,
+                    tag=None,
+                )
+        app._quant.assert_not_called()
+
+    def test_quant_precheck_ignores_unknown_configured_item(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        with patch.object(app_module, "msmodelslim_config") as mock_config:
+            mock_config.precheck_items = {"quant_precheck_item": {"path.permission"}}
+            with (
+                patch("msmodelslim.utils.precheck.rules.check_read_permission"),
+                patch("msmodelslim.utils.precheck.rules.check_write_permission"),
+                patch.object(app_module, "convert_to_writable_dir", side_effect=Path),
+            ):
+                app.quant(
+                    model_type="Qwen2.5-7B",
+                    model_path=str(self.model_path),
+                    save_path=str(self.save_path),
+                    device_type=DeviceType.CPU,
+                    quant_type=QuantType.W8A8,
+                )
+
+        app._quant.assert_called_once()
+
+    def test_quant_precheck_logs_precheck_banner(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        logger = MagicMock()
+        with (
+            patch.object(app_module, "msmodelslim_config") as mock_config,
+            patch.object(app_module, "get_logger", lambda: logger),
+        ):
+            mock_config.precheck_items = {"quant_precheck_item": set()}
+            with (
+                patch("msmodelslim.utils.precheck.rules.check_read_permission"),
+                patch("msmodelslim.utils.precheck.rules.check_write_permission"),
+                patch.object(app_module, "convert_to_writable_dir", side_effect=Path),
+            ):
+                app.quant(
+                    model_type="Qwen2.5-7B",
+                    model_path=str(self.model_path),
+                    save_path=str(self.save_path),
+                    device_type=DeviceType.CPU,
+                    quant_type=QuantType.W8A8,
+                )
+
+        info_messages = [call.args[0] for call in logger.info.call_args_list]
+        # 预检段落标识需出现在所有预检结果之前，与后续 ANALYSE MODEL / QUANTIZE MODEL 段落一致。
+        self.assertEqual(info_messages[0], "===========PRECHECK===========")
+
+    def test_quant_precheck_runs_configured_optional_disk_rule(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        with patch.object(app_module, "msmodelslim_config") as mock_config:
+            mock_config.precheck_items = {"quant_precheck_item": {"disk"}}
+            with self.assertRaises(EnvError):
+                app.quant(
+                    model_type="Qwen2.5-7B",
+                    model_path=str(self.model_path),
+                    save_path=str(self.save_path),
+                    device_type=DeviceType.CPU,
+                    quant_type=QuantType.W8A8,
+                )
+
+        app._quant.assert_not_called()
+
+    def test_quant_precheck_passes_occupancy_threshold_at_registration(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        bind_spy = MagicMock(wraps=app_module.npu_occupancy_check.bind)
+        with (
+            patch.object(app_module, "msmodelslim_config") as mock_config,
+            patch.object(app_module.npu_occupancy_check, "bind", bind_spy),
+            patch("msmodelslim.utils.precheck.rules.check_read_permission"),
+            patch("msmodelslim.utils.precheck.rules.check_write_permission"),
+            patch.object(app_module, "convert_to_writable_dir", side_effect=Path),
+        ):
+            mock_config.precheck_items = {"quant_precheck_item": set()}
+            app.quant(
+                model_type="Qwen2.5-7B",
+                model_path=str(self.model_path),
+                save_path=str(self.save_path),
+                device_type=DeviceType.CPU,
+                quant_type=QuantType.W8A8,
+            )
+
+        bind_spy.assert_called_once_with(
+            DeviceType.CPU,
+            0,
+            free_ratio_min=app_module.NPU_FREE_MEMORY_RATIO_MIN,
+            rule_id="npu.NPU:0",
+        )
+
+    def test_quant_precheck_treats_model_type_as_optional(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        bind_spy = MagicMock(wraps=app_module.string_field_check.bind)
+        with (
+            patch.object(app_module, "msmodelslim_config") as mock_config,
+            patch.object(app_module.string_field_check, "bind", bind_spy),
+            patch(
+                "msmodelslim.core.quant_service.modelslim_convert.config_detect.is_modelslim_convert_config",
+                return_value=True,
+            ),
+            patch("msmodelslim.utils.precheck.rules.check_read_permission"),
+            patch("msmodelslim.utils.precheck.rules.convert_to_readable_file", side_effect=Path),
+            patch("msmodelslim.utils.precheck.rules.check_write_permission"),
+            patch.object(app_module, "convert_to_writable_dir", side_effect=Path),
+        ):
+            mock_config.precheck_items = {"quant_precheck_item": set()}
+            app.quant(
+                model_type=None,
+                model_path=str(self.model_path),
+                save_path=str(self.save_path),
+                device_type=DeviceType.CPU,
+                config_path=str(Path(self.temp_dir) / "convert.yaml"),
+            )
+
+        app._quant.assert_called_once()
+        model_type_binding = next(call for call in bind_spy.call_args_list if call.args[1] == "model_type")
+        self.assertIsNone(model_type_binding.args[0])
+        self.assertTrue(model_type_binding.kwargs["skip_when_none"])
+
+    def test_quant_precheck_registers_occupancy_for_valid_unique_indices(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        bind_spy = MagicMock(wraps=app_module.npu_occupancy_check.bind)
+        with (
+            patch.object(app_module, "msmodelslim_config") as mock_config,
+            patch.object(app_module.npu_occupancy_check, "bind", bind_spy),
+        ):
+            mock_config.precheck_items = {"quant_precheck_item": set()}
+            # npu.index rejects the mixed list, but occupancy registration already happened.
+            with self.assertRaises(SchemaValidateError):
+                app.quant(
+                    model_type="Qwen2.5-7B",
+                    model_path=str(self.model_path),
+                    save_path=str(self.save_path),
+                    device_type=DeviceType.NPU,
+                    device_index=[2, 0, 2, -1, True, "1"],
+                )
+
+        self.assertEqual(
+            [call.kwargs["rule_id"] for call in bind_spy.call_args_list],
+            ["npu.NPU:2", "npu.NPU:0"],
+        )
+
+    def test_quant_precheck_failure_does_not_create_save_path(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        save_path = Path(self.temp_dir) / "new" / "save"
+        with (
+            patch.object(app_module, "msmodelslim_config") as mock_config,
+            patch("msmodelslim.utils.precheck.rules.get_valid_path", side_effect=lambda value: value),
+        ):
+            mock_config.precheck_items = {"quant_precheck_item": set()}
+            with self.assertRaises(SchemaValidateError):
+                app.quant(
+                    model_type="Qwen2.5-7B",
+                    model_path=str(self.model_path),
+                    save_path=str(save_path),
+                    device_type=DeviceType.CPU,
+                    quant_type=QuantType.W8A8,
+                    trust_remote_code="invalid",
+                )
+
+        self.assertFalse(save_path.exists())
+        app._quant.assert_not_called()
+
+    def test_invalid_device_type_fails_only_quant_arguments(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+        from msmodelslim.utils.precheck import NPU_INDEX_GROUP, PrecheckManager, PrecheckStatus, npu_index_check
+
+        manager = PrecheckManager()
+        manager.register(app_module.check_quant_arguments.bind("invalid", None, None, False, None, "model"))
+        manager.register(npu_index_check.bind("invalid", None))
+
+        report = manager.run()
+
+        self.assertEqual(
+            [result.check_id for result in report.results if result.status == PrecheckStatus.FAIL],
+            ["quant.arguments"],
+        )
+        npu_result = next(result for result in report.results if result.group == NPU_INDEX_GROUP)
+        self.assertEqual(npu_result.status, PrecheckStatus.SKIP)
+
+    def test_quant_argument_group_is_stable(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        self.assertEqual(app_module.QUANT_ARGUMENT_GROUP, "quant.arguments")
+        self.assertEqual(app_module.check_quant_arguments.group, app_module.QUANT_ARGUMENT_GROUP)
+
+    def test_quant_creates_save_path_after_all_prechecks_pass(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        save_path = Path(self.temp_dir) / "new" / "save"
+        with patch.object(app_module, "msmodelslim_config") as mock_config:
+            mock_config.precheck_items = {"quant_precheck_item": set()}
+            app.quant(
+                model_type="Qwen2.5-7B",
+                model_path=str(self.model_path),
+                save_path=str(save_path),
+                device_type=DeviceType.CPU,
+                quant_type=QuantType.W8A8,
+            )
+
+        self.assertTrue(save_path.is_dir())
+        self.assertEqual(app._quant.call_args.args[2], save_path)
 
 
 if __name__ == "__main__":

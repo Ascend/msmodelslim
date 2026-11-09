@@ -30,6 +30,7 @@ from msmodelslim.utils.exception import ConfigError, EnvVarError
 from msmodelslim.utils.security.path import get_valid_read_path
 
 CONFIG_PATH = '../config/config.ini'
+CONFIG_FILE_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), CONFIG_PATH))
 
 SECTION_URL = 'URL'
 KEY_REPO_URL = 'repository_url'
@@ -42,6 +43,7 @@ VALID_LOG_LEVELS = ['info', 'debug']
 
 SECTION_MODEL_ADAPTER = "ModelAdapter"
 SECTION_MODEL_ADAPTER_DEPENDENCIES = "ModelAdapterDependencies"
+SECTION_PRECHECK = "Precheck"
 
 MODEL_ADAPTER_ENTRY_POINTS = "msmodelslim.model_adapter.plugins"
 
@@ -60,6 +62,7 @@ class ModelSlimConfig(BaseModel):
     urls: URLs
     env_vars: EnvVars
     model_adapter_dependencies: dict[str, dict[str, str]]
+    precheck_items: dict[str, set[str]]
 
 
 def load_model_adapter_dependencies(
@@ -83,12 +86,21 @@ def load_model_adapter_dependencies(
     return deps
 
 
+def load_precheck_items(file_config: ConfigParser) -> dict[str, set[str]]:
+    if not file_config.has_section(SECTION_PRECHECK):
+        return {}
+
+    result = {}
+    for key, value in file_config.items(SECTION_PRECHECK):
+        items = {part.strip() for part in value.split(",") if part.strip()}
+        result[key] = items
+    return result
+
+
 def init_config():
     file_config = ConfigParser()
 
-    cur_dir = os.path.dirname(os.path.abspath(__file__))
-    config_path = os.path.abspath(os.path.join(cur_dir, CONFIG_PATH))
-    config_path = get_valid_read_path(config_path)
+    config_path = get_valid_read_path(CONFIG_FILE_PATH)
     file_config.read(config_path)
 
     if not file_config.has_section(SECTION_URL):
@@ -131,6 +143,7 @@ def init_config():
         ),
         env_vars=EnvVars(log_level=logger_level, custom_practice_repo=custom_practice_repo),
         model_adapter_dependencies=load_model_adapter_dependencies(file_config),
+        precheck_items=load_precheck_items(file_config),
     )
     return modelslim_config
 

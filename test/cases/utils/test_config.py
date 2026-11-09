@@ -132,3 +132,62 @@ def test_init_config_raises_config_error_when_url_key_missing(_loaded_config_fix
 
     with pytest.raises(ConfigError, match="Invalid config key: repository_url"):
         module.init_config()
+
+
+def test_load_precheck_items_parses_comma_separated_items(_loaded_config_fixture):
+    module, _ = _loaded_config_fixture
+    parser = ConfigParser()
+    parser.read_dict({"Precheck": {"quant_precheck_item": " disk , npu,,  "}})
+
+    assert module.load_precheck_items(parser) == {"quant_precheck_item": {"disk", "npu"}}
+
+
+def test_load_precheck_items_accepts_multiple_rule_groups(_loaded_config_fixture):
+    module, _ = _loaded_config_fixture
+    parser = ConfigParser()
+    parser.read_dict(
+        {
+            "Precheck": {
+                "quant_precheck_item": "disk",
+                "analyze_precheck_item": " path.permission , npu ",
+            }
+        }
+    )
+
+    assert module.load_precheck_items(parser) == {
+        "quant_precheck_item": {"disk"},
+        "analyze_precheck_item": {"path.permission", "npu"},
+    }
+
+
+def test_load_precheck_items_returns_empty_when_section_missing(_loaded_config_fixture):
+    module, _ = _loaded_config_fixture
+    parser = ConfigParser()
+    parser.read_dict({"URL": {"repository_url": "https://repo.example"}})
+
+    assert module.load_precheck_items(parser) == {}
+
+
+@pytest.mark.parametrize("value", ["", " ", " , ", ",,,"])
+def test_load_precheck_items_drops_blank_items(_loaded_config_fixture, value):
+    module, _ = _loaded_config_fixture
+    parser = ConfigParser()
+    parser.read_dict({"Precheck": {"quant_precheck_item": value}})
+
+    assert module.load_precheck_items(parser) == {"quant_precheck_item": set()}
+
+
+def test_init_config_loads_precheck_items(_loaded_config_fixture):
+    module, config_path = _loaded_config_fixture
+    config_path.write_text(
+        "[URL]\n"
+        "repository_url=https://repo.example\n"
+        "question_and_answer_url=https://qa.example\n"
+        "[ModelAdapter]\n"
+        "[ModelAdapterDependencies]\n"
+        "[Precheck]\n"
+        "quant_precheck_item=disk, npu\n",
+        encoding="utf-8",
+    )
+
+    assert module.init_config().precheck_items == {"quant_precheck_item": {"disk", "npu"}}
