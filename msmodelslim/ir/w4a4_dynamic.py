@@ -129,5 +129,5 @@ class W4A4DynamicPerGroupFakeQuantLinear(AutoFakeQuantLinear):
             ext={"scale": self.weight_scale, "offset": self.weight_offset, "group_size": self.group_size},
         )
         w_q_storage = QStorage(dtype=QDType.INT4, value=self.weight)
-        weight_q_dq = dequantize(w_q_storage, w_q_param)
+        weight_q_dq = dequantize(w_q_storage.T, w_q_param).T
         return F.linear(x_q_dq.value.reshape(x_shape), weight_q_dq.value, self.bias)
