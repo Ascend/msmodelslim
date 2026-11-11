@@ -22,6 +22,10 @@
 
 <span style="font-size:14px;">
 
+🔹 **[2026.11.11]**
+
+- 新增 msModelSlim 问答 SKILL（`modelslim-qa`）
+
 🔹 **[2026.09.03]**
 
 - 新增对 `Step-3.7-Flash`（W8A8 MXFP8）多模态模型的量化支持
@@ -130,6 +134,8 @@ msmodelslim --help
 ## ❓ FAQ
 
 **遇到了问题？** 请参见《[FAQ](./docs/zh/support/faq.md)》。
+
+**想直接问答？** 项目内置 [modelslim-qa Skill](./skills/modelslim-qa/SKILL.md)，可辅助解答安装、能力边界、量化操作、故障排查、部署、精度与概念等问题。
 
 ---
 

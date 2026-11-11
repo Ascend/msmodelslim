@@ -1,7 +1,7 @@
 ---
 title: FAQ 总览（索引）
 description: msModelSlim 常见问题统一索引，按安装/运行/硬件/精度/部署/告警六类导航至对应 FAQ 子文档；本页不含具体问答。
-keywords: [FAQ, 常见问题, 故障排查, 索引, Killed, pydantic, DeprecationWarning]
+keywords: [FAQ, 常见问题, 故障排查, 索引, Killed, pydantic, DeprecationWarning, 权重转换, MXFP8, VLM, 硬件兼容]
 ---
 
 # FAQ
@@ -14,9 +14,9 @@ keywords: [FAQ, 常见问题, 故障排查, 索引, Killed, pydantic, Deprecatio
 |------|---------|------|
 | 1. 安装与依赖 | pydantic 版本冲突、accelerate 依赖安装失败 | [faq_installation.md](./faq_installation.md) |
 | 2. 运行与资源 | 进程 Killed、显存/内存不足（OOM） | [faq_runtime.md](./faq_runtime.md) |
-| 3. 硬件兼容 | 预留分类（硬件环境与算子兼容指引） | [faq_hardware.md](./faq_hardware.md) |
-| 4. 精度与调优 | 预留分类（精度调优、异常定位指引） | [faq_precision.md](./faq_precision.md) |
-| 5. 部署与推理 | 预留分类（MindIE / vLLM-Ascend 部署指引） | [faq_deployment.md](./faq_deployment.md) |
+| 3. 硬件兼容 | 硬件环境与算子兼容指引；新增 A3 SoC、310P/300I 算子与 BF16 限制、aclnn/kernel 自检 | [faq_hardware.md](./faq_hardware.md) |
+| 4. 精度与调优 | 精度调优、异常定位指引；新增 VLM 敏感层排查 | [faq_precision.md](./faq_precision.md) |
+| 5. 部署与推理 | MindIE / vLLM-Ascend 部署指引；新增 FP8/INT4→BF16、BF16→MXFP8 权重转换 | [faq_deployment.md](./faq_deployment.md) |
 | 6. 告警与提示 | DeprecationWarning 等告警处理 | [faq_warning.md](./faq_warning.md) |
 
 ## 2. 检索指引
@@ -29,4 +29,5 @@ keywords: [FAQ, 常见问题, 故障排查, 索引, Killed, pydantic, Deprecatio
 
 | 日期 | 版本 | 变更说明 |
 | --- | --- | --- |
+| 2026-11-10 | v1.1 | 补充硬件兼容、VLM 敏感层排查、FP8/INT4→BF16 与 BF16→MXFP8 权重转换 FAQ；移除硬件/精度/部署分类的“预留”标记。 |
 | 2026-08-17 | v1.0 | 首次发布：按《msModelSlim资料规范》重构 FAQ 体系，拆分为安装/运行/硬件/精度/部署/告警六类子文档并建立本文档统一索引；条目统一三段式，补齐缩写全称与关联文档链接；子文档头部采用 `title`/`description`/`keywords` 三字段可读元数据。 |

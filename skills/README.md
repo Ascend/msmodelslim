@@ -14,6 +14,7 @@
 | 量化执行 | [quantization/](quantization/) | 执行 `msmodelslim quant` | `quantization`（自身） |
 | 评测 | [evaluation/](evaluation/) | 评测配置 / 执行 / 评测集 herding 压缩 | `evaluation/evaluation-cfg`、`evaluation/evaluate`、`evaluation/dataset-compression-herding` |
 | 资料管理 | [docs-management/](docs-management/) | 资料管理 | — |
+| msModelSlim 问答 | [modelslim-qa/](modelslim-qa/) | 客户咨询问答分类路由、资料导引、FAQ 补齐（仅限用户显式调用） | — |
 
 调优闭环脚本共享库（无 SKILL）：[tuning-loop-lib/](tuning-loop-lib/)。
 
@@ -26,7 +27,7 @@
 用户针对单一需求（安装、写适配器、生成 Practice、执行量化、跑评测等）直接触发对应 Skill，由 Skill 按自身流程独立完成，不依赖 `tuning` 编排。
 
 - 领域 Skill（`adaptation` / `strategy` / `evaluation`）是**领域入口**，内部路由到子 Skill 完成具体工作；
-- 单任务 Skill（`installation` / `quantization` / `sensitive-layer-analysis`）自身即可独立完成，无子级。
+- 单任务 Skill（`installation` / `quantization` / `sensitive-layer-analysis` / `modelslim-qa`）自身即可独立完成，无子级。其中 `modelslim-qa` 只允许用户显式调用，不参与自动路由。
 
 **2. 端到端调优（由 `tuning` 编排）**
 
@@ -121,7 +122,7 @@ skills 文档遵循「docs 为权威、skill 只写增量」的分工，避免�
 |------|------|------|
 | **强适用**（必须带经验条目区） | `sensitive-layer-analysis`、`strategy/practice-cfg`、`evaluation/evaluation-cfg`、`evaluation/evaluate`、`quantization`、`adaptation/calibration/analyze`、`adaptation/calibration/dequant`、`adaptation/calibration/verify`、`adaptation/calibration/layer_wise`、`evaluation/dataset-compression-herding` | 反复实操、每次运行都可能产出新经验（环境坑 / CLI 差异 / schema 边界 / 结构判定信号） |
 | **部分适用**（沉淀原则级条目） | `tuning`、`docs-management`、`adaptation/calibration`（主流程）、`adaptation/ep` | 只登记编排 / 文档管理 / 适配流程级原则；具体操作坑**下沉**给其子 skill 登记，避免编排层膨胀 |
-| **弱适用 / 不加** | `adaptation`、`evaluation`、`strategy`（路由入口） | 只做路由分发；如确有"哪类模型走哪条路径"的教训，登记到对应子 skill |
+| **弱适用 / 不加** | `adaptation`、`evaluation`、`strategy`（路由入口）、`modelslim-qa` | 只做路由分发；`modelslim-qa` 的经验并入各分类 reference，不单独维护索引 |
 | **经验库载体** | `strategy/standing_high_with_experience/expert-rules` | 全体系经验的 L1/L2/L3 检索索引与专家库，见其 SKILL.md「三级知识结构」；新模型个案按 L3 约定追加 `models/<vendor>/<model>.md` |
 
 ### 6. 风格约定
