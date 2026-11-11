@@ -63,7 +63,9 @@ class FA3QuantProcessorConfig(AutoProcessorConfig):
 
     type: Literal["fa3_quant"] = Field(default="fa3_quant", description="处理器类型，固定为 `fa3_quant`。")
     qconfig: Optional[QConfig] = Field(
-        default=None, description="统一量化配置；不提供时默认使用 INT8 per-head symmetric，见《QConfig 配置说明》"
+        default=None,
+        description="统一量化配置；不提供时默认使用 `dtype: int8`、`scope: per_head`、`symmetric: true`、"
+        "`method: minmax`（对称量化），见《QConfig 配置说明》。",
     )
     include: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=lambda: ["*"], description="包含的模块名称模式，默认 `*` 匹配全部模块"
@@ -78,7 +80,9 @@ class FA3QuantProcessorConfig(AutoProcessorConfig):
 
     @model_validator(mode="after")
     def validate_exclusivity(self) -> "FA3QuantProcessorConfig":
-        """校验 qconfig 与 details 互斥：两者都提供时报错；两者都未提供时默认 INT8 per-head symmetric。"""
+        """校验 qconfig 与 details 互斥：两者都提供时报错；两者都未提供时使用默认
+        `{dtype: int8, scope: per_head, symmetric: true, method: minmax}`。
+        """
         # 如果没有提供qconfig，使用默认的INT8 per-head symmetric配置
         if self.qconfig is None and not self.details:
             self.qconfig = QConfig(dtype=QDType.INT8, scope=QScope.PER_HEAD, symmetric=True, method="minmax")

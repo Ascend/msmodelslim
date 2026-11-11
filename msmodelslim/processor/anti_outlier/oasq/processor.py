@@ -58,7 +58,7 @@ class OASQProcessorConfig(AutoProcessorConfig):
 
     type: Literal["oasq"] = Field(default="oasq", description="处理器类型，固定为 `oasq`。")
     max_iters: Optional[Annotated[int, AfterValidator(pydtc.int_greater_than_zero)]] = Field(
-        default=None, description="最大迭代次数；不设置时使用实现默认值，必须大于0。"
+        default=None, gt=0, description="最大迭代次数；不设置时使用实现默认值，必须大于0。"
     )
     symmetric: bool = Field(default=True, description="是否对称量化后续的权重/激活。")
     enable_subgraph_type: Annotated[list, AfterValidator(pydtc.is_string_list)] = Field(

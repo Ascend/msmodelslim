@@ -205,6 +205,7 @@ class TestCaseConfig(BaseModel):
     @field_validator('items', mode='after')
     @classmethod
     def validate_items(cls, v: List[str]) -> List[str]:
+        """检查项名称必须来自内置检查项注册表。"""
         available_items = get_all_check_item_names()
         for item_name in v:
             if item_name not in available_items:
@@ -238,7 +239,10 @@ def parse_test_case(value: Any) -> TestCaseConfig:
 class GarbledTextPrecheckConfig(BasePrecheckConfig):
     """基本乱码检测预检查配置"""
 
-    type: Literal["garbled_text"] = "garbled_text"
+    type: Literal["garbled_text"] = Field(
+        default="garbled_text",
+        description="预检查类型，固定为 `garbled_text`。",
+    )
     test_cases: Optional[List[TestCaseConfig]] = Field(
         default=None, description="List of test cases. Each case contains a message and enabled check items."
     )
@@ -246,6 +250,7 @@ class GarbledTextPrecheckConfig(BasePrecheckConfig):
     @field_validator('test_cases', mode='before')
     @classmethod
     def parse_test_cases(cls, v: Any) -> List[TestCaseConfig]:
+        """将单条、列表或空值形式的测试用例统一转换为非空列表。"""
         if v is None:
             return [TestCaseConfig(message="How are you?", items=list(_CHECK_ITEM_REGISTRY.keys()))]
         if isinstance(v, list):
@@ -255,6 +260,7 @@ class GarbledTextPrecheckConfig(BasePrecheckConfig):
     @field_validator('test_cases', mode='after')
     @classmethod
     def validate_test_cases(cls, v: List[TestCaseConfig]) -> List[TestCaseConfig]:
+        """测试用例列表必须至少包含一项。"""
         if not v:
             raise SchemaValidateError(
                 "test_cases must contain at least one test case", action="Please provide at least one test case"

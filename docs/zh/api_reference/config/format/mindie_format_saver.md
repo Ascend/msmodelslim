@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.format.mindie_format.mindie.MindIEQuantFormatConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.format.mindie_format.mindie.MindIEQuantFormatConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # mindie_format_saver 配置说明
 
 ## 1. 配置概述
@@ -27,15 +32,10 @@ MindIE 保存格式配置，导出 MindIE 落盘格式的权重文件。
 ## 3. 完整配置参考
 
 ```yaml
-apiversion: multimodal_sd_modelslim_v1
+apiversion: modelslim_v1
 spec:
   save:
   - type: mindie_format_saver
     part_file_size: 4
     ext: {}
-  multimodal_sd_config:
-    dump_config:
-      enable_dump: true
-      capture_mode: args
-      dump_data_dir: ''
 ```

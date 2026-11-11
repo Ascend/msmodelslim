@@ -72,7 +72,7 @@ class KVSmoothProcessorConfig(AutoProcessorConfig):
 
     type: Literal["kv_smooth"] = Field(default="kv_smooth", description="处理器类型，固定为 `kv_smooth`。")
     smooth_factor: Annotated[float, AfterValidator(greater_than_zero)] = Field(
-        default=1.0, description="KV 平滑因子，必须大于0；越大平滑越强。"
+        default=1.0, gt=0, description="KV 平滑因子，必须大于0；越大平滑越强。"
     )
     include: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=lambda: ["*"], description="包含的模块名称模式，默认 `*` 匹配全部模块"

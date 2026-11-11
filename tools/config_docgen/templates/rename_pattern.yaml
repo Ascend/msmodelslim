@@ -1,0 +1,7 @@
+apiversion: modelslim_convert
+spec:
+  preprocess:
+  - type: rename
+    patterns:
+    - from: model.layers.*.mlp.gate_proj.weight
+      to: model.layers.*.mlp.gate.weight

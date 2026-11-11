@@ -43,9 +43,9 @@ class AccuracyExpectation(BaseModel):
     """精度期望：要求模型在指定数据集上达到的目标精度（含容差）。"""
 
     dataset: Annotated[str, AfterValidator(pydtc.validate_str_length())] = Field(description="数据集名称")
-    target: Annotated[Decimal, AfterValidator(pydtc.greater_than_zero)] = Field(description="目标精度，必须 > 0")
+    target: Annotated[Decimal, AfterValidator(pydtc.greater_than_zero)] = Field(gt=0, description="目标精度，必须 > 0")
     tolerance: Annotated[Decimal, AfterValidator(pydtc.in_range(min_val=0))] = Field(
-        description="相对目标精度可容忍的偏差，必须 >= 0"
+        ge=0, description="相对目标精度可容忍的偏差，必须 >= 0"
     )
 
 

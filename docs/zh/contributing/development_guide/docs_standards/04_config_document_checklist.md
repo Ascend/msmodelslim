@@ -27,4 +27,4 @@
 
 ## 2. 使用说明
 
-- **校验范围**：基于《[配置文档模板](04_config_document_template.md)》编写的配置文档，存放于 `docs/zh/api_reference/config/`，其中由生成器产出的文档带 `generated-by` 标记，不手工编辑。
+配置文档的生成、校验、维护流程和 UT 一致性门禁说明，统一参见《[配置文档生成工具](../../../../../tools/config_docgen/README.md)》。

@@ -43,7 +43,7 @@ class FloatSparseProcessorConfig(AutoProcessorConfig):
 
     type: Literal["float_sparse"] = Field(default="float_sparse", description="处理器类型，固定为 `float_sparse`。")
     sparse_ratio: Annotated[float, AfterValidator(in_range(min_val=0.0, max_val=1.0))] = Field(
-        default=0.3, description="稀疏比例（0~1），置零权重占比，越大稀疏越多。"
+        default=0.3, ge=0.0, le=1.0, description="稀疏比例（0~1），置零权重占比，越大稀疏越多。"
     )
     include: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=list, description="包含的模块名称模式"

@@ -1,7 +1,10 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.core.quant_service.modelslim_convert.quant_config.ModelslimConvertQuantConfig -->
-# modelslim_convert 配置说明
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quant_service.modelslim_convert.quant_config.ModelslimConvertQuantConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
 
-本文档介绍 modelslim_convert 权重转换任务的配置，说明 ModelslimConvertQuantConfig 配置类中 apiversion、spec、preprocess、linears、save、parallel、defaults 各字段的类型、默认值与取值范围，适用于需要编写 modelslim_convert 权重转换任务 YAML 配置的用户。
+# modelslim_convert 配置说明
 
 ## 1. 配置概述
 
@@ -18,8 +21,8 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `apiversion` | `string` | 可选 | `modelslim_convert` | `modelslim_convert` | 权重转换任务类型，固定为 `modelslim_convert`。 | 无 |
-| `spec` | `object` | 必选 | 无 | — | `modelslim_convert` 服务的 spec 结构。<br><br>声明权重名重命名/变换（`preprocess`）、线性层转换规则（`linears`）、<br>保存格式（`save`）、并行执行（`parallel`）与默认值（`defaults`）。 | 本页 <a href="#2-2-modelslim-convert-spec">§2.2</a> |
+| `apiversion` | `string` | 可选 | `modelslim_convert` | `modelslim_convert` | 权重转换任务类型（协议版本），固定为 `modelslim_convert`；框架据此选择权重转换任务配置插件。 | 无 |
+| `spec` | `object` | 必选 | 无 | — | `modelslim_convert` 服务的 spec 结构，声明权重名重命名/变换（`preprocess`）、线性层转换规则（`linears`）、保存格式（`save`）、并行执行（`parallel`）与默认值（`defaults`）。 | 本页 <a href="#2-2-modelslim-convert-spec">§2.2</a> |
 
 **配置约束**
 
@@ -34,7 +37,7 @@
 | `preprocess` | `list[object]` | 可选 | `[]` | — | 预处理步骤列表，每项 `type` 为 `rename` 或 `convert`。 | 本页 <a href="#2-2-1-preprocessconfig">§2.2.1</a> |
 | `linears` | `list[object]` | 可选 | `[]` | — | 线性层转换规则列表。 | 本页 <a href="#2-2-6-linear-convert-config">§2.2.6</a> |
 | `save` | `list[object]` | 可选 | `[]` | — | 保存格式配置列表，取首个生效。 | 本页 <a href="#2-2-7-save-config">§2.2.7</a> |
-| `parallel` | `object` | 可选 | 见嵌套配置默认值 | — | CPU 并行配置。NPU 多卡用命令行 `--device_id`。 | 本页 <a href="#2-2-8-parallel-spec-config">§2.2.8</a> |
+| `parallel` | `object` | 可选 | 见嵌套配置默认值 | — | 并行执行配置。设备（NPU/CPU 与卡号）由命令行 `--device`/`--device_id` 决定，YAML 不含设备字段；`cpu_workers` 仅在 `--device cpu` 时生效，NPU 转换固定每卡一个子进程。 | 本页 <a href="#2-2-8-parallel-spec-config">§2.2.8</a> |
 | `defaults` | `object` | 可选 | 见嵌套配置默认值 | — | 字段缺省时的全局默认值。 | 本页 <a href="#2-2-9-convert-defaults">§2.2.9</a> |
 
 **配置约束**
@@ -112,12 +115,12 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `match` | `list[string]` | 可选 | `[]` | — | 匹配的线性层名称模式列表。 | 无 |
-| `target` | `string` | 必选 | 无 | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN` | 转换目标 IR 类型，如 `W8A8_MXFP8`、`INT4_PACKED` 等。 | 无 |
-| `route` | `list[string] / string` | 可选 | `auto` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`MXFP4_PACKED`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN`；`auto` | 转换路径：显式 IR 列表（首元素为源 IR），或 `auto` 由路由器根据权重 dtype 推断。 | 无 |
+| `target` | `string` | 必选 | 无 | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`MXFP4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`PARETOQ_FLOAT`、`W4A8_DYNAMIC`、`W4A4_DYNAMIC`、`UNKNOWN` | 转换目标 IR 类型，如 `W8A8_MXFP8`、`INT4_PACKED` 等。 | 无 |
+| `route` | `list[string] / string` | 可选 | `auto` | 列表元素：`FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`MXFP4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`PARETOQ_FLOAT`、`W4A8_DYNAMIC`、`W4A4_DYNAMIC`、`UNKNOWN`；`auto` | 转换路径：显式 IR 列表（首元素为源 IR），或 `auto` 由虚拟树按权重 dtype 推断。 | 无 |
 
 **配置约束**
 
-- `target` 为 `W8A8_MXFP8` 或 `W4A4_MXFP4` 时，`save.type` 必须是 `ascend_v1`（`dst_format: ascendv1`）。
+- 无。
 
 <h4 id="2-2-7-save-config">2.2.7 SaveConfig</h4>
 
@@ -125,7 +128,7 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `type` | `string` | 可选 | `ascend_v1` | — | 保存格式：`ascend_v1`（昇腾，与 `ConvertDefaults.dst_format` 的 `ascendv1` 等价）；`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。 | 无 |
+| `type` | `string` | 可选 | `ascend_v1` | — | 保存格式：`ascend_v1`/`ascendv1`/`ascendv1_saver`（昇腾，均映射为 `ConvertDefaults.dst_format` 的 `ascendv1`）；`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。 | 无 |
 | `part_file_size` | `int` | 可选 | `4` | — | 分片文件大小，单位 GB；0 表示不分片。 | 无 |
 
 **配置约束**
@@ -134,17 +137,16 @@
 
 <h4 id="2-2-8-parallel-spec-config">2.2.8 ParallelSpecConfig</h4>
 
-`modelslim_convert` 的并行执行配置。设备（NPU/CPU 与卡号）由 CLI `--device` / `--device_id` 决定，YAML 不含设备字段。
+`modelslim_convert` 的并行执行配置。
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `cpu_workers` | `int` | 可选 | `8` | — | CPU 转换的并行进程数：1 表示单进程；大于1 表示组间多进程 + 组内线程。仅 `--device cpu` 时生效；NPU 转换固定每卡一个子进程（由 `--device_id` 决定），无需设置。 | 无 |
+| `cpu_workers` | `int` | 可选 | `8` | — | CPU 转换的并行 worker 数：1 单进程；大于1 组间多进程 + 组内线程，默认 8。仅 --device cpu 时生效；NPU 转换固定每卡一个子进程，由 --device_id 决定，无需设置。 | 无 |
 | `max_group_size` | `int / null` | 可选 | `null` | — | 单个依赖组的最大任务数，超过则拆成多个子组分散到不同进程；不设置表示不拆分。 | 无 |
 
 **配置约束**
 
-- `cpu_workers` 仅 `--device cpu` 时生效。NPU 用 `--device npu --device_id ...`。
-- `max_group_size`：MoE 等含有大量专家任务的模型，可设置为约「每层专家任务数 / 卡数」（如 8 张卡设为 96），防止大组单进程/单卡长尾等待。
+- 无。
 
 <h4 id="2-2-9-convert-defaults">2.2.9 ConvertDefaults</h4>
 
@@ -152,9 +154,9 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `src_format` | `string` | 可选 | `auto` | `auto` | 源权重格式：`auto` 由模型适配器/权重目录自动推断。 | 无 |
-| `dst_format` | `string` | 可选 | `ascendv1` | `ascendv1`、`ascendv1_saver`、`compressed_tensors`、`huggingface`、`hf` | 目标保存格式：`ascendv1`（昇腾，与 `SaveConfig.type` 的 `ascend_v1` 等价）；`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。 | 无 |
-| `dst_ir` | `string / null` | 可选 | `null` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`UNKNOWN` 或 null | 目标 IR 类型；不设置时由目标格式决定。 | 无 |
+| `src_format` | `string` | 可选 | `auto` | — | 源权重格式；`auto` 由模型适配器/权重目录自动推断。 | 无 |
+| `dst_format` | `string` | 可选 | `ascendv1` | — | 目标保存格式：`ascendv1`（昇腾，与 `SaveConfig.type` 的 `ascend_v1`/`ascendv1`/`ascendv1_saver` 等价）；`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。 | 无 |
+| `dst_ir` | `string / null` | 可选 | `null` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP8`、`INT4_PACKED`、`MXFP4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`PARETOQ_FLOAT`、`W4A8_DYNAMIC`、`W4A4_DYNAMIC`、`UNKNOWN`；或 null | 目标 IR 类型；不设置时由目标格式决定。 | 无 |
 
 **配置约束**
 

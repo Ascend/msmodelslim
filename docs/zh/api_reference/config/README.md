@@ -9,7 +9,7 @@
 3. **查保存格式**：`spec.save[]` 的每一项由 `type` 分派，按下方[保存格式](#4-保存格式specsave-按-type-分派)表查对应页面；VLM / 多模态生成协议只接受其中的 AscendV1 与 MindIE 两类。
 4. **查调优**：自动调优的顶层结构见《[自动调优配置说明导航](tuning/README.md)》，`strategy` 与 `evaluation` 的字段见下方[自动调优](#5-自动调优)表。
 
-> 本页、《[量化任务配置说明导航](quant/README.md)》与《[自动调优配置说明导航](tuning/README.md)》为手写导航；其余配置页由 `skills/docs-management/scripts/gen_config_api_docs.py` 从源码 Pydantic 注解生成。修改字段说明请改源码 `Field(description=)` 等注解后重新生成，不要直接编辑带 `generated-by` 标记的页面。
+> 本页、《[量化任务配置说明导航](quant/README.md)》与《[自动调优配置说明导航](tuning/README.md)》为手写导航；其余配置页由 `tools.config_docgen` 从源码 Pydantic 注解生成。修改字段说明请改源码 `Field(description=)` 等注解后重新生成，不要直接编辑带 `generated-by` 标记的页面。
 
 ## 2. 任务配置（按 `apiversion` 选择）
 

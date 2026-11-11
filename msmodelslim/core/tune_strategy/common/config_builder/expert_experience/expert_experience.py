@@ -48,6 +48,7 @@ class StructureConfig(BaseModel):
     @field_validator("include")
     @classmethod
     def include_no_empty_string(cls, v: List[str]) -> List[str]:
+        """校验 `include` 列表中的每个模式均为非空、非纯空白字符串。"""
         for s in v:
             if not s or not str(s).strip():
                 raise ValueError(

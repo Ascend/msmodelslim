@@ -109,8 +109,10 @@ def _register_non_fusion_smooth_hook(layer: nn.Module, scales: torch.Tensor) -> 
 
 
 class TrainableSmoothOpConfig(TLQOpConfig):
+    """可训练平滑操作配置：联合训练权重缩放与激活平滑迁移系数。"""
+
     type: Literal["trainable_smooth"] = Field(default="trainable_smooth", description="插件类型：trainable_smooth")
-    lr: Optional[float] = Field(default=None, gt=0.0)
+    lr: Optional[float] = Field(default=None, gt=0.0, description="该操作的学习率；未设置时使用处理器级默认学习率。")
     enable_subgraph_type: List[str] = Field(
         default_factory=lambda: list(SMOOTH_SUPPORTED_SUBGRAPH_TYPES),
         description="启用的 Smooth 子图类型，须为 SMOOTH_SUPPORTED_SUBGRAPH_TYPES 子集",
@@ -121,6 +123,7 @@ class TrainableSmoothOpConfig(TLQOpConfig):
     @field_validator("enable_subgraph_type")
     @classmethod
     def _validate_subgraph_types(cls, v: List[str]) -> List[str]:
+        """校验 `enable_subgraph_type` 必须为 `SMOOTH_SUPPORTED_SUBGRAPH_TYPES` 的子集。"""
         allowed = set(SMOOTH_SUPPORTED_SUBGRAPH_TYPES)
         unknown = [t for t in v if t not in allowed]
         if unknown:

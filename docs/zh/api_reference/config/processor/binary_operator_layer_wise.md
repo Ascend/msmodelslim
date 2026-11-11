@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.processor.analysis.binary_operator_layer_wise.processor.BinaryOperatorLayerWiseProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.analysis.binary_operator_layer_wise.processor.BinaryOperatorLayerWiseProcessorConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # binary_operator_layer_wise 配置说明
 
 ## 1. 配置概述
@@ -18,7 +23,7 @@
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `binary_operator_layer_wise` | `binary_operator_layer_wise` | 处理器类型，固定为 `binary_operator_layer_wise`。 | 无 |
 | `metrics` | `string` | 可选 | `mse_layer_wise` | — | 分析指标 `mse_layer_wise`。 | 无 |
-| `quant_modules` | `list[string]` | 可选 | `['*']` | — | 与 linear_quant.include、CLI --quant_modules 一致（YAML 占位 ${quant_modules}）；用于层敏感结果展示名后缀，如 model.layers.2 (mod1, mod2)。 | 无 |
+| `quant_modules` | `list[string]` | 可选 | `['*']` | 列表元素：字符串长度 ≤ 200 | 与 linear_quant.include、CLI --quant_modules 一致（YAML 占位 ${quant_modules}）；用于层敏感结果展示名后缀，如 model.layers.2 (mod1, mod2)。 | 无 |
 | `configs` | `list[object]` | 可选 | `[]` | — | 用于执行量化-反量化路径的量化子处理器配置列表 | 本页 <a href="#2-2-autoprocessorconfig">§2.2</a> |
 
 **配置约束**

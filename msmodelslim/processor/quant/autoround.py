@@ -530,7 +530,9 @@ class AutoroundProcessorConfig(AutoProcessorConfig):
     type: Literal["autoround_quant"] = Field(
         default="autoround_quant", description="处理器类型，固定为 `autoround_quant`。"
     )
-    iters: Annotated[int, AfterValidator(greater_than_zero)] = Field(default=10, description="迭代次数，必须大于0")
+    iters: Annotated[int, AfterValidator(greater_than_zero)] = Field(
+        default=10, gt=0, description="迭代次数，必须大于0"
+    )
     enable_minmax_tuning: bool = Field(default=True, description="是否启用最小最大值调优")
     enable_round_tuning: bool = Field(default=True, description="是否启用舍入调优")
     strategies: List[QuantStrategyConfig] = Field(default_factory=list, description="量化策略配置列表，至少配置一个")

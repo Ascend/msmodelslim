@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 
 from typing import Any, Dict, Generator, List, Literal, Optional
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import Field, model_validator
 
 from msmodelslim.core.analysis_service import (
     AnalysisConfig,
@@ -49,41 +49,8 @@ from msmodelslim.utils.pydantic_model_path import set_pydantic_model_path, valid
 MODELSLIM_V1_APIVERSION = "modelslim_v1"
 
 
-_FULL_EXAMPLE = {
-    'type': 'binary_fallback',
-    'rollback_path': 'spec.process.1.exclude',
-    'rollback_candidates': [],
-    'template': {
-        'apiversion': 'modelslim_v1',
-        'metadata': {
-            'config_id': 'binary_fallback_tune',
-            'label': {'w_bit': 8, 'a_bit': 8, 'is_sparse': False, 'kv_cache': False},
-        },
-        'spec': {
-            'runner': 'auto',
-            'process': [
-                {'type': 'iter_smooth', 'alpha': 0.5},
-                {
-                    'type': 'linear_quant',
-                    'qconfig': {
-                        'act': {'scope': 'per_tensor', 'dtype': 'int8', 'symmetric': False, 'method': 'minmax'},
-                        'weight': {'scope': 'per_channel', 'dtype': 'int8', 'symmetric': True, 'method': 'minmax'},
-                    },
-                    'include': ['*'],
-                    'exclude': [],
-                },
-            ],
-            'save': [{'type': 'ascendv1_saver', 'part_file_size': 4}],
-            'dataset': 'mix_calib.jsonl',
-        },
-    },
-}
-
-
 class BinaryFallbackStrategyConfig(StrategyConfig):
     """二分回退调优策略配置。"""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [_FULL_EXAMPLE]})
 
     type: Literal["binary_fallback"] = Field(
         default="binary_fallback", description="策略类型，固定为 `binary_fallback`"
@@ -101,6 +68,7 @@ class BinaryFallbackStrategyConfig(StrategyConfig):
 
     @model_validator(mode="after")
     def validate_binary_fallback_config(self):
+        """校验模板仅使用 `modelslim_v1`，且 `rollback_path` 命中模板中的模型层列表路径。"""
         if self.template.apiversion != MODELSLIM_V1_APIVERSION:
             raise SchemaValidateError(
                 f"binary_fallback only supports apiversion={MODELSLIM_V1_APIVERSION!r}, "

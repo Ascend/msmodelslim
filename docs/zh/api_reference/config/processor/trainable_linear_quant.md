@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.processor.trainable_linear_quant.config.processor_config.TrainableLinearQuantProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.trainable_linear_quant.config.processor_config.TrainableLinearQuantProcessorConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # trainable_linear_quant 配置说明
 
 ## 1. 配置概述
@@ -34,7 +39,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 必选 | 无 | — | 算子类型，分派具体 TLQ 算子（如 `minmax_tune`、`round_tune`）。 | 无 |
-| `lr` | `float / null` | 可选 | `null` | >0.0 或 null | 该 Op 可训练参数学习率；未指定时使用 train_config.lr | 无 |
+| `lr` | `float / null` | 可选 | `null` | >0.0；或 null | 该 Op 可训练参数学习率；未指定时使用 train_config.lr | 无 |
 
 **配置约束**
 
@@ -44,16 +49,18 @@
 
 | 配置类 | `type` | 说明 | 文档 |
 |--------|----------|------|------|
-| `MinmaxTuneOpConfig` | `minmax_tune` | `MinmaxTuneOpConfig` 是嵌套配置。 | 本页 <a href="#2-2-1-minmax-tune">§2.2.1</a> |
-| `RoundTuneOpConfig` | `round_tune` | `RoundTuneOpConfig` 是嵌套配置。 | 本页 <a href="#2-2-2-round-tune">§2.2.2</a> |
-| `TrainableSmoothOpConfig` | `trainable_smooth` | `TrainableSmoothOpConfig` 是嵌套配置。 | 本页 <a href="#2-2-3-trainable-smooth">§2.2.3</a> |
+| `MinmaxTuneOpConfig` | `minmax_tune` | Minmax 调优操作配置：通过可学习缩放参数调整权重的对称量化范围。 | 本页 <a href="#2-2-1-minmax-tune">§2.2.1</a> |
+| `RoundTuneOpConfig` | `round_tune` | 舍入调优操作配置：通过可学习舍入偏移优化权重量化误差。 | 本页 <a href="#2-2-2-round-tune">§2.2.2</a> |
+| `TrainableSmoothOpConfig` | `trainable_smooth` | 可训练平滑操作配置：联合训练权重缩放与激活平滑迁移系数。 | 本页 <a href="#2-2-3-trainable-smooth">§2.2.3</a> |
 
 <h4 id="2-2-1-minmax-tune">2.2.1 MinmaxTuneOpConfig</h4>
+
+Minmax 调优操作配置：通过可学习缩放参数调整权重的对称量化范围。
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `minmax_tune` | `minmax_tune` | 插件类型：minmax_tune | 无 |
-| `lr` | `float / null` | 可选 | `null` | >0.0 或 null | — | 无 |
+| `lr` | `float / null` | 可选 | `null` | >0.0；或 null | 该操作的学习率；未设置时使用处理器级默认学习率。 | 无 |
 
 **配置约束**
 
@@ -61,10 +68,12 @@
 
 <h4 id="2-2-2-round-tune">2.2.2 RoundTuneOpConfig</h4>
 
+舍入调优操作配置：通过可学习舍入偏移优化权重量化误差。
+
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `round_tune` | `round_tune` | 插件类型：round_tune | 无 |
-| `lr` | `float / null` | 可选 | `null` | >0.0 或 null | — | 无 |
+| `lr` | `float / null` | 可选 | `null` | >0.0；或 null | 该操作的学习率；未设置时使用处理器级默认学习率。 | 无 |
 
 **配置约束**
 
@@ -72,17 +81,19 @@
 
 <h4 id="2-2-3-trainable-smooth">2.2.3 TrainableSmoothOpConfig</h4>
 
+可训练平滑操作配置：联合训练权重缩放与激活平滑迁移系数。
+
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `trainable_smooth` | `trainable_smooth` | 插件类型：trainable_smooth | 无 |
-| `lr` | `float / null` | 可选 | `null` | >0.0 或 null | — | 无 |
+| `lr` | `float / null` | 可选 | `null` | >0.0；或 null | 该操作的学习率；未设置时使用处理器级默认学习率。 | 无 |
 | `enable_subgraph_type` | `list[string]` | 可选 | `['norm-linear', 'linear-linear', 'ov', 'up-down', 'non-fusion']` | — | 启用的 Smooth 子图类型，须为 SMOOTH_SUPPORTED_SUBGRAPH_TYPES 子集 | 无 |
 | `include` | `list[string] / null` | 可选 | `null` | — | 子图入口 include 通配 | 无 |
 | `exclude` | `list[string] / null` | 可选 | `null` | — | 子图入口 exclude 通配 | 无 |
 
 **配置约束**
 
-- 无。
+- 校验 `enable_subgraph_type` 必须为 `SMOOTH_SUPPORTED_SUBGRAPH_TYPES` 的子集。
 
 <h3 id="2-3-tlq-quant-strategy-config">2.3 QuantStrategyConfig</h3>
 
@@ -104,8 +115,8 @@ trainable_linear_quant 量化策略：对匹配的线性层应用一组可训练
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `act` | `object` | 可选 | `{'dtype': 'float', 'scope': 'per_tensor', 'symmetric': True, 'method': 'none', 'ext': {}}` | — | 激活值的量化配置。由激活量化器实现，`method` 支持 `minmax`、`histogram`、`none`；`scope` 支持 `per_tensor`、`per_token`、`per_channel`（限 int8/fp8_e4m3/mxfp8 的 minmax）等。默认 `float`（不量化激活），仅对权重做量化。 | 本页 <a href="#2-3-2-qconfig">§2.3.2</a> |
-| `weight` | `object` | 必选 | 无 | — | 权重的量化配置，必选。由权重量化器实现，`method` 支持 `minmax`、`mse_round`、`ssz`、`gptq` 等；`scope` 支持 `per_channel`、`per_group`、`per_block` 等（不支持 `per_tensor`/`per_token`）。 | 本页 <a href="#2-3-2-qconfig">§2.3.2</a> |
+| `act` | `object` | 可选 | `{'dtype': 'float', 'scope': 'per_tensor', 'symmetric': True, 'method': 'none'}` | — | 激活值的量化配置。由激活量化器实现，`method` 支持 `minmax`、`histogram`、`none`；`scope` 支持 `per_tensor`、`per_token`、`per_channel` 等；激活 `per_channel` 仅支持 `int8`、`fp8_e4m3`、`mxfp8` 配合 `method=minmax`。默认 `float`（不量化激活），仅对权重做量化。 | 本页 <a href="#2-3-2-qconfig">§2.3.2</a> |
+| `weight` | `object` | 必选 | 无 | — | 权重的量化配置，必选。由权重量化器实现，`method` 支持 `minmax`、`mse_round`、`ssz`、`gptq` 等；`scope` 支持 `per_channel`、`per_group`、`per_block` 等，不支持 `per_tensor`/`per_token`。 | 本页 <a href="#2-3-2-qconfig">§2.3.2</a> |
 
 **配置约束**
 
@@ -118,14 +129,14 @@ trainable_linear_quant 量化策略：对匹配的线性层应用一组可训练
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `dtype` | `string` | 必选 | 无 | `float`、`int8`、`int4`、`mxfp8`、`mxfp4`、`fp8_e4m3` | 量化数据类型，如 `int8`、`int4`、`mxfp8`、`mxfp4`、`fp8_e4m3`；`float` 表示该张量不量化。 | 无 |
-| `scope` | `string` | 必选 | 无 | `per_tensor`、`per_channel`、`per_group`、`per_block`、`per_token`、`pd_mix`、`per_head`、`dual_scale`、`per_channel_neg_offset` | 量化粒度，即 scale/zero_point 的计算范围。对于不同量化目标，`scope` 通常在可用取值上有所差异：<br>激活：`per_tensor`（整张量一个尺度）、`per_token`（按注意力头）、`per_block`(按固定块)、`pd_mix`（Prefill/Decode 混合粒度）；<br>权重：`per_channel`（按通道）、`per_group`（按分组）、`per_block`(按固定块)、`dual_scale`（双尺度）；<br>FA3 注意力：`per_head`（按注意力头）、`per_token`（按注意力头）。 | 无 |
+| `scope` | `string` | 必选 | 无 | `per_tensor`、`per_channel`、`per_group`、`per_block`、`per_token`、`pd_mix`、`per_head`、`dual_scale`、`per_channel_neg_offset` | 量化粒度，即 scale/zero_point 的计算范围。 | 无 |
 | `symmetric` | `bool` | 必选 | 无 | — | 是否对称量化。对称量化只保存 scale；非对称量化额外保存 zero_point，可用性取决于 `dtype`/`scope` 组合。 | 无 |
-| `method` | `string` | 必选 | 无 | — | 量化参数估计算法，如 `minmax`、`mse_round`、`histogram`、`ssz`、`none`、`gptq` 等；算法按张量类型分属两套量化器：激活量化器支持 `minmax`、`histogram`、`none`（配合 `float`）；权重量化器支持 `minmax`、`mse_round`、`ssz`、`gptq` 等。可用取值还取决于 `dtype`/`scope`/`symmetric` 组合，`none` 表示不估计参数。 | 无 |
+| `method` | `string` | 必选 | 无 | — | 量化参数估计算法。算法按张量类型分属两套量化器：激活量化器支持 `minmax`、`histogram`、`none`（`none` 仅配合 `float`）；权重量化器支持 `minmax`、`mse_round`、`ssz`、`gptq` 等。具体可用值取决于 `dtype`、`scope`、`symmetric` 与对应量化器实现。 | 无 |
 | `ext` | `object` | 可选 | `{}` | — | 量化器扩展参数，随 `method` 与量化器实现而定（如 gptq 的 `percdamp`/`group_size`）；空对象表示无扩展参数。 | 无 |
 
 **配置约束**
 
-- 无。
+- 激活：`per_tensor`（整张量一个尺度）、`per_token`（按 token）、`per_channel`（按通道）、`per_block`（按固定块）、`pd_mix`（Prefill/Decode 混合粒度）、`dual_scale`（双尺度）；<br>权重：`per_channel`（按通道）、`per_group`（按分组）、`per_block`（按固定块）、`dual_scale`（双尺度）、`per_channel_neg_offset`（按通道且 offset 取反的部署语义）；<br>FA3 注意力：`per_head`（按注意力头）、`per_channel`（按通道）、`per_token`（按 token）、`per_block`（按固定块）。具体可用组合取决于 `dtype`、`symmetric`、`method` 与所属量化器/处理器实现。
 
 <h3 id="2-4-block-train-config">2.4 BlockTrainConfig</h3>
 
@@ -213,7 +224,6 @@ spec:
           scope: per_tensor
           symmetric: true
           method: none
-          ext: {}
         weight:
           dtype: int8
           scope: per_channel

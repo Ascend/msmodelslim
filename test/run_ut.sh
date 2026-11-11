@@ -34,6 +34,12 @@ run_tests() {
     IFS="$oldIFS"
 }
 
+run_config_doc_check() {
+    # Tool scripts are outside the msmodelslim/ascend_utils coverage scope.
+    # Run the generator directly without coverage instrumentation so it does not affect coverage.
+    python3 "${rootdir}/tools/config_docgen/main.py" --check || ret=1
+}
+
 run_smoke_test() {
     python3 -m coverage run --branch --source=${code_dir} --omit="${coverage_omit}" -p -m pytest ${route}/smoke --junitxml="${route}/report/final_smoke.xml" || ret=1
 }
@@ -150,6 +156,7 @@ chmod 640 ${rootdir}/msmodelslim/config/config.ini ${rootdir}/msmodelslim/config
 case "${1:-}" in
     --modelslim_v1)
         echo "Running modelslim_v1 related test cases..."
+        run_config_doc_check
         run_tests "$MODELSlim_V1_CASES"
         report_coverage
         exit ${ret}
@@ -160,6 +167,7 @@ case "${1:-}" in
         ;;
     "")
         echo "Running all test cases..."
+        run_config_doc_check
         run_tests "$ALL_CASES"
         run_smoke_test
         report_coverage

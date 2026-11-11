@@ -52,7 +52,7 @@ class AdaptRotationStage1ProcessorConfig(BaseModel):
         default="_adapt_rotation_stage1", description="阶段配置类型，内部标识，无需配置。"
     )
     steps: Annotated[int, AfterValidator(in_range(min_val=1, max_val=1000))] = Field(
-        default=20, description="迭代优化步数"
+        default=20, ge=1, le=1000, description="迭代优化步数"
     )
     quant_dtype: Literal["int4", "int8"] = Field(
         default="int4",
@@ -65,7 +65,7 @@ class AdaptRotationStage1ProcessorConfig(BaseModel):
     )
     block_size: int = Field(default=-1, description="块大小，-1 表示 hidden_dim")
     max_samples: Annotated[int, AfterValidator(in_range(min_val=1, max_val=100000))] = Field(
-        default=2048, description="每层最大采样数"
+        default=2048, ge=1, le=100000, description="每层最大采样数"
     )
 
     @field_validator('layer_type')

@@ -53,7 +53,7 @@ class AWQProcessorConfig(AutoProcessorConfig):
         description="应用 AWQ 的子图类型列表，默认 `norm-linear`、`linear-linear`、`ov`、`up-down`。",
     )
     n_grid: Annotated[int, AfterValidator(pydtc.greater_than_zero)] = Field(
-        default=20, description="网格搜索的网格数，用于搜索最优量化尺度/裁剪点，必须大于0。"
+        default=20, gt=0, description="网格搜索的网格数，用于搜索最优量化尺度/裁剪点，必须大于0。"
     )
     include: Optional[List[Annotated[str, AfterValidator(pydtc.validate_str_length())]]] = Field(
         default=None, description="包含的模块名称模式；不设置表示全部匹配。"

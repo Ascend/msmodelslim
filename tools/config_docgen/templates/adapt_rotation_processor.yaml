@@ -1,0 +1,18 @@
+apiversion: modelslim_v1
+spec:
+  prior:
+  - process:
+    - type: adapt_rotation
+      stage: 1
+      steps: 20
+      quant_dtype: int4
+      layer_type:
+      - up_proj
+      block_size: -1
+      max_samples: 2048
+  process:
+  - type: adapt_rotation
+    stage: 2
+    online: false
+    block_size: -1
+    max_tp_size: 1

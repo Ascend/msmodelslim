@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.processor.quarot.online_quarot.online_quarot.OnlineQuaRotProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.quarot.online_quarot.online_quarot.OnlineQuaRotProcessorConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # online_quarot 配置说明
 
 ## 1. 配置概述
@@ -17,8 +22,8 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `online_quarot` | `online_quarot` | 处理器类型，固定为 `online_quarot`。 | 无 |
-| `include` | `list[string] / null` | 可选 | `null` | — | 包含的模块名称模式；不设置表示全部匹配。 | 无 |
-| `exclude` | `list[string] / null` | 可选 | `null` | — | 排除的模块名称模式，优先级高于 `include`。 | 无 |
+| `include` | `list[string] / null` | 可选 | `null` | 列表元素：字符串长度 ≤ 200；或 null | 包含的模块名称模式；不设置表示全部匹配。 | 无 |
+| `exclude` | `list[string] / null` | 可选 | `null` | 列表元素：字符串长度 ≤ 200；或 null | 排除的模块名称模式，优先级高于 `include`。 | 无 |
 | `block_size` | `int` | 可选 | `-1` | — | 旋转块大小，-1 表示按 hidden_dim 整块旋转；可被 RotationConfig 覆盖。 | 无 |
 
 **配置约束**

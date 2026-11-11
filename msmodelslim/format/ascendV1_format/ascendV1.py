@@ -42,7 +42,7 @@ class AscendV1QuantFormatConfig(QuantFormatConfig):
     )
     save_directory: str = Field(default=".", exclude=True)
     part_file_size: Annotated[int, AfterValidator(in_range(min_val=0))] = Field(
-        default=4, description="分片文件大小，单位 GB；0 表示不分片。"
+        default=4, ge=0, description="分片文件大小，单位 GB；0 表示不分片。"
     )
     ext: Dict[str, Any] = Field(
         default_factory=dict,

@@ -37,28 +37,33 @@ from msmodelslim.ir.qal.qregistry import QABCRegistry
 class QConfig(BaseModel):
     """描述单个张量（权重或激活）的量化方式。
 
-    `QConfig` 是量化配置的公共组成单元，字段直接内联在所属配置下（如
-    `LinearQConfig.qconfig.act` / `qconfig.weight`、AWQ 的 `weight_qconfig`）。
-    它由量化数据类型、量化粒度、是否对称与参数估计算法四要素决定量化行为，
-    其中 `dtype`/`scope`/`symmetric` 组合出一个量化方案（scheme），
-    再由 `method` 选定该方案下的参数估计算法实现。
+    - `QConfig` 是量化配置的公共组成单元，字段直接内联在所属配置下（如
+      `LinearQConfig.qconfig.act` / `qconfig.weight`、AWQ 的 `weight_qconfig`）。
+    - 它由量化数据类型、量化粒度、是否对称与参数估计算法四要素决定量化行为，
+      其中 `dtype`/`scope`/`symmetric` 组合出一个量化方案（scheme），
+      再由 `method` 选定该方案下的参数估计算法实现。
+
+    约束：
+    - 激活：`per_tensor`（整张量一个尺度）、`per_token`（按 token）、`per_channel`（按通道）、
+      `per_block`（按固定块）、`pd_mix`（Prefill/Decode 混合粒度）、`dual_scale`（双尺度）；
+      <br>权重：`per_channel`（按通道）、`per_group`（按分组）、`per_block`（按固定块）、
+      `dual_scale`（双尺度）、`per_channel_neg_offset`（按通道且 offset 取反的部署语义）；
+      <br>FA3 注意力：`per_head`（按注意力头）、`per_channel`（按通道）、`per_token`（按 token）、
+      `per_block`（按固定块）。具体可用组合取决于 `dtype`、`symmetric`、`method` 与所属量化器/处理器实现。
     """
 
     dtype: QDType = Field(
         description="量化数据类型，如 `int8`、`int4`、`mxfp8`、`mxfp4`、`fp8_e4m3`；`float` 表示该张量不量化。"
     )
-    scope: QScope = Field(
-        description="量化粒度，即 scale/zero_point 的计算范围：`per_tensor`（整张量一个尺度）、"
-        "`per_channel`（按通道）、`per_group`/`per_block`（按分组或固定块）、`per_token`（按 token）、"
-        "`per_head`（按注意力头）、`dual_scale`（双尺度）等；合法取值组合取决于 `dtype` 与量化器实现。"
-    )
+    scope: QScope = Field(description="量化粒度，即 scale/zero_point 的计算范围。")
     symmetric: bool = Field(
         description="是否对称量化。对称量化只保存 scale；非对称量化额外保存 zero_point，"
         "可用性取决于 `dtype`/`scope` 组合。"
     )
     method: str = Field(
-        description="量化参数估计算法，如 `minmax`、`mse_round`、`histogram`、`ssz`、`none` 等；"
-        "可用取值取决于 `dtype`/`scope`/`symmetric` 组合，`none` 表示不估计参数（配合 `float` 使用）。"
+        description="量化参数估计算法。算法按张量类型分属两套量化器：激活量化器支持 `minmax`、`histogram`、"
+        "`none`（`none` 仅配合 `float`）；权重量化器支持 `minmax`、`mse_round`、`ssz`、`gptq` 等。"
+        "具体可用值取决于 `dtype`、`scope`、`symmetric` 与对应量化器实现。"
     )
     ext: Dict[str, Any] = Field(
         default_factory=dict,

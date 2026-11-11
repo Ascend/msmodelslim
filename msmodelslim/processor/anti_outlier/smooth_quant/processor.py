@@ -53,7 +53,7 @@ class SmoothQuantProcessorConfig(AutoProcessorConfig):
 
     type: Literal["smooth_quant"] = Field(default="smooth_quant", description="处理器类型，固定为 `smooth_quant`。")
     alpha: Annotated[float, AfterValidator(validate_normalized_value)] = Field(
-        default=0.5, description="平滑迁移强度（0~1），越大表示把越多的激活离群值迁移到权重。"
+        default=0.5, gt=0.0, lt=1.0, description="平滑迁移强度（0~1），越大表示把越多的激活离群值迁移到权重。"
     )
     symmetric: bool = Field(default=True, description="是否对称量化；影响平滑后量化的对称性。")
     include: Optional[List[Annotated[str, AfterValidator(validate_str_length())]]] = Field(

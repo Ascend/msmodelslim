@@ -49,6 +49,32 @@ def _to_value_error(func, *args, **kwargs):
         raise ValueError(str(e)) from e
 
 
+def config_constraint(text: str, /, **format_values: Any):
+    """为 AfterValidator 函数附加配置文档约束说明。
+
+    该属性只供配置文档生成器读取，不参与 Pydantic 运行期校验。传入格式化参数时，
+    使用 str.format 将实际约束值写入文档标签。
+    """
+    resolved = text.format(**format_values) if format_values else text
+
+    def decorator(func):
+        setattr(func, "config_constraint", resolved)
+        return func
+
+    return decorator
+
+
+def config_internal(func):
+    """标记 validator 为内部实现，其 docstring 不进入用户配置文档。
+
+    仅用于归一化、兼容转换等不构成用户配置规则的 validator。标记不改变
+    Pydantic 运行期校验行为。
+    """
+    setattr(func, "config_internal", True)
+    return func
+
+
+@config_constraint("列表至少包含 1 项")
 def at_least_one_element(v: Any, info: ValidationInfo) -> Any:
     """
     给 Pydantic AfterValidator 使用的至少一个元素校验包装。
@@ -58,6 +84,7 @@ def at_least_one_element(v: Any, info: ValidationInfo) -> Any:
     return _to_value_error(_at_least_one_element, v, param_name=field_name)
 
 
+@config_constraint("合法主机名/IP，仅允许本机、回环或私有/链路本地地址")
 def is_safe_host(v: str, info: ValidationInfo) -> str:
     """
     给 Pydantic AfterValidator 使用的 host 安全校验包装。
@@ -84,6 +111,7 @@ def is_safe_host(v: str, info: ValidationInfo) -> str:
     return _to_value_error(validate_safe_host, v, field_name=field_name)
 
 
+@config_constraint("以 `/` 开头的安全路径，禁止 `..`、`//` 和非安全字符")
 def is_safe_endpoint(v: str, info: ValidationInfo) -> str:
     """
     给 Pydantic AfterValidator 使用的 endpoint 安全校验包装。
@@ -110,6 +138,7 @@ def is_safe_endpoint(v: str, info: ValidationInfo) -> str:
     return _to_value_error(validate_safe_endpoint, v, field_name=field_name)
 
 
+@config_constraint("1–65535")
 def is_port(v: Any, info: ValidationInfo) -> int:
     """
     给 Pydantic AfterValidator 使用的端口号校验包装。
@@ -136,6 +165,7 @@ def is_port(v: Any, info: ValidationInfo) -> int:
     return _to_value_error(_is_port, v, param_name=field_name)
 
 
+@config_constraint(">0")
 def greater_than_zero(v: Any, info: ValidationInfo) -> Any:
     """
     给 Pydantic AfterValidator 使用的大于零校验包装。
@@ -162,6 +192,7 @@ def greater_than_zero(v: Any, info: ValidationInfo) -> Any:
     return _to_value_error(_greater_than_zero, v, param_name=field_name)
 
 
+@config_constraint(">0")
 def int_greater_than_zero(v: Any, info: ValidationInfo) -> Any:
     """
     给 Pydantic AfterValidator 使用的大于零校验包装。
@@ -179,6 +210,7 @@ def int_greater_than_zero(v: Any, info: ValidationInfo) -> Any:
     return _to_value_error(_int_greater_than_zero, v, param_name=field_name)
 
 
+@config_constraint("0 < 值 < 1")
 def validate_normalized_value(v: Any, info: ValidationInfo) -> float:
     """
     给 Pydantic AfterValidator 使用的归一化值校验包装。
@@ -205,6 +237,7 @@ def validate_normalized_value(v: Any, info: ValidationInfo) -> float:
     return _to_value_error(_validate_normalized_value, v, param_name=field_name)
 
 
+@config_constraint("列表元素必须全部为字符串")
 def is_string_list(v: Any, info: ValidationInfo) -> List[str]:
     """
     给 Pydantic AfterValidator 使用的字符串列表校验包装。
@@ -256,6 +289,7 @@ def validate_str_length(max_len: int = 200):
         ```
     """
 
+    @config_constraint("字符串长度 ≤ {max_len}", max_len=max_len)
     def validator(v: str, info: ValidationInfo) -> str:
         field_name = getattr(info, 'field_name', None) or "string"
         _to_value_error(_validate_str_length, v, str_name=field_name, max_len=max_len)
@@ -264,6 +298,7 @@ def validate_str_length(max_len: int = 200):
     return validator
 
 
+@config_constraint("非空字符串")
 def non_empty_string(v: str, info: ValidationInfo) -> str:
     """
     给 Pydantic AfterValidator 使用的非空字符串校验包装。
@@ -290,6 +325,7 @@ def non_empty_string(v: str, info: ValidationInfo) -> str:
     return _to_value_error(_non_empty_string, v, field_name=field_name)
 
 
+@config_constraint("列表（允许为空列表）")
 def allow_empty_list(v: Any, info: ValidationInfo) -> Any:
     """
     给 Pydantic AfterValidator 使用的空列表允许校验包装。
@@ -315,6 +351,7 @@ def allow_empty_list(v: Any, info: ValidationInfo) -> Any:
     return _to_value_error(_allow_empty_list, v, param_name=field_name)
 
 
+@config_constraint("对象（允许为空对象）")
 def allow_empty_dict(v: Any, info: ValidationInfo) -> Any:
     """
     给 Pydantic AfterValidator 使用的空字典允许校验包装。
@@ -340,6 +377,7 @@ def allow_empty_dict(v: Any, info: ValidationInfo) -> Any:
     return _to_value_error(_allow_empty_dict, v, param_name=field_name)
 
 
+@config_constraint("对象至少包含 1 个键值对")
 def at_least_one_key(v: Any, info: ValidationInfo) -> Any:
     """
     给 Pydantic AfterValidator 使用的至少一个键值对校验包装。
@@ -388,6 +426,14 @@ def in_range(min_val: Any = None, max_val: Any = None):
         ```
     """
 
+    parts: List[str] = []
+    if min_val is not None:
+        parts.append(f"≥{min_val}")
+    if max_val is not None:
+        parts.append(f"≤{max_val}")
+    constraint = "；".join(parts) if parts else "不限范围"
+
+    @config_constraint(constraint)
     def validator(v: Any, info: ValidationInfo) -> Any:
         field_name = getattr(info, 'field_name', None) or "value"
         return _to_value_error(_in_range, v, param_name=field_name, min_val=min_val, max_val=max_val)

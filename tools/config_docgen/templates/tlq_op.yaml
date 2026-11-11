@@ -1,0 +1,24 @@
+apiversion: modelslim_v1
+spec:
+  process:
+  - type: trainable_linear_quant
+    operations:
+    - type: minmax_tune
+      lr: 0.01
+    - type: round_tune
+      lr: 0.005
+    strategies:
+    - qconfig:
+        act:
+          dtype: float
+          scope: per_tensor
+          symmetric: true
+          method: none
+        weight:
+          dtype: int4
+          scope: per_channel
+          symmetric: true
+          method: minmax
+      include:
+      - '*'
+      exclude: []

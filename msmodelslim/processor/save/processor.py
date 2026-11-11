@@ -60,9 +60,7 @@ class QuantSaveProcessorConfig(AutoProcessorConfig):
     """
 
     type: Literal["saver"] = Field(default="saver", description="处理器类型，固定为 `saver`。")
-    format: SerializeAsAny[QuantFormatConfig] = Field(
-        description="导出格式配置（单对象），见《QuantFormatConfig 配置说明》；由保存处理器自动注入。"
-    )
+    format: SerializeAsAny[QuantFormatConfig] = Field(description="导出格式配置（单对象），由保存处理器自动注入。")
     save_directory: str = Field(default="", exclude=True)
 
     def set_save_directory(self, save_directory: str):

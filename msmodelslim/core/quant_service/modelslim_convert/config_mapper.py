@@ -112,7 +112,8 @@ class SaveConfig(BaseModel):
 
     type: str = Field(
         default="ascend_v1",
-        description="保存格式：`ascend_v1`（昇腾，与 `ConvertDefaults.dst_format` 的 `ascendv1` 等价）；`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。",
+        description="保存格式：`ascend_v1`/`ascendv1`/`ascendv1_saver`（昇腾，均映射为 `ConvertDefaults.dst_format` 的 `ascendv1`）；"
+        "`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。",
     )
     part_file_size: int = Field(default=4, description="分片文件大小，单位 GB；0 表示不分片。")
 
@@ -150,7 +151,11 @@ class ModelslimConvertServiceConfig(BaseModel):
     )
     linears: List[LinearConvertConfig] = Field(default_factory=list, description="线性层转换规则列表。")
     save: List[SaveConfig] = Field(default_factory=list, description="保存格式配置列表，取首个生效。")
-    parallel: ParallelSpecConfig = Field(default_factory=ParallelSpecConfig, description="并行执行配置。")
+    parallel: ParallelSpecConfig = Field(
+        default_factory=ParallelSpecConfig,
+        description="并行执行配置。设备（NPU/CPU 与卡号）由命令行 `--device`/`--device_id` 决定，YAML 不含设备字段；"
+        "`cpu_workers` 仅在 `--device cpu` 时生效，NPU 转换固定每卡一个子进程。",
+    )
     defaults: ConvertDefaults = Field(default_factory=ConvertDefaults, description="字段缺省时的全局默认值。")
 
 

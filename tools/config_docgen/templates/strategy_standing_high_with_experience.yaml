@@ -1,0 +1,9 @@
+type: standing_high_with_experience
+quant_type: w8a8
+structure_configs:
+- type: GQA
+  include:
+  - '*self_attn*'
+- type: FFN
+  include:
+  - '*mlp*'

@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.core.quant_service.multimodal_vlm_v1.quant_config.MultimodalVLMModelslimV1QuantConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quant_service.multimodal_vlm_v1.quant_config.MultimodalVLMModelslimV1QuantConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # multimodal_vlm_modelslim_v1 配置说明
 
 ## 1. 配置概述
@@ -16,8 +21,8 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `apiversion` | `string` | 可选 | `multimodal_vlm_modelslim_v1` | `multimodal_vlm_modelslim_v1` | — | 无 |
-| `spec` | `object` | 必选 | 无 | — | `multimodal_vlm_modelslim_v1` 服务的 spec 结构。<br><br>面向多模态理解（VLM）模型：在 `ModelslimV1ServiceConfig` 基础上增加<br>`default_text` 提示词，用于图像类校准数据缺少文本时的默认输入。 | 本页 <a href="#2-2-multimodal-vlm-modelslim-v1-spec">§2.2</a> |
+| `apiversion` | `string` | 可选 | `multimodal_vlm_modelslim_v1` | `multimodal_vlm_modelslim_v1` | 协议版本，固定为 `multimodal_vlm_modelslim_v1`；框架据此选择 VLM 量化任务配置插件。 | 无 |
+| `spec` | `object` | 必选 | 无 | — | 多模态 VLM 服务规格：在 `ModelslimV1ServiceConfig` 基础上增加 `default_text` 提示词，用于图像类校准数据缺少文本时的默认输入；同时声明量化流水线、保存格式与校准数据。 | 本页 <a href="#2-2-multimodal-vlm-modelslim-v1-spec">§2.2</a> |
 
 **配置约束**
 
@@ -35,10 +40,11 @@
 | `save` | `list[object]` | 可选 | `[]` | — | 保存格式列表，每个元素是 `type` 分派的保存格式配置。 | 本页 <a href="#2-2-3-quantformatconfig">§2.2.3</a> |
 | `dataset` | `string` | 可选 | `mix_calib.jsonl` | — | 校准数据集名称（`lab_calib` 下的文件名）或数据集路径。 | 无 |
 | `default_text` | `string` | 可选 | `Describe this image in detail.` | — | 校准数据缺少文本模态时，图像类样本使用的默认提示词。 | 无 |
+| `model_adapter` | `object` | 可选 | `{}` | — | 传递给模型适配器的控制参数（结构由适配器 Loader 提供的 pydantic 配置类校验，见 ``BaseModelAdapterLoader.get_adapter_config_class``），与 `modelslim_v1` 一致。 | 无 |
 
 **配置约束**
 
-- 无。
+- 校验 `default_text` 必须为非空字符串。
 
 <h4 id="2-2-1-prior-stage-config">2.2.1 PriorStageConfig</h4>
 
@@ -47,7 +53,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `process` | `list[object]` | 可选 | `[]` | — | 该阶段处理器列表 | 本页 <a href="#2-2-2-autoprocessorconfig">§2.2.2</a> |
-| `dataset` | `string / null` | 可选 | `null` | — | 该阶段数据集名称，不提供则使用 spec.dataset | 无 |
+| `dataset` | `string / null` | 可选 | `null` | 字符串长度 ≤ 4096；或 null | 该阶段数据集名称，不提供则使用 spec.dataset | 无 |
 
 **配置约束**
 
@@ -107,4 +113,5 @@ spec:
   - type: ascendv1_saver
   dataset: mix_calib.jsonl
   default_text: Describe this image in detail.
+  model_adapter: {}
 ```

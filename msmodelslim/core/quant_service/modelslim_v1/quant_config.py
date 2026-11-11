@@ -74,8 +74,11 @@ class ModelslimV1QuantConfig(BaseQuantConfig):
     保存格式（`save`）与校准数据（`dataset`），由 `msmodelslim quant --config_path` 加载。
     """
 
-    apiversion: Literal["modelslim_v1"] = "modelslim_v1"  # 注册表推导 plugin_type 的依据
-    spec: ModelslimV1ServiceConfig  # quantization config specification
+    apiversion: Literal["modelslim_v1"] = Field(
+        default="modelslim_v1",
+        description="协议版本，固定为 `modelslim_v1`；框架据此选择对应的量化任务配置插件。",
+    )
+    spec: ModelslimV1ServiceConfig = Field(description="`modelslim_v1` 服务规格，声明量化流水线、保存格式与校准数据。")
 
     @classmethod
     def from_base(cls, quant_config: BaseQuantConfig) -> Self:

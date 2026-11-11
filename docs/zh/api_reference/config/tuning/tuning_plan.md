@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.app.auto_tuning.plan_manager_infra.TuningPlanConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.app.auto_tuning.plan_manager_infra.TuningPlanConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # tuning_plan 配置说明
 
 ## 1. 配置概述

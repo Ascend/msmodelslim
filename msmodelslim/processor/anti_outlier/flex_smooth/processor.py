@@ -61,10 +61,10 @@ class FlexSmoothBaseProcessorConfig(AutoProcessorConfig):
     type: Literal["_abstract_flex_smooth_base_"] = "_abstract_flex_smooth_base_"
 
     alpha: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = Field(
-        default=None, description="激活→权重的平滑迁移强度（0~1），越大迁移越多离群值到权重。"
+        default=None, gt=0.0, lt=1.0, description="激活→权重的平滑迁移强度（0~1），越大迁移越多离群值到权重。"
     )
     beta: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = Field(
-        default=None, description="额外的平滑调优系数（0~1），配合 alpha 使用。"
+        default=None, gt=0.0, lt=1.0, description="额外的平滑调优系数（0~1），配合 alpha 使用。"
     )
     enable_subgraph_type: Annotated[list, AfterValidator(pydtc.is_string_list)] = Field(
         default_factory=lambda: ["norm-linear", "linear-linear", "ov", "up-down"],
@@ -91,7 +91,7 @@ class FlexSmoothQuantProcessorConfig(FlexSmoothBaseProcessorConfig):
 
 
 class FlexAWQSSZProcessorConfig(FlexSmoothBaseProcessorConfig):
-    """FlexAWQSSZ 平滑+AWQ 处理器配置。
+    """Flex AWQ SSZ 离群值抑制处理器配置。
 
     位于 `spec.process[]`，由 `type: flex_awq_ssz` 分派；结合平滑（alpha/beta）与
     AWQ 风格仅权重量化，`qconfig` 指定激活与权重的量化方式。

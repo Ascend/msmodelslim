@@ -34,7 +34,7 @@ class TestCase(BaseModel):
     """预检查测试用例"""
 
     message: Annotated[str, AfterValidator(non_empty_string), AfterValidator(validate_str_length(max_len=4096))] = (
-        Field(description="Test message, must be a non-empty string")
+        Field(description="测试消息，须为非空字符串。")
     )
     expected_answer: Optional[
         Union[
@@ -43,7 +43,7 @@ class TestCase(BaseModel):
         ]
     ] = Field(
         default=None,
-        description="Expected content that should be included in the response. Can be a string or a list of strings.",
+        description="期望模型回复中包含的内容，可为字符串或字符串列表。",
     )
 
 
@@ -76,16 +76,20 @@ def _default_expected_answer_test_cases() -> List[TestCase]:
 class ExpectedAnswerPrecheckConfig(BasePrecheckConfig):
     """期望答案验证预检查配置"""
 
-    type: Literal["expected_answer"] = "expected_answer"
+    type: Literal["expected_answer"] = Field(
+        default="expected_answer",
+        description="预检查类型，固定为 `expected_answer`。",
+    )
     test_cases: List[TestCase] = Field(
         default_factory=_default_expected_answer_test_cases,
         min_length=1,
-        description="List of test cases in dictionary format (key-value pairs), English only. Must contain at least one test case.",
+        description="测试用例列表，字典（键值对）格式，内容须为英文，至少包含 1 条。",
     )
 
     @field_validator('test_cases', mode='before')
     @classmethod
     def parse_test_cases(cls, v: Any) -> List[TestCase]:
+        """将单条或列表形式的测试用例统一转换为列表。"""
         if isinstance(v, list):
             return [parse_test_case(item) for item in v]
         elif v is not None:
@@ -95,6 +99,7 @@ class ExpectedAnswerPrecheckConfig(BasePrecheckConfig):
     @field_validator('test_cases', mode='after')
     @classmethod
     def validate_test_cases(cls, v: List[TestCase]) -> List[TestCase]:
+        """测试用例列表必须至少包含一项。"""
         if not v:
             raise SchemaValidateError(
                 "test_cases must contain at least one test case", action="Please provide at least one test case"

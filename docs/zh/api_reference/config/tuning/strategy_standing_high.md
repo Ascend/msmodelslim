@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.core.tune_strategy.standing_high.strategy.StandingHighStrategyConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.tune_strategy.standing_high.strategy.StandingHighStrategyConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # standing_high 配置说明
 
 ## 1. 配置概述
@@ -17,7 +22,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `standing_high` | `standing_high` | 策略类型，固定为 `standing_high` | 无 |
-| `anti_outlier_strategies` | `list[list[object]]` | 必选 | 无 | — | 离群值抑制处理器链列表，至少1个；每个元素是一条处理器链，链内每个处理器是 `type` 分派的处理器配置（如 smooth_quant 等） | 本页 <a href="#2-2-autoprocessorconfig">§2.2</a> |
+| `anti_outlier_strategies` | `list[list[object]]` | 必选 | 无 | 列表至少包含 1 项 | 离群值抑制处理器链列表，至少1个；每个元素是一条处理器链，链内每个处理器是 `type` 分派的处理器配置（如 smooth_quant 等） | 本页 <a href="#2-2-autoprocessorconfig">§2.2</a> |
 | `template` | `object` | 可选 | 由工厂函数生成 | — | 完整的PracticeConfig模板，用于提取所有配置（包括线性层量化）。如果未提供，将使用默认的V1模板 | 《[modelslim_v1_spec 配置说明](../quant/modelslim_v1.md#2-2-modelslim-v1-spec)》 |
 | `metadata` | `object` | 可选 | 见嵌套配置默认值 | — | 量化配置元数据（config_id / label 等） | 本页 <a href="#2-3-metadata">§2.3</a> |
 
@@ -63,10 +68,10 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `config_id` | `string` | 可选 | `Unknown` | — | 量化配置 ID，例如 'Qwen3-32B W8A8' | 无 |
-| `score` | `float` | 可选 | `100.0` | — | 量化配置评分，用于排序，必须 >= 0 | 无 |
-| `label` | `object` | 可选 | `{}` | — | 量化配置标签，用于过滤，例如：`w_bit`（int，权重量化位数）、`a_bit`（int，激活量化位数）、`is_sparse`（bool，是否稀疏量化）、`kv_cache`（bool，是否启用 KV Cache 量化）、`fa_quant`（bool，是否启用 FA 量化）、`fa_bit`（int，FA 量化位数） | 无 |
-| `verified_model_types` | `list[string]` | 可选 | `[]` | — | 已验证的模型类型列表，例如 ['LLaMa3.1-70B', 'Qwen2.5-72B'] | 无 |
+| `config_id` | `string` | 可选 | `Unknown` | 字符串长度 ≤ 200 | 量化配置 ID，例如 'Qwen3-32B W8A8' | 无 |
+| `score` | `float` | 可选 | `100.0` | ≥0 | 量化配置评分，用于排序，必须 >= 0 | 无 |
+| `label` | `object` | 可选 | `{}` | — | 量化配置标签，用于过滤，例如：`w_bit`（int，权重量化位数）、`a_bit`（int，激活量化位数）、`is_sparse`（bool，是否稀疏量化）、`kv_cache`（bool，是否启用 KV Cache 量化）、`fa_quant`（bool，是否启用 FA 量化）、`fa_bit`（int，FA 量化位数）。 | 无 |
+| `verified_model_types` | `list[string]` | 可选 | `[]` | 列表元素：字符串长度 ≤ 200 | 已验证的模型类型列表，例如 ['LLaMa3.1-70B', 'Qwen2.5-72B'] | 无 |
 | `verified_tags` | `object` | 可选 | `{}` | — | 已验证场景标签：键为模型类型，值为场景标签列表（每个场景是一组标签，如 ['MindIE','Atlas_A2_Inference']） | 无 |
 
 **配置约束**

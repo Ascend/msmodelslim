@@ -44,17 +44,19 @@ class ScenarioTagMatch(str, Enum):
 
 
 class Metadata(BaseModel):
-    """量化配置元数据：标识配置的 ID、评分、标签与已验证的模型/场景。"""
+    """描述量化配置的元数据，通过标签、场景等字段为最佳实践库提供索引。"""
 
     config_id: Annotated[str, AfterValidator(validate_str_length())] = Field(
         default='Unknown', description="量化配置 ID，例如 'Qwen3-32B W8A8'"
     )
     score: Annotated[float, AfterValidator(in_range(min_val=0))] = Field(
-        default=100.0, description="量化配置评分，用于排序，必须 >= 0"
+        default=100.0, ge=0, description="量化配置评分，用于排序，必须 >= 0"
     )
     label: dict = Field(
         default_factory=dict,
-        description="量化配置标签，用于过滤，例如 {'w_bit': 8, 'a_bit': 8, 'is_sparse': True, 'kv_cache': True}",
+        description="量化配置标签，用于过滤，例如：`w_bit`（int，权重量化位数）、`a_bit`（int，激活量化位数）、"
+        "`is_sparse`（bool，是否稀疏量化）、`kv_cache`（bool，是否启用 KV Cache 量化）、"
+        "`fa_quant`（bool，是否启用 FA 量化）、`fa_bit`（int，FA 量化位数）。",
     )
     verified_model_types: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=list, description="已验证的模型类型列表，例如 ['LLaMa3.1-70B', 'Qwen2.5-72B']"

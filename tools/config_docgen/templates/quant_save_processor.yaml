@@ -1,0 +1,5 @@
+apiversion: modelslim_v1
+spec:
+  save:
+  - type: ascendv1_saver
+    part_file_size: 4

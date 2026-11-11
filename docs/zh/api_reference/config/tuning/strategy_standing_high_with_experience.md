@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.core.tune_strategy.standing_high_with_experience.strategy.StandingHighWithExperienceStrategyConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.tune_strategy.standing_high_with_experience.strategy.StandingHighWithExperienceStrategyConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # standing_high_with_experience 配置说明
 
 ## 1. 配置概述
@@ -22,7 +27,7 @@
 
 **配置约束**
 
-- 无。
+- 校验 `quant_type` 必须位于专家经验配置的 `supported_quant_types` 中。
 
 <h3 id="2-2-structure-config">2.2 StructureConfig</h3>
 
@@ -30,13 +35,13 @@
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `type` | `string` | 必选 | 无 | 长度 ≥ 1 | 结构类型，非空，例如 'GQA', 'MoE', 'FFN' | 无 |
+| `type` | `string` | 必选 | 无 | 字符串长度 ≥ 1 | 结构类型，非空，例如 'GQA', 'MoE', 'FFN' | 无 |
 | `include` | `list[string]` | 必选 | 无 | 最少1项 | 包含的模式列表，必选，不可为空且不能包含空字符串，例如 ['*self_attn*'] | 无 |
-| `exclude` | `list[string] / null` | 可选 | `null` | — | 排除的模式列表，例如 ['*kv_b_proj', '*wq_b'] | 无 |
+| `exclude` | `list[string] / null` | 可选 | `null` | 列表元素：字符串长度 ≤ 200；或 null | 排除的模式列表，例如 ['*kv_b_proj', '*wq_b'] | 无 |
 
 **配置约束**
 
-- 无。
+- 校验 `include` 列表中的每个模式均为非空、非纯空白字符串。
 
 ## 3. 完整配置参考
 

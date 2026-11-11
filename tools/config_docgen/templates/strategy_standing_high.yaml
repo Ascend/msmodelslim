@@ -1,0 +1,34 @@
+type: standing_high
+anti_outlier_strategies:
+- - type: iter_smooth
+    alpha: 0.5
+- - type: flex_smooth_quant
+template:
+  runner: auto
+  process:
+  - type: linear_quant
+    qconfig:
+      act:
+        scope: per_tensor
+        dtype: int8
+        symmetric: false
+        method: minmax
+      weight:
+        scope: per_channel
+        dtype: int8
+        symmetric: true
+        method: minmax
+    include:
+    - '*'
+    exclude: []
+  save:
+  - type: ascendv1_saver
+    part_file_size: 4
+  dataset: mix_calib.jsonl
+metadata:
+  config_id: standing_high
+  label:
+    w_bit: 8
+    a_bit: 8
+    is_sparse: false
+    kv_cache: false

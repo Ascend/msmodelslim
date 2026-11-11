@@ -75,6 +75,7 @@ class MultimodalVLMServiceConfig(BaseModel):
     @field_validator("default_text")
     @classmethod
     def validate_default_text(cls, v: str) -> str:
+        """校验 `default_text` 必须为非空字符串。"""
         return non_empty_string(v, "default_text")
 
 
@@ -85,8 +86,14 @@ class MultimodalVLMModelslimV1QuantConfig(ModelslimV1QuantConfig):
     量化流水线与校准数据，兼容 `NaiveQuantizationApplication` 与最佳实践系统。
     """
 
-    apiversion: Literal["multimodal_vlm_modelslim_v1"] = "multimodal_vlm_modelslim_v1"
-    spec: MultimodalVLMServiceConfig
+    apiversion: Literal["multimodal_vlm_modelslim_v1"] = Field(
+        default="multimodal_vlm_modelslim_v1",
+        description="协议版本，固定为 `multimodal_vlm_modelslim_v1`；框架据此选择 VLM 量化任务配置插件。",
+    )
+    spec: MultimodalVLMServiceConfig = Field(
+        description="多模态 VLM 服务规格：在 `ModelslimV1ServiceConfig` 基础上增加 `default_text` 提示词，"
+        "用于图像类校准数据缺少文本时的默认输入；同时声明量化流水线、保存格式与校准数据。"
+    )
 
     @classmethod
     def from_base(cls, quant_config: BaseQuantConfig) -> Self:

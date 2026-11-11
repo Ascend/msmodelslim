@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+from pydantic import Field
 from typing_extensions import Self
 
 from msmodelslim.core.quant_service.interface import BaseQuantConfig
@@ -39,8 +40,14 @@ class ModelslimConvertQuantConfig(BaseQuantConfig):
     由 `msmodelslim quant --config_path` 加载执行纯权重转换。
     """
 
-    apiversion: Literal["modelslim_convert"] = "modelslim_convert"
-    spec: ModelslimConvertServiceConfig
+    apiversion: Literal["modelslim_convert"] = Field(
+        default="modelslim_convert",
+        description="权重转换任务类型（协议版本），固定为 `modelslim_convert`；框架据此选择权重转换任务配置插件。",
+    )
+    spec: ModelslimConvertServiceConfig = Field(
+        description="`modelslim_convert` 服务的 spec 结构，声明权重名重命名/变换（`preprocess`）、"
+        "线性层转换规则（`linears`）、保存格式（`save`）、并行执行（`parallel`）与默认值（`defaults`）。"
+    )
 
     @classmethod
     def from_base(cls, quant_config: BaseQuantConfig) -> Self:

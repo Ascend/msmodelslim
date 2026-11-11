@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.processor.quant.fa3.processor.FA3QuantProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.quant.fa3.processor.FA3QuantProcessorConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # fa3_quant 配置说明
 
 ## 1. 配置概述
@@ -17,14 +22,14 @@ FA3（FlashAttention-3）量化处理器配置。
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `fa3_quant` | `fa3_quant` | 处理器类型，固定为 `fa3_quant`。 | 无 |
-| `qconfig` | `object / null` | 可选 | `null` | — | 统一量化配置；不提供时默认使用 `dtype: int8`、`scope: per_head`、`symmetric: true`、`method: minmax`（对称量化），见<a href="#2-2-qconfig">《QConfig 配置说明》</a> | 本页 <a href="#2-2-qconfig">§2.2</a> |
-| `include` | `list[string]` | 可选 | `['*']` | — | 包含的模块名称模式，默认 `*` 匹配全部模块 | 无 |
-| `exclude` | `list[string]` | 可选 | `[]` | — | 排除的模块名称模式，优先级高于 `include` | 无 |
+| `qconfig` | `object / null` | 可选 | `null` | — | 统一量化配置；不提供时默认使用 `dtype: int8`、`scope: per_head`、`symmetric: true`、`method: minmax`（对称量化），见<a href="#2-2-qconfig">《QConfig 配置说明》</a>。 | 本页 <a href="#2-2-qconfig">§2.2</a> |
+| `include` | `list[string]` | 可选 | `['*']` | 列表元素：字符串长度 ≤ 200 | 包含的模块名称模式，默认 `*` 匹配全部模块 | 无 |
+| `exclude` | `list[string]` | 可选 | `[]` | 列表元素：字符串长度 ≤ 200 | 排除的模块名称模式，优先级高于 `include` | 无 |
 | `details` | `object / null` | 可选 | `null` | — | Q/K/V 分支级量化配置（FA3AttentionDetails），见<a href="#2-3-fa3-attention-details">《FA3AttentionDetails 配置说明》</a> | 本页 <a href="#2-3-fa3-attention-details">§2.3</a> |
 
 **配置约束**
 
-- 校验 qconfig 与 details 互斥：两者都提供时报错；两者都未提供时使用默认：`{dtype: int8, scope: per_head, symmetric: true, method: minmax}`。
+- 校验 qconfig 与 details 互斥：两者都提供时报错；两者都未提供时使用默认 `{dtype: int8, scope: per_head, symmetric: true, method: minmax}`。
 
 <h3 id="2-2-qconfig">2.2 QConfig</h3>
 
@@ -33,14 +38,14 @@ FA3（FlashAttention-3）量化处理器配置。
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `dtype` | `string` | 必选 | 无 | `float`、`int8`、`int4`、`mxfp8`、`mxfp4`、`fp8_e4m3` | 量化数据类型，如 `int8`、`int4`、`mxfp8`、`mxfp4`、`fp8_e4m3`；`float` 表示该张量不量化。 | 无 |
-| `scope` | `string` | 必选 | 无 | `per_tensor`、`per_channel`、`per_group`、`per_block`、`per_token`、`pd_mix`、`per_head`、`dual_scale`、`per_channel_neg_offset` | 量化粒度，即 scale/zero_point 的计算范围。对于不同量化目标，`scope` 通常在可用取值上有所差异：<br>激活：`per_tensor`（整张量一个尺度）、`per_token`（按注意力头）、`per_block`(按固定块)、`pd_mix`（Prefill/Decode 混合粒度）；<br>权重：`per_channel`（按通道）、`per_group`（按分组）、`per_block`(按固定块)、`dual_scale`（双尺度）；<br>FA3 注意力：`per_head`（按注意力头）、`per_token`（按注意力头）。 | 无 |
+| `scope` | `string` | 必选 | 无 | `per_tensor`、`per_channel`、`per_group`、`per_block`、`per_token`、`pd_mix`、`per_head`、`dual_scale`、`per_channel_neg_offset` | 量化粒度，即 scale/zero_point 的计算范围。 | 无 |
 | `symmetric` | `bool` | 必选 | 无 | — | 是否对称量化。对称量化只保存 scale；非对称量化额外保存 zero_point，可用性取决于 `dtype`/`scope` 组合。 | 无 |
-| `method` | `string` | 必选 | 无 | — | 量化参数估计算法，如 `minmax`、`mse_round`、`histogram`、`ssz`、`none`、`gptq` 等；算法按张量类型分属两套量化器：激活量化器支持 `minmax`、`histogram`、`none`（配合 `float`）；权重量化器支持 `minmax`、`mse_round`、`ssz`、`gptq` 等。可用取值还取决于 `dtype`/`scope`/`symmetric` 组合，`none` 表示不估计参数。 | 无 |
+| `method` | `string` | 必选 | 无 | — | 量化参数估计算法。算法按张量类型分属两套量化器：激活量化器支持 `minmax`、`histogram`、`none`（`none` 仅配合 `float`）；权重量化器支持 `minmax`、`mse_round`、`ssz`、`gptq` 等。具体可用值取决于 `dtype`、`scope`、`symmetric` 与对应量化器实现。 | 无 |
 | `ext` | `object` | 可选 | `{}` | — | 量化器扩展参数，随 `method` 与量化器实现而定（如 gptq 的 `percdamp`/`group_size`）；空对象表示无扩展参数。 | 无 |
 
 **配置约束**
 
-- 无。
+- 激活：`per_tensor`（整张量一个尺度）、`per_token`（按 token）、`per_channel`（按通道）、`per_block`（按固定块）、`pd_mix`（Prefill/Decode 混合粒度）、`dual_scale`（双尺度）；<br>权重：`per_channel`（按通道）、`per_group`（按分组）、`per_block`（按固定块）、`dual_scale`（双尺度）、`per_channel_neg_offset`（按通道且 offset 取反的部署语义）；<br>FA3 注意力：`per_head`（按注意力头）、`per_channel`（按通道）、`per_token`（按 token）、`per_block`（按固定块）。具体可用组合取决于 `dtype`、`symmetric`、`method` 与所属量化器/处理器实现。
 
 <h3 id="2-3-fa3-attention-details">2.3 FA3AttentionDetails</h3>
 

@@ -50,7 +50,7 @@ class BinaryOperatorLayerWiseProcessorConfig(AutoProcessorConfig):
     )
     metrics: str = Field(
         default="mse_layer_wise",
-        description="分析指标，如 `mse_layer_wise`。",
+        description="分析指标 `mse_layer_wise`。",
     )
     quant_modules: List[Annotated[str, AfterValidator(validate_str_length())]] = Field(
         default_factory=lambda: ["*"],

@@ -33,6 +33,8 @@
 
 参考开发者文档 《[编码规范](development_guide/coding_standards.md)》。
 
+修改量化配置类时，请遵循《[配置文档生成工具](../../../tools/config_docgen/README.md)》：先更新源码注解，再重新生成配置文档并提交生成稿。
+
 提交代码前须在本地通过 pre-commit 检查（首次开发请执行 `pre-commit install`，详见《[编码规范](development_guide/coding_standards.md)》）。
 
 对涉及用户端功能的改动，请同步更新对应的用户和开发者文档。

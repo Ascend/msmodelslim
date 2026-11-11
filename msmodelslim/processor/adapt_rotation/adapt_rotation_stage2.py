@@ -53,7 +53,7 @@ class AdaptRotationStage2ProcessorConfig(BaseModel):
         description="down_proj 在线层索引列表",
     )
     max_tp_size: Annotated[int, AfterValidator(in_range(min_val=1, max_val=64))] = Field(
-        default=4, description="最大 TP 并行度"
+        default=4, ge=1, le=64, description="最大 TP 并行度"
     )
 
     @field_validator('down_proj_online_layers')

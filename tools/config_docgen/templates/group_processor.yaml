@@ -1,0 +1,20 @@
+apiversion: modelslim_v1
+spec:
+  process:
+  - type: group
+    configs:
+    - type: linear_quant
+      qconfig:
+        act:
+          dtype: float
+          scope: per_tensor
+          symmetric: true
+          method: none
+        weight:
+          dtype: int8
+          scope: per_channel
+          symmetric: true
+          method: minmax
+    - type: smooth_quant
+      alpha: 0.5
+      symmetric: true

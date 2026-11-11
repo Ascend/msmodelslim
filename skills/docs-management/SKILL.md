@@ -67,9 +67,9 @@ metadata:
 
 ### 2.1 接口文档（量化配置 / CLI）
 
-- **量化配置文档**：由生成器从 Pydantic 注解生成，修改源码注解后运行 `python3 skills/docs-management/scripts/gen_config_api_docs.py` 重新生成；提交前用 `python3 skills/docs-management/scripts/gen_config_api_docs.py --check` 校验漂移。**不要手工编辑带 `generated-by` 标记的文档**。
+- **量化配置文档**：由生成器从 Pydantic 注解生成，修改源码注解后运行 `python -m tools.config_docgen` 重新生成；提交前用同一入口执行 `--check` 校验漂移。**不要手工编辑带 `generated-by` 标记的文档**。完整规范和生成器用法见《[配置文档生成工具](../../tools/config_docgen/README.md)》。
 - **CLI 文档**：当前为手工维护（模板 05），修改 `docs/zh/api_reference/cli/*.md` 后按《[命令行 API 文档模板](../../docs/zh/contributing/development_guide/docs_standards/05_cli_api_contract_template.md)》与《[命令行 API 文档校验清单](../../docs/zh/contributing/development_guide/docs_standards/05_cli_api_contract_checklist.md)》校验。
-- 生成器用法见《[接口文档生成器](scripts/README.md)》；接口文档的新增/更新场景见《[更新接口文档](scenarios/update-interface-docs.md)》。
+- 接口文档的新增/更新场景见《[更新接口文档](scenarios/update-interface-docs.md)》。
 
 ## 职责 3 — 删除 / 下线资料（完整流程）
 
@@ -139,6 +139,6 @@ metadata:
 | 条目 | 主题 | 适用条件 / 触发信号 | 结论要点（一句话） | 正文位置 | 来源 | 验证状态 |
 |------|------|------|------|------|------|------|
 | E-001 | 无场景文档不代建 | 新增资料未命中场景索引 | 只推荐操作（目标目录/模板/校验依据）并询问是否先登记场景文档；不建目录、不插模板 | 职责 1.1 | 用户反馈 | 已回归 |
-| E-002 | 生成器文档不手编 | 接口文档（量化配置/CLI）维护 | 带 `generated-by` 标记的配置文档由生成器维护，改源码注解后跑 `gen_config_api_docs.py`，提交前 `--check` 防漂移；CLI 文档为手工维护按模板校验 | 职责 2.1 | 用户反馈 | 待验证 |
+| E-002 | 生成器文档不手编 | 接口文档（量化配置/CLI）维护 | 带 `generated-by` 标记的配置文档由生成器维护，改源码注解后跑 `python -m tools.config_docgen`，提交前 `--check` 防漂移；CLI 文档为手工维护按模板校验 | 职责 2.1 | 用户反馈 | 待验证 |
 | E-003 | 删除先处理引用 | 删除/下线资料 | 先找全部反向链接并改指/随删，版本说明声明，再跑链接完整性复查确认无断链 | 职责 3 | 用户反馈 | 已回归 |
 | E-004 | 校验 ERROR 门禁 | 新增/更新/删除后校验 | 任一 ERROR 未解决即不通过（豁免 `<!-- waiver -->` 除外，ERROR ≤2项）；仅 WARN 时结论为"需修订" | 职责 5 | 用户反馈 | 已回归 |

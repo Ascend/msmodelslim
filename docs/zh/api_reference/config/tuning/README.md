@@ -9,7 +9,7 @@
 3. **查评估服务**：`evaluation` 由 `type` 分派，按下方[评估服务](#4-评估服务evaluation-按-type-分派)表查对应页面。当前仅 `service_oriented`。
 4. **查内嵌量化配置**：`standing_high` 与 `binary_fallback` 的 `template` 引用最佳实践或 `modelslim_v1` 任务配置，协议页见《[量化任务配置说明导航](../quant/README.md)》，处理器 `type` 见《[配置说明导航](../README.md)》。`standing_high_with_experience` 不要求手写完整量化 YAML，由 `quant_type` 与 `structure_configs` 生成。
 
-> 本目录除本页外，均由 `skills/docs-management/scripts/gen_config_api_docs.py` 从源码 Pydantic 注解生成。修改字段说明请改源码 `Field(description=)` 等注解后重新生成，不要直接编辑带 `generated-by` 标记的页面。
+> 本目录除本页外，均由 `tools.config_docgen` 从源码 Pydantic 注解生成。修改字段说明请改源码 `Field(description=)` 等注解后重新生成，不要直接编辑带 `generated-by` 标记的页面。
 
 ## 2. 调优计划
 

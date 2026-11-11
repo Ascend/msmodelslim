@@ -58,10 +58,10 @@ class IterSmoothProcessorConfig(AutoProcessorConfig):
 
     type: Literal["iter_smooth"] = Field(default="iter_smooth", description="处理器类型，固定为 `iter_smooth`。")
     alpha: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = Field(
-        default=0.9, description="平滑迁移强度（0~1），越大迁移越多离群值到权重。"
+        default=0.9, gt=0.0, lt=1.0, description="平滑迁移强度（0~1），越大迁移越多离群值到权重。"
     )
     scale_min: Annotated[float, AfterValidator(pydtc.validate_normalized_value)] = Field(
-        default=1e-5, description="平滑缩放因子的最小值下限，防止数值下溢。"
+        default=1e-5, gt=0.0, lt=1.0, description="平滑缩放因子的最小值下限，防止数值下溢。"
     )
     symmetric: bool = Field(default=True, description="是否对称量化后续的权重/激活。")
     enable_subgraph_type: Annotated[list, AfterValidator(pydtc.is_string_list)] = Field(

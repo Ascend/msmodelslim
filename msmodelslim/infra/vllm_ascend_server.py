@@ -48,7 +48,11 @@ class VllmAscendConfig(BaseModel):
     entrypoint: Annotated[str, AfterValidator(non_empty_string), AfterValidator(validate_str_length())] = Field(
         default="vllm.entrypoints.openai.api_server", description="vLLM 服务启动入口，默认 OpenAI API server"
     )
-    env_vars: Dict = Field(default_factory=dict, description="传递给 vLLM 进程的额外环境变量字典")
+    env_vars: Dict = Field(
+        default_factory=dict,
+        description="传递给 vLLM 进程的额外环境变量字典（键值对），键和值会作为环境变量注入；"
+        "可配置参数见 vLLM-Ascend 文档。",
+    )
     served_model_name: Annotated[str, AfterValidator(non_empty_string), AfterValidator(validate_str_length())] = Field(
         default='served_model_name', description="已部署/对外暴露的模型名称"
     )
@@ -60,8 +64,12 @@ class VllmAscendConfig(BaseModel):
     startup_timeout: Annotated[
         int,
         AfterValidator(greater_than_zero),
-    ] = Field(default=600, description="服务启动超时（秒），必须 > 0")
-    args: Dict = Field(default_factory=dict, description="追加的 vLLM 启动命令行参数（键值对）")
+    ] = Field(default=600, gt=0, description="服务启动超时（秒），必须 > 0")
+    args: Dict = Field(
+        default_factory=dict,
+        description="追加的 vLLM 启动命令行参数（键值对），键会转换为 `--<key>` 选项；布尔值 `true` 作为开关，"
+        "`false`/`null` 忽略，对象值序列化为紧凑 JSON；可配置参数见 vLLM-Ascend 文档。",
+    )
 
 
 # 健康检查轮询间隔（秒）

@@ -37,10 +37,10 @@ class BasePrecheckConfig(TypedConfig):
         description="预检查类型，按 `type` 字段分派，如 `garbled_text`、`expected_answer`"
     )
     max_tokens: Annotated[int, AfterValidator(greater_than_zero)] = Field(
-        default=512, description="最大生成 token 数，必须大于 0"
+        default=512, gt=0, description="最大生成 token 数，必须大于 0"
     )
     timeout: Annotated[float, AfterValidator(greater_than_zero)] = Field(
-        default=60.0, description="API 调用超时时间（秒），必须大于 0"
+        default=60.0, gt=0, description="API 调用超时时间（秒），必须大于 0"
     )
 
 

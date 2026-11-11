@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.core.quant_service.modelslim_v1.quant_config.ModelslimV1QuantConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quant_service.modelslim_v1.quant_config.ModelslimV1QuantConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # modelslim_v1 配置说明
 
 ## 1. 配置概述
@@ -10,20 +15,14 @@
 | 配置类 | `ModelslimV1QuantConfig` |
 | 源码 | [quant_config.py](../../../../../msmodelslim/core/quant_service/modelslim_v1/quant_config.py) |
 
-`modelslim_v1` 是量化工具推出的新一代量化处理框架，目前正在快速演进中。相较于 `modelslim_v0` 版本，`modelslim_v1` 有以下优势：
-
-- 算法独立实现，配置自由组合。
-- 支持逐层量化，大幅降低资源消耗。
-- 不依赖特定版本的 CANN。
-
 ## 2. 参数列表
 
 <h3 id="2-1-modelslim-v1">2.1 ModelslimV1QuantConfig</h3>
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `apiversion` | `string` | 可选 | `modelslim_v1` | `modelslim_v1` | — | 无 |
-| `spec` | `object` | 必选 | 无 | — | `modelslim_v1` 服务的 spec 结构，声明量化流水线、保存格式与校准数据。 | 本页 <a href="#2-2-modelslim-v1-spec">§2.2</a> |
+| `apiversion` | `string` | 可选 | `modelslim_v1` | `modelslim_v1` | 协议版本，固定为 `modelslim_v1`；框架据此选择对应的量化任务配置插件。 | 无 |
+| `spec` | `object` | 必选 | 无 | — | `modelslim_v1` 服务规格，声明量化流水线、保存格式与校准数据。 | 本页 <a href="#2-2-modelslim-v1-spec">§2.2</a> |
 
 **配置约束**
 
@@ -39,7 +38,8 @@
 | `prior` | `list[object]` | 可选 | `[]` | — | 前置阶段列表，每阶段含 process 与 dataset | 本页 <a href="#2-2-1-prior-stage-config">§2.2.1</a> |
 | `process` | `list[object]` | 可选 | `[]` | — | 量化处理器链，按顺序执行；每个元素是 `type` 分派的处理器配置，如 `linear_quant`、`awq`、`smooth_quant` 等。 | 本页 <a href="#2-2-2-autoprocessorconfig">§2.2.2</a> |
 | `save` | `list[object]` | 可选 | `[]` | — | 保存格式列表，每个元素是 `type` 分派的保存格式配置，如 `ascendv1_saver`、`compressed_tensors`、`mindie_format_saver`。 | 本页 <a href="#2-2-3-quantformatconfig">§2.2.3</a> |
-| `dataset` | `string` | 可选 | `mix_calib.jsonl` | — | 校准数据集名称（`lab_calib` 下的文件名）或数据集路径，用于量化的参数估计与敏感性校准。 | 无 |
+| `dataset` | `string` | 可选 | `mix_calib.jsonl` | 字符串长度 ≤ 4096 | 校准数据集名称（`lab_calib` 下的文件名）或数据集路径，用于量化的参数估计与敏感性校准。 | 无 |
+| `model_adapter` | `object` | 可选 | `{}` | — | 传递给模型适配器的控制参数（结构由适配器 Loader 提供的 pydantic 配置类校验，见 ``BaseModelAdapterLoader.get_adapter_config_class``）。 | 无 |
 
 **配置约束**
 
@@ -52,7 +52,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `process` | `list[object]` | 可选 | `[]` | — | 该阶段处理器列表 | 本页 <a href="#2-2-2-autoprocessorconfig">§2.2.2</a> |
-| `dataset` | `string / null` | 可选 | `null` | — | 该阶段数据集名称，不提供则使用 spec.dataset | 无 |
+| `dataset` | `string / null` | 可选 | `null` | 字符串长度 ≤ 4096；或 null | 该阶段数据集名称，不提供则使用 spec.dataset | 无 |
 
 **配置约束**
 
@@ -110,4 +110,5 @@ spec:
   process: []
   save: []
   dataset: mix_calib.jsonl
+  model_adapter: {}
 ```

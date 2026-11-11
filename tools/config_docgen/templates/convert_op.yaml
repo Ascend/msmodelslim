@@ -1,0 +1,15 @@
+apiversion: modelslim_convert
+spec:
+  preprocess:
+  - type: convert
+    source:
+    - model.layers.*.mlp.gate_up_proj.weight
+    target:
+    - model.layers.*.mlp.gate_proj.weight
+    - model.layers.*.mlp.up_proj.weight
+    ops:
+    - type: chunk
+      dim: 1
+      projections:
+      - gate_proj
+      - up_proj

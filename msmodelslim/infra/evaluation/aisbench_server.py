@@ -76,20 +76,22 @@ class AisbenchConfig(BaseModel):
     binary: Literal['ais_bench'] = Field(default="ais_bench", description="aisbench 启动命令，固定为 'ais_bench'")
     mode: Annotated[str, AfterValidator(validate_str_length())] = Field(default="all", description="评测模式")
     timeout: Annotated[int, AfterValidator(greater_than_zero)] = Field(
-        default=7200, description="命令执行超时时间（秒），默认2小时"
+        default=7200, gt=0, description="命令执行超时时间（秒），默认2小时"
     )
     cleanup_model_config: bool = Field(default=True, description="是否清理生成的模型配置文件")
     model_meta: ModelConfigMeta = Field(default_factory=ModelConfigMeta, description="模型配置元数据")
     request_rate: Annotated[float, AfterValidator(greater_than_zero)] = Field(
-        default=1.0, description="默认请求速率，必须 > 0"
+        default=1.0, gt=0, description="默认请求速率，必须 > 0"
     )
     pred_postprocessor: Annotated[str, AfterValidator(validate_str_length())] = Field(
         default="extract_non_reasoning_content", description="预测后处理器名称"
     )
     retry: int = Field(default=2, ge=0, description="请求重试次数，必须 >= 0")
-    batch_size: Annotated[int, AfterValidator(greater_than_zero)] = Field(default=1, description="批处理大小，必须 > 0")
+    batch_size: Annotated[int, AfterValidator(greater_than_zero)] = Field(
+        default=1, gt=0, description="批处理大小，必须 > 0"
+    )
     max_out_len: Annotated[int, AfterValidator(greater_than_zero)] = Field(
-        default=512, description="最大输出长度，必须 > 0"
+        default=512, gt=0, description="最大输出长度，必须 > 0"
     )
     trust_remote_code: bool = Field(default=False, description="是否信任远程代码")
     generation_kwargs: Dict = Field(default_factory=dict, description="生成参数配置字典")
@@ -115,7 +117,7 @@ class DatasetConfig(BaseModel):
     max_out_len: Annotated[
         Optional[int],
         AfterValidator(greater_than_zero),
-    ] = Field(default=None, description="该数据集的最大输出长度，None 表示使用全局默认值")
+    ] = Field(default=None, gt=0, description="该数据集的最大输出长度，None 表示使用全局默认值")
     returns_tool_calls: Optional[bool] = Field(default=None, description="是否返回工具调用，None 表示不写入该字段")
     api_chat_type: Annotated[
         str,
@@ -123,7 +125,9 @@ class DatasetConfig(BaseModel):
         AfterValidator(validate_str_length()),
     ] = Field(default="VLLMCustomAPIChat", description="该数据集使用的 API Chat 类型")
     chat_template_kwargs: Dict = Field(
-        default_factory=dict, description="chat_template 的额外参数，例如 aime25 需要 {\"thinking\": True}"
+        default_factory=dict,
+        description="chat_template 的额外参数，最终写入 AISBench 模型配置；具体参数请参考 AISBench 文档，"
+        "例如 aime25 需要 {\"thinking\": true}。",
     )
     extra_args: List[str] = Field(default_factory=list, description="该数据集额外的命令行参数列表，默认为空列表")
 

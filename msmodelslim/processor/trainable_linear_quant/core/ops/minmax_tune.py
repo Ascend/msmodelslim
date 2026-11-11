@@ -41,8 +41,10 @@ from .base import LinearTLQOp, TLQOpConfig, format_tensor_dbg
 
 
 class MinmaxTuneOpConfig(TLQOpConfig):
+    """Minmax 调优操作配置：通过可学习缩放参数调整权重的对称量化范围。"""
+
     type: Literal["minmax_tune"] = Field(default="minmax_tune", description="插件类型：minmax_tune")
-    lr: Optional[float] = Field(default=None, gt=0.0)
+    lr: Optional[float] = Field(default=None, gt=0.0, description="该操作的学习率；未设置时使用处理器级默认学习率。")
 
 
 class MinmaxTuneOp(LinearTLQOp):

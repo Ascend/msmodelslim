@@ -140,7 +140,7 @@ class TestIterSmoothProcessor:
             _ = IterSmoothProcessorConfig(alpha=-1)
 
         error_str = str(exc_info.value)
-        assert "value must be in the range (0, 1)" in error_str or "range" in error_str.lower()
+        assert "greater than 0" in error_str.lower()
 
     def test_yaml_alpha_validation_out_of_range(self):
         """测试用例5：yaml参数校验alpha超出范围"""
@@ -152,7 +152,7 @@ class TestIterSmoothProcessor:
             _ = IterSmoothProcessorConfig(alpha=1.5)
 
         error_str = str(exc_info.value)
-        assert "alpha must be in the range (0, 1)" in error_str
+        assert "less than 1" in error_str.lower()
 
     def test_yaml_scale_min_validation_negative(self):
         """测试用例6：yaml参数校验scale_min为浮点类型且大于0"""
@@ -164,7 +164,7 @@ class TestIterSmoothProcessor:
             _ = IterSmoothProcessorConfig(scale_min=-1)
 
         error_str = str(exc_info.value)
-        assert "scale_min must be in the range (0, 1)" in error_str
+        assert "greater than 0" in error_str.lower()
 
     def test_yaml_scale_min_validation_out_of_range(self):
         """测试用例6：yaml参数校验scale_min超出范围"""
@@ -176,7 +176,7 @@ class TestIterSmoothProcessor:
             _ = IterSmoothProcessorConfig(scale_min=2.0)
 
         error_str = str(exc_info.value)
-        assert "scale_min must be in the range (0, 1)" in error_str
+        assert "less than 1" in error_str.lower()
 
     def test_yaml_symmetric_validation_non_boolean(self):
         """测试用例7：yaml参数校验symmetric为布尔类型"""

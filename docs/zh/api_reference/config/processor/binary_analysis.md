@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.processor.analysis.binary_operator.processor.BinaryAnalysisProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.analysis.binary_operator.processor.BinaryAnalysisProcessorConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # binary_analysis 配置说明
 
 ## 1. 配置概述
@@ -18,7 +23,7 @@
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `binary_analysis` | `binary_analysis` | 处理器类型，固定为 `binary_analysis`。 | 无 |
 | `metrics` | `string` | 可选 | `mse` | — | 分析指标：`mse`（均方误差） | 无 |
-| `patterns` | `list[string]` | 可选 | `['*']` | — | 待分析的层名模式列表，默认 `*` 匹配全部 | 无 |
+| `patterns` | `list[string]` | 可选 | `['*']` | 列表元素：字符串长度 ≤ 200 | 待分析的层名模式列表，默认 `*` 匹配全部 | 无 |
 | `configs` | `list[object]` | 可选 | `[]` | — | 用于执行量化-反量化路径的量化子处理器配置列表 | 本页 <a href="#2-2-autoprocessorconfig">§2.2</a> |
 
 **配置约束**

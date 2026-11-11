@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 
 from typing import Any, Dict, Generator, List, Optional, Literal, Annotated
 
-from pydantic import ConfigDict, Field, model_validator, AfterValidator
+from pydantic import Field, model_validator, AfterValidator
 
 from msmodelslim.core.analysis_service import AnalysisConfig, AnalysisScope, PipelineAnalysisService
 from msmodelslim.core.const import DeviceType
@@ -75,36 +75,8 @@ def _get_default_metadata():
     )
 
 
-_FULL_EXAMPLE = {
-    'type': 'standing_high',
-    'anti_outlier_strategies': [[{'type': 'iter_smooth', 'alpha': 0.5}], [{'type': 'flex_smooth_quant'}]],
-    'template': {
-        'runner': 'auto',
-        'process': [
-            {
-                'type': 'linear_quant',
-                'qconfig': {
-                    'act': {'scope': 'per_tensor', 'dtype': 'int8', 'symmetric': False, 'method': 'minmax'},
-                    'weight': {'scope': 'per_channel', 'dtype': 'int8', 'symmetric': True, 'method': 'minmax'},
-                },
-                'include': ['*'],
-                'exclude': [],
-            }
-        ],
-        'save': [{'type': 'ascendv1_saver', 'part_file_size': 4}],
-        'dataset': 'mix_calib.jsonl',
-    },
-    'metadata': {
-        'config_id': 'standing_high',
-        'label': {'w_bit': 8, 'a_bit': 8, 'is_sparse': False, 'kv_cache': False},
-    },
-}
-
-
 class StandingHighStrategyConfig(StrategyConfig):
     """摸高算法策略配置（V1框架）：先跑敏感层分析，再逐步回退不满意的层并尝试不同离群值抑制策略。"""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [_FULL_EXAMPLE]})
 
     type: Literal["standing_high"] = Field(default="standing_high", description="策略类型，固定为 `standing_high`")
 

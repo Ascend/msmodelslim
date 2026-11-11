@@ -1,0 +1,28 @@
+apiversion: modelslim_convert
+spec:
+  linears:
+  - match:
+    - model.language_model.layers.*.mlp.gate_proj
+    - model.language_model.layers.*.mlp.up_proj
+    - model.language_model.layers.*.mlp.down_proj
+    - model.language_model.layers.*.mlp.shared_experts.gate_proj
+    - model.language_model.layers.*.mlp.shared_experts.up_proj
+    - model.language_model.layers.*.mlp.shared_experts.down_proj
+    - model.language_model.layers.*.mlp.experts.*.gate_proj
+    - model.language_model.layers.*.mlp.experts.*.up_proj
+    - model.language_model.layers.*.mlp.experts.*.down_proj
+    - model.language_model.layers.*.self_attn.q_a_proj
+    - model.language_model.layers.*.self_attn.q_b_proj
+    - model.language_model.layers.*.self_attn.kv_a_proj_with_mqa
+    target: W8A8_MXFP8
+    route: auto
+  save:
+  - type: ascend_v1
+    part_file_size: 4
+  parallel:
+    cpu_workers: 8
+    max_group_size: null
+  defaults:
+    src_format: auto
+    dst_format: ascendv1
+    dst_ir: null

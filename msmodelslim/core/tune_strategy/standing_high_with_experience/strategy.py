@@ -18,7 +18,7 @@ See the Mulan PSL v2 for more details.
 
 from typing import List, Literal, Optional, Generator
 
-from pydantic import ConfigDict, Field, field_validator
+from pydantic import Field, field_validator
 
 from msmodelslim.core.const import DeviceType, QuantType
 from msmodelslim.core.practice import PracticeConfig
@@ -42,17 +42,8 @@ from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
 
 
-_FULL_EXAMPLE = {
-    'type': 'standing_high_with_experience',
-    'quant_type': 'w8a8',
-    'structure_configs': [{'type': 'GQA', 'include': ['*self_attn*']}, {'type': 'FFN', 'include': ['*mlp*']}],
-}
-
-
 class StandingHighWithExperienceStrategyConfig(StrategyConfig):
     """基于专家经验的摸高算法策略配置"""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [_FULL_EXAMPLE]})
 
     type: Literal["standing_high_with_experience"] = Field(
         default="standing_high_with_experience", description="策略类型，固定为 `standing_high_with_experience`"
@@ -68,6 +59,7 @@ class StandingHighWithExperienceStrategyConfig(StrategyConfig):
     @field_validator("quant_type", mode="before")
     @classmethod
     def _quant_type_only_expert_supported(cls, v):
+        """校验 `quant_type` 必须位于专家经验配置的 `supported_quant_types` 中。"""
         allowed_values = set(ExpertExperienceLoader.get_supported_quant_types())
         value_str = v.value if isinstance(v, QuantType) else v
         if value_str not in allowed_values:

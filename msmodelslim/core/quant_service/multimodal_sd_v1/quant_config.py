@@ -38,6 +38,7 @@ from msmodelslim.core.quant_service.modelslim_v1.quant_config import ModelslimV1
 from msmodelslim.core.quant_service.modelslim_v1.save.saver import AutoSaverConfigList
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.exception_decorator import exception_handler
+from msmodelslim.utils.validation.pydantic import config_internal
 from .legacy_pipeline_interface import LegacyMultimodalPipelineInterface
 from .pipeline_interface import MultimodalPipelineInterface
 
@@ -52,7 +53,9 @@ class DumpConfig(BaseModel):
         description="是否在量化前对模型做浮点 dump（导出 pth 校准数据）；`false` 时跳过 pth 加载与浮点 dump。",
     )
     capture_mode: Literal["args"] = Field(default="args", description="dump 捕获模式，当前仅支持 `args`。")
-    dump_data_dir: str = Field(default="", description="浮点 dump 数据的输出目录；为空时回退到 save_path。")
+    dump_data_dir: str = Field(
+        default="", description="浮点 dump 数据的输出目录；为空时回退到本次量化的权重保存目录 `save_path`。"
+    )
 
 
 # 多模态基础配置
@@ -63,7 +66,8 @@ class MultimodalSDConfig(BaseModel):
     # 推理参数
     inference_config: Optional[Dict[str, Any]] = Field(
         default=None,
-        description="推理参数字典，经模型适配器的 InferenceConfig 类校验；与迁移期字段 `model_config` 互斥。",
+        description="推理参数字典。字段形状由当前模型适配器的 `get_inference_config_class()` 返回的 "
+        "InferenceConfig 决定，量化时用该类做校验；与迁移期字段 `model_config` 互斥。",
     )
     # 允许接收未定义的额外参数（迁移期旧字段 model_config 等可落在 model_extra）
     model_config = {"extra": "allow"}
@@ -119,19 +123,29 @@ class MultimodalSDConfig(BaseModel):
 class MultimodalSDServiceConfig(BaseModel):
     """`multimodal_sd_modelslim_v1` 服务的 spec 结构。
 
-    面向多模态生成（SD）模型：在通用字段之外支持按专家（`per_expert`）覆盖处理器链，
-    并提供多模态专用 `multimodal_sd_config`。
+    说明：
+    - 面向多模态生成（SD）模型：在通用字段之外支持按专家（`per_expert`）覆盖处理器链，
+      并提供多模态专用 `multimodal_sd_config`。
+
+    约束：
+    - 本协议不支持 `adapt_rotation`：量化服务不执行 `spec.prior`，且多模态生成适配器未实现
+      `AdaptRotationInterface`；请保持 `prior` 为空，且勿在 `process`/`per_expert` 中配置
+      `adapt_rotation`。
     """
 
     runner: RunnerType = Field(
         default=RunnerType.LAYER_WISE,
         description="流水线执行方式：`layer_wise` 逐层计算（默认）、`auto` 按设备数量自动选择、"
-        "`model_wise` 整模型计算、`dp_layer_wise` 数据并行逐层计算。",
+        "`model_wise` 整模型计算、`dp_layer_wise` 数据并行逐层计算。目前本服务仅支持 `layer_wise`；"
+        "配置为 `auto`、`model_wise` 或 `dp_layer_wise` 时会警告并回退为 `layer_wise`。",
     )
-    prior: List[PriorStageConfig] = Field(default_factory=list, description="前置阶段列表，每阶段含 process 与 dataset")
+    prior: List[PriorStageConfig] = Field(
+        default_factory=list,
+        description="前置阶段列表，每阶段含 process 与 dataset；当前量化服务不执行该字段，请保持为空。",
+    )
     process: AutoProcessorConfigList = Field(
         default_factory=list,
-        description="量化处理器链，按顺序执行；每个元素是 `type` 分派的处理器配置。",
+        description="量化处理器链，按顺序执行；每个元素是 `type` 分派的处理器配置。本协议不支持 `adapt_rotation`。",
     )
     per_expert: Optional[Dict[str, AutoProcessorConfigList]] = Field(
         default=None,
@@ -153,7 +167,9 @@ class MultimodalSDServiceConfig(BaseModel):
 
     # 验证并转换配置格式
     @model_validator(mode="after")
+    @config_internal
     def normalize_config(self) -> Self:
+        """将字典形态的 `multimodal_sd_config` 归一化为 `MultimodalSDConfig` 实例。"""
         if isinstance(self.multimodal_sd_config, dict):
             # 将字典转换 MultimodalSDConfig 实例（会保留额外字段）
             self.multimodal_sd_config = MultimodalSDConfig(**self.multimodal_sd_config)
@@ -173,8 +189,14 @@ class MultimodalSDModelslimV1QuantConfig(ModelslimV1QuantConfig):
     量化流水线、按专家覆盖的处理器链与多模态专用配置。
     """
 
-    apiversion: Literal["multimodal_sd_modelslim_v1"] = "multimodal_sd_modelslim_v1"
-    spec: MultimodalSDServiceConfig  # 使用新的多模态配置
+    apiversion: Literal["multimodal_sd_modelslim_v1"] = Field(
+        default="multimodal_sd_modelslim_v1",
+        description="协议版本，固定为 `multimodal_sd_modelslim_v1`；框架据此选择 SD 量化任务配置插件。",
+    )
+    spec: MultimodalSDServiceConfig = Field(
+        description="多模态 SD 服务规格：在通用量化流水线、保存格式与校准数据之外，"
+        "支持按专家（`per_expert`）整链覆盖处理器，并提供多模态专用 `multimodal_sd_config`。"
+    )
 
     @classmethod
     def from_base(cls, quant_config: BaseQuantConfig) -> Self:

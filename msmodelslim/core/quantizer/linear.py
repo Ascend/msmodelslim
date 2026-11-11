@@ -42,9 +42,13 @@ class LinearQConfig(BaseModel):
 
     act: QConfig = Field(
         default=QConfig(dtype=QDType.FLOAT, scope=QScope.PER_TENSOR, symmetric=True, method="none"),
-        description="激活值的量化配置。默认 `float`（不量化激活），仅对权重做量化。",
+        description="激活值的量化配置。由激活量化器实现，`method` 支持 `minmax`、`histogram`、`none`；"
+        "`scope` 支持 `per_tensor`、`per_token`、`per_channel` 等；激活 `per_channel` 仅支持 `int8`、`fp8_e4m3`、`mxfp8` 配合 `method=minmax`。默认 `float`（不量化激活），仅对权重做量化。",
     )
-    weight: QConfig = Field(description="权重的量化配置，必选。")
+    weight: QConfig = Field(
+        description="权重的量化配置，必选。由权重量化器实现，`method` 支持 `minmax`、`mse_round`、`ssz`、`gptq` 等；"
+        "`scope` 支持 `per_channel`、`per_group`、`per_block` 等，不支持 `per_tensor`/`per_token`。"
+    )
 
 
 @logger_setter()

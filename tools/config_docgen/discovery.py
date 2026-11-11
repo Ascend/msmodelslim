@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 基础抽取脚本：从 Pydantic 配置模型注解按指定目标生成量化配置接口文档。
 
 提供基础能力（--targets 指定特定对象、--expand-nested 控制是否展开嵌套）；
-具体抽取目标与后处理由驱动脚本 gen_config_api_docs.py 控制（见其模块 docstring）。
+具体抽取目标与后处理由 generate.py 实现，由 main.py 暴露稳定入口。
 """
 
 from __future__ import annotations
@@ -35,218 +35,75 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, get_origin
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parents[2]
-sys.path.insert(0, str(SCRIPT_DIR))
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from pydantic import BaseModel  # noqa: E402
 
-from quant_config_docgen import (  # noqa: E402
+from tools.config_docgen.catalog import (  # noqa: E402
+    APIVERSION_BY_ROOT,
+    CATEGORY_DIRS,
+    CONFIG_SOURCE_MODULES,
+    MANUAL_KEEP,
+    QUALNAME_SLUGS,
+    SKIP_CLASS_NAMES,
+    SLUG_OVERRIDES,
+    TARGET_GROUP_KEYWORDS,
+)
+from tools.config_docgen.examples import (  # noqa: E402
+    load_explicit_examples,
+    load_practice_config_example,
+    load_scenarios,
+    load_tuning_examples,
+)
+from tools.config_docgen.records import ModelRecord  # noqa: E402
+from tools.config_docgen.renderer import (  # noqa: E402
     GENERATED_MARKER,
-    ModelRecord,
+    LEGACY_GENERATED_MARKERS,
     _anchor,
     _doc_path,
+    render_markdown,
+)
+from tools.config_docgen.schema import (  # noqa: E402
+    _literal_values,
     annotation_refers_to,
-    class_summary,
+    class_doc_sections,
     collect_nested_models,
     collect_validator_docs,
-    extract_declared_example,
     extract_fields,
     extractable_example_payload,
     is_internal_type_tag,
     is_pydantic_model,
     public_type_tag,
     raw_type_tag,
-    render_markdown,
     rewrite_example_internal_types,
     slugify_class,
+    split_optional,
+    unwrap_annotation,
     wrap_example_at_path,
-    _literal_values,
 )
-
-MANUAL_KEEP = {"processor_group.md", "auto_precision_tuning.md"}
-NAV_BEGIN = "# BEGIN GENERATED QUANT CONFIG NAV"
-NAV_END = "# END GENERATED QUANT CONFIG NAV"
-
-SLUG_OVERRIDES = {
-    "ModelslimV1QuantConfig": "modelslim_v1",
-    "ModelslimV1ServiceConfig": "modelslim_v1_spec",
-    "MultimodalVLMModelslimV1QuantConfig": "multimodal_vlm_modelslim_v1",
-    "MultimodalVLMServiceConfig": "multimodal_vlm_modelslim_v1_spec",
-    "MultimodalSDModelslimV1QuantConfig": "multimodal_sd_modelslim_v1",
-    "MultimodalSDServiceConfig": "multimodal_sd_modelslim_v1_spec",
-    "ModelslimConvertQuantConfig": "modelslim_convert",
-    "ModelslimConvertServiceConfig": "modelslim_convert_spec",
-    "AdaptRotationStage1ProcessorConfig": "adapt_rotation_stage1",
-    "AdaptRotationStage2ProcessorConfig": "adapt_rotation_stage2",
-    "TuningPlanConfig": "tuning_plan",
-    "StandingHighStrategyConfig": "strategy_standing_high",
-    "StandingHighWithExperienceStrategyConfig": "strategy_standing_high_with_experience",
-    "BinaryFallbackStrategyConfig": "strategy_binary_fallback",
-    "ServiceOrientedEvaluateServiceConfig": "evaluation_service_oriented",
-}
-
-QUALNAME_SLUGS = {
-    "msmodelslim.processor.quant.autoround.QuantStrategyConfig": "autoround_quant_strategy_config",
-    "msmodelslim.processor.flat_quant.flat_quant.QuantStrategyConfig": "flatquant_quant_strategy_config",
-    "msmodelslim.processor.trainable_linear_quant.config.processor_config.QuantStrategyConfig": "tlq_quant_strategy_config",
-}
-
-APIVERSION_BY_ROOT = {
-    "ModelslimV1QuantConfig": "modelslim_v1",
-    "MultimodalVLMModelslimV1QuantConfig": "multimodal_vlm_modelslim_v1",
-    "MultimodalSDModelslimV1QuantConfig": "multimodal_sd_modelslim_v1",
-    "ModelslimConvertQuantConfig": "modelslim_convert",
-}
-
-
-# 自动拼装无法得到完整示例的配置类，提供手写、可解析的完整 YAML 参考。
-# 键为类名；值为完整任务配置（apiversion + spec），须能被对应根配置 model_validate 通过。
-EXPLICIT_EXAMPLES = {
-    "RenamePattern": {
-        "apiversion": "modelslim_convert",
-        "spec": {
-            "preprocess": [
-                {
-                    "type": "rename",
-                    "patterns": [
-                        {"from": "model.layers.*.mlp.gate_proj.weight", "to": "model.layers.*.mlp.gate.weight"},
-                    ],
-                },
-            ],
-        },
-    },
-    "ConvertOpConfig": {
-        "apiversion": "modelslim_convert",
-        "spec": {
-            "preprocess": [
-                {
-                    "type": "convert",
-                    "source": ["model.layers.*.mlp.gate_up_proj.weight"],
-                    "target": ["model.layers.*.mlp.gate_proj.weight", "model.layers.*.mlp.up_proj.weight"],
-                    "ops": [
-                        {"type": "chunk", "dim": 1, "projections": ["gate_proj", "up_proj"]},
-                    ],
-                },
-            ],
-        },
-    },
-    "GroupProcessorConfig": {
-        "apiversion": "modelslim_v1",
-        "spec": {
-            "process": [
-                {
-                    "type": "group",
-                    "configs": [
-                        {
-                            "type": "linear_quant",
-                            "qconfig": {
-                                "act": {"dtype": "float", "scope": "per_tensor", "symmetric": True, "method": "none"},
-                                "weight": {
-                                    "dtype": "int8",
-                                    "scope": "per_channel",
-                                    "symmetric": True,
-                                    "method": "minmax",
-                                },
-                            },
-                        },
-                        {"type": "smooth_quant", "alpha": 0.5, "symmetric": True},
-                    ],
-                },
-            ],
-        },
-    },
-    "TLQOpConfig": {
-        "apiversion": "modelslim_v1",
-        "spec": {
-            "process": [
-                {
-                    "type": "trainable_linear_quant",
-                    "operations": [
-                        {"type": "minmax_tune", "lr": 0.01},
-                        {"type": "round_tune", "lr": 0.005},
-                    ],
-                    "strategies": [
-                        {
-                            "qconfig": {
-                                "act": {"dtype": "float", "scope": "per_tensor", "symmetric": True, "method": "none"},
-                                "weight": {
-                                    "dtype": "int4",
-                                    "scope": "per_channel",
-                                    "symmetric": True,
-                                    "method": "minmax",
-                                },
-                            },
-                            "include": ["*"],
-                            "exclude": [],
-                        },
-                    ],
-                },
-            ],
-        },
-    },
-    "QuantSaveProcessorConfig": {
-        "apiversion": "modelslim_v1",
-        "spec": {
-            "process": [
-                {
-                    "type": "saver",
-                    "format": {"type": "_auto_save"},
-                },
-            ],
-        },
-    },
-}
-
-SKIP_CLASS_NAMES = {
-    "BaseModel",
-    "BaseQuantConfig",
-    "AutoProcessorConfig",
-    "QuantFormatConfig",
-    "AutoSaverBaseConfig",
-    "TypedConfig",
-    "QuantServiceConfig",
-}
 
 
 def _ensure_package_config_link() -> Optional[Path]:
-    """开发树中 config.ini 在仓库根目录，包内相对路径期望 msmodelslim/config。"""
-    pkg_config = REPO_ROOT / "msmodelslim" / "config"
-    repo_config = REPO_ROOT / "config" / "config.ini"
-    if pkg_config.exists() or not repo_config.exists():
-        return None
-    pkg_config.symlink_to(repo_config.parent.resolve(), target_is_directory=True)
-    return pkg_config
+    """兼容历史调用；项目级生成器不创建 msmodelslim/config 软链接。"""
+    return None
+
+
+class ConfigModuleImportError(RuntimeError):
+    """Raised when a known config source module cannot be imported."""
 
 
 def _import_known_modules() -> None:
-    modules = [
-        "msmodelslim.processor",
-        "msmodelslim.processor.kv_smooth.processor",
-        "msmodelslim.processor.quarot",
-        "msmodelslim.format.registry",
-        "msmodelslim.core.quant_service.modelslim_v1.quant_config",
-        "msmodelslim.core.quant_service.multimodal_vlm_v1.quant_config",
-        "msmodelslim.core.quant_service.multimodal_sd_v1.quant_config",
-        "msmodelslim.core.quant_service.modelslim_convert.quant_config",
-        "msmodelslim.core.quant_service.modelslim_convert.config_mapper",
-        # 自动调优配置
-        "msmodelslim.app.auto_tuning.plan_manager_infra",
-        "msmodelslim.app.auto_tuning.evaluation_service_infra",
-        "msmodelslim.core.tune_strategy.interface",
-        "msmodelslim.core.tune_strategy.standing_high.strategy",
-        "msmodelslim.core.tune_strategy.standing_high_with_experience.strategy",
-        "msmodelslim.core.tune_strategy.binary_fallback.strategy",
-        "msmodelslim.infra.service_oriented_evaluate_service",
-        "msmodelslim.infra.evaluation.aisbench_server",
-        "msmodelslim.infra.vllm_ascend_server",
-    ]
-    for name in modules:
+    """导入全部已知配置事实源；任一模块失败都必须中止生成。"""
+    failures: List[str] = []
+    for name in CONFIG_SOURCE_MODULES:
         try:
             importlib.import_module(name)
-        except Exception as exc:
-            print(f"skip import {name}: {exc}", file=sys.stderr)
+        except Exception as exc:  # noqa: BLE001 - a missing fact source must fail closed
+            failures.append(f"{name}: {exc}")
+    if failures:
+        details = "\n".join(f"  - {failure}" for failure in failures)
+        raise ConfigModuleImportError(f"配置模块导入失败，无法生成完整文档：\n{details}")
 
 
 def _source_rel(model_cls: type) -> str:
@@ -377,6 +234,20 @@ def _public_evaluations() -> List[type]:
     return [ServiceOrientedEvaluateServiceConfig]
 
 
+def _precheck_config_base() -> type:
+    from msmodelslim.infra.evaluation.precheck.base import BasePrecheckConfig
+
+    return BasePrecheckConfig
+
+
+def _public_prechecks() -> List[type]:
+    base = _precheck_config_base()
+    return sorted(
+        [cls for cls in base.__subclasses__() if is_pydantic_model(cls) and _should_keep(cls)],
+        key=lambda cls: cls.__name__,
+    )
+
+
 def _auto_tuning_targets() -> List[type]:
     return [_tuning_plan_config()] + _public_strategies() + _public_evaluations()
 
@@ -427,6 +298,7 @@ def _collect_seeds() -> List[type]:
     seeds.extend(_public_formats())
     seeds.extend(_extra_convert_models())
     seeds.extend(_auto_tuning_targets())
+    seeds.extend(_public_prechecks())
     seeds.extend(_tlq_op_subclasses())
     seen: Set[type] = set()
     ordered: List[type] = []
@@ -446,15 +318,16 @@ def _collect_seeds() -> List[type]:
 
 
 def _category_for(cls: type) -> str:
+    from msmodelslim.core.practice.interface import PracticeConfig
     from msmodelslim.core.quant_service.interface import BaseQuantConfig
     from msmodelslim.format.base import QuantFormatConfig
     from msmodelslim.processor.base import AutoProcessorConfig
 
-    # PracticeConfig 是 BaseQuantConfig 子类（任务配置），作为任务基类配置单独成页，
-    # 用于展示 apiversion + spec + metadata（Metadata）的完整实践配置结构。
+    # PracticeConfig 是 metadata + task 的最佳实践任务配置，作为独立任务页生成，
+    # 用于展示 metadata、task（apiversion + spec）与嵌套配置的完整结构。
     if cls in _auto_tuning_targets():
         return "自动调优"
-    if issubclass(cls, BaseQuantConfig):
+    if cls is PracticeConfig or issubclass(cls, BaseQuantConfig):
         return "任务配置"
     if cls.__name__.endswith("ServiceConfig"):
         return "服务规格"
@@ -582,6 +455,7 @@ def _yaml_paths(models: Sequence[type]) -> Tuple[Dict[type, str], Dict[type, typ
     }
     convert_root = next(cls for cls in _root_configs() if cls.__name__ == "ModelslimConvertQuantConfig")
     tuning_root = _tuning_plan_config()
+    precheck_base = _precheck_config_base()
     for cls in models:
         if cls.__name__ in path_overrides:
             paths[cls] = path_overrides[cls.__name__]
@@ -589,6 +463,11 @@ def _yaml_paths(models: Sequence[type]) -> Tuple[Dict[type, str], Dict[type, typ
                 roots[cls] = tuning_root
             else:
                 roots[cls] = convert_root if cls.__name__ in convert_names else _root_configs()[0]
+            continue
+        if issubclass(cls, precheck_base):
+            # 预检查规则按 type 分派，所有派生规则共享 evaluation.precheck[] 路径。
+            paths[cls] = "evaluation.evaluation.precheck[]"
+            roots[cls] = tuning_root
             continue
         if cls in paths:
             continue
@@ -604,8 +483,6 @@ def _yaml_paths(models: Sequence[type]) -> Tuple[Dict[type, str], Dict[type, typ
 
 def _annotation_is_list(annotation: Any) -> bool:
     """字段是否为列表类型（unwrap Annotated/SerializeAsAny 后判断）。"""
-    from quant_config_docgen import split_optional, unwrap_annotation
-
     ann, _ = unwrap_annotation(annotation)
     ann, _ = split_optional(ann)
     return get_origin(ann) in (list, List)
@@ -625,6 +502,12 @@ def _nested_refs(
     convert_models = _extra_convert_models()[:2]
     for name, info in cls.model_fields.items():
         field_path = f"{yaml_path}.{name}" if yaml_path else name
+        if cls.__name__ == "AisbenchServerConfig" and name == "precheck":
+            item_path = f"{field_path}[]"
+            for precheck in _public_prechecks():
+                if precheck in slugs:
+                    refs.append((item_path, slugs[precheck], "type 分派"))
+            continue
         if _refers_to_saver(info.annotation):
             # 单个 saver/format 对象（如 saver 处理器的 format）为自动注入，不列出公开格式；
             # 只有列表形式（如 spec.save[]）才是用户可选的保存格式。
@@ -726,6 +609,9 @@ def _dispatch_bases_for(cls: type, yaml_path: str) -> Dict[str, str]:
             # 转换侧 preprocess 按 type 分派 rename / convert 两类预处理步骤。
             bases[f"{field_path}[]"] = "PreprocessConfig"
             continue
+        if cls.__name__ == "AisbenchServerConfig" and name == "precheck":
+            bases[f"{field_path}[]"] = "BasePrecheckConfig"
+            continue
         nested = collect_nested_models(ann)
         names = [getattr(n, "__name__", str(n)) for n in nested]
         if len(set(names)) >= 2:
@@ -748,14 +634,13 @@ def _title_for(cls: type) -> str:
     return f"{name} 配置说明"
 
 
-def _summary_for(cls: type, yaml_path: str, category: str) -> str:
+def _summary_for(cls: type, yaml_path: str, category: str, doc_summary: str = "") -> str:
     """配置概述：只用类 docstring，不再拼接「该配置位于 …」这类位置句。
 
     YAML 位置由页面标题/展开小节标题给出，概述保持简洁。
     """
-    doc = class_summary(cls)
-    if doc:
-        return doc
+    if doc_summary:
+        return doc_summary
     return f"`{cls.__name__}` 是{category}。"
 
 
@@ -961,29 +846,29 @@ def _tuning_example_valid(data: Dict[str, Any]) -> bool:
     return False
 
 
-def _tuning_sub_example(getter) -> Optional[Dict[str, Any]]:
-    """取策略/评估类里声明的全量子树示例（json_schema_extra.examples）。"""
-    for cls in getter():
-        declared = extract_declared_example(cls)
-        if isinstance(declared, dict):
-            return _to_plain(declared)
-    return None
+def _tuning_sub_example(class_name: str) -> Optional[Dict[str, Any]]:
+    """按显式类名读取调优子树示例，避免依赖注册表迭代顺序。"""
+    example = load_tuning_examples().get(class_name)
+    return _to_plain(example) if isinstance(example, dict) else None
 
 
 def _complete_tuning_example(cls: type, format_standin: str) -> str:
-    """自动调优配置没有 apiversion 根，完整示例由类内声明的子树示例组装：
-    页面自身类取自己的全量子树，兄弟类型取默认子树（strategy 页配默认 evaluation，
-    evaluation 页配默认 strategy，TuningPlanConfig 取两者默认）。
+    """自动调优配置没有 apiversion 根，完整示例由显式登记的子树 YAML 组装。
+
+    strategy 页使用自己的 strategy 子树和默认 evaluation；evaluation 页使用默认
+    strategy 和自己的 evaluation；TuningPlanConfig 使用两者默认值。
     """
-    declared = extract_declared_example(cls)
-    if isinstance(cls, type) and _tuning_plan_config().__name__ == cls.__name__:
-        strategy, ev = _tuning_sub_example(_public_strategies), _tuning_sub_example(_public_evaluations)
+    default_strategy = _tuning_sub_example("StandingHighStrategyConfig")
+    default_evaluation = _tuning_sub_example("ServiceOrientedEvaluateServiceConfig")
+    if cls.__name__ == _tuning_plan_config().__name__:
+        strategy = default_strategy
+        ev = default_evaluation
     elif cls in set(_public_strategies()):
-        strategy = _to_plain(declared) if isinstance(declared, dict) else None
-        ev = _tuning_sub_example(_public_evaluations)
+        strategy = _tuning_sub_example(cls.__name__)
+        ev = default_evaluation
     elif cls in set(_public_evaluations()):
-        strategy = _tuning_sub_example(_public_strategies)
-        ev = _to_plain(declared) if isinstance(declared, dict) else None
+        strategy = default_strategy
+        ev = _tuning_sub_example(cls.__name__)
     else:
         return ""
     if not (isinstance(strategy, dict) and isinstance(ev, dict)):
@@ -1006,21 +891,29 @@ def _complete_example_yaml(
 ) -> str:
     if _is_tuning_root(root_cls):
         return _complete_tuning_example(cls, format_standin)
+    if cls.__name__ == "PracticeConfig":
+        wrapped = rewrite_example_internal_types(
+            _to_plain(load_practice_config_example()),
+            public_format_type=format_standin,
+        )
+        if _validate_example(cls, wrapped):
+            return _dump_yaml(wrapped)
+        return ""
     apiversion = _apiversion_of(root_cls)
     if not apiversion:
         return ""
-    explicit = EXPLICIT_EXAMPLES.get(cls.__name__)
+    explicit = load_explicit_examples().get(cls.__name__)
     if explicit is not None:
-        wrapped = dict(explicit)
+        wrapped = rewrite_example_internal_types(
+            _to_plain(explicit),
+            public_format_type=format_standin,
+        )
         wrapped["apiversion"] = apiversion
         _inject_required_save(root_cls, wrapped, format_standin)
         if _validate_example(root_cls, wrapped):
             return _dump_yaml(wrapped)
         return ""
-    declared = extract_declared_example(cls)
-    if isinstance(declared, str):
-        declared = None
-    payload = declared if isinstance(declared, dict) else extractable_example_payload(cls)
+    payload = extractable_example_payload(cls)
     if payload is None:
         return ""
     payload = rewrite_example_internal_types(_to_plain(payload), public_format_type=format_standin)
@@ -1082,6 +975,7 @@ def build_records() -> List[ModelRecord]:
     pending: List[Tuple[type, ModelRecord]] = []
     format_standin = public_type_tag(formats[0]) if formats else "ascendv1_saver"
     slug_to_cls = {slugs[cls]: cls for cls in models}
+    scenarios_by_class = load_scenarios()
 
     slug_by_class_name: Dict[str, str] = {}
     for cls, slug in slugs.items():
@@ -1095,21 +989,27 @@ def build_records() -> List[ModelRecord]:
     for cls in models:
         yaml_path = paths.get(cls, "spec")
         category = _category_for(cls)
+        doc = class_doc_sections(cls)
+        constraints = list(dict.fromkeys([*doc.constraints, *collect_validator_docs(cls)]))
+        notes = list(dict.fromkeys(doc.notes))
         record = ModelRecord(
             qualname=f"{cls.__module__}.{cls.__name__}",
             class_name=cls.__name__,
             slug=slugs[cls],
             title=_title_for(cls),
-            summary=_summary_for(cls, yaml_path, category),
-            class_summary=class_summary(cls),
+            summary=_summary_for(cls, yaml_path, category, doc.summary),
+            class_summary=doc.summary,
+            class_description=list(doc.description),
             source_rel=_source_rel(cls),
             yaml_path=yaml_path or "(根)",
             category=category,
             type_tag=public_type_tag(cls),
             fields=extract_fields(cls, name_of=name_of),
-            constraints=collect_validator_docs(cls) or [],
+            constraints=constraints,
             nested_refs=_nested_refs(cls, yaml_path, processors, formats, slugs),
             dispatch_bases=_dispatch_bases_for(cls, yaml_path),
+            notes=notes,
+            scenarios=scenarios_by_class.get(cls.__name__, []),
         )
         records.append(record)
         pending.append((cls, record))
@@ -1133,48 +1033,9 @@ def build_records() -> List[ModelRecord]:
     return records
 
 
-def _nav_entries(records: Sequence[ModelRecord]) -> List[str]:
-    groups: Dict[str, List[ModelRecord]] = defaultdict(list)
-    for record in records:
-        groups[record.category].append(record)
-    order = ["任务配置", "服务规格", "处理器", "保存格式", "自动调优", "嵌套配置"]
-    lines: List[str] = []
-    for category in order:
-        items = sorted(groups.get(category, []), key=lambda r: r.slug)
-        if not items:
-            continue
-        lines.append(f"          - {category}:")
-        for record in items:
-            lines.append(f'              - {record.slug}: "zh/api_reference/config/{_doc_path(record)}"')
-    lines.append('          - 组合处理器使用说明: "zh/api_reference/config/processor_group.md"')
-    lines.append('          - 自动调优配置: "zh/api_reference/config/auto_precision_tuning.md"')
-    return lines
-
-
-def update_mkdocs(mkdocs_path: Path, records: Sequence[ModelRecord], dry_run: bool) -> None:
-    text = mkdocs_path.read_text(encoding="utf-8")
-    nav_block = "\n".join([f"          {NAV_BEGIN}"] + _nav_entries(records) + [f"          {NAV_END}"])
-    if NAV_BEGIN in text and NAV_END in text:
-        start = text.index(NAV_BEGIN)
-        end = text.index(NAV_END) + len(NAV_END)
-        line_start = text.rfind("\n", 0, start) + 1
-        updated = text[:line_start] + nav_block + text[end:]
-    else:
-        needle = '      - 量化配置:\n'
-        if needle not in text:
-            print("mkdocs.yml 未找到量化配置导航，已跳过更新", file=sys.stderr)
-            return
-        insert_at = text.index(needle) + len(needle)
-        # 删除旧的手工条目，直到传统 V0 段
-        rest = text[insert_at:]
-        next_section = rest.find("      - 传统 V0 Python API:")
-        if next_section == -1:
-            print("mkdocs.yml 未找到传统 V0 导航，已跳过更新", file=sys.stderr)
-            return
-        updated = text[:insert_at] + nav_block + "\n" + rest[next_section:]
-    if dry_run:
-        return
-    mkdocs_path.write_text(updated, encoding="utf-8")
+def _has_generated_marker(text: str) -> bool:
+    """兼容识别新工具与历史 skill 生成稿，避免旧稿被误判为手写稿。"""
+    return GENERATED_MARKER in text or any(marker in text for marker in LEGACY_GENERATED_MARKERS)
 
 
 def _rel_to_repo(path: Path) -> str:
@@ -1193,7 +1054,7 @@ def _spec_merge_links(catalog: Dict[str, "ModelRecord"]) -> Dict[str, Tuple[str,
     """spec 不再独立成页时，把对 spec 的引用重定向到所属 task 页的 2.2 小节。
 
     返回 slug → (输出相对路径, #锚点)。
-    task 页块序固定：根块 §2.1，spec 作为首个嵌套块 §2.2。
+    quant 页块序固定：根块 §2.1，spec 作为首个嵌套块 §2.2。
     """
     links: Dict[str, Tuple[str, str]] = {}
     for record in catalog.values():
@@ -1202,7 +1063,7 @@ def _spec_merge_links(catalog: Dict[str, "ModelRecord"]) -> Dict[str, Tuple[str,
         for field_path, slug, relation in record.nested_refs:
             target = catalog.get(slug)
             if target is not None and target.category == "服务规格":
-                links[slug] = (f"task/{record.slug}.md", f"#{_anchor(f'2.2 {slug}')}")
+                links[slug] = (f"{CATEGORY_DIRS['任务配置']}/{record.slug}.md", f"#{_anchor(f'2.2 {slug}')}")
     return links
 
 
@@ -1219,16 +1080,17 @@ def write_docs(
     """渲染选中的记录到 output 下的分类子目录；catalog 缺省为 records。
 
     - ``expand_nested``：为 True 时嵌套内部配置展开进上级文档（不再单独成页）。
-    - ``prune``：删除 output 下已生成但不在本次目标集中的过时文档（MANUAL_KEEP
+    - ``prune``：以完整 catalog 的预期页面集为基准，删除 output 下真正过时的生成稿（MANUAL_KEEP
       与手写文档除外）；check 模式下改为报告 stale。
     """
     if catalog is None:
         catalog = {record.slug: record for record in records}
-    output.mkdir(parents=True, exist_ok=True)
+    if not dry_run and not check:
+        output.mkdir(parents=True, exist_ok=True)
     drift = 0
     written = 0
-    # 文档按类型放入 task/spec/processor/format/tuning/nested 子目录，源码链接深度 5。
-    # task 页默认把对应 spec 与嵌套配置一并展开，不再单独生成 spec 页。
+    # 文档按类型放入 quant/spec/processor/format/tuning/nested 子目录，源码链接深度 5。
+    # quant 页默认把对应 spec 与嵌套配置一并展开，不再单独生成 spec 页。
     link_overrides = _spec_merge_links(catalog) if expand_nested else {}
     targets: Dict[Path, str] = {}
     for record in records:
@@ -1244,9 +1106,16 @@ def write_docs(
             link_overrides=link_overrides,
         )
 
+    # prune 的过期判断必须以完整 catalog 的预期页面集为基准。局部 --targets
+    # 只决定本次重写范围，不能把其他仍有效的生成页误判为 stale。
+    protected_records = list(catalog.values())
+    if expand_nested:
+        protected_records = [record for record in protected_records if not _is_nested_or_spec(record)]
+    protected_paths = {output / _doc_path(record) for record in protected_records}
+
     for path, content in targets.items():
         existing = path.read_text(encoding="utf-8") if path.exists() else None
-        if existing is not None and GENERATED_MARKER not in existing and path.name in MANUAL_KEEP:
+        if existing is not None and not _has_generated_marker(existing) and path.name in MANUAL_KEEP:
             continue
         if check:
             if existing != content:
@@ -1265,13 +1134,13 @@ def write_docs(
     if prune:
         # 递归扫描子目录；保留手写文档与非生成稿，其余过时生成稿删除。
         for path in sorted(output.rglob("*.md")):
-            if path.name in MANUAL_KEEP or path in targets:
+            if path.name in MANUAL_KEEP or path in protected_paths:
                 continue
             try:
                 text = path.read_text(encoding="utf-8")
             except OSError:
                 continue
-            if GENERATED_MARKER not in text:
+            if not _has_generated_marker(text):
                 continue
             if check:
                 print(f"stale: {_rel_to_repo(path)}")
@@ -1286,19 +1155,8 @@ def write_docs(
     return drift
 
 
-# 目标选择关键字 → 配置分类（--targets 基础能力）
-TARGET_GROUP_KEYWORDS = {
-    "task": "任务配置",
-    "root": "任务配置",
-    "spec": "服务规格",
-    "service": "服务规格",
-    "processor": "处理器",
-    "format": "保存格式",
-    "save": "保存格式",
-    "tuning": "自动调优",
-    "auto_tuning": "自动调优",
-    "nested": "嵌套配置",
-}
+class UnknownTargetError(ValueError):
+    """Raised when one or more --targets selectors match no discovered config."""
 
 
 def select_records(records: Sequence[ModelRecord], selectors: Optional[Sequence[str]]) -> List[ModelRecord]:
@@ -1308,8 +1166,17 @@ def select_records(records: Sequence[ModelRecord], selectors: Optional[Sequence[
     """
     if not selectors:
         return list(records)
-    cleaned = [s.strip() for s in selectors if s and s.strip()]
-    if not cleaned or any(s.lower() == "all" for s in cleaned):
+    cleaned = list(dict.fromkeys(s.strip() for s in selectors if s and s.strip()))
+    if not cleaned:
+        return list(records)
+    unknown = [
+        selector
+        for selector in cleaned
+        if selector.lower() != "all" and not any(_match_target(record, selector) for record in records)
+    ]
+    if unknown:
+        raise UnknownTargetError(f"未识别的 --targets 选择器: {', '.join(unknown)}")
+    if any(selector.lower() == "all" for selector in cleaned):
         return list(records)
     selected: List[ModelRecord] = []
     for record in records:
@@ -1364,39 +1231,47 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.set_defaults(expand_nested=False)
     parser.add_argument(
         "--prune",
+        dest="prune",
         action="store_true",
-        help="删除 output 下已生成但不在本次目标集中的过时文档",
+        help="按完整配置目录删除 output 下不再生成的过时文档",
     )
+    parser.add_argument(
+        "--no-prune",
+        dest="prune",
+        action="store_false",
+        help="保留历史遗留文档，仅覆盖本次目标文件",
+    )
+    parser.set_defaults(prune=False)
     parser.add_argument("--dry-run", action="store_true", help="只打印将写入/删除的文件，不落盘")
     parser.add_argument("--check", action="store_true", help="检查已生成文档是否与源码注解一致")
-    parser.add_argument("--update-mkdocs", action="store_true", help="写入 mkdocs.yml 导航（默认不改）")
     return parser.parse_args(argv)
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parse_args(argv)
-    created_link = _ensure_package_config_link()
     try:
         records = build_records()
-        catalog = {record.slug: record for record in records}
+    except ConfigModuleImportError as exc:
+        print(f"配置文档生成失败：{exc}", file=sys.stderr)
+        return 2
+    catalog = {record.slug: record for record in records}
+    try:
         selected = select_records(records, args.targets)
-        code = write_docs(
-            selected,
-            args.output,
-            args.dry_run,
-            args.check,
-            catalog=catalog,
-            expand_nested=args.expand_nested,
-            prune=args.prune,
-        )
-        if args.update_mkdocs and not args.check:
-            update_mkdocs(REPO_ROOT / "mkdocs.yml", selected, args.dry_run)
-        if args.check and code:
-            return 1
-        return 0
-    finally:
-        if created_link is not None and created_link.is_symlink():
-            created_link.unlink()
+    except UnknownTargetError as exc:
+        print(f"配置文档生成失败：{exc}", file=sys.stderr)
+        return 2
+    code = write_docs(
+        selected,
+        args.output,
+        args.dry_run,
+        args.check,
+        catalog=catalog,
+        expand_nested=args.expand_nested,
+        prune=args.prune,
+    )
+    if args.check and code:
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

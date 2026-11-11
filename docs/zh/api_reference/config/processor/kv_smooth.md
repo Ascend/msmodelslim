@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.processor.kv_smooth.processor.KVSmoothProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.kv_smooth.processor.KVSmoothProcessorConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # kv_smooth 配置说明
 
 ## 1. 配置概述
@@ -17,9 +22,9 @@ KV cache 平滑处理器配置。
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `kv_smooth` | `kv_smooth` | 处理器类型，固定为 `kv_smooth`。 | 无 |
-| `smooth_factor` | `float` | 可选 | `1.0` | — | KV 平滑因子，必须大于0；越大平滑越强。 | 无 |
-| `include` | `list[string]` | 可选 | `['*']` | — | 包含的模块名称模式，默认 `*` 匹配全部模块 | 无 |
-| `exclude` | `list[string]` | 可选 | `[]` | — | 排除的模块名称模式，优先级高于 `include` | 无 |
+| `smooth_factor` | `float` | 可选 | `1.0` | >0 | KV 平滑因子，必须大于0；越大平滑越强。 | 无 |
+| `include` | `list[string]` | 可选 | `['*']` | 列表元素：字符串长度 ≤ 200 | 包含的模块名称模式，默认 `*` 匹配全部模块 | 无 |
+| `exclude` | `list[string]` | 可选 | `[]` | 列表元素：字符串长度 ≤ 200 | 排除的模块名称模式，优先级高于 `include` | 无 |
 
 **配置约束**
 

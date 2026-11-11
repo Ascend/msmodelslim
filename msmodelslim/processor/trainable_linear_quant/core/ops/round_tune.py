@@ -46,8 +46,10 @@ from .base import LinearTLQOp, TLQOpConfig, format_tensor_dbg
 
 
 class RoundTuneOpConfig(TLQOpConfig):
+    """舍入调优操作配置：通过可学习舍入偏移优化权重量化误差。"""
+
     type: Literal["round_tune"] = Field(default="round_tune", description="插件类型：round_tune")
-    lr: Optional[float] = Field(default=None, gt=0.0)
+    lr: Optional[float] = Field(default=None, gt=0.0, description="该操作的学习率；未设置时使用处理器级默认学习率。")
 
 
 def _round_ste(x: torch.Tensor) -> torch.Tensor:

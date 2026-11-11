@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.format.ascendV1_format.ascendV1.AscendV1QuantFormatConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.format.ascendV1_format.ascendV1.AscendV1QuantFormatConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # ascendv1_saver 配置说明
 
 ## 1. 配置概述
@@ -17,7 +22,7 @@ AscendV1 保存格式配置，导出昇腾落盘格式的权重文件。
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `ascendv1_saver` | `ascendv1_saver` | 保存格式类型，固定为 `ascendv1_saver`。 | 无 |
-| `part_file_size` | `int` | 可选 | `4` | — | 分片文件大小，单位 GB；0 表示不分片。 | 无 |
+| `part_file_size` | `int` | 可选 | `4` | ≥0 | 分片文件大小，单位 GB；0 表示不分片。 | 无 |
 | `ext` | `object` | 可选 | `{}` | — | 保存格式扩展参数，随实现而定；空对象表示无扩展参数。 | 无 |
 
 **配置约束**

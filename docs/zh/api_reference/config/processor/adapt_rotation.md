@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.processor.adapt_rotation.adapt_rotation.AdaptRotationProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.adapt_rotation.adapt_rotation.AdaptRotationProcessorConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # adapt_rotation 配置说明
 
 ## 1. 配置概述
@@ -40,11 +45,11 @@ adapt_rotation 阶段1的配置。
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `_adapt_rotation_stage1` | `_adapt_rotation_stage1` | 阶段配置类型，内部标识，无需配置。 | 无 |
-| `steps` | `int` | 可选 | `20` | — | 迭代优化步数 | 无 |
+| `steps` | `int` | 可选 | `20` | ≥1；≤1000 | 迭代优化步数 | 无 |
 | `quant_dtype` | `string` | 可选 | `int4` | `int4`、`int8` | 量化比特数，应与下游量化中激活值量化类型一致（如 w4a4 用 int4，w8a8 用 int8） | 无 |
-| `layer_type` | `list[string]` | 可选 | `['up_proj']` | 最少1项 | 要收集激活的层名子串列表 | 无 |
+| `layer_type` | `list[string]` | 可选 | `['up_proj']` | 最少1项；列表元素：字符串长度 ≤ 200 | 要收集激活的层名子串列表 | 无 |
 | `block_size` | `int` | 可选 | `-1` | — | 块大小，-1 表示 hidden_dim | 无 |
-| `max_samples` | `int` | 可选 | `2048` | — | 每层最大采样数 | 无 |
+| `max_samples` | `int` | 可选 | `2048` | ≥1；≤100000 | 每层最大采样数 | 无 |
 
 **配置约束**
 
@@ -61,7 +66,7 @@ adapt_rotation 阶段2的配置。
 | `online` | `bool` | 可选 | `false` | — | 是否启用在线旋转 | 无 |
 | `block_size` | `int` | 可选 | `-1` | — | 块大小，-1 表示 hidden_dim | 无 |
 | `down_proj_online_layers` | `list[int]` | 可选 | `[]` | — | down_proj 在线层索引列表 | 无 |
-| `max_tp_size` | `int` | 可选 | `4` | — | 最大 TP 并行度 | 无 |
+| `max_tp_size` | `int` | 可选 | `4` | ≥1；≤64 | 最大 TP 并行度 | 无 |
 
 **配置约束**
 

@@ -9,7 +9,7 @@
 3. **查处理器 / 保存格式**：`spec.process[]`、`spec.save[]` 由 `type` 分派，字段见《[配置说明导航](../README.md)》的处理器、保存格式表，或直接打开 `../processor/`、`../format/` 下对应页面。
 4. **查最佳实践包装**：一键量化 / 调优模板若带 `metadata`，见《[practice_config](practice_config.md)》；其内 `task` 仍对应某一 `apiversion` 任务配置。
 
-> 本页为手写导航；本目录其余页面由 `skills/docs-management/scripts/gen_config_api_docs.py`（或 `gen_quant_config_docs.py`）从源码 Pydantic 注解生成。修改字段说明请改源码 `Field(description=)` 等注解后重新生成，不要直接编辑带 `generated-by` 标记的页面。
+> 本页为手写导航；本目录其余页面由 `tools.config_docgen`从源码 Pydantic 注解生成。修改字段说明请改源码 `Field(description=)` 等注解后重新生成，不要直接编辑带 `generated-by` 标记的页面。
 
 ## 2. 任务配置（按 `apiversion` 选择）
 

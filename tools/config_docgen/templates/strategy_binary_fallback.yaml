@@ -1,0 +1,36 @@
+type: binary_fallback
+rollback_path: spec.process.1.exclude
+rollback_candidates: []
+template:
+  apiversion: modelslim_v1
+  metadata:
+    config_id: binary_fallback_tune
+    label:
+      w_bit: 8
+      a_bit: 8
+      is_sparse: false
+      kv_cache: false
+  spec:
+    runner: auto
+    process:
+    - type: iter_smooth
+      alpha: 0.5
+    - type: linear_quant
+      qconfig:
+        act:
+          scope: per_tensor
+          dtype: int8
+          symmetric: false
+          method: minmax
+        weight:
+          scope: per_channel
+          dtype: int8
+          symmetric: true
+          method: minmax
+      include:
+      - '*'
+      exclude: []
+    save:
+    - type: ascendv1_saver
+      part_file_size: 4
+    dataset: mix_calib.jsonl

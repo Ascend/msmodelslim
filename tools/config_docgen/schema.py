@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# pylint: disable=too-many-lines
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
@@ -18,20 +17,16 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 
-Pydantic 配置模型 → 量化配置文档（模板 04）渲染。
-
-本模块不导入 msmodelslim，便于用最小 pydantic 模型做单测。
+从 Pydantic 配置模型抽取字段、约束、类型与示例事实。
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import enum
 import inspect
-import posixpath
 import re
 import textwrap
-from dataclasses import dataclass, field, replace
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union, get_args, get_origin
 
 from pydantic import BaseModel
@@ -40,10 +35,14 @@ from pydantic.functional_validators import AfterValidator, BeforeValidator
 from pydantic.json_schema import GenerateJsonSchema
 from pydantic_core import PydanticUndefined, to_jsonable_python
 
-GENERATED_MARKER = "generated-by: skills/docs-management/scripts/gen_quant_config_docs.py"
+from tools.config_docgen.records import ClassDocSections, FieldRecord
 
-# YAML `type` 以该前缀开头的配置视为内部类：不进入公开分派索引，示例不得当作用户可写 type。
+
 INTERNAL_TYPE_PREFIX = "_"
+
+
+DECIMAL_JSON_SCHEMA_PATTERN = r"^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$"
+
 
 SIMPLE_TYPE_NAMES = {
     str: "string",
@@ -56,45 +55,6 @@ SIMPLE_TYPE_NAMES = {
 }
 
 
-@dataclass
-class FieldRecord:
-    name: str
-    type_name: str
-    required: bool
-    default: str
-    constraint: str
-    description: str
-    nested_models: List[str] = field(default_factory=list)
-    is_union_type: bool = False
-    discriminator: Optional[str] = None
-
-
-@dataclass
-class ModelRecord:
-    qualname: str
-    class_name: str
-    slug: str
-    title: str
-    summary: str
-    source_rel: str
-    yaml_path: str
-    category: str
-    type_tag: Optional[str]
-    fields: List[FieldRecord]
-    constraints: List[str]
-    nested_refs: List[Tuple[str, str, str]]
-    parents: List[Tuple[str, str, str]] = field(default_factory=list)
-    # field_path → type 分派基础类显示名（如 select_best → SelectBestConfig）
-    dispatch_bases: Dict[str, str] = field(default_factory=dict)
-    example_yaml: str = ""
-    # 类 docstring 首段（无 docstring 时为空字符串）；用于嵌套配置块的类级描述
-    class_summary: str = ""
-
-    @property
-    def filename(self) -> str:
-        return f"{self.slug}.md"
-
-
 def is_pydantic_model(obj: Any) -> bool:
     return inspect.isclass(obj) and issubclass(obj, BaseModel) and obj is not BaseModel
 
@@ -105,6 +65,10 @@ class DocJsonSchemaGenerator(GenerateJsonSchema):
     丢掉不可 JSON 化的 ``json_schema_extra``（如 ``exclude_if`` 闭包）；
     无法表示的类型（如 ``torch.dtype``）回退为 string，避免整份 Schema 生成失败。
     """
+
+    def get_decimal_pattern(self, schema):  # type: ignore[override]
+        """固定 Decimal 的序列化正则，避免 Pydantic 版本变化导致文档漂移。"""
+        return DECIMAL_JSON_SCHEMA_PATTERN
 
     def generate_inner(self, schema):  # type: ignore[override]
         if isinstance(schema, dict):
@@ -132,34 +96,13 @@ def model_json_schema_for_docs(model_cls: type) -> Dict[str, Any]:
 
 
 _MISSING = object()
+
+
 _PREFERRED_ENUM_VALUES = ("int8", "per_channel", "per_token", "per_tensor", "minmax")
 
 
 class _Flattened(dict):
     """内部 Union 载体：字段展平到父配置，不在 YAML 里保留该嵌套键。"""
-
-
-def extract_declared_example(model_cls: type) -> Optional[Any]:
-    """只取模型显式声明的完整示例，不根据默认值拼装。"""
-    extra = getattr(model_cls, "model_config", None) or {}
-    js_extra = extra.get("json_schema_extra") if hasattr(extra, "get") else None
-    schema = model_json_schema_for_docs(model_cls)
-    chunks: List[Any] = []
-    for source in (js_extra if isinstance(js_extra, dict) else {}, schema):
-        if "examples" in source:
-            chunks.append(source["examples"])
-        if "example" in source:
-            chunks.append(source["example"])
-    for chunk in chunks:
-        if chunk in (None, "", {}, []):
-            continue
-        if isinstance(chunk, list):
-            for item in chunk:
-                if item not in (None, "", {}, []):
-                    return item
-            continue
-        return chunk
-    return None
 
 
 def _dump_extractable_value(value: Any) -> Any:
@@ -195,6 +138,17 @@ def _numeric_from_constraints(info: FieldInfo) -> Any:
             value = meta.lt
             return value - 1 if isinstance(value, int) and not isinstance(value, bool) else value
     return _MISSING
+
+
+def _field_info_constraints(info: FieldInfo) -> List[str]:
+    """从 FieldInfo 元数据提取数值边界，兼容不输出约束的 Pydantic 版本。"""
+    constraints: List[str] = []
+    for meta in info.metadata or []:
+        for attr, operator in (("gt", ">"), ("ge", "≥"), ("lt", "<"), ("le", "≤")):
+            value = getattr(meta, attr, None)
+            if value is not None:
+                constraints.append(f"{operator}{value}")
+    return constraints
 
 
 def _list_too_short(dumped: Any, info: FieldInfo) -> bool:
@@ -489,6 +443,11 @@ def _json_type_name(json_type: str, node: Dict[str, Any], defs: Dict[str, Any]) 
     return "string"
 
 
+def _list_element_constraint(text: str) -> str:
+    """为数组元素约束补充明确的列表上下文。"""
+    return text if text.startswith("列表元素") else f"列表元素：{text}"
+
+
 def _schema_constraints(node: Dict[str, Any], defs: Dict[str, Any]) -> str:
     resolved = _resolve_schema(node, defs)
     parts: List[str] = []
@@ -500,18 +459,36 @@ def _schema_constraints(node: Dict[str, Any], defs: Dict[str, Any]) -> str:
         values = [item for item in enums if str(item).lower() != "placeholder"]
         if values:
             parts.append("、".join(f"`{item}`" for item in values))
-    if resolved.get("minimum") is not None:
-        parts.append(f"≥{resolved['minimum']}")
-    if resolved.get("exclusiveMinimum") is not None and not isinstance(resolved.get("exclusiveMinimum"), bool):
-        parts.append(f">{resolved['exclusiveMinimum']}")
-    if resolved.get("maximum") is not None:
-        parts.append(f"≤{resolved['maximum']}")
-    if resolved.get("exclusiveMaximum") is not None and not isinstance(resolved.get("exclusiveMaximum"), bool):
-        parts.append(f"<{resolved['exclusiveMaximum']}")
+    if resolved.get("ge") is not None:
+        parts.append(f"≥{resolved['ge']}")
+    minimum = resolved.get("minimum")
+    exclusive_minimum = resolved.get("exclusiveMinimum")
+    if minimum is not None:
+        if exclusive_minimum is True:
+            parts.append(f">{minimum}")
+        else:
+            parts.append(f"≥{minimum}")
+    if resolved.get("gt") is not None:
+        parts.append(f">{resolved['gt']}")
+    if exclusive_minimum is not None and not isinstance(exclusive_minimum, bool):
+        parts.append(f">{exclusive_minimum}")
+    if resolved.get("le") is not None:
+        parts.append(f"≤{resolved['le']}")
+    maximum = resolved.get("maximum")
+    exclusive_maximum = resolved.get("exclusiveMaximum")
+    if maximum is not None:
+        if exclusive_maximum is True:
+            parts.append(f"<{maximum}")
+        else:
+            parts.append(f"≤{maximum}")
+    if resolved.get("lt") is not None:
+        parts.append(f"<{resolved['lt']}")
+    if exclusive_maximum is not None and not isinstance(exclusive_maximum, bool):
+        parts.append(f"<{exclusive_maximum}")
     if resolved.get("minLength") is not None:
-        parts.append(f"长度 ≥ {resolved['minLength']}")
+        parts.append(f"字符串长度 ≥ {resolved['minLength']}")
     if resolved.get("maxLength") is not None:
-        parts.append(f"长度 ≤ {resolved['maxLength']}")
+        parts.append(f"字符串长度 ≤ {resolved['maxLength']}")
     if resolved.get("pattern"):
         parts.append(f"`{resolved['pattern']}`")
     if resolved.get("minItems") is not None:
@@ -521,13 +498,19 @@ def _schema_constraints(node: Dict[str, Any], defs: Dict[str, Any]) -> str:
     items = resolved.get("items")
     if isinstance(items, dict):
         inner = _schema_constraints(items, defs)
-        if inner and inner != "—" and inner not in parts:
+        if inner and inner != "—":
+            item_constraint = _list_element_constraint(inner)
+            if item_constraint not in parts:
+                parts.append(item_constraint)
+    variants: List[Dict[str, Any]] = []
+    for key in ("anyOf", "oneOf"):
+        variants.extend(item for item in resolved.get(key) or [] if isinstance(item, dict))
+        if resolved is not node:
+            variants.extend(item for item in node.get(key) or [] if isinstance(item, dict))
+    for item in variants:
+        inner = _schema_constraints(item, defs)
+        if inner and inner != "—":
             parts.append(inner)
-    if "anyOf" in node:
-        for item in node.get("anyOf") or []:
-            inner = _schema_constraints(item, defs)
-            if inner and inner != "—" and inner not in parts:
-                parts.append(inner)
     return "；".join(dict.fromkeys(parts)) if parts else "—"
 
 
@@ -728,6 +711,12 @@ def _validator_belongs_to_class(func: Any, cls_name: str) -> bool:
     return qualname.split(".")[0] == cls_name
 
 
+def is_internal_validator(func: Any) -> bool:
+    """validator 是否显式标记为仅用于内部实现。"""
+    candidates = (func, getattr(func, "__func__", None), getattr(func, "func", None))
+    return any(getattr(candidate, "config_internal", False) for candidate in candidates if candidate is not None)
+
+
 def collect_validator_docs(model_cls: type) -> List[str]:
     docs: List[str] = []
     decorators = getattr(model_cls, "__pydantic_decorators__", None)
@@ -738,6 +727,8 @@ def collect_validator_docs(model_cls: type) -> List[str]:
         group = getattr(decorators, group_name, {}) or {}
         for wrapped in group.values():
             func = getattr(wrapped, "func", wrapped)
+            if is_internal_validator(func):
+                continue
             if not _validator_belongs_to_class(func, cls_name):
                 continue
             text = inspect.getdoc(func) or ""
@@ -838,6 +829,113 @@ def _field_info_by_schema_name(model_cls: type) -> Dict[str, FieldInfo]:
     return mapping
 
 
+def _validator_closure_value(func: Any, name: str) -> Any:
+    """读取 validator 闭包中的文档参数，不执行 validator。"""
+    try:
+        values = inspect.getclosurevars(func)
+    except (TypeError, ValueError):
+        return None
+    return values.nonlocals.get(name, values.globals.get(name))
+
+
+def _iter_after_validators(value: Any, *, list_item: bool = False):
+    """递归查找 AfterValidator，并标记其是否作用于列表元素。"""
+    if isinstance(value, AfterValidator):
+        yield value, list_item
+        return
+    child_list_item = list_item or get_origin(value) is list
+    for arg in get_args(value):
+        yield from _iter_after_validators(arg, list_item=child_list_item)
+
+
+def _legacy_validator_constraint(func: Any) -> str:
+    """兼容尚未迁移到 ``config_constraint`` 的项目通用 validator。"""
+    name = getattr(func, "__name__", "")
+    qualname = getattr(func, "__qualname__", name)
+    if name == "at_least_one_element":
+        return "列表至少包含 1 项"
+    if name in {"greater_than_zero", "int_greater_than_zero"}:
+        return ">0"
+    if name == "validate_normalized_value":
+        return "0 < 值 < 1"
+    if name == "is_string_list":
+        return "列表元素必须全部为字符串"
+    if name == "non_empty_string":
+        return "非空字符串"
+    if name == "is_port":
+        return "1–65535"
+    if name == "is_safe_host":
+        return "合法主机名/IP，仅允许本机、回环或私有/链路本地地址"
+    if name == "is_safe_endpoint":
+        return "以 `/` 开头的安全路径，禁止 `..`、`//` 和非安全字符"
+    if name == "allow_empty_list":
+        return "列表（允许为空列表）"
+    if name == "allow_empty_dict":
+        return "对象（允许为空对象）"
+    if name == "at_least_one_key":
+        return "对象至少包含 1 个键值对"
+    if "validate_str_length" in qualname:
+        max_len = _validator_closure_value(func, "max_len")
+        if isinstance(max_len, int) and max_len > 0:
+            return f"字符串长度 ≤ {max_len}"
+    if "in_range" in qualname:
+        min_val = _validator_closure_value(func, "min_val")
+        max_val = _validator_closure_value(func, "max_val")
+        parts: List[str] = []
+        if min_val is not None:
+            parts.append(f"≥{min_val}")
+        if max_val is not None:
+            parts.append(f"≤{max_val}")
+        return "；".join(parts)
+    return ""
+
+
+def iter_field_after_validators(info: FieldInfo):
+    """Yield unique AfterValidator instances and whether they validate list items."""
+    seen: Set[Tuple[int, bool]] = set()
+    for value in [*info.metadata, info.annotation]:
+        for metadata, list_item in _iter_after_validators(value):
+            key = (id(metadata), list_item)
+            if key in seen:
+                continue
+            seen.add(key)
+            yield metadata, list_item
+
+
+def validator_constraint_text(func: Any) -> str:
+    """Return the source-declared documentation constraint for a reusable validator."""
+    text = getattr(func, "config_constraint", None)
+    if not isinstance(text, str) or not text.strip():
+        text = _legacy_validator_constraint(func)
+    return text.strip() if isinstance(text, str) else ""
+
+
+def _field_validator_constraints(info: FieldInfo) -> List[str]:
+    """把 AfterValidator 的运行期约束补充到文档取值范围列。
+
+    JSON Schema 无法表达自定义 ``AfterValidator``。生成器优先读取 validator
+    函数上的 ``config_constraint`` 属性，未迁移的通用 validator 再回退到函数名
+    与闭包参数映射。字段注解会递归扫描，以覆盖列表元素中的 ``Annotated``。
+    """
+    constraints: List[str] = []
+    for metadata, list_item in iter_field_after_validators(info):
+        text = validator_constraint_text(metadata.func)
+        if list_item and text:
+            text = _list_element_constraint(text)
+        if text and text not in constraints:
+            constraints.append(text)
+    return constraints
+
+
+def _merge_constraints(base: str, additions: Sequence[str]) -> str:
+    parts = [] if base == "—" else [part for part in base.split("；") if part]
+    for addition in additions:
+        for part in addition.split("；"):
+            if part and part not in parts:
+                parts.append(part)
+    return "；".join(parts) if parts else "—"
+
+
 def extract_fields(model_cls: type, name_of: Any = None) -> List[FieldRecord]:
     """从 JSON Schema 抽取字段表；Schema 未给出 default 时回退 Field / default_factory。"""
     name_of = name_of or (lambda item: getattr(item, "__name__", str(item)))
@@ -857,6 +955,12 @@ def extract_fields(model_cls: type, name_of: Any = None) -> List[FieldRecord]:
             record.nested_models = [name_of(nested) for nested in model_nested]
         if record.default == "无" and not record.required:
             record.default = _default_text(info)
+        # Decimal 等字段的数值边界在部分 Pydantic 版本中不进入序列化 Schema；
+        # AfterValidator 也不进入 JSON Schema。两者都从源码注解补入取值范围列。
+        record.constraint = _merge_constraints(
+            record.constraint,
+            [*_field_info_constraints(info), *_field_validator_constraints(info)],
+        )
         # 取值范围列补足默认值语义：默认 null 的可空字段补充「或 null」；
         # 默认空列表且非必填的 list 字段把 minItems 表达为「0项或≥N项」。
         if record.constraint and record.constraint != "—":
@@ -879,17 +983,101 @@ def extract_fields(model_cls: type, name_of: Any = None) -> List[FieldRecord]:
     return kept
 
 
+def _join_docstring_lines(paragraph: str) -> str:
+    """合并段内硬换行；中文换行不额外插入空格，英文和行内代码边界保留间隔。"""
+    cjk = re.compile(r"[\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uff00-\uffef]")
+    lines = [line.strip() for line in paragraph.splitlines() if line.strip()]
+    if not lines:
+        return ""
+    merged = lines[0]
+    for line in lines[1:]:
+        if line.startswith("`") and merged[-1] not in "（《“‘【、，。；：！？）》】":
+            separator = " "
+        else:
+            separator = "" if cjk.search(merged[-1]) or cjk.search(line[0]) else " "
+        merged += separator + line
+    return merged
+
+
 def first_paragraph(text: str) -> str:
+    """返回 docstring 首段并合并段内硬换行，忽略后续段落。"""
     text = textwrap.dedent(text or "").strip()
     if not text:
         return ""
-    parts = re.split(r"\n\s*\n", text, maxsplit=1)
-    return " ".join(parts[0].split())
+    paragraph = re.split(r"\n\s*\n", text, maxsplit=1)[0]
+    return _join_docstring_lines(paragraph)
+
+
+def class_doc_sections(model_cls: type) -> ClassDocSections:
+    """解析配置类自身 docstring 的概述和固定说明小节。
+
+    首段作为配置概述；只有 ``说明``、``约束`` 和 ``注意事项`` 固定标题下的
+    内容进入生成文档，其他段落保留在源码但不参与抽取。每个列表项可以跨多行。
+    """
+    raw = model_cls.__dict__.get("__doc__") or ""
+    cleaned = inspect.cleandoc(raw).strip()
+    if not cleaned:
+        return ClassDocSections(summary="")
+
+    parts = re.split(r"\n\s*\n", cleaned, maxsplit=1)
+    remaining = parts[1] if len(parts) > 1 else ""
+    items: Dict[str, List[str]] = {
+        "description": [],
+        "constraints": [],
+        "notes": [],
+    }
+    headings = {
+        "说明": "description",
+        "约束": "constraints",
+        "注意事项": "notes",
+    }
+    current_section: Optional[str] = None
+    current_item: Optional[str] = None
+
+    def flush_item() -> None:
+        nonlocal current_item
+        if current_section and current_item:
+            merged = _join_docstring_lines(current_item)
+            if merged:
+                items[current_section].append(merged)
+        current_item = None
+
+    for raw_line in remaining.splitlines():
+        line = raw_line.strip()
+        if not line:
+            flush_item()
+            continue
+
+        heading_match = re.fullmatch(r"([^：:\s]{1,16})[：:]", line)
+        if heading_match:
+            flush_item()
+            current_section = headings.get(heading_match.group(1).strip())
+            continue
+
+        bullet_match = re.match(r"^-\s+(.+)$", line)
+        if current_section is None:
+            continue
+
+        if bullet_match:
+            flush_item()
+            current_item = bullet_match.group(1)
+        elif current_item is None:
+            current_item = line
+        else:
+            current_item += "\n" + line
+
+    flush_item()
+    return ClassDocSections(
+        summary=first_paragraph(cleaned),
+        description=tuple(items["description"]),
+        constraints=tuple(items["constraints"]),
+        notes=tuple(items["notes"]),
+    )
 
 
 def class_summary(model_cls: type) -> str:
-    raw = model_cls.__dict__.get("__doc__") or ""
-    return first_paragraph(raw)
+    """返回配置类自身 docstring 的首段。"""
+    return class_doc_sections(model_cls).summary
 
 
 def example_value(info: FieldInfo, annotation: Any, depth: int = 0, field_name: str = "") -> Any:
@@ -955,460 +1143,3 @@ def example_model(model_cls: type, depth: int = 0) -> Dict[str, Any]:
         alias = info.serialization_alias or info.alias or name
         data[alias] = value
     return data
-
-
-def _md_cell(text: str) -> str:
-    return text.replace("|", "\\|").replace("\n", "<br>")
-
-
-# 配置分类 → 输出子目录（按类型组织 API 文档）
-CATEGORY_DIRS = {
-    "任务配置": "task",
-    "服务规格": "spec",
-    "处理器": "processor",
-    "保存格式": "format",
-    "自动调优": "tuning",
-    "嵌套配置": "nested",
-}
-
-
-def _doc_path(record: "ModelRecord") -> str:
-    """记录对应的输出相对路径（按分类子目录组织）。"""
-    directory = CATEGORY_DIRS.get(record.category, "other")
-    return f"{directory}/{record.filename}"
-
-
-def _rel_link(source: "ModelRecord", target: "ModelRecord") -> str:
-    """从 source 页面所在目录到 target 文档页面的相对链接。"""
-    return posixpath.relpath(_doc_path(target), start=CATEGORY_DIRS.get(source.category, "other"))
-
-
-def _rel_link_to(source: "ModelRecord", doc_rel: str) -> str:
-    """从 source 页面所在目录到指定输出相对路径（如 task/modelslim_v1.md）的相对链接。"""
-    return posixpath.relpath(doc_rel, start=CATEGORY_DIRS.get(source.category, "other"))
-
-
-def field_yaml_path(yaml_path: str, name: str) -> str:
-    """字段路径：只显示相对当前配置的字段名，不叠加整条 YAML 路径。
-
-    配置自身在 YAML 中的位置由「配置概述」或展开小节标题给出。
-    """
-    return name
-
-
-def _full_field_path(record: "ModelRecord", name: str) -> str:
-    """字段的完整 YAML 路径（用于分派判断，不直接展示）。"""
-    if record.yaml_path in {"", "(根)"}:
-        return name
-    return f"{record.yaml_path}.{name}"
-
-
-def _anchor(text: str) -> str:
-    slug = text.lower()
-    slug = re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "-", slug).strip("-")
-    return slug
-
-
-def _jump_link(label: str, anchor: str) -> str:
-    """页内跳转用 HTML 锚点：``<a href=\"#anchor\">§label</a>``。"""
-    return f'<a href="#{anchor}">§{label}</a>'
-
-
-def is_expandable_nested(record: "ModelRecord") -> bool:
-    """嵌套配置类别（无独立页面、展开进上级文档的内部配置）是否应展开。"""
-    return record.category == "嵌套配置"
-
-
-def _collect_expanded(
-    record: "ModelRecord",
-    catalog: Dict[str, "ModelRecord"],
-    is_expandable: Any,
-) -> List[Tuple[str, str]]:
-    """收集需要展开进本页的嵌套配置 (slug, 上下文 YAML 路径)。
-
-    BFS 含多级嵌套，按出现顺序去重；路径取自引用方 nested_refs，保证展开内容
-    使用该页上下文中的真实字段路径（例如 Metadata 在 binary_fallback 下是
-    ``strategy.template.metadata``）。
-    """
-    ordered: List[Tuple[str, str]] = []
-    seen: Set[str] = set()
-    queue: List[Tuple[str, str]] = [(slug, path) for path, slug, _ in record.nested_refs]
-    while queue:
-        slug, path = queue.pop(0)
-        if slug in seen:
-            continue
-        target = catalog.get(slug)
-        if target is None or not is_expandable(target):
-            continue
-        seen.add(slug)
-        ordered.append((slug, path))
-        queue.extend((s, p) for p, s, _ in target.nested_refs)
-    return ordered
-
-
-def _dispatch_slugs(record: "ModelRecord", field_path: str) -> List[str]:
-    """字段在 type/mode 分派下分派到的配置 slug 列表。
-
-    优先用 ``dispatch_bases``（含 Union 分派如 select_best），否则退到
-    ``type 分派`` 关系（处理器 / 保存格式 / 策略 / 评估服务）。
-    """
-    targets: List[str] = []
-    if field_path in record.dispatch_bases or f"{field_path}[]" in record.dispatch_bases:
-        for fp, slug, relation in record.nested_refs:
-            if fp in (field_path, f"{field_path}[]"):
-                targets.append(slug)
-        return targets
-    for fp, slug, relation in record.nested_refs:
-        if relation != "type 分派":
-            continue
-        if fp in (field_path, f"{field_path}[]"):
-            targets.append(slug)
-    return targets
-
-
-def _field_ref_text(
-    page_record: "ModelRecord",
-    item: FieldRecord,
-    catalog: Dict[str, "ModelRecord"],
-    anchors: Dict[str, Tuple[str, str]],
-    dispatch_slugs: Sequence[str],
-    link_overrides: Optional[Dict[str, Tuple[str, str]]] = None,
-    field_path: Optional[str] = None,
-) -> str:
-    """参数列表「引用配置」列文案：展开进本页的走页内锚点，公开页面走相对链接。
-
-    ``page_record`` 是当前渲染页面（展开小节时为上级页面），用于计算跨目录相对路径。
-    ``link_overrides`` 把未独立成页的配置（如已合并进 task 页的 spec）重定向到
-    合并页的锚点，映射为 slug → (输出相对路径, #锚点)。
-    ``field_path`` 是当前字段的完整 YAML 路径：type 分派字段优先指向页内的
-    基础类块锚点（``anchors[field_path]``）。
-    """
-    if dispatch_slugs:
-        if field_path:
-            for key in (field_path, f"{field_path}[]"):
-                if key in anchors:
-                    label, anchor = anchors[key]
-                    return f"本页 {_jump_link(label, anchor)}"
-        in_page = [s for s in dispatch_slugs if s in anchors]
-        external = [s for s in dispatch_slugs if s not in anchors]
-        cells = [f"本页 {_jump_link(*anchors[s])}" for s in in_page]
-        if external and len(external) <= 4:
-            for s in external:
-                target = catalog.get(s)
-                if target:
-                    if link_overrides and s in link_overrides:
-                        doc_rel, anchor = link_overrides[s]
-                        cells.append(f"《[{target.title}]({_rel_link_to(page_record, doc_rel)}{anchor})》")
-                    else:
-                        cells.append(f"《[{target.title}]({_rel_link(page_record, target)})》")
-                else:
-                    cells.append(s)
-        elif external:
-            cells.append("按 `type` 分派，见对应配置文档")
-        return "、".join(cells) if cells else "无"
-    if item.nested_models:
-        links = []
-        for nested_key in item.nested_models:
-            if nested_key in anchors:
-                label, anchor = anchors[nested_key]
-                links.append(f"本页 {_jump_link(label, anchor)}")
-                continue
-            target = catalog.get(nested_key)
-            if target:
-                if link_overrides and nested_key in link_overrides:
-                    doc_rel, anchor = link_overrides[nested_key]
-                    links.append(f"《[{target.title}]({_rel_link_to(page_record, doc_rel)}{anchor})》")
-                else:
-                    links.append(f"《[{target.title}]({_rel_link(page_record, target)})》")
-            else:
-                links.append(nested_key)
-        return "、".join(links)
-    return "无"
-
-
-def _param_rows(
-    record: "ModelRecord",
-    catalog: Dict[str, "ModelRecord"],
-    anchors: Dict[str, Tuple[int, str]],
-    page_record: Optional["ModelRecord"] = None,
-    link_overrides: Optional[Dict[str, Tuple[str, str]]] = None,
-) -> List[str]:
-    """渲染一个配置类的参数表；``page_record`` 用于计算跨目录链接（缺省为 record）。"""
-    if page_record is None:
-        page_record = record
-    dispatch_paths = set(record.dispatch_bases)
-    dispatch_paths.update(field_path for field_path, _, relation in record.nested_refs if relation == "type 分派")
-    rows: List[str] = []
-    for item in record.fields:
-        req = "必选" if item.required else "可选"
-        default = "无" if item.required and item.default == "无" else item.default
-        item_path = field_yaml_path(record.yaml_path, item.name)
-        full_item_path = _full_field_path(record, item.name)
-        dispatch_slugs: List[str] = []
-        if full_item_path in dispatch_paths or f"{full_item_path}[]" in dispatch_paths:
-            dispatch_slugs = _dispatch_slugs(record, full_item_path)
-        ref = _field_ref_text(
-            page_record,
-            item,
-            catalog,
-            anchors,
-            dispatch_slugs,
-            link_overrides=link_overrides,
-            field_path=full_item_path,
-        )
-        path = f"`{item_path}`"
-        # apiversion 的默认值是代码占位，取值是固定协议名；文档给出真实可取值避免误导。
-        if item.name == "apiversion":
-            if "Unknown" in default:
-                default = "Unknown（代码占位；YAML 中须按任务类型显式指定）"
-            if item.constraint in ("—", ""):
-                item.constraint = (
-                    "`modelslim_v1`、`multimodal_vlm_modelslim_v1`、`multimodal_sd_modelslim_v1`、`modelslim_convert`"
-                )
-        rows.append(
-            f"| {path} | `{item.type_name}` | {req} | {_md_cell(default)} | "
-            f"{_md_cell(item.constraint)} | {_md_cell(item.description)} | {ref} |"
-        )
-    return rows
-
-
-def _render_param_table(rows: Sequence[str]) -> str:
-    if not rows:
-        return "无对外字段。"
-    header = (
-        "| 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |\n"
-        "|----------|------|-----------|--------|----------------|------|----------|\n"
-    )
-    return header + "\n".join(rows)
-
-
-def _constraint_text(constraints: Sequence[str]) -> str:
-    return "\n".join(f"- {c}" for c in constraints) if constraints else "- 无。"
-
-
-def _field_name_from_path(field_path: str) -> str:
-    """从完整字段路径（如 spec.process[].train_config.select_best）取字段名。"""
-    name = field_path.rsplit(".", 1)[-1]
-    return name.rstrip("[]")
-
-
-def _dispatch_value(target: "ModelRecord", discriminator: Optional[str]) -> str:
-    """分派字段下派生配置的判别值（type/mode 字面量）。"""
-    if target.type_tag:
-        return target.type_tag
-    if discriminator:
-        for f in target.fields:
-            if f.name == discriminator and f.constraint:
-                return f.constraint.strip("`")
-    return ""
-
-
-def _find_base_record(catalog: Dict[str, "ModelRecord"], base_name: str) -> Optional["ModelRecord"]:
-    for r in catalog.values():
-        if r.class_name == base_name:
-            return r
-    return None
-
-
-def _dispatch_derived_items(
-    record: "ModelRecord",
-    refs: Sequence[Tuple[str, str]],
-    anchors: Dict[str, Tuple[str, str]],
-    catalog: Dict[str, "ModelRecord"],
-    discriminator: Optional[str],
-) -> List[str]:
-    """基础类块下「派生类」列表项：类名 + 判别值 + 一句说明 + 链接。"""
-    items: List[str] = []
-    for slug, _rel in refs:
-        target = catalog.get(slug)
-        if target is None:
-            items.append(f"- `{slug}`")
-            continue
-        value = _dispatch_value(target, discriminator)
-        desc = target.summary
-        if slug in anchors:
-            label, anchor = anchors[slug]
-            link = f"本页 {_jump_link(label, anchor)}"
-        else:
-            link = f"《[{target.title}]({_rel_link(record, target)})》"
-        value_txt = f"（`{discriminator or 'type'}: {value}`）" if value else ""
-        items.append(f"- `{target.class_name}`{value_txt} — {desc} {link}")
-    return items
-
-
-def _render_param_blocks(
-    record: "ModelRecord",
-    catalog: Dict[str, "ModelRecord"],
-    anchors: Dict[str, Tuple[str, str]],
-    link_overrides: Optional[Dict[str, Tuple[str, str]]],
-    is_expandable: Any,
-    expand_nested: bool,
-) -> str:
-    """按类名组织「参数列表」：根配置 + 递归展开嵌套/分派配置。
-
-    - 普通嵌套配置：``### 类名`` 平铺块；
-    - type 分派字段：``### 基础类名`` 块 + 「派生类」列表 + 各派生类 ``####`` 子块。
-    不再在子标题里显示 ``（ctx_path）`` 路径后缀。
-
-    两阶段实现：先遍历分配全部页内锚点，再渲染块，保证参数表「引用配置」列
-    能指向后续才出现的块锚点。
-    """
-    counter = [0]
-    seen: Set[str] = set()
-    plan: List[Tuple[str, Any]] = []
-    rendered_bases: Dict[str, Tuple[str, str]] = {}
-
-    def assign(key: str) -> Tuple[str, str]:
-        counter[0] += 1
-        label = f"2.{counter[0]}"
-        anchor = _anchor(f"{label} {key}")
-        anchors[key] = (label, anchor)
-        return label, anchor
-
-    def build(target: "ModelRecord", page: "ModelRecord") -> None:
-        groups: Dict[str, List[Tuple[str, str]]] = {}
-        for fp, slug, rel in target.nested_refs:
-            groups.setdefault(fp, []).append((slug, rel))
-        for fp, refs in groups.items():
-            rels = {rel for _, rel in refs}
-            is_dispatch = "type 分派" in rels or len(refs) > 1
-            if is_dispatch:
-                first = catalog.get(refs[0][0])
-                base_name = target.dispatch_bases.get(fp) or (first.class_name if first else fp)
-                base_record = _find_base_record(catalog, base_name)
-                derived_refs = refs
-                if base_record:
-                    derived_refs = [r for r in refs if r[0] != base_record.slug]
-                if base_name in rendered_bases:
-                    # 同一页面同基础类只渲染一次：后续分派字段别名到已渲染块锚点。
-                    blabel, banchor = rendered_bases[base_name]
-                    anchors[fp] = (blabel, banchor)
-                    if base_record:
-                        anchors[base_record.slug] = (blabel, banchor)
-                    continue
-                base_key = base_record.slug if base_record else base_name
-                label, anchor = assign(base_key)
-                rendered_bases[base_name] = (label, anchor)
-                anchors[fp] = (label, anchor)
-                if base_record:
-                    anchors[base_record.slug] = (label, anchor)
-                field_name = _field_name_from_path(fp)
-                discriminator = next(
-                    (f.discriminator for f in target.fields if f.name == field_name),
-                    None,
-                )
-                plan.append(("base", (base_name, base_record, label, anchor, discriminator, derived_refs)))
-                for slug, _rel in derived_refs:
-                    child = catalog.get(slug)
-                    if child is None or slug in seen or not is_expandable(child):
-                        continue
-                    seen.add(slug)
-                    clabel, canchor = assign(slug)
-                    plan.append(("sub", (child, clabel, canchor, fp)))
-                    build(replace(child, yaml_path=fp), page)
-            else:
-                slug = refs[0][0]
-                child = catalog.get(slug)
-                if child is None or slug in seen or not is_expandable(child):
-                    continue
-                seen.add(slug)
-                clabel, canchor = assign(slug)
-                plan.append(("config", (child, clabel, canchor, fp)))
-                build(replace(child, yaml_path=fp), page)
-
-    rlabel, ranchor = assign(record.slug)
-    plan.append(("root", (record, rlabel, ranchor)))
-    if expand_nested:
-        build(record, record)
-
-    blocks: List[str] = []
-    for kind, payload in plan:
-        if kind == "root":
-            child, clabel, canchor = payload
-            rows = _param_rows(child, catalog, anchors, page_record=record, link_overrides=link_overrides)
-            blocks.append(
-                f'<h3 id="{canchor}">{clabel} {child.class_name}</h3>\n\n'
-                f"{_render_param_table(rows)}\n\n"
-                f"**配置约束**\n\n{_constraint_text(child.constraints)}"
-            )
-        elif kind == "config":
-            child, clabel, canchor, fp = payload
-            ctx = replace(child, yaml_path=fp)
-            rows = _param_rows(ctx, catalog, anchors, page_record=record, link_overrides=link_overrides)
-            summary = ctx.class_summary
-            summary_text = f"{summary}\n\n" if summary else ""
-            blocks.append(
-                f'<h3 id="{canchor}">{clabel} {ctx.class_name}</h3>\n\n'
-                f"{summary_text}"
-                f"{_render_param_table(rows)}\n\n"
-                f"**配置约束**\n\n{_constraint_text(ctx.constraints)}"
-            )
-        elif kind == "sub":
-            child, clabel, canchor, fp = payload
-            ctx = replace(child, yaml_path=fp)
-            rows = _param_rows(ctx, catalog, anchors, page_record=record, link_overrides=link_overrides)
-            summary = ctx.class_summary
-            summary_text = f"{summary}\n\n" if summary else ""
-            blocks.append(
-                f'<h4 id="{canchor}">{clabel} {ctx.class_name}</h4>\n\n'
-                f"{summary_text}"
-                f"{_render_param_table(rows)}\n\n"
-                f"**配置约束**\n\n{_constraint_text(ctx.constraints)}"
-            )
-        else:  # base
-            base_name, base_record, clabel, anchor, discriminator, derived_refs = payload
-            derived_items = _dispatch_derived_items(record, derived_refs, anchors, catalog, discriminator)
-            base_params = ""
-            if base_record:
-                base_params = (
-                    f"{_render_param_table(_param_rows(base_record, catalog, anchors, page_record=record, link_overrides=link_overrides))}\n\n"
-                    f"**配置约束**\n\n{_constraint_text(base_record.constraints)}\n\n"
-                )
-            header = base_name
-            if discriminator:
-                header += f"（按 `{discriminator}` 分派）"
-            blocks.append(
-                f'<h3 id="{anchor}">{clabel} {header}</h3>\n\n{base_params}**派生类**\n\n' + "\n".join(derived_items)
-            )
-    return "\n\n".join(blocks)
-
-
-def render_markdown(
-    record: ModelRecord,
-    catalog: Dict[str, "ModelRecord"],
-    expand_nested: bool = False,
-    is_expandable: Any = None,
-    link_depth: int = 4,
-    link_overrides: Optional[Dict[str, Tuple[str, str]]] = None,
-) -> str:
-    source_name = Path(record.source_rel).name
-    source_link = "/".join([".."] * link_depth + [record.source_rel.replace("\\", "/")])
-    if is_expandable is None:
-        is_expandable = is_expandable_nested
-
-    anchors: Dict[str, Tuple[str, str]] = {}
-    param_section = _render_param_blocks(
-        record,
-        catalog,
-        anchors,
-        link_overrides,
-        is_expandable,
-        expand_nested,
-    )
-
-    sections: List[Tuple[str, str, str]] = [
-        (
-            "1",
-            "配置概述",
-            f"{record.summary}\n\n| 项目 | 内容 |\n|------|------|\n"
-            f"| 配置类 | `{record.class_name}` |\n"
-            f"| 源码 | [{source_name}]({source_link}) |",
-        ),
-        ("2", "参数列表", param_section),
-    ]
-    next_num = 3
-    if (record.example_yaml or "").strip():
-        sections.append((str(next_num), "完整配置参考", f"```yaml\n{record.example_yaml.rstrip()}\n```"))
-
-    body = "\n\n".join(f"## {num}. {title}\n\n{content}" for num, title, content in sections)
-    return f"<!-- {GENERATED_MARKER} ; class: {record.qualname} -->\n# {record.title}\n\n{body}\n"

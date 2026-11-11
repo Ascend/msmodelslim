@@ -1,4 +1,9 @@
-<!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.processor.container.group.GroupProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.container.group.GroupProcessorConfig -->
+> **自动生成文档，请勿手工修改。**
+>
+> 本页由 `tools.config_docgen` 根据源码注解生成。
+> 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
+
 # group 配置说明
 
 ## 1. 配置概述
@@ -21,7 +26,7 @@
 
 **配置约束**
 
-- `configs` 内各子处理器必须为同一 `type`（同类合并，如均为 `linear_quant`）；不同 `type` 请拆成多个独立的 `process` 项，不要混在同一 `group` 中。
+- 无。
 
 <h3 id="2-2-autoprocessorconfig">2.2 《<a href="linear_quant.md">AutoProcessorConfig</a>》</h3>
 
@@ -66,31 +71,16 @@ spec:
     - type: linear_quant
       qconfig:
         act:
-          dtype: int8
+          dtype: float
           scope: per_tensor
-          symmetric: false
-          method: minmax
+          symmetric: true
+          method: none
         weight:
           dtype: int8
           scope: per_channel
           symmetric: true
           method: minmax
-      include:
-      - '*self_attn*'
-    - type: linear_quant
-      qconfig:
-        act:
-          dtype: int8
-          scope: per_token
-          symmetric: true
-          method: minmax
-        weight:
-          dtype: int8
-          scope: per_channel
-          symmetric: true
-          method: minmax
-      include:
-      - '*mlp*'
-      exclude:
-      - '*gate*'
+    - type: smooth_quant
+      alpha: 0.5
+      symmetric: true
 ```
