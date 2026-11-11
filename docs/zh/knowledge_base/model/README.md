@@ -489,7 +489,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td>Qwen3.6-27B</td>
+      <td>Qwen3.6-27B<sup>6</sup></td>
       <td>transformers==5.2.0</td>
       <td>-</td>
       <td>√(一键量化)</td>
@@ -1090,6 +1090,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
 - <sup>3</sup> 压缩后配合Atlas 推理系列产品解压缩特性更佳；仅MindIE支持稀疏量化模式，包括w8a8s和w16a16s。
 - <sup>4</sup> 仅MindIE支持采用了PDMIX量化方案的最佳实践。
 - <sup>5</sup> DeepSeek-V4-Flash-0731、DeepSeek-V4-Pro-0813 的 w4a4c8 列为 W4A4C8 混合精度方案：路由专家 MXFP4、Attention/共享专家 MXFP8、KV 复用官方 FP8；量化时使用 `--quant_type w4a4c8`。已验证场景为 vLLM-Ascend + Ascend_950 与 vLLM-Ascend + Atlas_350，详见[DeepSeek 量化说明](https://gitcode.com/Ascend/msmodelslim/blob/master/example/DeepSeek/README.md)。
+- <sup>6</sup> Qwen3.6-27B 在伪量化场景（如 `msmodelslim eval`）下建议使用 transformers==5.14.1 或更高版本，较低版本可能偶现输出乱码。
 
 ## 多模态模型支持列表
 

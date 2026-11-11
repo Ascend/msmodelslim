@@ -27,6 +27,7 @@ Qwen3.6 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据
 
 - transformers 版本需要配置安装 5.2.0 版本。
   - pip install transformers==5.2.0
+- **伪量化场景（`msmodelslim eval`）**：Qwen3.6-27B 建议使用 `transformers==5.14.1` 或更高版本；较低版本可能偶现输出乱码。
 
 ## 支持的模型版本与量化策略
 
