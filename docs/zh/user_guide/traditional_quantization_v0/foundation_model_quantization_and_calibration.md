@@ -249,7 +249,7 @@ def get_calib_dataset(tokenizer, mixed_dataset, device='npu'):
 
 ### 3.2 功能介绍
 
-### 3.3 大语言模型FA3量化关键步骤说如下
+### 3.3 大语言模型FA3量化关键步骤说明如下
 
 #### 3.3.1 修改modeling文件
 
@@ -258,7 +258,7 @@ def get_calib_dataset(tokenizer, mixed_dataset, device='npu'):
 - 方式一：从transformers库中找到modeling文件，并复制到模型权重路径下，以便后续修改：
 <br>`cp {transformers库路径}/models/{模型名称}/modeling_{model_type}.py {权重路径}/modeling_{model_type}_fa3.py`
 
-- 方式二：通过`pip show transformers`查询transformers的`Version`，假设为`4.43.1`，则可以去transformer库里找到对应版本的`modeling_{model_type}.py`，以Qwen2.5-72B为例，4.43.1版本的modeling文件地址为[modeling_qwen2.py](https://github.com/huggingface/transformers/blob/v4.43.1/src/transformers/models/qwen2/modeling_qwen2.py)
+- 方式二：通过`pip show transformers`查询transformers的`Version`，假设为`4.43.1`，则可以去transformers库里找到对应版本的`modeling_{model_type}.py`，以Qwen2.5-72B为例，4.43.1版本的modeling文件地址为[modeling_qwen2.py](https://github.com/huggingface/transformers/blob/v4.43.1/src/transformers/models/qwen2/modeling_qwen2.py)
 
 - 注意：Llama3.1-70B模型需使用4.43.0及以上的modeling文件。
 

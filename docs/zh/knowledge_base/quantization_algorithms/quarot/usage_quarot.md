@@ -189,7 +189,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
      process:
        - type: "quarot"                     # 固定为 `quarot`，用于指定 Processor 类型。
          online: False                      # 控制是否启用在线旋转，默认为 False。
-         block_size: -1                     # 旋转矩阵启用块对角矩阵时每个块的大小，取值范围为-1或2的幂次方，如果大于0必须为2的幂，若为-1，表示不进行块对角矩阵处理
+         block_size: -1                     # 旋转矩阵启用块对角矩阵时每个块的大小，取值范围为-1或2的幂，如果大于0必须为2的幂，若为-1，表示不进行块对角矩阵处理
          max_tp_size: 4                     # 最大张量并行大小，默认为4，仅在启用在线旋转时生效，必须大于0且为2的幂
          down_proj_online_layers: [ ]       # 用于指定哪些层的down_proj使用在线旋转，默认为空
          export_extra_info: True            # 是否导出全局旋转矩阵：使用 ascend_v1_saver 时在量化权重路径下生成 optional 目录及 quant_model_description.json 追加字段，默认为 True

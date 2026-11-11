@@ -134,7 +134,7 @@ msmodelslim analyze attn \
 
 对全部 Attention 模块计算 MSE 敏感度。
 
-### 5.4 指定限定模块进行敏感层分析
+### 5.4 指定模块进行敏感层分析
 
 ```bash
 msmodelslim analyze layer \

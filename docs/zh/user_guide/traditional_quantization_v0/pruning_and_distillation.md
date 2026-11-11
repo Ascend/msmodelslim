@@ -249,7 +249,6 @@ distill_model = get_distill_model(teacher_model, student_model, distill_config) 
 
 - 将原始代码中model = modeling.BertForQuestionAnswering(config)改为model = distill_model.student_model，从而为student模型设置optimizer。
 - 将原始代码中start_logits, end_logits = model(input_ids, segment_ids, input_mask)改为loss, student_outputs, teacher_outputs = distill_model (input_ids, segment_ids, input_mask)，并注释原始的loss计算部分，从而对 DistillDualModels模型实例进行训练。
-训练完成后，可以使用get_student_model方法，获取训练后的student模型（MindSpore框架的模型使用get_student_model方法后，无法再次对DistillDualModels模型实例进行训练）。
 
 7.训练完成后，可以使用get_student_model方法，获取训练后的student模型（MindSpore框架的模型使用get_student_model方法后，无法再次对DistillDualModels模型实例进行训练）。
 

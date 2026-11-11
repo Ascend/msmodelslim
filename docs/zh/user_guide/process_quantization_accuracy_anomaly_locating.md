@@ -232,7 +232,7 @@ flowchart TD
    }
    ```
 
-   关键参数：`level`（采集精度级别）、`data_mode`（input/output/all）、`dump_path`（**两组环境必须不同路径**，替换为实际输出路径），关键参数的详细说明参见《[vLLM-Ascend msprobe 指南](https://docs.vllm.ai/projects/ascend/zh-cn/v0.18.0/developer_guide/performance_and_debug/msprobe_guide.html)》。
+   关键参数：`level`（采集精度级别）、`data_mode`（input/output/all）、`dump_path`（**两组环境必须不同路径**，替换为实际输出路径），详细说明参见《[vLLM-Ascend msprobe 指南](https://docs.vllm.ai/projects/ascend/zh-cn/v0.18.0/developer_guide/performance_and_debug/msprobe_guide.html)》。
 3. **分别在两组环境采集**：启动带 dump 的服务（vLLM-Ascend 示例），发送相同请求，dump 完成后停止服务：
 
    ```bash

@@ -35,7 +35,7 @@ flowchart LR
 各阶段的关键细节如下：
 
 - **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行量化流程。
-- **确定 MXFP8 per-block 方案**：当前 MSE-Round 只注册 MXFP8 per-block 对称权重量化，用户侧主要工作是确认格式与 axes 布局。
+- **确定 MXFP8 per-block 方案**：当前 MSE_Round 只注册 MXFP8 per-block 对称权重量化，用户侧主要工作是确认格式与 axes 布局。
 - **计算两种 shared exponent 候选**：算法对每个 block 的 shared exponent 计算向上/向下两个候选，无需用户干预。
 - **比较重构 MSE**：算法自动比较两个候选的重构 MSE，选择误差更小的舍入结果。
 - **量化权重**：按选定舍入执行 per-block 权重量化，提升 MXFP8 权重精度。
@@ -80,7 +80,7 @@ spec:
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |
-| `scope` | 当前 MSE-Round 只注册 MXFP8 per-block 权重量化。 | 固定 `per_block`。 | 不支持其他 scope。 |
+| `scope` | 当前 MSE_Round 只注册 MXFP8 per-block 权重量化。 | 固定 `per_block`。 | 不支持其他 scope。 |
 | `dtype` | 当前只支持 `mxfp8`。 | 固定 `mxfp8`。 | 需要 MXFP4 应使用相应算法。 |
 | `symmetric` | 当前注册为对称 MXFP8。 | 固定 `true`。 | 不调。 |
 | `method` | 固定 `mse_round`。算法对每个 block 的 shared exponent 比较向上/向下两个候选，选择重构 MSE 更小的一个。 | 固定。 | 算法已自动做局部舍入选择，不需要再暴露“向上/向下比例”参数。 |
@@ -88,7 +88,7 @@ spec:
 
 ### 参数组合与选择顺序
 
-MSE-Round 的算法内部已经自动比较两种 exponent 舍入，因此用户侧主要工作是确认 MXFP8 per-block 格式和 axes；没有必要人为增加额外搜索旋钮。
+MSE_Round 的算法内部已经自动比较两种 exponent 舍入，因此用户侧主要工作是确认 MXFP8 per-block 格式和 axes；没有必要人为增加额外搜索旋钮。
 
 **输出**：一份完成单变量调整的算法参数方案，关键字段均有明确的选择依据和调整方向。
 

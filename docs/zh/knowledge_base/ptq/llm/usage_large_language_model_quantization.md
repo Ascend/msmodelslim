@@ -54,7 +54,7 @@ flowchart LR
 
 若目标模型已在官方支持列表中，无需编写适配代码，直接指定对应 `--model_type` 即可；若需接入新模型或扩展量化接口，请参见[《LLM 模型接入量化流程指南》](./integration_guide_large_language_model_quantization.md#步骤-4实现流水线核心接口方法)。
 
-该指南详细说明了 `PipelineInterface` 规范、核心方法说明（`handle_dataset`、`init_model`、`generate_model_visit`、`generate_model_forward`、`enable_kv_cache`）以及适配器注册与开发步骤。
+该指南详细说明了 `PipelineInterface` 规范、核心方法（`handle_dataset`、`init_model`、`generate_model_visit`、`generate_model_forward`、`enable_kv_cache`）以及适配器注册与开发步骤。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 

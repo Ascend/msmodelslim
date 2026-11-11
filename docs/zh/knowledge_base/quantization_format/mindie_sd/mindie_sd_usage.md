@@ -1,6 +1,6 @@
 # MindIE SD 使用指南
 
-本指南说明如何在 msModelSlim 中选用 **MindIE-SD** 量化格式，按 **确认模式支持 → 配置 save → 执行量化并核对产物** 完成落盘，并将产物部署到 MindIE 多模态生成路径。格式字段与枚举见《[MindIE SD](term_mindie_sd.md)》；模型适配与 `--config` 执行量化见《[权重量化使用指南](../../../user_guide/usage_weight_quantization.md)》；配置协议与最佳实践入口见《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
+本指南说明如何在 msModelSlim 中选用 **MindIE SD** 量化格式，按 **确认模式支持 → 配置 save → 执行量化并核对产物** 完成落盘，并将产物部署到 MindIE 多模态生成路径。格式字段与枚举见《[MindIE SD](term_mindie_sd.md)》；模型适配与 `--config` 执行量化见《[权重量化使用指南](../../../user_guide/usage_weight_quantization.md)》；配置协议与最佳实践入口见《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 1. 适用范围
 

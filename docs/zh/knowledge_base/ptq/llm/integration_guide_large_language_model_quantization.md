@@ -129,7 +129,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None
 **实现要点**：
 
 - **逐层加载控显存**：大参数量模型推荐在 `init_model` 中仅加载第一层 Decoder Layer（临时设置 `num_hidden_layers=1`），其余层在量化前向时按需加载；若源模型为 FP8 权重，需在此阶段执行反量化。
-- **层序严格一致**：`generate_model_visit` 与 `generate_model_forward` 的层访问顺序必须完全严格一致，否则逐层调度会错位。
+- **层序严格一致**：`generate_model_visit` 与 `generate_model_forward` 的层访问顺序必须完全一致，否则逐层调度会错位。
 - **禁用 KVCache**：PTQ 校准仅需 Prefill 特征，`enable_kv_cache` 中显式关闭可大幅减少显存开销。
 
 **输出**：完成全部接口契约实现的适配器代码。

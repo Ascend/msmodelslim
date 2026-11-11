@@ -55,7 +55,7 @@ flowchart LR
 
 若目标模型已在官方支持列表中，无需编写适配代码，直接指定对应 `--model_type` 即可；若需接入新 VLM 模型，请参见[《VLM 模型接入量化流程指南》](./integration_guide_vision_transformer_quantization.md)。
 
-该指南详细说明了 `PipelineInterface` 规范、核心方法说明（`handle_dataset`、`init_model`、`generate_model_visit`、`generate_model_forward`、`enable_kv_cache`）以及视觉组件封装与适配器注册开发步骤。
+该指南详细说明了 `PipelineInterface` 规范、核心方法（`handle_dataset`、`init_model`、`generate_model_visit`、`generate_model_forward`、`enable_kv_cache`）以及视觉组件封装与适配器注册开发步骤。
 
 **输出**：已在框架中注册可用的 VLM 适配器（通过 `--model_type` 调用）。
 

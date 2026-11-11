@@ -34,7 +34,7 @@
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
 | 输入 | 待量化浮点张量 | 权重、激活或 KV 缓存 | 可在 float32 下统计与计算 | 形状已知，能沿选定轴归约 |
-| 输入 | 数据类型与粒度选择 | 调用方根据部署目标确定 | INT8/INT4 可选 per_tensor、per_channel、per_group；FP8 仅 per_tensor/per_channel；MX 为块长 32 | 与目标模式一致，见步骤 1 |
+| 输入 | 数据类型与粒度选择 | 调用方根据部署目标确定 | INT8/INT4 可选 per-tensor、per-channel、per-group；FP8 仅 per-tensor/per-channel；MX 为块长 32 | 与目标模式一致，见步骤 1 |
 | 交付件 | 量化网格与量化参数 | 函数返回值 | `q` 默认 float32 同形状网格；INT 对称返回 scale，非对称再加 offset；MX 返回 uint8 E8M0 | 能被对应 `dequantize` 还原，参数可广播 |
 | 交付件 | 反量化浮点张量 | 调用 `dequantize` 的输出 | float32，形状与输入一致 | 与原张量同形状，可用于后续计算或损失 |
 
@@ -179,7 +179,7 @@ y = int8_dequantize_per_channel_sym(q, scale, axis=-1)
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 量化与反量化 | scale、zero_point、静态动态与粒度 | [量化与反量化](term_quantization.md) |
+| 量化与反量化 | scale、zero_point、静态与动态、粒度 | [量化与反量化](term_quantization.md) |
 | INT8 | 8位有符号整数仿射 | [INT8](term_int8.md) |
 | INT4 | 4位有符号整数仿射 | [INT4](term_int4.md) |
 | FP8 | OCP OFP8 逐元素浮点 | [FP8](term_fp8.md) |

@@ -90,7 +90,7 @@ Ceil_X 并不是直接连续优化 $E(s)$，而是通过 $c$ 控制整数指数 
 
 ### 2.6 使用限制
 
-- 仅支持 mxFP4 格式的 per_block 对称量化。
+- 仅支持 mxFP4 格式的 per-block 对称量化。
 - 启用 `enable_search` 时增加若干次前向量化评估，计算开销增大。
 - `search_max` 须大于 `search_min`。
 

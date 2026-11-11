@@ -39,7 +39,7 @@ msmodelslim/model/{model_name}/
 ├── loader.py                # 适配器延迟加载器
 ├── model_adapter.py         # 主适配器类
 ├── base_model_adapter.py    # （可选）多专家模型的基础适配器
-├── expert_sub_adapter.py    # （可选）专家子适配器（多专家必须）
+├── expert_sub_adapter.py    # （可选）专家子适配器（多专家必需）
 └── {task}/                  # （可选）按生成任务拆分的子模块（如 t2v/i2v）
 ```
 
@@ -145,7 +145,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 **实现要点**：
 
-- **浮点推理 Dump 校准**：DiT 量化校准依赖运行完整浮点去噪推理管线捕获激活特征，`inference_dump_calib_data` 须固定生成随机数种子保证可复现性。
+- **浮点推理 Dump 校准**：DiT 量化校准依赖运行完整浮点去噪推理管线捕获激活特征，`inference_dump_calib_data` 须固定随机数种子保证可复现性。
 - **逐块调度（LayerWise）**：DiT 模型在 `multimodal_sd_modelslim_v1` 中固定使用 `runner: layer_wise`，通过 hook 截获 Attention Block 输入逐块量化。
 - **多专家模型显式继承**：多专家模型（如 Wan2.2 双专家）的专家子适配器必须**显式继承**主适配器所实现的扩展接口（如 `OnlineQuaRotInterface`、`IterSmoothInterface`），不能仅靠主适配器继承和 `__getattr__` 代理。
 

@@ -192,7 +192,7 @@ core/                     # 领域层，按领域积累和管理量化知识
 │   └── interface.py              # 最佳实践定义
 ├── quant_service/            # 量化服务知识库，量化服务将浮点模型转化为量化模型并生成量化权重
 │   ├── __init__.py
-│   ├── dataset_loader_infra.py   # 量化服务提出“数据集加载”基础设施要求
+│   ├── dataset_loader_infra.py   # 量化服务提出“数据集加载”基础设施需求
 │   ├── interface.py              # 量化服务定义和协议
 │   ├── key_info_persistence_infra.py
 │   ├── modelslim_v0/             # 基于msModelSlim V0框架的LLM量化服务

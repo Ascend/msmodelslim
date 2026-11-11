@@ -74,7 +74,7 @@ msmodelslim tune \
 
 `${MODEL_PATH}` 为权重目录，`${SAVE_PATH}` 为调优结果目录，`${CONFIG_PATH}` 为调优 YAML（含 `strategy` 与 `evaluation`）。未指定 `--model_type` 时使用默认适配器 `default`，推荐显式指定。
 
-### 7.2 显示指定模型类型、设备与超时时长
+### 7.2 显式指定模型类型、设备与超时时长
 
 ```bash
 msmodelslim tune \

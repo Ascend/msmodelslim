@@ -119,7 +119,7 @@ msmodelslim quant \
   --device_id 0 1 2 3
 ```
 
-`--quant_type w8a8c8` 表示权重8bit、激活8bit、KVCache 8bit 量化；`--device_id 0 1 2 3` 使用 4 个 NPU 设备。权重转换的命令见 [7.7](#77-显示指定设备进行权重转换)。
+`--quant_type w8a8c8` 表示权重8bit、激活8bit、KVCache 8bit 量化；`--device_id 0 1 2 3` 使用 4 个 NPU 设备。权重转换的命令见 [7.7](#77-显式指定设备进行权重转换)。
 
 ### 7.4 使用自定义配置文件
 
@@ -131,7 +131,7 @@ msmodelslim quant \
   --config ${CONFIG_PATH}
 ```
 
-`${CONFIG_PATH}` 指向符合 V1 协议的量化 YAML；指定后直接采用该配置，不再做最佳实践匹配。字段说明见引用的配置文档。权重转换示例见 [7.7](#77-显示指定设备进行权重转换)。
+`${CONFIG_PATH}` 指向符合 V1 协议的量化 YAML；指定后直接采用该配置，不再做最佳实践匹配。字段说明见引用的配置文档。权重转换示例见 [7.7](#77-显式指定设备进行权重转换)。
 
 ### 7.5 使用场景标签匹配最佳实践
 
@@ -159,7 +159,7 @@ msmodelslim quant \
 
 `${MODEL_PATH}` 为源权重目录，`${SAVE_PATH}` 为转换输出目录，`${CONFIG_PATH}` 为转换 YAML。配置协议与字段见《[modelslim_convert 配置说明](../config/quant/modelslim_convert.md)》，操作步骤与示例 YAML 见《[权重转换使用指南](../../knowledge_base/ptq/convert/usage_weight_conversion.md)》。
 
-### 7.7 显示指定设备进行权重转换
+### 7.7 显式指定设备进行权重转换
 
 NPU 多卡时加上 `--device npu` 和 `--device_id`：
 

@@ -118,7 +118,7 @@ spec:
 
 **操作**：
 
-ModelSlim 实现入口：
+msModelSlim 实现入口：：
 [查看对应实现目录](../../../../../msmodelslim/processor/quant/autoround.py)
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |

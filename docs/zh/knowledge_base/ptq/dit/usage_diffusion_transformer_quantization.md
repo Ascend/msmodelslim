@@ -56,7 +56,7 @@ flowchart LR
 
 若目标模型已在官方支持列表中，无需编写适配代码，直接指定对应 `--model_type` 即可；若需接入新 DiT 模型，请参见[《DiT 模型接入量化流程指南》](./integration_guide_diffusion_transformer_quantization.md)。
 
-该指南详细说明了 `MultimodalPipelineInterface` 规范、核心方法说明（`get_inference_config_class`、`configure_runtime`、`prepare_calib_data`、`inference_dump_calib_data`、`quantization_context`、`get_expert_adapter`）以及推理参数校验、运行态配置、浮点校准数据导出与量化执行上下文的适配器开发步骤。
+该指南详细说明了 `MultimodalPipelineInterface` 规范、核心方法（`get_inference_config_class`、`configure_runtime`、`prepare_calib_data`、`inference_dump_calib_data`、`quantization_context`、`get_expert_adapter`）以及推理参数校验、运行态配置、浮点校准数据导出与量化执行上下文的适配器开发步骤。
 
 **输出**：已在框架中注册可用的多模态模型适配器（通过 `--model_type` 调用）。
 

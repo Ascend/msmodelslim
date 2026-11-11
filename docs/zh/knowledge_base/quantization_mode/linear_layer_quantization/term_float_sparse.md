@@ -79,6 +79,6 @@
 
 ## 5. 参考文档
 
-1. 《[浮点稀疏 参数配置流程指南](../../quantization_algorithms/float_sparse/usage_float_sparse.md)》
+1. 《[浮点稀疏参数配置流程指南](../../quantization_algorithms/float_sparse/usage_float_sparse.md)》
 2. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
 3. 《[量化模式](../README.md)》

@@ -11,7 +11,7 @@
 
 以下情况**不适用**本指南，请改用其他路径：
 
-- 模型未收录支持矩阵或未验证：请参考《[新模型权重量化流程](process_new_model_quantization_tuning.md)》；
+- 模型未收录支持矩阵或未验证：请参考《[新模型量化调优流程](process_new_model_quantization_tuning.md)》；
 - 需要深度定制量化算法组合、校准集等策略：请参考《[新模型量化调优流程](process_new_model_quantization_tuning.md)》制定方案。
 
 ## 2. 流程关系与前置条件

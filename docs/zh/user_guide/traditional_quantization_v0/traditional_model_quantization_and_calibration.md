@@ -168,7 +168,7 @@ with SafeWriteUmask(umask=0o377):
 ONNX模型的量化可以采用不同的模式，包括Label-Free和Data-Free模式。这些模式在量化过程中是否需要数据集以及如何使用数据集方面有所不同。msModelSlim工具提供的squant_ptq接口和post_training_quant接口支持这两种量化模式，并且都可以处理静态和动态shape模型。
 
 - Data-Free模式
-    Data-Free模式则不需要数据集来进行量化校准。这种模式通常使用模型本身的统计信息或其他无需实际数据的技巧来估计量化参数。Data-Free模式的优势在于，它可以用于那些难以获取或无法获取真实数据的场景。当前以Data-Free模式（以squant_ptq接口为例）（无需校准数据集）为例演示量化步骤。
+    Data-Free模式则不需要数据集来进行量化校准。这种模式通常使用模型本身的统计信息或其他无需实际数据的技巧来估计量化参数。Data-Free模式的优势在于，它可以用于那些难以获取或无法获取真实数据的场景。当前以Data-Free模式（以squant_ptq接口为例，无需校准数据集）为例演示量化步骤。
 
 - Label-Free模式
     在Label-Free模式下，量化过程需要少量的数据集来校准量化因子。这种模式允许量化工具根据实际数据分布调整量化参数，从而提高量化后的模型精度。当前以Label-Free模式（以post_training_quant接口为例）为例演示量化步骤。
@@ -203,7 +203,7 @@ ONNX模型的量化可以采用不同的模式，包括Label-Free和Data-Free模
 图优化：针对静态shape模型，量化工具内置了多种图结构优化方法，支持对浮点模型和量化后模型进行图优化。使用graph_optimize_level参数开启并指定图优化级别，并支持通过
 shut_down_structures参数指定需关闭优化的图结构。同时，在图优化过程中需要将ONNX模型转换为OM模型，用户可以通过om_method参数指定转换工具。
 
-根据ONNX模型和调用OnnxCalibrator封装量化算法，可以根据模型量化情况配置精度保持策略。
+根据ONNX模型调用OnnxCalibrator封装量化算法，可以根据模型量化情况配置精度保持策略。
 
 初始化OnnxCalibrator后通过run()函数执行量化。
 
@@ -252,7 +252,7 @@ python3 resnet50_quant.py
 
 动态shape模型量化步骤（以YoloV5m为例）
 
-用户需自行准备模型。以YoloV5m为例，可参考对应[README](https://gitcode.com/Ascend/ModelZoo-PyTorch/blob/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer/README.md#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，获取6.1版本YoloV5m模型的权重文件后，并配置模型推理方式为nms_script，导出动态shape的onnx文件，导出命令参考如下：
+用户需自行准备模型。以YoloV5m为例，可参考对应[README](https://gitcode.com/Ascend/ModelZoo-PyTorch/blob/master/ACL_PyTorch/built-in/cv/Resnet50_Pytorch_Infer/README.md#%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86)中“模型推理”章节，获取6.1版本YoloV5m模型的权重文件后，配置模型推理方式为nms_script，导出动态shape的onnx文件，导出命令参考如下：
 
 ```bash
 bash pth2onnx.sh --tag 6.1 --model yolov5m --nms_mode nms_script

@@ -69,7 +69,7 @@ MOE模型支持W8A8_per-token量化场景、W8A16 per-channel量化场景和W8A1
 
 5. 调用生成的量化校准对象的run()方法对原始模型进行量化。
 
-6. 调用生成的量化校准对象的save()接口保存量化后的模型，包括模型量化权重和模型相关参数，用于后续量化模型的部署任务，具体请参见MindIE的[“加速库支持模型列表”](https://www.hiascend.com/document/detail/zh/mindie/20RC1/modellist/mindie_modellist_0001.html)章节中已适配量化的模型。
+6. 调用生成的量化校准对象的save()接口保存量化后的模型，包括模型量化权重和模型相关参数，用于后续量化模型的部署任务，具体请参见MindIE的[“加速库支持模型列表”](https://www.hiascend.com/developer/models?tab=infer)章节中已适配量化的模型。
 
 ### 1.5 量化步骤（以ChatGLM2-6B为例）
 
@@ -469,7 +469,7 @@ export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 #配置量化将会执行的设备序�
 
 大模型量化工具建议在大模型下游任务评估流程打通的前提下使用，请自行调试源码后进行以下量化配置。
 
-ChatGLM2-6B为模型进行量化前请执行如下命令安装所需依赖，若运行量化工具过程中提示缺失某个依赖，请根据提示安装。
+ChatGLM2-6B模型进行量化前请执行如下命令安装所需依赖，若运行量化工具过程中提示缺失某个依赖，请根据提示安装。
 
 ```bash
 pip3 install protobuf==4.24.1
@@ -887,7 +887,7 @@ pip3 install torch==2.1.0   # 安装CPU版本的PyTorch 2.1.0（不依赖TorchNP
 
 执行压缩算法RACompressor启动长序列压缩任务，进行长序列压缩。
 
-调用get_alibi_windows接口导出压缩窗口，并在指定路径中获取.pt文件，具体请参见MindIE的[“加速库支持模型列表”](https://www.hiascend.com/document/detail/zh/mindie/20RC1/modellist/mindie_modellist_0001.html)章节中已适配量化的模型。
+调用get_alibi_windows接口导出压缩窗口，并在指定路径中获取.pt文件，具体请参见MindIE的[“加速库支持模型列表”](https://www.hiascend.com/developer/models?tab=infer)章节中已适配量化的模型。
 
 #### 3.3.1 压缩步骤（以baichuan2-13b为例）
 
@@ -938,7 +938,7 @@ ra.get_alibi_windows(save_path)
 
 执行以下命令，启动长序列压缩任务，并在“baichuan2-13b”文件夹的路径下获取.pt文件。
 python3 run.py
-.pt文件可用于后续的推理部署任务，具体请参见MindIE的[“加速库支持模型列表”](https://www.hiascend.com/document/detail/zh/mindie/20RC1/modellist/mindie_modellist_0001.html)章节中已适配量化的模型。
+.pt文件可用于后续的推理部署任务，具体请参见MindIE的[“加速库支持模型列表”](https://www.hiascend.com/developer/models?tab=infer)章节中已适配量化的模型。
 
 ## 4. RoPE编码类型简介
 
@@ -993,7 +993,7 @@ pip3 install torch_npu-2.1.0.xxx.whl
 
 用户可根据.pt文件进行压缩
 
-压缩后的文件可用于后续的推理部署，具体请参见MindIE的[“加速库支持模型列表”](https://www.hiascend.com/document/detail/zh/mindie/20RC1/modellist/mindie_modellist_0001.html)章节中已适配量化的模型。
+压缩后的文件可用于后续的推理部署，具体请参见MindIE的[“加速库支持模型列表”](https://www.hiascend.com/developer/models?tab=infer)章节中已适配量化的模型。
 
 ### 4.3 压缩步骤（以Qwen2-72b-instruct为例）
 
@@ -1048,7 +1048,7 @@ ra.get_compress_heads(save_path)
 
 用户可根据.pt文件进行压缩。
 
-压缩后的文件可用于后续的推理部署，具体请参见MindIE的[“MindIE支持模型列表”](https://www.hiascend.com/document/detail/zh/mindie/20RC1/modellist/mindie_modellist_0001.html)章节中已适配量化的模型。
+压缩后的文件可用于后续的推理部署，具体请参见MindIE的[“MindIE支持模型列表”](https://www.hiascend.com/developer/models?tab=infer)章节中已适配量化的模型。
 
 ```bash
 python3 run.py

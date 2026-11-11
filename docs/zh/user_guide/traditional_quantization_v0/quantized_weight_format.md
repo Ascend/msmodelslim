@@ -152,8 +152,8 @@ msmodelslim工具提供的KV Cache量化采用int8量化。对于每个attention
 
 ### 5.1 权重说明
 
-`kv_cache_scale`为kvcache量化scale的缩放系数，数据类型为torch.Tensor，dtype为torch.float32或torch.float16，shape为kv channel的size，如果是qkv分开场景，则为k或v层linear的n维（见上文**w8a16量化** 章节 **权重说明** weight的shape说明）
-`kv_cache_offset`为kvcache量化scale的偏移系数，数据类型、dtype、shape和scale一致
+`kv_cache_scale`为kvcache量化的缩放系数，数据类型为torch.Tensor，dtype为torch.float32或torch.float16，shape为kv channel的size，如果是qkv分开场景，则为k或v层linear的n维（见上文**w8a16量化** 章节 **权重说明** weight的shape说明）
+`kv_cache_offset`为kvcache量化的偏移系数，数据类型、dtype、shape和kv_cache_scale一致
 
 计算公式：
 量化

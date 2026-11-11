@@ -12,7 +12,7 @@
 - [大模型量化与校准](foundation_model_quantization_and_calibration.md)
   - 包含低显存量化、混合校准数据集、FA3 量化。
 - [压缩与结构优化（大模型为主）](foundation_model_compression.md)
-  - 包含稀疏量化与权重压缩、长序列压缩、权重压缩流程、低秩分解。
+  - 包含稀疏量化与权重压缩、长序列压缩、低秩分解。
 
 ## 3. 训练加速与模型改造
 

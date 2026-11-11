@@ -20,7 +20,7 @@ QuantConfig(w_bit=8, a_bit=8, w_signed=True, a_signed=False, w_sym=True, a_sym=F
 | a_signed | 输入 | 是否对激活值进行符号量化。| 可选。<br>数据类型：bool。<br>默认为False。<br>使用relu的CV模型建议设置为False，其他模型建议设置为True。|
 | w_sym | 输入 | 权重是否对称量化。| 可选。<br>数据类型：bool。<br>默认为True。|
 | a_sym | 输入 | 激活值是否对称量化。| 可选。<br>数据类型：bool。<br>默认为False。|
-| input_shape | 输入 | 当输入模型支持动态shape时，用户需指定input_shape参数，用以生成量化时的校对数据。| 可选，当模型支持动态shape时必须指定。<br>数据类型：list [list [int]]。<br>默认值：None <br>当模型有多个输入时，按照顺序指定input_shape，例如：\[[1, 3,224, 224], [1, 3, 640, 640]]。|
+| input_shape | 输入 | 当输入模型支持动态shape时，用户需指定input_shape参数，用以生成量化时的校正数据。| 可选，当模型支持动态shape时必须指定。<br>数据类型：list [list [int]]。<br>默认值：None <br>当模型有多个输入时，按照顺序指定input_shape，例如：\[[1, 3,224, 224], [1, 3, 640, 640]]。|
 | act_quant | 输入 | 是否对激活值进行量化。| 可选。<br>数据类型：bool。<br>默认为True。<br>暂不支持修改。|
 | act_method | 输入 | 激活值量化方法。| 可选。<br>数据类型：int。<br>可选值[0,1,2]，默认为0。<br>(1) 0代表Data-Free场景的量化方法（具体由sigma参数决定）<br>(2) 1代表Label-Free场景的min-max observer方法。Label-Free场景推荐选1。<br>(3) 2代表Label-Free场景的histogram observer方法。|
 | quant_mode | 输入 | 量化模式。| 可选。<br>数据类型：int。<br>可选值为[0,1]，默认为0。<br>(1)0代表Data-Free量化模式。<br>(2)1代表Label-Free量化模式。|

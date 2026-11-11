@@ -24,7 +24,7 @@ QuantConfig(quant_mode=1, is_signed_quant=True, is_per_channel=True, calib_data=
 | amp_num | 输入 | 混合精度回退层数。| 可选。<br>数据类型：int。<br>默认为0。精度降低过多时，可以增大此值，以减少量化的层数。|
 | is_optimize_graph | 输入 | 是否进行图优化。| 数据类型：bool，默认为True。|
 | is_quant_depthwise_conv | 输入 | 是否量化DepthwiseConv算子。|可选。<br>数据类型：bool。<br>默认为True。当模型中有DepthwiseConv算子，量化精度损失较大时，可以配置为False。|
-| input_shape | 输入 | 当输入模型支持动态shape时，用户需指定input_shape参数，用以生成量化时的校准数据。|可选，当模型支持动态shape时必须指定。<br>数据类型：list [list [int]]。<br>默认值：None。<br>当模型有多个输入时，按照顺序指定input_shape，例如：\[[1, 3,224, 224], [1, 3, 640, 640]]。|
+| input_shape | 输入 | 当输入模型支持动态shape时，用户需指定input_shape参数，用以生成量化时的校正数据。|可选，当模型支持动态shape时必须指定。<br>数据类型：list [list [int]]。<br>默认值：None。<br>当模型有多个输入时，按照顺序指定input_shape，例如：\[[1, 3,224, 224], [1, 3, 640, 640]]。|
 | is_dynamic_shape | 输入 | 指定输入的模型是否支持动态shape。|可选。输入模型支持动态shape时，另一配置参数input_shape也必须指定。<br>数据类型：bool。<br>默认为False。<br>True：输入的模型支持动态shape。False：输入的模型为静态shape。|
 
 ## 调用示例

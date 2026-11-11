@@ -48,7 +48,7 @@
 - 《[量化格式接入指南](iformat_integration_guide.md)》：基于 IFormat 接入新落盘格式。
 - 《[AscendV1 使用指南](ascendv1/ascendv1_usage.md)》：AscendV1 确认模式支持、配置与执行。
 - 《[compressed-tensors 使用指南](compressed_tensors/compressed_tensors_usage.md)》：compressed-tensors 确认模式支持、配置与执行。
-- 《[MindIE SD 使用指南](mindie_sd/mindie_sd_usage.md)》：MindIE-SD 确认模式支持、配置与执行。
+- 《[MindIE SD 使用指南](mindie_sd/mindie_sd_usage.md)》：MindIE SD 确认模式支持、配置与执行。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：一键量化命令与配置协议总览。
 
 ---
