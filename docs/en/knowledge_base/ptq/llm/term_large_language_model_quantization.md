@@ -1,6 +1,6 @@
 # Large Language Model Quantization
 
-> **Entry Category**: Quantization Basic Concept ([Quantization Basics](../README.md))<br>
+> **Entry Category**: [Quantization Basic Concept](../README.md)<br>
 > **English Name**: Large Language Model Quantization<br>
 > **Abbreviation**: LLM Quantization<br>
 > **Application Domain**: Large language model inference acceleration, model compression
@@ -38,7 +38,7 @@ In response to the architectural and runtime bottlenecks of LLMs, their quantiza
 
 - [LLM Quantization Usage Guide](./usage_large_language_model_quantization.md): the complete workflow for LLM quantization.
 - [LLM Model Integration Quantization Workflow Guide](./integration_guide_large_language_model_quantization.md): development guidance for integrating a new language model into the quantization workflow.
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: covers the one-click quantization workflow for various model types.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): covers the one-click quantization workflow for various model types.
 
 ---
 

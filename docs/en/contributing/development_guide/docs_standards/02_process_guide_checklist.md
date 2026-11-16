@@ -1,6 +1,6 @@
 # Workflow Guide Checklist
 
-> Used to check workflow guide documents that are created or reworked based on the *[Workflow Guide Template](02_process_guide_template.md)*. For the general check items, see the *[Common Checklist](00_common_checklist.md)*; for the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the *[msModelSlim Documentation Standards](./README.md)*. The following are the check items specific to the workflow guide type, separated into tables by severity level.
+> Used to check workflow guide documents that are created or reworked based on the [Workflow Guide Template](02_process_guide_template.md). For the general check items, see the [Common Checklist](00_common_checklist.md); for the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the [msModelSlim Documentation Standards](./README.md). The following are the check items specific to the workflow guide type, separated into tables by severity level.
 
 ## 1. Check Items
 
@@ -31,4 +31,4 @@
 
 ## 2. Usage Notes
 
-- **Validation scope**: workflow guides and usage guides written based on the *[Workflow Guide Template](02_process_guide_template.md)*, including business workflow guides and tool usage guides.
+- **Validation scope**: workflow guides and usage guides written based on the [Workflow Guide Template](02_process_guide_template.md), including business workflow guides and tool usage guides.

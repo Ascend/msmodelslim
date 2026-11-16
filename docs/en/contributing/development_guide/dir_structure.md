@@ -32,7 +32,7 @@ msmodelslim/
 ├── lab_practice/          # Best-practice quantization configurations for various models (V1 framework)
 ├── modelslim/             # Compatibility layer for the modelslim alias (V0 framework)
 ├── msmodelslim/           # Project source code
-├── precision_tool/        # Fake-quantization accuracy evaluation tool (V0 framework)
+├── precision_tool/        # Pseudo-quantization accuracy evaluation tool (V0 framework)
 ├── security/              # Core security verification modules (V0 framework)
 ├── skills/                # Agent Skills (document management, quantization installation/adaptation/quantization/strategy/tuning/evaluation, etc.)
 ├── test/                  # Test cases and test scripts
@@ -74,14 +74,14 @@ msmodelslim/
 
 ```text
 msmodelslim/
-├── app/              # Application layer for features such as quick quantization, auto tuning, and model analysis (V1 framework)
+├── app/              # Application layer for features such as one-click quantization, auto tuning, and model analysis (V1 framework)
 ├── cli/              # Interface layer containing the command-line interface and functional subcommands (V1 framework)
 ├── common/           # Framework-agnostic compression logic including knowledge distillation, low-rank factorization, and pruning (small models)
 ├── core/             # Domain layer containing business logic and functional modules for quantization (V1 framework)
 ├── infra/            # Infrastructure layer containing adapters for external dependencies (V1 framework)
 ├── ir/               # Domain layer defining core intermediate representations and low-bit modes such as W8A8 quantization (V1 framework)
 ├── mindspore/        # Adapter components and functional implementations for the MindSpore framework (V0 and small models)
-├── model/            # Infrastructure layer containing model-specific structure adapters for models such as DeepSeek and Qwen
+├── model/            # Infrastructure layer containing model-specific structure adapters for models such as DeepSeek and Qwen (V1 framework)
 ├── onnx/             # Adapter components and functional implementations for the ONNX framework (V0 and small models)
 ├── processor/        # Domain layer implementing quantization execution processors such as the GPTQ algorithm (V1 framework)
 ├── pytorch/          # Adapter components and functional implementations for the PyTorch framework (V0 and small models)
@@ -95,7 +95,7 @@ The V1 framework involves the following directories:
 
 ```text
 msmodelslim/
-├── app/              # Application layer for features such as quick quantization, auto tuning, and quantization analysis
+├── app/              # Application layer for features such as one-click quantization, auto tuning, and quantization analysis
 ├── cli/              # Interface layer containing the command-line interface and functional subcommands
 ├── core/             # Domain layer containing business logic and functional modules for quantization
 ├── infra/            # Infrastructure layer containing adapters for external dependencies
@@ -114,7 +114,7 @@ msmodelslim/
 # `app/` Directory Structure
 
 ```text
-app/                          # Application layer for features such as quick quantization, auto tuning, and quantization analysis
+app/                          # Application layer for features such as one-click quantization, auto tuning, and quantization analysis
 ├── __init__.py
 ├── analysis/                    # Quantization analysis application module
 │   ├── __init__.py
@@ -129,9 +129,9 @@ app/                          # Application layer for features such as quick qua
 │   ├── practice_accuracy_infra.py   # Infrastructure interface for quantization configuration accuracy caching
 │   ├── practice_history_infra.py    # Infrastructure interface for tuning history management
 │   └── practice_manager_infra.py    # Infrastructure interface for practice management
-└── naive_quantization/          # Quick quantization application module
+└── naive_quantization/          # One-click quantization application module
     ├── __init__.py
-    ├── application.py               # Workflow and orchestration for quick quantization
+    ├── application.py               # Workflow and orchestration for one-click quantization
     ├── model_info_interface.py      # Model adaptation interface for retrieving model metadata
     └── practice_manager_infra.py    # Infrastructure interface for best-practice configuration management
 ```
@@ -150,7 +150,7 @@ cli/                          # Interface layer containing the command-line inte
 ├── auto_tuning/                  # Automatic tuning subcommand module
 │   ├── __init__.py
 │   └── __main__.py                   # Entry point for the msmodelslim tune command
-├── naive_quantization/           # Quick quantization subcommand module
+├── naive_quantization/           # One-click quantization subcommand module
 │   ├── __init__.py
 │   └── __main__.py                   # Entry point for the msmodelslim quant command
 └── utils.py                      # General-purpose utility functions for the CLI module
@@ -167,11 +167,11 @@ core/                     # Domain layer organizing and managing quantization ca
 │   ├── __init__.py
 │   ├── interface.py              # Definition and protocol for the quantization analysis service
 │   └── pipeline_analysis/        # msModelSlim V1 pipeline-based quantization analysis service
-├── base/                     # Base protocols (to be removed; existing implementations must be moved into the corresponding knowledge base)
+├── base/                     # Base protocols (to be deprecated; existing implementations will be relocated to respective modules)
 │   ├── __init__.py
 │   ├── processor.py
 │   └── protocol.py
-├── const.py                  # Constants (to be removed; existing implementations will be  moved into the corresponding knowledge base)
+├── const.py                  # Constants (to be deprecated; existing implementations will be relocated to respective knowledge bases)
 ├── context/                  # Context knowledge base for the unified management and sharing of states across processing workflows. Users can treat the context as unlimited-capacity storage
 │   ├── __init__.py
 │   ├── base.py                   # Base class for context

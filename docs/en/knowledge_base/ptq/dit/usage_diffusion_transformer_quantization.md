@@ -37,7 +37,7 @@ flowchart LR
 
 The key details of each stage are as follows:
 
-Prerequisite: model adaptation. Model adaptation must be completed before quantization; the adapter implements interfaces such as PipelineInterface (the basic pipeline interface). For details see the *[DiT Model Integration Quantization Workflow Guide](./integration_guide_diffusion_transformer_quantization.md)*. If the target model is already in the official pre-validated list, no adapter code is needed; simply specify the corresponding `--model_type`. Model adaptation must be completed first before the quantization workflow can run.
+Prerequisite: model adaptation. Model adaptation must be completed before quantization; the adapter implements interfaces such as PipelineInterface (the basic pipeline interface). For details see the [DiT Model Integration Quantization Workflow Guide](./integration_guide_diffusion_transformer_quantization.md). If the target model is already in the official pre-validated list, no adapter code is needed; simply specify the corresponding `--model_type`. Model adaptation must be completed first before the quantization workflow can run.
 
 - **Adapt the model pipeline interface**: ensure the model to be quantized has an adapter interface that complies with the `multimodal_sd_modelslim_v1` specification, so that it can drive floating-point inference to generate calibration data and be handled uniformly by the layer-wise quantization scheduler.
 - **Configure the calibration dataset and floating-point inference parameters**: quantization calibration relies on running the complete floating-point denoising inference pipeline; it is configured jointly through `dataset` and `multimodal_sd_config`. 50 calibration samples are recommended, with the resolution, frame count, and denoising steps aligned with the production deployment scenario.
@@ -54,7 +54,7 @@ Prerequisite: model adaptation. Model adaptation must be completed before quanti
 
 **Action**:
 
-If the target model is already in the official support list, no adapter code is needed; simply specify the corresponding `--model_type`. If you need to integrate a new DiT model, see the *[DiT Model Integration Quantization Workflow Guide](./integration_guide_diffusion_transformer_quantization.md)*.
+If the target model is already in the official support list, no adapter code is needed; simply specify the corresponding `--model_type`. If you need to integrate a new DiT model, see the [DiT Model Integration Quantization Workflow Guide](./integration_guide_diffusion_transformer_quantization.md).
 
 That guide explains the `MultimodalPipelineInterface` specification in detail, the core methods (`get_inference_config_class`, `configure_runtime`, `prepare_calib_data`, `inference_dump_calib_data`, `quantization_context`, `get_expert_adapter`), and the adapter development steps for inference parameter validation, runtime configuration, floating-point calibration data export, and the quantization execution context.
 
@@ -108,7 +108,7 @@ That guide explains the `MultimodalPipelineInterface` specification in detail, t
    ```
 
 2. **Format Selection and Documentation Links**:
-   - **[mindie_format_saver Configuration Description](../../../api_reference/config/format/mindie_format_saver.md)**: the **core deployment format for DiT models**. Aimed at the Ascend MindIE SD inference engine, it exports a MindIE-compliant quantized description file and weights. For multi-expert models (such as Wan2.2) it automatically creates an independent subdirectory per expert under the save directory, such as `high_noise_model/` and `low_noise_model/`.
+   - [mindie_format_saver Configuration Description](../../../api_reference/config/format/mindie_format_saver.md): the **core deployment format for DiT models**. Aimed at the Ascend MindIE SD inference engine, it exports a MindIE-compliant quantized description file and weights. For multi-expert models (such as Wan2.2) it automatically creates an independent subdirectory per expert under the save directory, such as `high_noise_model/` and `low_noise_model/`.
 
 3. **Selection Guide**:
    - Multimodal generation models are currently deployed for inference on the Ascend platform uniformly with `mindie_format_saver`.
@@ -133,7 +133,7 @@ That guide explains the `MultimodalPipelineInterface` specification in detail, t
    | FA3 attention quantization (fa3_quant) | Introduces `fp8_e4m3` or `mxfp4` low-bit execution for the self-attention QK^T and PV computations | Further compresses the attention computation cost together with low-bit schemes such as W4A4 | [fa3_quant Configuration Description](../../../api_reference/config/processor/fa3_quant.md) |
    | Per-expert configuration (per_expert) | Lets you specify a more conservative quantization strategy for sensitive experts | When the error tolerance differs greatly among experts in a multi-expert DiT | — |
 
-   > For more quantization algorithm descriptions see the *[Quantization Algorithm Overview](../../quantization_algorithms/README.md)*.
+   > For more quantization algorithm descriptions see the [Quantization Algorithm Overview](../../quantization_algorithms/README.md).
 
 2. **Algorithm Selection and Tuning**:
    - **W8A8 INT8 dynamic quantization (lightweight starting point)**: activations `per_token`, weights `per_channel`, and `dtype` `int8` for both. The scale is computed online per token, and `enable_dump: false` can be set to skip the floating-point inference dump; it suits quick validation and resource-constrained scenarios (see `lab_practice/wan2_1/wan2_1_w8a8_dynamic.yaml`, which excludes sensitive layers such as `*ffn.2*`).
@@ -284,7 +284,7 @@ msmodelslim quant \
 
 | API or Capability | Brief Description | Link |
 | --- | --- | --- |
-| `msmodelslim quant` | One-click quantization CLI entry point and complete command reference | *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)* |
+| `msmodelslim quant` | One-click quantization CLI entry point and complete command reference | [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md) |
 | multimodal_sd_modelslim_v1 Configuration Description | Field descriptions of task-level configuration such as `runner`/`process`/`per_expert`/`save`/`dataset`/`multimodal_sd_config` | [multimodal_sd_modelslim_v1 Configuration Description](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md) |
 | linear_quant Configuration Description | Complete value descriptions for the `linear_quant` processor and each field of its `qconfig` | [linear_quant Configuration Description](../../../api_reference/config/processor/linear_quant.md) |
 | Multimodal Generation Model Integration | DiT model integration and adapter development | [Multimodal Generation Model Integration](./integration_guide_diffusion_transformer_quantization.md) |

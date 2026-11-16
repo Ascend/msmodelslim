@@ -77,7 +77,7 @@ flowchart LR
 2. **Start the inference framework service**: use the target inference framework to start the inference service, load the quantized weights, and provide an external inference interface. For the deployment method of each framework, see the official documentation:
    - [vLLM-Ascend Document](https://docs.vllm.ai/projects/ascend/en/latest/getting_started/quick_start.html)
    - [SGLang Document](https://docs.sglang.io/docs/get-started/quickstart)
-   - [MindIE Motor Official Documentation](https://mindie-motor.readthedocs.io/en/latest/user_guide/quick_start/#image-preparation)
+   - [MindIE Motor Official Documentation](https://www.hiascend.com/en-sg/document/detail/en/mindie/320/quickstart/docs/en/user_guide/quick_start.md#preparing-the-image)
 3. **Health check**: confirm that the service log shows a successful deployment.
 4. **Warm-up request verification**: send a warm-up request to verify that the service responds. The first request may be slower or return garbled text, which is normal; discard the result after the warm-up.
 

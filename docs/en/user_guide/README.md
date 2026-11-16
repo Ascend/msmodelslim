@@ -12,7 +12,7 @@ The documents in this directory are divided into **business process guides** and
 
 | Function Module | Description | Applicable Scenario |
 |---------|------|---------|
-| [New Model Quantization Tuning Process](#21-new-model-quantization-tuning-process) | Quantization scheme design -> weight quantization -> operator and graph construction -> evaluation -> release; if the target is not met, revise the scheme and close the loop again | A new model, or a target quantization mode that has not been verified, requiring the whole path from scheme design to release |
+| [New Model Quantization Tuning Process](#21-new-model-quantization-tuning-process) | Quantization scheme design -> weight quantization -> operator and graph composition -> evaluation -> release; if the target is not met, revise the scheme and close the loop again | A new model, or a target quantization mode that has not been verified, requiring the whole path from scheme design to release |
 | [Accuracy Tuning Methods](#22-accuracy-tuning-methods) | Systematic tuning approaches: outlier suppression, quantization strategy, calibration dataset, and fallback | The manual tuning path when the accuracy target is not met |
 | [Mainstream Model Quantization Deployment](#23-mainstream-model-quantization-deployment) | End-to-end guidance: obtain quantized weights, deploy the inference service, evaluate accuracy, and perform online monitoring | Scenarios where quantized weights have been obtained and need to be deployed in production |
 | [Quantization Inference Accuracy Anomaly Locating](#24-quantization-inference-accuracy-anomaly-locating) | Locate the source of abnormal output by "understanding the input/output format -> logprobs confirmation -> control experiment -> layer-by-layer activation comparison" | More bad cases, abnormal output, or inability to align with the floating-point output after quantization |
@@ -32,7 +32,7 @@ The documents in this directory are divided into **business process guides** and
 
 ### 2.1 New Model Quantization Tuning Process
 
-When a new model or a target quantization mode has not been verified, follow the main path of "quantization scheme design -> weight quantization -> operator development and graph construction -> accuracy/performance evaluation -> weight release". If the evaluation does not meet the target, revise the quantization scheme and then return to weight quantization to continue the loop until release.
+When a new model or a target quantization mode has not been verified, follow the main path of "quantization scheme design -> weight quantization -> operator development and graph composition -> accuracy/performance evaluation -> weight release". If the evaluation does not meet the target, revise the quantization scheme and then return to weight quantization to continue the loop until release.
 
 For the detailed process, see the [New Model Quantization Tuning Process](process_new_model_quantization_tuning.md).
 

@@ -8,7 +8,7 @@
 
 **Accuracy acceptance criteria**: use the selected accuracy baseline (this case uses the baseline published in the paper or on the model card) as the comparison reference, and obtain the quantized result score with AISBench. If the quantized result score is not lower than the selected accuracy baseline score, the case passes directly; if the quantized result score is lower than the selected accuracy baseline score, the relative drop must not exceed 1%; otherwise it fails.
 
-**Related process**: *[One-Click Quantization Usage Guide](../user_guide/usage_one_click_quantization.md)*, *[Weight Quantization Usage Guide](../user_guide/usage_weight_quantization.md)*, *[msModelSlim Installation Guide](../install_guide/install_guide.md)*
+**Related process**: [One-Click Quantization Usage Guide](../user_guide/usage_one_click_quantization.md), [Weight Quantization Usage Guide](../user_guide/usage_weight_quantization.md), [msModelSlim Installation Guide](../install_guide/install_guide.md)
 
 ## 2. Environment and Versions
 
@@ -30,7 +30,7 @@
 
 > [!NOTE]
 >
-> The floating-point weights used in this case are DeepSeek-V4-Flash preview (not 0731). The official release DeepSeek-V4-Flash-0731 has the same structure as DSpark; use `--model_type DeepSeek-V4-Flash-0731 --quant_type w4a4c8`. For details, see [DeepSeek quantization notes](../../../example/DeepSeek/README.md).
+> The floating-point weights used in this case are DeepSeek-V4-Flash preview (not 0731). The official release DeepSeek-V4-Flash-0731 has the same structure as DSpark; use `--model_type DeepSeek-V4-Flash-0731 --quant_type w4a4c8`. For details, see [DeepSeek quantization notes](../../../example/DeepSeek/README.md#deepseek-v4-flash-0731-w4a4c8-quantization).
 
 ## 3. Inputs and Deliverables
 

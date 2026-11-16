@@ -56,8 +56,8 @@ An MoE model sparsely activates several experts to greatly expand the model para
 
 ## 3. Related Workflows
 
-- *[Expert Parallelism Usage Guide](expert_parallelism_guide.md)*: explains the shared / local module division under EP and the constraints on using DistHelper.
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: the multi-device quantization entry point.
+- [Expert Parallelism Usage Guide](expert_parallelism_guide.md): explains the shared / local module division under EP and the constraints on using DistHelper.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): the multi-device quantization entry point.
 
 ---
 
@@ -72,4 +72,4 @@ An MoE model sparsely activates several experts to greatly expand the model para
 
 ## 5. Reference Documents
 
-1. *[Expert Parallelism Usage Guide](expert_parallelism_guide.md)*
+1. [Expert Parallelism Usage Guide](expert_parallelism_guide.md)

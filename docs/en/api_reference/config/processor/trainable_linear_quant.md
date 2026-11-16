@@ -20,7 +20,7 @@ Trainable linear quantization (TLQ) processor configuration.
 | `operations` | `list[object]` | Optional | `[MinmaxTuneOpConfig(type='minmax_tune', lr=None), RoundTuneOpConfig(type='round_tune', lr=None)]` | At least 1 item | List of OP configurations for the trainable quantization pipeline; each item contains type, and the remaining fields are defined by the individual plugin | This page <a href="#2-2-tlq-op-config">§2.2</a> |
 | `strategies` | `list[object]` | Optional | `[]` | 0 items or ≥1 item | List of quantization strategy configurations; when not provided it is an empty list and no quantization strategy is applied; if provided explicitly, at least 1 item is required. | This page <a href="#2-3-tlq-quant-strategy-config">§2.3</a> |
 | `train_with_act_quant` | `bool` | Optional | `false` | — | Whether the block-level training forward pass applies fake quantization to activations (through x_kernel); false is consistent with train_with_act_quant=False in autoround; the exported IR is still determined by qconfig.act and is unaffected by this option | None |
-| `enable_quanted_input` | `bool` | Optional | `false` | — | Whether to use the quantized forward result of this layer as a bypass input (q_input) propagated to training/quantization of the next layer; does not affect the floating-point teacher: Runner layers always pass teacher outputs between them via datas | None |
+| `enable_quanted_input` | `bool` | Optional | `false` | — | Whether to use the quantized forward result of this layer as a bypass input (q_input) propagated to training/quantization of the next layer; does not affect the floating-point teacher: the Runner always propagates teacher outputs between layers via datas | None |
 | `train_config` | `object` | Optional | See the nested configuration default | — | Block-level Trainer hyperparameters: iters, gradient_accumulate_steps, select_best, lr (or learning_rate), loss_type; each OP can configure lr separately to override the global value | This page <a href="#2-4-block-train-config">§2.4</a> |
 
 **Configuration Constraints**
@@ -137,7 +137,7 @@ Block-level training (block train) hyperparameter configuration.
 | `gradient_accumulate_steps` | `int` | Optional | `8` | ≥1 | Number of gradient accumulation steps, used to adjust the effective batch under limited video memory | None |
 | `lr` | `float` | Optional | `0.01` | >0.0 | Global base learning rate (alias `learning_rate`) | None |
 | `select_best` | `object` | Optional | See the nested configuration default | — | Best-iteration snapshot policy (fields differ by mode: ema / min_loss / last) | This page <a href="#2-4-1-selectbestconfig">§2.4.1</a> |
-| `loss_type` | `string` | Optional | `l1` | `l1`, `custom_outlier` | Block-level training loss: l1 (L1Loss reduction=none), custom_outlier (0.3 * full L1 + 0.7 * L1 over the region within 3σ) | None |
+| `loss_type` | `string` | Optional | `l1` | `l1`, `custom_outlier` | Block-level training loss: l1 (L1Loss reduction=none), custom_outlier (`0.3 * full L1 + 0.7 * L1 over the region within 3σ`) | None |
 | `train_seed` | `int` | Optional | `42` | — | Random seed for block-level training (used for sample shuffling and deterministic operators) | None |
 
 **Configuration Constraints**

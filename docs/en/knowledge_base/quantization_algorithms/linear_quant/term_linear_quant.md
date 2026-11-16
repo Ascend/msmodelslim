@@ -90,7 +90,7 @@ In terms of error and applicability boundaries: a fine-grained scale gives each 
 ### 2.6 Usage Restrictions
 
 - The linear quantization discussed in this entry mainly targets two-dimensional linear transformations; other operators such as convolution and normalization require a quantization definition that matches their tensor layout.
-- There are compatibility relationships among the data format, the quantization granularity, the symmetry, and the parameter estimation method; a practical scheme should choose a valid combination supported by the deployment backend.
+- There are compatibility relationships among the data type, the quantization granularity, the symmetry, and the parameter estimation method; a practical scheme should choose a valid combination supported by the deployment backend.
 
 ---
 

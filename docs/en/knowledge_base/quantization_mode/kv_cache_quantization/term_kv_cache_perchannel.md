@@ -61,8 +61,8 @@ Here $x$ is the tensor to quantize, $q$ is the quantized integer value, $\hat{x}
 
 ## 3. Related Workflows
 
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: select this mode via a YAML configuration and run quantization.
-- *[Quantization Accuracy Tuning Guide](../../../user_guide/process_quantization_precision_tuning.md)*: accuracy degradation caused by this mode can be rolled back layer by layer and tuned through that workflow.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): select this mode via a YAML configuration and run quantization.
+- [Quantization Accuracy Tuning Guide](../../../user_guide/process_quantization_precision_tuning.md): accuracy degradation caused by this mode can be rolled back layer by layer and tuned through that workflow.
 
 ---
 
@@ -78,6 +78,6 @@ Here $x$ is the tensor to quantize, $q$ is the quantized integer value, $\hat{x}
 
 ## 5. Reference Documents
 
-1. *[KVCache Quant Parameter Configuration Workflow Guide](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)*
-2. *[KV Smooth Parameter Configuration Workflow Guide](../../quantization_algorithms/kv_smooth/usage_kv_smooth.md)*
-3. *[Quantization Modes](../README.md)*
+1. [KVCache Quant Parameter Configuration Workflow Guide](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)
+2. [KV Smooth Parameter Configuration Workflow Guide](../../quantization_algorithms/kv_smooth/usage_kv_smooth.md)
+3. [Quantization Modes](../README.md)

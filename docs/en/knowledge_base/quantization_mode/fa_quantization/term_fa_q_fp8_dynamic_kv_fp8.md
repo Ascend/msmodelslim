@@ -69,8 +69,8 @@ In the formula above, $x$ is the tensor to quantize, $q$ is the quantized value 
 
 ## 3. Related Workflows
 
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: select this mode via a YAML configuration and run quantization.
-- *[Quantization Accuracy Tuning Guide](../../../user_guide/process_quantization_precision_tuning.md)*: accuracy degradation caused by this mode can be rolled back layer by layer and tuned through that workflow.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): select this mode via a YAML configuration and run quantization.
+- [Quantization Accuracy Tuning Guide](../../../user_guide/process_quantization_precision_tuning.md): accuracy degradation caused by this mode can be rolled back layer by layer and tuned through that workflow.
 
 ---
 
@@ -86,5 +86,5 @@ In the formula above, $x$ is the tensor to quantize, $q$ is the quantized value 
 
 ## 5. Reference Documents
 
-1. *[FA3 Quant Parameter Configuration Workflow Guide](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)*
-2. *[Quantization Modes](../README.md)*
+1. [FA3 Quant Parameter Configuration Workflow Guide](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)
+2. [Quantization Modes](../README.md)

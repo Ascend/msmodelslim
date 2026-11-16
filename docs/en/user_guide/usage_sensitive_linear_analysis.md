@@ -15,7 +15,7 @@ This guide is intended for developers and algorithm engineers who need to identi
 
 - **Multimodal generation models** (text-to-image, text-to-video, etc.): currently not supported by sensitive layer analysis.
 - Need to fall back by Decoder block or by whole Attention, MLP, or MoE blocks: use the [Layer-wise Sensitive Layer Analysis Usage Guide](usage_sensitive_layer_analysis.md).
-- Identify the attention modules that need to fall back when FA quantization is applied: use the [Attention Sensitive Layer Analysis Usage Guide](usage_sensitive_attn_analysis.md).
+- Identify attention modules that must fall back together with FA quantization: use the [Attention Sensitive Layer Analysis Usage Guide](usage_sensitive_attn_analysis.md).
 - **MoE structure analysis**: the number of linear layers on the expert side is large and not all of them participate in activation, so using this guide to analyze experts is generally not recommended; when a fallback is needed, prefer layer-wise analysis.
 
 ## 2. Process Relationships and Prerequisites
@@ -191,7 +191,7 @@ Replace the variables with actual values as described in the [Command-Line Previ
 | Invalid or unreadable calibration dataset format | Verify the `.json` or `.jsonl` format, path, permissions, and parsing rules as described in Step 2, and then run the analysis command |
 | `model_type` not hit, or a warning indicates the default model is used | Complete the model adaptation and `--model_type` registration as described in Step 3, run `bash install.sh` again to make the registration take effect, and then run the analysis command |
 | Insufficient memory or run failure | Reduce the calibration dataset, or switch to a device with more memory, and then run the analysis command |
-| Still unable to deploy or abnormal accuracy after fallback | Check whether only half of a grouped module fell back, and check the limits of the inference engine on the number of fallback layers; correct the configuration, and then re-quantize and evaluate |
+| Still unable to deploy or abnormal accuracy after fallback | Check whether only half of a grouped module was set to fall back, and check the limits of the inference engine on the number of fallback layers; correct the configuration, and then re-quantize and evaluate |
 
 ## 8. Terminology
 

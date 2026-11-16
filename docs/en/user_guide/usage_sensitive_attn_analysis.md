@@ -2,13 +2,13 @@
 
 ## 1. Scope
 
-This guide is intended for developers and algorithm engineers who need to identify quantization-sensitive layers at the **Attention module** granularity through the `msmodelslim analyze attn` command line, and adjust the quantization YAML accordingly. The analysis outputs a sensitivity ranking by Attention module; the typical use case today is to identify, in conjunction with FA (Flash Attention) class attention quantization (such as `fa3_quant`), the modules that need to fall back, rather than falling back on individual linear layers.
+This guide is intended for developers and algorithm engineers who need to identify quantization-sensitive layers at the **Attention module** granularity through the `msmodelslim analyze attn` command line, and adjust the quantization YAML accordingly. The analysis outputs a sensitivity ranking by Attention module; the typical landing scenario today is to identify modules that must fall back together with FA (Flash Attention) class attention quantization (such as `fa3_quant`), rather than falling back by single linear layer.
 
 **Applicable scenarios**:
 
 - **LLM model**: use a text calibration dataset (`.json` or `.jsonl`).
 - **VLM model** (multimodal understanding, such as Kimi-K3): use an image-text calibration dataset (such as `calibImages`), and the adapter must implement `PipelineInterface` and the multimodal `handle_dataset`.
-- FA quantization scheme design: identify, in conjunction with attention quantization such as Flash Attention 3, the Attention modules that need to fall back.
+- FA quantization scheme design: identify Attention modules that must fall back together with attention quantization such as Flash Attention 3.
 - When the accuracy target is not met, iterate the FA-related configuration based on the Attention sensitivity ranking.
 
 **Not applicable scenarios**:

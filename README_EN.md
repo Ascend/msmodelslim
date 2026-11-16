@@ -80,7 +80,7 @@ English | [简体中文](https://gitcode.com/Ascend/msmodelslim/blob/master/READ
 
 ## 🚀 Quick Start
 
-**A step-by-step guide to end-to-end model quantization**. See *[Quick Start](./docs/en/quick_start/quantization_quick_start.md)*.
+**A step-by-step guide to end-to-end model quantization**. See [Quick Start](./docs/en/quick_start/quantization_quick_start.md).
 
 ---
 
@@ -96,7 +96,7 @@ pip install msmodelslim
 msmodelslim --help
 ```
 
-> For more installation methods, see *[Installation Guide](./docs/en/install_guide/install_guide.md)*.
+> For more installation methods, see [Installation Guide](./docs/en/install_guide/install_guide.md).
 
 ---
 
@@ -106,24 +106,24 @@ msmodelslim --help
 
 | Business Process | Corresponding Tool/Feature |
 |---------|--------------|
-| *[New Model Quantization Tuning Process](./docs/en/user_guide/process_new_model_quantization_tuning.md)* | [Weight Quantization](./docs/en/user_guide/usage_weight_quantization.md), [Sensitive Layer Analysis](./docs/en/user_guide/usage_sensitive_linear_analysis.md) |
-| *[Precision Tuning Methods](./docs/en/user_guide/process_quantization_precision_tuning.md)* | [Sensitive Layer Analysis](./docs/en/user_guide/usage_sensitive_linear_analysis.md), [Automatic Tuning](./docs/en/user_guide/usage_auto_precision_tuning.md), [Debug Mode](./docs/en/user_guide/usage_debug_mode.md) |
-| *[Mainstream Model Quantization Deployment](./docs/en/user_guide/process_mainstream_model_deployment.md)* | *[One-Click Quantization](./docs/en/user_guide/usage_one_click_quantization.md)* |
-| *[Locating Quantization Inference Precision Anomalies](./docs/en/user_guide/process_quantization_accuracy_anomaly_locating.md)* | [Debug Mode](./docs/en/user_guide/usage_debug_mode.md) |
+| [New Model Quantization Tuning Process](./docs/en/user_guide/process_new_model_quantization_tuning.md) | [Weight Quantization](./docs/en/user_guide/usage_weight_quantization.md), [Sensitive Layer Analysis](./docs/en/user_guide/usage_sensitive_linear_analysis.md) |
+| [Precision Tuning Methods](./docs/en/user_guide/process_quantization_precision_tuning.md) | [Sensitive Layer Analysis](./docs/en/user_guide/usage_sensitive_linear_analysis.md), [Automatic Tuning](./docs/en/user_guide/usage_auto_precision_tuning.md), [Debug Mode](./docs/en/user_guide/usage_debug_mode.md) |
+| [Mainstream Model Quantization Deployment](./docs/en/user_guide/process_mainstream_model_deployment.md) | [One-Click Quantization](./docs/en/user_guide/usage_one_click_quantization.md) |
+| [Locating Quantization Inference Precision Anomalies](./docs/en/user_guide/process_quantization_accuracy_anomaly_locating.md) | [Debug Mode](./docs/en/user_guide/usage_debug_mode.md) |
 
-> For more usage guides, see *[Usage Guide](./docs/en/user_guide/README.md)*.
+> For more usage guides, see [Usage Guide](./docs/en/user_guide/README.md).
 
 ---
 
 ## 📚 Knowledge Base
 
-**Unfamiliar with quantization terms such as `W4A8`/`W8A8`?** See [*Inference Acceleration Knowledge Base*](./docs/en/knowledge_base/README.md).
+**Unfamiliar with quantization terms such as `W4A8`/`W8A8`?** See [Inference Acceleration Knowledge Base](./docs/en/knowledge_base/README.md).
 
 ---
 
 ## 💡 Typical Cases
 
-**Looking for typical scenarios for model quantization tuning?** See *[msModelSlim Typical Cases](./docs/en/best_practices/README.md)*.
+**Looking for typical scenarios for model quantization tuning?** See [msModelSlim Typical Cases](./docs/en/best_practices/README.md).
 
 ---
 
@@ -149,10 +149,10 @@ To improve document retrieval efficiency, we provide multiple efficient search m
 
 ## ⚖️ Related Notes
 
-🔹 *[Release Notes](https://gitcode.com/Ascend/msmodelslim/releases)*<br>
-🔹 *[License Notice](docs/en/legal/license_notice.md)*<br>
-🔹 *[Security Statement](docs/en/legal/SECURITY.md)*<br>
-🔹 *[Disclaimer](docs/en/legal/disclaimer.md)*<br>
+🔹 [Release Notes](https://gitcode.com/Ascend/msmodelslim/releases)<br>
+🔹 [License Notice](docs/en/legal/license_notice.md)<br>
+🔹 [Security Statement](docs/en/legal/SECURITY.md)<br>
+🔹 [Disclaimer](docs/en/legal/disclaimer.md)<br>
 
 ---
 

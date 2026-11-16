@@ -4,7 +4,7 @@
 
 `msmodelslim tune` is the auto-tuning command. It reads a tuning YAML containing `strategy` and `evaluation`, runs the loop "generate a quantization configuration → quantize → evaluate accuracy", and iteratively searches, based on the evaluation results, for a quantization configuration that meets the accuracy expectation, until the strategy generator is exhausted, the `--timeout` expires, or the maximum number of iterations is reached. Results such as the quantized model and the evaluation history are written to `--save_path`; after tuning finishes, the final best practice can be saved to a custom best-practice repository.
 
-Command boundaries: this command does not expand on how to write specific tuning strategies and evaluation configurations; for field descriptions, see *[Auto Tuning Configuration Reference Navigation](../config/tuning/README.md)*, whose strategy templates reference the quantization task protocol described in *[Quantization Task Configuration Reference Navigation](../config/quant/README.md)*; for operational steps, see *[Auto Tuning Usage Guide](../../user_guide/usage_auto_precision_tuning.md)*.
+Command boundaries: this command does not expand on how to write specific tuning strategies and evaluation configurations; for field descriptions, see [Auto Tuning Configuration Reference Navigation](../config/tuning/README.md), whose strategy templates reference the quantization task protocol described in [Quantization Task Configuration Reference Navigation](../config/quant/README.md); for operational steps, see [Auto Tuning Usage Guide](../../user_guide/usage_auto_precision_tuning.md).
 
 ## 2. Command Format
 
@@ -25,7 +25,7 @@ Symbols:
 
 | Parameter | Alias | Type | Passing Form | Required/Optional | Default | Value Range or Format | Description |
 |------|------|------|----------|-----------|--------|----------------|------|
-| `--model_type` | None | `string` | Single value | Optional | `default` | Model type name, such as `Qwen2.5-7B-Instruct` or `Qwen3-32B` | Type of the model to tune, which must match a name in the *[Foundation Model Support Matrix](../../knowledge_base/model/README.md)*; when it is not passed, the default adapter `default` is used. |
+| `--model_type` | None | `string` | Single value | Optional | `default` | Model type name, such as `Qwen2.5-7B-Instruct` or `Qwen3-32B` | Type of the model to tune, which must match a name in the [Foundation Model Support Matrix](../../knowledge_base/model/README.md); when it is not passed, the default adapter `default` is used. |
 | `--model_path` | None | `string` | Single value | Required | None | Original model weight directory (must exist and be readable) | Weight directory of the model to tune. |
 | `--save_path` | None | `string` | Single value | Required | None | Output directory (must be writable) | Directory in which the tuning results, the quantized model, and the history records are saved. |
 | `--config` | `-c` | `string` | Single value | Required | None | Path to a readable YAML file | Tuning configuration YAML, containing the `strategy` and `evaluation` fields. |
@@ -50,7 +50,7 @@ Symbols:
 
 | Related Parameter | Configuration Name | Reference Relationship | Configuration Document |
 |----------|----------|----------|----------|
-| `--config` | Auto tuning configuration | Loads `strategy` and `evaluation` | *[Auto Tuning Configuration Reference Navigation](../config/tuning/README.md)* |
+| `--config` | Auto tuning configuration | Loads `strategy` and `evaluation` | [Auto Tuning Configuration Reference Navigation](../config/tuning/README.md) |
 
 ## 6. Environment Variables
 

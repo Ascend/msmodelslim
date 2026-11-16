@@ -1,12 +1,12 @@
 # FP8
 
-> **Entry Category**: Quantization Data Type ([Quantization Data Type](README.md))<br>
+> **Entry Category**: Quantization Data Type ([Quantization Data Types](README.md))<br>
 > **English Name**: FP8<br>
 > **Application Domain**: Weight and activation quantization<br>
 
 ## 1. Overview
 
-**FP8** follows OCP OFP8: each element is encoded independently, with no block-level shared exponent. Of the two element formats, E4M3 has higher precision (upper bound 448) and E5M2 has a wider dynamic range (upper bound 57344). The bit width is the same as [INT8](term_int8.md), but it is more robust to outliers. The standard defines only the symmetric path (a real-number scale, no zero-point). For function usage, see [Quantization Data Type ops Usage Workflow Guide](usage_dtype_ops.md).
+**FP8** follows [OCP OFP8](https://www.opencompute.org/documents/ocp-8-bit-floating-point-specification-ofp8-revision-1-0-2023-12-01-pdf-1): each element is encoded independently, with no block-level shared exponent. Of the two element formats, E4M3 has higher precision (upper bound 448) and E5M2 has a wider dynamic range (upper bound 57344). The bit width is the same as [INT8](term_int8.md), but FP8 is more robust to outliers. The standard defines only the symmetric path (a real scale, with no zero-point). For function usage, see the [Quantization Data Type Ops Usage Guide](usage_dtype_ops.md).
 
 ---
 
@@ -28,10 +28,10 @@ $$s = \frac{\mathrm{amax}}{\mathrm{max\_norm}}, \qquad x' = \frac{x}{s}, \qquad 
 
 - $x$: the floating-point value to be quantized.
 - $\mathrm{amax}$: the maximum absolute value computed along the quantization axis.
-- $s$: the real-number scale.
+- $s$: the real scale.
 - $x'$: the value normalized by the scale.
-- $q$: the quantized value after falling onto the FP8 grid.
-- $\hat{x}$: the value restored by dequantization.
+- $q$: the quantized value after landing on the FP8 grid.
+- $\hat{x}$: the dequantized restored value.
 
 Element rounding (OCP OFP8):
 
@@ -40,23 +40,23 @@ $$\mathrm{min\_exp} = 2 - 2^{e_{\mathrm{bits}}-1}, \qquad a \leftarrow \mathrm{r
 - $e_{\mathrm{bits}}$: the number of exponent bits.
 - $m$: the number of mantissa bits including the implicit bit.
 - $e_{\mathrm{priv}}=\lfloor\log_2|a|\rfloor$, clamped to $\mathrm{min\_exp}$ first.
-- No zero-point.
+- There is no zero-point.
 
-### 2.3 Relationship with Related Formats
+### 2.3 Relationship to Related Formats
 
-- Relative to [INT8](term_int8.md): both are 8-bit; FP8 retains the exponent, is more robust to outliers, and relies on FP8 GEMM.
-- Relative to [MXFP8](term_mxfp8.md): the element encoding is the same, but every 32 elements of MXFP8 share one E8M0, so the scale overhead is lower.
+- Compared with [INT8](term_int8.md): both are 8-bit; FP8 keeps the exponent and is more robust to outliers, but it depends on an FP8 GEMM.
+- Compared with [MXFP8](term_mxfp8.md): the element encoding is the same, but MXFP8 shares one E8M0 per 32 elements, so the scale overhead is lower.
 
 ### 2.4 Applicable Scenarios and Limitations
 
-- **Applicable**: weights and activations, for example [W8A8 FP8 Dynamic Quantization](../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md). Prefer E4M3 when there are many outliers, and use E5M2 when the distribution is wider.
-- **Limitations**: hardware FP8 GEMM is required. The upper bound of E4M3 is 448; larger values are handled by scale scaling. Only the symmetric path is available.
+- **Applicable**: weights and activations, for example [W8A8 FP8 Dynamic Quantization](../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md). Prefer E4M3 when there are many outliers, and E5M2 when the distribution is wider.
+- **Limitations**: a hardware FP8 GEMM is required. The E4M3 upper bound is 448, and larger values rely on scale scaling. Only the symmetric path is available.
 
 ---
 
 ## 3. Related Workflows
 
-- [Quantization Data Type ops Usage Workflow Guide](usage_dtype_ops.md): the call steps of the functions for this format, including `fmt` defaulting to `e4m3`.
+- [Quantization Data Type Ops Usage Guide](usage_dtype_ops.md): the calling steps for the functions of this type, including `fmt`, whose default is `e4m3`.
 - [One-Click Quantization Usage Guide](../../user_guide/usage_one_click_quantization.md): the execution entry point for quantization tasks.
 - [Quantization Accuracy Tuning Guide](../../user_guide/process_quantization_precision_tuning.md): accuracy problems caused by this format can be diagnosed through this workflow.
 
@@ -64,12 +64,12 @@ $$\mathrm{min\_exp} = 2 - 2^{e_{\mathrm{bits}}-1}, \qquad a \leftarrow \mathrm{r
 
 ## 4. Related Terms
 
-- [Quantization Data Type](README.md): the higher-level concept; the directory this entry belongs to.
-- [Quantization and Dequantization](term_quantization.md): a prerequisite term; describes scale and symmetric quantization.
-- [INT8](term_int8.md): an 8-bit format of the same family, the integer affine counterpart.
-- [MXFP8](term_mxfp8.md): an 8-bit floating-point format of the same family, with a block-level shared exponent.
-- [GEMM](../quantization_mode/term_gemm.md): a companion term; low-precision matrix multiplication.
-- [W8A8 FP8 Dynamic Quantization](../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md): an application object; linear layers adopt this format.
+- [Quantization Data Types](README.md): The parent concept and the directory this entry belongs to.
+- [Quantization and Dequantization](term_quantization.md): A prerequisite term; it explains scale and symmetric quantization.
+- [INT8](term_int8.md): A sibling 8-bit format, the integer affine counterpart.
+- [MXFP8](term_mxfp8.md): A sibling 8-bit floating-point format with a block-level shared exponent.
+- [GEMM](../quantization_mode/term_gemm.md): A companion term; low-precision matrix multiplication.
+- [W8A8 FP8 Dynamic Quantization](../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md): An application target; the linear layer uses this format.
 
 ---
 

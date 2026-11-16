@@ -14,7 +14,7 @@ RACompressor.get_alibi_windows(save_path)
 
 | Parameter | Input/Return | Description | Constraints |
 | ------ | ------ | ------ | ------ |
-| save_path | Input | The save path for the head compression window parameter file during long sequence compression. | Required.<br>Data type: str. |
+| save_path | Input | The save path for the head compression window parameter file during long sequence compression. | Required.<br>Data type: String. |
 
 ## Sample
 

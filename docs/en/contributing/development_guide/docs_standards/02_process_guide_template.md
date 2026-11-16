@@ -158,5 +158,5 @@ flowchart LR
 {{product_form_and_resource_constraints}}
 
 > **Note**:  
-> Write the target product form and resource boundaries, for example: online inference service / offline batch processing; single-node multi-card / distributed; minimum NPU model and number of cards; minimum video memory / memory; supported version combinations of CANN, PyTorch, and the inference framework; Atlas inference products support only single-card quantization.  
+> Write the target product form and resource boundaries, for example: online inference service / offline batch processing; single-node multi-card / distributed; minimum NPU model and number of cards; minimum device memory / memory; supported version combinations of CANN, PyTorch, and the inference framework; Atlas inference products support only single-card quantization.
 > If there are no differences in form or resource constraints, this section may be deleted.

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Binary Fallback is an auto-tuning strategy that determines the minimum quantization fallback configuration solely through **binary search**. Unlike Standing High, this strategy does **not** iterate over outlier suppression strategies, nor does it perform probing and layer reduction; processors such as outlier suppression are fixed in `template`, and the algorithm only adjusts the list-type fallback field pointed to by `rollback_path`.
+Binary Fallback is an auto-tuning strategy that determines the minimum quantization fallback configuration solely through **binary search**. Unlike Standing High, this strategy does **not** iterate over outlier suppression strategies, nor does it perform the Standing High layer-reduction step; processors such as outlier suppression are fixed in `template`, and the algorithm only adjusts the list-type fallback field pointed to by `rollback_path`.
 
 Currently, only quantization configurations with `apiversion: modelslim_v1` are supported.
 
@@ -86,7 +86,7 @@ rollback_candidates:
 | Item | Standing High | Binary Fallback |
 |----|---------------|-----------------|
 | Outlier suppression | Iterates over `anti_outlier_strategies` | Fixed in `template.spec.process` |
-| Fallback search | Binary search + probing and layer reduction | Binary search only |
+| Fallback search | Binary search + Standing High layer reduction | Binary search only |
 | template | Only the spec fragment + outer metadata | Complete PracticeConfig |
 | Fallback write | Hardcoded `linear_quant.exclude` | Specified by `rollback_path` |
 | Maximum fallback still fails to meet the target | Returns the current best | `SpecError` |

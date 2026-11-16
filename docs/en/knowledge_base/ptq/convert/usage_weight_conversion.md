@@ -1,5 +1,7 @@
 # Weight Conversion Usage Guide
 
+This document introduces weight conversion, providing approachable recommended configurations and copy-ready commands, and explains the meaning of each configuration item and when it needs to be adjusted. It is intended for users who need to perform a format or precision transformation on existing quantized or floating-point weights.
+
 ## 1. Scope
 
 This guide is intended for users who need to perform a format or precision transformation on **existing quantized / floating-point weights** (for example, dequantizing an FP8 block to BF16, offline-quantizing BF16 to W8A8 MXFP8, or dequantizing INT4 packed to BF16). **The focus is on providing ready-to-use recommended configurations and copy-ready commands, and on explaining the meaning of each configuration item and when it needs to be adjusted.**
@@ -13,7 +15,7 @@ Differences from regular one-click quantization:
 | Requires `quant_type` | Required when using `--quant_type` to match a best practice; not required when using `--config` | **Not required** (the conversion configuration must be specified through `--config`) |
 | Typical scenarios | Floating-point model → W8A8, etc. | FP8 → BF16, BF16 → MXFP8, FP8 → MXFP8, etc. |
 
-For command-line conventions see [Step 3](#step-3-run-the-conversion-command); for the full parameter table see the *[msmodelslim quant Command Line](../../../api_reference/cli/msmodelslim_quant.md)*; for field descriptions see the *[modelslim_convert Configuration Description](../../../api_reference/config/quant/modelslim_convert.md)*.
+For command-line conventions see [Step 3](#step-3-run-the-conversion-command); for the full parameter table see the [msmodelslim quant Command Line](../../../api_reference/cli/msmodelslim_quant.md); for field descriptions see the [modelslim_convert Configuration Description](../../../api_reference/config/quant/modelslim_convert.md).
 
 ## 2. Inputs and Deliverables
 
@@ -41,7 +43,7 @@ flowchart LR
 
 ### Step 1: Confirm the Source and Target
 
-**Action**: First determine three things -- what format the source weights are currently in (FP8 block / BF16 / INT4 packed), what IR the target output is (`W8A8_MXFP8` / `FLOAT`), and what the target deployment framework is (which determines the `save` format). Weight conversion is a **purely offline, data-free** operation: it needs no calibration set, no `model_type`, and no `quant_type`.
+**Action**: First determine three things -- what format the source weights are currently in (FP8 block / BF16 / INT4 packed / MXFP4 packed), what IR the target output is (`W8A8_MXFP8` / `W4A4_MXFP4` / `FLOAT`), and what the target deployment framework is (which determines the `save` format). Weight conversion is a **purely offline, data-free** operation: it needs no calibration set, no `model_type`, and no `quant_type`.
 
 Currently supported conversions:
 
@@ -49,8 +51,10 @@ Currently supported conversions:
 |-------|---------|------|-----------|
 | `FP8_BLOCK` | `FLOAT` | FP8 block weights are dequantized to BF16 | Lossless |
 | `INT4_PACKED` | `FLOAT` | INT4 packed (grouped) weights are dequantized to BF16 | Lossless |
-| `FLOAT` | `W8A8_MXFP8` | Offline MXFP8 quantization of BF16/FP16 floating-point weights | Lossy |
-| `FP8_BLOCK` | `W8A8_MXFP8` | Dequantize first, then quantize to MXFP8 | Lossy (the second half is quantization) |
+| `MXFP4_PACKED` | `FLOAT` | Dequantize MXFP4 packed (E2M1 + E8M0) weights to BF16 | Lossless |
+| `FLOAT` | `W8A8_MXFP8` | Offline MXFP8 quantization of BF16/FP16 weights | Lossy |
+| `FLOAT` | `W4A4_MXFP4` | Offline MXFP4 quantization of BF16/FP16 weights | Lossy |
+| `FP8_BLOCK` | `W8A8_MXFP8` | Direct conversion when the format is E4M3 + E8M0 and the number of columns of the FP8 block is a multiple of 32; otherwise dequantize first, then quantize | The direct conversion is lossless; the three-stage path is lossy |
 
 The tool identifies the source format automatically from the weights in the checkpoint.
 
@@ -117,7 +121,9 @@ spec:
         - "model.layers.*.mlp.up_proj"
         - "model.layers.*.mlp.down_proj"
       target: W8A8_MXFP8
-      # Explicit path: dequantize first, then quantize. When omitted or set to auto, the tool chooses the same shortest path.
+      # auto: when the format is E4M3 + E8M0 and the number of columns of the FP8 block is a multiple of 32, take the lossless direct conversion FP8_BLOCK -> W8A8_MXFP8;
+      # other FP8 formats (such as F32 scale) take FP8_BLOCK -> FLOAT -> W8A8_MXFP8.
+      # When the explicit three-stage path below is written, the three stages are kept even if the layer can be converted directly.
       route: [FP8_BLOCK, FLOAT, W8A8_MXFP8]
   save:
     - type: ascend_v1
@@ -167,17 +173,17 @@ msmodelslim quant \
 
 **Action**: First confirm which layers were converted and whether the target format and the save format match; then tune parallelism if acceleration is needed.
 
-`W8A8_MXFP8` pairs with `ascend_v1`, and `FLOAT` pairs with `huggingface`.
+`W8A8_MXFP8` and `W4A4_MXFP4` pair with `ascend_v1`, and `FLOAT` pairs with `huggingface`.
 
 | Configuration Item | Meaning | Recommended Setting | Selection and Tuning Advice |
 | --- | --- | --- | --- |
 | `linears.match` | Module path patterns of the linear layers to be converted; `*` wildcards are supported. Only the matched Linear weights take part in IR conversion; **unmatched weights (such as Norm, Embedding, and Head) are copied as is** to the output directory. | List all Linear projection layers in the target model: `q_proj`/`k_proj`/`v_proj`/`o_proj`/`gate_proj`/`up_proj`/`down_proj`. | If the match range is too broad, the tool tries to convert non-Linear layers (which may fail); if it is too narrow, some Linear weights keep their original format. Check the checkpoint's `model.safetensors.index.json` to confirm the key names first, then write the wildcards from the layer-name prefixes and projection names. |
-| `linears.target` | The target IR type of the conversion, which determines the numerical format of the output weights. Currently supported: `FLOAT` (BF16 floating point) and `W8A8_MXFP8` (Ascend MXFP8). | FP8 dequantization → `FLOAT`; Ascend deployment → `W8A8_MXFP8`. | `target` must match `save.type`: `W8A8_MXFP8` must be written with `ascend_v1`, and `FLOAT` with `huggingface`. Configuration validation checks this item. |
-| `linears.route` | The IR conversion path from source to target. `auto` infers the source IR from the weights and takes the shortest path; it can also be written as an IR list, whose first element is the source IR and last element is `target`. | Defaults to `auto`. Write a list when a fixed path is needed, for example dequantization only `[FP8_BLOCK, FLOAT]`, or FP8 to MXFP8 `[FP8_BLOCK, FLOAT, W8A8_MXFP8]`. | Adjacent IRs in the list must have a registered conversion edge. See Scenario C. |
-| `save.type` | The save format: `ascend_v1` (Ascend, corresponding to MXFP8) and `huggingface` / `hf` / `compressed_tensors` (HF ecosystem, corresponding to BF16 floating point). | `ascend_v1` (when the target IR is `W8A8_MXFP8`); `huggingface` (when the target IR is `FLOAT`). | The format must strictly match the target IR; a mismatch will prevent the target framework from loading the weights. |
+| `linears.target` | The target IR type of the conversion, which determines the numerical format of the output weights. Currently supported: `FLOAT` (BF16 floating point), `W8A8_MXFP8` (Ascend MXFP8), and `W4A4_MXFP4` (Ascend MXFP4). | FP8 / MXFP4 dequantization → `FLOAT`; Ascend deployment → `W8A8_MXFP8` or `W4A4_MXFP4`. | `target` must match `save.type`: `W8A8_MXFP8` and `W4A4_MXFP4` must be written with `ascend_v1`, and `FLOAT` with `huggingface`. Configuration validation checks this item. |
+| `linears.route` | The IR conversion path from source to target. `auto` selects the path from the optimal route table; in particular, when the source is `FP8_BLOCK` and the target is `W8A8_MXFP8`, it performs conditional routing: if the format is E4M3 + E8M0 and the number of columns of the FP8 block is a multiple of 32, `FP8_BLOCK → W8A8_MXFP8` takes the lossless direct conversion, otherwise it takes the three-stage path. It can also be written as an IR list, whose first element is the source IR and last element is `target`. | Defaults to `auto`. Write a list when a fixed path is needed, for example dequantization only `[FP8_BLOCK, FLOAT]` or `[MXFP4_PACKED, FLOAT]`. An explicit `[FP8_BLOCK, FLOAT, W8A8_MXFP8]` keeps the three stages even when direct conversion is possible. | When an explicit direct-conversion edge does not meet the E8M0 / divisibility condition, an error is reported directly instead of silently rolling back to three stages. Adjacent IRs in the list must have a registered conversion edge. See Scenario C. |
+| `save.type` | The save format: `ascend_v1` (Ascend, corresponding to MXFP8 / MXFP4) and `huggingface` / `hf` / `compressed_tensors` (HF ecosystem, corresponding to BF16 floating point). | `ascend_v1` (when the target IR is `W8A8_MXFP8` or `W4A4_MXFP4`); `huggingface` (when the target IR is `FLOAT`). | The format must strictly match the target IR; a mismatch will prevent the target framework from loading the weights. |
 | `save.part_file_size` | The size of each weight shard file, in GB; `0` means no sharding. | Defaults to `4` (4 GB shards). | Small models can use `0` for no sharding; large models should keep `4` to make huge checkpoints easier to manage. |
 | `parallel.cpu_workers` | The number of parallel workers for CPU conversion: `1` for a single process, `>1` for multi-process parallelism (bypassing the GIL); defaults to `8`. NPU conversion always uses one child process per card and runs serially within a group (processes = cards), so this field does not apply there. | The default `8` suits most scenarios; increase it appropriately for very large models or MoE. | It takes effect only with `--device cpu`. The larger `cpu_workers` is, the higher the CPU parallelism, but it is limited by memory bandwidth and disk I/O; NPU multi-card parallelism is controlled by `--device_id` and needs no setting. |
-| `preprocess` | Weight-graph preprocessing; performs structural transforms on checkpoint keys before the virtual module tree is built. It supports `rename` (renaming keys) and `convert` (split fused weights via chunk / merge weights). | Generally not needed; it must be configured when splitting a fused gate_up_proj in an MoE model. | Needed only when the checkpoint contains fused weights (such as `gate_up_proj`) that must be split into separate projections. See the MoE examples under the `convert/` directory. |
+| `preprocess` | Weight-graph preprocessing; performs structural transforms on checkpoint keys before the virtual module tree is built. It supports `rename` (renaming keys) and `convert` (split fused weights via chunk / merge weights). | Generally not needed. The tool identifies the source format by these suffixes; when the checkpoint does not match, use `rename` to change the keys to the agreed names: `.weight` for `FLOAT`; `.weight` and `.weight_scale_inv` for `FP8_BLOCK`; `.weight_packed` and `.weight_scale` for `MXFP4_PACKED`; `.weight_packed`, `.weight_scale`, `.weight_shape`, and `.bias` for `INT4_PACKED`. Common renaming examples: `.scale` → `.weight_scale_inv` for FP8, and `.weight` / `.scale` → `.weight_packed` / `.weight_scale` for MXFP4. Splitting the fused `gate_up_proj` of MoE still uses `convert`. | `rename` changes only the keys, not the values. Write `type: rename` and give `from` / `to` for each entry in `patterns`: `from` is a regular expression for the complete key and can use `(?P<prefix>...)` to capture a prefix, and `to` uses `\g<prefix>` to build the new key. An error is reported if the target key already exists, so the patterns should cover only the layers to be renamed. Configure `convert` only when a fused weight must be split into separate projections; see the MoE examples under the `convert/` directory. |
 | `defaults.src_format` | The source weight format; `auto` infers it from the model adapter / weight directory. | Defaults to `auto`. | Generally no change is needed. The tool infers it automatically from the weight dtype in the checkpoint. |
 | `defaults.dst_format` | The target save format; synonymous with `save.type`, and used as a fallback when `save` is empty. The code default is `ascendv1` (without an underscore), which corresponds to `ascend_v1` in `save.type`. | Defaults to `ascendv1`. | Generally no change is needed; control it directly through `save.type`. |
 | `defaults.dst_ir` | The target IR type; when unset it is determined by the target format. | Defaults to `null`. | Generally no change is needed; control it directly through `linears.target`. |

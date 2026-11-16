@@ -4,11 +4,13 @@
 > **English Name**: Weight Conversion<br>
 > **Application Domain**: Format / precision transformation of existing quantized weights, offline deployment
 
+Weight conversion is an offline, data-free quantization tool capability. This document covers the core mechanisms of that capability, including the IR abstraction, automatic routing, the virtual module tree, and the 7-stage pipeline, and it describes the applicable conversion scenarios and usage restrictions. It is intended for developers and deployment engineers who need to transform the format or precision of existing quantized weights.
+
 ---
 
 ## 1. Overview
 
-Weight conversion (Convert) is an offline, data-free quantization tool capability in msModelSlim. Without loading model code or relying on a calibration dataset, it performs a format or precision transformation on an existing checkpoint. Unlike regular [post-training quantization (PTQ)](../term_ptq.md), which requires calibration data, weight conversion operates directly on tensor-level IR (Intermediate Representation) and selects the shortest conversion path through an automatic routing mechanism. It applies to scenarios such as FP8 block dequantization, BF16 to MXFP8, and INT4 group dequantization. Weight conversion is usually a follow-up step to [LLM quantization](../llm/term_large_language_model_quantization.md), used to adjust the on-disk format of existing quantized weights so that they fit different inference frameworks.
+Weight conversion is an offline, data-free quantization tool capability in msModelSlim. Without loading model code or relying on a calibration dataset, it performs a format or precision transformation on an existing checkpoint. Unlike regular [post-training quantization (PTQ)](../term_ptq.md), which requires calibration data, weight conversion operates directly on tensor-level IR (Intermediate Representation) and selects the shortest conversion path through an automatic routing mechanism. It applies to scenarios such as FP8 block dequantization, BF16 to MXFP8, and INT4 group dequantization. Weight conversion is usually a follow-up step to [LLM quantization](../llm/term_large_language_model_quantization.md), used to adjust the on-disk format of existing quantized weights so that they fit different inference frameworks.
 
 ## 2. Term Description
 
@@ -43,8 +45,8 @@ Here $\Delta_{\text{block}}$ is the block-level scaling factor; the MXFP8 format
 ### 3.2 Key Properties
 
 - **Data-free property**: no calibration dataset and no model code are required; it is purely offline weight computation.
-- **Lossless conversion**: `FP8_BLOCK → FLOAT` and `INT4_PACKED → FLOAT` are lossless conversions (dequantization only).
-- **Lossy conversion**: `FLOAT → W8A8_MXFP8` is a lossy conversion (requantization introduces quantization error).
+- **Lossless conversion**: `FP8_BLOCK → FLOAT`, `INT4_PACKED → FLOAT`, and `MXFP4_PACKED → FLOAT` are lossless conversions, as is the direct `FP8_BLOCK → W8A8_MXFP8` conversion when its conditions are met.
+- **Lossy conversion**: `FLOAT → W8A8_MXFP8` and `FLOAT → W4A4_MXFP4` are lossy conversions (requantization introduces quantization error). An `FP8_BLOCK → W8A8_MXFP8` conversion that does not meet the direct-conversion conditions is dequantized first and then quantized, so its second half is lossy.
 - **Automatic routing**: with `route: auto` it infers the source IR and selects the conversion path, supporting multi-step chaining.
 - **Seven-stage pipeline**: from reading the catalog to writing to disk, the whole process requires no model forward pass.
 - **Multiple save formats**: `ascend_v1` (MXFP8 deployment) and `huggingface` (HF ecosystem).
@@ -52,7 +54,7 @@ Here $\Delta_{\text{block}}$ is the block-level scaling factor; the MXFP8 format
 
 ## 4. Process Flow
 
-> For detailed algorithm steps and code-level analysis, see the *[Weight Conversion Usage Guide](./usage_weight_conversion.md)*.
+> For detailed algorithm steps and code-level analysis, see the [Weight Conversion Usage Guide](./usage_weight_conversion.md).
 
 ### 4.1 Processing Flow
 
@@ -66,15 +68,15 @@ flowchart LR
 
 - **Read catalog**: scan the checkpoint files to obtain all tensor keys and dtype information.
 - **Preprocess**: optional; performs structural transforms on checkpoint keys (such as splitting fused gate/up).
-- **Build virtual module tree**: organizes the module hierarchy in tick-tock mode and builds the `ModelFreeModule` tree.
+- **Build virtual module tree**: builds the `ModelFreeModule` tree according to the module hierarchy.
 - **Create IR tasks**: create an IR conversion task for each matching linear layer.
 - **Route**: automatically select the conversion path according to the `route` configuration.
-- **Execute**: call the corresponding IR conversion processor (`DequantToFloatProcessor`, `Int4PackedToFloatProcessor`, `MxFp8QuantProcessor`).
+- **Execute**: call the corresponding IR conversion processor (`Fp8BlockToFloatProcessor`, `Fp8BlockToMxFp8Processor`, `Int4PackedToFloatProcessor`, `MxFp4PackedToFloatProcessor`, `MxFp8QuantProcessor`, `MxFp4QuantProcessor`).
 - **Save**: write to disk according to the configured `save.type` (`ascend_v1` or `huggingface`).
 
 ### 4.2 Configuration Example
 
-The following is a minimal working YAML configuration snippet (FP8 block to BF16 as an example). For the detailed meaning and value ranges of each field, see the *[Weight Conversion Usage Guide](./usage_weight_conversion.md)*.
+The following is a minimal working YAML configuration snippet (FP8 block to BF16 as an example). For the detailed meaning and value ranges of each field, see the [Weight Conversion Usage Guide](./usage_weight_conversion.md).
 
 ```yaml
 apiversion: modelslim_convert
@@ -103,7 +105,7 @@ spec:
 
 - **FP8 block dequantization**: dequantize FP8 quantized weights to BF16 for inference in the HuggingFace ecosystem.
 - **BF16 offline MXFP8 quantization**: offline-quantize BF16 floating-point weights to W8A8 MXFP8 for Ascend NPU inference.
-- **FP8 directly to MXFP8**: automatic routing chains `FP8_BLOCK → FLOAT → W8A8_MXFP8` in a single step.
+- **FP8 to MXFP8**: with `route: auto`, a lossless direct conversion `FP8_BLOCK → W8A8_MXFP8` is taken when the format is E4M3 + E8M0 and the number of columns of the FP8 block is a multiple of 32; otherwise the path is chained as `FP8_BLOCK → FLOAT → W8A8_MXFP8`.
 - **INT4 packed dequantization**: dequantize INT4 group-quantized weights to BF16.
 
 ### 5.2 Usage Limitations
@@ -115,19 +117,19 @@ spec:
 
 ## 6. Related Workflows
 
-- *[Weight Conversion Usage Guide](./usage_weight_conversion.md)*: the complete workflow, command reference, and detailed configuration protocol for weight conversion.
-- *[msmodelslim quant Command Line](../../../api_reference/cli/msmodelslim_quant.md)*: contains copy-ready weight conversion commands.
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: the complete workflow for regular one-click quantization (including calibration).
+- [Weight Conversion Usage Guide](./usage_weight_conversion.md): the complete workflow, command reference, and detailed configuration protocol for weight conversion.
+- [msmodelslim quant Command Line](../../../api_reference/cli/msmodelslim_quant.md): contains copy-ready weight conversion commands.
+- [msModelSlim One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): the complete workflow for regular one-click quantization (including calibration).
 
 ## 7. Related Terms
 
-- [LLM Quantization](../llm/term_large_language_model_quantization.md): a prerequisite term; weight conversion is usually follow-up processing on LLM quantized weights.
-- [VLM Quantization](../vlm/term_vision_transformer_quantization.md): an application target; VLM quantized weights can also have their format adjusted through conversion.
-- [DiT Quantization](../dit/term_diffusion_transformer_quantization.md): an application target; DiT quantized weights can also have their format adjusted through conversion.
-- [PTQ](../term_ptq.md): the parent concept; weight conversion is a tool-chain step within the PTQ ecosystem.
+- [Large Language Model Quantization](../llm/term_large_language_model_quantization.md): a prerequisite term; weight conversion is usually follow-up processing on LLM quantized weights.
+- [Vision-Language Model Quantization](../vlm/term_vision_transformer_quantization.md): an application target; VLM quantized weights can also have their format adjusted through conversion.
+- [Diffusion Transformer Quantization](../dit/term_diffusion_transformer_quantization.md): an application target; DiT quantized weights can also have their format adjusted through conversion.
+- [Post-Training Quantization (PTQ)](../term_ptq.md): the parent concept; weight conversion is a tool-chain step within the PTQ ecosystem.
 
 ## 8. Reference Documents
 
-1. *[Weight Conversion Usage Guide](./usage_weight_conversion.md)*: detailed msModelSlim weight conversion documentation.
-2. *[msModelSlim One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: the overall one-click quantization workflow.
-3. *[Format Support Matrix](../../quantization_format/README.md)*: description of quantization formats and storage formats.
+1. [Weight Conversion Usage Guide](./usage_weight_conversion.md): detailed msModelSlim weight conversion documentation.
+2. [msModelSlim One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): the overall one-click quantization workflow.
+3. [Format Support Matrix](../../quantization_format/README.md): description of quantization formats and storage formats.

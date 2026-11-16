@@ -83,7 +83,7 @@ In terms of error and applicability boundaries, a single sporadic abnormal value
 
 - [Std](../std/term_std.md): a similar algorithm and another `linear`-scope analysis metric that emphasizes the ratio of range to dispersion.
 - [Kurtosis](../kurtosis/term_kurtosis.md): a similar algorithm and another `linear`-scope analysis metric that focuses on spiky distributions.
-- [MSE Layer Wise](../mse_layer_wise/term_mse_layer_wise.md): a companion term and a `layer`-scope analysis metric, usable for block-level evaluation.
+- [MSE Layer Wise](../mse_layer_wise/term_mse_layer_wise.md): a companion term and a `layer` -scope analysis metric, usable for block-level evaluation.
 
 ---
 

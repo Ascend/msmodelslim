@@ -18,7 +18,7 @@ This guide is intended for developers and algorithm engineers who need to identi
 - **Multimodal generation models** (text-to-image, text-to-video, etc.): not supported.
 - Need to fall back or increase the bit width by single linear layer: see the [Sensitive Linear Layer Analysis Usage Guide](usage_sensitive_linear_analysis.md).
 - Need to fall back by Decoder block or by whole Attention, MLP, or MoE blocks: see the [Layer-wise Sensitive Layer Analysis Usage Guide](usage_sensitive_layer_analysis.md).
-- Identify the Attention modules that need to fall back when FA quantization is applied: see the [Attention Sensitive Layer Analysis Usage Guide](usage_sensitive_attn_analysis.md).
+- Identify Attention modules that must fall back together with FA quantization: see the [Attention Sensitive Layer Analysis Usage Guide](usage_sensitive_attn_analysis.md).
 
 ## 2. Process Relationships and Prerequisites
 

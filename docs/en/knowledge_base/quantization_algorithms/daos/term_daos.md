@@ -16,7 +16,7 @@ DAOS is a combined **W4A4 / MXFP** low-bit solution for multimodal **generative*
 
 Multimodal generative models (text-to-video / image-to-video, and so on) also face the superposition of activation outliers and rounding errors at extremely low bit widths such as W4A4 and MXFP4. DAOS combines outlier suppression with trainable linear quantization: OASQ first splits and smooths outlier activations by channel-wise z-score, and TLQ then performs block-level reconstruction training on the linear layers over a friendlier distribution, recovering accuracy along the low-bit deployment path for generative models.
 
-Positioned within the quantization flow, DAOS is not a single processor but a recommended solution composed of OASQ and TLQ in series under the `multimodal_sd_modelslim_v1` task; for the specific parameters and practical recipe, see the *[DAOS Parameter Configuration Workflow Guide](./usage_daos.md)*.
+Positioned within the quantization flow, DAOS is not a single processor but a recommended solution composed of OASQ and TLQ in series under the `multimodal_sd_modelslim_v1` task; for the specific parameters and practical recipe, see the [DAOS Parameter Configuration Workflow Guide](./usage_daos.md).
 
 ### 2.1 Core Idea
 
@@ -80,7 +80,7 @@ Overall this remains a staged approximation: the optimal OASQ scale is not neces
 
 ## 3. Related Workflows
 
-- *[DAOS Parameter Configuration Workflow Guide](./usage_daos.md)*: this workflow is how OASQ and TLQ (and optionally FA3) are configured in series to implement DAOS.
+- [DAOS Parameter Configuration Workflow Guide](./usage_daos.md): this workflow is how OASQ and TLQ (and optionally FA3) are configured in series to implement DAOS.
 
 ---
 

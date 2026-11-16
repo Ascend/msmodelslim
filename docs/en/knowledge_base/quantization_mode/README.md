@@ -1,6 +1,6 @@
 # Quantization Modes
 
-> **Entry Category**: Quantization Basic Concept ([Quantization Data Type](../dtype_ops/README.md))<br>
+> **Entry Category**: Quantization Basic Concept ([Quantization Data Types](../dtype_ops/README.md))<br>
 > **English Name**: Quantization Mode<br>
 > **Application Domain**: Large language model quantization and compression, inference acceleration, KVCache compression<br>
 
@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-Before reading this entry, it is recommended to first understand the basic concepts in [Quantization Data Type](../dtype_ops/README.md), such as [Quantization and Dequantization](../dtype_ops/term_quantization.md), scale, and common data types.
+Before reading this entry, it is recommended to first understand the basic concepts in [Quantization Data Types](../dtype_ops/README.md), such as [Quantization and Dequantization](../dtype_ops/term_quantization.md), scale, and common data types.
 
 A quantization mode is a foundational concept that describes how quantization is applied to a particular class of model structure. The basic object of quantization is the **tensor**—weights, activations, and cached K/V are all tensors; a quantization mode is the combination formed by applying some quantization (bit width, data type, parameter acquisition, quantization granularity, symmetry) to one or several such tensors respectively. When a quantization mode is mentioned, it usually states at the same time which structure it acts on, which tensors within it are quantized, and at what bit width and with what parameter acquisition. Take W8A8 static quantization as an example—it is **quantization of the linear layer**: both weights and activations are 8bit (INT8), and both use **static quantization** ([W8A8 Static Quantization](linear_layer_quantization/term_w8a8_static.md)).
 
@@ -28,7 +28,7 @@ A quantization mode name is usually composed of "acting structure + tensor bit w
 - **Tensor bit width**: W and A denote the bit widths of the weights and activations respectively. The lower the bit width, the greater the memory-traffic and compute benefit, but the lower the numerical resolution and the higher the risk of accuracy loss.
 - **Parameter acquisition**: static (the scale/offset is obtained by offline calibration and fixed at inference time, such as [W8A8 Static Quantization](linear_layer_quantization/term_w8a8_static.md)) or dynamic (computed online from statistics at inference time, such as [W8A8 Dynamic Quantization](linear_layer_quantization/term_w8a8_dynamic.md) and [W4A4 Dynamic Quantization](linear_layer_quantization/term_w4a4_dynamic.md)).
 - **Quantization granularity**: the range over which a group of elements shares one set of quantization parameters. Common granularities include per-tensor, per-channel, per-group, per-token, per-head, per-block, and so on; how coarse or fine it is depends on **how many elements each set of quantization parameters covers**—the fewer the elements covered (the smaller the block), the finer the granularity, the more accurately the numerical distribution is characterized and the better the accuracy, but the greater the number of quantization parameters and the compute overhead (for example, per-token is covered by [W8A8 Dynamic Quantization](linear_layer_quantization/term_w8a8_dynamic.md), and per-block by [W8A8 MX Dynamic Quantization](linear_layer_quantization/term_w8a8_mx_dynamic.md)).
-- **Data type**: the numerical format after quantization, such as INT integers (INT8/INT4), FP8 floating point (E4M3), and MXFP8/MXFP4 with a block-level shared exponent. For the correspondence between the standard definition of each data type and the [`qal/dtype_ops`](../dtype_ops/README.md) implementation in this repository, see [Quantization Data Type](../dtype_ops/README.md).
+- **Data type**: the numerical format after quantization, such as INT integers (INT8/INT4), FP8 floating point (E4M3), and MXFP8/MXFP4 with a block-level shared exponent. The standard definitions of each data format and their mapping to the [`core/dtype_ops`](../dtype_ops/README.md) implementation in this repository are described in [Quantization Data Types](../dtype_ops/README.md).
 
 ---
 
@@ -38,9 +38,9 @@ A quantization mode name is usually composed of "acting structure + tensor bit w
 
 By quantization target, common quantization modes are divided into three categories:
 
-- **[Linear Layer Quantization](linear_layer_quantization/README.md)**: quantizes the weights and activations of the linear layers (Linear / MatMul), which account for the largest share of large language models. It is the main body of quantization modes and has the largest number of modes, such as [W8A8 Static Quantization](linear_layer_quantization/term_w8a8_static.md) and [W4A4 Dynamic Quantization](linear_layer_quantization/term_w4a4_dynamic.md).
-- **[KVCache Quantization](kv_cache_quantization/README.md)**: quantizes the KVCache of the attention mechanism. The KVCache is essentially a special kind of activation—the Key/Value projections of historical tokens are cached for reuse by subsequent tokens, and its memory grows linearly with sequence length; quantizing K/V halves the cache memory, such as [KVCache-PerChannel Quantization](kv_cache_quantization/term_kv_cache_perchannel.md).
-- **[FA Quantization](fa_quantization/README.md)**: an advanced form of KVCache quantization—building on quantized K/V it further quantizes the Q fed into Flash Attention, enabling low-precision attention matrix computation, such as [FA INT8 PerHead Quantization](fa_quantization/term_fa_int8_perhead.md).
+- [Linear Layer Quantization](linear_layer_quantization/README.md): quantizes the weights and activations of the linear layers (Linear / MatMul), which account for the largest share of large language models. It is the main body of quantization modes and has the largest number of modes, such as [W8A8 Static Quantization](linear_layer_quantization/term_w8a8_static.md) and [W4A4 Dynamic Quantization](linear_layer_quantization/term_w4a4_dynamic.md).
+- [KVCache Quantization](kv_cache_quantization/README.md): quantizes the KVCache of the attention mechanism. The KVCache is essentially a special kind of activation—the Key/Value projections of historical tokens are cached for reuse by subsequent tokens, and its memory grows linearly with sequence length; quantizing K/V halves the cache memory, such as [KVCache-PerChannel Quantization](kv_cache_quantization/term_kv_cache_perchannel.md).
+- [FA Quantization](fa_quantization/README.md): an advanced form of KVCache quantization—building on quantized K/V it further quantizes the Q fed into Flash Attention, enabling low-precision attention matrix computation, such as [FA INT8 PerHead Quantization](fa_quantization/term_fa_int8_perhead.md).
 
 The three categories act at different positions in the computation graph and can be used independently or in combination, together forming the optimization space for inference acceleration; among them, FA quantization builds on KVCache quantization and is its extension at the compute level.
 
@@ -115,7 +115,7 @@ The three branches may use the same activation quantization mode or different on
 - [Linear Quantization Algorithm](../quantization_algorithms/linear_quant/term_linear_quant.md): a companion term that describes the code implementation of linear layer quantization modes.
 - [KVCache Quant Cache Quantization Algorithm](../quantization_algorithms/kvcache_quant/term_kvcache_quant.md): a companion term that describes the KVCache quantization algorithm.
 - [FA3 Quant Attention Activation Quantization Algorithm](../quantization_algorithms/fa3_quant/term_fa3_quant.md): a companion term that describes the FA quantization algorithm.
-- [Quantization Data Type](../dtype_ops/README.md): a companion concept; the standard definitions of the five data types used by quantization modes ([INT8](../dtype_ops/term_int8.md)/[INT4](../dtype_ops/term_int4.md)/[FP8](../dtype_ops/term_fp8.md)/[MXFP8](../dtype_ops/term_mxfp8.md)/[MXFP4](../dtype_ops/term_mxfp4.md)) correspond to the [`qal/dtype_ops`](../../../../msmodelslim/ir/qal/dtype_ops/) implementation.
+- [Quantization Data Types](../dtype_ops/README.md): a companion concept; the standard definitions of the five data formats used by quantization modes ([INT8](../dtype_ops/term_int8.md)/[INT4](../dtype_ops/term_int4.md)/[FP8](../dtype_ops/term_fp8.md)/[MXFP8](../dtype_ops/term_mxfp8.md)/[MXFP4](../dtype_ops/term_mxfp4.md)) and their mapping to the [`core/dtype_ops`](../../../../msmodelslim/core/dtype_ops/) implementation.
 
 ---
 

@@ -11,7 +11,7 @@
 
 AscendV1 is the [Quantization Format Terminology Entry](../README.md) of msModelSlim for Ascend NPU inference. Inference frameworks (vLLM Ascend, SGLang, MindIE) identify the quantization type of each tensor through `quant_model_description.json` and load the corresponding parameters from `quant_model_weights*.safetensors`. It solves the problem of unified write-to-disk and loading of quantized weights on the Ascend side. Its core characteristics are covering multiple quantization mode enumerations and aligning with the vLLM Ascend, SGLang, and MindIE loading paths.
 
-For configuration, execution, and deployment steps see the *[AscendV1 Usage Guide](ascendv1_usage.md)*. For the principles and formulas of each quantization mode see *[Quantization Modes](../../quantization_mode/README.md)* and the entry links in the support tables below.
+For configuration, execution, and deployment steps see the [AscendV1 Usage Guide](ascendv1_usage.md). For the principles and formulas of each quantization mode see [Quantization Modes](../../quantization_mode/README.md) and the entry links in the support tables below.
 
 ---
 
@@ -60,7 +60,7 @@ After running one-click quantization with the AscendV1 write-to-disk format spec
 | `quant_model_weights*.safetensors` | **Quantization weight file**; unsharded is `quant_model_weights.safetensors`; sharded is in forms such as `quant_model_weights-00001-of-0000N.safetensors`, indexed by `quant_model_weights.safetensors.index.json` |
 | `tokenizer_config.json` | The configuration file of the original tokenizer, containing information such as special tokens and the vocabulary size |
 | `tokenizer.json` | The vocabulary file of the original tokenizer, defining the mapping between tokens and IDs |
-| `{model_type}_best_practice.yaml` | **Quantization configuration protocol file**, recording the complete configuration used in this quantization; see the *[modelslim_v1 Configuration Description](../../../api_reference/config/quant/modelslim_v1.md)* |
+| `{model_type}_best_practice.yaml` | **Quantization configuration protocol file**, recording the complete configuration used in this quantization; see the [modelslim_v1 Configuration Description](../../../api_reference/config/quant/modelslim_v1.md) |
 | `vocab.json` | The original vocabulary mapping file; some models (such as GPT-style models) include this file |
 | `optional/quarot.safetensors` | **Optional export**: the QuaRot global rotation matrix (generated only when QuaRot is used and `export_extra_info: true` is set); see Optional Export below |
 
@@ -169,7 +169,7 @@ The inference framework loads the matrix file according to `optional.quarot.rota
 
 ## 4. <span id="engine-support">Inference Engine Support</span>
 
-All format enumerations in the table **can be written to disk by AscendV1**; the table describes whether the artifact can be loaded and deployed by the target inference engine. The reference basis is the notes of the *[Foundation Model Support Matrix](../../model/README.md)* and the lab_practice validation labels; specific model x mode x engine combinations are subject to the support matrix and official best practices, and are constrained by CANN / engine versions and hardware generations.
+All format enumerations in the table **can be written to disk by AscendV1**; the table describes whether the artifact can be loaded and deployed by the target inference engine. The reference basis is the notes of the [Foundation Model Support Matrix](../../model/README.md) and the lab_practice validation labels; specific model x mode x engine combinations are subject to the support matrix and official best practices, and are constrained by CANN / engine versions and hardware generations.
 
 | Format Enumeration | vLLM Ascend | SGLang | MindIE | Description |
 | --- | --- | --- | --- | --- |
@@ -195,7 +195,7 @@ All format enumerations in the table **can be written to disk by AscendV1**; the
 
 ## 5. <span id="mode-support">Quantization Mode Support</span>
 
-> **Deliverable notes**: In the table, "Deliverable: quantization description JSON" corresponds to `quant_model_description.json`; "Deliverable: quantization weight file" corresponds to `quant_model_weights*.safetensors`. For the mode principles see the *[Quantization Modes](../../quantization_mode/README.md)* entry; this table does not elaborate the dequantization formulas or NPU operators. The deliverables of this entry are described in two columns: the description JSON key values and the safetensors tensor fields.
+> **Deliverable notes**: In the table, "Deliverable: quantization description JSON" corresponds to `quant_model_description.json`; "Deliverable: quantization weight file" corresponds to `quant_model_weights*.safetensors`. For the mode principles see the [Quantization Modes](../../quantization_mode/README.md) entry; this table does not elaborate the dequantization formulas or NPU operators. The deliverables of this entry are described in two columns: the description JSON key values and the safetensors tensor fields.
 
 | Format Enumeration | Whether AscendV1 Supports Write-to-Disk | Quantization Mode Entry | Deliverable: Quantization Description JSON | Deliverable: Quantization Weight Files |
 | --- | --- | --- | --- | --- |
@@ -482,7 +482,7 @@ The specific `{prefix}` depends on the naming of the attention KV-related module
 
 ### 6.13 FAQuant
 
-> **Naming conventions**: The `{prefix}` in this section refers to the full name of the **attention module** (such as `model.layers.0.self_attn`), which differs from the Linear `{prefix}` above (such as `...self_attn.q_proj`). The Q/K/V branches of FA quantization are written to disk as the `fa_q` / `fa_k` / `fa_v` sub-keys rather than a single `{prefix}.scale` / `{prefix}.offset`. For the holistic modes of each FA variant see *[FA Quantization](../../quantization_mode/fa_quantization/README.md)*.
+> **Naming conventions**: The `{prefix}` in this section refers to the full name of the **attention module** (such as `model.layers.0.self_attn`), which differs from the Linear `{prefix}` above (such as `...self_attn.q_proj`). The Q/K/V branches of FA quantization are written to disk as the `fa_q` / `fa_k` / `fa_v` sub-keys rather than a single `{prefix}.scale` / `{prefix}.offset`. For the holistic modes of each FA variant see [FA Quantization](../../quantization_mode/fa_quantization/README.md).
 
 **<span id="desc-faquant">quant_model_description.json</span>**
 
@@ -519,7 +519,7 @@ The correspondence between validated schemes and `{prefix}.quant_type`:
 | `Q_FP8_DYNAMIC_KV_FP8` | [FA Q-FP8 Dynamic K/V-FP8 Static Quantization](../../quantization_mode/fa_quantization/term_fa_q_fp8_dynamic_kv_fp8.md) |
 | `QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL` | [FA QK-MXFP8 Dynamic / V-MXFP8 PerChannel Static Quantization](../../quantization_mode/fa_quantization/term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md) |
 
-Static branches write `scale` / `offset` to disk: per-head static writes a float32 scale plus a zero-valued zero-point - int8 zero for INT8 schemes and float32 zero for FP8 schemes. per-channel static (MXFP8) encodes the E8M0 shared exponent as uint8 (exp + 127) and writes it as the scale, together with a uint8 zero-valued zero-point. The activations of dynamic branches (per-token / per-block) do not write `scale` / `offset` to disk; only the `{prefix}.quant_type` above is written. For the algorithm configuration see *[FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)*.
+Static branches write `scale` / `offset` to disk: per-head static writes a float32 scale plus a zero-valued zero-point - int8 zero for INT8 schemes and float32 zero for FP8 schemes. per-channel static (MXFP8) encodes the E8M0 shared exponent as uint8 (exp + 127) and writes it as the scale, together with a uint8 zero-valued zero-point. The activations of dynamic branches (per-token / per-block) do not write `scale` / `offset` to disk; only the `{prefix}.quant_type` above is written. For the algorithm configuration see [FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md).
 
 **<span id="st-faquant">`quant_model_weights*.safetensors`</span>**
 
@@ -550,9 +550,9 @@ Static branches write `scale` / `offset` to disk: per-head static writes a float
 
 ## 8. Related Workflows
 
-- *[AscendV1 Usage Guide](ascendv1_usage.md)*: confirm mode support, configure, and run.
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: commands and configuration protocol.
-- *[Quantization Format Integration Guide](../iformat_integration_guide.md)*: a reference for developing a new format.
+- [AscendV1 Usage Guide](ascendv1_usage.md): confirm mode support, configure, and run.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): commands and configuration protocol.
+- [Quantization Format Integration Guide](../iformat_integration_guide.md): a reference for developing a new format.
 
 ---
 

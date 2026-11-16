@@ -35,10 +35,10 @@ flowchart LR
 
 The key details of each stage are as follows:
 
-Prerequisite: model adaptation. Model adaptation must be completed before quantization; the adapter implements interfaces such as PipelineInterface (the basic pipeline interface). For details see the *[LLM Model Integration Quantization Workflow Guide](./integration_guide_large_language_model_quantization.md)*. If the target model is already in the official pre-validated list, no adapter code is needed; simply specify the corresponding `--model_type`. Model adaptation must be completed first before the quantization workflow can run.
+Prerequisite: model adaptation. Model adaptation must be completed before quantization; the adapter implements interfaces such as PipelineInterface (the basic pipeline interface). For details see the [LLM Model Integration Quantization Workflow Guide](./integration_guide_large_language_model_quantization.md). If the target model is already in the official pre-validated list, no adapter code is needed; simply specify the corresponding `--model_type`. Model adaptation must be completed first before the quantization workflow can run.
 
 - **Adapt the model pipeline interface**: ensure the model to be quantized has an adapter interface that complies with the `modelslim_v1` specification, so that it can be driven as a whole by the scheduler (Runner) and the processors (Processor).
-- **Configure the calibration dataset**: specify the calibration data through `spec.dataset`. For general scenarios the built-in `mix_calib.jsonl` is recommended, with 50 samples and a sequence length of 2048~4096, to provide a sufficient basis for activation statistics.
+- **Configure the calibration dataset**: specify the calibration data through `spec.dataset`. For general scenarios the built-in `mix_calib.jsonl` is recommended, 50 samples and a sequence length of 2048~4096 are recommended to provide a sufficient basis for activation statistics.
 - **Select the weight save format**: declare the save processor in `spec.save`. For Ascend NPU deployment `ascendv1_saver` is recommended; be sure to align with the deployment framework version.
 - **Select and orchestrate quantization algorithms**: orchestrate the algorithm chain in declaration order in `spec.process`. Starting from W8A8 dynamic quantization (`minmax` estimation) is recommended, adding smoothing or rotation algorithms only if accuracy is insufficient.
 - **Select the execution scheduler (Runner)**: specify the scheduling strategy in `spec.runner`; `auto` is recommended -- on a single card it automatically schedules layer by layer to lower peak memory, and on multiple cards it automatically enables data-parallel acceleration.
@@ -52,7 +52,7 @@ Prerequisite: model adaptation. Model adaptation must be completed before quanti
 
 **Action**:
 
-If the target model is already in the official support list, no adapter code is needed; simply specify the corresponding `--model_type`. If you need to integrate a new model or extend the quantization interfaces, see the *[LLM Model Integration Quantization Workflow Guide](./integration_guide_large_language_model_quantization.md#step-4-implement-the-pipeline-core-interface-methods)*.
+If the target model is already in the official support list, no adapter code is needed; simply specify the corresponding `--model_type`. If you need to integrate a new model or extend the quantization interfaces, see the [LLM Model Integration Quantization Workflow Guide](./integration_guide_large_language_model_quantization.md#step-4-implement-the-pipeline-core-interface-methods).
 
 That guide explains the `PipelineInterface` specification in detail, the core methods (`handle_dataset`, `init_model`, `generate_model_visit`, `generate_model_forward`, `enable_kv_cache`), and the adapter registration and development steps.
 
@@ -98,8 +98,8 @@ That guide explains the `PipelineInterface` specification in detail, the core me
    ```
 
 2. **Format Selection and Documentation Links**:
-   - **[ascendv1_saver Configuration Description](../../../api_reference/config/format/ascendv1_saver.md)**: the **recommended format for Ascend NPU deployment**. Designed for the Ascend acceleration library (ATB / Ascend Transformer Boost) and the MindIE inference engine, it produces a `quant_model_description.json` carrying quantized metadata plus sharded quantized weights `*.safetensors`, and automatically performs the weight repacking (Pack) and dequantization-coefficient preprocessing required by the hardware instructions.
-   - **[mindie_format_saver Configuration Description](../../../api_reference/config/format/mindie_format_saver.md)**: a unified deployment format for the newer MindIE SD / MindIE ecosystem.
+   - [ascendv1_saver Configuration Description](../../../api_reference/config/format/ascendv1_saver.md): the **recommended format for Ascend NPU deployment**. Designed for the Ascend acceleration library (ATB / Ascend Transformer Boost) and the MindIE inference engine, it produces a `quant_model_description.json` carrying quantized metadata plus sharded quantized weights `*.safetensors`, and automatically performs the weight repacking (Pack) and dequantization-coefficient preprocessing required by the hardware instructions.
+   - [mindie_format_saver Configuration Description](../../../api_reference/config/format/mindie_format_saver.md): a unified deployment format for the newer MindIE SD / MindIE ecosystem.
 
 3. **Selection Guide**:
    - When running vLLM-Ascend, ATB-Models, or MindIE-Service on the Ascend platform, `ascendv1_saver` is the recommended first choice.
@@ -123,7 +123,7 @@ That guide explains the `PipelineInterface` specification in detail, the core me
    | QuaRot | Introduces an orthogonal Walsh-Hadamard rotation matrix to spread activation outlier channels without changing the forward output | When activation outliers are severe and smoothing algorithms do not deliver enough benefit | [QuaRot](../../quantization_algorithms/quarot/usage_quarot.md) |
    | KVCache Quant | Applies low-bit quantization to the Key/Value cache tensors | Memory and throughput optimization for long-sequence multi-turn conversations | [KVCache Quant](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md) |
 
-   > For the full set of supported outlier suppression algorithms, quantization optimization algorithms, and sensitive layer analysis algorithms, see the *[Quantization Algorithm Overview](../../quantization_algorithms/README.md)*.
+   > For the full set of supported outlier suppression algorithms, quantization optimization algorithms, and sensitive layer analysis algorithms, see the [Quantization Algorithm Overview](../../quantization_algorithms/README.md).
 
 2. **Algorithm Selection and Tuning**:
    - **W8A8 dynamic quantization (recommended starting point)**: activations `scope: per_token`, weights `scope: per_channel`, `symmetric: true`, estimation method `minmax`. The scale is computed dynamically per token, so it adapts well to outliers; accuracy is close to the floating-point baseline and no smoothing algorithm needs to be added.
@@ -287,5 +287,5 @@ msmodelslim quant \
 
 | API or Capability | Brief Description | Link |
 | --- | --- | --- |
-| `msmodelslim quant` | One-click quantization CLI entry point and complete command reference | *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)* |
+| `msmodelslim quant` | One-click quantization CLI entry point and complete command reference | [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md) |
 | modelslim_v1 Configuration Description | Field descriptions of task-level configuration such as `runner`/`process`/`save`/`dataset` | [modelslim_v1 Configuration Description](../../../api_reference/config/quant/modelslim_v1.md) |

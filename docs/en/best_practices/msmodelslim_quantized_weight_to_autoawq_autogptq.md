@@ -27,7 +27,7 @@ Install the dependencies by referring to [Preparations](../user_guide/traditiona
 ### Quantization Instructions
 
 The quantization script is the same as a regular quantization script. For reference, see [W8A8 Accuracy Tuning Strategies](../user_guide/process_quantization_precision_tuning.md).
-This guide uses W4A16 quantization as an example. Pay attention to the following points:
+This guide uses W4A16 quantization as an example. Pay attention to the following three points:
 a. In the outlier suppression configuration (`AntiOutlierConfig`), set `a_bit` and `w_bit` according to the quantization mode. When `anti_method` is set to `"m3"`, the AWQ algorithm is used. For GPTQ, you do not need the outlier suppression module, so you can comment out the related configuration.
 
 ```python

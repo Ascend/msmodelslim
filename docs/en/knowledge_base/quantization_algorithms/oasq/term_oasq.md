@@ -83,7 +83,7 @@ In terms of error boundaries, too strict a threshold makes almost all channels f
 
 ## 3. Related Workflows
 
-- *[OASQ Parameter Configuration Workflow Guide](./usage_oasq.md)*: this workflow is how OASQ is written into a quantization task and how adaptation and parameter tuning are completed.
+- [OASQ Parameter Configuration Workflow Guide](./usage_oasq.md): this workflow is how OASQ is written into a quantization task and how adaptation and parameter tuning are completed.
 
 ---
 

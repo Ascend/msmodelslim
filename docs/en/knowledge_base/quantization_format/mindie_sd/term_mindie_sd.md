@@ -11,7 +11,7 @@
 
 MindIE SD is the [Quantization Format Terminology Entry](../README.md) of msModelSlim for **multimodal generation** scenarios, consumed by MindIE SD. It is enabled in one-click quantization through the saver type `mindie_format_saver`. It solves the problem of aligning the quantized weights of multimodal generation models such as diffusion / DiT models with the MindIE SD loading conventions. Its core feature is that it works together with the `multimodal_sd_modelslim_v1` configuration protocol and writes to disk as `quant_model_description*.json` + `quant_model_weight*.safetensors`.
 
-For configuration, execution, and deployment steps see the *[MindIE SD Usage Guide](mindie_sd_usage.md)*. For the principles and formulas of each quantization mode see *[Quantization Modes](../../quantization_mode/README.md)* and the entry links in the support tables below.
+For configuration, execution, and deployment steps see the [MindIE SD Usage Guide](mindie_sd_usage.md). For the principles and formulas of each quantization mode see [Quantization Modes](../../quantization_mode/README.md) and the entry links in the support tables below.
 
 ---
 
@@ -31,7 +31,7 @@ Therefore, users can understand MindIE SD as: **the MindIE SD inference engine s
 - In YAML, `type` is fixed to `mindie_format_saver`.
 - Supports sharding by `part_file_size`; `0` means no sharding.
 - Usually appears together with `multimodal_sd_config` (dump / inference_config).
-- The enumeration values in the description file express the ability to carry multiple quantization modes; modes whose handler is not implemented must switch to *[AscendV1](../ascendv1/term_ascendv1.md)*.
+- The enumeration values in the description file express the ability to carry multiple quantization modes; modes whose handler is not implemented must switch to [AscendV1](../ascendv1/term_ascendv1.md).
 
 ---
 
@@ -49,7 +49,7 @@ After running one-click quantization with the MindIE SD write-to-disk format spe
 └── (optional) calib_data_*.pth                # Dump calibration data (when enable_dump is enabled, the directory is determined by dump_data_dir)
 ```
 
-For dual noise expert structures such as Wan2.2, the description file and the quantization weight are usually placed in the `low_noise_model/` and `high_noise_model/` subdirectories respectively, for example:
+For dual noise expert structures such as Wan2.2, the description files and quantization weights are usually split across the `low_noise_model/` and `high_noise_model/` subdirectories, for example:
 
 ```bash
 ├── low_noise_model/
@@ -97,7 +97,7 @@ In `quant_model_description*.json`, each tensor key corresponds to one quantizat
 | `fa_quant_type` | string | Flash Attention related quantization type (written when FA3 and so on are enabled) |
 | `{tensor name}` | string | The quantization type enumeration that each tensor belongs to |
 
-For the complete multimodal configuration protocol see the *[multimodal_sd_modelslim_v1 Configuration Description](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md)*.
+For the complete multimodal configuration protocol see the [multimodal_sd_modelslim_v1 Configuration Description](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md).
 
 ### 3.3 <span id="optional-dump">Optional Export: Calibration Dump Data</span>
 
@@ -114,7 +114,7 @@ For the meaning of the fields see [DumpConfig](../../../api_reference/config/qua
 
 ## 4. <span id="engine-support">Inference Engine Support</span>
 
-All format enumerations in the table **can be written to disk by MindIE SD**; the table describes whether the artifact can be loaded by the **MindIE multimodal generation** path. The reference basis is the *[Foundation Model Support Matrix](../../model/README.md)* and the lab_practice validation labels; specific model x mode x MindIE SD version combinations are subject to the support matrix and official best practices.
+All format enumerations in the table **can be written to disk by MindIE SD**; the table describes whether the artifact can be loaded by the **MindIE multimodal generation** path. The reference basis is the [Foundation Model Support Matrix](../../model/README.md) and the lab_practice validation labels; specific model x mode x MindIE SD version combinations are subject to the support matrix and official best practices.
 
 | Format Enumeration | MindIE SD | Description |
 | --- | --- | --- |
@@ -126,13 +126,13 @@ All format enumerations in the table **can be written to disk by MindIE SD**; th
 | `W4A4_MXFP4_DUALSCALE` | √ | MXFP4 Dual Scale |
 | `FAQuant` | √ | FA3 and so on; often combined with linear layer quantization |
 
-> **Legend**: `√` means the engine has a loadable path or validated practice. For the generic LLM paths vLLM Ascend / SGLang / MindIE, use *[AscendV1](../ascendv1/term_ascendv1.md)* instead; after selecting, check the deliverable fields in [Quantization Mode Support](#mode-support) below.
+> **Legend**: `√` means the engine has a loadable path or validated practice. For the generic LLM paths vLLM Ascend / SGLang / MindIE, use [AscendV1](../ascendv1/term_ascendv1.md) instead; after selecting, check the deliverable fields in [Quantization Mode Support](#mode-support) below.
 
 ---
 
 ## 5. <span id="mode-support">Quantization Mode Support</span>
 
-> **Deliverable notes**: In the table, "Deliverable: quantization description JSON" corresponds to `quant_model_description*.json`; "Deliverable: quantization safetensors" corresponds to `quant_model_weight*.safetensors`. For the mode principles see the *[Quantization Modes](../../quantization_mode/README.md)* entry (this entry does not elaborate the dequantization formulas or NPU operators). Specific model and `quant_type` combinations are subject to the *[Foundation Model Support Matrix](../../model/README.md)* and lab_practice / example.
+> **Deliverable notes**: In the table, "Deliverable: quantization description JSON" corresponds to `quant_model_description*.json`; "Deliverable: quantization safetensors" corresponds to `quant_model_weight*.safetensors`. For the mode principles see the [Quantization Modes](../../quantization_mode/README.md) entry (this entry does not elaborate the dequantization formulas or NPU operators). Specific model and `quant_type` combinations are subject to the [Foundation Model Support Matrix](../../model/README.md) and lab_practice / example.
 
 | Format Enumeration | Whether MindIE SD Supports Write-to-Disk | Quantization Mode Entry | Deliverable: Quantization Description JSON | Deliverable: Quantization safetensors |
 | ---------------------- | ---------------- | ------ | ------------------------------------------------ | ----------------------------------------------- |
@@ -277,7 +277,7 @@ Building on the [W4A4_MXFP4 description keys](#desc-w4a4-mxfp4), the values are 
 | --------------------------------- | ----------- | ------------------ |
 | `{prefix}.scale`                  | `"FAQuant"` | FA per-head scale  |
 | `{prefix}.offset`                 | `"FAQuant"` | FA per-head offset |
-| Global `fa_quant_type`, layer-level `quant_type` | string | Written when FA3 and so on are enabled; the value of the layer-level `quant_type` depends on the quantization method of each Q/K/V branch; for the holistic modes see *[FA Quantization](../../quantization_mode/fa_quantization/README.md)* |
+| Global `fa_quant_type`, layer-level `quant_type` | string | Written when FA3 and so on are enabled; the value of the layer-level `quant_type` depends on the quantization method of each Q/K/V branch; for the holistic modes see [FA Quantization](../../quantization_mode/fa_quantization/README.md) |
 
 **<span id="st-faquant">`quant_model_weight*.safetensors`</span>**
 
@@ -304,10 +304,10 @@ Building on the [W4A4_MXFP4 description keys](#desc-w4a4-mxfp4), the values are 
 
 ## 8. Related Workflows
 
-- *[MindIE SD Usage Guide](mindie_sd_usage.md)*: confirm mode support, configure, and run.
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: details of the multimodal_sd configuration.
-- *[Multimodal Generation Model Integration](../../ptq/dit/integration_guide_diffusion_transformer_quantization.md)*: model integration and examples.
-- *[Quantization Format Integration Guide](../iformat_integration_guide.md)*: a reference for developing a new format.
+- [MindIE SD Usage Guide](mindie_sd_usage.md): confirm mode support, configure, and run.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): details of the multimodal_sd configuration.
+- [Multimodal Generation Model Integration](../../ptq/dit/integration_guide_diffusion_transformer_quantization.md): model integration and examples.
+- [Quantization Format Integration Guide](../iformat_integration_guide.md): a reference for developing a new format.
 
 ---
 

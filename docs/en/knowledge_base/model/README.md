@@ -5,9 +5,9 @@
 - You can click a link in the **Model Type** column to go to the best practices page recommended by msModelSlim, which describes the quantization commands and configuration in detail.
 - √ indicates that the quantization strategy has been officially verified by msModelSlim. It features complete functions and stable performance and is recommended for use.
 - \- indicates that the quantization strategy has not been officially verified by msModelSlim. You can configure and try the strategy as needed, but the quantization effect and function stability cannot be guaranteed.
-- The "model name-quantization mode (such as w8a8s)" combination marked with "one-click quantization" can be used to execute the following *[one-click quantization](../../user_guide/usage_one_click_quantization.md)* command line to perform model quantization after *[installation](../../install_guide/install_guide.md)*.
+- The "model name-quantization mode (such as w8a8s)" combination marked with "one-click quantization" can be used to execute the following [one-click quantization](../../user_guide/usage_one_click_quantization.md) command line to perform model quantization after [installation](../../install_guide/install_guide.md).
 - Because newer versions of the Qwen series with more powerful capabilities have been released, the Qwen1.5-14B/32B/72B models have exceeded the maintenance period. Old models in this series will be sunset, and maintenance support for the quantization modes of their live-network versions will be discontinued.
-- **Qwen3.5 / Qwen3.6** have native multimodal (Vision) capabilities. For calibration modality descriptions, see the *[Qwen3.5 Quantization Guide - Calibration Modality Support](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md)*.
+- **Qwen3.5 / Qwen3.6** have native multimodal (Vision) capabilities. For calibration modality descriptions, see the [Qwen3.5 Quantization Guide - Calibration Modality Support](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md).
 
 ```bash
 msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type ${MODEL_TYPE} --quant_type ${QUANT_TYPE} --trust_remote_code true
@@ -507,7 +507,7 @@ The format of the quantization mode name is `W{weight_bit}A{activation_bit}[C{ca
       <td>transformers==5.2.0</td>
       <td>-</td>
       <td>-</td>
-      <td>-</td>
+      <td>√ (one-click quantization)</td>
       <td>-</td>
       <td>√ (one-click quantization)<sup>4</sup></td>
       <td>-</td>

@@ -8,4 +8,4 @@ This document serves as an overview of the quantization and calibration group. T
 ## 1. Content Boundaries
 
 - Traditional models: PyTorch/ONNX/MindSpore post-training quantization and quantization-aware training.
-- Foundation models: low-memory quantization, hybrid calibration datasets, and FA3 quantization.
+- Foundation models: low-memory quantization, mixed calibration datasets, and FA3 quantization.

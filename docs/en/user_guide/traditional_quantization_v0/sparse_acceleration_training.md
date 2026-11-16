@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-Deep learning training often involves tens of thousands or millions of iterations, introducing significant computational redundancy. Based on network augmentation principles and combined with parameter inheritance methods, this algorithm provides width-level and depth-level network augmentation capabilities to handle different deployment scenarios.
+Deep learning training often involves tens of thousands or millions of iterations, introducing significant computational redundancy. Based on the idea of network-augmented training and combined with parameter inheritance methods, this algorithm implements network augmentation at the width and depth levels respectively to cope with different scenarios.
 
 ## 2. Function
 
@@ -32,7 +32,7 @@ Deep learning training often involves tens of thousands or millions of iteration
 #### 2.1.3 Sample
 
   ```py
-  import os
+import os
 import torch
 import torch_npu
 import apex
@@ -104,6 +104,4 @@ for _ in range(steps_per_epoch * sum(epochs_each_stage)):
 
 #### 2.2.3 Sample
 
-  - To execute depth-augmented sparse training, substitute the `sparse_model_width` API call inside the **Width-Augmented Model Code Sample** block with `sparse_model_depth`.
-
-***
+  - To run depth-augmented sparse training, replace `sparse_model_width` with `sparse_model_depth` in the sample under **2.1 Width-Augmented Model Sparse Training Acceleration**.

@@ -1,6 +1,6 @@
 # Case Reference Checklist
 
-> Used to check case reference documents that are created or reworked based on the *[Case Reference Template](03_general_case_template.md)*, and to verify how they connect with the related workflow guide. For the general check items, see the *[Common Checklist](00_common_checklist.md)*; for the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the *[msModelSlim Documentation Standards](./README.md)*. The following are the check items specific to the case reference type, separated into tables by severity level.
+> Used to check case reference documents that are created or reworked based on the [Case Reference Template](03_general_case_template.md), and to verify how they connect with the related workflow guide. For the general check items, see the [Common Checklist](00_common_checklist.md); for the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the [msModelSlim Documentation Standards](./README.md). The following are the check items specific to the case reference type, separated into tables by severity level.
 
 ## 1. Check Items
 
@@ -35,4 +35,4 @@
 
 ## 2. Usage Notes
 
-- **Validation scope**: case reference documents written based on the *[Case Reference Template](03_general_case_template.md)*, stored in `docs/en/best_practices/`.
+- **Validation scope**: case reference documents written based on the [Case Reference Template](03_general_case_template.md), stored in `docs/en/best_practices/`.

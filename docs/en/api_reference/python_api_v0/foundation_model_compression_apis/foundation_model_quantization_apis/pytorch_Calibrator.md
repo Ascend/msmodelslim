@@ -19,9 +19,9 @@ Calibrator(model, cfg: QuantConfig, calib_data=None, disable_level='L0', all_ten
 | calib_data | Input | Calibration data for LLM quantization. Input real data for Label-Free quantization. | Optional.<br>Data type: object.<br>Default value is None, for Data-Free scenarios. Must be provided for Label-Free scenarios.<br>Input template: \[[input1],[input2],[input3]]. |
 | disable_level | Input | The automatic fallback level. The level can be appropriately increased when the model accuracy loss is significant, but the number of fallback layers cannot exceed the total number of model layers. | Optional.<br>Data type: str.<br>Configuration examples are as follows: (1) 'L0': Default value, no fallback is performed. (2) 'L1': Fallback 1 layer. (3) 'L2': Fallback 2 layers. (4) 'L3': Fallback 3 layers. (5) 'L4': Fallback 4 layers. (6) 'L5': Fallback 5 layers.<br>And so on. |
 | all_tensors | Input | {name:tensor} for layer-wise quantization calibration. | Optional.<br>Data type: dict.<br>Default value is None, use the default configuration. |
-| mix_cfg | Input | Hybrid quantization configuration, specifying {wildcard or layer name of **nn.Module**: quantization type}.<br>Key: **Wildcards are case-sensitive. The implementation uses Python's standard library fnmatch, so please refer to fnmatch for related usage.** | Optional.<br>Data type: dict.<br>Default value is None.<br>Configuration example: {"\*down\*": "w8a16", "\*": "w8a8"}<br>**The quantization type (the value of the dictionary) must be an internally recognized configuration, otherwise an error will be reported.**<br>Currently supports w8a8, w8a16, w8a8_dynamic
+| mix_cfg | Input | Mixed quantization configuration, specifying {wildcard or layer name of **nn.Module**: quantization type}.<br>Key: **Wildcards are case-sensitive. The implementation uses Python's standard library fnmatch, so please refer to fnmatch for related usage.** | Optional.<br>Data type: dict.<br>Default value is None.<br>Configuration example: {"\*down\*": "w8a16", "\*": "w8a8"}<br>**The quantization type (the value of the dictionary) must be an internally recognized configuration, otherwise an error will be reported.**<br>Currently supports w8a8, w8a16, w8a8_dynamic
 
-### Hybrid Quantization Priority Description
+### Mixed Quantization Priority Description
 
 When mix_cfg and the existing fallback mechanism are used simultaneously, the **matching priority** of different configurations is as follows, **matching from top to bottom in the following order. The first match takes effect, and no subsequent matching is performed**:
 
@@ -50,7 +50,7 @@ Assume mix_cfg is set to:
 mix_cfg = {
     "model.layers.0.mlp.down_proj": "w8a16",  # Layer name, matched successfully.
     "model.layers.1.mlp.down_pro?": "w8a16",  # fnmatch wildcard, matched successfully.
-    "?q_proj": "w8a8_dynamic",  # fnmatch wildcard, matched failed.
+    "?q_proj": "w8a8_dynamic",  # fnmatch wildcard, match failed.
     "*q_proj": "float",  # fnmatch wildcard, matched successfully.
     "model.layers.[012].mlp.down_proj": "w8a8_dynamic",  # fnmatch wildcard, matched successfully for 012, but since 0 and 1 are already matched, only 2 remains here.
     "model.layers.[!456789].mlp.down_proj": "w8a16",  # fnmatch wildcard, matched successfully for 0123. Similarly, since 0, 1, and 2 are already matched, only 3 remains here.
@@ -99,7 +99,7 @@ model = AutoModel.from_pretrained('/chatglm2-6b',
 calibrator = Calibrator(model, quant_config, calib_data=dataset_calib, disable_level='L0')
 ```
 
-### (Optional) INT8 Hybrid Quantization Sample
+### (Optional) INT8 Mixed Quantization Sample
 
 Configure all parameters in the QuantConfig initialization according to actual requirements.
 

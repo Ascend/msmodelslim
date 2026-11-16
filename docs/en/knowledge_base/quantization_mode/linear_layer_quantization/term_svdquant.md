@@ -97,5 +97,5 @@ $$
 ## 5. Reference Documents
 
 1. Li M et al. SVDQuant: Absorbing Outliers by Low-Rank Components for 4-Bit Diffusion Models. NeurIPS 2024. <https://arxiv.org/abs/2411.05007>
-2. *[SVDQuant Parameter Configuration Workflow Guide](../../quantization_algorithms/svdquant/usage_svdquant.md)*
-3. *[Quantization Modes](../README.md)*
+2. [SVDQuant Parameter Configuration Workflow Guide](../../quantization_algorithms/svdquant/usage_svdquant.md)
+3. [Quantization Modes](../README.md)

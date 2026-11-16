@@ -4,7 +4,7 @@
 
 This process is intended for external developers and maintainers who need to integrate a **new quantization write-to-disk format** into msModelSlim. It uses `compressed_tensors` as a complete 1-shot example to explain how to implement format export based on the `IFormat` protocol and how to enable it through YAML configuration.
 
-Not applicable to: users who only consume existing formats (read the *[Quantization Format](README.md)* map first and then jump to the corresponding usage guide).
+Not applicable to: users who only consume existing formats (read the [Quantization Format](README.md) map first and then jump to the corresponding usage guide).
 
 ## 2. Process Relationships and Prerequisites
 
@@ -12,10 +12,10 @@ Not applicable to: users who only consume existing formats (read the *[Quantizat
 
 **Prerequisites**:
 
-- You have read *[Quantization Format](README.md)* and confirmed that a new format must be added (rather than extending an existing handler).
+- You have read [Quantization Format](README.md) and confirmed that a new format must be added (rather than extending an existing handler).
 - The loading conventions of the target inference framework (tensor naming and metadata schema) have been clarified.
 
-**Follow-up operations**: complete the documentation after the code is merged: write the format entry and usage guide according to the *[Documentation Standards](../../contributing/development_guide/docs_standards/README.md)* and *[Adding Quantization Format Documentation](../../../../skills/docs-management/scenarios/add-quantization-format.md)*, and update the format map in *[Quantization Format](README.md)*.
+**Follow-up operations**: complete the documentation after the code is merged: write the format entry and usage guide according to the [Documentation Standards](../../contributing/development_guide/docs_standards/README.md) and [Adding Quantization Format Documentation](../../../../skills/docs-management/scenarios/add-quantization-format.md), and update the format map in [Quantization Format](README.md).
 
 ## 3. Inputs and Deliverables
 
@@ -182,7 +182,7 @@ After it is added, `parse_format_config` and the one-click quantization `spec.sa
 
 2. Refer to [`test/cases/format/compressed_tensors_format/`](../../../../test/cases/format/compressed_tensors_format): implement a mock writer, construct a minimal QIR model, invoke the three-stage lifecycle, and assert the key names / dtype / metadata.
 
-3. Add the entry and usage guide under `docs/en/knowledge_base/quantization_format/<format_name>/` according to the documentation standards, and register the link in the *[Quantization Format](README.md)* map.
+3. Add the entry and usage guide under `docs/en/knowledge_base/quantization_format/<format_name>/` according to the documentation standards, and register the link in the [Quantization Format](README.md) map.
 
 **Output**: Export can be started through the one-click quantization YAML (`spec.save.type`), the unit tests pass, and the documentation map is navigable.
 
@@ -198,9 +198,9 @@ After it is added, `parse_format_config` and the one-click quantization `spec.sa
 
 | Term | Brief Description | Link |
 | --- | --- | --- |
-| Quantization format | Write-to-disk and loading protocol | *[Quantization Format](README.md)* |
-| compressed-tensors | 1-shot reference format | *[compressed-tensors](compressed_tensors/term_compressed_tensors.md)* |
-| AscendV1 | Ascend default format (for comparison) | *[AscendV1](ascendv1/term_ascendv1.md)* |
+| Quantization format | Write-to-disk and loading protocol | [Quantization Format](README.md) |
+| compressed-tensors | 1-shot reference format | [compressed-tensors](compressed_tensors/term_compressed_tensors.md) |
+| AscendV1 | Ascend default format (for comparison) | [AscendV1](ascendv1/term_ascendv1.md) |
 
 ## 8. Interface Documentation List
 

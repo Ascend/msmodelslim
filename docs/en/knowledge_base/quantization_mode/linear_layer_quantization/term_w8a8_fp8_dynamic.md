@@ -54,15 +54,15 @@ Here $x$ is the tensor to quantize, $q$ is the quantized FP8 value ($\mathrm{rou
 #### 2.4.2 Usage Limitations
 
 - **Hardware operator dependency**: FP8 GEMM requires support from the target hardware operator library; otherwise it can only be emulated in software and the benefit is discounted.
-- **Overflow boundary**: the E4M3 representable range is limited (max 448), so out-of-range values rely on the scaling to compensate, and extreme distributions still need verification.
+- **Overflow boundary**: the E4M3 representable range is limited (max 448), so out-of-range values rely on scale scaling to compensate, and extreme distributions still need verification.
 - **Online reduction overhead**: per-token dynamic quantization incurs a small min/max reduction overhead.
 
 ---
 
 ## 3. Related Workflows
 
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: select this mode via `--quant_type` or a YAML configuration and run quantization.
-- *[Quantization Accuracy Tuning Guide](../../../user_guide/process_quantization_precision_tuning.md)*: accuracy degradation caused by this mode can be rolled back layer by layer and tuned through that workflow.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): select this mode via `--quant_type` or a YAML configuration and run quantization.
+- [Quantization Accuracy Tuning Guide](../../../user_guide/process_quantization_precision_tuning.md): accuracy degradation caused by this mode can be rolled back layer by layer and tuned through that workflow.
 
 ---
 
@@ -80,5 +80,5 @@ Here $x$ is the tensor to quantize, $q$ is the quantized FP8 value ($\mathrm{rou
 ## 5. Reference Documents
 
 1. Kuzmin A et al. FP8 Formats for Deep Learning. arXiv:2209.05433. <https://arxiv.org/abs/2209.05433>
-2. *[Linear Quantization Parameter Configuration Workflow Guide](../../quantization_algorithms/linear_quant/usage_linear_quant.md)*
-3. *[Quantization Modes](../README.md)*
+2. [Linear Quantization Parameter Configuration Workflow Guide](../../quantization_algorithms/linear_quant/usage_linear_quant.md)
+3. [Quantization Modes](../README.md)

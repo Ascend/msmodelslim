@@ -62,6 +62,6 @@ The following is the list of KVCache quantization modes supported by msModelSlim
 
 ## 5. Reference Documents
 
-1. *[KVCache Quant Parameter Configuration Workflow Guide](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)*
-2. *[KV Smooth Parameter Configuration Workflow Guide](../../quantization_algorithms/kv_smooth/usage_kv_smooth.md)*
-3. *[Quantization Modes](../README.md)*
+1. [KVCache Quant Parameter Configuration Workflow Guide](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)
+2. [KV Smooth Parameter Configuration Workflow Guide](../../quantization_algorithms/kv_smooth/usage_kv_smooth.md)
+3. [Quantization Modes](../README.md)

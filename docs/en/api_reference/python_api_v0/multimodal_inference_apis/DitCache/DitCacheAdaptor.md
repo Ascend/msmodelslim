@@ -79,7 +79,7 @@ Performs a cache configuration search to find the optimal caching strategy.
 
 | Parameter | Type | Description | Default Value | Remarks |
 |------------------------|--------------|------------------------------------------------|--------|----------------------------------------------------------------------|
-| `run_pipeline_and_save_videos` | `Callable` | Function that runs the pipeline and returns generated videos | None | Input parameter: `pipeline (OpenSoraPipeline)`<br>Return value: `List[np.ndarray]`, each video has a shape of `(num_frames, h, w, c)` |
+| `run_pipeline_and_save_videos` | `Callable` | Function that runs the pipeline and returns generated videos | - | Input parameter: `pipeline (OpenSoraPipeline)`<br>Return value: `List[np.ndarray]`, each video has a shape of `(num_frames, h, w, c)` |
 | `prompts_num` | `int` | Number of videos to generate | `1` | Controls the number of generated videos |
 
 ##### Returns

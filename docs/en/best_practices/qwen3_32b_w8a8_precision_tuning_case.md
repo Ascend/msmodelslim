@@ -4,9 +4,9 @@
 
 This case tunes the issue of garbled conversational output after W8A8 quantization of the Qwen3-32B model. The initial solution used fully static quantization (per-channel/per-tensor) together with the Smooth Quant outlier suppression algorithm, but the quantized model produced garbled conversations. After systematic tuning, the accuracy of the quantized model on the AIME25 dataset increased from unusable to 70.00%. In addition, the effects of two alternative optimization measures, calibration dataset adjustment and quantization rollback, were verified on the GPQA dataset.
 
-This case actually covers the 5 steps of the *[Quantization Accuracy Tuning Guide](../user_guide/process_quantization_precision_tuning.md)*: confirm that the accuracy issue is credible → adjust the outlier suppression algorithm → adjust the quantization strategy → adjust the calibration dataset → quantization rollback.
+This case actually covers the 5 steps of the [Quantization Accuracy Tuning Guide](../user_guide/process_quantization_precision_tuning.md): confirm that the accuracy issue is credible → adjust the outlier suppression algorithm → adjust the quantization strategy → adjust the calibration dataset → quantization rollback.
 
-**Related process**: *[Quantization Accuracy Tuning Guide](../user_guide/process_quantization_precision_tuning.md)*
+**Related process**: [Quantization Accuracy Tuning Guide](../user_guide/process_quantization_precision_tuning.md)
 
 ## 2. Environment and Versions
 
@@ -19,7 +19,7 @@ This case actually covers the 5 steps of the *[Quantization Accuracy Tuning Guid
 | vLLM Ascend | 0.22.1rc1 (inference deployment environment) |
 | transformers | 4.51.0 |
 | Runtime image | [`m.daocloud.io/quay.io/ascend/vllm-ascend:v0.22.1rc1-a3`](https://quay.io/repository/ascend/vllm-ascend?tab=tags&tag=v0.22.1rc1-a3) |
-| Other dependencies | msModelSlim (the tool used in this case; for installation, see the *[msModelSlim Tool Installation Guide](../install_guide/install_guide.md)*); AISBench (accuracy evaluation; for installation, see the *[AISBench Installation Guide](https://github.com/AISBench/benchmark/blob/master/docs/source_en/get_started/install.md)*); Qwen3-32B model weights and tokenizer |
+| Other dependencies | msModelSlim (the tool used in this case; for installation, see the [msModelSlim Tool Installation Guide](../install_guide/install_guide.md)); AISBench (accuracy evaluation; for installation, see the [AISBench Installation Guide](https://github.com/AISBench/benchmark/blob/master/docs/source_en/get_started/install.md)); Qwen3-32B model weights and tokenizer |
 
 **Prerequisites for this case**:
 
@@ -90,13 +90,13 @@ msmodelslim quant \
 
 1. **Tune one by one in priority order**: Follow the tuning order of Iterative Smooth first, then asymmetric → symmetric → adjusting alpha → other algorithms, and execute the following loop each time: generate configuration → quantize → deploy and evaluate. At each step, decide based on the evaluation result whether to continue to the next step (all with the same `linear_quant` static quantization and `save` format). The key points of each algorithm configuration are as follows (for complete parameters, see the algorithm documentation):
 
-   a. **Iterative Smooth (asymmetric/alpha:0.5)**: Try the asymmetric scheme first. The asymmetric scheme supports only the `norm-linear` subgraph. For details, see *[Iterative Smooth Algorithm](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md)*.
+   a. **Iterative Smooth (asymmetric/alpha:0.5)**: Try the asymmetric scheme first. The asymmetric scheme supports only the `norm-linear` subgraph. For details, see [Iterative Smooth Algorithm](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md).
 
-   b. **Iterative Smooth (symmetric/alpha:0.5)**: Switch to the symmetric scheme and use the default alpha value of 0.5. For details, see *[Iterative Smooth Algorithm](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md)*. — If the accuracy does not meet the target after evaluation, adjust alpha.
+   b. **Iterative Smooth (symmetric/alpha:0.5)**: Switch to the symmetric scheme and use the default alpha value of 0.5. For details, see [Iterative Smooth Algorithm](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md). — If the accuracy does not meet the target after evaluation, adjust alpha.
 
-   c. **Iterative Smooth (symmetric/alpha:0.9)**: Keep the symmetric scheme and increase alpha to 0.9. For details, see *[Iterative Smooth Algorithm](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md)*. — If the accuracy still does not meet the target after evaluation, switch to another outlier suppression algorithm.
+   c. **Iterative Smooth (symmetric/alpha:0.9)**: Keep the symmetric scheme and increase alpha to 0.9. For details, see [Iterative Smooth Algorithm](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md). — If the accuracy still does not meet the target after evaluation, switch to another outlier suppression algorithm.
 
-   d. **Flex Smooth Quant (alternative)**: alpha/beta are automatically searched by default. For details, see *[Flex Smooth Quant Algorithm](../knowledge_base/quantization_algorithms/flex_smooth_quant/usage_flex_smooth_quant.md)*. — Use only when none of the Iterative Smooth schemes meets the target.
+   d. **Flex Smooth Quant (alternative)**: alpha/beta are automatically searched by default. For details, see [Flex Smooth Quant Algorithm](../knowledge_base/quantization_algorithms/flex_smooth_quant/usage_flex_smooth_quant.md). — Use only when none of the Iterative Smooth schemes meets the target.
 
    For an algorithm comparison, see [Outlier Suppression Algorithms](../knowledge_base/quantization_algorithms/README.md#1-outlier-suppression-algorithms).
 
@@ -125,9 +125,9 @@ msmodelslim quant \
 
 **Operations**:
 
-1. **Tune one by one in priority order**: You can first try the two methods `per_tensor` (static quantization) and `per_token` (dynamic quantization). If neither `per_tensor` nor `per_token` meets the target, you can refer to *[Quantization Accuracy Tuning Guide - Quantization Algorithm Selection](../user_guide/process_quantization_precision_tuning.md#step-3-choosing-the-quantization-algorithm)* and try other quantization strategies, such as switching the weight quantization method (`ssz`/`gptq`/`autoround`) or the activation quantization method (`histogram`), or using the `pd_mix` mixed granularity.
+1. **Tune one by one in priority order**: You can first try the two methods `per_tensor` (static quantization) and `per_token` (dynamic quantization). If neither `per_tensor` nor `per_token` meets the target, you can refer to [Quantization Accuracy Tuning Guide - Quantization Algorithm Selection](../user_guide/process_quantization_precision_tuning.md#step-3-choosing-the-quantization-algorithm) and try other quantization strategies, such as switching the weight quantization method (`ssz`/`gptq`/`autoround`) or the activation quantization method (`histogram`), or using the `pd_mix` mixed granularity.
 
-   a. **per_tensor (static quantization)**: In the `linear_quant` processor of the quantization configuration YAML, set `qconfig.act.scope` to `per_tensor` and run the quantization command. For the `linear_quant` processor parameters, see *[Linear Quant Algorithm](../knowledge_base/quantization_algorithms/linear_quant/usage_linear_quant.md)*; for the quantization method parameters, see [MinMax](../knowledge_base/quantization_algorithms/minmax/usage_minmax.md). — If the accuracy does not meet the target after evaluation, switch to per_token.
+   a. **per_tensor (static quantization)**: In the `linear_quant` processor of the quantization configuration YAML, set `qconfig.act.scope` to `per_tensor` and run the quantization command. For the `linear_quant` processor parameters, see [Linear Quant Algorithm](../knowledge_base/quantization_algorithms/linear_quant/usage_linear_quant.md); for the quantization method parameters, see [MinMax](../knowledge_base/quantization_algorithms/minmax/usage_minmax.md). — If the accuracy does not meet the target after evaluation, switch to per_token.
 
    b. **per_token (dynamic quantization)**: Change `qconfig.act.scope` to `per_token` and run the quantization command. — If the accuracy still does not meet the target after evaluation, refer to the guide link above and try other quantization strategies.
 
@@ -203,7 +203,7 @@ msmodelslim quant \
 
 **Operations**:
 
-1. **Sensitive layer analysis**: Use the msModelSlim sensitive layer analysis tool to identify quantization-sensitive layers. For detailed usage, see the *[Quantization Sensitive Layer Analysis Usage Guide](../user_guide/usage_sensitive_linear_analysis.md)*.
+1. **Sensitive layer analysis**: Use the msModelSlim sensitive layer analysis tool to identify quantization-sensitive layers. For detailed usage, see the [Quantization Sensitive Layer Analysis Usage Guide](../user_guide/usage_sensitive_linear_analysis.md).
 
    ```bash
    # Fill in the following paths according to the actual environment
@@ -320,11 +320,11 @@ msmodelslim quant \
 
 2. **Prioritize adjusting the activation quantization granularity**: Switching from per-tensor (static quantization) to per-token (dynamic quantization) raises the AIME25 accuracy from 63.33% to 70.00% (+6.67 percentage points) and shortens the quantization time (289 s vs. 319 s), meeting the target without changing the weight quantization method. Applicable boundary: per-token dynamic quantization is more computationally complex and may cause a certain inference performance loss; when performance is the priority, the `pd_mix` mixed strategy can be used instead; if the target is still not met after adjusting the activation quantization granularity, weight quantization methods such as ssz can be tried.
 
-3. **Calibration dataset quality affects accuracy**: On the GPQA dataset, adding badcase samples to the calibration dataset raises the accuracy from 48.98% to 57.07% (+8.09 percentage points). Applicable boundary: a data volume of 10–50 entries is recommended, and the data must match the task and language (use English data for English models); the badcases must come from the same evaluation dataset to reliably reproduce the benefit.
+3. **Calibration dataset quality affects accuracy**: On the GPQA dataset, adding badcase samples to the calibration dataset raises the accuracy from 48.98% to 57.07% (+8.09 percentage points). Applicable boundary: a data volume of 10–50 entries is recommended, and the data must match the task and language (use Chinese data for Chinese models); the badcases must come from the same evaluation dataset to reliably reproduce the benefit.
 
 4. **Quantization rollback is a last resort**: On the GPQA dataset, rolling back 9 quantization-sensitive layers raises the accuracy from 48.98% to 49.49% (+0.51 percentage points). Applicable boundary: rollback brings a performance overhead and an increase in model size, so it should be used when other measures cannot meet the requirements; `mlp.down_proj` is usually a sensitive layer and can be rolled back first.
 
 ## 6. Appendix
 
-- Related guide: *[Quantization Sensitive Layer Analysis Usage Guide](../user_guide/usage_sensitive_linear_analysis.md)*
+- Related guide: [Quantization Sensitive Layer Analysis Usage Guide](../user_guide/usage_sensitive_linear_analysis.md)
 - Evaluation data: [AIME25](https://github.com/AISBench/benchmark/blob/master/ais_bench/benchmark/configs/datasets/aime2025/README.md), [GPQA](https://github.com/AISBench/benchmark/blob/master/ais_bench/benchmark/configs/datasets/gpqa/README.md)

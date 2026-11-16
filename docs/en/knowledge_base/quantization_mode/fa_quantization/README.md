@@ -102,5 +102,5 @@ The following is the list of FA quantization modes (for complete specifications 
 ## 5. Reference Documents
 
 1. Dao T et al. FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. NeurIPS 2022. <https://arxiv.org/abs/2205.14135>
-2. *[FA3 Quant Parameter Configuration Workflow Guide](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)*
-3. *[Quantization Modes](../README.md)*
+2. [FA3 Quant Parameter Configuration Workflow Guide](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)
+3. [Quantization Modes](../README.md)

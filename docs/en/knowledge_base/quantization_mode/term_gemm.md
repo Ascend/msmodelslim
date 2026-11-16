@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-**GEMM** (General Matrix Multiply) is the matrix multiplication $C=A\times B$, the most common class of basic operation in a Transformer. Besides $Y=X\cdot W$ in [linear layers](linear_layer_quantization/README.md), $QK^{\top}$ and the attention weighting $PV$ in Flash Attention are also matrix multiplications, and all of them reduce to GEMM. Quantization lets GEMM run with integer/low-precision inputs and is the main source of compute benefit from quantization.
+**GEMM** (General Matrix Multiply) is the matrix multiplication $C=A\times B$, the basic operation that accounts for the largest share of computation in a Transformer. Besides $Y=X\cdot W$ in [linear layers](linear_layer_quantization/README.md), $QK^{\top}$ and the attention weighting $PV$ in Flash Attention are also matrix multiplications, and all of them reduce to GEMM. Quantization lets GEMM run with integer/low-precision inputs and is the main source of compute benefit from quantization.
 
 ---
 
@@ -48,4 +48,4 @@ If only one side is quantized (such as [W8A16 Static Quantization](linear_layer_
 
 ## 5. Reference Documents
 
-1. *[Quantization Modes](README.md)*
+1. [Quantization Modes](README.md)

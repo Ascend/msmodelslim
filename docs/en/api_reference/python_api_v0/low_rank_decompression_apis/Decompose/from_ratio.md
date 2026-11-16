@@ -16,7 +16,7 @@ from_ratio(channel_ratio, excludes=None, divisor=64)
 | ------ | ------ | ------ | ------ |
 | channel_ratio | Input | The decomposition ratio used to calculate the number of channels after decomposition for the layers to be decomposed. | Required.<br>Data type: float. Range: 0-1. |
 | excludes | Input | Specifies the names of layers not to be decomposed. | Optional.<br>Data type: None, list, or tuple.<br>Default value: None. |
-| divisor | Input | Specifies the divisor for the number of channels after decomposition. For example, if set to 16, the number of channels after decomposition will be a multiple of 16. | Optional.<br>Data type: int, must be greater than 0. Default value: 64.<br>Note: Setting divisor to 1 disables this feature. |
+| divisor | Input | Specifies the multiplier for the number of channels after decomposition. For example, if set to 16, the number of channels after decomposition will be a multiple of 16. | Optional.<br>Data type: int, must be greater than 0. Default value: 64.<br>Note: Setting divisor to 1 disables this feature. |
 
 ## Sample
 

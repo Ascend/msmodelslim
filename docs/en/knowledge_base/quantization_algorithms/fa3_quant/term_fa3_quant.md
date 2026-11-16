@@ -83,7 +83,7 @@ In terms of error and applicability boundaries, attention is especially sensitiv
 ### 2.6 Usage Restrictions
 
 - Primarily aimed at attention structures compatible with the FA3 low-precision attention path, especially MLA-like architectures; ordinary attention structures cannot be assumed to have the same quantization insertion points.
-- The quantization granularity and data format of Q, K, and V must be consistent with the actual capabilities of the attention operator; lower-precision formats usually require stricter end-to-end accuracy validation.
+- The quantization granularity and data type of Q, K, and V must be consistent with the actual capabilities of the attention operator; lower-precision types usually require stricter end-to-end accuracy validation.
 
 ---
 

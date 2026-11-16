@@ -10,7 +10,7 @@
 
 **Covered steps**: analyze the new model structure in `${MODEL_PATH}/config.json` → design the `lab_practice/deepseek_v4/deepseek_v4_pro_w4a8.yaml` quantization scheme → complete the development of the `msmodelslim/model/deepseek_v4/` model adapter and the `lab_practice/deepseek_v4/` quantization YAML → environment preparation and tool installation → run the one-click quantization command → check the integrity of the `${SAVE_PATH}` quantized weights → inference deployment and accuracy evaluation with `${SAVE_PATH}` → quantization tuning (optional).
 
-**Related process**: *[Weight Quantization Usage Guide](../user_guide/usage_weight_quantization.md)*, *[One-Click Quantization Usage Guide](../user_guide/usage_one_click_quantization.md)*, *[LLM Model Integration Quantization Workflow Guide](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)*, *[Quantization Algorithm Overview](../knowledge_base/quantization_algorithms/README.md)*
+**Related process**: [Weight Quantization Usage Guide](../user_guide/usage_weight_quantization.md), [One-Click Quantization Usage Guide](../user_guide/usage_one_click_quantization.md), [LLM Model Integration Quantization Workflow Guide](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md), [Quantization Algorithm Overview](../knowledge_base/quantization_algorithms/README.md)
 
 **Model information**
 
@@ -499,7 +499,7 @@ ais_bench \
 
 **Operations**:
 
-1. Use the [sensitive linear layer analysis tool](../user_guide/usage_sensitive_linear_analysis.md) to analyze the original floating-point weights and locate the quantization-sensitive layers. For the complete tuning workflow, see the *[Quantization Accuracy Tuning Guide](../user_guide/process_quantization_precision_tuning.md)*:
+1. Use the [sensitive linear layer analysis tool](../user_guide/usage_sensitive_linear_analysis.md) to analyze the original floating-point weights and locate the quantization-sensitive layers. For the complete tuning workflow, see the [Quantization Accuracy Tuning Guide](../user_guide/process_quantization_precision_tuning.md):
 
    ```bash
    msmodelslim analyze linear \

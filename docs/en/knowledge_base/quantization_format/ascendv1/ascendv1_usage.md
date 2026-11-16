@@ -1,20 +1,20 @@
 # AscendV1 Usage Guide
 
-This guide explains how to select the **AscendV1** quantization format in msModelSlim, complete the write-to-disk step in the order **confirm mode support -> (optional) adapter adaptation for save -> configure -> run**, and deploy the artifacts to vLLM Ascend, SGLang, and MindIE. For format fields and enumerations see *[AscendV1](term_ascendv1.md)*; for an overview of the one-click quantization commands see the *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*.
+This guide explains how to select the **AscendV1** quantization format in msModelSlim, complete the write-to-disk step in the order **confirm mode support -> (optional) adapter adaptation for save -> configure -> run**, and deploy the artifacts to vLLM Ascend, SGLang, and MindIE. For format fields and enumerations see [AscendV1](term_ascendv1.md); for an overview of the one-click quantization commands see the [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md).
 
 ## 1. Scope
 
 This workflow applies to users who have already chosen **AscendV1** as the write-to-disk format, need to complete the configuration and run one-click quantization in msModelSlim, and will deploy the artifacts to an Ascend inference stack such as **vLLM Ascend**, **SGLang**, or **MindIE**.
 
-Not applicable: exporting only generic HuggingFace / vLLM `compressed-tensors` weights (use the *[compressed-tensors Usage Guide](../compressed_tensors/compressed_tensors_usage.md)* instead); multimodal generation MindIE SD scenarios (use the *[MindIE SD Usage Guide](../mindie_sd/mindie_sd_usage.md)* instead).
+Not applicable: exporting only generic HuggingFace / vLLM `compressed-tensors` weights (use the [compressed-tensors Usage Guide](../compressed_tensors/compressed_tensors_usage.md) instead); multimodal generation MindIE SD scenarios (use the [MindIE SD Usage Guide](../mindie_sd/mindie_sd_usage.md) instead).
 
 ## 2. Process Relationships and Prerequisites
 
-**Parent process**: *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*
+**Parent process**: [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)
 
 **Prerequisites**:
 
-- A compatible version of msModelSlim is installed, and the target model is quantizable according to the *[Foundation Model Support Matrix](../../model/README.md)*
+- A compatible version of msModelSlim is installed, and the target model is quantizable according to the [Foundation Model Support Matrix](../../model/README.md)
 - The target inference framework has been confirmed as vLLM Ascend, SGLang, or MindIE
 
 **Follow-up operations**: load the `save_path` artifacts according to the inference framework documentation; if the accuracy is insufficient, enter the tuning workflow.
@@ -25,7 +25,7 @@ Not applicable: exporting only generic HuggingFace / vLLM `compressed-tensors` w
 | --- | --- | --- | --- | --- |
 | Input | Floating-point model directory | Local or ModelScope/HF | Can be loaded by the target Transformers version | `from_pretrained` smoke test passes |
 | Input | Quantization YAML / best practice | The best-practice library or a custom `config` | Contains `spec.save` with `type` set to `ascendv1_saver` | Fields pass configuration protocol validation |
-| Deliverable | AscendV1 quantized weight directory | `${SAVE_PATH}` | Contains `quant_model_description.json` and weight safetensors | See the *[AscendV1](term_ascendv1.md#export-artifacts)* export artifacts |
+| Deliverable | AscendV1 quantized weight directory | `${SAVE_PATH}` | Contains `quant_model_description.json` and weight safetensors | See the [AscendV1](term_ascendv1.md#export-artifacts) export artifacts |
 
 ## 4. Process Overview
 
@@ -42,9 +42,9 @@ flowchart LR
 
 **Action**:
 
-1. Referring to *[AscendV1](term_ascendv1.md#engine-support)* Inference Engine Support, *[AscendV1](term_ascendv1.md#mode-support)* Quantization Mode Support, and the target framework version notes, confirm that the chosen quantization mode can be loaded by that stack.
+1. Referring to [AscendV1](term_ascendv1.md#engine-support) Inference Engine Support, [AscendV1](term_ascendv1.md#mode-support) Quantization Mode Support, and the target framework version notes, confirm that the chosen quantization mode can be loaded by that stack.
 2. Confirm that the inference side identifies the quantization type of each tensor through `quant_model_description.json`, and loads parameters from `quant_model_weights*.safetensors` (or sharded weights plus an index).
-3. If QuaRot is enabled and the rotation matrix must be exported, confirm that the inference framework can consume `optional/quarot.safetensors` (see *[AscendV1](term_ascendv1.md#optional-quarot)* Optional Export: QuaRot-Related Files).
+3. If QuaRot is enabled and the rotation matrix must be exported, confirm that the inference framework can consume `optional/quarot.safetensors` (see [AscendV1](term_ascendv1.md#optional-quarot) Optional Export: QuaRot-Related Files).
 
 **Output**: A decision record of the target framework, the quantization mode, and whether to export the optional artifacts.
 
@@ -93,11 +93,11 @@ spec:
 | `part_file_size` | int | `4` | Weight shard size (GB); `0` means no sharding |
 | `ext` | object | `{}` | Optional extension configuration; the current `AscendV1Saver` does not read this field, so it can be omitted for regular exports |
 
-Alternatively, use the official `quant_type` best practice directly (most LLM best practices already include `ascendv1_saver` by default). For the complete protocol see the `ascendv1_saver` field description in the *[ascendv1_saver Configuration Description](../../../api_reference/config/format/ascendv1_saver.md)*.
+Alternatively, use the official `quant_type` best practice directly (most LLM best practices already include `ascendv1_saver` by default). For the complete protocol see the `ascendv1_saver` field description in the [ascendv1_saver Configuration Description](../../../api_reference/config/format/ascendv1_saver.md).
 
 **Output**: A usable YAML configuration file path, or confirmation that the official `quant_type` one-click path is used.
 
-**Pass conditions**: `type` is `ascendv1_saver`; the chosen quantization mode falls within the support table of *[AscendV1](term_ascendv1.md#mode-support)*.
+**Pass conditions**: `type` is `ascendv1_saver`; the chosen quantization mode falls within the support table of [AscendV1](term_ascendv1.md#mode-support).
 
 ### Step 4: Run Quantization and Verify the Artifacts
 
@@ -130,7 +130,7 @@ Alternatively, use the official `quant_type` best practice directly (most LLM be
          part_file_size: 4
    ```
 
-2. Run quantization as described in the *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*:
+2. Run quantization as described in the [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md):
 
    ```bash
    msmodelslim quant \
@@ -146,7 +146,7 @@ Alternatively, use the official `quant_type` best practice directly (most LLM be
    - `quant_model_description.json` (containing `model_quant_type` and the type of each tensor)
    - `quant_model_weights.safetensors`, or sharded weights plus an index
    - Auxiliary files copied from the source model, such as `config.json` and tokenizer files
-   For the directory tree and field details see *[AscendV1](term_ascendv1.md#export-artifacts)* Export Artifacts and Deliverable Formats of Each Quantization Mode.
+   For the directory tree and field details see [AscendV1](term_ascendv1.md#export-artifacts) Export Artifacts and Deliverable Formats of Each Quantization Mode.
 4. Load this directory with the target inference framework and complete at least one generate or API request to confirm that the quantized weights load correctly and inference returns normally. This step is a quick pre-deployment validation and does not require a full accuracy evaluation.
 
 **Output**: A deployable `${SAVE_PATH}` directory and a validation log.
@@ -157,11 +157,11 @@ Alternatively, use the official `quant_type` best practice directly (most LLM be
 
 - Do not claim deployability before confirming that the target inference stack supports the AscendV1 loading conventions.
 - Do not proceed to inference evaluation when `quant_model_description.json` or the weight files are missing.
-- The quantization mode field must be consistent with the enumerations in *[AscendV1](term_ascendv1.md)*.
+- The quantization mode field must be consistent with the enumerations in [AscendV1](term_ascendv1.md).
 
 ## 7. Terminology
 
 | Term | Brief Description | Link |
 | --- | --- | --- |
-| AscendV1 | The quantization write-to-disk format on the Ascend side | *[AscendV1](term_ascendv1.md)* |
-| Quantization Format | The write-to-disk protocol between the quantization tool and the inference framework | *[Quantization Format](../README.md)* |
+| AscendV1 | The quantization write-to-disk format on the Ascend side | [AscendV1](term_ascendv1.md) |
+| Quantization Format | The write-to-disk protocol between the quantization tool and the inference framework | [Quantization Format](../README.md) |

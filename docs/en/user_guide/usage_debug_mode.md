@@ -220,7 +220,7 @@ Locate the cause of accuracy degradation by comparing activation value distribut
 
 ### 5.1 Storage Space
 
-- The debug information can occupy significant disk space, typically 10% to 50% of the model size. Ensure that sufficient storage space is available.
+- The debug information can occupy significant drive space, typically 10% to 50% of the model size. Ensure that sufficient storage space is available.
 - For ultra-large models (100B+ parameters), the debug information can reach dozens of GB.
 
 ### 5.2 Performance Impact
@@ -297,7 +297,7 @@ Q3: What Should I Do If the Debug Information Fails to Be Saved?
 
 A: Possible causes and solutions include:
 
-1. **Insufficient disk space**: Clear the disk space or change the save path.
+1. **Insufficient drive space**: Clear the drive space or change the save path.
 2. **Permission issues**: Ensure that you have write permissions for the save path.
 3. **Invalid path**: Ensure that the path specified by the `save_path` parameter is valid.
 

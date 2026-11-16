@@ -26,7 +26,7 @@ The method exploits the structure of the non-uniform lattice of low-precision fl
 
 The numerical lattice of MXFP4 is not uniformly spaced along the real axis; especially at the high end of the representable range, the spacing between adjacent FP4 values increases noticeably. Mapping the block maximum exactly to the format maximum therefore does not always minimize the error of the whole block. Four Over Six constructs two scale candidates for each block: one scales the maximum with a near-full-range target close to 6, and the other scales it with a more conservative target close to 4.
 
-The two candidates are passed through the same FP4 encoding/decoding and their in-block MSE is compared directly. Scale-to-6 uses the dynamic range more fully, but the coarse high-end lattice may make a group of elements near the maximum incur a larger error; Scale-to-4 shifts where these elements land on the FP4 lattice and sometimes obtains a denser or more suitable effective representation at the cost of part of the nominal range. The algorithm ultimately just selects the better-reconstructing scale path for each block without changing the underlying FP4 data format.
+The two candidates are passed through the same FP4 encoding/decoding and their in-block MSE is compared directly. Scale-to-6 uses the dynamic range more fully, but the coarse high-end lattice may make a group of elements near the maximum incur a larger error; Scale-to-4 shifts where these elements land on the FP4 lattice and sometimes obtains a denser or more suitable effective representation at the cost of part of the nominal range. The algorithm ultimately just selects the better-reconstructing scale path for each block without changing the underlying FP4 data type.
 
 ### 2.3 Mathematical Description
 
@@ -56,7 +56,7 @@ $$
 s^* = \begin{cases} \tilde{s}_a & \text{if } \text{MSE}_a \le \text{MSE}_b \\ \tilde{s}_b & \text{otherwise} \end{cases}
 $$
 
-Exponent rounding strategy (e8m0 format): when the mantissa is > 0.5, the exponent is incremented by 1; when the mantissa is < 0.5, the exponent is left unchanged; when the mantissa == 0.5, the banker's rounding rule is applied (an even exponent is incremented and an odd one is not).
+Exponent rounding strategy (e8m0 format): when the mantissa is > 0.5, the exponent is incremented by 1; when the mantissa is < 0.5, the exponent is left unchanged; when the mantissa == 0.5, the banker's rounding rule is applied (round to even, so an even exponent is incremented and an odd one is not).
 
 Let the representable FP4 set be $\mathcal F$ and the e8m0 scale projection be $P_E(\cdot)$. The two candidates can be written more generally as:
 

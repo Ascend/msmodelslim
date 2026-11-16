@@ -148,9 +148,9 @@ Reference implementations:
 
 | Term | Brief Description | Link |
 | --- | --- | --- |
-| Expert Parallelism (EP) | Routed experts are sharded by rank, introducing `local_only` modules held only by the current rank | *[Expert Parallelism](term_expert_parallelism.md)* |
-| Data Parallelism (DP) | Each rank holds a complete model replica, the calibration data is split by rank, and the statistics of shared modules are reduced across devices | *[Data Parallelism](../data_parallelism/term_data_parallelism.md)* |
-| Distributed Task Scheduler (DTS) | On top of DP completeness, it schedules algorithm subtasks across devices and must avoid tasks that depend on `local_only` modules | *[Distributed Task Scheduler](../distributed_task_scheduler/term_distributed_task_scheduler.md)* |
+| Expert Parallelism (EP) | Routed experts are sharded by rank, introducing `local_only` modules held only by the current rank | [Expert Parallelism](term_expert_parallelism.md) |
+| Data Parallelism (DP) | Each rank holds a complete model replica, the calibration data is split by rank, and the statistics of shared modules are reduced across devices | [Data Parallelism](../data_parallelism/term_data_parallelism.md) |
+| Distributed Task Scheduler (DTS) | On top of DP completeness, it schedules algorithm subtasks across devices and must avoid tasks that depend on `local_only` modules | [Distributed Task Scheduler](../distributed_task_scheduler/term_distributed_task_scheduler.md) |
 
 ## 9. Interface Documentation List
 
@@ -159,7 +159,7 @@ Reference implementations:
 | `resolve_expert_ep_range` / `_get_expert_range` | Local expert range resolution: a single process returns all experts, a multi-process run shards contiguously by `world_size`, and a non-divisible count raises an error | [common/utils.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/common/utils.py) |
 | `DistHelper` | Module topology classification: `is_shared` / `is_local_only` / `get_shared_modules_slice` | [dist_helper.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_helper.py) |
 | `DistributedAscendV1Saver` | Distributed saving: `local_only` modules are written exclusively, shared modules are assigned by role, and rank 0 merges the results | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
-| `--device npu --device_id 0 1 ...` | Multi-device quantization entry (EP takes effect after distributed initialization) | *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)* |
+| `--device npu --device_id 0 1 ...` | Multi-device quantization entry (EP takes effect after distributed initialization) | [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md) |
 
 ## 10. Product Form and Resource Constraints
 

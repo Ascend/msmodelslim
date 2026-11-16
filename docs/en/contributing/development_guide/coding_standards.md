@@ -49,6 +49,8 @@ git commit -m "your message"
 
 If the check passes, the commit succeeds; if it fails, the commit is blocked.
 
+---
+
 ## Check Items (Reference)
 
 The following table lists the content checked by pre-commit. If a check fails, fix the issue according to the prompt.
@@ -75,17 +77,21 @@ The following table lists the content checked by pre-commit. If a check fails, f
 | bandit | Scans for security vulnerabilities (such as hardcoded passwords and dangerous functions). |
 | typos | Checks spelling (covers all source files, including Python code). |
 
+---
+
 ## Allowlist Configuration
 
 When a check tool falsely reports a word as a spelling error, you can add it to the allowlist.
 
->[!NOTE]
+> [!NOTE]
 >
 >Allowlist changes must be submitted with the PR, and the reason must be explained in the PR description.
 
 - typos allowlist: edit `pre-commit/typos.toml`
 
 - codespell allowlist: in `.pre-commit-config.yaml`, locate `-L` of the codespell hook and append the falsely reported word
+
+---
 
 ## FAQs
 

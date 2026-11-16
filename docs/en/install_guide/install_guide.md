@@ -12,11 +12,11 @@
 
 ### 2.1 Online Installation
 
-If your device has Internet access, you can complete the download and installation of the tool automatically with a single command. See the MindStudio [Download](https://www.hiascend.com/en/developer/software/mindstudio/download?versionId=142&ids=45%2C26958bcc909e4cd48fa56d4c4a43ebec%2C90%2C49) page on the Ascend Community, select the corresponding CANN version, and choose "Online" as the installation method. The system will guide you through the subsequent operations.
+If your device has Internet access, you can complete the download and installation of the tool automatically with a single command. See the MindStudio [Download](https://www.hiascend.com/en/developer/software/mindstudio/download?versionId=152&ids=45%2Cb1e62037594d4e5c9a0fd797ff490006%2C129%2C49%2C) page on the Ascend Community, select the corresponding CANN version, and choose "Online" as the installation method. The system will guide you through the subsequent operations.
 
 ### 2.2 Offline Installation
 
-For devices in environments without external network access, such as enterprise intranets, first download the complete offline installation package on a machine with network access, and then transfer it to the target device for installation. See the MindStudio [Download](https://www.hiascend.com/en/developer/software/mindstudio/download?versionId=145&ids=45%2C26958bcc909e4cd48fa56d4c4a43ebec%2C90%2C50%2C) page on the Ascend Community, select the corresponding CANN version, and choose "Offline" as the installation method to obtain the corresponding installation package and operation instructions.
+For devices in environments without external network access, such as enterprise intranets, first download the complete offline installation package on a machine with network access, and then transfer it to the target device for installation. See the MindStudio [Download](https://www.hiascend.com/en/developer/software/mindstudio/download?versionId=152&ids=45%2Cb1e62037594d4e5c9a0fd797ff490006%2C129%2C50%2C) page on the Ascend Community, select the corresponding CANN version, and choose "Offline" as the installation method to obtain the corresponding installation package and operation instructions.
 
 ### 2.3 Source Installation
 
@@ -26,8 +26,8 @@ If you want to use the features of the latest code, or modify the source code to
 
 Source code compilation uniformly uses the MindStudio standard build environment.
 
-- For daily development or when using a released image, see *[MindStudio Tool Development Environment Setup Guide](https://gitcode.com/Ascend/msot/blob/26.2.0/docs/en/common/dev_env_setup.md)*.
-- When you need to reproduce the environment from the base operating system, perform source build verification, or run unit test verification, you must refer to the *[MindStudio Unified Build Image Creation Guide](https://gitcode.com/Ascend/msot/blob/26.2.0/docs/en/common/docker_image_build_guide.md)* and build the environment image on site from the openEuler base image.
+- For daily development or when using a released image, see the [MindStudio Tool Development Environment Setup Guide](https://gitcode.com/Ascend/msot/blob/master/docs/en/common/dev_env_setup.md).
+- When you need to reproduce the environment from the base operating system, perform source build verification, or run unit test verification, you must refer to the [MindStudio Unified Build Image Creation Guide](https://gitcode.com/Ascend/msot/blob/master/docs/en/common/docker_image_build_guide.md) and build the environment image on site from the openEuler base image.
 
 The source compilation and unit test commands in the rest of this document are all executed in the specified image container or in the container of the environment image built on site. The CANN package version, GCC version, and Python version are subject to the Unified Build Image Creation Guide and are not duplicated in this repository.
 
@@ -104,15 +104,15 @@ If sparse quantization and compression are required, install CANN 8.2.RC1 or lat
 
    `chmod -R 550 build`
 
->[!NOTE]
+> [!NOTE]
 >
 > 1. When using the `msModelSlim` command-line tool, do not run commands directly in the source code directory of `msModelSlim`. This may cause command execution failure due to conflicts between the source code path and the installation path when Python imports modules.
-> 2. If an error occurs during the installation of `msModelSlim`, first refer to *[FAQs](../support/faq.md)* to find a solution. If the problem remains unresolved, you are welcome to submit an [Issue](https://gitcode.com/Ascend/msmodelslim/issues) with your runtime environment and complete error logs, and we will troubleshoot it as soon as possible.
+> 2. If an error occurs during the installation of `msModelSlim`, first refer to [FAQs](../support/faq.md) to find a solution. If the problem remains unresolved, you are welcome to submit an [Issue](https://gitcode.com/Ascend/msmodelslim/issues) with your runtime environment and complete error logs, and we will troubleshoot it as soon as possible.
 > 3. Currently, only Atlas inference products support compression after sparse quantization.
 
 ## 3. Installation Verification
 
-After the installation is complete, run the following command to verify whether the tools are installed successfully:
+After the installation is complete, run the following command to verify whether the tool is installed successfully:
 
 ```shell
 msmodelslim --help
@@ -130,7 +130,7 @@ You can perform uninstallation by following these steps:
    curl -O https://inst.obs.cn-north-4.myhuaweicloud.com/26.2.0/ms_install.py
    ```
 
-   >[!NOTE]
+   > [!NOTE]
    >
    > - An internet connection is required for downloading. If the environment does not allow internet access or is offline, download the script in an environment with internet access first and then copy it to the target device.
    > - If the command does not respond or errors such as connection failure or SSL certificate errors occur, see [FAQs](https://www.hiascend.com/developer/blog/details/02176213671719317003).
@@ -152,4 +152,4 @@ You can perform uninstallation by following these steps:
 ## 5. Upgrade
 
 Upgrade means "uninstall first and then install". Directly run the installation command, and the tool will automatically uninstall the old version and guide you through the overwrite installation.<br>
-You can run the `pip show msmodelslim` command to view the version information of the current environment, and then select the version to upgrade to. When upgrading, pay attention to the version compatibility. For details, see *[Release Notes](https://gitcode.com/Ascend/release-management/blob/master/MindStudio/26.2.0/release_notes.md)*.
+You can run the `pip show msmodelslim` command to view the version information of the current environment, and then select the version to upgrade to. When upgrading, pay attention to the version compatibility. For details, see [Release Notes](https://gitcode.com/Ascend/release-management/blob/master/MindStudio/26.2.0/release_notes_en.md).

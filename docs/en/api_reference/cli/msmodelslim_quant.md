@@ -4,7 +4,7 @@
 
 `msmodelslim quant` is the one-click quantization command. It loads the original model weights, performs weight and activation quantization, and exports deployable quantized weights and a description file. There are two sources of configuration: use `--quant_type` to automatically match a best-practice YAML in `lab_practice` by model and quantization type; or use `--config` to specify a user YAML directly (supporting `modelslim_v1`, multimodal, and the `modelslim_convert` pure weight-conversion protocols).
 
-Command boundaries: the supported devices are `npu` and `cpu`, and multi-device runs specify the index list with `--device_id`; scenario tag matching and dumping the `--debug` debug context to disk are also supported. For operational steps such as calibration data preparation and deployment, see *[One-Click Quantization Usage Guide](../../user_guide/usage_one_click_quantization.md)*; for the fields of the quantization task YAML, see *[Quantization Task Configuration Reference Navigation](../config/quant/README.md)*, and for the auto-tuning configuration, see *[Auto Tuning Configuration Reference Navigation](../config/tuning/README.md)*. For more related items, see [Referenced Configurations](#5-referenced-configurations).
+Command boundaries: the supported devices are `npu` and `cpu`, and multi-device runs specify the index list with `--device_id`; scenario tag matching and dumping the `--debug` debug context to disk are also supported. For operational steps such as calibration data preparation and deployment, see [One-Click Quantization Usage Guide](../../user_guide/usage_one_click_quantization.md); for the fields of the quantization task YAML, see [Quantization Task Configuration Reference Navigation](../config/quant/README.md), and for the auto-tuning configuration, see [Auto Tuning Configuration Reference Navigation](../config/tuning/README.md). For more related items, see [Referenced Configurations](#5-referenced-configurations).
 
 ## 2. Command Format
 
@@ -65,15 +65,15 @@ Symbols:
 
 ## 5. Referenced Configurations
 
-For the protocol overview, see *[Quantization Task Configuration Reference Navigation](../config/quant/README.md)*; if the configuration is used as an auto-tuning template, see also *[Auto Tuning Configuration Reference Navigation](../config/tuning/README.md)*.
+For the protocol overview, see [Quantization Task Configuration Reference Navigation](../config/quant/README.md); if the configuration is used as an auto-tuning template, see also [Auto Tuning Configuration Reference Navigation](../config/tuning/README.md).
 
 | Related Parameter | Configuration Name | Reference Relationship | Configuration Document |
 |----------|----------|----------|----------|
-| `--config` | `modelslim_v1` | Loads the entire quantization YAML | *[modelslim_v1 Configuration Reference](../config/quant/modelslim_v1.md)* |
-| `--config` | `multimodal_vlm_modelslim_v1` | Multimodal understanding model quantization YAML | *[multimodal_vlm_modelslim_v1 Configuration Reference](../config/quant/multimodal_vlm_modelslim_v1.md)* |
-| `--config` | `multimodal_sd_modelslim_v1` | Multimodal generation model quantization YAML | *[multimodal_sd_modelslim_v1 Configuration Reference](../config/quant/multimodal_sd_modelslim_v1.md)* |
-| `--config` | `modelslim_convert` | Weight conversion YAML; `--model_type` is not needed | *[modelslim_convert Configuration Reference](../config/quant/modelslim_convert.md)* |
-| `--quant_type` | `lab_practice` best-practice YAML | Matched by model and quantization type | *[One-Click Quantization Usage Guide](../../user_guide/usage_one_click_quantization.md)* |
+| `--config` | `modelslim_v1` | Loads the entire quantization YAML | [modelslim_v1 Configuration Reference](../config/quant/modelslim_v1.md) |
+| `--config` | `multimodal_vlm_modelslim_v1` | Multimodal understanding model quantization YAML | [multimodal_vlm_modelslim_v1 Configuration Reference](../config/quant/multimodal_vlm_modelslim_v1.md) |
+| `--config` | `multimodal_sd_modelslim_v1` | Multimodal generation model quantization YAML | [multimodal_sd_modelslim_v1 Configuration Reference](../config/quant/multimodal_sd_modelslim_v1.md) |
+| `--config` | `modelslim_convert` | Weight conversion YAML; `--model_type` is not needed | [modelslim_convert Configuration Reference](../config/quant/modelslim_convert.md) |
+| `--quant_type` | `lab_practice` best-practice YAML | Matched by model and quantization type | [One-Click Quantization Usage Guide](../../user_guide/usage_one_click_quantization.md) |
 
 ## 6. Environment Variables
 
@@ -157,7 +157,7 @@ msmodelslim quant \
   --config ${CONFIG_PATH}
 ```
 
-`${MODEL_PATH}` is the source weight directory, `${SAVE_PATH}` is the conversion output directory, and `${CONFIG_PATH}` is the conversion YAML. For the configuration protocol and fields, see *[modelslim_convert Configuration Reference](../config/quant/modelslim_convert.md)*; for the operational steps and an example YAML, see *[Weight Conversion Usage Guide](../../knowledge_base/ptq/convert/usage_weight_conversion.md)*.
+`${MODEL_PATH}` is the source weight directory, `${SAVE_PATH}` is the conversion output directory, and `${CONFIG_PATH}` is the conversion YAML. For the configuration protocol and fields, see [modelslim_convert Configuration Reference](../config/quant/modelslim_convert.md); for the operational steps and an example YAML, see [Weight Conversion Usage Guide](../../knowledge_base/ptq/convert/usage_weight_conversion.md).
 
 ### 7.7 Weight Conversion with an Explicitly Specified Device
 

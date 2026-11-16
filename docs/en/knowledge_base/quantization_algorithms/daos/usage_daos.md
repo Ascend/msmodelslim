@@ -4,7 +4,7 @@
 
 This guide is intended for users who need to use the [DAOS Low-Bit Quantization Solution](./term_daos.md). DAOS is a joint low-bit solution for multimodal **generative** models. By chaining `oasq` (outlier-aware smoothing) with `trainable_linear_quant` (TLQ, trainable linear quantization), it targets extremely low-bit scenarios such as W4A4 / MXFP; when further accelerating Attention inference is needed, `fa3_quant` can additionally be configured for FA quantization.
 
-This guide explains the chaining order, stage goals, and constraints. For each algorithm's recommended starting configuration and field tuning, see the [OASQ Outlier-Aware Smooth Quantization Algorithm Usage Guide](../oasq/usage_oasq.md), the [Trainable Linear Quantization Algorithm Usage Guide](../trainable_linear_quant/usage_trainable_linear_quant.md), and the [FA3 Quant Parameter Configuration Workflow Guide](../fa3_quant/usage_fa3_quant.md) respectively; they are not repeated here.
+This guide explains the chaining order, stage goals, and constraints. For each algorithm's recommended starting configuration and field tuning, see the [OASQ Outlier-Aware Smooth Quantization Algorithm Usage Guide](../oasq/usage_oasq.md), the [Trainable Linear Quant Trainable Linear Quantization Algorithm Usage Guide](../trainable_linear_quant/usage_trainable_linear_quant.md), and the [FA3 Quant Parameter Configuration Workflow Guide](../fa3_quant/usage_fa3_quant.md) respectively; they are not repeated here.
 
 - **Applicable**: you need OASQ + TLQ to jointly recover low-bit accuracy; the task protocol is `multimodal_sd_modelslim_v1` (or the corresponding multimodal generative task protocol).
 - **Not applicable**: a single calibration pass is sufficient and OASQ/TLQ is not needed; the target dtype/scope/method has no corresponding TLQ kernel; the adapter cannot provide OASQ-fusible subgraphs and default probing does not apply either; or the device memory/duration cannot support block-level training.
@@ -66,7 +66,7 @@ Key details of each stage are as follows:
 1. If the target model already has a `lab_practice` recipe containing the complete DAOS chain, prefer reusing it.
 2. Otherwise, complete adaptation and configuration authoring in the order **OASQ → TLQ → optional FA3**:
    - **OASQ**: see the [OASQ Outlier-Aware Smooth Quantization Algorithm Usage Guide](../oasq/usage_oasq.md) to complete subgraph adaptation and write `oasq`.
-   - **TLQ**: see the [Trainable Linear Quantization Algorithm Usage Guide](../trainable_linear_quant/usage_trainable_linear_quant.md) to complete adaptation and write `trainable_linear_quant`; configure `operations` according to the path chosen in Step 1; keep `strategies[].qconfig` consistent with the final deployment bit width. If `trainable_smooth` is selected, confirm the subgraph capability according to that guide.
+   - **TLQ**: see the [Trainable Linear Quant Trainable Linear Quantization Algorithm Usage Guide](../trainable_linear_quant/usage_trainable_linear_quant.md) to complete adaptation and write `trainable_linear_quant`; configure `operations` according to the path chosen in Step 1; keep `strategies[].qconfig` consistent with the final deployment bit width. If `trainable_smooth` is selected, confirm the subgraph capability according to that guide.
    - **FA3**: if Step 1 decided to enable FA, see the [FA3 Quant Parameter Configuration Workflow Guide](../fa3_quant/usage_fa3_quant.md) to complete adaptation, and append `fa3_quant` after TLQ.
 3. For field types and constraints, see the related documents in Chapter 6.
 4. Verify the chaining constraints:
@@ -84,7 +84,7 @@ Key details of each stage are as follows:
 
 1. Start quantization using the configuration from Step 2.
 2. If OASQ appears to be a no-op, first troubleshoot the adaptation and `include`/`exclude` according to the [OASQ Outlier-Aware Smooth Quantization Algorithm Usage Guide](../oasq/usage_oasq.md), then continue with the subsequent training-related parameter adjustments.
-3. **When memory is insufficient**, try the following adjustments first, changing only one item at a time; for details see the [Trainable Linear Quantization Algorithm Usage Guide](../trainable_linear_quant/usage_trainable_linear_quant.md):
+3. **When memory is insufficient**, try the following adjustments first, changing only one item at a time; for details see the [Trainable Linear Quant Trainable Linear Quantization Algorithm Usage Guide](../trainable_linear_quant/usage_trainable_linear_quant.md):
    - Increase `train_config.gradient_accumulate_steps` to reduce peak memory; this change alters the effective update frequency.
    - Narrow the low-bit range that needs training in the TLQ `strategies`, for example by adding `exclude` entries or moving some modules to a higher-bit-width strategy.
    - If necessary, temporarily lower `train_config.iters` to first verify the chain runs; restore a reasonable number of iterations for formal accuracy runs.
@@ -114,7 +114,7 @@ Key details of each stage are as follows:
 | --- | --- | --- |
 | DAOS Low-Bit Quantization Solution | The solution's definition, principle, properties, and limitations. | [DAOS Low-Bit Quantization Solution Terminology Entry](./term_daos.md) |
 | OASQ | DAOS's upstream outlier suppression. | [OASQ Outlier-Aware Smooth Quantization Algorithm Terminology Entry](../oasq/term_oasq.md) |
-| Trainable Linear Quant | DAOS's trainable linear quantization stage. | [Trainable Linear Quantization Algorithm Terminology Entry](../trainable_linear_quant/term_trainable_linear_quant.md) |
+| Trainable Linear Quant | DAOS's trainable linear quantization stage. | [Trainable Linear Quant Trainable Linear Quantization Algorithm Terminology Entry](../trainable_linear_quant/term_trainable_linear_quant.md) |
 | FA3 Quant | Optional Attention FA quantization. | [FA3 Quant Attention Activation Quantization Algorithm Terminology Entry](../fa3_quant/term_fa3_quant.md) |
 
 ## 6. Related Documents

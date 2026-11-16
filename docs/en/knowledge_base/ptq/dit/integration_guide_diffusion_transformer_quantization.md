@@ -9,7 +9,7 @@ Applicable scenarios:
 - The target multimodal generation model is not in the official support matrix, so a new `model_type` must be added and the quantization chain connected;
 - An existing `model_type` needs to be extended to support new quantization modes (such as extending from W8A8 MXFP8 to W4A4 MXFP4, or differentiated quantization for dual experts).
 
-To check whether a model is already in the support list see the *[Foundation Model Support Matrix](../../model/README.md)*; for standard DiT quantization operations see the *[DiT Quantization Usage Guide](usage_diffusion_transformer_quantization.md)*; for pure-text LLM integration see the *[LLM Integration Guide](../llm/integration_guide_large_language_model_quantization.md)*; for multimodal understanding model integration see the *[VLM Integration Guide](../vlm/integration_guide_vision_transformer_quantization.md)*.
+To check whether a model is already in the support list see the [Foundation Model Support Matrix](../../model/README.md); for standard DiT quantization operations see the [DiT Quantization Usage Guide](usage_diffusion_transformer_quantization.md); for pure-text LLM integration see the [LLM Integration Guide](../llm/integration_guide_large_language_model_quantization.md); for multimodal understanding model integration see the [VLM Integration Guide](../vlm/integration_guide_vision_transformer_quantization.md).
 
 ## 2. Inputs and Deliverables
 
@@ -253,5 +253,5 @@ Add configuration items in `config/config.ini` (splitting into independent `mode
 | DiT Quantization Usage Guide | The complete standard DiT model quantization workflow, configuration protocol, and out-of-the-box examples | [DiT Quantization Usage Guide](usage_diffusion_transformer_quantization.md) |
 | multimodal_sd_modelslim_v1 Configuration Description | Field descriptions for multimodal generation configuration such as `process`/`save`/`multimodal_sd_config` | [multimodal_sd_modelslim_v1 Configuration Description](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md) |
 | mindie_format_saver Configuration Description | MindIE SD save format and multi-expert write-to-disk description | [mindie_format_saver Configuration Description](../../../api_reference/config/format/mindie_format_saver.md) |
-| One-Click Quantization Usage Guide | One-click quantization CLI entry point and complete command parameter reference | *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)* |
+| One-Click Quantization Usage Guide | One-click quantization CLI entry point and complete command parameter reference | [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md) |
 | Quantization Algorithm Overview | Detailed description of micro-scaling floating point, online rotation, and the various quantization algorithms | [Quantization Algorithm Overview](../../quantization_algorithms/README.md) |

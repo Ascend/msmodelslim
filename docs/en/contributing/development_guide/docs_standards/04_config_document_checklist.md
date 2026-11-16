@@ -1,6 +1,6 @@
 # Configuration Document Checklist
 
-> Used to check configuration documents that are created or reworked based on the *[Configuration Document Template](04_config_document_template.md)*, applicable to task configurations (including `PracticeConfig`), service specifications, and the configurations that reference them. For the general check items, see the *[Common Checklist](00_common_checklist.md)*; for the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the *[msModelSlim Documentation Standards](./README.md)*. The following are the check items specific to the configuration document type, separated into tables by severity level.
+> Used to check configuration documents that are created or reworked based on the [Configuration Document Template](04_config_document_template.md), applicable to task configurations (including `PracticeConfig`), service specifications, and the configurations that reference them. For the general check items, see the [Common Checklist](00_common_checklist.md); for the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the [msModelSlim Documentation Standards](./README.md). The following are the check items specific to the configuration document type, separated into tables by severity level.
 
 ## 1. Check Items
 
@@ -27,4 +27,4 @@
 
 ## 2. Usage Notes
 
-- **Validation scope**: configuration documents written based on the *[Configuration Document Template](04_config_document_template.md)*, stored in `docs/zh/api_reference/config/`; documents produced by the generator carry a `generated-by` marker and are not edited manually.
+- **Validation scope**: configuration documents written based on the [Configuration Document Template](04_config_document_template.md), stored in `docs/en/api_reference/config/`; documents produced by the generator carry a `generated-by` marker and are not edited manually.

@@ -6,7 +6,7 @@
 
 **Covered steps**: model integration and adaptation → quantization scheme design → weight quantization → accuracy evaluation
 
-**Related process**: *[DiT Model Integration Quantization Workflow Guide](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)*, *[One-Click Quantization Usage Guide](../user_guide/usage_one_click_quantization.md)*
+**Related process**: [DiT Model Integration Quantization Workflow Guide](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md), [One-Click Quantization Usage Guide](../user_guide/usage_one_click_quantization.md)
 
 ## 2. Model Information
 
@@ -31,7 +31,7 @@
 | Item | Version or Configuration |
 | ----------- | -------------------------------------------------- |
 | Product form | Ascend 950PR&950DT products (restricted: floating-point inference is limited to this hardware form) |
-| Inference repository | The Modelers community Wan2.2 model inference repository. For quantization, the recommended version is `git checkout 38fb8eb13a018cca316678930720eafa446c4387`; for inference, the latest version is recommended. For the repository, see the *[Wan2.2 inference repository](https://modelers.cn/models/MindIE/wan2.2)* |
+| Inference repository | The Modelers community Wan2.2 model inference repository. For quantization, the recommended version is `git checkout 38fb8eb13a018cca316678930720eafa446c4387`; for inference, the latest version is recommended. For the repository, see the [Wan2.2 inference repository](https://modelers.cn/models/MindIE/wan2.2) |
 | CANN        | 9.1.0 |
 | PyTorch     | 2.9.0 |
 | TorchNPU    | 2.9.0 |
@@ -50,7 +50,7 @@
 | --- | -------------------- | ------------------------ | -------------------------- | --------------------------------- |
 | Input | Wan2.2 floating-point model weights | `${MODEL_PATH}` | Official open-source format, containing the weights of the dual DiT experts, the VAE, the text encoder, the tokenizer, and config.json | Can be loaded normally through the official inference repository, and 720P video generation is free of anomalies |
 | Deliverable | Wan2.2 W4A4F4 quantized weights | `${SAVE_PATH}` | msModelSlim quantization export format, containing `quant_model_description.json` and the quantized weights of both experts | Can be loaded normally by MindIE SD and generates videos successfully |
-| Deliverable | Quantization best practice | [`lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml`](../../../lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml) | Complies with the *[multimodal_sd_modelslim_v1 Configuration Reference](../api_reference/config/quant/multimodal_sd_modelslim_v1.md)* | The quantization configuration file is specified with the `--config` command-line parameter |
+| Deliverable | Quantization best practice | [`lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml`](../../../lab_practice/wan2_2/wan2_2_w4a4f4_mxfp_t2v.yaml) | Complies with the [multimodal_sd_modelslim_v1 Configuration Reference](../api_reference/config/quant/multimodal_sd_modelslim_v1.md) | The quantization configuration file is specified with the `--config` command-line parameter |
 | Input | Accuracy evaluation set | `${EVAL_DATA_PATH}` | The standard VBench evaluation set | Both sides of the comparison use exactly the same data and random seed |
 | Deliverable | Accuracy report | `./outputs/default/{timestamp}/` | Generated video samples (FP vs. quantized comparison) and a table of objective metric results such as VBench | Meets the preset acceptance threshold, with no severe image quality problems |
 
@@ -151,7 +151,7 @@ The Wan2.2 adapter base class `Wan2_2BaseModelAdapter` implements the common log
 **Output**: the adapter code is written, the model name is registered, and msModelSlim can recognize `Wan2.2-T2V-A14B`.
 **Record**: the list of adapter code files (`base_model_adapter.py`, `expert_sub_adapter.py`, `constants.py`, `t2v/model_adapter.py`, `t2v/loader.py`) and the `config.ini` registration configuration.
 
-**Reference**: *[DiT Model Integration Quantization Workflow Guide](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)*
+**Reference**: [DiT Model Integration Quantization Workflow Guide](../knowledge_base/ptq/dit/integration_guide_diffusion_transformer_quantization.md)
 
 ### Step 2: Quantization Scheme Design
 
@@ -374,13 +374,13 @@ torchrun --nproc_per_node=4 --master_port=23459 vbench.py \
 | Number of samples / subset strategy | The 1% subset of VBench-1.0-mini contains 11 prompts in total; 1 video is generated per prompt, giving 11 video samples in total |
 | Metrics and direction | VBench Quality, VBench Semantic |
 | Acceptance threshold | The absolute score drops of both VBench Quality and Semantic must be < 1pp (that is, `\|FP score − quantized score\| < 1pp`); the judgment is made item by item, and if any item exceeds the threshold, the case fails |
-| Randomness control | Fixed random seed seed=0, fixed sampling steps=40, fixed resolution 720P, and fixed frame count 81 frames; all inference parameters are exactly identical between the two sides of the comparison |
+| Randomness control | Fixed random seed (seed=0), fixed sampling steps=40, fixed resolution 720P, and fixed frame count 81 frames; all inference parameters are exactly identical between the two sides of the comparison |
 
 ### 6.2 Reproducible Procedure
 
 **Data preparation**:
 
-The VBench-1.0-mini dataset has been prepared in Step 5 (the `final_mini_dataset_0_01/` directory). For the VBench evaluation data preparation, the small-model weight cache download, and the AISBench environment installation, see the *[AISBench VBench evaluation documentation](https://github.com/AISBench/benchmark/blob/master/docs/source_en/extended_benchmark/lmm_generate/vbench.md)*.
+The VBench-1.0-mini dataset has been prepared in Step 5 (the `final_mini_dataset_0_01/` directory). For the VBench evaluation data preparation, the small-model weight cache download, and the AISBench environment installation, see the [AISBench VBench evaluation documentation](https://github.com/AISBench/benchmark/blob/master/docs/source_en/extended_benchmark/lmm_generate/vbench.md).
 
 **Key evaluation configuration points**:
 

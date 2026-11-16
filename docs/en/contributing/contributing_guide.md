@@ -1,6 +1,6 @@
 # Contributing to MindStudio ModelSlim
 
-Thank you for considering contributing to MindStudio ModelSlim. We welcome contributions in any form, whether you are fixing bugs, adding features, improving documentation, or sharing feedback and suggestions. Whether you are an experienced developer or participating in an open-source project for the first time, your help is invaluable.
+Thank you for considering contributing to MindStudio ModelSlim. We welcome contributions in any form, whether you are fixing bugs, adding features, improving documentation, or sharing feedback and suggestions. Whether you are an experienced developer or participating in an open-source project for the first time, your help is invaluable. This document explains how to claim Issues, submit and review Pull Requests, and the build and test requirements.
 
 There are many ways to support the project:
 
@@ -29,6 +29,8 @@ Follow our PR [template and guidelines](https://gitcode.com/Ascend/msmodelslim/b
 
 See the developer documentation [LLM Integration Guide](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md).
 
+When contributing quantization / compression / analysis algorithms to the V1 framework, additionally follow the [Algorithm Contribution Guide](algorithm_contribution_guide.md) (first justify the scenario advantage through an RFC, then merge the code).
+
 See the developer documentation [Coding Standards](development_guide/coding_standards.md).
 
 Before submitting code, you must pass the pre-commit check locally (for first-time development, run `pre-commit install`; for details, see [Coding Standards](development_guide/coding_standards.md)).
@@ -37,7 +39,7 @@ For changes that affect user-facing features, update the corresponding user and 
 
 Add or update a test in the continuous integration (CI) workflow. If no test is required, provide the reason.
 
-After you finish the preceding preparations, submit the code and enter the `compile` command to trigger the automated build pipeline.
+After you finish the preceding preparations, submit the code and comment `compile` in the Pull Request to trigger the automated build pipeline.
 
 After the pipeline builds successfully, contact the [repository management and maintenance members](https://gitcode.com/Ascend/msmodelslim/member) to request review and merge.
 
@@ -63,7 +65,7 @@ After you submit the PR, comment `compile` to trigger the PR pipeline. The platf
 
 ### 3.1 PR Title and Category
 
-Only PRs of specific types will be reviewed. Add a proper prefix before your PR title to specify the PR type. The types include:
+Only PRs of specific types will be reviewed. Add a proper prefix before your PR title to specify the PR type. Use one of the following categories:
 
 - `[Feature]`: code related to new features
 - `[Bugfix]`: code related to bug fixes
@@ -73,7 +75,7 @@ Only PRs of specific types will be reviewed. Add a proper prefix before your PR 
 ### 3.2 Commit Requirement
 
 To keep the commit history clean, make sure each PR contains only one commit.
-If your PR currently contains multiple commits, merge them into a single commit before submitting by using one of the following methods. Although GitCode provides the Squash merge option for PR merging, it is still considered a best practice to sort PRs into a single concise commit in advance.
+If your PR currently contains multiple commits, merge them into a single commit before submitting by using one of the following methods (including but not limited to). Although GitCode provides the Squash merge option for PR merging, preparing the PR as a single concise commit in advance is still considered a best practice and is highly appreciated by committers.
 
 #### 3.2.1 Method 1: (Recommended) Interactive Rebase
 
@@ -90,8 +92,8 @@ git rebase -i HEAD~N
 ```
 
 - In the opened editor:
-    - Keep `pick` for the first commit.
-    - Change `pick` before the remaining commits to `squash` or `s`.
+  - Keep `pick` for the first commit.
+  - Change `pick` before the remaining commits to `squash` or `s`.
 - Save and close the editor. A new window will open for you to write a concise and meaningful combined commit message.
 - Force-push the updated branch, but only to your own feature branch:
 
@@ -102,16 +104,16 @@ git push --force-with-lease origin your-branch-name
 #### 3.2.2 Method 2: Reset + New Commit
 
 ```bash
-# Obtain the latest target branch (for example, master) to be merged.
+# Obtain the latest target branch (for example, master) to be merged
 git fetch origin master
 
-# Soft-reset to the main branch. This operation preserves all modifications and moves them back to the staging area.
+# Soft-reset to the main branch. This operation preserves all modifications in the staging area
 git reset --soft origin/master
 
-# Commit all changes as a new commit.
+# Commit all changes as a new commit
 git commit -m "feat: concise description of your change"
 
-# Force-push to update the PR branch.
+# Force-push to update the PR branch
 git push --force-with-lease origin your-branch-name
 
 ```
@@ -130,4 +132,4 @@ If you need to run or write msModelSlim unit tests, see the detailed [Developer 
 
 ## 4. Acknowledgment
 
-We appreciate your contributions to MindStudio ModelSlim. Every bit of effort makes this project stronger and easier to use. Enjoy creating and coding.
+We appreciate your contributions to MindStudio ModelSlim. Every bit of effort makes this project stronger and easier to use. Enjoy developing and coding.

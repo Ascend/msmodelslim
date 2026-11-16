@@ -22,7 +22,7 @@ QatConfig(w_bit=8, a_bit=8, a_sym=False, amp_num=0, steps=1, ema=0.99, is_forwar
 | ema | Optional | Parameter in the Adam optimizer, the exponential moving average.<br>Data type: float. Value range: [0.1, 1.0]. Defaults to 0.99.<br>Input/Return: Input. |
 | is_forward | Optional | Whether to process the forward pass with reference to mmdetection.<br>Data type: bool. Default is False.<br>Input/Return: Input. |
 | ignore_head_tail_node | Optional | Whether to ignore the first and last layers and not quantize them.<br>Data type: bool. Default is False.<br>Input/Return: Input. |
-| disable_names | Optional | Names of nodes to be excluded from quantization, i.e., the names of quantization layers for manual fallback.<br>If the accuracy is poor, you can select quantization layers for fallback.<br>Data type: list[str]. Default is None.<br>Input/Return: Input. |
+| disable_names | Optional | Names of nodes to be excluded from quantization, that is, the names of quantization layers for manual fallback.<br>If the accuracy is poor, you can select quantization layers for fallback.<br>Data type: list[str]. Default is None.<br>Input/Return: Input. |
 | has_init_quant | Optional | Whether the model has undergone quantization initialization.<br>Data type: bool. Default is False.<br>Input/Return: Input. |
 | quant_mode | Optional | Whether to enable quantization mode.<br>Data type: bool. Default is True.<br>Input/Return: Input. |
 | grad_scale | Optional | Gradient compensation strength.<br>Data type: float. Default is 0.0, and the recommended configuration is 0.001.<br>Input/Return: Input. |

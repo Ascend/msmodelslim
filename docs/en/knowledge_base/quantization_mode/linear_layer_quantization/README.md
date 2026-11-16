@@ -118,5 +118,5 @@ The following is the list of linear layer quantization modes supported by msMode
 
 ## 5. Reference Documents
 
-1. *[Linear Quantization Parameter Configuration Workflow Guide](../../quantization_algorithms/linear_quant/usage_linear_quant.md)*
-2. *[Quantization Modes](../README.md)*
+1. [Linear Quantization Parameter Configuration Workflow Guide](../../quantization_algorithms/linear_quant/usage_linear_quant.md)
+2. [Quantization Modes](../README.md)

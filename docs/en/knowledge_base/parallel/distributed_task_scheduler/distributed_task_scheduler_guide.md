@@ -161,9 +161,9 @@ flowchart LR
 
 | Term | Brief Description | Link |
 | --- | --- | --- |
-| Distributed Task Scheduler (DTS) | On top of DP completeness, it schedules algorithm subtasks across devices; each task runs only once and dependencies drive the waves | *[Distributed Task Scheduler](term_distributed_task_scheduler.md)* |
-| Data Parallelism (DP) | Each rank holds a complete model replica, the calibration data is split by rank, and the statistics of shared modules are reduced across devices | *[Data Parallelism](../data_parallelism/term_data_parallelism.md)* |
-| Expert Parallelism (EP) | Routed experts are sharded by rank, introducing `local_only` modules held only by the current rank (DTS must avoid assigning tasks that depend on them) | *[Expert Parallelism](../expert_parallelism/term_expert_parallelism.md)* |
+| Distributed Task Scheduler (DTS) | On top of DP completeness, it schedules algorithm subtasks across devices; each task runs only once and dependencies drive the waves | [Distributed Task Scheduler](term_distributed_task_scheduler.md) |
+| Data Parallelism (DP) | Each rank holds a complete model replica, the calibration data is split by rank, and the statistics of shared modules are reduced across devices | [Data Parallelism](../data_parallelism/term_data_parallelism.md) |
+| Expert Parallelism (EP) | Routed experts are sharded by rank, introducing `local_only` modules held only by the current rank (DTS must avoid assigning tasks that depend on them) | [Expert Parallelism](../expert_parallelism/term_expert_parallelism.md) |
 
 ## 10. Interface Documentation List
 

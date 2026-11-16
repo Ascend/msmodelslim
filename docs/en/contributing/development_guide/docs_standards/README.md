@@ -19,7 +19,7 @@ This standard applies to the documentation under the `docs/` directory and cover
 - **Mandatory scope**: the `docs/zh/` Chinese documentation tree is the mandatory scope and the direct basis for documentation checking and review.
 - **Reference scope**: the `docs/en/` English tree and other language versions are implemented for reference only and are not included in the mandatory check scope.
 - **Coverage of all document types**: this includes both the documents within the template system (5 types in total, see [Section 2.2](#22-document-types)) and the documents outside the template system, such as installation guides, quick start guides, FAQs, release notes, and legal statements.
-- **Out of scope**: content carried by code, such as code comments and commit messages, is not within the scope of this standard; for its requirements, see the *[Coding Standards](../coding_standards.md)*.
+- **Out of scope**: content carried by code, such as code comments and commit messages, is not within the scope of this standard; for its requirements, see the [Coding Standards](../coding_standards.md).
 
 ### 1.3 Target Readers
 
@@ -38,7 +38,7 @@ This standard is intended for all roles involved in msModelSlim documentation wo
 
 ### 2.1 Documentation Tiers
 
-The `docs/zh` documentation is divided into six tiers, each defined as follows:
+The `docs/en` documentation is divided into six tiers, each defined as follows:
 
 | Tier | Directory | Role |
 | --- | --- | --- |
@@ -47,7 +47,7 @@ The `docs/zh` documentation is divided into six tiers, each defined as follows:
 | Knowledge tier | `knowledge_base/` | Domain knowledge: concepts such as quantization algorithms, tuning strategies, and quantization formats, and their applications |
 | Interface tier | `api_reference/` | Interface reference: API documentation such as command-line and configuration references |
 | Support tier | `support/` (FAQ), `release_notes/`, `legal/` | Auxiliary information: frequently asked questions, release notes, and legal statements |
-| Governance tier | `contributing/` | Governance standards: contribution guides, design documents, development standards, and documentation standards |
+| Governance tier | `contributing/` | Governance standards: contribution guides, development standards, and documentation standards |
 
 ### 2.2 Document Types
 
@@ -55,15 +55,15 @@ The `docs/zh` documentation is divided into six tiers, each defined as follows:
 
 | Type | Tier | Role | Template | Checklist |
 | --- | --- | --- | --- | --- |
-| Terminology entry | Knowledge tier | Declarative knowledge: describes the definition, principles, properties, and relationships of a term | *[Terminology Entry Template](./01_term_glossary_template.md)* | *[Terminology Entry Checklist](./01_term_glossary_checklist.md)* |
-| Workflow guide | Usage tier | Procedural knowledge: describes the applicable scope, inputs and deliverables, and procedure | *[Workflow Guide Template](./02_process_guide_template.md)* | *[Workflow Guide Checklist](./02_process_guide_checklist.md)* |
-| Case reference | Usage tier | Practical case: records the background, environment, steps, results, and lessons | *[Case Reference Template](./03_general_case_template.md)* | *[Case Reference Checklist](./03_general_case_checklist.md)* |
-| Configuration document | Interface tier | Interface reference: describes configuration fields, constraints, and values | *[Configuration Document Template](./04_config_document_template.md)* | *[Configuration Document Checklist](./04_config_document_checklist.md)* |
-| CLI document | Interface tier | Interface contract: describes command names, parameters, and invocation conventions | *[Command-Line API Document Template](./05_cli_api_contract_template.md)* | *[Command-Line API Document Checklist](./05_cli_api_contract_checklist.md)* |
+| Terminology entry | Knowledge tier | Declarative knowledge: describes the definition, principles, properties, and relationships of a term | [Terminology Entry Template](./01_term_glossary_template.md) | [Terminology Entry Checklist](./01_term_glossary_checklist.md) |
+| Workflow guide | Usage tier | Procedural knowledge: describes the applicable scope, inputs and deliverables, and procedure | [Workflow Guide Template](./02_process_guide_template.md) | [Workflow Guide Checklist](./02_process_guide_checklist.md) |
+| Case reference | Usage tier | Practical case: records the background, environment, steps, results, and lessons | [Case Reference Template](./03_general_case_template.md) | [Case Reference Checklist](./03_general_case_checklist.md) |
+| Configuration document | Interface tier | Interface reference: describes configuration fields, constraints, and values | [Configuration Document Template](./04_config_document_template.md) | [Configuration Document Checklist](./04_config_document_checklist.md) |
+| CLI document | Interface tier | Interface contract: describes command names, parameters, and invocation conventions | [Command-Line API Document Template](./05_cli_api_contract_template.md) | [Command-Line API Document Checklist](./05_cli_api_contract_checklist.md) |
 
 > **Audience and level of detail**: usage guides (workflow guides) target beginner users and use detailed steps to guide them through selecting parameters, filling in configurations, and executing commands; API documents and configuration documents target advanced users for quick reference and only need to specify reference information such as command names, parameters, and values, without expanding the steps.
 
-**Documents outside the template system**: installation guides, quick start guides, FAQs, release notes, legal statements, and the description files under each directory do not use a template and are distributed across multiple tiers (for example, the installation guide and quick start guide in the getting started tier, and the FAQ and release notes in the support tier). They follow the general writing requirements in the *[Common Checklist](00_common_checklist.md)* and must at least satisfy the items marked as ERROR therein.
+**Documents outside the template system**: installation guides, quick start guides, FAQs, release notes, legal statements, and the description files under each directory do not use a template and are distributed across multiple tiers (for example, the installation guide and quick start guide in the getting started tier, and the FAQ and release notes in the support tier). They follow the general writing requirements in the [Common Checklist](00_common_checklist.md) and must at least satisfy the items marked as ERROR therein.
 
 ### 2.3 Choosing a Document Type
 
@@ -82,7 +82,7 @@ Determine the document type according to the nature and purpose of the content t
 
 ### 3.1 docs Directory Structure
 
-In addition to the Chinese documentation `docs/zh/`, `docs/` also contains the English documentation `docs/en/`, the site home page `docs/index.md`, and the static asset directories `docs/assets/` and `docs/stylesheets/`. This standard takes `docs/zh/` as the mandatory scope (see [Section 1.2](#12-scope)), and the documentation directories are arranged in the tier order of [Section 2.1](#21-documentation-tiers) as follows:
+In addition to the Chinese documentation `docs/zh/`, `docs/` also contains the English documentation `docs/en/`, the site home page `docs/index.md`, and the static asset directories `docs/assets/` and `docs/stylesheets/`. This standard takes `docs/zh/` as the mandatory scope (see [Section 1.2](#12-scope)). The documentation directories are arranged in the tier order of [Section 2.1](#21-documentation-tiers) as follows:
 
 ```text
 docs/en/
@@ -97,7 +97,6 @@ docs/en/
 ├── legal/              # All legally related files such as licenses, statements, and disclaimers
 └── contributing/       # Contribution guide directory
     ├── contributing_guide.md    # Contribution guide
-    ├── design/                  # Design documents
     └── development_guide/       # Technical documents
 ```
 
@@ -113,12 +112,12 @@ docs/en/
 
 Documentation writing requirements are divided into general requirements and type-specific requirements. The former do not vary with the document type, while the latter differ by document type:
 
-- **General requirements**: apply to all documents (including those outside the template system). They cover writing conventions unrelated to the document type, such as heading structure, punctuation, terminology, links, figures, tables, and formulas, and are uniformly given in the general items of the *[Common Checklist](00_common_checklist.md)*. The general requirements are identical for all document types, so no template is provided and they are carried directly by the checklist items.
+- **General requirements**: apply to all documents (including those outside the template system). They cover writing conventions unrelated to the document type, such as heading structure, punctuation, terminology, links, figures, tables, and formulas, and are uniformly given in the general items of the [Common Checklist](00_common_checklist.md). The general requirements are identical for all document types, so no template is provided and they are carried directly by the checklist items.
 - **Type-specific requirements**: apply to the 5 document types within the template system. They cover the section structure and the required and optional sections, as given in the corresponding template. Their specific criteria are given in the checklist for the corresponding type; for the mapping between templates and checklists, see [Section 2.2](#22-document-types).
 
 ### 4.2 Check Requirements
 
-Documentation checking is based on the general items in the *[Common Checklist](00_common_checklist.md)* and the specific items in the checklist for the corresponding type. Before writing, read the corresponding template and the *[Common Checklist](00_common_checklist.md)*; before submission, check item by item against the two sets of items above.
+Documentation checking is based on the general items in the [Common Checklist](00_common_checklist.md) and the specific items in the checklist for the corresponding type. Before writing, read the corresponding template and the [Common Checklist](00_common_checklist.md); before submission, check item by item against the two sets of items above.
 
 - **Severity levels**: `ERROR` items are mandatory, and `WARN` items are recommended. The level of an item is determined as follows: those with objective criteria that affect readers' comprehension are classified as `ERROR`; those requiring subjective judgment or having many reasonable exceptions are classified as `WARN`. When a single requirement involves both kinds of criteria, it is split into two items with separate levels.
 - **Conclusion rules**: if any `ERROR` item is not satisfied, the check conclusion is **fail**; if only `WARN` items are not satisfied, the check conclusion is **revision required**; if all items are satisfied, the check conclusion is **pass**.
@@ -136,7 +135,7 @@ The business workflow diagram expresses the hierarchical relationship between bu
 - **Linking requirement**: a business operation workflow document should link to every tool usage workflow document it depends on; when it depends on multiple tools, link to each of them separately, nesting level by level.
 - **Coverage requirement**: apart from business operation workflow documents, every workflow document should be linked by an upper-level workflow document; no workflow document may remain unlinked.
 - **External tool requirement**: when a workflow uses a third-party tool outside this repository, provide a link to that tool's official usage guide. External links pointing to documents outside the repository are not subject to the templates and checklists of this standard.
-- **Node requirement**: each node in the diagram should be a workflow guide document that follows the *[Workflow Guide Template](./02_process_guide_template.md)*; a business operation workflow is itself an independent workflow document and must not be replaced by a virtual grouping.
+- **Node requirement**: each node in the diagram should be a workflow guide document that follows the [Workflow Guide Template](./02_process_guide_template.md); a business operation workflow is itself an independent workflow document and must not be replaced by a virtual grouping.
 - **Scope requirement**: terminology entries, interface documents, and cases must not be nodes of the business workflow diagram; they should be referenced by workflow documents in the form of links.
 
 ### 5.2 Knowledge Graph
@@ -164,7 +163,7 @@ The knowledge graph expresses the relationships between term concepts.
 
 ### 7.1 Checklist Authoring Conventions
 
-The item numbering and type codes of the checklists follow the conventions below. When a type-specific checklist references an item of the *[Common Checklist](00_common_checklist.md)*, it writes the number directly, for example "see CE-05".
+The item numbering and type codes of the checklists follow the conventions below. When a type-specific checklist references an item of the [Common Checklist](00_common_checklist.md), it writes the number directly, for example "see CE-05".
 
 **Numbering format**: in the checklists defined by this standard, all items use `<Type Code><Level Code>-<two-digit serial number>`, for example `CE-05` denotes the 5th `ERROR` item of the common checklist. Within a single checklist, `ERROR` and `WARN` items are numbered consecutively from `01`, with no gaps.
 
@@ -192,8 +191,8 @@ The item numbering and type codes of the checklists follow the conventions below
 | 2026-08-05 | v1.0 | First release. |
 | 2026-08-07 | v1.1 | The entry document type was renamed to "terminology entry", and the template and checklist files were renamed to term_glossary; book-title marks in the body text and broken examples were corrected. |
 | 2026-08-12 | v1.2 | Added links to book-title-marked title citations (*Workflow Guide Template*, *Terminology Entry Template*, *Common Checklist*) to align with CE-05 and CE-12. |
-| 2026-08-12 | v1.3 | Unified the anchor text of book-title-marked citations to the `*[Title](link)*` form, and converged the CE-05 example to a single canonical form. |
+| 2026-08-12 | v1.3 | Unified the anchor text of book-title-marked citations to the `[Title](link)` form, and converged the CE-05 example to a single canonical form. |
 | 2026-08-19 | v1.4 | The quantization configuration document template and checklist were adjusted along with the generator structure: the parameter list is blocked by configuration class, nested blocks output a class overview, the separate "referenced configurations / referenced by" sections were removed, and anchors were unified to HTML. |
-| 2026-09-12 | v2.0 | Breaking revision: (1) restructured the standard so that writing requirements and check requirements are separated, with the general writing requirements moved to the *[Common Checklist](00_common_checklist.md)* and the check mechanism moved to Section 4.2; (2) unified the checklist system, changing the numbering to `<Type Code><Level Code>-serial number` and registering type codes, aligning type naming with the type table and renaming files accordingly, and reclassifying `ERROR` and `WARN` by "objective criteria + impact on readers' comprehension", which substantially reduced the number of items and eliminated duplication with the common checklist; (3) moved the checklist authoring conventions (numbering rules, type code registry, optional section references, exception handling) up to Section 7.1 and prohibited type-level or document-level exceptions within a checklist; (4) eliminated dual sources: optional sections are defined solely by the template `[OPTIONAL]` marker and are no longer listed in checklists, and the "Complete Configuration Reference" is established as optional but recommended. |
+| 2026-09-12 | v2.0 | Breaking revision: (1) restructured the standard so that writing requirements and check requirements are separated, with the general writing requirements moved to the [Common Checklist](00_common_checklist.md) and the check mechanism moved to Section 4.2; (2) unified the checklist system, changing the numbering to `<Type Code><Level Code>-serial number` and registering type codes, aligning type naming with the type table and renaming files accordingly, and reclassifying `ERROR` and `WARN` by "objective criteria + impact on readers' comprehension", which substantially reduced the number of items and eliminated duplication with the common checklist; (3) moved the checklist authoring conventions (numbering rules, type code registry, optional section references, exception handling) up to Section 7.1 and prohibited type-level or document-level exceptions within a checklist; (4) eliminated dual sources: optional sections are defined solely by the template `[OPTIONAL]` marker and are no longer listed in checklists, and the "Complete Configuration Reference" is established as optional but recommended. |
 | 2026-09-12 | v2.1 | Corrected wording and punctuation in the body text so that the standard itself satisfies the check requirements it publishes: (1) unified quoted parentheses to Chinese quotation marks (`""`) instead of corner brackets, aligning with CE-09; (2) removed extra spaces between numbers and quantifiers, aligning with CE-06. Only wording is affected; no item criterion is changed. |
 | 2026-09-14 | v2.2 | Completed the heading numbering requirements: (1) added `CE-13` heading numbering to the common checklist, clarifying that the level-1 heading carries no number while level-2 and headings below carry visible numbers aligned with their levels, which removes the problem that "renumbering" in `CE-10` previously had no explicit basis; (2) reduced duplication, keeping only the heading separator in `TW-04` and renaming the anchor style in `FW-07` to keep only the anchor form; (3) restored the heading numbering of the common checklist itself for consistency with the other checklists. |

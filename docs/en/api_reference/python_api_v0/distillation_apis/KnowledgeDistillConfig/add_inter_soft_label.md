@@ -2,7 +2,7 @@
 
 ## Function
 
-A method of the KnowledgeDistillConfig class, used to configure the soft label for distillation, i.e., the mapping relationship between the soft labels of the student model and the teacher model. This method is not mandatory.
+A method of the KnowledgeDistillConfig class, used to configure the soft label for distillation, that is, the mapping relationship between the soft labels of the student model and the teacher model. This method is not mandatory.
 
 ## Prototype
 

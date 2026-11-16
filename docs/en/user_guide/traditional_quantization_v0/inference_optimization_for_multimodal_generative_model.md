@@ -14,7 +14,7 @@ This tool provides an inference optimization solution for large-scale multimodal
 ## 4. Software Dependencies
 
 - Install msModelSlim. For details, see the [msModelSlim Installation Guide](../../install_guide/install_guide.md).
-- Refer to the README file in the open-source model repository [OpenSoraPlanV1.2](https://github.com/PKU-YuanGroup/Open-Sora-Plan/releases/tag/v1.2.0) to download the model weights to your local directory, and complete the installation of the Python environment dependencies required by the model.
+- Refer to the README file in the open-source model repository [OpenSoraPlanV1.2](https://github.com/PKU-YuanGroup/Open-Sora-Plan/releases/tag/v1.2.0) to save the model weights to your local directory, and complete the installation of the Python environment dependencies required by the model.
 
 ## 5. Environment Setup
 
@@ -75,7 +75,7 @@ sequenceDiagram
     U->>S: starts configuration search.
     S->>M: generates calibration videos.
     M-->>S: returns the benchmark result.
-    loop configuration search iteration
+    loop Configuration search iteration
         S->>S: generates cache configuration schemes.
         S->>M: performs inference using the current configuration.
         M-->>S: returns the optimization results.

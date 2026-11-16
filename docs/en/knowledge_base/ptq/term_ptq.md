@@ -1,6 +1,6 @@
 # Post-Training Quantization (PTQ)
 
-> **Entry Category**: Quantization Basic Concept ([Quantization Basics](../README.md))<br>
+> **Entry Category**: [Quantization Basic Concept](../README.md)<br>
 > **English Name**: Post-Training Quantization<br>
 > **Abbreviation**: PTQ<br>
 > **Application Domain**: Model compression, inference acceleration
@@ -30,9 +30,9 @@ Different model architectures have different compute patterns and data-flow char
 
 | Architecture Type | Core Model Structure | Inference Compute Characteristics | Core Quantization Challenge and Response |
 | :--- | :--- | :--- | :--- |
-| **[LLM Quantization](./llm/term_large_language_model_quantization.md)** | Transformer Decoder-only | Autoregressive token-by-token generation, memory-bandwidth bound (Memory-bound); carries a KV cache | Activations have fixed outliers (Outliers) in specific channels, so outlier suppression or rotation algorithms such as [SmoothQuant](../quantization_algorithms/smooth_quant/term_smooth_quant.md) and [QuaRot](../quantization_algorithms/quarot/term_quarot.md) are required; KV cache quantization also needs to be combined in. |
-| **[VLM Quantization](./vlm/term_vision_transformer_quantization.md)** | ViT vision encoder + text decoder | Cross-modal heterogeneity; image features are fused into the text space through a projection layer | The distribution characteristics of the vision encoder and the text decoder differ greatly, and the modality-alignment projection layer (Merger/Projection) is sensitive to quantization, so multimodal calibration data is required together with targeted sensitivity protection or cross-modal rotation coordination. |
-| **[DiT Quantization](./dit/term_diffusion_transformer_quantization.md)** | Diffusion Transformer backbone | Multi-step iterative denoising, no KV cache, compute-intensive (Compute-bound) | The activation distribution is highly dynamic and non-stationary across timesteps (Timestep), so calibration must cover the denoising trajectory of multiple timesteps; multi-expert models need per-expert distribution statistics. |
+| [LLM Quantization](./llm/term_large_language_model_quantization.md) | Transformer Decoder-only | Autoregressive token-by-token generation, memory-bandwidth bound (Memory-bound); carries a KV cache | Activations have fixed outliers (Outliers) in specific channels, so outlier suppression or rotation algorithms such as [SmoothQuant](../quantization_algorithms/smooth_quant/term_smooth_quant.md) and [QuaRot](../quantization_algorithms/quarot/term_quarot.md) are required; KV cache quantization also needs to be combined in. |
+| [VLM Quantization](./vlm/term_vision_transformer_quantization.md) | ViT vision encoder + text decoder | Cross-modal heterogeneity; image features are fused into the text space through a projection layer | The distribution characteristics of the vision encoder and the text decoder differ greatly, and the modality-alignment projection layer (Merger/Projection) is sensitive to quantization, so multimodal calibration data is required together with targeted sensitivity protection or cross-modal rotation coordination. |
+| [DiT Quantization](./dit/term_diffusion_transformer_quantization.md) | Diffusion Transformer backbone | Multi-step iterative denoising, no KV cache, compute-intensive (Compute-bound) | The activation distribution is highly dynamic and non-stationary across timesteps (Timestep), so calibration must cover the denoising trajectory of multiple timesteps; multi-expert models need per-expert distribution statistics. |
 
 ### 2.3 Technical Challenges
 
@@ -49,7 +49,7 @@ Different model architectures have different compute patterns and data-flow char
 - [Multimodal Understanding Model (VLM) Quantization Usage Guide](./vlm/usage_vision_transformer_quantization.md): the complete workflow for VLM quantization.
 - [Multimodal Generation Model (DiT) Quantization Usage Guide](./dit/usage_diffusion_transformer_quantization.md): the complete workflow for DiT quantization.
 - [Weight Conversion Usage Guide](./convert/usage_weight_conversion.md): the complete workflow for weight conversion.
-- *[One-Click Quantization Usage Guide](../../user_guide/usage_one_click_quantization.md)*: covers the overall one-click quantization workflow for various model types.
+- [One-Click Quantization Usage Guide](../../user_guide/usage_one_click_quantization.md): covers the overall one-click quantization workflow for various model types.
 
 ---
 

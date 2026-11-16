@@ -70,7 +70,7 @@ $$
 - **The ratio determines the selection size**: how many heads to retain is determined not by a score threshold but by the top ratio, and the ratio setting directly determines the size of the selected set.
 - **Positional encoding consistency**: positional encoding is applied to the injected Q / K before computing the scores, so that the measurement conditions stay consistent with the attention pattern during real inference.
 - **Output is a discrete set**: it outputs only the selected head indices, not a sensitivity score ranking, so it cannot be used for fallback decisions with continuous thresholds.
-- **The result is used for compression, not fallback**: the output is `head.pt` (a `.pt` file holding a serialized dict), delivered to the MindIE inference framework for long-sequence KV cache compression. Users can complete long-sequence compression from `head.pt`, and the compressed model can be used for subsequent inference deployment; for the specific list of adapted quantization models, see the "Models Supported by MindIE" section of *[What Is MindIE](https://www.hiascend.com/document/detail/en/mindie/10RC3/whatismindie/mindie_what_0001.html)*. This artifact is not used for the exclude / include configuration of a quantization YAML, nor for layer fallback decisions.
+- **The result is used for compression, not fallback**: the output is `head.pt` (a `.pt` file holding a serialized dict), delivered to the MindIE inference framework for long-sequence KV cache compression. Users can complete long-sequence compression from `head.pt`, and the compressed model can be used for subsequent inference deployment; for the specific list of adapted quantization models, see the "Models Supported by MindIE" section of [What Is MindIE](https://www.hiascend.com/document/detail/en/mindie/10RC3/whatismindie/mindie_what_0001.html). This artifact is not used for the exclude / include configuration of a quantization YAML, nor for layer fallback decisions.
 
 ### 2.5 Use Cases
 
@@ -84,14 +84,14 @@ $$
 - Only the Q / K projection layers (or fused QKV layer) of Transformer self-attention are analyzed; other structures are out of scope. For models whose projection layer naming does not match the default pattern, the model adapter must provide the naming information through `RaCompressAnalysisInterface.get_proj_names`.
 - The result depends on the controlled repeated-segment input structure and reflects the segment-spanning retrieval capability of attention heads; it cannot be equated directly with the model's quality on real long-text tasks.
 - The output is a discrete selection set rather than a continuous score; a change in the selection ratio changes the result as a whole, and results at different ratios are not comparable in the sense of "score magnitude".
-- For the supported range of `model_type`, see the *[Foundation Model Support Matrix](../../model/README.md)* and the corresponding adapter implementations.
+- For the supported range of `model_type`, see the [Foundation Model Support Matrix](../../model/README.md) and the corresponding adapter implementations.
 
 ---
 
 ## 3. Related Workflows
 
-- *[Attention Head Screening and Analysis Usage Guide](../../../user_guide/usage_sensitive_attn_head_analysis.md)*: this algorithm is used as the metric of `attn_head` scope analysis.
-- On the MindIE inference framework side (the consumer of the deliverable): the `head.pt` produced by the analysis is delivered to the MindIE inference framework, from which users can complete long-sequence compression and use the compressed model for subsequent inference deployment; for the specific list of adapted quantization models, see the "Models Supported by MindIE" section of *[What Is MindIE](https://www.hiascend.com/document/detail/en/mindie/10RC3/whatismindie/mindie_what_0001.html)*.
+- [Attention Head Screening and Analysis Usage Guide](../../../user_guide/usage_sensitive_attn_head_analysis.md): this algorithm is used as the metric of `attn_head` scope analysis.
+- On the MindIE inference framework side (the consumer of the deliverable): the `head.pt` produced by the analysis is delivered to the MindIE inference framework, from which users can complete long-sequence compression and use the compressed model for subsequent inference deployment; for the specific list of adapted quantization models, see the "Models Supported by MindIE" section of [What Is MindIE](https://www.hiascend.com/document/detail/en/mindie/10RC3/whatismindie/mindie_what_0001.html).
 
 ---
 

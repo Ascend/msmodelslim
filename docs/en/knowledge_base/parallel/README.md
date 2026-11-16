@@ -1,6 +1,6 @@
 # Multi-Device Quantization Parallel
 
-> **Scope note**: the actual content of this directory covers only the multi-device quantization mechanisms (DP / EP / DTS). **The multi-device quantization mechanisms do not cover weight conversion (Convert); weight conversion follows its own independent conversion parallelism scheme** (NPU multi-device uses `--device npu --device_id` to start one independent compute process per device, and CPU parallelism uses `parallel.cpu_workers`). For details, see *[Weight Conversion Usage Guide](../ptq/convert/usage_weight_conversion.md)*.
+> **Scope note**: the actual content of this directory covers only the multi-device quantization mechanisms (DP / EP / DTS). **The multi-device quantization mechanisms do not cover weight conversion (Convert); weight conversion follows its own independent conversion parallelism scheme** (NPU multi-device uses `--device npu --device_id` to start one independent compute process per device, and CPU parallelism uses `parallel.cpu_workers`). For details, see [Weight Conversion Usage Guide](../ptq/convert/usage_weight_conversion.md).
 
 ## 1. Brief Description of the Parallel Mechanisms
 
@@ -14,12 +14,12 @@ This directory collects the workflow guides and terminology entries related to m
 
 | Document | Description |
 |------|------|
-| *[Data Parallelism](data_parallelism/term_data_parallelism.md)* | DP terminology entry |
-| *[Data Parallelism Usage Guide](data_parallelism/data_parallelism_guide.md)* | DP usage guide |
-| *[Expert Parallelism](expert_parallelism/term_expert_parallelism.md)* | EP terminology entry |
-| *[Expert Parallelism Usage Guide](expert_parallelism/expert_parallelism_guide.md)* | EP usage guide |
-| *[Distributed Task Scheduler](distributed_task_scheduler/term_distributed_task_scheduler.md)* | DTS terminology entry |
-| *[Distributed Task Scheduler Usage Guide](distributed_task_scheduler/distributed_task_scheduler_guide.md)* | DTS usage guide |
+| [Data Parallelism](data_parallelism/term_data_parallelism.md) | DP terminology entry |
+| [Data Parallelism Usage Guide](data_parallelism/data_parallelism_guide.md) | DP usage guide |
+| [Expert Parallelism](expert_parallelism/term_expert_parallelism.md) | EP terminology entry |
+| [Expert Parallelism Usage Guide](expert_parallelism/expert_parallelism_guide.md) | EP usage guide |
+| [Distributed Task Scheduler](distributed_task_scheduler/term_distributed_task_scheduler.md) | DTS terminology entry |
+| [Distributed Task Scheduler Usage Guide](distributed_task_scheduler/distributed_task_scheduler_guide.md) | DTS usage guide |
 
 ## 3. Parallel Mechanism Support List
 
@@ -86,4 +86,4 @@ msmodelslim quant \
   --device_id 0 1 2 3 4 5 6 7
 ```
 
-**Note**: under the quantization path, DP, EP, and DTS are enabled according to what has been adapted. The multi-device quantization mechanisms do not cover weight conversion (Convert); weight conversion follows its own scheme. For details, see *[Weight Conversion Usage Guide](../ptq/convert/usage_weight_conversion.md)*.
+**Note**: under the quantization path, DP, EP, and DTS are enabled according to what has been adapted. The multi-device quantization mechanisms do not cover weight conversion (Convert); weight conversion follows its own scheme. For details, see [Weight Conversion Usage Guide](../ptq/convert/usage_weight_conversion.md).

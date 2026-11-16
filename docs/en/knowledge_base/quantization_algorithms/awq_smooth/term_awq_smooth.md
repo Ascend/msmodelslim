@@ -38,7 +38,7 @@ s = \frac{\operatorname{act\_mean}^{\text{ratio}}}{\sqrt{\max(s) \cdot \min(s)}}
 $$
 
 - $s$: per-channel scale factor
-- $\text{act\_mean}$: the per-channel mean of the absolute activation values, i.e. $mean(|act|)$, reflecting the importance of each channel
+- $\text{act\_mean}$: the per-channel mean of the absolute activation values, that is $mean(|act|)$, reflecting the importance of each channel
 - $\text{ratio}$: the scaling ratio coefficient, grid-searched over $[0, 1)$ with a step of $1 / n\_grid$
 - $10^{-4}$: the minimum value of the scaling factor
 

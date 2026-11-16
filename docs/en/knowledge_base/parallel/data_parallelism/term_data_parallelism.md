@@ -46,7 +46,7 @@ Post-training quantization (Post-Training Quantization, PTQ) of large models rel
 
 ### 2.3 Process Flow
 
-> For detailed adaptation steps and cases, see *[Data Parallelism Usage Guide](data_parallelism_guide.md)*.
+> For detailed adaptation steps and cases, see [Data Parallelism Usage Guide](data_parallelism_guide.md).
 
 ```mermaid
 flowchart LR
@@ -73,8 +73,8 @@ flowchart LR
 
 ## 3. Related Workflows
 
-- *[Data Parallelism Usage Guide](data_parallelism_guide.md)*: explains DP completeness support, statistics synchronization, and the adaptation steps.
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: triggers multi-device quantization by passing multiple device indexes through the `--device npu --device_id 0 1 2 3 4 5 6 7` parameters.
+- [Data Parallelism Usage Guide](data_parallelism_guide.md): explains DP completeness support, statistics synchronization, and the adaptation steps.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): triggers multi-device quantization by passing multiple device indexes through the `--device npu --device_id 0 1 2 3 4 5 6 7` parameters.
 
 ---
 
@@ -89,4 +89,4 @@ flowchart LR
 
 ## 5. Reference Documents
 
-1. *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*
+1. [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)

@@ -193,7 +193,7 @@ class W8A8TimeStepProcessorConfig(BaseModel):
     timestep_sep: int
 ```
 
-### Parameter Description
+### Parameters
 
 | Parameter | Input/Return | Description | Constraints |
 | ------ | ------ | ------ | ------ |
@@ -287,8 +287,8 @@ class SaveProcessorConfig(BaseModel):
 | Parameter | Input/Return| Description| Constraints|
 | ------ | ------ | ------ | ------ |
 | output_path | Input| Quantization saving path.| Required.<br>Data type: String. No default value.|
-| safetensors_name | Input| Name of the quantization weight safetensors file.| Optional.<br>Data type: String. Default value is None, generated based on the quantization type, e.g., quant_model_weight_w8a8.safetensors.|
-| json_name | Input| Name of the quantization weight description JSON file.| Optional.<br>Data type: String. Default value is None, generated based on the quantization type, e.g., quant_model_description_w8a8.json.|
+| safetensors_name | Input| Name of the quantization weight safetensors file.| Optional.<br>Data type: String. Default value is None, generated based on the quantization type, for example, quant_model_weight_w8a8.safetensors.|
+| json_name | Input| Name of the quantization weight description JSON file.| Optional.<br>Data type: String. Default value is None, generated based on the quantization type, for example, quant_model_description_w8a8.json.|
 | save_type | Input| Saving format for quantization weights.| Optional.<br>Data type: List, elements are strings. Default value is ['safe_tensor']. The safetensors format is used by default in multimodal generative model quantization scenarios.|
 | part_file_size | Input| When saving as safetensors weight files, the size of each part during sharded saving, in GB.| Optional.<br>Data type: Integer. Default value is None, which disables the sharded saving feature. Otherwise, sharding will be performed according to the user-set value; the actual saved weights may be slightly larger than the set value.|
 

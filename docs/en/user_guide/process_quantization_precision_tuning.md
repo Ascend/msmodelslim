@@ -25,7 +25,7 @@ Step 3: Adjust the quantization strategy.
     ↓
 Step 4: Adjust the calibration dataset.
     ↓
-Step 5: Perform quantization rollback (last resort).
+Step 5: Perform quantization fallback (last resort).
 ```
 
 **Objective:**
@@ -110,7 +110,7 @@ Activation quantization supports several granularities, and they directly affect
 |---------|------|---------|
 | per_tensor | Uses one set of quantization parameters for the entire tensor. This is static quantization. It is simple, fast, and supported by almost all hardware. However, if the data distribution varies significantly within the tensor, quantization error becomes noticeable.| Use when you want the best performance.|
 | per_token | Uses one set of quantization parameters per token. This is dynamic quantization. It gives finer granularity and higher accuracy, but it is also more computationally complex and has lower performance.| Use when you want higher accuracy.|
-| pd_mix | Uses `per_token` during prefill and `per_tensor` during decode. This is a hybrid strategy designed to balance accuracy and performance.| Use when you need to balance accuracy and performance. It helps improve W8A8 accuracy.|
+| pd_mix | Uses `per_token` during prefill and `per_tensor` during decode. This is a mixed strategy designed to balance accuracy and performance.| Use when you need to balance accuracy and performance. It helps improve W8A8 accuracy.|
 
 ##### Configuration Example (YAML)
 
@@ -137,7 +137,7 @@ In the quantization config file, activation quantization is usually configured i
 2. **Quantization granularity (`scope`)**:
    - Use `per_tensor` (static quantization) for performance.
    - Use `per_token` (dynamic quantization) for accuracy.
-   - Use `pd_mix` (hybrid policy) when you need to balance accuracy and performance.
+   - Use `pd_mix` (mixed policy) when you need to balance accuracy and performance.
 3. **Symmetry (`symmetric`)**: Activation quantization usually uses `false` for asymmetric quantization so that it better fits non-zero-centered data distributions.
 4. `pd_mix`: This balanced strategy aims to balance activation quantization accuracy and computational performance during inference.
 
@@ -152,7 +152,7 @@ When algorithm tuning has limited effect, improve the quantized model accuracy b
 | Increase the amount of data.| Increase the data volume appropriately. 10 to 50 samples is recommended.| Improve the accuracy of quantization parameter estimation.|
 | Match the application scenario.| Use data that matches the model application scenario. For example, use Chinese data for a Chinese model and code data for a code model.| Make the calibration data closer to the real application scenario.|
 | Balance the data distribution.| Sample from multiple datasets and mix them together to balance the data distribution.| Improve the diversity and balance of the data distribution.|
-| Remove abnormal data.| Remove calibration samples that cause a noticeable accuracy drop.| Reduces the interference of abnormal samples on quantization parameters.|
+| Remove abnormal data.| Remove calibration samples that cause a noticeable accuracy drop.| Reduces the interference of abnormal samples with the quantization parameters.|
 | Add bad cases.| Add bad-case samples from the model on that dataset so the calibration data better reflects the true input distribution.| Help the quantized model learn hard samples and improve accuracy.|
 
 #### Summary and Suggestions
@@ -207,7 +207,7 @@ spec:
           symmetric: true      # Specifies whether to enable symmetric quantization. Default value: true.
           method: "minmax"     # Specifies the quantization method. Default value: minmax.
       include: ["*"]            # Specifies the layers to be included. Wildcard matching is supported. Default value: ["*"].
-      exclude: ["*model.layers.*.mlp.down_proj*"] # Specifies layers to exclude. Default: []. Rolls back all `mlp.down_proj` layers here.
+      exclude: ["*model.layers.*.mlp.down_proj*"] # Specifies layers to exclude. Default: []. applies fallback to all `mlp.down_proj` layers here.
 ```
 
 #### Summary and Suggestions

@@ -1,5 +1,7 @@
 <!-- generated-by: skills/docs-management/scripts/gen_quant_config_docs.py ; class: msmodelslim.core.quant_service.modelslim_convert.quant_config.ModelslimConvertQuantConfig -->
-# modelslim_convert Configuration Reference
+# `modelslim_convert` Configuration Reference
+
+This document describes the configuration of the `modelslim_convert` weight conversion task. It explains the type, default value, and value range of the `apiversion`, `spec`, `preprocess`, `linears`, `save`, `parallel`, and `defaults` fields in the ModelslimConvertQuantConfig configuration class, for users who need to write YAML configurations for `modelslim_convert` weight conversion tasks.
 
 ## 1. Configuration Overview
 
@@ -111,11 +113,11 @@ Specifies the rule for converting matching linear layers to the target IR.
 |----------|------|-----------|--------|----------------|------|----------|
 | `match` | `list[string]` | Optional | `[]` | — | List of matching linear layer name patterns. | None |
 | `target` | `string` | Required | None | `FLOAT`, `FP8_BLOCK`, `W8A8_MXFP8`, `W4A4_MXFP4`, `W4A8_MXFP8`, `INT4_PACKED`, `NVFP4_MODELOPT`, `HIFP4`, `UNKNOWN` | Target IR type for conversion, such as `W8A8_MXFP8` or `INT4_PACKED`. | None |
-| `route` | `list[string] / string` | Optional | `auto` | `FLOAT`, `FP8_BLOCK`, `W8A8_MXFP8`, `W4A4_MXFP4`, `W4A8_MXFP8`, `INT4_PACKED`, `NVFP4_MODELOPT`, `HIFP4`, `UNKNOWN`; `auto` | Conversion route: an explicit IR list (the first element is the source IR), or `auto` to let the virtual tree infer it from the weight dtype. | None |
+| `route` | `list[string] / string` | Optional | `auto` | `FLOAT`, `FP8_BLOCK`, `W8A8_MXFP8`, `W4A4_MXFP4`, `W4A8_MXFP8`, `MXFP4_PACKED`, `INT4_PACKED`, `NVFP4_MODELOPT`, `HIFP4`, `UNKNOWN`; `auto` | Conversion route: an explicit IR list (the first element is the source IR), or `auto` to let the router infer it from the weight dtype. | None |
 
 **Configuration Constraints**
 
-- None.
+- When `target` is `W8A8_MXFP8` or `W4A4_MXFP4`, `save.type` must be `ascend_v1` (`dst_format: ascendv1`).
 
 <h4 id="2-2-7-save-config">2.2.7 SaveConfig</h4>
 
@@ -136,7 +138,7 @@ Parallel execution configuration of `modelslim_convert`. The device (NPU/CPU and
 
 | Field Path | Type | Required/Optional | Default | Value Range or Format | Description | Referenced Config |
 |----------|------|-----------|--------|----------------|------|----------|
-| `cpu_workers` | `int` | Optional | `8` | — | Number of parallel workers for CPU conversion: 1 means a single process; greater than 1 means multiple processes across groups plus threads within a group. Takes effect only with `--device cpu`; NPU conversion always uses one subprocess per card (determined by `--device_id`) and does not need this setting. | None |
+| `cpu_workers` | `int` | Optional | `8` | — | Number of parallel processes for CPU conversion: 1 means a single process; greater than 1 means multiple processes across groups plus threads within a group. Takes effect only with `--device cpu`; NPU conversion always uses one subprocess per card (determined by `--device_id`) and does not need this setting. | None |
 | `max_group_size` | `int / null` | Optional | `null` | — | Maximum number of tasks in a single dependency group; beyond this the group is split into several sub-groups spread across processes. Unset means no splitting. | None |
 
 **Configuration Constraints**

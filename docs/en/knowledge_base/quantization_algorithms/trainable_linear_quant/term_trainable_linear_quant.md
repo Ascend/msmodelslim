@@ -1,4 +1,4 @@
-# Trainable Linear Quantization Algorithm Terminology Entry
+# Trainable Linear Quant Trainable Linear Quantization Algorithm Terminology Entry
 
 > **Entry Category**: [Quantization Algorithms](../README.md#2-quantization-algorithms)<br>
 > **English Name**: trainable_linear_quant<br>
@@ -83,7 +83,7 @@ In terms of error and applicability boundaries, the lower the bit width, the mor
 
 ## 3. Related Workflows
 
-- *[Trainable Linear Quant Parameter Configuration Workflow Guide](./usage_trainable_linear_quant.md)*: this workflow is how TLQ is written into a quantization task and how adaptation and parameter tuning are completed.
+- [Trainable Linear Quant Parameter Configuration Workflow Guide](./usage_trainable_linear_quant.md): this workflow is how TLQ is written into a quantization task and how adaptation and parameter tuning are completed.
 
 ---
 

@@ -5,7 +5,7 @@
 > The level-1 heading contains only the entry name `{{ term_name }}`; do **not** append a suffix such as "Terminology Entry".
 > `{{ placeholder }}` is a placeholder to be filled in, and `[OPTIONAL]` sections are kept as needed. The notes inside the template are marked with `> **Note**:` and must be deleted from the formal entry.
 > The examples in the template (such as the link `XX...`, the path `xxx.md`, and configuration snippets) are all placeholder examples, and it is normal for such links to be invalid; in a formal entry they must be replaced with the actual document title and relative path.
-> After filling it in, check item by item for low-level errors against the *[Terminology Entry Checklist](01_term_glossary_checklist.md)*.
+> After filling it in, check item by item for low-level errors against the [Terminology Entry Checklist](01_term_glossary_checklist.md).
 >
 > **Template flexibility**: the template sections fall into two categories: "Generally Required" and "As Needed ([OPTIONAL])":
 >
@@ -24,11 +24,11 @@
 >
 > **Note**: the fields above are required and are used to quickly locate the basic attributes of an entry. The filling requirements for each field are as follows:
 >
-> - Entry Category: the value must be within the enumeration set allowed by the template (Quantization Basic Concept / Quantization Algorithms / Outlier Suppression Algorithms / Sensitive Layer Analysis Algorithms / Auto Tuning Strategies / Quantization Data Format / Quantization Parameters / Quantization Configuration Items / Quantization Tool Interface / Quantization Evaluation Metrics / Other).
+> - Entry Category: the value must be within the enumeration set allowed by the template (Quantization Basic Concept / Quantization Algorithms / Outlier Suppression Algorithms / Sensitive Layer Analysis Algorithms / Auto Tuning Strategies / Quantization Data Type / Quantization Data Format / Quantization Parameters / Quantization Configuration Items / Quantization Tool Interface / Quantization Evaluation Metrics / Other).
 > - English Name: keep it consistent with the `english_name` in the file name `term_<english_name>.md` (the letter case may differ, but the spelling must match).
 > - Application Domain: briefly describe the domains to which the entry applies.
 > - First Proposed: fill it in only when there is a clear source (authors, conference or journal, year); if there is no clear source, delete the line.
-> - For field checking, see items TE-03, TW-02, TW-03, and TW-10 of the *[Terminology Entry Checklist](01_term_glossary_checklist.md)*.
+> - For field checking, see items TE-03, TW-02, TW-03, and TW-10 of the [Terminology Entry Checklist](01_term_glossary_checklist.md).
 
 ## 1. Overview
 
@@ -38,7 +38,7 @@
 >
 > 1. Complete the definition in one paragraph, keeping the length moderate; being concise and accurate is enough.
 > 2. Cover three core elements: what it is, what problem it solves, and what its core characteristics are.
-> 3. Terminology encyclopedia entries mentioned in the text that already exist or will exist should be presented as hyperlinks: `[entry_name](./term_xxx.md)`. The anchor text of an entry link is the entry name, without book-title marks (a level-1 heading contains no book-title marks); book-title marks are added only when a document title is mentioned separately in the body text, according to CE-05 of the *[Common Checklist](00_common_checklist.md)*.
+> 3. Terminology encyclopedia entries mentioned in the text that already exist or will exist should be presented as hyperlinks: `[entry_name](./term_xxx.md)`. The anchor text of an entry link is the entry name, without book-title marks (a level-1 heading contains no book-title marks); book-title marks are added only when a document title is mentioned separately in the body text, according to CE-05 of the [Common Checklist](00_common_checklist.md).
 > 4. Avoid expanding algorithm details or restating complete formulas.
 > 5. Related terms mentioned in the overview should be presented as hyperlinks, covering the terminology entries that already exist in the body text or will exist in the future, to facilitate the construction of the knowledge graph.
 
@@ -69,8 +69,8 @@
 >
 > Example:
 >
-> - *[One-Click Quantization V1](../../../user_guide/usage_one_click_quantization.md)*: this algorithm is integrated by default as a pre-processing step for outlier suppression.
-> - *[Sensitive Layer Analysis Usage Guide](../../../user_guide/usage_sensitive_layer_analysis.md)*: the analysis results can be used to roll back the layers that use this algorithm.
+> - [One-Click Quantization V1](../../../user_guide/usage_one_click_quantization.md): This algorithm is integrated by default as a pre-processing step for outlier suppression.
+> - [Sensitive Layer Analysis Usage Guide](../../../user_guide/usage_sensitive_layer_analysis.md): The analysis results can be used to roll back the layers that use this algorithm.
 
 ## 4. [OPTIONAL] Related Terms
 
@@ -84,7 +84,7 @@
 > 4. After each related term, it is recommended to briefly describe the relationship type in parentheses or after a colon. Relationship types include but are not limited to:
 >    the parent concept / a subordinate concept / a similar algorithm / a comparison algorithm / a prerequisite term / a follow-up term / a companion term / an application target / an evaluation metric.
 > 5. If this section references terms that are not explained in the body of this entry, they should also be hyperlinks.
-> 6. The anchor text of an entry link is the entry name, without book-title marks (consistent with the level-1 heading of the entry); book-title marks are added only when a document title is mentioned separately in the body text, according to CE-05 of the *[Common Checklist](00_common_checklist.md)*.
+> 6. The anchor text of an entry link is the entry name, without book-title marks (consistent with the level-1 heading of the entry); book-title marks are added only when a document title is mentioned separately in the body text, according to CE-05 of the [Common Checklist](00_common_checklist.md).
 
 ## 5. [OPTIONAL] Reference Documents
 

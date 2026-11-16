@@ -13,7 +13,7 @@ The foundation model quantization tool converts high-bit floating-point numbers 
 
 - Install msModelSlim. For details, see [msModelSlim Installation Guide](../../install_guide/install_guide.md).
 - Ensure the following dependencies have been installed for the foundation model quantization tool.
-  If you run the following commands as a non-root user, add `--user` to the end of each installation command, such as `pip3 install onnx --user`. If dependencies do not completely match in your development environment, modify dependency versions based on the GUI error message.
+  If you run the following commands as a non-root user, add `--user` to the end of each installation command, such as `pip3 install onnx --user`. If dependencies do not completely match in your development environment, adjust the dependency versions according to the error message displayed.
 
 ```bash
 pip3 install numpy==1.25.2
@@ -219,7 +219,7 @@ Code samples for other scenarios are available [here](quantization_and_sparse_qu
 ### 1.7 Quantized Weight Files
 
 - Files in `.npy` format
-When [save_type](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save().md) is set to ['numpy'] or is not set, the quantized weights are saved as npy files. The npy storage format is a dictionary, in which the key is the name of each Linear layer and the value is the Linear weight of that layer. For example, for the ChatGLM2-6B model, the key is transformer.encoder.layers.0.self_attention.query_key_value and the value is the Linear weight of query_key_value in layer 0.
+When [save_type](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save%28%29.md) is set to ['numpy'] or is not set, the quantized weights are saved as npy files. The npy storage format is a dictionary, in which the key is the name of each Linear layer and the value is the Linear weight of that layer. For example, for the ChatGLM2-6B model, the key is transformer.encoder.layers.0.self_attention.query_key_value and the value is the Linear weight of query_key_value in layer 0.
 
 > Note: The `w4a8_dynamic` quantization type does not support saving in the `['numpy']` format. Therefore, when `save_type` is set to `['numpy']`, an error message is displayed. When `save_type` is set to `['numpy', 'safe_tensor']`, the data is saved in `safe_tensor` format. For data in `numpy` format, saving is skipped and an error message is displayed in the log.
 
@@ -239,8 +239,8 @@ When [save_type](../../api_reference/python_api_v0/foundation_model_compression_
 Code sample for reading the preceding files during inference and deployment: `quant_param_dict = np.load("xxx.npy", allow_pickle=True).item()`
 
 - Files in safetensors format
-When [save_type](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save().md) is set to ['safe_tensor'], the quantized weights are saved as a safetensors file and a json description file.
-**Note**: When the [part_file_size](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save().md) value set by the user is greater than 0, the sharded saving function of the PyTorch framework is enabled. The msModelSlim tool counts the size of the weight files it traverses. If the size of a weight file is greater than the part_file_size value, the counted weights are treated as one part, and counting starts over. After counting is complete, the weight shards are saved and a weight index file (xxx.safetensors.index.json) is generated. The names of the weights and the index can follow those of open-source models, for example, xxx-0000x-of-0000x.safetensors. When the number of parts is greater than 99999, the names of the weights and the index become xxx-x-of-x.safetensors.
+When [save_type](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save%28%29.md) is set to ['safe_tensor'], the quantized weights are saved as a safetensors file and a json description file.
+**Note**: When the [part_file_size](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save%28%29.md) value set by the user is greater than 0, the sharded saving function of the PyTorch framework is enabled. The msModelSlim tool counts the size of the weight files it traverses. If the size of a weight file is greater than the part_file_size value, the counted weights are treated as one part, and counting starts over. After counting is complete, the weight shards are saved and a weight index file (xxx.safetensors.index.json) is generated. The names of the weights and the index can follow those of open-source models, for example, xxx-0000x-of-0000x.safetensors. When the number of parts is greater than 99999, the names of the weights and the index become xxx-x-of-x.safetensors.
 
     - The storage format in safetensors is a dictionary containing quantized weights and floating-point weights that are not modified during quantization. The key of a quantized weight is the name of each Linear layer plus the name of the corresponding weight: module.weight and module.bias correspond to anti_fp_norm.npy, weight corresponds to quant_weight.npy, and quant_bias corresponds to quant_bias.npy, and so on. For example, transformer.encoder.layers.0.self_attention.query_key_value.deq_scale of the ChatGLM2-6B model corresponds to transformer.encoder.layers.0.self_attention.query_key_value in deq_scale.npy of the npy-format weights.
 
@@ -280,7 +280,7 @@ When [save_type](../../api_reference/python_api_v0/foundation_model_compression_
 > Note: When the `w4a8_dynamic` quantization type is used, the `model_quant_type_second` and `kv_cache_type_second` keys and their corresponding quantization type `W4A8_DYNAMIC` are also generated in the JSON description file.
 
 - Files in `ascendV1` format
-<br>When [save_type](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save().md) is set to ['ascendV1'], the quantized weights are saved as a safetensors file and a json description file. The safetensors file differs depending on the configured format: when ['ascendV1'] is set and outlier suppression is enabled, *norm.module.bias/weight is not exported, whereas it is exported when ['safe_tensor'] is set. The json description file name changes from quant_model_description_{quant_type}.json to quant_model_description.json, and a version parameter is added.
+<br>When [save_type](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_save%28%29.md) is set to ['ascendV1'], the quantized weights are saved as a safetensors file and a json description file. The safetensors file differs depending on the configured format: when ['ascendV1'] is set and outlier suppression is enabled, *norm.module.bias/weight is not exported, whereas it is exported when ['safe_tensor'] is set. The json description file name changes from quant_model_description_{quant_type}.json to quant_model_description.json, and a version parameter is added.
 
 > Note: When using a `w4a16` quantization configuration, the tool packs the weights by default.
 
@@ -315,7 +315,7 @@ After the quantization weights are generated, you can use the fake quantization 
 
 - Note: This method supports W8A8 (`per_channel`) and W8A16 `per_channel` (MinMax, GPTQ, and HQQ) scenarios.
 
-(2) Call [Calibrator.run()](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_run().md). The model passed in when constructing the Calibrator is replaced with a pseudo-quantized model, which can be called directly for forward inference to test the dialogue performance.
+(2) Call [Calibrator.run()](../../api_reference/python_api_v0/foundation_model_compression_apis/foundation_model_quantization_apis/pytorch_run%28%29.md). The model passed in when constructing the Calibrator is replaced with a pseudo-quantized model, which can be called directly for forward inference to test the dialogue performance.
 
 #### 1.8.2 Dataset accuracy drops significantly, resulting in garbled text or nonsensical dialogue
 
@@ -336,7 +336,7 @@ After the quantization weights are generated, you can use the fake quantization 
 4. Adjust the calibration data. The number of calibration records is generally between 20 and 40. When selecting data, consider the specific inference scenarios where the model will be deployed. For example, Chinese models require Chinese inputs as the calibration dataset, English models require English inputs, and code-generation models require code-generation tasks. Models supporting both languages should use a mixed Chinese-English calibration dataset. Normally, increasing the data volume improves accuracy, but beyond a certain threshold, the accuracy gains become limited. In some cases, reducing the data volume can actually improve accuracy (such as in long-text scenarios).<br>
     To obtain a hybrid calibration dataset, you can use the [`CalibrationData` module](foundation_model_quantization_and_calibration.md#2-usage-of-mixed-calibration-datasets).
 
-5. Increase the number of fallback layers. You can use the `disable_level` automatic fallback feature to automatically roll back linear layers that significantly impact accuracy based on predefined criteria. Alternatively, you can manually specify fallback layers by using `disable_name` based on empirical experience.
+5. Increase the number of fallback layers. You can use the `disable_level` automatic fallback feature to automatically roll back linear layers that significantly impact accuracy based on predefined criteria. Alternatively, you can manually specify fallback layers by using `disable_names` based on empirical experience.
 
 6. Use the mixed quantization function. In scenarios where only a few critical layers require higher accuracy, you can initially perform mixed quantization on those layers, and then evaluate the metrics and dialogue quality. If the accuracy remains insufficient, expand the scope to cover more layers. If the performance drop is too severe, narrow the scope down to a leaner set of critical layers.
 
@@ -440,7 +440,7 @@ Call `export()` of the weight compression object to save the compression results
 
 Note
 
-When the weight compression tool loads the input weight file, deserialization attacks may occur. The tool displays a warning prompt on the GUI regarding this risk. The tool starts processing the file only after you confirm that the file is safe to load.
+When the weight compression tool loads the input weight file, deserialization attacks may occur. The tool prompts you about this risk when it loads the file. The tool starts processing the file only after you confirm that the file is safe to load.
 
 #### 2.3.3 Sparse Quantization Procedure (Using ChatGLM2-6B as an Example)
 
@@ -467,7 +467,7 @@ Prepare the model, weight files, and calibration data. This section uses ChatGLM
 
 Note
 
-You are advised to use the foundation model quantization tool after the downstream task evaluation process for the foundation model is fully established. Verify that your source code runs successfully before performing the following quantization configurations.
+You are advised to use the foundation model quantization tool after the downstream task evaluation process for the foundation model is fully established. Debug the source code yourself before applying the following quantization configuration.
 
 Before quantizing the ChatGLM2-6B model, run the following commands to install the required dependencies. If the quantization tool prompts that a dependency is missing during execution, install it as prompted.
 
@@ -539,7 +539,7 @@ Note
 
 To mitigate the security risk of deserialization attacks when saving quantization parameters, the tool automatically sets the permissions of the output directory to `750`, the quantization weight files to `400`, and the quantization weight description files to `600`.
 
-Start the foundation model sparsification and quantization task and obtain the quantization parameters from the specified output directory.
+Start the foundation model sparsification and quantization task and save the quantization parameters to the specified output directory.
 
 ```bash
 python3 sparse_quant.py
@@ -688,7 +688,7 @@ Call `export()` of the weight compression object to save the compression results
 
 Note
 
-When the weight compression tool loads the input weight file, deserialization attacks may occur. The tool displays a warning prompt on the GUI regarding this risk. The tool starts processing the file only after you confirm that the file is safe to load.
+When the weight compression tool loads the input weight file, deserialization attacks may occur. The tool prompts you about this risk when it loads the file. The tool starts processing the file only after you confirm that the file is safe to load.
 
 #### 2.3.5.3 Sparse Quantization Procedure
 
@@ -700,7 +700,7 @@ Prepare the model, weight files, and calibration data. Ensure the weight files a
 
 Note
 
-You are advised to use the foundation model quantization tool after the downstream task evaluation process for the foundation model is fully established. Verify that your source code runs successfully before performing the following quantization configurations.
+You are advised to use the foundation model quantization tool after the downstream task evaluation process for the foundation model is fully established. Debug the source code yourself before applying the following quantization configuration.
 
 Create a sparse quantization script named `sparse_quant.py`, and then edit the file.
 
@@ -854,7 +854,7 @@ Full acceleration: The compressed KV cache can be used directly for model infere
 
 Incremental acceleration: The tool updates and compresses only the specific subset of the KV cache that corresponds to new tokens.
 
-Long-sequence compression is currently supported for the large models with ALiBi encoding listed in the following table (including but not limited to).
+Long-sequence compression is currently supported for the large models with Alibi encoding listed in the following table (including but not limited to).
 
 Verified models:
 
@@ -1112,7 +1112,7 @@ Note:
 
 ### 5.5 Processing and Saving Layer Weights: NumPy > Nz > Compression > Saving
 
-The tool calls the C-compiled compression processor to interact using files and complete the weight compression process.
+The tool calls the C-compiled compression processor to interact using files and complete the weight compression process. After startup, the tool processes the weights of each layer through a sequence of converting to NumPy, transforming to Nz, compressing, and saving.
 
 ### 5.6 Exporting the Compression Results
 
@@ -1122,7 +1122,7 @@ compressor.export(compress_index, index_root)
 compressor.export(compress_info, info_root, dtype=np.int64) # The info data must be explicitly declared as the INT64 format. Otherwise, it will be saved as the INT8 format by default.
 ```
 
-Note: When the weight compression tool loads the input weight file, deserialization attacks may occur. The tool displays a warning prompt on the GUI regarding this risk. The tool starts processing the file only after you confirm that the file is safe to load.
+Note: When the weight compression tool loads the input weight file, deserialization attacks may occur. The tool prompts you about this risk when it loads the file. The tool starts processing the file only after you confirm that the file is safe to load.
 
 ## 6. Low-rank Model Decomposition
 

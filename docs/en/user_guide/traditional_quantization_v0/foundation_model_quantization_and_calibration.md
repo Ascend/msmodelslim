@@ -6,12 +6,12 @@ This document focuses on foundation model scenarios, including low-memory quanti
 
 ### 1.1 Overview
 
-During the quantization of a foundation model, if the model cannot be fully loaded due to constrained hardware resources or excessive parameters (such as hundreds of billions), the quantization process throws an out-of-memory error. To resolve this, you can enable low-memory quantization mode.
+During foundation model quantization, if the model cannot be fully loaded into NPU memory because NPU memory is limited or the number of parameters is excessive (such as hundreds of billions), the quantization process reports an out-of-memory error. To resolve this, you can enable low-memory quantization mode.
 This mode keeps most model modules stored in the host memory and offloads execution to the NPU only during computation, minimizing NPU memory consumption.
 
 ### 1.2 Note
 
-In this document, **NPU memory** is a term borrowed for ease of understanding; it actually refers to **NPU on-chip memory**.
+In this document, **NPU memory** actually means **NPU on-chip memory**. The term is borrowed from GPU terminology to make the text easier to follow.
 
 ### 1.3 Preparations
 
@@ -139,7 +139,7 @@ class CustomizedProcessor(DatasetProcessorBase):
         return prompts_anses
 
     def verify_positive_prompt(self, prompts, labels):
-        """Validates positive samples within a group of prompts. Output format: [{"prompt": prompt1, "ans": ans1},{"prompt": prompt2, "ans": ans2}]"""
+        """Validates positive samples within a group of prompts, where labels are the corresponding labels. Output format: [{"prompt": prompt1, "ans": ans1},{"prompt": prompt2, "ans": ans2}]"""
         prpt_ans = []
         with torch.no_grad():
             inputs = self.tokenizer(prompts, padding=True, return_tensors="pt").to(self.model.device)
@@ -475,7 +475,7 @@ If the modified modeling file is named `modeling_qwen2_fa3.py` and the `architec
 
 `config = QuantConfig().fa_quant()`
 
-Initialize the core parameters `(w_bit, a_bit, disable_names, disable_last_linear, dev_type, dev_id)` within `QuantConfig`. To enable FlashAttention quantization extensions, call the `fa_quant()` method of the `QuantConfig` instance to complete the configuration.
+Initialize the core parameters `(w_bit, a_bit, disable_names, disable_last_linear, dev_type, dev_id)` within `QuantConfig`. To enable Flash Attention quantization extensions, call the `fa_quant()` method of the `QuantConfig` instance to complete the configuration.
 
 The following table describes the parameters.
 
@@ -577,7 +577,7 @@ When `save_type` is set to `['safe_tensor']`, the quantized weights are saved as
    "model.layers.0.self_attn.fa_k.scale": "FAQuant",         # The scale of key_states of self_attn at layer 0 added during quantization.
    "model.layers.0.self_attn.fa_k.offset": "FAQuant",        # The offset of key_states of self_attn at layer 0 added during quantization.
    "model.layers.0.self_attn.fa_v.scale": "FAQuant",         # The scale of key_states of self_attn at layer 0 added during quantization.
-   "model.layers.0.self_attn.fa_v.offset": "FAQuant",        # The offset of key_states of self_attn at layer 0 added during quantization.
+   "model.layers.0.self_attn.fa_v.offset": "FAQuant",        # The offset of value_states of self_attn at layer 0 added during quantization.
    ...
 }
 ```

@@ -14,7 +14,7 @@ calibrator.run(int_infer=False)
 
 | Parameter | Input/Return | Description | Constraints |
 | ------ | ------ | ------ | ------ |
-| int_infer | Input | Whether to use int8matmul for pseudo-quantization calculation. | Optional.<br>Data type: bool.<br>Default value: False.<br>This parameter is only applicable to W8A8 scenarios and is invalid in W8A16 scenarios. |
+| int_infer | Input | Whether to use int8matmul for fake quantization calculation. | Optional.<br>Data type: bool.<br>Default value: False.<br>This parameter is only applicable to W8A8 scenarios and is invalid in W8A16 scenarios. |
 
 ## Sample
 

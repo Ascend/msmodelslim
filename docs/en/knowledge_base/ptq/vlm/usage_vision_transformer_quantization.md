@@ -36,7 +36,7 @@ flowchart LR
 
 The key details of each stage are as follows:
 
-Prerequisite: model adaptation. Model adaptation must be completed before quantization; the adapter implements interfaces such as PipelineInterface (the basic pipeline interface). For details see the *[VLM Model Integration Quantization Workflow Guide](./integration_guide_vision_transformer_quantization.md)*. If the target model is already in the official pre-validated list, no adapter code is needed; simply specify the corresponding `--model_type`. Model adaptation must be completed first before the quantization workflow can run.
+Prerequisite: model adaptation. Model adaptation must be completed before quantization; the adapter implements interfaces such as PipelineInterface (the basic pipeline interface). For details see the [VLM Model Integration Quantization Workflow Guide](./integration_guide_vision_transformer_quantization.md). If the target model is already in the official pre-validated list, no adapter code is needed; simply specify the corresponding `--model_type`. Model adaptation must be completed first before the quantization workflow can run.
 
 - **Adapt the model pipeline interface**: ensure the VLM model to be quantized has an adapter interface that complies with the `multimodal_vlm_modelslim_v1` specification, so that it can drive the joint forward pass of visual feature extraction and text decoding.
 - **Configure the multimodal calibration dataset**: specify the image-text calibration data through `spec.dataset` and `spec.default_text`; 50 image samples with paired prompts are recommended to cover the general visual feature distribution stably.
@@ -53,7 +53,7 @@ Prerequisite: model adaptation. Model adaptation must be completed before quanti
 
 **Action**:
 
-If the target model is already in the official support list, no adapter code is needed; simply specify the corresponding `--model_type`. If you need to integrate a new VLM model, see the *[VLM Model Integration Quantization Workflow Guide](./integration_guide_vision_transformer_quantization.md)*.
+If the target model is already in the official support list, no adapter code is needed; simply specify the corresponding `--model_type`. If you need to integrate a new VLM model, see the [VLM Model Integration Quantization Workflow Guide](./integration_guide_vision_transformer_quantization.md).
 
 That guide explains the `PipelineInterface` specification in detail, the core methods (`handle_dataset`, `init_model`, `generate_model_visit`, `generate_model_forward`, `enable_kv_cache`), and the visual component encapsulation plus adapter registration and development steps.
 
@@ -78,7 +78,7 @@ That guide explains the `PipelineInterface` specification in detail, the core me
 
 2. **Calibration Set Selection Guide and Recommended Configuration**:
    - **Confirm the modality support scope of the calibration set**: the modality support of a calibration set depends on the model type. **The differences in calibration set support between omni-modal models and non-omni-modal models are as follows**:
-      - **Omni-modal models (such as Qwen3-Omni)**: a sample may contain `text` plus any combination of `image` / `audio` / `video`; when `text` is absent the configured `default_text` is used. Within one quantization task the effective modality signature of all samples must be identical (homogeneity constraint); for example, pure-text and image-text samples must not be mixed, nor must videos with and without an audio track.
+      - **Omni-modal models (such as Qwen3-Omni)**: a sample may contain `text` plus any combination of `image` / `audio` / `video`; when `text` is absent the configured `default_text` is used. Within one quantization task the effective modality signature of all samples must be identical (homogeneity constraint); for example, pure-text and image-text samples must not be mixed, nor may videos with and without an audio track be mixed.
       - **Non-omni-modal models (such as Qwen3-VL and Qwen3.5, VLMs that support only text + image)**: the adapter consumes only the `text` and `image` fields; samples containing `audio` or `video` are not supported by the adapter.
    - **General multimodal quantization (recommended)**: the built-in `calibImages` is used by default. The images cover general natural scenes, charts, and image-text layouts, and together with the default description prompt they cover the general visual feature distribution stably.
    - **Vertical scenario customization**: if the model targets industrial defect detection, medical imaging question answering, or autonomous driving, replace the images with real business images and align domain-specific instructions (such as "Please analyze the abnormal region in the image") in `default_text` or the index file.
@@ -180,8 +180,8 @@ Configuration example: `dataset: "calibImages"` or the corresponding path.
    ```
 
 2. **Format Selection and Documentation Links**:
-   - **[ascendv1_saver Configuration Description](../../../api_reference/config/format/ascendv1_saver.md)**: the **recommended format for Ascend NPU deployment**. It fits the MindIE and vLLM-Ascend inference engines and exports a `quant_model_description.json` containing the multimodal model quantization parameters plus sharded quantized weights `*.safetensors`.
-   - **[mindie_format_saver Configuration Description](../../../api_reference/config/format/mindie_format_saver.md)**: a unified deployment format for the MindIE SD / MindIE ecosystem.
+   - [ascendv1_saver Configuration Description](../../../api_reference/config/format/ascendv1_saver.md): the **recommended format for Ascend NPU deployment**. It fits the MindIE and vLLM-Ascend inference engines and exports a `quant_model_description.json` containing the multimodal model quantization parameters plus sharded quantized weights `*.safetensors`.
+   - [mindie_format_saver Configuration Description](../../../api_reference/config/format/mindie_format_saver.md): a unified deployment format for the MindIE SD / MindIE ecosystem.
 
 3. **Selection Guide**:
    - For Ascend deployment `ascendv1_saver` is the first choice.
@@ -205,7 +205,7 @@ Configuration example: `dataset: "calibImages"` or the corresponding path.
    | QuaRot | Introduces an orthogonal Walsh-Hadamard rotation matrix to spread activation outlier features | Improves the distribution shift of low-bit multimodal models | [QuaRot](../../quantization_algorithms/quarot/usage_quarot.md) |
    | KVCache Quant | Quantizes the Key/Value cache tensors in multi-turn image-text conversations | Memory optimization for multi-turn image-text conversations | [KVCache Quant](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md) |
 
-   > For the complete algorithm list see the *[Quantization Algorithm Overview](../../quantization_algorithms/README.md)*.
+   > For the complete algorithm list see the [Quantization Algorithm Overview](../../quantization_algorithms/README.md).
 
 2. **Algorithm Selection and Tuning**:
    - **Excluding vision-sensitive projection layers (key strategy)**: the visual feature projection layers (such as `*merger*`, `*linear_fc2`, and `*deepstack_merger_list*`) map image patch features into the text token space and are highly sensitive to numerical precision. Explicitly excluding them in the `exclude` list and keeping them as floating-point weights suppresses the collapse of image-text understanding caused by cross-modal alignment error.
@@ -303,5 +303,5 @@ msmodelslim quant \
 
 | API or Capability | Brief Description | Link |
 | --- | --- | --- |
-| `msmodelslim quant` | One-click quantization CLI entry point and complete command reference | *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)* |
+| `msmodelslim quant` | One-click quantization CLI entry point and complete command reference | [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md) |
 | multimodal_vlm_modelslim_v1 Configuration Description | Field descriptions of task-level configuration such as `runner`/`process`/`save`/`dataset`/`default_text` | [multimodal_vlm_modelslim_v1 Configuration Description](../../../api_reference/config/quant/multimodal_vlm_modelslim_v1.md) |

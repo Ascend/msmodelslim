@@ -2,7 +2,7 @@
 
 msModelSlim supports multiple advanced quantization algorithms, covering all aspects from outlier suppression to low-bit optimization. The following tables summarize the currently supported core algorithms and their primary characteristics by category.
 
-> **Reading tip**: Each algorithm directory contains two types of documents: "Term" and "Usage Guide". A Term document only introduces the algorithm definition, principles, properties, applicable scenarios, and related knowledge. A Usage Guide targets new users and focuses on the meaning of the configuration parameters, recommended starting values, and when to adjust them. To look up complete field types, default values, and advanced task-level configuration, continue reading the *[modelslim_v1 Configuration Reference](../../api_reference/config/quant/modelslim_v1.md)*.
+> **Reading tip**: Each algorithm directory contains two types of documents: "Term" and "Usage Guide". A Term document only introduces the algorithm definition, principles, properties, applicable scenarios, and related knowledge. A Usage Guide targets new users and focuses on the meaning of the configuration parameters, recommended starting values, and when to adjust them. To look up complete field types, default values, and advanced task-level configuration, continue reading the [modelslim_v1 Configuration Reference](../../api_reference/config/quant/modelslim_v1.md).
 
 ## 1. Outlier Suppression Algorithms
 
@@ -69,7 +69,7 @@ Attention head analysis uses `msmodelslim analyze` to measure the cross-segment 
 
 ## 5. Algorithm Selection Suggestions
 
-Beginners can start with *[One-Click Quantization (V1)](../../user_guide/usage_one_click_quantization.md)*, which automatically integrates validated algorithm combinations. When an automatically searched configuration is needed, see the *[Auto Tuning Strategies Overview](../tuning_strategies/README.md)*. For practical configurations, also refer to the corresponding YAML files under `lab_practice/`.
+Beginners can start with [One-Click Quantization (V1)](../../user_guide/usage_one_click_quantization.md), which automatically integrates validated algorithm combinations. When an automatically searched configuration is needed, see the [Auto Tuning Strategies Overview](../tuning_strategies/README.md). For practical configurations, also refer to the corresponding YAML files under `lab_practice/`.
 
 ### 5.1 Quantization Algorithms
 
@@ -90,10 +90,10 @@ Beginners can start with *[One-Click Quantization (V1)](../../user_guide/usage_o
 
 ### 5.3 Sensitive Layer Analysis
 
-Sensitive layer analysis currently supports measuring sensitivity on calibration data at three scopes — `linear` / `layer` / `attn` — and using the results for fallback and mixed-precision tuning at the corresponding granularity. Usage guides: *[Linear Layers](../../user_guide/usage_sensitive_linear_analysis.md)*, *[Layers](../../user_guide/usage_sensitive_layer_analysis.md)*, *[Attention](../../user_guide/usage_sensitive_attn_analysis.md)*.
+Sensitive layer analysis currently supports measuring sensitivity on calibration data at three scopes — `linear` / `layer` / `attn` — and using the results for fallback and mixed-precision tuning at the corresponding granularity. Usage guides: [Linear Layers](../../user_guide/usage_sensitive_linear_analysis.md), [Layers](../../user_guide/usage_sensitive_layer_analysis.md), [Attention](../../user_guide/usage_sensitive_attn_analysis.md).
 
 - **linear** (linear layers): **Kurtosis** is preferred; it uses activation kurtosis to capture the impact of peaks and tails and helps identify linear layers that need fallback or a wider bit width.
 - **layer** (decoder blocks): **mse_layer_wise** is preferred and suits fallback of entire layers or blocks (such as MLP or attention segments).
 - **attn** (attention structures): **Attention MSE (mse)** is preferred, mainly used together with **FA3 Quant** to identify attention modules that need fallback (an adapter interface is required).
 
-If the goal is attention head filtering before long-sequence KV cache compression (`attn_head`), use **RA Compress**: it filters induction heads / echo heads by the repeated-segment structure and produces the `head.pt` list of critical heads for delivery to the subsequent MindIE inference framework (LLM only; the calibration input is built by the algorithm itself at runtime, so `--calibration_dataset` is not required). This scope produces a deliverable rather than a sensitivity ranking and is not used for fallback or mixed-precision tuning. For the algorithm description, see *[4. Attention Head Analysis Algorithms](#4-attention-head-analysis-algorithms)*; for the usage guide, see *[Attention Head](../../user_guide/usage_sensitive_attn_head_analysis.md)*.
+If the goal is attention head filtering before long-sequence KV cache compression (`attn_head`), use **RA Compress**: it filters induction heads / echo heads by the repeated-segment structure and produces the `head.pt` list of critical heads for delivery to the subsequent MindIE inference framework (LLM only; the calibration input is built by the algorithm itself at runtime, so `--calibration_dataset` is not required). This scope produces a deliverable rather than a sensitivity ranking and is not used for fallback or mixed-precision tuning. For the algorithm description, see [4. Attention Head Analysis Algorithms](#4-attention-head-analysis-algorithms); for the usage guide, see [Attention Head](../../user_guide/usage_sensitive_attn_head_analysis.md).

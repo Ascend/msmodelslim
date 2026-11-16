@@ -2,19 +2,19 @@
 
 ## System Security Hardening
 
-You are advised to enable **address space layout randomization** (ASLR) at level 2 in the system. Run the following command to enable it:
+You are advised to enable **address space layout randomization** (ASLR) at level 2 in the system — also known as fully randomized address space layout randomization. Run the following command to enable it:
 
     echo 2 > /proc/sys/kernel/randomize_va_space
 
 ## Running User Recommendations
 
- 1. Use the principle of least privilege. For example, prevent other users from writing data by disabling permissions such as `666` and `777`.
+ 1. You must ensure the principle of least privilege yourself. For example, prevent other users from writing data by disallowing permissions such as `666` and `777`.
 
  2. Before installing or using the tools, ensure the user's `umask` is set to `0027` or a more restrictive value. Otherwise, issues may occur, such as source code compilation failures, configuration file read failures, or excessive permissions for generated directories and files.
 
  3. Tools in this repository are designed to be installed and used with low privileges. For security and least privilege purposes, no tool should be used with a high-privilege account such as root. You are advised to install and run them with a common user account.
 
- 4. If a tool depends on CANN, use the CANN package installed by the same non-privileged user. After running the `source` command, do not modify environment variables in `set_env.sh`.
+ 4. If a tool depends on CANN, to ensure security, use the CANN package installed by default by the same low-privilege user. After running the `source` command, do not arbitrarily modify environment variables in `set_env.sh`.
 
 ## File Permission Control
 

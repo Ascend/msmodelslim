@@ -61,8 +61,8 @@ This mode does not lower the bit width and introduces no quantization error, ser
 
 ## 3. Related Workflows
 
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: select this mode via `--quant_type` or a YAML configuration and run quantization.
-- *[Quantization Accuracy Tuning Guide](../../../user_guide/process_quantization_precision_tuning.md)*: accuracy degradation caused by this mode can be rolled back layer by layer and tuned through that workflow.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): select this mode via `--quant_type` or a YAML configuration and run quantization.
+- [Quantization Accuracy Tuning Guide](../../../user_guide/process_quantization_precision_tuning.md): accuracy degradation caused by this mode can be rolled back layer by layer and tuned through that workflow.
 
 ---
 
@@ -79,6 +79,6 @@ This mode does not lower the bit width and introduces no quantization error, ser
 
 ## 5. Reference Documents
 
-1. *[Float Sparse Parameter Configuration Workflow Guide](../../quantization_algorithms/float_sparse/usage_float_sparse.md)*
-2. *[Linear Quantization Parameter Configuration Workflow Guide](../../quantization_algorithms/linear_quant/usage_linear_quant.md)*
-3. *[Quantization Modes](../README.md)*
+1. [Float Sparse Parameter Configuration Workflow Guide](../../quantization_algorithms/float_sparse/usage_float_sparse.md)
+2. [Linear Quantization Parameter Configuration Workflow Guide](../../quantization_algorithms/linear_quant/usage_linear_quant.md)
+3. [Quantization Modes](../README.md)

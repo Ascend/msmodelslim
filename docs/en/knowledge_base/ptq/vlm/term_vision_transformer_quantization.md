@@ -1,6 +1,6 @@
 # Vision-Language Model Quantization
 
-> **Entry Category**: Quantization Basic Concept ([Quantization Basics](../README.md))<br>
+> **Entry Category**: [Quantization Basic Concept](../README.md)<br>
 > **English Name**: Vision-Language Model Quantization<br>
 > **Abbreviation**: VLM Quantization<br>
 > **Application Domain**: Multimodal understanding model inference acceleration, model compression
@@ -38,7 +38,7 @@ Compared with pure language models, VLM quantization has the following notable c
 
 - [Multimodal Understanding Model (VLM) Quantization Usage Guide](./usage_vision_transformer_quantization.md): the complete workflow for VLM quantization.
 - [VLM Model Integration Quantization Workflow Guide](./integration_guide_vision_transformer_quantization.md): development guidance for integrating a new vision-language model into the quantization workflow.
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: covers the one-click quantization workflow for various model types.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): covers the one-click quantization workflow for various model types.
 
 ---
 

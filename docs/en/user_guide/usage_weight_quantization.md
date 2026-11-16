@@ -33,7 +33,7 @@ This guide describes the business path shared by the three model categories: dow
 
 **Follow-up operations**:
 
-- After the deliverables pass verification, return to the [New Model Quantization Tuning Process](process_new_model_quantization_tuning.md) to continue with steps such as operator development and graph construction, and accuracy and performance evaluation.
+- After the deliverables pass verification, return to the [New Model Quantization Tuning Process](process_new_model_quantization_tuning.md) to continue with steps such as operator development and graph composition, and accuracy and performance evaluation.
 
 ## 3. Inputs and Deliverables
 
@@ -74,7 +74,7 @@ msmodelslim quant \
 
 ### Pre-Execution Checklist
 
-Before downloading and quantizing, check each item in the following checklist one by one; if any item is not passed, resolve it first before continuing with the subsequent steps. Running this pre-check once more before one-click quantization is recommended.
+Before downloading and quantizing, check each item in the following checklist one by one; if any item is not passed, resolve it first before continuing with the subsequent steps. It is recommended to run this pre-check once more before one-click quantization.
 
 | No. | Check Item | Recommended Command | Pass Criteria |
 | --- | --- | --- | --- |
@@ -156,7 +156,7 @@ When integrating a model yourself, perform the following operations:
              dtype: "int8"
              symmetric: true
              method: "minmax"
-         # For the first version of multimodal understanding, changing it to match only the language part is recommended
+         # For the first version of multimodal understanding, it is recommended to change `include` so that it matches only the language part
          include: ["*"]
          exclude: []
      dataset: "mix_calib.jsonl"
@@ -261,7 +261,7 @@ This table covers only the common blockers within the steps of this guide; for a
 | Model loading, `trust_remote_code`, or dependency version failure | Check the dependencies on the model release page and in the prerequisites; enable remote code only for trustworthy models when necessary |
 | `--model_type` not hit | Confirm that the adapter is registered in `config.ini`, and re-run `bash install.sh` to make `${MODEL_TYPE}` take effect |
 | Configuration parsing failure or missing protocol fields | Return to Step 3, complete or correct the YAML according to the corresponding configuration protocol, and then re-run Step 4 |
-| Errors in interfaces, subgraphs, calibration dumps, or expert orchestration during quantization | Return to Step 2, and complete the implementation according to the corresponding integration guide and a similar adapter of the same series |
+| Errors in interfaces, subgraphs, calibration dumps, or expert orchestration during quantization | Return to Step 2, and complete the implementation according to the integration guide for the model category and a similar adapter of the same series |
 | Incomplete artifacts or a description file that does not meet expectations | Check the saver type and the export format, and compare them with the [Quantization Format Terminology Entry](../knowledge_base/quantization_format/README.md) and the corresponding format terminology entry; after confirming the description file, re-run Step 4 and then perform Step 5 |
 | Insufficient memory during quantization | Switch to multi-device quantization, reduce the calibration scale, or switch to a device with more memory, and then re-run |
 

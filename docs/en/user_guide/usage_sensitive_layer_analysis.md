@@ -15,7 +15,7 @@ This guide is intended for developers and algorithm engineers who need to identi
 
 - **Multimodal generation models** (text-to-image, text-to-video, etc.): currently not supported by sensitive layer analysis.
 - Need to fall back or increase the bit width by single linear layer: use the [Sensitive Linear Layer Analysis Usage Guide](usage_sensitive_linear_analysis.md).
-- Identify the attention modules that need to fall back when FA quantization is applied: use the [Attention Sensitive Layer Analysis Usage Guide](usage_sensitive_attn_analysis.md).
+- Identify attention modules that must fall back together with FA quantization: use the [Attention Sensitive Layer Analysis Usage Guide](usage_sensitive_attn_analysis.md).
 
 ## 2. Process Relationships and Prerequisites
 
@@ -140,7 +140,7 @@ Replace the variables with actual values as described in the [Command-Line Previ
 
 **Action**:
 
-1. Read the sensitive layer ranking list: a **higher** Score indicates that the layer is more sensitive to quantization, so fallback or bit-width increase should be prioritized. The `layer` output is ranked by Decoder block granularity, and the fallback layer names in the YAML contain wildcards by default (such as `model.layers.2.*`), indicating that all submodules in that block fall back. See the example below:
+1. Read the sensitive layer ranking list: a **higher** Score indicates that the layer is more sensitive to quantization, so fallback or bit-width increase should be prioritized. The `layer` output is ranked by Decoder block granularity, and the fallback layer names in the YAML contain wildcards by default (such as `model.layers.2.*`), indicating that all submodules in that block fall back (are excluded from quantization). See the example below:
 
    ```text
    === Layer Analysis Results (mse_layer_wise method) ===

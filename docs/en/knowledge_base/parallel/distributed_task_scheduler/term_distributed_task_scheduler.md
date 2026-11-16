@@ -106,7 +106,7 @@ that is, it must be consistent with the result of executing the complete task ch
 
 ## 5. Related Workflows
 
-- *[Distributed Task Scheduler Usage Guide](distributed_task_scheduler_guide.md)*: provides the adaptation workflow description and case references for DTS.
+- [Distributed Task Scheduler Usage Guide](distributed_task_scheduler_guide.md): provides the adaptation workflow description and case references for DTS.
 
 ---
 
@@ -121,4 +121,4 @@ that is, it must be consistent with the result of executing the complete task ch
 
 ## 7. Reference Documents
 
-1. *[Distributed Task Scheduler Usage Guide](distributed_task_scheduler_guide.md)*
+1. [Distributed Task Scheduler Usage Guide](distributed_task_scheduler_guide.md)

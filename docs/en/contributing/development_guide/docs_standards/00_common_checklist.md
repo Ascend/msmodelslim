@@ -1,6 +1,6 @@
 # Common Checklist
 
-> This checklist is part of the *[msModelSlim Documentation Standards](./README.md)* and lists the general check items applicable to all documents, each with a criterion and a recommended action. For the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the *[msModelSlim Documentation Standards](./README.md)*; for the item numbering rules and type codes, see [Section 7.1](./README.md#71-checklist-authoring-conventions). Type-specific checklists reference the general items in this checklist, which does not define any type-specific items.
+> This checklist is part of the [msModelSlim Documentation Standards](./README.md) and lists the general check items applicable to all documents, each with a criterion and a recommended action. For the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the [msModelSlim Documentation Standards](./README.md); for the item numbering rules and type codes, see [Section 7.1](./README.md#71-checklist-authoring-conventions). Type-specific checklists reference the general items in this checklist, which does not define any type-specific items.
 > Scope: documents within the template system must satisfy all items in this checklist; documents outside the template system (installation guides, quick start guides, FAQs, release notes, and so on) must satisfy at least the ERROR items.
 
 ## 1. General Check Items

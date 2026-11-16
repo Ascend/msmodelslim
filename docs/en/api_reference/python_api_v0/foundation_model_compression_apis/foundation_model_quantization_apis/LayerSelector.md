@@ -38,7 +38,7 @@ select_layers_by_threshold(threshold)
 
 | Parameter | Input/Return Value | Description | Usage Constraints |
 | ------ | ------ | ------ | ------ |
-| threshold | Input | Quantization difficulty threshold. | Required.<br>Data type: float.<br>Value Range: >0. |
+| threshold | Input | quantization difficulty threshold. | Required.<br>Data type: float.<br>Value Range: >0. |
 | Return value | Return | A list of layer names whose quantization difficulty exceeds the threshold. | Data type: list. |
 
 ### select_layers_by_disable_level
@@ -49,7 +49,7 @@ select_layers_by_disable_level(disable_level)
 
 | Parameter | Input/Return | Description | Constraints |
 | ------ | ------ | ------ | ------ |
-| disable_level | Input | The number of layers to skip quantization. | Required.<br>Data type: int.<br>Value range: ≥0. |
+| disable_level | Input | The number of layer levels to skip quantization. | Required.<br>Data type: int.<br>Value range: ≥0. |
 | Return value | Return | A list of layer names in the selected levels. | Data type: list. |
 
 ## Sample

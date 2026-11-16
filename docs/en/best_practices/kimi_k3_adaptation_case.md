@@ -6,13 +6,13 @@
 
 **Covered steps**: model adaptation → quantization scheme design → weight quantization → accuracy evaluation.
 
-**Related process**: *[VLM Model Integration Quantization Workflow Guide](../knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md)*, *[One-Click Quantization Usage Guide](../user_guide/usage_one_click_quantization.md)*
+**Related process**: [VLM Model Integration Quantization Workflow Guide](../knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md), [One-Click Quantization Usage Guide](../user_guide/usage_one_click_quantization.md)
 
 ## 2. Environment and Versions
 
 | Item | Version or Configuration |
 | --- | --- |
-| Product form | Ascend A3 products (restricted; this case is verified on Ascend A3 products) |
+| Product form | Atlas A3 products (restricted; this case is verified on Atlas A3 products) |
 | vLLM Ascend | [vllm-ascend:v0.23.0rc1-a3](https://quay.io/repository/ascend/vllm-ascend?tab=tags&tag=v0.23.0rc1-a3) |
 | CANN | 9.0.1 (included in the image) |
 | PyTorch | 2.10.0 (included in the image) |
@@ -34,7 +34,7 @@
 | --- | --- | --- | --- | --- |
 | Input | Floating-point weights | [Kimi-K3](https://huggingface.co/moonshotai/Kimi-K3) | The weight files are complete | The download is complete and the hash values match |
 | Deliverable | Model adapter code | [`msmodelslim/model/kimi_k3/`](../../../msmodelslim/model/kimi_k3/) | The adapter must implement the interfaces required by the quantization pipeline | `--model_type Kimi-K3` on the command line hits the adapter |
-| Deliverable | Quantization best practice | [`lab_practice/kimi_k3/kimi_k3_w4a8.yaml`](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | Complies with the *[modelslim_v1 Configuration Reference](../api_reference/config/quant/modelslim_v1.md)* | The quantization configuration file is specified with the `--config` command-line parameter |
+| Deliverable | Quantization best practice | [`lab_practice/kimi_k3/kimi_k3_w4a8.yaml`](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | Complies with the [modelslim_v1 Configuration Reference](../api_reference/config/quant/modelslim_v1.md) | The quantization configuration file is specified with the `--config` command-line parameter |
 | Deliverable | Quantized weight directory | The save location is specified with the `--save_path` command-line parameter | Complies with the [AscendV1 format](../knowledge_base/quantization_format/ascendv1/ascendv1_usage.md) | The quantized weights meet the accuracy test target |
 
 ## 4. Procedure
@@ -61,7 +61,7 @@
    | `format` | `mxfp4-pack-quantized` | The native weights contain MXFP4 quantized weights, so weight dequantization must be completed offline or online |
    | `mm_projector_type` | `patchmergerv2` | The fusion module class for visual features, which affects the adaptation of the rotation quantization algorithm |
 
-2. Following the *[VLM Model Integration Quantization Workflow Guide](../knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md)*, develop the model adapter ([`msmodelslim/model/kimi_k3/model_adapter.py`](../../../msmodelslim/model/kimi_k3/model_adapter.py)). For Kimi-K3, even with layer-by-layer loading, the 64 GB of memory on a single device still overflows, so the expert parallelism adaptation must be completed with reference to the *[Expert Parallelism Usage Guide](../knowledge_base/parallel/expert_parallelism/expert_parallelism_guide.md)* ([`ep_patches.py`](../../../msmodelslim/model/kimi_k3/ep_patches.py)).
+2. Following the [VLM Model Integration Quantization Workflow Guide](../knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md), develop the model adapter ([`msmodelslim/model/kimi_k3/model_adapter.py`](../../../msmodelslim/model/kimi_k3/model_adapter.py)). For Kimi-K3, even with layer-by-layer loading, the 64 GB of memory on a single device still overflows, so the expert parallelism adaptation must be completed with reference to the [Expert Parallelism Usage Guide](../knowledge_base/parallel/expert_parallelism/expert_parallelism_guide.md) ([`ep_patches.py`](../../../msmodelslim/model/kimi_k3/ep_patches.py)).
 
 3. Register the model adapter ([`config/config.ini`](../../../config/config.ini)):
 
@@ -177,7 +177,7 @@
     }'
    ```
 
-4. Run the dataset accuracy evaluation with reference to the *[AISBench tutorial](https://github.com/AISBench/benchmark/blob/master/README.md)*.
+4. Run the dataset accuracy evaluation with reference to the [AISBench tutorial](https://github.com/AISBench/benchmark/blob/master/README.md).
 
    - Accuracy results:
 
@@ -188,7 +188,7 @@
 
    > [!NOTE]
    >
-   > Evaluation data may fluctuate. If a single evaluation result does not meet the target, it is recommended to use the average of multiple evaluation results as the basis. If the results of multiple evaluations still do not meet the target, refer to the *[Quantization Accuracy Tuning Guide](../user_guide/process_quantization_precision_tuning.md)* for accuracy tuning.
+   > Evaluation data may fluctuate. If a single evaluation result does not meet the target, it is recommended to use the average of multiple evaluation results as the basis. If the results of multiple evaluations still do not meet the target, refer to the [Quantization Accuracy Tuning Guide](../user_guide/process_quantization_precision_tuning.md) for accuracy tuning.
 
 **Output**:
 
@@ -201,7 +201,7 @@
 | Step | Key Operation | Metric | Change | Note |
 | --- | --- | --- | --- | --- |
 | Step 1 | Develop and register the model adapter | `--model_type Kimi-K3` hits the adapter | New model adapter | The code takes effect only after a reinstall is performed once development is complete |
-| Step 2 | Design the mixed quantization scheme | [kimi_k3_w4a8.yaml](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | New quantization practice configuration | The quantization practice configuration complies with the *[modelslim_v1 Configuration Reference](../api_reference/config/quant/modelslim_v1.md)* |
+| Step 2 | Design the mixed quantization scheme | [kimi_k3_w4a8.yaml](../../../lab_practice/kimi_k3/kimi_k3_w4a8.yaml) | New quantization practice configuration | The quantization practice configuration complies with the [modelslim_v1 Configuration Reference](../api_reference/config/quant/modelslim_v1.md) |
 | Step 3 | Run the quantization command | W4A8 quantized weights | Quantized weights exported | The exported artifacts comply with the [AscendV1 format](../knowledge_base/quantization_format/ascendv1/ascendv1_usage.md) |
 | Step 4 | vLLM Ascend deployment + AISBench accuracy evaluation | [GPQA](https://github.com/AISBench/benchmark/blob/master/ais_bench/benchmark/configs/datasets/gpqa/README.md) / [OCRBench](https://github.com/AISBench/benchmark/blob/master/ais_bench/benchmark/configs/datasets/ocrbench_v2/README.md) | Accuracy verified | Accuracy target met |
 

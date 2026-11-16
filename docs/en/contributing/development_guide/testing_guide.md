@@ -44,7 +44,7 @@ cases/core/context/test_base_context.py .................    [  4%]
 ===== 392 passed, 14 skipped, 4 warnings in 18.30s =====
 ```
 
->[!NOTE]
+> [!NOTE]
 >
 > After the tests are complete, you will see the statistics of each module in the format `X passed, Y skipped, Z warnings`.
 
@@ -102,7 +102,7 @@ Test method naming follows a three-part structure:
 | `assertion` | The assertion description of the result | `returns_none`, `raises_error`, `equals_expected` |
 | `condition` | The precondition that triggers the behavior | `input_is_empty`, `weight_out_of_range`, `not_updated` |
 
->[!NOTE]
+> [!NOTE]
 >
 > Naming is documentation. When a test fails, the method name should directly identify **which scenario** has a problem, rather than merely "some feature is broken". For example, if `test_quantize_raises_error_when_weight_out_of_range` fails → there is a boundary handling issue; if `test_quantize_works` fails → you only know that "quantization has a problem".
 
@@ -111,7 +111,7 @@ Test method naming follows a three-part structure:
 - Each class in the source code **must** correspond to a test class, and the test class name is prefixed with `Test` (for example, `W4A4Quantizer` → `TestW4A4Quantizer`).
 - A test class must include a docstring describing the target under test.
 - A single file may contain multiple test classes, arranged from top to bottom according to the classes under test.
-- Each test method must include a docstring in the **scenario/expectation** format: `"""Scenario: xxx. Expectation: yyy."""`.
+- Each test method must include a docstring in Chinese in the **scenario/expectation** format: `"""场景：xxx。预期：yyy。"""`.
 - Each test file must contain a standard copyright declaration header.
 - Import order: standard library → third-party library → project internal modules, with one blank line between each group; project internal modules must be imported using the full package path.
 
@@ -169,7 +169,7 @@ When adding a new fixture, select the placement level based on its scope:
 
 ### Common Test Patterns
 
-| Pattern | Usage | Critical API |
+| Pattern | Usage | Key API |
 |------|------|----------|
 | Exception assertion | Verify the exception type and message. | `pytest.raises(ExceptionType, match="...")` |
 | Floating-point comparison | Avoid floating-point precision issues. | `assert val == pytest.approx(expected)` |

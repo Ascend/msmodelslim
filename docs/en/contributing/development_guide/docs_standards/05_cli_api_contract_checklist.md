@@ -1,6 +1,6 @@
 # Command-Line API Document Checklist
 
-> Used to check command-line interface documents that are created or reworked based on the *[Command-Line API Document Template](05_cli_api_contract_template.md)*. For the general check items, see the *[Common Checklist](00_common_checklist.md)*; for the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the *[msModelSlim Documentation Standards](./README.md)*. The following are the check items specific to the command-line API document type, separated into tables by severity level.
+> Used to check command-line interface documents that are created or reworked based on the [Command-Line API Document Template](05_cli_api_contract_template.md). For the general check items, see the [Common Checklist](00_common_checklist.md); for the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the [msModelSlim Documentation Standards](./README.md). The following are the check items specific to the command-line API document type, separated into tables by severity level.
 
 ## 1. Check Items
 
@@ -26,4 +26,4 @@
 
 ## 2. Usage Notes
 
-- **Validation scope**: command-line interface documents written based on the *[Command-Line API Document Template](05_cli_api_contract_template.md)*, stored in `docs/zh/api_reference/cli/`.
+- **Validation scope**: command-line interface documents written based on the [Command-Line API Document Template](05_cli_api_contract_template.md), stored in `docs/en/api_reference/cli/`.

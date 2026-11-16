@@ -11,7 +11,7 @@
 
 compressed-tensors is the [Quantization Format Terminology Entry](../README.md) compatible with the HuggingFace / vLLM ecosystem, and its field conventions follow the [vllm-project/compressed-tensors](https://github.com/vllm-project/compressed-tensors) specification. msModelSlim has this specification's structure definitions **built in at export time**, so the quantization process **does not require** installing the `compressed-tensors` package. Its core characteristic is writing the scheme into `config.json` -> `quantization_config` and the weights into HF-style safetensors.
 
-For configuration, execution, and deployment steps see the *[compressed-tensors Usage Guide](compressed_tensors_usage.md)*. For the principles and formulas of each quantization mode see *[Quantization Modes](../../quantization_mode/README.md)* and the entry links in the support tables below.
+For configuration, execution, and deployment steps see the [compressed-tensors Usage Guide](compressed_tensors_usage.md). For the principles and formulas of each quantization mode see [Quantization Modes](../../quantization_mode/README.md) and the entry links in the support tables below.
 
 ---
 
@@ -130,20 +130,20 @@ Each `config_groups` entry describes the quantization scheme of a group of layer
 
 ## 4. <span id="engine-support">Inference Engine Support</span>
 
-All Presets in the table **can be exported by compressed-tensors**; the table describes whether the artifact can be loaded by the target inference engine through the HF `quantization_config`. Specific model x Preset x engine combinations are subject to the *[Foundation Model Support Matrix](../../model/README.md)* and the official best practices.
+All Presets in the table **can be exported by compressed-tensors**; the table describes whether the artifact can be loaded by the target inference engine through the HF `quantization_config`. Specific model x Preset x engine combinations are subject to the [Foundation Model Support Matrix](../../model/README.md) and the official best practices.
 
 | Format Preset | vLLM (HF ecosystem) | Description |
 | --- | --- | --- |
 | W8A8 Static | √ | The activation has been calibrated offline; `act.scope: per_tensor` |
 | W8A8 Dynamic | √ | Dynamic activation; `act.scope: per_token` |
 
-> **Legend**: `√` means the engine has a loadable path or validated practice. When selecting, first confirm that the framework supports `quant_method: "compressed-tensors"`, then check the deliverable fields in [Quantization Mode Support](#mode-support) below. For Ascend private paths use the *[AscendV1](../ascendv1/term_ascendv1.md)* instead.
+> **Legend**: `√` means the engine has a loadable path or validated practice. When selecting, first confirm that the framework supports `quant_method: "compressed-tensors"`, then check the deliverable fields in [Quantization Mode Support](#mode-support) below. For Ascend private paths use the [AscendV1](../ascendv1/term_ascendv1.md) instead.
 
 ---
 
 ## 5. <span id="mode-support">Quantization Mode Support</span>
 
-> **Deliverable notes**: In the table, "Deliverable: quantization_config" corresponds to the scheme inside `config.json`; "Deliverable: safetensors" corresponds to `model*.safetensors`. For the mode principles see the *[Quantization Modes](../../quantization_mode/README.md)* entry. The deliverables of this entry are described in two columns: `quantization_config` and `model*.safetensors`.
+> **Deliverable notes**: In the table, "Deliverable: quantization_config" corresponds to the scheme inside `config.json`; "Deliverable: safetensors" corresponds to `model*.safetensors`. For the mode principles see the [Quantization Modes](../../quantization_mode/README.md) entry. The deliverables of this entry are described in two columns: `quantization_config` and `model*.safetensors`.
 
 | Format Preset | Whether compressed-tensors Supports Export | Quantization Mode Entry | Deliverable: quantization_config | Deliverable: safetensors |
 | ------------ | ------------------------- | ---------------- | ----------------------------------------- | ------------------------------------- |
@@ -220,15 +220,15 @@ A typical `config_groups` entry (the activation is dynamic; `input_activations.d
 - Distributed export is not supported (`support_distributed() = False`).
 - KV Cache quantization is not supported yet (`kv_cache_scheme = null`).
 - Only the two QIR types W8A8 Static / W8A8 Dynamic have handlers.
-- The quantization mode principles and operator descriptions are not elaborated (see *[Quantization Modes](../../quantization_mode/README.md)*).
+- The quantization mode principles and operator descriptions are not elaborated (see [Quantization Modes](../../quantization_mode/README.md)).
 
 ---
 
 ## 8. Related Workflows
 
-- *[compressed-tensors Usage Guide](compressed_tensors_usage.md)*: confirm mode support, configure, and run.
-- *[Quantization Format Integration Guide](../iformat_integration_guide.md)*: an IFormat one-shot reference.
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: an overview of the save configuration.
+- [compressed-tensors Usage Guide](compressed_tensors_usage.md): confirm mode support, configure, and run.
+- [Quantization Format Integration Guide](../iformat_integration_guide.md): an IFormat one-shot reference.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): an overview of the save configuration.
 
 ---
 

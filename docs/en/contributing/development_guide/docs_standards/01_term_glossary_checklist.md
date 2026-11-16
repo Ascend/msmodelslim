@@ -1,6 +1,6 @@
 # Terminology Entry Checklist
 
-> Used to check terminology entry documents that are created or reworked based on the *[Terminology Entry Template](01_term_glossary_template.md)*. For the general check items, see the *[Common Checklist](00_common_checklist.md)*; for the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the *[msModelSlim Documentation Standards](./README.md)*. The following are the check items specific to the terminology entry type, separated into tables by severity level.
+> Used to check terminology entry documents that are created or reworked based on the [Terminology Entry Template](01_term_glossary_template.md). For the general check items, see the [Common Checklist](00_common_checklist.md); for the check mechanism (severity levels, conclusion rules, check execution, and the waiver mechanism), see Section 4.2 of the [msModelSlim Documentation Standards](./README.md). The following are the check items specific to the terminology entry type, separated into tables by severity level.
 
 ## 1. Check Items
 

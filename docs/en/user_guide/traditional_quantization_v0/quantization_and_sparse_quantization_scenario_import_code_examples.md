@@ -1,6 +1,6 @@
 # Quantization Code Samples
 
-Code Samples for Quantization and Sparse Quantization Scenarios
+The code samples for importing the quantization and sparse quantization scenarios are as follows:
 
 ## 1. W8A8 KVCache Quantization Scenario
 
@@ -669,7 +669,7 @@ tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path='./chatg
 # To perform multi-rank quantization on the NPU, refer to the prerequisites for configuration and set device_map='auto'. When creating a model, remove .npu(). To perform quantization on the CPU, set torch_dtype=torch.float32 and remove .npu().
 model = AutoModel.from_pretrained(pretrained_model_name_or_path='./chatglm2', local_files_only=True).npu()
 
-# NF4 quantization is commonly used in training scenarios such as QLoRA. Activation operations, such as AntiOutlier, are not recommended in this scenario.
+# NF4 quantization is commonly used in training scenarios such as QLoRA. Operations on activations, such as AntiOutlier outlier suppression, are not recommended in this scenario.
 
 # Quantization configuration (modify it as needed)
 from msmodelslim.pytorch.llm_ptq.llm_ptq_tools import Calibrator, QuantConfig    # Import quantization configuration interfaces.

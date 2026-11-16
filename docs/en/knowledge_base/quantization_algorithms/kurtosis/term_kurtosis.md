@@ -70,7 +70,7 @@ However, high kurtosis does not necessarily imply high quantization loss. Some h
 
 - [Std](../std/term_std.md): a similar algorithm and another `linear`-scope analysis metric that emphasizes the ratio of range to dispersion.
 - [Quantile](../quantile/term_quantile.md): a similar algorithm and another `linear`-scope analysis metric that is relatively robust to outliers.
-- [MSE Layer Wise](../mse_layer_wise/term_mse_layer_wise.md): a companion term and a `layer`-scope analysis metric, usable for block-level evaluation.
+- [MSE Layer Wise](../mse_layer_wise/term_mse_layer_wise.md): a companion term and a `layer` -scope analysis metric, usable for block-level evaluation.
 
 ---
 

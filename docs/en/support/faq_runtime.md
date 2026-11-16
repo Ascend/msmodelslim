@@ -30,7 +30,7 @@ In general, this is caused by the process being killed by another user or by ano
 First, confirm that the process has not been killed by another user and that the NPU resource has not been preempted. If there is no resource preemption, you can use the following commands to view system logs, monitor system memory, and free system memory:
 
 ```shell
-# Use dmesg to view processes terminated by the kernel or by insufficient memory.
+# Use dmesg to view processes terminated by the kernel or by insufficient NPU memory.
 dmesg | grep -A 3 -B 1 -i "killed process\|oom-kill"
 
 # Monitor system memory.

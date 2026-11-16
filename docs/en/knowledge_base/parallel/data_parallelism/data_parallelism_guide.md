@@ -230,8 +230,8 @@ Decision principle: any quantity that each device computes from its own local sl
 
 | Term | Brief Description | Link |
 | --- | --- | --- |
-| Data Parallelism (DP) | Each rank holds a complete model replica, the calibration data is split by rank, and statistics are reduced across devices | *[Data Parallelism](term_data_parallelism.md)* |
-| Expert Parallelism (EP) | Routed experts are sharded by rank, introducing `local_only` modules held only by the current rank | *[Expert Parallelism](../expert_parallelism/term_expert_parallelism.md)* |
+| Data Parallelism (DP) | Each rank holds a complete model replica, the calibration data is split by rank, and statistics are reduced across devices | [Data Parallelism](term_data_parallelism.md) |
+| Expert Parallelism (EP) | Routed experts are sharded by rank, introducing `local_only` modules held only by the current rank | [Expert Parallelism](../expert_parallelism/term_expert_parallelism.md) |
 
 ## 9. Interface Documentation List
 
@@ -241,7 +241,7 @@ Decision principle: any quantity that each device computes from its own local sl
 | `sync_base_operation` and others | Cross-rank statistics reduction utility functions | [dist_ops.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_ops.py) |
 | `support_distributed()` | Processor distributed support declaration (the base class returns `False`) | [processor/base.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/base.py) |
 | `ascendv1_saver_distributed` | Distributed saver (converted automatically from `ascendv1_saver`) | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
-| `--device npu --device_id 0 1 ...` | Multi-device quantization entry configuration | *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)* |
+| `--device npu --device_id 0 1 ...` | Multi-device quantization entry configuration | [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md) |
 
 ## 10. Product Form and Resource Constraints
 

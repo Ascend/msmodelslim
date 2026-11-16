@@ -9,7 +9,7 @@ Applicable scenarios:
 - The target multimodal understanding model is not in the official support matrix, so a new `model_type` must be added and the quantization chain connected;
 - An existing `model_type` needs to be extended to support new quantization features (such as outlier smoothing, rotation quantization, or MoE mixed quantization).
 
-To check whether a model is already in the support list see the *[Foundation Model Support Matrix](../../model/README.md)*; for standard multimodal understanding quantization operations see the *[VLM Quantization Usage Guide](usage_vision_transformer_quantization.md)*; for pure-text LLM integration see the *[LLM Integration Guide](../llm/integration_guide_large_language_model_quantization.md)*; for diffusion generation model integration see the *[DiT Integration Guide](../dit/integration_guide_diffusion_transformer_quantization.md)*.
+To check whether a model is already in the support list see the [Foundation Model Support Matrix](../../model/README.md); for standard multimodal understanding quantization operations see the [VLM Quantization Usage Guide](usage_vision_transformer_quantization.md); for pure-text LLM integration see the [LLM Integration Guide](../llm/integration_guide_large_language_model_quantization.md); for diffusion generation model integration see the [DiT Integration Guide](../dit/integration_guide_diffusion_transformer_quantization.md).
 
 ## 2. Inputs and Deliverables
 
@@ -74,7 +74,7 @@ class {ModelName}AdapterLoader(BaseModelAdapterLoader):
    - If the model structure is highly customized and the base class cannot be reused, inherit from [BaseModelAdapter](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/base.py) and implement the config loading and data collection logic yourself.
 
 2. **Core Quantization Interface**:
-   - **[`ModelSlimPipelineInterfaceV1`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/runner/pipeline_interface.py) (must be implemented)**: the core model pipeline interface, which the scheduler uses to drive multimodal quantization.
+   - [`ModelSlimPipelineInterfaceV1`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/runner/pipeline_interface.py) (must be implemented)**: the core model pipeline interface, which the scheduler uses to drive multimodal quantization.
 
 3. **Optional Algorithm Extension Interfaces** (all defined in [Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py)):
    - **`IterSmoothInterface` / `FlexSmoothQuantInterface`**: if the scheme needs outlier smoothing suppression, inherit the corresponding interface and configure the operator mapping on the language Decoder.
@@ -234,5 +234,5 @@ Add configuration items in `config/config.ini` (note: the key names in the three
 | Interface Hub | A centralized definition and summary of the interfaces that quantization mechanisms and algorithm components require from models | [Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py) |
 | VLM Quantization Usage Guide | The complete standard multimodal understanding model quantization workflow, configuration protocol, and out-of-the-box examples | [VLM Quantization Usage Guide](usage_vision_transformer_quantization.md) |
 | multimodal_vlm_modelslim_v1 Configuration Description | Field descriptions for multimodal understanding configuration such as `process`/`save`/`dataset` | [multimodal_vlm_modelslim_v1 Configuration Description](../../../api_reference/config/quant/multimodal_vlm_modelslim_v1.md) |
-| One-Click Quantization Usage Guide | One-click quantization CLI entry point and complete command parameter reference | *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)* |
+| One-Click Quantization Usage Guide | One-click quantization CLI entry point and complete command parameter reference | [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md) |
 | Quantization Algorithm Overview | Detailed description of outlier smoothing suppression and the various quantization algorithms | [Quantization Algorithm Overview](../../quantization_algorithms/README.md) |

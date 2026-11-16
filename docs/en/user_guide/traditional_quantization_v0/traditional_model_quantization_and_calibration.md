@@ -18,9 +18,9 @@ To optimize quantization accuracy, the msModelSlim tool integrates an automatic 
 
 To further minimize accuracy loss, the msModelSlim tool integrates multiple accuracy retention strategies for PyTorch PTQ to optimize weight quantization parameters and rounding modes.
 
-- Easy Quant weight optimization: optimizes quantization parameters using output similarity to reduce quantization error across input and output tensors. It is recommended for data-free scenarios.
+- Easy Quant weight optimization: optimizes quantization parameters using output similarity to reduce quantization error across input and output tensors. It is recommended for data-free scenarios and usually delivers a noticeable improvement.
 - ADMM weight optimization: uses the Alternating Direction Method of Multipliers (ADMM) to iteratively update and optimize weight quantization parameters. It is recommended for use in label-free scenarios to improve quantization performance.
-- Adaptive rounding optimization: optimizes weight rounding using adaptive strategies rather than standard rounding methods to improve quantization accuracy. It is recommended for label-free scenarios to improve quantization performance.
+- Rounding optimization: Standard rounding is not optimal in quantization. Using adaptive rounding to optimize weight rounding improves quantization accuracy. It is recommended for label-free scenarios to improve quantization performance.
 
 ### 1.2.3 Example
 
@@ -285,7 +285,7 @@ Accuracy Retention Strategies
 
 To further minimize quantization accuracy loss, the msModelSlim tool integrates several accuracy retention strategies in Data-Free mode.
 
-Strategy 1 (recommended): If the post-quantization accuracy does not meet expectations, implement accuracy retention strategies to recover accuracy. The tool integrates multiple accuracy retention strategies to optimize weight quantization parameters and rounding modes. You can configure these strategies in the `keep_acc` parameter. Setting the `sigma` parameter to `0` enables activation min-max quantization. When `sigma` is set to `0`, using the optimization strategies configured in `keep_acc` at the same time is not recommended. The following code block shows a configuration example for `keep_acc`:
+Strategy 1 (recommended): If the post-quantization accuracy does not meet expectations, implement accuracy retention strategies to recover accuracy. The tool integrates multiple accuracy retention strategies to optimize weight quantization parameters and rounding modes. You can configure these strategies in the `keep_acc` parameter. Setting the `sigma` parameter to `0` enables activation min-max quantization. When `sigma` is set to `0`, do not use `keep_acc` accuracy retention strategies. The following code block shows a configuration example for `keep_acc`:
 
 ```python
 config = QuantConfig(quant_mode=0,
@@ -293,7 +293,7 @@ config = QuantConfig(quant_mode=0,
 )
 ```
 
-Strategy 2: To ensure output accuracy, quantizing the classification and input layers of the model is not recommended. Exclude these layers by passing the classification layer and input layer names to the `disable_names` parameter.
+Strategy 2: To ensure output accuracy, do not quantize the classification and input layers of the model. Exclude these layers by passing the classification layer and input layer names to the `disable_names` parameter.
 
 Strategy 3: If model accuracy after Data-Free quantization with synthetic data does not meet expectations, you can use real data for quantization instead. For example, an image or a text sample from another dataset can be used as real input data. Since real data has a better data distribution, it can improve model accuracy. The following example shows how to preprocess a real image and pass it as `calib_data` during quantization.
 
@@ -318,7 +318,7 @@ The code samples in this section call the `post_training_quant` interface to con
 
 Prerequisites
 The development environment has been configured by referring to the [Installation Guide](../../install_guide/install_guide.md).
-The required software dependencies have been installed before executing PTQ.
+You must install the required software dependencies before running PTQ.
 If you run the following commands as a non-root user, add `--user` to the end of each installation command, such as `pip3 install onnx --user`.
 
 ```bash
@@ -603,7 +603,7 @@ If you run the following commands as a non-root user, add `--user` to the end of
     model = nvmodels.build_resnet("resnet50", "classic", is_training=False)
     pretrained_dict = safe_torch_load(args.pretrained, map_location='cpu')["state_dict"]
     model.load_state_dict(pretrained_dict, strict=False)
-# Save the quantized ONNX model
+    # Save the quantized ONNX model
     from msmodelslim.pytorch.quant.qat_tools import save_qsin_qat_model
     #Configure the name of the output model file (in .onnx format), input shape, fake-quantization model weight, and ONNX input name as needed.
     save_onnx_name='./resnet50.onnx'

@@ -18,10 +18,10 @@ Symbols:
 
 | Subcommand | Function | Documentation |
 |--------|------|------|
-| `quant` | One-click quantization or weight conversion, saving the quantized weights and the description file | *[msmodelslim quant Command-Line API Document](msmodelslim_quant.md)* |
-| `analyze` | Sensitive layer analysis before quantization, listing the layer names from the highest sensitivity score to the lowest | *[msmodelslim analyze Command-Line API Document](msmodelslim_analyze.md)* |
-| `eval` | Fake-quantized model accuracy evaluation based on an AscendV1 export | *[msmodelslim eval Command-Line API Document](msmodelslim_eval.md)* |
-| `tune` | Automatically tunes the quantization configuration to reach the target accuracy | *[msmodelslim tune Command-Line API Document](msmodelslim_tune.md)* |
+| `quant` | One-click quantization or weight conversion, saving the quantized weights and the description file | [msmodelslim quant Command-Line API Document](msmodelslim_quant.md) |
+| `analyze` | Sensitive layer analysis before quantization, listing the layer names from the highest sensitivity score to the lowest | [msmodelslim analyze Command-Line API Document](msmodelslim_analyze.md) |
+| `eval` | Fake-quantized model accuracy evaluation based on an AscendV1 export | [msmodelslim eval Command-Line API Document](msmodelslim_eval.md) |
+| `tune` | Automatically tunes the quantization configuration to reach the target accuracy | [msmodelslim tune Command-Line API Document](msmodelslim_tune.md) |
 
 ## 3. Global Parameters
 

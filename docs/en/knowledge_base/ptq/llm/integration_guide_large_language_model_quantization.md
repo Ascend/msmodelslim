@@ -9,7 +9,7 @@ Applicable scenarios:
 - The target LLM is not in the official support matrix, so a new `model_type` must be added and the quantization chain connected;
 - An existing `model_type` needs to be extended to support new quantization features (such as outlier smoothing, rotation quantization, or sensitive layer tuning).
 
-To check whether a model is already in the support list see the *[Foundation Model Support Matrix](../../model/README.md)*; for standard model quantization operations see the *[LLM Quantization Usage Guide](usage_large_language_model_quantization.md)*; for multimodal model integration see the *[VLM Integration Guide](../vlm/integration_guide_vision_transformer_quantization.md)* or the *[DiT Integration Guide](../dit/integration_guide_diffusion_transformer_quantization.md)*.
+To check whether a model is already in the support list see the [Foundation Model Support Matrix](../../model/README.md); for standard model quantization operations see the [LLM Quantization Usage Guide](usage_large_language_model_quantization.md); for multimodal model integration see the [VLM Integration Guide](../vlm/integration_guide_vision_transformer_quantization.md) or the [DiT Integration Guide](../dit/integration_guide_diffusion_transformer_quantization.md).
 
 ## 2. Inputs and Deliverables
 
@@ -226,6 +226,6 @@ Add configuration items in `config/config.ini` (note: the key names in the three
 | Interface Hub | A centralized definition and summary of the interfaces that quantization mechanisms and algorithm components require from models | [Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py) |
 | LLM Quantization Usage Guide | The complete standard LLM quantization workflow, configuration protocol, and out-of-the-box examples | [LLM Quantization Usage Guide](usage_large_language_model_quantization.md) |
 | modelslim_v1 Configuration Description | Field descriptions of task-level configuration such as `runner`/`process`/`save`/`dataset` | [modelslim_v1 Configuration Description](../../../api_reference/config/quant/modelslim_v1.md) |
-| One-Click Quantization Usage Guide | One-click quantization CLI entry point and complete command parameter reference | *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)* |
+| One-Click Quantization Usage Guide | One-click quantization CLI entry point and complete command parameter reference | [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md) |
 | Auto Tuning Usage Instructions | Sensitive layer analysis, rollback candidates, and tuning strategy descriptions | [Auto Tuning Usage Instructions](../../../user_guide/usage_auto_precision_tuning.md) |
 | Quantization Algorithm Overview | Detailed description of outlier smoothing suppression and the various quantization algorithms | [Quantization Algorithm Overview](../../quantization_algorithms/README.md) |

@@ -196,7 +196,7 @@ template:
 
 **Purpose**: Defines the metadata information for a strategy. This information is used to identify and classify quantization configurations (such as quantization bit width labels) so that they can be easily retrieved and reused in the best practice library.
 
-If the environment variable `MSMODELSLIM_CUSTOM_PRACTICE_REPO` is set before auto tuning is started, the final quantization configuration will be written to the best practice library corresponding to this path after the accuracy requirements are met. When performing quick quantization (`msmodelslim quant`) later, you only need to specify the same `quant_type` in the same `MSMODELSLIM_CUSTOM_PRACTICE_REPO` environment. The tool will then automatically match and use the corresponding configuration from the best practice library for quick quantization based on the retrieval rules of the library.
+If the environment variable `MSMODELSLIM_CUSTOM_PRACTICE_REPO` is set before auto tuning is started, the final quantization configuration will be written to the best practice library corresponding to this path after the accuracy requirements are met. When performing one-click quantization (`msmodelslim quant`) later, you only need to specify the same `quant_type` in the same `MSMODELSLIM_CUSTOM_PRACTICE_REPO` environment. The tool will then automatically match and use the corresponding configuration from the best practice library according to the one-click quantization retrieval rules of the library.
 
 **Field Description**
 
@@ -209,7 +209,7 @@ If the environment variable `MSMODELSLIM_CUSTOM_PRACTICE_REPO` is set before aut
 
 | Field| Purpose| Type| Description|
 |--------|------|------|------|
-| w_bit | Specifies weight quantization bits.| int | For example, `8` indicates 8-bit quantization.|
+| w_bit | Specifies weight quantization bits.| int | Number of bits for weight quantization. For example, `8` indicates 8-bit quantization.|
 | a_bit | Specifies activation quantization bits.| int | Number of bits for activation quantization. For example, `8` indicates 8-bit quantization.|
 | is_sparse | Specifies whether to enable sparse quantization.| bool | Specifies whether to enable sparse quantization.|
 | kv_cache | Specifies whether to quantize the KV cache.| bool | Specifies whether to quantize the KV cache.|

@@ -4,7 +4,7 @@
 |--------|------|
 | `model` | [Foundation Model Support Matrix](model/README.md) |
 | `quantization_algorithms` | [Quantization Algorithm Overview](quantization_algorithms/README.md) |
-| `dtype_ops` | [Quantization Data Type](dtype_ops/README.md) |
+| `dtype_ops` | [Quantization Data Types](dtype_ops/README.md) |
 | `quantization_mode` | [Quantization Modes](quantization_mode/README.md) |
 | `tuning_strategies` | [Auto Tuning Strategies Overview](tuning_strategies/README.md) |
 | `quantization_format` | [Quantization Format Terminology Entry](quantization_format/README.md) |

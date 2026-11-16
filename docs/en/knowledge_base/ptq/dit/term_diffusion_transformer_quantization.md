@@ -25,11 +25,11 @@ Diffusion Transformer (DiT) uses the Transformer structure to completely replace
 
 ### 2.2 Core Quantization Characteristics
 
-Unlike the autoregressive or single-pass forward of LLMs/VLMs, the quantization focus of DiT models centers on adapting to dynamic timesteps and highly dense computation:
+Unlike the autoregressive or single-pass forward of LLMs/VLMs, the quantization focus of DiT models centres on adapting to dynamic timesteps and highly dense computation:
 
 - **Timestep-Aware Calibration**: the dynamic range and magnitude distribution of activations differ strongly and non-stationarily between the early (high-noise) and late (low-noise) stages of denoising. Quantization calibration must uniformly sample the hidden-layer activations of different timesteps across the complete floating-point denoising trajectory to avoid global Scale distortion.
 - **Decoupled independent statistics for multiple experts**: for diffusion architectures that use staged experts, the weight and activation distributions of different experts differ markedly, so the calibration activation distribution must be built and the quantization parameters solved independently for each expert.
-- **High-throughput low-precision floating point preferred**: because denoising iterations exhibit an obvious error accumulation effect, industry practice favors wide-dynamic-range floating-point formats such as MXFP8 and FP8 (with micro-block block scaling), which greatly accelerate dense GEMM computation while tightly controlling the perceptual degradation of images/videos.
+- **High-throughput low-precision floating point preferred**: because denoising iterations exhibit an obvious error accumulation effect, industry practice favours wide-dynamic-range floating-point formats such as MXFP8 and FP8 (with micro-block scaling), which greatly accelerate dense GEMM computation while tightly controlling the perceptual degradation of images/videos.
 
 ---
 
@@ -37,7 +37,7 @@ Unlike the autoregressive or single-pass forward of LLMs/VLMs, the quantization 
 
 - [Multimodal Generation Model (DiT) Quantization Usage Guide](./usage_diffusion_transformer_quantization.md): the complete workflow and command reference for DiT quantization.
 - [DiT Model Integration Quantization Workflow Guide](./integration_guide_diffusion_transformer_quantization.md): guidance for integrating a new diffusion generation model into the quantization workflow.
-- *[One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md)*: covers the one-click quantization workflow for various generation models.
+- [One-Click Quantization Usage Guide](../../../user_guide/usage_one_click_quantization.md): covers the one-click quantization workflow for various generation models.
 
 ---
 

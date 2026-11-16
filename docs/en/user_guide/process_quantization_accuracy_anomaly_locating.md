@@ -211,7 +211,7 @@ flowchart TD
 
 **Action**:
 
-1. **Install and check msprobe**: install msprobe (an Ascend operator/tensor dump and comparison analysis tool; for details, see the [msprobe Installation Documentation](https://gitcode.com/Ascend/msprobe/blob/26.2.0/docs/en/install_guide/msprobe_install_guide.md)), and after installation run `msprobe --help` to confirm that the command is available.
+1. **Install and check msprobe**: install msprobe (an Ascend operator/tensor dump and comparison analysis tool; for details, see the [msprobe Installation Documentation](https://gitcode.com/Ascend/msprobe/blob/master/docs/en/install_guide/msprobe_install_guide.md)), and after installation run `msprobe --help` to confirm that the command is available.
 2. **Create the msprobe dump configuration file**:
 
    ```json
@@ -259,7 +259,7 @@ flowchart TD
    tensorboard --logdir /path/to/compare_output --bind_all   # The same actual output directory as -o
    ```
 
-   `-tp` is the side to be debugged (such as the quantized model), and `-gp` is the baseline side (such as the floating-point model; required for the two-graph comparison). The command outputs `compare_{timestamp}.vis.db`. For details about the comparison and visualization, see the [msprobe Accuracy Comparison Visualization Guide](https://gitcode.com/Ascend/msprobe/blob/26.2.0/docs/en/user_guide/accuracy_compare/pytorch_visualization_instruct.md).
+   `-tp` is the side to be debugged (such as the quantized model), and `-gp` is the baseline side (such as the floating-point model; required for the two-graph comparison). The command outputs `compare_{timestamp}.vis.db`. For details about the comparison and visualization, see the [msprobe Accuracy Comparison Visualization Guide](https://gitcode.com/Ascend/msprobe/blob/master/docs/en/user_guide/accuracy_compare/pytorch_visualization_instruct.md).
 6. **Locate and analyze the anomaly**: observe the cosine similarity of each layer in TensorBoard (a darker node color indicates a larger deviation):
    - A large input deviation -> the problem is in the previous layers; a large output deviation -> the problem is in the current layer;
    - When the overall cosine is low in a garbled text scenario, pay attention to the **relative ranking** (find the top-10 deviation layers), **pattern recognition** (whether the deviations are concentrated in a specific module type, such as all MLP modules), and the **turning-point layer** (the point in the layer-by-layer deviation curve where the cosine suddenly drops; the problem may come from quantization having the greatest impact on the weights of that layer, or from the output deviation of the previous layer being amplified in that layer).

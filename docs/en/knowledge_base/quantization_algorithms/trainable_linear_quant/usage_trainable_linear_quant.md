@@ -1,8 +1,8 @@
-# Trainable Linear Quantization Algorithm Usage Guide
+# Trainable Linear Quant Trainable Linear Quantization Algorithm Usage Guide
 
 ## 1. Scope
 
-This guide is intended for users who need to use the [Trainable Linear Quantization Algorithm](./term_trainable_linear_quant.md). Trainable Linear Quant (TLQ, `trainable_linear_quant`), as a linear-layer quantization processor, is usually written in `spec.process` of the quantization YAML and optimizes quantization parameters and rounding through block-level training; it is mainly used for accuracy enhancement in extremely low-bit scenarios such as W4A4.
+This guide is intended for users who need to use the [Trainable Linear Quant Trainable Linear Quantization Algorithm](./term_trainable_linear_quant.md). Trainable Linear Quant (TLQ, `trainable_linear_quant`), as a linear-layer quantization processor, is usually written in `spec.process` of the quantization YAML and optimizes quantization parameters and rounding through block-level training; it is mainly used for accuracy enhancement in extremely low-bit scenarios such as W4A4.
 
 Applicable scenarios:
 
@@ -253,7 +253,7 @@ msmodelslim quant \
 
 | Term | Brief Description | Link |
 | --- | --- | --- |
-| Trainable Linear Quantization Algorithm | Explains the definition, core principle, key properties, applicable scenarios, and limitations of the algorithm. | [Trainable Linear Quantization Algorithm Terminology Entry](./term_trainable_linear_quant.md) |
+| Trainable Linear Quant Trainable Linear Quantization Algorithm | Explains the definition, core principle, key properties, applicable scenarios, and limitations of the algorithm. | [Trainable Linear Quant Trainable Linear Quantization Algorithm Terminology Entry](./term_trainable_linear_quant.md) |
 
 ## 6. Related Documents
 
