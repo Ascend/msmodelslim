@@ -131,7 +131,7 @@ flowchart LR
    - **语义一致性校验**：`run()` 先 `all_gather_object` 比对各 rank 的任务数与任务语义哈希（`task_semantic_hash` 由 fn / sync_fn / args / kwargs / dependencies / parallel 归约后 sha256），不一致直接 `RuntimeError` 并指出首个不一致任务索引——避免各 rank 提交不同任务导致的隐性错误；
    - **任务分发**：优先经共享任务队列抢任务（`DPLayerWiseRunner` 在 `mp.spawn` 前创建并注入各 rank 的跨进程队列，rank 0 放入任务索引与 `None` 终止符，各 rank 阻塞 `get`，超时 300s）；无共享队列时退化为静态轮询（`idx % world_size == rank`）；
    - **执行保护**：共享任务执行期间挂载 `_collective_op_guard`，非法集合通信直接报错（子任务函数内不得含集合通信，否则引起进程死锁）；
-   - **性能日志**：`run()` 结束后打印 `【DTS】 Summary: ...`（任务数、本 rank 执行数、exec/sync 耗时、speedup 与队列模式）；`exec_over_sync ≤ 1` 时输出 `DTS not suitable for parallel` 提示。
+   - **性能日志**：`run()` 结束后以 `DEBUG` 级别打印 `【DTS】 Summary: ...`（任务数、本 rank 执行数、exec/sync 耗时、speedup 与队列模式）；`exec_over_sync ≤ 1` 时输出 `DTS not suitable for parallel` 提示。该日志由各 rank 子进程输出，不继承 CLI 的 `--log_level`，多卡场景需 `export MSMODELSLIM_LOG_LEVEL=DEBUG` 才能看到。
 
 **输出**：`TaskExecutionRecord` 列表（可用于审计执行分工与耗时）。
 

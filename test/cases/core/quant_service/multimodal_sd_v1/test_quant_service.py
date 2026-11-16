@@ -221,6 +221,7 @@ class TestQuantProcessComplete:  # pylint: disable=attribute-defined-outside-ini
             "calib_data": "/tmp/test_dump/calib_data_mock_model2.pth",
             "device": self.device,
             "model": self.mock_model2,
+            "context": self.context_factory.create.return_value,
         }
 
     @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.load_cached_data_for_models")
@@ -270,6 +271,7 @@ class TestQuantProcessComplete:  # pylint: disable=attribute-defined-outside-ini
             "calib_data": "/tmp/test_dump/calib_data__.pth",
             "device": self.device,
             "model": self.mock_model1,
+            "context": self.context_factory.create.return_value,
         }
 
     @patch("msmodelslim.core.quant_service.multimodal_sd_v1.quant_service.load_cached_data_for_models")

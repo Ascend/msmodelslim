@@ -28,6 +28,7 @@ from msmodelslim.processor.save.processor import QuantSaveProcessorConfig
 from msmodelslim.processor.base import AutoProcessorConfig
 from msmodelslim.core.const import RunnerType, DeviceType
 from msmodelslim.core.context import ContextManager, IContextFactory
+from msmodelslim.core.context.summary import quant_summary
 from msmodelslim.core.quant_service import KeyInfoPersistenceInfra
 from msmodelslim.core.quant_service.dataset_loader_infra import DatasetLoaderInfra
 from msmodelslim.core.runner.layer_wise_runner import LayerWiseRunner
@@ -215,6 +216,7 @@ class ModelslimV1QuantService(IQuantService):
                 runner = _create_runner()
                 for process_cfg in prior_stage.process:
                     runner.add_processor(processor_cfg=process_cfg)
+                # prior 不是量化阶段：处理器自取上下文，不传 context 即不计入汇总
                 runner.run(calib_data=prior_dataset, device=device, device_indices=device_indices)
 
             # 主阶段：process + save，使用 spec.dataset（可读取 prior 写入的 context）
@@ -228,7 +230,8 @@ class ModelslimV1QuantService(IQuantService):
             if save_path is not None:
                 for save_cfg in quant_config.spec.save:
                     runner.add_processor(processor_cfg=self._build_save_processor_config(save_cfg, save_path))
-            runner.run(calib_data=dataset, device=device, device_indices=device_indices)
+            runner.run(calib_data=dataset, device=device, device_indices=device_indices, context=ctx)
+            quant_summary.finish(ctx)
         get_logger().info("==========QUANTIZATION: END==========")
 
         # Save context if persistence is provided

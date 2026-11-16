@@ -26,6 +26,8 @@ from torch import nn
 
 from msmodelslim.core.base.protocol import DataUnit
 from msmodelslim.core.const import DeviceType
+from msmodelslim.core.context import IContext
+from msmodelslim.core.context.summary import SummaryContext
 from msmodelslim.core.runner.generated_runner import GeneratedRunner, get_input_datas
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
 from msmodelslim.processor import LoadProcessorConfig, AutoProcessorConfig
@@ -72,6 +74,7 @@ class LayerWiseRunner(GeneratedRunner):
         calib_data: Optional[List[Any]] = None,
         device: DeviceType = DeviceType.NPU,
         device_indices: Optional[List[int]] = None,
+        context: Optional[IContext] = None,
     ):
         _ = get_input_datas(self.adapter, calib_data, DeviceType.CPU)
 
@@ -91,4 +94,5 @@ class LayerWiseRunner(GeneratedRunner):
             processor_list, model=model, adapter=self.adapter, calib_data=calib_data, data_recorder=data_recorder
         )
 
-        self.generated_schedule(process_units, model, calib_data)
+        summary_context = SummaryContext.from_context(context)
+        self.generated_schedule(process_units, model, calib_data, summary_context=summary_context)

@@ -47,7 +47,7 @@ class PluginModelFactory(IModelFactory):
             else:
                 eps = entry_points().get(MODEL_ADAPTER_ENTRY_POINTS, [])
             cls._model_map = {ep.name: ep for ep in eps}
-            get_logger().info(f"Found {len(cls._model_map)} model adapters: {list(cls._model_map.keys())}")
+            get_logger().debug(f"Found {len(cls._model_map)} model adapters: {list(cls._model_map.keys())}")
         return cls._model_map
 
     @staticmethod

@@ -34,6 +34,7 @@ from msmodelslim.utils.exception import InvalidDatasetError, SchemaValidateError
 from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.utils.seed import seed_all
 from msmodelslim.core.context import ContextManager, IContextFactory
+from msmodelslim.core.context.summary import quant_summary
 from .quant_config import MultimodalVLMModelslimV1QuantConfig
 from ..interface import BaseQuantConfig, IQuantService, QuantServiceConfig
 
@@ -277,7 +278,8 @@ class MultimodalVLMModelslimV1QuantService(IQuantService):
                 runner.add_processor(processor_cfg=process_cfg)
 
             # Run quantization (device_indices enables DP spawn when runner is DP)
-            runner.run(calib_data=dataset, device=device, device_indices=device_indices)
+            runner.run(calib_data=dataset, device=device, device_indices=device_indices, context=ctx)
+            quant_summary.finish(ctx)
             get_logger().info("==========QUANTIZATION: END==========")
 
         # Save context if persistence is provided

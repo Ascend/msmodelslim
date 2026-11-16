@@ -286,7 +286,7 @@ class TestDtsPerformanceGuidanceLogContract(unittest.TestCase):
         return "\n".join(_format_logger_call(c) for c in m.call_args_list)
 
     def test_multirank_parallel_wave_logs_time_summary_and_speedup_when_exec_dominates(self):
-        """同步轻于执行：不打「不适合并行」，输出 DTS summary。"""
+        """同步轻于执行：不打「不适合并行」，summary 走 DEBUG（INFO 降噪）。"""
         # wall0, exec0, exec1, sync0, sync1, wall1
         perf_vals = [0.0, 0.0, 10.0, 10.0, 11.0, 11.0]
 
@@ -299,11 +299,12 @@ class TestDtsPerformanceGuidanceLogContract(unittest.TestCase):
         info_text = self._joined_messages(mock_log, "info")
         self.assertIn(DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX, debug_text)
         self.assertNotIn(DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX, debug_text)
-        self.assertIn("Summary", info_text)
-        self.assertIn("speedup=0.9091", info_text)
+        self.assertIn("Summary", debug_text)
+        self.assertIn("speedup=0.9091", debug_text)
+        self.assertNotIn("Summary", info_text)
 
     def test_multirank_parallel_wave_warns_when_sync_dominates(self):
-        """同步不轻于执行：DEBUG 提示不适合并行，且 summary 包含执行耗时。"""
+        """同步不轻于执行：DEBUG 提示不适合并行，且 DEBUG summary 包含执行耗时。"""
         perf_vals = [0.0, 0.0, 2.0, 2.0, 12.0, 12.0]
 
         def _heavy_sync(_r, _c) -> None:
@@ -315,10 +316,11 @@ class TestDtsPerformanceGuidanceLogContract(unittest.TestCase):
         info_text = self._joined_messages(mock_log, "info")
         self.assertIn(DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX, debug_text)
         self.assertIn(DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX, debug_text)
-        self.assertIn("Summary", info_text)
+        self.assertIn("Summary", debug_text)
+        self.assertNotIn("Summary", info_text)
 
     def test_multirank_parallel_wave_skips_speedup_when_zero_exec(self):
-        """无可统计执行耗时：summary 中 speedup=0，不触发「不适合并行」。"""
+        """无可统计执行耗时：DEBUG summary 中 speedup=0，不触发「不适合并行」。"""
         perf_vals = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         def _noop_sync(_r, _c) -> None:
@@ -330,8 +332,9 @@ class TestDtsPerformanceGuidanceLogContract(unittest.TestCase):
         info_text = self._joined_messages(mock_log, "info")
         self.assertNotIn(DTS_PERF_LOG_RUN_TIME_SUMMARY_PREFIX, debug_text)
         self.assertNotIn(DTS_PERF_LOG_NOT_SUITABLE_FOR_PARALLEL_PREFIX, debug_text)
-        self.assertIn("Summary", info_text)
-        self.assertIn("speedup=0.0000", info_text)
+        self.assertIn("Summary", debug_text)
+        self.assertIn("speedup=0.0000", debug_text)
+        self.assertNotIn("Summary", info_text)
 
 
 class TestDtsPerformanceMultiprocessParallelPath(unittest.TestCase):

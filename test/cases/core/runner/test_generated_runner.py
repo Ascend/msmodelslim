@@ -26,6 +26,9 @@ import torch
 from torch import nn
 
 from msmodelslim.core.base.protocol import DataUnit, ProcessRequest
+from msmodelslim.core.const import DeviceType
+from msmodelslim.core.context import ContextFactory, ContextManager
+from msmodelslim.core.context.summary import SUMMARY_NAMESPACE, SummaryContext, quant_summary
 from msmodelslim.core.runner.generated_runner import (
     GeneratedProcessUnit,
     GeneratedRunner,
@@ -305,6 +308,124 @@ class TestGeneratedRunner:
             )
 
         assert "post_run" not in processor.log
+
+
+class TestGeneratedRunnerQuantSummary:
+    def test_generated_schedule_feeds_the_builtin_summary_when_summary_context_is_passed(self):
+        ctx = ContextFactory().create(is_distributed=False)
+        model = nn.Linear(2, 2)
+        adapter = Mock()
+        adapter.generate_model_visit.return_value = (
+            ProcessRequest(name="layer0", module=model, args=(), kwargs={}) for _ in range(1)
+        )
+        processor = _Processor(data_free=True, output=False)
+        runner = GeneratedRunner(adapter)
+
+        # 不进入 ContextManager：显式传入的承载位置足以驱动统计
+        runner.generated_schedule(
+            [_unit(model, processor)],
+            model,
+            summary_context=SummaryContext.from_context(ctx),
+        )
+        result = quant_summary.finish(ctx)
+
+        state = ctx[SUMMARY_NAMESPACE].state
+        assert result["time"].layer_count == 1
+        assert result["linear"].original_bytes == pytest.approx(16.0)
+        assert result["linear"].quantized_bytes == pytest.approx(16.0)
+        assert state["time"]["layer0"]["elapsed"] > 0.0
+        assert state["linear@rank_0"]["layer0"][""] == {
+            "numel": 4,
+            "original_bits": 32,
+            "quantized_bits": 32,
+            "quantized": False,
+        }
+        assert "fa@rank_0" not in state
+        assert "kv@rank_0" not in state
+
+    def test_generated_schedule_accepts_plain_dict_backed_summary_context(self):
+        model = nn.Linear(2, 2)
+        adapter = Mock()
+        adapter.generate_model_visit.return_value = (
+            ProcessRequest(name="layer0", module=model, args=(), kwargs={}) for _ in range(1)
+        )
+        processor = _Processor(data_free=True, output=False)
+        runner = GeneratedRunner(adapter)
+        state = {}
+
+        # 任意满足 SummaryStateProtocol 的映射都可作为承载位置，单测用普通 dict 即可
+        runner.generated_schedule([_unit(model, processor)], model, summary_context=SummaryContext(state))
+
+        assert state["time"]["layer0"]["elapsed"] > 0.0
+        assert state["linear@rank_0"]["layer0"][""]["numel"] == 4
+
+    def test_generated_schedule_skips_observers_when_summary_context_is_disabled(self):
+        model = nn.Linear(2, 2)
+        adapter = Mock()
+        adapter.generate_model_visit.return_value = (
+            ProcessRequest(name="layer0", module=model, args=(), kwargs={}) for _ in range(1)
+        )
+        processor = _Processor(data_free=True, output=False)
+        runner = GeneratedRunner(adapter)
+
+        with (
+            patch.object(quant_summary.linear, "record") as linear_record,
+            patch.object(quant_summary.fa, "record") as fa_record,
+            patch.object(quant_summary.kv, "record") as kv_record,
+            patch.object(quant_summary.time, "record") as time_record,
+        ):
+            runner.generated_schedule([_unit(model, processor)], model, summary_context=SummaryContext(None))
+
+        linear_record.assert_not_called()
+        fa_record.assert_not_called()
+        kv_record.assert_not_called()
+        time_record.assert_not_called()
+
+    def test_generated_schedule_records_nothing_when_summary_context_is_not_passed(self):
+        ctx = ContextFactory().create(is_distributed=False)
+        model = nn.Linear(2, 2)
+        adapter = Mock()
+        adapter.generate_model_visit.return_value = (
+            ProcessRequest(name="layer0", module=model, args=(), kwargs={}) for _ in range(1)
+        )
+        processor = _Processor(data_free=True, output=False)
+        runner = GeneratedRunner(adapter)
+
+        # 环境里存在 ContextManager，但未显式传入承载位置：按约定不统计
+        with ContextManager(ctx):
+            runner.generated_schedule([_unit(model, processor)], model)
+            result = quant_summary.finish(ctx)
+
+        assert not result
+        assert len(ctx[SUMMARY_NAMESPACE].state) == 0
+
+    def test_run_forwards_explicit_context_to_generated_schedule(self):
+        adapter = Mock()
+        runner = GeneratedRunner(adapter)
+        ctx = ContextFactory().create(is_distributed=False)
+
+        with (
+            patch("msmodelslim.core.runner.generated_runner.get_input_datas", return_value=[]),
+            patch.object(runner, "generated_schedule") as schedule,
+        ):
+            runner.run(model=nn.Linear(2, 2), device=DeviceType.CPU, context=ctx)
+
+        summary_context = schedule.call_args.kwargs["summary_context"]
+        assert summary_context.enabled
+        assert summary_context.state is ctx[SUMMARY_NAMESPACE].state
+
+    def test_run_disables_summary_when_context_is_not_passed(self):
+        adapter = Mock()
+        runner = GeneratedRunner(adapter)
+
+        with (
+            patch("msmodelslim.core.runner.generated_runner.get_input_datas", return_value=[]),
+            patch.object(runner, "generated_schedule") as schedule,
+        ):
+            runner.run(model=nn.Linear(2, 2), device=DeviceType.CPU)
+
+        summary_context = schedule.call_args.kwargs["summary_context"]
+        assert not summary_context.enabled
 
 
 class TestGeneratedRunnerFunctions:

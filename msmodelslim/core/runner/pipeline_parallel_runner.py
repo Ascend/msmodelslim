@@ -24,6 +24,7 @@ from typing import Optional, List, Any
 from torch import nn
 
 from msmodelslim.core.const import DeviceType
+from msmodelslim.core.context import IContext
 from msmodelslim.core.runner.generated_runner import GeneratedRunner
 from msmodelslim.utils.logging import logger_setter, get_logger
 
@@ -36,9 +37,10 @@ class PPRunner(GeneratedRunner):
         calib_data: Optional[List[Any]] = None,
         device: DeviceType = DeviceType.NPU,
         device_indices: Optional[List[int]] = None,
+        context: Optional[IContext] = None,
     ):
         if device_indices is not None:
             get_logger().warning(
                 "Specifying device indices is not supported in model_wise runner. Device indices will be ignored. "
             )
-        super().run(model, calib_data, device, device_indices)
+        super().run(model, calib_data, device, device_indices, context)

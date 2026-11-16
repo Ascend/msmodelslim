@@ -40,6 +40,8 @@ WRITE_FILE_NOT_PERMITTED_STAT = 0
 # Disabled: set to 0 to bypass st_mode bitmask checks
 READ_FILE_NOT_PERMITTED_STAT = 0
 yaml.SafeDumper.add_multi_representer(str, yaml.representer.SafeRepresenter.represent_str)
+# Deduplicated dirs path
+WRITTEN_DIRS_LOGGED = set()
 
 
 def is_endswith_extensions(path, extensions):
@@ -224,7 +226,9 @@ def check_write_directory(dir_name, check_user_stat=False):
 def get_write_directory(dir_name):
     real_dir_name = get_valid_path(dir_name)
     if os.path.exists(real_dir_name):
-        get_logger().info("write directory exists, write file to directory %r", dir_name)
+        if real_dir_name not in WRITTEN_DIRS_LOGGED:
+            WRITTEN_DIRS_LOGGED.add(real_dir_name)
+            get_logger().info("write directory exists, write file to directory %r", dir_name)
     else:
         get_logger().warning("write directory not exists, creating directory %r", dir_name)
         os.makedirs(name=real_dir_name, exist_ok=True)

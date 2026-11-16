@@ -30,6 +30,7 @@ from torch import nn
 
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
+from msmodelslim.core.context import ContextFactory, ContextManager
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Config
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1_distributed import DistributedAscendV1Config
 from msmodelslim.core.runner.dp_layer_wise_runner import DPLayerWiseRunner
@@ -242,6 +243,18 @@ class TestRunFallbackToSingleDevice(unittest.TestCase):
         runner.run(model=model, device_indices=[])
         self.assertEqual(mock_parent_run.call_count, 3)
 
+    @patch('msmodelslim.core.runner.layer_wise_runner.LayerWiseRunner.run')
+    @patch('msmodelslim.core.runner.generated_runner.get_input_datas')
+    def test_run_fallback_forwards_context_to_single_device(self, mock_get_input_datas, mock_parent_run):
+        """回退到单设备时，显式传入的 context 必须继续传下去，不能丢。"""
+        adapter = MockPipelineInterface()
+        runner = DPLayerWiseRunner(adapter)
+        ctx = ContextFactory().create(is_distributed=False)
+
+        runner.run(model=nn.Linear(10, 5), device_indices=None, context=ctx)
+
+        self.assertIs(mock_parent_run.call_args.kwargs["context"], ctx)
+
 
 @unittest.skipIf(not is_npu_available(), "NPU not available")
 class TestRunDistributed(unittest.TestCase):
@@ -267,6 +280,55 @@ class TestRunDistributed(unittest.TestCase):
 
         mock_set_start_method.assert_called_once_with('spawn', force=True)
         mock_spawn.assert_called_once()
+
+    @patch('torch.multiprocessing.spawn')
+    @patch('torch.multiprocessing.set_start_method')
+    @patch.object(AutoSessionProcessor, 'from_config')
+    @patch('msmodelslim.core.runner.generated_runner.get_input_datas')
+    def test_run_distributed_forwards_context_to_workers(
+        self, mock_get_input_datas, mock_from_config, mock_set_start_method, mock_spawn
+    ):
+        """多卡路径必须把显式 context 作为 shared_ctx 传给各 rank。"""
+        adapter = MockPipelineInterface()
+        runner = DPLayerWiseRunner(adapter)
+        ctx = ContextFactory().create(is_distributed=True)
+
+        mock_get_input_datas.return_value = []
+        mock_processor = MagicMock()
+        mock_processor.support_distributed.return_value = True
+        mock_from_config.return_value = mock_processor
+        runner.add_processor(MockProcessorConfig(type="mock_processor"))
+
+        runner.run(model=nn.Linear(10, 5), device_indices=[0, 1], context=ctx)
+
+        spawn_args = mock_spawn.call_args.kwargs["args"]
+        self.assertIs(spawn_args[6], ctx)
+        self.assertIs(spawn_args[8], True)
+
+    @patch('torch.multiprocessing.spawn')
+    @patch('torch.multiprocessing.set_start_method')
+    @patch.object(AutoSessionProcessor, 'from_config')
+    @patch('msmodelslim.core.runner.generated_runner.get_input_datas')
+    def test_run_forwards_ambient_context_to_workers(
+        self, mock_get_input_datas, mock_from_config, mock_set_start_method, mock_spawn
+    ):
+        """未传 context 时，环境上下文只透传给处理器，汇总保持关闭。"""
+        adapter = MockPipelineInterface()
+        runner = DPLayerWiseRunner(adapter)
+        ctx = ContextFactory().create(is_distributed=True)
+
+        mock_get_input_datas.return_value = []
+        mock_processor = MagicMock()
+        mock_processor.support_distributed.return_value = True
+        mock_from_config.return_value = mock_processor
+        runner.add_processor(MockProcessorConfig(type='mock_processor'))
+
+        with ContextManager(ctx):
+            runner.run(model=nn.Linear(10, 5), device_indices=[0, 1])
+
+        spawn_args = mock_spawn.call_args.kwargs["args"]
+        self.assertIs(spawn_args[6], ctx)
+        self.assertIs(spawn_args[8], False)
 
     @patch.object(AutoSessionProcessor, 'from_config')
     @patch('msmodelslim.core.runner.generated_runner.get_input_datas')

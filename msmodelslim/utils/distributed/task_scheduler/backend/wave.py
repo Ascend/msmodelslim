@@ -619,7 +619,7 @@ class _DtsMultiRankParallelWaveScheduler(_DtsSingleWaveSchedulerBase):
             DTS_USER_LOG_PREFIX
             + "Summary: tasks=%d world_size=%d rank=%d my_tasks=%d exec_s=%.4f my_exec_s=%.4f sync_s=%.4f my_sync_s=%.4f t_run_wall_s=%.4f speedup=%.4f queue=%s"
         )
-        _log.info(
+        _log.debug(
             parallel_summary_fmt,
             n_tasks,
             world_size,

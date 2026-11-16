@@ -36,6 +36,7 @@ from msmodelslim.utils.cache import load_cached_data_for_models, to_device
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.core.context import IContextFactory, ContextManager
+from msmodelslim.core.context.summary import quant_summary
 from .legacy_pipeline_interface import LegacyMultimodalPipelineInterface
 from .pipeline_interface import MultimodalPipelineInterface
 from .quant_config import (
@@ -190,8 +191,10 @@ class MultimodalSDModelslimV1QuantService(IQuantService):
                             calib_data=calib_data[expert_name],
                             device=device,
                             model=expert_model,
+                            context=ctx,
                         )
                     )
+                    quant_summary.finish(ctx)
                     get_logger().info(f"========== {expert_name} quantized, save to {expert_save_path} ==========")
                 except Exception as e:
                     get_logger().error(f"========== {expert_name} quantization failed: {str(e)} ==========")
@@ -254,7 +257,9 @@ class MultimodalSDModelslimV1QuantService(IQuantService):
                             calib_data=calib_data[expert_name],
                             device=device,
                             model=expert_model,
+                            context=ctx,
                         )
+                    quant_summary.finish(ctx)
                     get_logger().info(f"========== {expert_name} quantized, save to {expert_save_path} ==========")
                 except Exception as e:
                     get_logger().error(f"========== {expert_name} quantization failed: {str(e)} ==========")

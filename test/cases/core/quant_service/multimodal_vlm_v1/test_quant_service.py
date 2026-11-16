@@ -256,7 +256,12 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
         runner.add_processor.assert_has_calls(expected_calls, any_order=False)
 
         # 最终量化执行（透传 device_indices）
-        runner.run.assert_called_once_with(calib_data=self.mock_dataset, device=self.device, device_indices=[0])
+        runner.run.assert_called_once_with(
+            calib_data=self.mock_dataset,
+            device=self.device,
+            device_indices=[0],
+            context=self.context_factory.create.return_value,
+        )
         self.context_factory.create.assert_called_once_with(is_distributed=False)
         # 确保结束日志被打印
         assert mock_get_logger.return_value.info.called
@@ -302,6 +307,7 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
             calib_data=self.mock_dataset,
             device=self.device,
             device_indices=[0, 1, 2, 3],
+            context=self.context_factory.create.return_value,
         )
         self.context_factory.create.assert_called_once_with(is_distributed=True)
 
@@ -346,6 +352,7 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
             calib_data=self.mock_dataset,
             device=self.device,
             device_indices=[0, 1],
+            context=self.context_factory.create.return_value,
         )
         self.context_factory.create.assert_called_once_with(is_distributed=True)
 
@@ -403,7 +410,12 @@ class TestMultimodalVLMModelslimV1QuantService:  # pylint: disable=attribute-def
             [call(processor_cfg=cfg) for cfg in process_cfgs],
             any_order=False,
         )
-        runner.run.assert_called_once_with(calib_data=self.mock_dataset, device=cpu_device, device_indices=None)
+        runner.run.assert_called_once_with(
+            calib_data=self.mock_dataset,
+            device=cpu_device,
+            device_indices=None,
+            context=self.context_factory.create.return_value,
+        )
 
     @staticmethod
     def _make_quant_config_for_offload_case():

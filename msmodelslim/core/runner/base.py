@@ -25,6 +25,7 @@ from typing import Optional, List, Any
 from torch import nn
 
 from msmodelslim.core.const import DeviceType
+from msmodelslim.core.context import IContext
 from msmodelslim.processor import AutoProcessorConfig
 
 
@@ -58,6 +59,7 @@ class BaseRunner:
         calib_data: Optional[List[Any]] = None,
         device: DeviceType = DeviceType.NPU,
         device_indices: Optional[List[int]] = None,
+        context: Optional[IContext] = None,
     ):
         """
         执行推理调度流程。
@@ -69,6 +71,9 @@ class BaseRunner:
             model: 可选的模型实例，如果未提供则会通过adapter初始化
             calib_data: 可选的校准数据，用于需要数据的处理器
             device: 目标设备类型，默认为NPU
+            device_indices: 可选的设备索引列表，多卡时使用
+            context: 运行级上下文；仅从中解析 ``quant_summary`` 命名空间做统计，None 表示不汇总。
+                处理器所需上下文各自通过 ``get_current_context()`` 获取，runner 不代为创建。
 
         整个调度过程是确定性的，确保推理结果的可重复性。
         """

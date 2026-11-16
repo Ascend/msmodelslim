@@ -20,6 +20,7 @@ See the Mulan PSL v2 for more details.
 """
 
 import gc
+import time
 from typing import Any, Generator, List, Optional
 
 import torch
@@ -29,6 +30,9 @@ from torch.utils.data import DataLoader, DistributedSampler
 
 from msmodelslim.core.base.protocol import BatchProcessRequest, DataUnit, ProcessRequest
 from msmodelslim.core.const import DeviceType
+from msmodelslim.core.context import IContext
+from msmodelslim.core.context.summary import SummaryContext, quant_summary
+from msmodelslim.core.context.summary.utils import load_source_weight_bits
 from msmodelslim.core.runner.base import BaseRunner
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
 from msmodelslim.processor import AutoProcessorConfig
@@ -229,8 +233,12 @@ class GeneratedRunner(BaseRunner):
         calib_data: Optional[List[Any]] = None,
         device: DeviceType = DeviceType.NPU,
         device_indices: Optional[List[int]] = None,
+        context: Optional[IContext] = None,
     ):
         _ = device_indices
+        summary_context = SummaryContext.from_context(context)
+        if not summary_context.enabled:
+            get_logger().debug("No context passed to runner, quantization summary disabled")
         _ = get_input_datas(self.adapter, calib_data, device)
         if model is None:
             get_logger().info("Start to init model")
@@ -246,7 +254,7 @@ class GeneratedRunner(BaseRunner):
             calib_data=calib_data,
             data_recorder=data_recorder,
         )
-        self.generated_schedule(process_units, model, calib_data)
+        self.generated_schedule(process_units, model, calib_data, summary_context=summary_context)
 
     @torch.no_grad()
     def generated_schedule(
@@ -254,8 +262,17 @@ class GeneratedRunner(BaseRunner):
         process_units: List[GeneratedProcessUnit],
         model: nn.Module,
         calib_data: Optional[List[Any]] = None,
+        summary_context: Optional[SummaryContext] = None,
     ):
-        """Run processors over strict same-target sample barriers."""
+        """Run processors over strict same-target sample barriers.
+
+        ``summary_context`` is the optional carrier; None disables all summary recording.
+        """
+        context = summary_context if summary_context is not None else SummaryContext(None)
+        # Count Linear compression from source weights: block-fp8 weights are dequantized to bf16 on load.
+        source_bits = (
+            load_source_weight_bits(str(getattr(self.adapter, "model_path", "") or "")) if context.enabled else {}
+        )
         get_logger().info("Scheduler %d unit: %s", len(process_units), process_units)
         get_logger().info("Runner propagate=%s", self.propagate)
         use_forward_pipeline = any(not unit.processor.is_data_free() for unit in process_units)
@@ -277,6 +294,7 @@ class GeneratedRunner(BaseRunner):
         feedback: Optional[List[Any]] = None
         try:
             while True:
+                layer_start = time.perf_counter()
                 requests, done = _advance_generators(generators, started, feedback)
                 if done:
                     completed = True
@@ -288,8 +306,16 @@ class GeneratedRunner(BaseRunner):
                     datas=[(request.args, dict(request.kwargs)) for request in requests],
                     outputs=None,
                 )
+                name, module = batch_request.name, batch_request.module
+                if context.enabled:
+                    quant_summary.linear.record(context, name, module, is_before_quant=True, source_bits=source_bits)
                 for unit in process_units:
                     unit.run_step(batch_request)
+                if context.enabled:
+                    quant_summary.time.record(context, name, time.perf_counter() - layer_start)
+                    quant_summary.linear.record(context, name, module, is_before_quant=False)
+                    quant_summary.fa.record(context, name, module)
+                    quant_summary.kv.record(context, name, module)
                 feedback = batch_request.outputs if self.propagate else None
                 if feedback is not None and len(feedback) != len(requests):
                     raise UnexpectedError(

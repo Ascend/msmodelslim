@@ -194,6 +194,36 @@ class TestModelslimV1QuantServiceQuantProcess:
         service.quant_process(cfg, MagicMock(), None, device=MagicMock(), device_indices=[0, 1])
         mock_dp_cls.assert_called_once()
 
+    @patch("msmodelslim.core.quant_service.modelslim_v1.quant_service.LayerWiseRunner")
+    @patch("msmodelslim.core.quant_service.modelslim_v1.quant_service.ContextManager")
+    def test_quant_process_prior_stage_does_not_pass_context(self, mock_ctx_mgr, mock_runner_cls, service):
+        """场景：存在 prior 阶段。预期：prior 不传 context（不产生汇总），主阶段正常统计。"""
+        prior = MagicMock()
+        prior.dataset = None
+        prior.process = []
+        cfg = self._quant_config()
+        cfg.spec.prior = [prior]
+        prior_runner = MagicMock()
+        main_runner = MagicMock()
+        mock_runner_cls.side_effect = [prior_runner, main_runner]
+
+        service.quant_process(cfg, MagicMock(), None, device=MagicMock())
+
+        ctx = service.context_factory.create.return_value
+        assert "context" not in prior_runner.run.call_args.kwargs
+        assert main_runner.run.call_args.kwargs["context"] is ctx
+
+    @patch("msmodelslim.core.quant_service.modelslim_v1.quant_service.quant_summary")
+    @patch("msmodelslim.core.quant_service.modelslim_v1.quant_service.LayerWiseRunner")
+    @patch("msmodelslim.core.quant_service.modelslim_v1.quant_service.ContextManager")
+    def test_quant_process_finishes_summary_when_runner_completes(
+        self, mock_ctx_mgr, mock_runner_cls, mock_quant_summary, service
+    ):
+        """场景：主阶段 runner 正常结束。预期：在 context 内调用 quant_summary.finish。"""
+        mock_runner_cls.return_value = MagicMock()
+        service.quant_process(self._quant_config(), MagicMock(), None, device=MagicMock())
+        mock_quant_summary.finish.assert_called_once()
+
 
 def test_get_plugin_returns_config_and_service_classes():
     """场景：调用 get_plugin。预期：返回配置类与服务类。"""

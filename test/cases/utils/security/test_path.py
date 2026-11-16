@@ -26,7 +26,7 @@ import stat
 import json
 import sys
 import yaml
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from msmodelslim.utils.exception import SecurityError, SchemaValidateError
@@ -191,6 +191,20 @@ def test_get_write_directory_pass_when_valid_directory():
     from msmodelslim.utils.security.path import get_write_directory
 
     get_write_directory(TEST_DIR)
+
+
+def test_get_write_directory_logs_once_when_same_directory_is_reused(monkeypatch):
+    """测试 get_write_directory：同一已存在目录重复调用时只打印一次 info。"""
+    from msmodelslim.utils.security import path as path_module
+
+    monkeypatch.setattr(path_module, "WRITTEN_DIRS_LOGGED", set())
+    mock_logger = MagicMock()
+    monkeypatch.setattr(path_module, "get_logger", lambda: mock_logger)
+
+    path_module.get_write_directory(TEST_DIR)
+    path_module.get_write_directory(TEST_DIR)
+
+    mock_logger.info.assert_called_once()
 
 
 def test_get_write_directory_given_invalid_when_any_then_error():

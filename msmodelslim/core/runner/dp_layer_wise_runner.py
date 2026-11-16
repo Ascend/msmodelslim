@@ -37,7 +37,8 @@ from msmodelslim.utils.distributed import find_free_port, setup_distributed
 from msmodelslim.utils.logging import logger_setter, get_logger, set_logger_level
 from msmodelslim.core.runner.generated_runner import get_input_datas
 from msmodelslim.utils.exception import UnsupportedError
-from msmodelslim.core.context import ContextManager, get_current_context
+from msmodelslim.core.context import ContextManager, IContext, get_current_context
+from msmodelslim.core.context.summary import SummaryContext
 from msmodelslim.utils.distributed import (
     clear_distributed_task_work_queue,
     set_distributed_task_work_queue,
@@ -111,6 +112,7 @@ class DPLayerWiseRunner(LayerWiseRunner):
         master_port: int = 29500,
         shared_ctx=None,
         work_queue=None,
+        summary_enabled: bool = False,
     ):
         """
         Worker function for distributed execution.
@@ -125,6 +127,7 @@ class DPLayerWiseRunner(LayerWiseRunner):
             master_port: Master port for distributed communication
             shared_ctx: Shared context instance
             work_queue: ``multiprocessing.Queue`` created in parent before ``spawn``，用于任务并行调度器在各 rank 抢任务。
+            summary_enabled: Record summary only when the parent received an explicit context.
         """
         try:
             with ContextManager(ctx=shared_ctx):
@@ -195,7 +198,8 @@ class DPLayerWiseRunner(LayerWiseRunner):
                     data_recorder=data_recorder,
                 )
 
-                self.generated_schedule(process_units, model, calib_data)
+                summary_context = SummaryContext.from_context(shared_ctx if summary_enabled else None)
+                self.generated_schedule(process_units, model, calib_data, summary_context=summary_context)
 
         except Exception as e:
             get_logger().error("Error in rank %s: %s", rank, e)
@@ -211,6 +215,7 @@ class DPLayerWiseRunner(LayerWiseRunner):
         calib_data: Optional[List[Any]] = None,
         device: DeviceType = DeviceType.NPU,
         device_indices: Optional[List[int]] = None,
+        context: Optional[IContext] = None,
     ):
         """
         Run distributed quantization.
@@ -223,10 +228,11 @@ class DPLayerWiseRunner(LayerWiseRunner):
             calib_data: Calibration data (optional)
             device: Target device type
             device_indices: List of device indices to use (e.g., [0, 1, 2, 3])
+            context: Summary carrier; None disables summary, processors still get ``get_current_context()``.
         """
         if device_indices is None or len(device_indices) <= 1:
             get_logger().warning("Number of devices <= 1, falling back to single-device execution")
-            return super().run(model=model, calib_data=calib_data, device=device, device_indices=device_indices)
+            return super().run(model, calib_data, device, device_indices, context=context)
 
         world_size = len(device_indices)
 
@@ -255,7 +261,9 @@ class DPLayerWiseRunner(LayerWiseRunner):
                     "Main process: Using existing MASTER_PORT %s for distributed quantization", master_port
                 )
 
-            shared_ctx = get_current_context()
+            # Ambient context goes to processors only; summary needs an explicit context (namespace pre-created here).
+            shared_ctx = context if context is not None else get_current_context()
+            summary_enabled = SummaryContext.from_context(context).enabled
 
             # Cross-process shared task queue: created by parent process before spawn,
             # injected globally for access by all ranks.
@@ -268,7 +276,17 @@ class DPLayerWiseRunner(LayerWiseRunner):
                 # Start distributed execution
                 mp.spawn(
                     self.distributed_worker,
-                    args=(world_size, device_indices, model, calib_data, device, master_port, shared_ctx, work_queue),
+                    args=(
+                        world_size,
+                        device_indices,
+                        model,
+                        calib_data,
+                        device,
+                        master_port,
+                        shared_ctx,
+                        work_queue,
+                        summary_enabled,
+                    ),
                     nprocs=world_size,
                     join=True,
                 )
