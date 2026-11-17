@@ -9,7 +9,7 @@
 - 目标多模态理解模型不在官方支持矩阵中，需要新增 `model_type` 并打通量化链路；
 - 已有 `model_type` 需要扩展支持新的量化特性（如离群值平滑、旋转量化或 MoE 混合量化）。
 
-模型是否已在支持列表中请参考[《大模型支持矩阵》](../../model/README.md)；标准多模态理解量化操作请参阅[《VLM 量化使用指南》](usage_vision_transformer_quantization.md)；纯文本 LLM 接入请参阅[《LLM 接入指南》](../llm/integration_guide_large_language_model_quantization.md)；扩散生成模型接入请参阅[《DiT 接入指南》](../dit/integration_guide_diffusion_transformer_quantization.md)。
+模型是否已在支持列表中请参考《[大模型支持矩阵](../../model/README.md)》；标准多模态理解量化操作请参阅《[VLM 量化使用指南](usage_vision_transformer_quantization.md)》；纯文本 LLM 接入请参阅《[LLM 接入指南](../llm/integration_guide_large_language_model_quantization.md)》；扩散生成模型接入请参阅《[DiT 接入指南](../dit/integration_guide_diffusion_transformer_quantization.md)》。
 
 ## 2. 输入和交付件
 
@@ -40,7 +40,7 @@ msmodelslim/model/{model_name}/
 └── moe_utils.py         # （可选）MoE 3D 融合权重转换工具
 ```
 
-> 常规 VLM 通常仅需 `loader.py` 与 `model_adapter.py` 两个文件。若为 MoE 架构，可增加 `moe_utils.py`；若含 MTP 等自定义结构，可在同级目录下扩展辅助模块。
+> VLM 通常仅需 `loader.py` 与 `model_adapter.py` 两个文件。若为 MoE 架构，可增加 `moe_utils.py`；若含 MTP 等自定义结构，可在同级目录下扩展辅助模块。
 
 **输出**：完成适配器目录与源码文件初始化。
 
@@ -139,7 +139,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 ### 步骤 5：在全局配置文件中注册模型
 
-**目标**：在 `config/config.ini` 中注册模型名称和加载器入口，使 CLI 命令行能够通过 `--model_type` 正确路由。
+**目标**：在 `config/config.ini` 中注册模型名称和加载器入口，使 CLI能够通过 `--model_type` 正确路由。
 
 **操作**：
 
@@ -218,21 +218,21 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 | 案例 | 简述 | 链接 |
 | --- | --- | --- |
-| Kimi-K3 新模型接入与量化 | 多模态理解模型新结构接入与 W4A8 量化端到端实践 | [《Kimi-K3 新模型 W4A8 量化案例》](../../../best_practices/kimi_k3_adaptation_case.md) |
+| Kimi-K3 新模型接入与量化 | 多模态理解模型新结构接入与 W4A8 量化端到端实践 | 《[Kimi-K3 新模型 W4A8 量化案例](../../../best_practices/kimi_k3_adaptation_case.md)》 |
 
 ## 5. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| PTQ | 训练后量化（Post-Training Quantization） | [《训练后量化词条》](../term_ptq.md) |
-| VLM 量化 | 多模态视觉语言模型训练后量化 | [《多模态理解模型（VLM）量化词条》](./term_vision_transformer_quantization.md) |
+| PTQ | 训练后量化（Post-Training Quantization） | 《[训练后量化词条](../term_ptq.md)》 |
+| VLM 量化 | 多模态视觉语言模型训练后量化 | 《[多模态理解模型（VLM）量化词条](./term_vision_transformer_quantization.md)》 |
 
 ## 6. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | [《Interface Hub》](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py) |
-| VLM 量化使用指南 | 标准多模态理解模型量化全流程、配置协议与开箱即用示例 | [《VLM 量化使用指南》](usage_vision_transformer_quantization.md) |
-| multimodal_vlm_modelslim_v1 配置说明 | `process`/`save`/`dataset` 等多模态理解配置的字段说明 | [《multimodal_vlm_modelslim_v1 配置说明》](../../../api_reference/config/quant/multimodal_vlm_modelslim_v1.md) |
+| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | 《[Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py)》 |
+| VLM 量化使用指南 | 标准多模态理解模型量化全流程、配置协议与开箱即用示例 | 《[VLM 量化使用指南](usage_vision_transformer_quantization.md)》 |
+| multimodal_vlm_modelslim_v1 配置说明 | `process`/`save`/`dataset` 等多模态理解配置的字段说明 | 《[multimodal_vlm_modelslim_v1 配置说明](../../../api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》 |
 | 一键量化使用指南 | 一键量化 CLI 入口与完整命令参数说明 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
-| 量化算法总览 | 离群值平滑抑制与各类量化算法详述 | [《量化算法总览》](../../quantization_algorithms/README.md) |
+| 量化算法总览 | 离群值平滑抑制与各类量化算法详述 | 《[量化算法总览](../../quantization_algorithms/README.md)》 |

@@ -6,7 +6,7 @@
 
 ## 1. 概述
 
-**INT8** 是8位有符号整数，取值 $[-128, 127]$，共256个均匀档位。它把浮点张量压到一半访存宽度，并对接整数 [GEMM](../quantization_mode/term_gemm.md)。量化方式是仿射量化：浮点经 scale 以及可选 zero-point 映射到整数网格，按 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229) 的 `roundTiesToEven` 舍入后饱和到 $[-128, 127]$。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
+**INT8** 是8位有符号整数，取值 $[-128, 127]$，共256个均匀档位。它把浮点张量压缩到一半访存宽度，并对接整数 [GEMM](../quantization_mode/term_gemm.md)。量化方式是仿射量化：浮点经 scale 以及可选 zero-point 映射到整数网格，按 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229) 的 `roundTiesToEven` 舍入后饱和到 $[-128, 127]$。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
 
 ---
 

@@ -34,7 +34,7 @@ flowchart LR
 
 ## 5. 操作步骤
 
-### 步骤 1：声明处理器分布式支持
+### 步骤 1：声明Processor分布式支持
 
 **目标**：让量化流水线中的每个 Processor 声明自身支持多卡执行。
 
@@ -53,9 +53,9 @@ flowchart LR
 
 **输出**：`support_distributed()` 返回 `True` 的 Processor 实现。
 
-**通过条件**：多卡启动时不再因处理器不支持而报 `UnsupportedError`。
+**通过条件**：多卡启动时不再因 Processor 不支持而报 `UnsupportedError`。
 
-**异常处置**：若日志报不支持的处理器，逐个补齐 `support_distributed()` 重写。
+**异常处置**：若日志报不支持的 Processor，逐个补齐 `support_distributed()` 重写。
 
 ### 步骤 2：注入 DistHelper 建立共享/局部模块分类
 
@@ -218,7 +218,7 @@ flowchart LR
 
 ## 6. 验收条件
 
-- 执行多卡量化命令后顺利完成量化，日志无报错；
+- 执行多卡量化命令后顺利完成量化，日志无报错。
 
 ## 7. 案例列表
 

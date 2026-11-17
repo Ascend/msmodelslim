@@ -8,7 +8,7 @@
 
 量化数据类型描述量化之后的数值本身：占多少比特、按什么编码、能表示多大范围、如何舍入和截断。本词条给出 INT8、INT4、FP8、MXFP8、MXFP4 的概念索引，以及未量化基准 FP16 / BF16。`msmodelslim.core.dtype_ops` 按类型对任意张量做量化与反量化，并带上粒度、静态或动态、对称性，不区分张量来自权重、激活还是 KVCache。INT8 / INT4 走仿射量化，舍入遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229)；FP8 遵循 [OCP OFP8](https://www.opencompute.org/documents/ocp-8-bit-floating-point-specification-ofp8-revision-1-0-2023-12-01-pdf-1)；MXFP8 / MXFP4 遵循 [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf)；未量化基准 FP16 / BF16 遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229)。
 
-[量化模式](../quantization_mode/README.md)首先区分量化对象（线性层 / KVCache / FA），再在对象上选用上述能力。不同对象、以及同一对象上不同的量化方式和数据类型，对应不同模式。例如线性层 8bit 可以是 [W8A8 静态量化](../quantization_mode/linear_layer_quantization/term_w8a8_static.md)（[INT8](term_int8.md)）、[W8A8 FP8 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md) 或 [W8A8 MX 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_mx_dynamic.md)。
+[量化模式](../quantization_mode/README.md)首先区分量化对象（线性层 / KVCache / FA），再在对象上选用上述能力。不同对象，以及同一对象上不同的量化方式和数据类型，对应不同模式。例如线性层 8bit 可以是 [W8A8 静态量化](../quantization_mode/linear_layer_quantization/term_w8a8_static.md)（[INT8](term_int8.md)）、[W8A8 FP8 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md) 或 [W8A8 MX 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_mx_dynamic.md)。
 
 阅读模式词条前，建议先看[量化与反量化](term_quantization.md)里的公式、scale 和粒度，以及未量化基准 [FP16 / BF16](term_fp16_bf16.md)。具体函数怎么调用见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。各接口参数见《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》。
 

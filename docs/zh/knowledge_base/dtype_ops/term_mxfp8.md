@@ -38,7 +38,7 @@ $$q_i = \mathrm{clamp}(\mathrm{roundTiesToEven\_to\_FP8}(x'_i), \pm\mathrm{max\_
 - $q_i$：块内 FP8 量化值。
 - $\hat{x}_i$：反量化还原值。
 
-减去 $e_{\max}$，是为了让块内最大元素落到元素格式的上沿。全零块的 $e_{\mathrm{shared}}=-127$ 是合法值。元素舍入与 [FP8](term_fp8.md) 相同。没有 zero-point。
+减去 $e_{\max}$，是为了让块内最大元素落到元素格式的上沿。全零块的 $e_{\mathrm{shared}}=-127$ 是合法值。元素舍入与 [FP8](term_fp8.md) 相同，没有 zero-point。
 
 ### 2.3 与相关格式的关系
 

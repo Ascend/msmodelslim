@@ -34,7 +34,7 @@ $$ x_{\text{bf16}} = x_{\text{fp8}} \cdot s_{\text{scale\_inv}} $$
 
 $$ x_{\text{bf16}} = (x_{\text{int4}} - z) \cdot \Delta $$
 
-其中 $x_{\text{int4}}$ 为分组 INT4 packed 包装格式的权重，$\Delta$ 为分组缩放因子，$z$ 为分组零点。
+其中 $x_{\text{int4}}$ 为分组 INT4 packed 格式的权重，$\Delta$ 为分组缩放因子，$z$ 为分组零点。
 
 #### 3.1.3 FLOAT 到 MXFP8 量化（有损）
 
@@ -130,6 +130,6 @@ spec:
 
 ## 8. 参考文档
 
-1. 《[权重转换使用指南](./usage_weight_conversion.md)》：msModelSlim 权重转换详细文档。
+1. 《[权重转换使用指南](./usage_weight_conversion.md)》：msModelSlim权重转换详细文档。
 2. 《[msModelSlim 一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：一键量化总体流程。
 3. 《[格式支持矩阵](../../quantization_format/README.md)》：量化格式与存储格式说明。

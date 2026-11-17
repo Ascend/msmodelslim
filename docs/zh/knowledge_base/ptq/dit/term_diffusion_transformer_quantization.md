@@ -29,14 +29,14 @@ Diffusion Transformer（DiT）使用 Transformer 结构完全替代传统扩散�
 
 - **时间步感知校准（Timestep-Aware Calibration）**：去噪初期（高噪声）与后期（低噪声）激活值的动态范围和幅值分布具有强烈的非平稳性。量化校准必须在完整浮点去噪轨迹中均匀采样不同时间步的隐层激活，以避免全局 Scale 失真。
 - **多专家解耦独立统计**：针对采用分阶段专家的扩散架构，不同专家的权重与激活分布差异显著，需按专家分别构建校准激活分布并独立求解量化参数。
-- **高吞吐低精度浮点优先**：由于去噪迭代具有明显的误差累积效应，工业界多优先采用 MXFP8、FP8 等宽动态范围浮点格式（搭配微块 block 缩放），在大幅加速密集 GEMM 计算的同时严格控制图像/视频的感知退化。
+- **高吞吐低精度浮点优先**：由于去噪迭代具有明显的误差累积效应，工业界优先采用 MXFP8、FP8 等宽动态范围浮点格式（搭配微块 Block 缩放），在大幅加速密集 GEMM 计算的同时严格控制图像/视频的感知退化。
 
 ---
 
 ## 3. 关联流程
 
-- [《多模态生成模型（DiT）量化使用指南》](./usage_diffusion_transformer_quantization.md)：DiT 量化完整的操作流程与命令说明。
-- [《DiT 模型接入量化流程指南》](./integration_guide_diffusion_transformer_quantization.md)：将新扩散生成模型接入量化流程的指导文档。
+- 《[多模态生成模型（DiT）量化使用指南](./usage_diffusion_transformer_quantization.md)》：DiT 量化的完整操作流程与命令说明。
+- 《[DiT 模型接入量化流程指南](./integration_guide_diffusion_transformer_quantization.md)》：将新扩散生成模型接入量化流程的指导文档。
 - 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》：涵盖各类生成模型的一键量化流程。
 
 ---

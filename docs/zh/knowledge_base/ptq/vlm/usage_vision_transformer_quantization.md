@@ -53,7 +53,7 @@ flowchart LR
 
 **操作**：
 
-若目标模型已在官方支持列表中，无需编写适配代码，直接指定对应 `--model_type` 即可；若需接入新 VLM 模型，请参见[《VLM 模型接入量化流程指南》](./integration_guide_vision_transformer_quantization.md)。
+若目标模型已在官方支持列表中，无需编写适配代码，直接指定对应 `--model_type` 即可；若需接入新 VLM 模型，请参见《[VLM 模型接入量化流程指南](./integration_guide_vision_transformer_quantization.md)》。
 
 该指南详细说明了 `PipelineInterface` 规范、核心方法（`handle_dataset`、`init_model`、`generate_model_visit`、`generate_model_forward`、`enable_kv_cache`）以及视觉组件封装与适配器注册开发步骤。
 
@@ -180,8 +180,8 @@ calib_data.jsonl 示例：
    ```
 
 2. **格式选型与文档链接**：
-   - **[ascendv1_saver 配置说明](../../../api_reference/config/format/ascendv1_saver.md)**：**昇腾 NPU 部署推荐格式**。适配 MindIE 及 vLLM-Ascend 推理引擎，导出包含多模态模型量化参数的 `quant_model_description.json` 及分片量化权重 `*.safetensors`。
-   - **[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：面向 MindIE SD/MindIE 生态的统一部署格式。
+   - **[ascendv1_saver配置说明](../../../api_reference/config/format/ascendv1_saver.md)**：**昇腾 NPU 部署推荐格式**。适配 MindIE 及 vLLM-Ascend 推理引擎，导出包含多模态模型量化参数的 `quant_model_description.json` 及分片量化权重 `*.safetensors`。
+   - **[mindie_format_saver配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：面向 MindIE SD/MindIE 生态的统一部署格式。
 
 3. **选型指南**：
    - 昇腾部署场景首选 `ascendv1_saver`。
@@ -200,12 +200,12 @@ calib_data.jsonl 示例：
 
    | 算法 | 简述 | 适用场景 | 链接 |
    | --- | --- | --- | --- |
-   | MinMax | 统计张量极值直接计算 scale 与 zero-point，开销低 | W8A8 量化的基础估计算法 | [《MinMax》](../../quantization_algorithms/minmax/usage_minmax.md) |
-   | SmoothQuant | 将激活离群值按通道缩放迁移到权重 | 降低全网静态量化难度 | [《SmoothQuant》](../../quantization_algorithms/smooth_quant/usage_smooth_quant.md) |
-   | QuaRot | 引入正交 Walsh-Hadamard 旋转矩阵打散激活离群特征 | 改善低比特多模态模型的分布偏移 | [《QuaRot》](../../quantization_algorithms/quarot/usage_quarot.md) |
-   | KVCache Quant | 对多轮图文对话中的 Key/Value 缓存张量量化 | 多轮图文对话的显存优化 | [《KVCache Quant》](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md) |
+   | MinMax | 统计张量极值直接计算 scale 与 zero-point，开销低 | W8A8 量化的基础估计算法 | 《[MinMax](../../quantization_algorithms/minmax/usage_minmax.md)》 |
+   | SmoothQuant | 将激活离群值按通道缩放迁移到权重 | 降低全网静态量化难度 | 《[SmoothQuant](../../quantization_algorithms/smooth_quant/usage_smooth_quant.md)》 |
+   | QuaRot | 引入正交 Walsh-Hadamard 旋转矩阵打散激活离群特征 | 改善低比特多模态模型的分布偏移 | 《[QuaRot](../../quantization_algorithms/quarot/usage_quarot.md)》 |
+   | KVCache Quant | 对多轮图文对话中的 Key/Value 缓存张量量化 | 多轮图文对话的显存优化 | 《[KVCache Quant](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)》 |
 
-   > 完整算法列表请参阅[《量化算法总览》](../../quantization_algorithms/README.md)。
+   > 完整算法列表请参阅《[量化算法总览](../../quantization_algorithms/README.md)》。
 
 2. **算法选型与调优**：
    - **视觉敏感投影层排除（关键策略）**：视觉特征投影层（如 `*merger*`、`*linear_fc2`、`*deepstack_merger_list*` 等）负责将图像 patch 特征映射至文本 token 空间，对数值精度高度敏感。在 `exclude` 列表中显式排除，保留浮点权重，可抑制跨模态对齐误差导致的图文理解崩塌。
@@ -217,7 +217,7 @@ calib_data.jsonl 示例：
 
 ### 步骤 5：选择执行调度器（Runner）
 
-**目标**：结合 VLM 视觉编码器与多卡并行环境，选择最佳调度引擎。
+**目标**：结合 VLM 视觉编码器与多卡并行环境，选择最佳调度器。
 
 **操作**：
 
@@ -242,13 +242,13 @@ calib_data.jsonl 示例：
 
 ### 步骤 6：编写量化配置并执行命令
 
-**目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。有关量化命令参数的完整说明，请参阅[《权重量化使用指南》](../../../user_guide/usage_weight_quantization.md)。
+**目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。有关量化命令参数的完整说明，请参阅《[权重量化使用指南](../../../user_guide/usage_weight_quantization.md)》。
 
 **操作**：
 
 #### 完整示例：VLM W8A8 量化（含视觉投影层排除）
 
-##### 配置文件：`vlm_w8a8.yaml`
+##### 配置文件：vlm_w8a8.yaml
 
 ```yaml
 apiversion: multimodal_vlm_modelslim_v1
@@ -296,12 +296,12 @@ msmodelslim quant \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| PTQ | 训练后量化（Post-Training Quantization） | [《训练后量化词条》](../term_ptq.md) |
-| VLM 量化 | 多模态视觉语言模型训练后量化 | [《VLM 量化词条》](./term_vision_transformer_quantization.md) |
+| PTQ | 训练后量化（Post-Training Quantization） | 《[训练后量化词条](../term_ptq.md)》 |
+| VLM 量化 | 多模态视觉语言模型训练后量化 | 《[VLM 量化词条](./term_vision_transformer_quantization.md)》 |
 
 ## 6. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
 | `msmodelslim quant` | 一键量化 CLI 入口与完整命令说明 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
-| multimodal_vlm_modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset`/`default_text` 等任务级配置的字段说明 | [《multimodal_vlm_modelslim_v1 配置说明》](../../../api_reference/config/quant/multimodal_vlm_modelslim_v1.md) |
+| multimodal_vlm_modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset`/`default_text` 等任务级配置的字段说明 | 《[multimodal_vlm_modelslim_v1 配置说明](../../../api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》 |

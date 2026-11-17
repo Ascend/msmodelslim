@@ -9,7 +9,7 @@ MindStudio ModelSlim（msModelSlim）是面向昇腾生态的模型压缩工具�
 | 步骤 | 环节 | 核心工具           |       操作耗时       | 原理学习 |
 |:--:|:-------|:---------------|:----------------:|:-----:|
 | 1 | 容器环境准备 | vLLM-Ascend 容器 | 约 1 分钟（不含镜像下载时间） | 5 分钟 |
-| 2 | 模型文件准备 | modelscope     | 约 1 分钟（不含模型下载时间） | 2 分钟 |
+| 2 | 模型文件准备 | ModelScope     | 约 1 分钟（不含模型下载时间） | 2 分钟 |
 | 3 | 模型量化 | msModelSlim    |      约 3 分钟      | 5 分钟 |
 | 4 | 量化结果验证 | vLLM-Ascend    |      约 5 分钟      | 10 分钟 |
 
@@ -202,7 +202,7 @@ fi
 msmodelslim quant --model_path ~/qwen36_27b_base --save_path ~/qwen36_27b_w8a8 --device npu --model_type Qwen3.6-27B --quant_type w8a8 --trust_remote_code true
 ```
 
-量化耗时约 4 分钟，出现如下输出即表示完成：
+量化耗时约 3 分钟，出现如下输出即表示完成：
 
 ```text
 msmodelslim.app.naive_quantization - INFO - ===========SUCCESS===========
@@ -316,8 +316,8 @@ vllm serve ~/qwen36_27b_w8a8 \
 | 1  | 配置解析与插件激活 | 约 10 秒 | 加载 vLLM-Ascend 平台插件，解析模型架构与调度参数 |
 | 2  | Worker 启动与 HCCL 握手 | 约 50 秒 | 拉起多卡 Worker 进程，建立通信链路，分配 TP Rank |
 | 3  | CPU-NPU 亲和绑定 | 约 10 秒 | 按 NUMA 拓扑将 Worker 绑定至 NPU 近端 CPU 核心及中断 |
-| 4  | 加载模型权重 | 约 30 秒 | 将量化权重分片（约 30GB，均分至 2 张卡，每卡约 15GB）加载至全局内存 |
-| 5  | 图编译与算子融合 | 约 80 秒 | Dynamo 字节码转换（20s）+ CANN 算子编译（48s）+ 融合预热 |
+| 4  | 加载模型权重 | 约 30 秒 | 将量化权重分片（约 30GB，均分至 2 张卡，每卡约 15GB）加载至显存 |
+| 5  | 图编译与算子融合 | 约 80 秒 | Dynamo 字节码转换（20秒）+ CANN 算子编译（48秒）+ 融合预热 |
 | 6  | NPU Graph 捕获 | 约 30 秒 | 预编译 22 种 Batch 大小（1~152）的静态执行路径 |
 
 当出现类似如下日志时，表示服务启动成功：
@@ -328,12 +328,12 @@ vllm serve ~/qwen36_27b_w8a8 \
 (APIServer pid=6036) INFO:     Application startup complete.
 ```
 
-> 启动过程中可能会有一些 Warning 日志，只要出现上述成功日志即可忽略，具体原因参考 [vLLM 启动时出现 WARNING 日志是否正常](#43-vllm-启动时出现-warning-日志是否正常)。
+> 启动过程中可能会有一些 WARNING 日志，只要出现上述成功日志即可忽略，具体原因参考 [vLLM 启动时出现 WARNING 日志是否正常](#43-vllm-启动时出现-warning-日志是否正常)。
 
 若服务启动中止，未出现上述成功日志，请根据终端输出的错误信息定位问题。常见错误及处理方式：
 
 1. 端口被占用：错误信息包含 `Address already in use` 或 `bind: address already in use`。请通过 `--port` 更换端口，或中止使用此端口的进程。
-2. 显存不足（OOM）：错误信息包含类似 `Out of memory`。可通过 `npu-smi info` 确认目标卡显存占用情况，通过 `ASCEND_RT_VISIBLE_DEVICES` 切换至空闲卡。
+2. 显存不足（OOM）：错误信息包含类似 `Out of memory`，可通过 `npu-smi info` 确认目标卡显存占用情况，通过 `ASCEND_RT_VISIBLE_DEVICES` 切换至空闲卡。
 
 #### 2.3.4 推理验证
 
@@ -360,9 +360,9 @@ curl -s http://localhost:5678/v1/completions \
 > 2. Triton 算子 JIT 编译：FlashAttention 等算子首次执行时进行动态编译与自动调优（Autotuning），产生数秒延迟；
 > 3. KV Cache 脏数据：全局内存预分配后未逐字节清零，首次注意力计算可能读取到无效数据，导致输出乱码。
 >
-> 业界通常采用”**预热（Warmup）**”机制应对此类问题，即服务启动后先发送一条测试请求并丢弃其结果，待系统完成初始化后再接入正式流量。
+> 业界通常采用“**预热（Warmup）**”机制应对此类问题，即服务启动后先发送一条测试请求并丢弃其结果，待系统完成初始化后再接入正式流量。
 
-**第二步：发送正式推理请求**：
+**第二步：发送正式推理请求**
 
 ```bash
 curl -s http://localhost:5678/v1/completions \
@@ -371,7 +371,7 @@ curl -s http://localhost:5678/v1/completions \
   | python3 -c "import sys, json; print(json.load(sys.stdin)['choices'][0]['text'])"
 ```
 
-等待推理完成，若返回的信息中包括写代码的思考过程或有代码输出即表明推理成功
+等待推理完成，若返回的信息中包括写代码的思考过程或有代码输出即表明推理成功。
 
 ### 2.4 清理资源
 
@@ -387,7 +387,7 @@ curl -s http://localhost:5678/v1/completions \
 ~/ctr_in.py -d
 ```
 
-🎉 至此，您已完成 msModelSlim 一键量化与 vLLM-Ascend 推理部署的完整流程。如需了解更多功能，请阅读 《[使用指南](../user_guide/README.md)》 等进阶文档。
+🎉 至此，您已完成 msModelSlim 一键量化与 vLLM-Ascend 推理部署的完整流程。如需了解更多功能，请阅读《[使用指南](../user_guide/README.md)》等进阶文档。
 
 ## 3. 附录：内网环境无公网访问权限的应对方案
 

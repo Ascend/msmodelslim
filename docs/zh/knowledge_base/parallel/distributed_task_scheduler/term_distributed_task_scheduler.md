@@ -18,7 +18,7 @@
 
 ## 1. 概述
 
-分布式任务调度器（Distributed Task Scheduler，DTS）是 msModelSlim 在多卡量化完备性之上引入的调度组件：把 Processor 内可独立执行的算法子任务放入共享队列，由各 rank **分工执行**，并在依赖满足时做跨卡同步。它解决的是仅做 [DP](../data_parallelism/term_data_parallelism.md) 时各卡仍重复跑同一串子任务的算力浪费问题。
+分布式任务调度器（Distributed Task Scheduler，DTS）是 msModelSlim 在多卡量化完备性之上引入的调度组件：把 Processor 内可独立执行的算法子任务放入共享队列，由各 rank **分工执行**，并在依赖满足时做跨卡同步。它解决的是仅做 [数据并行](../data_parallelism/term_data_parallelism.md) 时各卡仍重复跑同一串子任务的算力浪费问题。
 
 ---
 

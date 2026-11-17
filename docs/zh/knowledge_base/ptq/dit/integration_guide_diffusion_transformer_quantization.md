@@ -9,7 +9,7 @@
 - 目标多模态生成模型不在官方支持矩阵中，需要新增 `model_type` 并打通量化链路；
 - 已有 `model_type` 需要扩展支持新的量化模式（如从 W8A8 MXFP8 扩展至 W4A4 MXFP4、双专家差异化量化等）。
 
-模型是否已在支持列表中请参考[《大模型支持矩阵》](../../model/README.md)；标准 DiT 量化操作请参阅[《DiT 量化使用指南》](usage_diffusion_transformer_quantization.md)；纯文本 LLM 接入请参阅[《LLM 接入指南》](../llm/integration_guide_large_language_model_quantization.md)；多模态理解模型接入请参阅[《VLM 接入指南》](../vlm/integration_guide_vision_transformer_quantization.md)。
+模型是否已在支持列表中请参考《[大模型支持矩阵](../../model/README.md)》；标准 DiT 量化操作请参阅《[DiT 量化使用指南](usage_diffusion_transformer_quantization.md)》；纯文本 LLM 接入请参阅《[LLM 接入指南](../llm/integration_guide_large_language_model_quantization.md)》；多模态理解模型接入请参阅《[VLM 接入指南](../vlm/integration_guide_vision_transformer_quantization.md)》。
 
 ## 2. 输入和交付件
 
@@ -153,7 +153,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 ### 步骤 5：在全局配置文件中注册模型
 
-**目标**：在 `config/config.ini` 中注册模型名称和加载器入口，使 CLI 命令行能够通过 `--model_type` 正确路由。
+**目标**：在 `config/config.ini` 中注册模型名称和加载器入口，使 CLI 能够通过 `--model_type` 正确路由。
 
 **操作**：
 
@@ -235,23 +235,23 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 | 案例 | 简述 | 链接 |
 | --- | --- | --- |
-| Wan2.2 新模型量化案例 | 双专家 DiT 文生视频模型 W4A4F4 低比特量化端到端实践 | [《Wan2.2 新模型 W4A4F4 量化案例》](../../../best_practices/wan2_2_w4a4f4_new_dit_quantization_case.md) |
+| Wan2.2 新模型量化案例 | 双专家 DiT 文生视频模型 W4A4F4 低比特量化端到端实践 | 《[Wan2.2 新模型 W4A4F4 量化案例](../../../best_practices/wan2_2_w4a4f4_new_dit_quantization_case.md)》 |
 
 ## 5. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| PTQ | 训练后量化（Post-Training Quantization） | [《训练后量化词条》](../term_ptq.md) |
-| DiT 量化 | Diffusion Transformer 扩散生成模型训练后量化 | [《多模态生成模型（DiT）量化词条》](./term_diffusion_transformer_quantization.md) |
+| PTQ | 训练后量化（Post-Training Quantization） | 《[训练后量化词条](../term_ptq.md)》 |
+| DiT 量化 | Diffusion Transformer 扩散生成模型训练后量化 | 《[多模态生成模型（DiT）量化词条](./term_diffusion_transformer_quantization.md)》 |
 
 ## 6. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | [《Interface Hub》](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py) |
-| Pipeline 接口 | 多模态生成量化服务的流水线接口定义 | [《pipeline_interface.py》](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py) |
-| DiT 量化使用指南 | 标准 DiT 模型量化全流程、配置协议与开箱即用示例 | [《DiT 量化使用指南》](usage_diffusion_transformer_quantization.md) |
-| multimodal_sd_modelslim_v1 配置说明 | `process`/`save`/`multimodal_sd_config` 等多模态生成配置字段说明 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md) |
-| mindie_format_saver 配置说明 | MindIE SD 保存格式与多专家落盘说明 | [《mindie_format_saver 配置说明》](../../../api_reference/config/format/mindie_format_saver.md) |
+| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | 《[Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py)》 |
+| Pipeline 接口 | 多模态生成量化服务的流水线接口定义 | 《[pipeline_interface.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/multimodal_sd_v1/pipeline_interface.py)》 |
+| DiT 量化使用指南 | 标准 DiT 模型量化全流程、配置协议与开箱即用示例 | 《[DiT 量化使用指南](usage_diffusion_transformer_quantization.md)》 |
+| multimodal_sd_modelslim_v1 配置说明 | `process`/`save`/`multimodal_sd_config` 等多模态生成配置字段说明 | 《[multimodal_sd_modelslim_v1 配置说明](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》 |
+| mindie_format_saver 配置说明 | MindIE SD 保存格式与多专家落盘说明 | 《[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)》 |
 | 一键量化使用指南 | 一键量化 CLI 入口与完整命令参数说明 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
-| 量化算法总览 | 微缩浮点、在线旋转与各类量化算法详述 | [《量化算法总览》](../../quantization_algorithms/README.md) |
+| 量化算法总览 | 微缩浮点、在线旋转与各类量化算法详述 | 《[量化算法总览](../../quantization_algorithms/README.md)》 |

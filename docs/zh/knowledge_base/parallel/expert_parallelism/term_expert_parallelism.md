@@ -18,7 +18,7 @@
 
 ## 1. 概述
 
-专家并行（Expert Parallelism，EP）是面向 Mixture-of-Experts（MoE）结构的并行策略：将路由专家按 rank 切分，使每个进程只持有一部分专家权重，从而降低单卡显存占用。它解决的是单卡显存不足以容纳 MoE 全量专家的问题。核心特征是同时存在**仅由本 rank 持有的局部模块**与各 rank 共同持有的**共享模块**；量化时必须区分二者——共享模块需跨卡同步，对局部专家则应避免盲目进行集合通信。EP 常与 [DP](../data_parallelism/term_data_parallelism.md) 叠加，并由 `DistHelper` 完成拓扑分类。
+专家并行（Expert Parallelism，EP）是面向 Mixture-of-Experts（MoE）结构的并行策略：将路由专家按 rank 切分，使每个进程只持有一部分专家权重，从而降低单卡显存占用。它解决的是单卡显存不足以容纳 MoE 全量专家的问题。核心特征是同时存在**仅由本 rank 持有的局部模块**与各 rank 共同持有的**共享模块**；量化时必须区分二者——共享模块需跨卡同步，对局部专家则应避免盲目进行集合通信。EP 常与 [数据并行](../data_parallelism/term_data_parallelism.md) 叠加，并由 `DistHelper` 完成拓扑分类。
 
 ---
 
@@ -36,7 +36,7 @@ MoE 模型通过稀疏激活多个专家，在不显著增加计算量的前提�
 
 #### 2.2.1 核心思想
 
-- **专家分片**：路由专家集合按 rank 进行切分子集，各 rank 仅加载专家子集。
+- **专家分片**：路由专家集合按 rank 切分为子集，各 rank 仅加载专家子集。
 - **同步边界**：量化所需的统计量 / 参数的集合通信应以共享模块为边界，对仅由局部 rank 持有的路由专家应避免盲目执行集合通信。
 
 <a id="scenarios-and-limitations"></a>

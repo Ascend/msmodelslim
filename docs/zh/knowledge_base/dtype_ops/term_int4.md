@@ -6,7 +6,7 @@
 
 ## 1. 概述
 
-**INT4** 是4位有符号整数，取值 $[-8, 7]$，共16个均匀档位。压缩比相对 [INT8](term_int8.md) 再翻一倍，通常只用于权重，并配合分组与重构（[GPTQ](../quantization_algorithms/gptq/term_gptq.md)、[LAOS](../quantization_algorithms/laos/term_laos.md)）。公式与 INT8 相同，只是 $b=4$。舍入遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229) 的 `roundTiesToEven`。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
+**INT4** 是4bit有符号整数，取值 $[-8, 7]$，共16个均匀档位。压缩比相对 [INT8](term_int8.md) 再翻一倍，通常只用于权重，并配合分组与重构（[GPTQ](../quantization_algorithms/gptq/term_gptq.md)、[LAOS](../quantization_algorithms/laos/term_laos.md)）。公式与 INT8 相同，只是 $b=4$。舍入遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229) 的 `roundTiesToEven`。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
 
 ---
 
@@ -37,12 +37,12 @@ $$q_{\min} = -2^{b-1} = -8, \qquad q_{\max} = 2^{b-1} - 1 = 7, \qquad b = 4$$
 ### 2.3 与相关格式的关系
 
 - 相对 [INT8](term_int8.md)：公式相同、位宽减半，分辨率从 256 档降到 16 档。
-- 相对 [MXFP4](term_mxfp4.md)：同为 4bit；INT4 是均匀整数网格，MXFP4 用块级共享指数保留浮点动态范围。
+- 相对 [MXFP4](term_mxfp4.md)：同为4bit；INT4 是均匀整数网格，MXFP4 用块级共享指数保留浮点动态范围。
 
 ### 2.4 适用场景与限制
 
 - **适用**：权重量化，例如 [W4A8 动态量化](../quantization_mode/linear_layer_quantization/term_w4a8_dynamic.md)、[W4A4 动态量化](../quantization_mode/linear_layer_quantization/term_w4a4_dynamic.md)。精度敏感时配合 GPTQ / LAOS。
-- **限制**：只有16个电平，一般不用于激活；对离群值比 [MXFP4](term_mxfp4.md) 更敏感。
+- **限制**：只有16个档位，一般不用于激活；对离群值比 [MXFP4](term_mxfp4.md) 更敏感。
 
 ---
 
@@ -59,7 +59,7 @@ $$q_{\min} = -2^{b-1} = -8, \qquad q_{\max} = 2^{b-1} - 1 = 7, \qquad b = 4$$
 - [量化数据类型](README.md)：上位概念，本词条所属目录。
 - [量化与反量化](term_quantization.md)：前置术语，说明仿射公式与分组粒度。
 - [INT8](term_int8.md)：同类整数格式，公式相同、位宽不同。
-- [MXFP4](term_mxfp4.md)：同类 4bit 格式，块级共享指数对照。
+- [MXFP4](term_mxfp4.md)：同类4bit格式，块级共享指数对照。
 - [GEMM](../quantization_mode/term_gemm.md)：配套术语，低比特矩阵乘。
 - [W4A8 动态量化](../quantization_mode/linear_layer_quantization/term_w4a8_dynamic.md)：应用对象，线性层权重采用本格式。
 

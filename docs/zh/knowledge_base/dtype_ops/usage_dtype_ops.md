@@ -1,4 +1,4 @@
-# 量化数据类型 ops 使用流程指南
+# 量化数据类型 ops使用流程指南
 
 ## 1. 适用范围
 
@@ -13,7 +13,7 @@
 不适用于：
 
 - 选择整层量化模式或编写 YAML 配方，请改走《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》与对应模式词条；
-- 存储打包（两个 4bit 打进一个字节），本层不做 pack / unpack。
+- 存储打包（两个4bit打进一个字节），本层不做 pack / unpack。
 
 类型定义见[量化数据类型](README.md)下各词条。公式见[量化与反量化](term_quantization.md)。各接口参数见《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》。
 

@@ -21,7 +21,7 @@ PTQ 的核心思想是通过离线统计校准集前向传播中的张量极值�
 
 根据量化对象与算力目标，PTQ 主要包含两种范式：
 
-- **权重量化（Weight-Only Quantization）**：仅将模型权重压缩为低比特（如 W8A16），计算时反量化为浮点执行。主要解决显存容量受限与内存带宽瓶颈（Memory-bound），大幅降低模型权重占用的显存空间，常见于批大小（Batch Size）较小的 LLM 生成阶段。
+- **权重量化（Weight-Only Quantization）**：仅将模型权重压缩为低比特（如 W8A16），计算时反量化为浮点执行。主要解决显存容量受限与内存带宽瓶颈（Memory-bound），大幅减少模型权重占用的显存空间，常见于批大小（Batch Size）较小的 LLM 生成阶段。
 - **权重与激活全量化（Weight-Activation Quantization）**：权重与激活均量化为低比特（如 W8A8、W4A8），直接调用硬件低精度矩阵乘算子（GEMM/MatMul）。兼顾显存占用缩减与计算加速（Compute-bound），在大 Batch 或多模态推理中加速收益显著。
 
 ### 2.2 主流大模型架构的 PTQ 特点对比
@@ -37,7 +37,7 @@ PTQ 的核心思想是通过离线统计校准集前向传播中的张量极值�
 ### 2.3 技术挑战
 
 - **激活离群值抑制**：深层 Transformer 激活值常存在跨通道幅值悬殊的离群通道，易导致常规量化截断误差或缩放因子被极值主导。
-- **校准集分布代表性**：PTQ 不更新模型权重，统计参数高度依赖校准数据。若校准样本覆盖域不全，易导致泛化精度下降。
+- **校准集分布代表性**：PTQ 不更新模型权重，统计参数高度依赖校准数据。若校准样本覆盖范围不全，易导致泛化精度下降。
 - **超低比特精度维持**：进入 INT4、INT3 等更低比特时，线性量化截断损失呈指数级上升，需结合二阶误差补偿或通道重排等进阶算法。
 - **误差跨层累积**：单层局部量化误差在前向传播过程中会逐层扩散与放大，需通过端到端敏感度分析进行关键层精度保护。
 
@@ -45,10 +45,10 @@ PTQ 的核心思想是通过离线统计校准集前向传播中的张量极值�
 
 ## 3. 关联流程
 
-- [《大语言模型（LLM）量化使用指南》](./llm/usage_large_language_model_quantization.md)：LLM 量化的完整操作流程。
-- [《多模态理解模型（VLM）量化使用指南》](./vlm/usage_vision_transformer_quantization.md)：VLM 量化的完整操作流程。
-- [《多模态生成模型（DiT）量化使用指南》](./dit/usage_diffusion_transformer_quantization.md)：DiT 量化的完整操作流程。
-- [《权重转换使用指南》](./convert/usage_weight_conversion.md)：权重转换的完整操作流程。
+- 《[大语言模型（LLM）量化使用指南](./llm/usage_large_language_model_quantization.md)》：LLM 量化的完整操作流程。
+- 《[多模态理解模型（VLM）量化使用指南](./vlm/usage_vision_transformer_quantization.md)》：VLM 量化的完整操作流程。
+- 《[多模态生成模型（DiT）量化使用指南](./dit/usage_diffusion_transformer_quantization.md)》：DiT 量化的完整操作流程。
+- 《[权重转换使用指南](./convert/usage_weight_conversion.md)》：权重转换的完整操作流程。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：涵盖各类模型的一键量化总体流程。
 
 ---

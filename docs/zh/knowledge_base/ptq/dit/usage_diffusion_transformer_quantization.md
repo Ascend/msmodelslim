@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-本指南面向首次对 Diffusion Transformer 架构的多模态生成模型（如 FLUX.1、HunyuanVideo、Wan2.1、Wan2.2、Qwen-Image-Edit 等）执行[训练后量化（PTQ）](../term_ptq.md)的用户。文档提供规范的量化使用流程，系统阐明多模态生成模型的适配接口、校准集与浮点推理配置、保存格式、算法选型、调度器（Runner）机制，并提供完整的 W8A8 量化开箱即用示例。
+本指南面向首次对 Diffusion Transformer 架构的多模态生成模型（如 FLUX.1、HunyuanVideo、Wan2.1、Wan2.2、Qwen-Image-Edit 等）执行[《训练后量化词条》](../term_ptq.md)的用户。文档提供规范的量化使用流程，系统阐明多模态生成模型的适配接口、校准集与浮点推理配置、保存格式、算法选型、调度器（Runner）机制，并提供完整的 W8A8 量化开箱即用示例。
 
 适用场景：
 
@@ -37,7 +37,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-前置条件：模型适配：量化前需先完成模型适配，适配器实现 PipelineInterface（基础流水线接口）等接口，详见[《DiT 模型接入量化流程指南》](./integration_guide_diffusion_transformer_quantization.md)。若目标模型已在官方预验证列表中，无需编写适配代码，直接指定对应 `--model_type` 即可。模型适配必须先完成，才能执行量化流程。
+前置条件：模型适配：量化前需先完成模型适配，适配器实现 PipelineInterface（基础流水线接口）等接口，详见《[DiT 模型接入量化流程指南](./integration_guide_diffusion_transformer_quantization.md)》。若目标模型已在官方预验证列表中，无需编写适配代码，直接指定对应 `--model_type` 即可。模型适配必须先完成，才能执行量化流程。
 
 - **适配模型流水线接口**：确保待量化模型具备符合 `multimodal_sd_modelslim_v1` 规范的适配器接口，能够驱动浮点推理生成校准数据并被逐层量化调度器统一处理。
 - **配置校准数据集与浮点推理参数**：量化校准依赖运行完整浮点去噪推理管线，通过 `dataset` 与 `multimodal_sd_config` 联合配置，推荐 50 条校准样本，分辨率、帧数与去噪步数对齐生产部署场景。
@@ -54,7 +54,7 @@ flowchart LR
 
 **操作**：
 
-若目标模型已在官方支持列表中，无需编写适配代码，直接指定对应 `--model_type` 即可；若需接入新 DiT 模型，请参见[《DiT 模型接入量化流程指南》](./integration_guide_diffusion_transformer_quantization.md)。
+若目标模型已在官方支持列表中，无需编写适配代码，直接指定对应 `--model_type` 即可；若需接入新 DiT 模型，请参见《[DiT 模型接入量化流程指南](./integration_guide_diffusion_transformer_quantization.md)》。
 
 该指南详细说明了 `MultimodalPipelineInterface` 规范、核心方法（`get_inference_config_class`、`configure_runtime`、`prepare_calib_data`、`inference_dump_calib_data`、`quantization_context`、`get_expert_adapter`）以及推理参数校验、运行态配置、浮点校准数据导出与量化执行上下文的适配器开发步骤。
 
@@ -108,10 +108,10 @@ flowchart LR
    ```
 
 2. **格式选型与文档链接**：
-   - **[mindie_format_saver 配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：**DiT 模型部署核心格式**。面向昇腾 MindIE SD 推理引擎，导出符合 MindIE 规范的量化描述文件及权重。针对多专家模型（如 Wan2.2），会自动在保存目录下生成 `high_noise_model/`、`low_noise_model/` 等各专家的独立子目录。
+   - **[mindie_format_saver配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：**DiT 模型部署核心格式**。面向昇腾 MindIE SD 推理引擎，导出符合 MindIE 规范的量化描述文件及权重。针对多专家模型（如 Wan2.2），会自动在保存目录下生成 `high_noise_model/`、`low_noise_model/` 等各专家的独立子目录。
 
 3. **选型指南**：
-   - 当前多模态生成模型在昇腾平台推理部署时，均统一采用 `mindie_format_saver`。
+   - 当前多模态生成模型在昇腾平台推理部署时，统一采用 `mindie_format_saver`。
 
 **输出**：在 YAML 中配置完成的 `save` 格式。
 
@@ -126,14 +126,14 @@ flowchart LR
 
    | 算法 | 简述 | 适用场景 | 链接 |
    | --- | --- | --- | --- |
-   | MX 格式量化（linear_quant） | `mxfp8`（E4M3/E5M2）或 `mxfp4` 数据类型，配合 `scope: per_block`（通常每 32 元素共享 scale），保持浮点高动态范围 | 昇腾 NPU 硬件优化的权重与激活量化 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-   | INT8 动态量化（linear_quant） | `dtype: int8`，激活 `per_token` 逐 Token 在线计算 scale（动态）、权重 `per_channel`，无需浮点 dump 校准数据 | 快速验证与轻量部署（如 Wan2.1） | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-   | MinMax / MSE | 激活量化用 `minmax` 统计极值；权重量化推荐 `mse_round`，以均方误差最小化搜索舍入 | 提升低位宽下的权重保真度 | [《MinMax》](../../quantization_algorithms/minmax/usage_minmax.md) |
-   | 在线正交旋转（QuaRot / online_quarot） | 在注意力自投影层引入正交变换矩阵，打散激活离群值通道 | 极端敏感层或低比特量化时的画质改善 | [《QuaRot》](../../quantization_algorithms/quarot/usage_quarot.md) |
-   | FA3 注意力量化（fa3_quant） | 对自注意力 QK^T 与 PV 计算引入 `fp8_e4m3` 或 `mxfp4` 低比特执行 | 配合 W4A4 等低比特方案进一步压缩注意力计算开销 | [《fa3_quant 配置说明》](../../../api_reference/config/processor/fa3_quant.md) |
+   | MX 格式量化（linear_quant） | `mxfp8`（E4M3/E5M2）或 `mxfp4` 数据类型，配合 `scope: per_block`（通常每 32 个元素共享 scale），保持浮点高动态范围 | 昇腾 NPU 硬件优化的权重与激活量化 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+   | INT8 动态量化（linear_quant） | `dtype: int8`，激活 `per_token` 逐 Token 在线计算 scale（动态）、权重 `per_channel`，无需浮点 dump 校准数据 | 快速验证与轻量部署（如 Wan2.1） | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+   | MinMax / MSE | 激活量化用 `minmax` 统计极值；权重量化推荐 `mse_round`，以均方误差最小化搜索舍入 | 提升低位宽下的权重保真度 | 《[MinMax](../../quantization_algorithms/minmax/usage_minmax.md)》 |
+   | 在线正交旋转（QuaRot / online_quarot） | 在自注意力投影层引入正交变换矩阵，打散激活离群值通道 | 极端敏感层或低比特量化时的画质改善 | 《[QuaRot](../../quantization_algorithms/quarot/usage_quarot.md)》 |
+   | FA3 注意力量化（fa3_quant） | 对自注意力 QK^T 与 PV 计算引入 `fp8_e4m3` 或 `mxfp4` 低比特执行 | 配合 W4A4 等低比特方案进一步压缩注意力计算开销 | 《[fa3_quant 配置说明](../../../api_reference/config/processor/fa3_quant.md)》 |
    | 按专家独立配置（per_expert） | 为敏感专家单独指定更保守的量化策略 | 多专家 DiT 中各专家误差容忍度差异较大时 | — |
 
-   > 更多量化算法介绍请参考[《量化算法总览》](../../quantization_algorithms/README.md)。
+   > 更多量化算法介绍请参考《[量化算法总览](../../quantization_algorithms/README.md)》。
 
 2. **算法选型与调优**：
    - **W8A8 INT8 动态量化（轻量起点）**：激活 `per_token`、权重 `per_channel`，`dtype` 均为 `int8`。逐 Token 在线计算 scale，可设 `enable_dump: false` 跳过浮点推理 dump，适合快速验证与资源受限场景（可参考 `lab_practice/wan2_1/wan2_1_w8a8_dynamic.yaml`，其中排除了 `*ffn.2*` 等敏感层）。
@@ -162,19 +162,19 @@ flowchart LR
 
 2. **配置指南**：
    - **固定配置 `runner: layer_wise`**。
-   - 执行前请确保单张 NPU 具备容纳最大单个网络层参数及前向临时激活的显存空间。
+   - 执行前请确保单块 NPU 具备容纳最大单个网络层参数及前向临时激活的显存空间。
 
 **输出**：YAML 中确认的 `runner` 调度策略。
 
 ### 步骤 6：编写量化配置并执行命令
 
-**目标**：整合上述步骤编写完整的 YAML 量化配置文件，并通过 CLI 启动量化。有关量化命令参数的完整说明，请参阅[《权重量化使用指南》](../../../user_guide/usage_weight_quantization.md)。
+**目标**：整合上述步骤编写完整的 YAML 量化配置文件，并通过 CLI 启动量化。有关量化命令参数的完整说明，请参阅《[权重量化使用指南](../../../user_guide/usage_weight_quantization.md)》。
 
 **操作**：
 
 #### 完整示例 1：W8A8 MXFP8 静态量化（推荐起点，生成画质与性能均衡）
 
-##### 配置文件：`dit_w8a8_mxfp8.yaml`
+##### 配置文件：dit_w8a8_mxfp8.yaml
 
 ```yaml
 apiversion: multimodal_sd_modelslim_v1
@@ -223,7 +223,7 @@ msmodelslim quant \
 
 #### 完整示例 2：W8A8 INT8 动态量化（轻量起点，无需浮点 dump）
 
-##### 配置文件：`dit_w8a8_int8_dynamic.yaml`
+##### 配置文件：dit_w8a8_int8_dynamic.yaml
 
 ```yaml
 apiversion: multimodal_sd_modelslim_v1
@@ -277,14 +277,14 @@ msmodelslim quant \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| DiT 量化 | Diffusion Transformer 多模态生成模型训练后量化 | [《DiT 量化词条》](./term_diffusion_transformer_quantization.md) |
-| PTQ | 训练后量化（Post-Training Quantization） | [《训练后量化词条》](../term_ptq.md) |
+| DiT 量化 | Diffusion Transformer 多模态生成模型训练后量化 | 《[DiT 量化词条](./term_diffusion_transformer_quantization.md)》 |
+| PTQ | 训练后量化（Post-Training Quantization） | 《[训练后量化词条](../term_ptq.md)》 |
 
 ## 6. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
 | `msmodelslim quant` | 一键量化 CLI 入口与完整命令说明 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
-| multimodal_sd_modelslim_v1 配置说明 | `runner`/`process`/`per_expert`/`save`/`dataset`/`multimodal_sd_config` 等任务级配置的字段说明 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md) |
-| linear_quant 配置说明 | `linear_quant` 处理器及其 `qconfig` 各字段的完整取值说明 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-| 多模态生成模型接入 | DiT 模型接入与适配器开发 | [《多模态生成模型接入》](./integration_guide_diffusion_transformer_quantization.md) |
+| multimodal_sd_modelslim_v1 配置说明 | `runner`/`process`/`per_expert`/`save`/`dataset`/`multimodal_sd_config` 等任务级配置的字段说明 | 《[multimodal_sd_modelslim_v1 配置说明](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》 |
+| linear_quant 配置说明 | `linear_quant` 处理器及其 `qconfig` 各字段的完整取值说明 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+| 多模态生成模型接入 | DiT 模型接入与适配器开发 | 《[多模态生成模型接入](./integration_guide_diffusion_transformer_quantization.md)》 |

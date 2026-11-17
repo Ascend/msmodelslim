@@ -9,7 +9,7 @@
 - 目标 LLM 不在官方支持矩阵中，需要新增 `model_type` 并打通量化链路；
 - 已有 `model_type` 需要扩展支持新的量化特性（如离群值平滑、旋转量化或敏感层调优）。
 
-模型是否已在支持列表中请参考[《大模型支持矩阵》](../../model/README.md)；标准模型量化操作请参阅[《LLM 量化使用指南》](usage_large_language_model_quantization.md)；多模态模型接入请参阅[《VLM 接入指南》](../vlm/integration_guide_vision_transformer_quantization.md)或[《DiT 接入指南》](../dit/integration_guide_diffusion_transformer_quantization.md)。
+模型是否已在支持列表中请参考《[大模型支持矩阵](../../model/README.md)》；标准模型量化操作请参阅《[LLM 量化使用指南](usage_large_language_model_quantization.md)》；多模态模型接入请参阅《[VLM 接入指南](../vlm/integration_guide_vision_transformer_quantization.md)》或《[DiT 接入指南](../dit/integration_guide_diffusion_transformer_quantization.md)》。
 
 ## 2. 输入和交付件
 
@@ -136,7 +136,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None
 
 ### 步骤 5：在全局配置文件中注册模型
 
-**目标**：在 `config/config.ini` 中注册模型名称和加载器入口，使 CLI 命令行能够通过 `--model_type` 正确路由。
+**目标**：在 `config/config.ini` 中注册模型名称和加载器入口，使 CLI 能够通过 `--model_type` 正确路由。
 
 **操作**：
 
@@ -209,23 +209,23 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None
 
 | 案例 | 简述 | 链接 |
 | --- | --- | --- |
-| DeepSeek-V4-Pro 新模型接入与量化 | 复杂 MoE+MLA 架构大模型 W4A8 混合量化端到端接入实践 | [《DeepSeek-V4-Pro 新模型 W4A8 量化案例》](../../../best_practices/deepseek_v4_pro_w4a8_new_llm_quantization_case.md) |
-| Qwen3-32B 精度调优实战 | 典型开源大模型 W8A8 动态量化与敏感层自动调优案例 | [《Qwen3-32B 模型 W8A8 量化调优案例》](../../../best_practices/qwen3_32b_w8a8_precision_tuning_case.md) |
+| DeepSeek-V4-Pro 新模型接入与量化 | 复杂 MoE+MLA 架构大模型 W4A8 混合量化端到端接入实践 | 《[DeepSeek-V4-Pro 新模型 W4A8 量化案例](../../../best_practices/deepseek_v4_pro_w4a8_new_llm_quantization_case.md)》 |
+| Qwen3-32B 精度调优实战 | 典型开源大模型 W8A8 动态量化与敏感层自动调优案例 | 《[Qwen3-32B 模型 W8A8 量化调优案例](../../../best_practices/qwen3_32b_w8a8_precision_tuning_case.md)》 |
 
 ## 5. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| PTQ | 训练后量化（Post-Training Quantization） | [《训练后量化词条》](../term_ptq.md) |
-| LLM 量化 | Decoder-only 大语言模型训练后量化 | [《LLM 量化词条》](./term_large_language_model_quantization.md) |
+| PTQ | 训练后量化（Post-Training Quantization） | 《[训练后量化词条](../term_ptq.md)》 |
+| LLM 量化 | Decoder-only 大语言模型训练后量化 | 《[LLM 量化词条](./term_large_language_model_quantization.md)》 |
 
 ## 6. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | [《Interface Hub》](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py) |
-| LLM 量化使用指南 | 标准 LLM 量化全流程、配置协议与开箱即用示例 | [《LLM 量化使用指南》](usage_large_language_model_quantization.md) |
-| modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset` 等任务级配置的字段说明 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
+| Interface Hub | 量化机制与算法组件对模型所需接口的集中定义与汇总 | 《[Interface Hub](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/model/interface_hub.py)》 |
+| LLM 量化使用指南 | 标准 LLM 量化全流程、配置协议与开箱即用示例 | 《[LLM 量化使用指南](usage_large_language_model_quantization.md)》 |
+| modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset` 等任务级配置的字段说明 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
 | 一键量化使用指南 | 一键量化 CLI 入口与完整命令参数说明 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
-| 自动调优使用说明 | 敏感层分析、回退候选及调优策略说明 | [《自动调优使用说明》](../../../user_guide/usage_auto_precision_tuning.md) |
-| 量化算法总览 | 离群值平滑抑制与各类量化算法详述 | [《量化算法总览》](../../quantization_algorithms/README.md) |
+| 自动调优使用说明 | 敏感层分析、回退候选及调优策略说明 | 《[自动调优使用说明](../../../user_guide/usage_auto_precision_tuning.md)》 |
+| 量化算法总览 | 离群值平滑抑制与各类量化算法详述 | 《[量化算法总览](../../quantization_algorithms/README.md)》 |
