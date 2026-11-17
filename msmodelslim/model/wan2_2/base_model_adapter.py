@@ -53,7 +53,6 @@ from msmodelslim.utils.memory import (
     get_device_allocated_memory,
     get_device_reserved_memory,
 )
-from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
 from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VlmCalibSample
 from ..interface_hub import (
     ModelInfoInterface,
@@ -61,6 +60,8 @@ from ..interface_hub import (
     OnlineQuaRotInterface,
     IterSmoothInterface,
     OASQInterface,
+    FA3QuantAdapterInterface,
+    FA3QuantPlaceHolder,
 )
 from .constants import DEFAULT_SIZE, DUAL_EXPERT_SCENE_TASKS, EXAMPLE_PROMPT, TASK_TYPES
 from .expert_sub_adapter import (

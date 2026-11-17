@@ -22,11 +22,11 @@ See the Mulan PSL v2 for more details.
 import pytest
 import torch
 
-from msmodelslim import ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.observer.histogram import HistogramObserver, SearchMethod
 from msmodelslim.core.quantizer.base import AutoActQuantizer, QConfig
 from msmodelslim.core.quantizer.impl.histogram import ActPerTensorHistogram
-from msmodelslim.ir.qal.qbase import QDType, QScheme, QScope, QParam
+from msmodelslim.core.quantization_schema.qal.qbase import QDType, QScheme, QScope, QParam
 from msmodelslim.utils.exception import SpecError
 
 

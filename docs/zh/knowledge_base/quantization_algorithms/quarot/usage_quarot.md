@@ -76,7 +76,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
 
 **操作**：模型适配器中旋转部分的适配代码需实现以下接口，相关接口均由 `msmodelslim.model.interface_hub` 汇总提供：
 
-1. **`QuaRotInterface`**（位于 `msmodelslim.processor.quarot.offline_quarot.quarot_interface`）：离线旋转核心接口。
+1. **`QuaRotInterface`**（位于 `msmodelslim.core.quantization_algorithm.quarot.offline_quarot.quarot_interface`）：离线旋转核心接口。
 
    ```python
    class QuaRotInterface:
@@ -108,7 +108,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
    - **`get_ln_fuse_map`**：返回 LayerNorm 层与 Linear 层的融合映射（`pre_run_fused_ln` 与 `fused_map` 两个字典），用于旋转前的 Norm 融合。
    - **`get_bake_names`**：返回需要均值融合（mean fusion）的 Linear 层名称列表（`pre_run_bake_names` 与 `bake_names`），模型使用 `nn.LayerNorm` 时通常需要。
    - **`get_rotate_map`**：返回旋转映射，包括 pre-run 阶段（通常为 embedding 层旋转）的 `pre_run_pairs` 与 preprocess 阶段的 `rotate_pairs`，每项为携带左旋/右旋矩阵的 `RotatePair` 列表。
-2. **`OnlineQuaRotInterface`**（位于 `msmodelslim.processor.quarot.online_quarot.online_quarot_interface`）：简化在线旋转接口。
+2. **`OnlineQuaRotInterface`**（位于 `msmodelslim.core.quantization_algorithm.quarot.online_quarot.online_quarot_interface`）：简化在线旋转接口。
 
    ```python
    class OnlineQuaRotInterface:
@@ -121,7 +121,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
    ```
 
    返回模块名（如 `model.layers.0.self_attn.q_rot`）到 `RotationConfig` 的映射；`rotation_type` 支持 `"input"`、`"output"`、`"replace"`、`"offline"`，可提供自定义旋转矩阵或指定 `rotation_size` 自动生成。
-3. **`LAOSOnlineRotationInterface`**（位于 `msmodelslim.processor.quarot.offline_quarot.quarot_interface`）：LAOS 在线旋转接口，用于描述注意力头维度及各 Decoder 层 O/V、up/down 投影的旋转对。
+3. **`LAOSOnlineRotationInterface`**（位于 `msmodelslim.core.quantization_algorithm.quarot.offline_quarot.quarot_interface`）：LAOS 在线旋转接口，用于描述注意力头维度及各 Decoder 层 O/V、up/down 投影的旋转对。
 
    ```python
    class LAOSOnlineRotationInterface:
@@ -142,7 +142,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
            ...
    ```
 
-4. **`AdaptRotationInterface`**（位于 `msmodelslim.processor.adapt_rotation`）：用于 AdaptRotation stage1/stage2 两阶段旋转的适配接口，仅在编排 `adapt_rotation` 处理器时需要实现。
+4. **`AdaptRotationInterface`**（位于 `msmodelslim.core.quantization_algorithm.adapt_rotation`）：用于 AdaptRotation stage1/stage2 两阶段旋转的适配接口，仅在编排 `adapt_rotation` 处理器时需要实现。
 
    以上接口均通过 `msmodelslim.model.interface_hub` 汇总导出，适配开发时从该模块导入即可。
 

@@ -22,9 +22,9 @@ See the Mulan PSL v2 for more details.
 import pytest
 import torch
 
-from msmodelslim import ir as qir
-from msmodelslim.ir.api import calculate_qparam, fake_quantize
-from msmodelslim.ir.qal import QABCRegistry, QParam, QScheme, QScope, QDType, QStorage
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.api import calculate_qparam, fake_quantize
+from msmodelslim.core.quantization_schema.qal import QABCRegistry, QParam, QScheme, QScope, QDType, QStorage
 from msmodelslim.core.observer import MsMinMaxObserver
 from msmodelslim.core.quantizer.base import QConfig, AutoWeightQuantizer
 from msmodelslim.core.quantizer.impl.hqq import (

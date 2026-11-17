@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 
 from __future__ import annotations
 
-from msmodelslim.format.compressed_tensors_format.compressed_tensors_json_reader_factory_infra import (
+from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors_json_reader_factory_infra import (
     CompressedTensorJsonReaderFactoryInfra,
     CompressedTensorJsonReaderInfra,
 )

@@ -25,7 +25,7 @@ from torch import nn
 
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.runner.layer_wise_runner import LayerWiseRunner
-from msmodelslim.processor import LoadProcessorConfig
+from msmodelslim.core.devkit.load import LoadProcessorConfig
 
 
 class TestLayerWiseRunner:

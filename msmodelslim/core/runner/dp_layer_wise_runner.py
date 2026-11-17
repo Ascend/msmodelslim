@@ -29,8 +29,8 @@ import torch.multiprocessing as mp
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.runner.layer_wise_runner import LayerWiseRunner
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
-from msmodelslim.processor import AutoProcessorConfig
-from msmodelslim.processor.base import AutoSessionProcessor
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoSessionProcessor
 from msmodelslim.utils.config import msmodelslim_config
 from msmodelslim.utils.device import bind_npu_cpus
 from msmodelslim.utils.distributed import find_free_port, setup_distributed

@@ -25,10 +25,10 @@ from typing import Optional
 
 import torch
 
-import msmodelslim.ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.observer import MsMinMaxObserver, MinMaxObserverConfig
-from msmodelslim.ir.api import quantize, fake_quantize, calculate_qparam
-from msmodelslim.ir.qal import QABCRegistry, QDType, QStorage, QParam, QScope, QScheme
+from msmodelslim.core.quantization_schema.api import quantize, fake_quantize, calculate_qparam
+from msmodelslim.core.quantization_schema.qal import QABCRegistry, QDType, QStorage, QParam, QScope, QScheme
 from msmodelslim.utils.exception import SpecError
 from msmodelslim.utils.logging import logger_setter
 from msmodelslim.utils.validation.value import greater_than_zero, int_greater_than_zero

@@ -3,7 +3,7 @@
 > **词条类别**：量化数据格式（[线性层量化](README.md)）<br>
 > **英文名称**：W8A16 Static Quantization<br>
 > **应用领域**：大语言模型量化压缩、推理加速<br>
-> **承载 IR 类**：`W8A16StaticPerChannelFakeQuantLinear` / `W8A16StaticPerGroupFakeQuantLinear`（[`msmodelslim/ir/w8a16_static.py`](../../../../../msmodelslim/ir/w8a16_static.py)）<br>
+> **承载 IR 类**：`W8A16StaticPerChannelFakeQuantLinear` / `W8A16StaticPerGroupFakeQuantLinear`（[`msmodelslim/core/quantization_schema/w8a16_static.py`](../../../../../msmodelslim/core/quantization_schema/w8a16_static.py)）<br>
 
 ## 1. 概述
 

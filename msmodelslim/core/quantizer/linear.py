@@ -27,8 +27,8 @@ from pydantic import BaseModel, Field
 from pydantic import validate_call
 from torch import nn
 
-import msmodelslim.ir as qir
-from msmodelslim.ir.qal import QDType, QStorage
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.qal import QDType, QStorage
 from msmodelslim.utils.logging import logger_setter
 from .base import AutoActQuantizer, AutoWeightQuantizer, QConfig, QScope
 

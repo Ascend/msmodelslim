@@ -20,7 +20,7 @@
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
 | 输入 | MoE 模型适配器 | `msmodelslim/model/`（新增或既有） | 支持逐层加载 | `--model_type` 命中适配器 |
-| 输入 | 已完成 DP 完备性适配的量化算法 | `msmodelslim/processor/` | 已按[数据并行使用指南](../data_parallelism/data_parallelism_guide.md)实现 DP 支持 | 多卡统计同步正确 |
+| 输入 | 已完成 DP 完备性适配的量化算法 | `msmodelslim/core/quantization_algorithm/` | 已按[数据并行使用指南](../data_parallelism/data_parallelism_guide.md)实现 DP 支持 | 多卡统计同步正确 |
 | 交付件 | EP 化的模型加载/构建代码 | `msmodelslim/model/`（原地修改或新增补丁模块） | 各 rank 仅加载本地专家；单进程下自动退化为全量专家 | 多卡各 rank 上非本地专家模块不存在（或为 `None` 槽位） |
 
 ## 4. 流程总览

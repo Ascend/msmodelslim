@@ -23,7 +23,7 @@ import pytest
 from pydantic import ValidationError
 
 from msmodelslim.core.quantizer.base import AutoActQuantizer, AutoWeightQuantizer, QConfig
-from msmodelslim.ir.qal.qbase import QDType, QScheme, QScope
+from msmodelslim.core.quantization_schema.qal.qbase import QDType, QScheme, QScope
 from msmodelslim.utils.exception import SchemaValidateError
 
 
@@ -110,12 +110,12 @@ class TestAutoActQuantizer:
             AutoActQuantizer.from_config({"dtype": "int8"})
 
     def test_register_new_subclass_and_can_create_instance_using_from_config(self):
-        from msmodelslim.ir.qal.qregistry import QABCRegistry
+        from msmodelslim.core.quantization_schema.qal.qregistry import QABCRegistry
 
         test_scheme = QConfig(dtype="int8", scope="per_channel", method="test", symmetric=True).to_scheme()
 
         @QABCRegistry.register(dispatch_key=(test_scheme, "test"), abc_class=AutoActQuantizer)
-        class MyActQuantizer(AutoActQuantizer):
+        class MyActQuantizer(AutoActQuantizer):  # pylint: disable=abstract-method
             def __init__(self, config: QConfig):
                 super().__init__()
 
@@ -136,12 +136,12 @@ class TestAutoWeightQuantizer:
             AutoWeightQuantizer.from_config({"dtype": "int8"})
 
     def test_register_new_subclass_and_can_create_instance_using_from_config(self):
-        from msmodelslim.ir.qal.qregistry import QABCRegistry
+        from msmodelslim.core.quantization_schema.qal.qregistry import QABCRegistry
 
         test_scheme = QConfig(dtype="int8", scope="per_channel", method="test", symmetric=True).to_scheme()
 
         @QABCRegistry.register(dispatch_key=(test_scheme, "test"), abc_class=AutoWeightQuantizer)
-        class MyWeightQuantizer(AutoWeightQuantizer):
+        class MyWeightQuantizer(AutoWeightQuantizer):  # pylint: disable=abstract-method
             def __init__(self, config: QConfig):
                 super().__init__()
 
@@ -154,12 +154,12 @@ class TestAutoWeightQuantizer:
             def get_q_storage(self):
                 from msmodelslim.core.quantizer.base import QStorage
 
-                return QStorage()
+                return QStorage()  # pylint: disable=no-value-for-parameter
 
             def get_q_param(self):
                 from msmodelslim.core.quantizer.base import QParam
 
-                return QParam()
+                return QParam()  # pylint: disable=no-value-for-parameter
 
         config = QConfig(dtype="int8", scope="per_channel", method="test", symmetric=True)
         quantizer = AutoWeightQuantizer.from_config(config)

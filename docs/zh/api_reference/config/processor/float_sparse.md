@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.sparse.float_sparse.FloatSparseProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_algorithm.sparse.float_sparse.FloatSparseProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `FloatSparseProcessorConfig` |
-| 源码 | [float_sparse.py](../../../../../msmodelslim/processor/sparse/float_sparse.py) |
+| 源码 | [float_sparse.py](../../../../../msmodelslim/core/quantization_algorithm/sparse/float_sparse.py) |
 
 ## 2. 参数列表
 

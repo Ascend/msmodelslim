@@ -23,9 +23,9 @@ import pytest
 import torch
 from torch import nn
 
-from msmodelslim import ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.context.summary import SummaryContext, KVQuantStatisticsObserver, KVStats
-from msmodelslim.ir.qal import QDType, QParam, QScheme, QScope
+from msmodelslim.core.quantization_schema.qal import QDType, QParam, QScheme, QScope
 
 
 class _StubDynamicCache(qir.AutoFakeQuantDynamicCache):

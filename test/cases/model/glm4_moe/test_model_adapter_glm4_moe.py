@@ -209,7 +209,7 @@ class TestGLM4MoeModuleFunctions(unittest.TestCase):
     def test_glm4_moe_get_rotate_map_when_called_then_return_correct_rotate_commands(self):
         """测试glm4_moe_get_rotate_map方法：调用时应返回正确的旋转命令"""
         from msmodelslim.model.glm4_moe.model_adapter import glm4_moe_get_rotate_map
-        from msmodelslim.processor.quarot import QuaRotInterface
+        from msmodelslim.core.quantization_algorithm.quarot import QuaRotInterface
 
         block_size = 64
         pre_run, rot_pairs, rot, rot_uv = glm4_moe_get_rotate_map(self.config, block_size)

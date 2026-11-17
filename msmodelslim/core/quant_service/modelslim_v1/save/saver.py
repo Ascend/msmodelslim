@@ -27,9 +27,9 @@ import torch.distributed as dist
 from pydantic import SerializeAsAny
 from torch import nn
 
-import msmodelslim.ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.base.protocol import BatchProcessRequest
-from msmodelslim.processor.base import AutoSessionProcessor, AutoProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoSessionProcessor, AutoProcessorConfig
 from msmodelslim.utils.distributed import DistHelper
 from msmodelslim.utils.logging import get_logger
 

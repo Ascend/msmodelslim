@@ -23,8 +23,8 @@ import pytest
 import torch
 from pydantic import ValidationError
 
-from msmodelslim.ir.qal.qbase import QStorage, QDType, QScheme, QScope, QParam
-from msmodelslim import ir as qir
+from msmodelslim.core.quantization_schema.qal.qbase import QStorage, QDType, QScheme, QScope, QParam
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.observer import MsMinMaxObserver
 from msmodelslim.core.quantizer.base import QConfig, AutoActQuantizer, AutoWeightQuantizer
 from msmodelslim.core.quantizer.impl.minmax import (
@@ -384,8 +384,8 @@ class TestMXWeightPerBlockMinmax:
 
         # eager flow (original init_weight logic)
         from msmodelslim.core.observer import MsMinMaxBlockObserver, MinMaxBlockObserverConfig
-        from msmodelslim.ir.api import calculate_qparam, quantize
-        from msmodelslim.ir.utils import reshape_to_blocks, undo_reshape_to_blocks
+        from msmodelslim.core.quantization_schema.api import calculate_qparam, quantize
+        from msmodelslim.core.quantization_schema.utils import reshape_to_blocks, undo_reshape_to_blocks
 
         obs = MsMinMaxBlockObserver(MinMaxBlockObserverConfig(axes=-1))
         proc_axes = [-1]
@@ -417,8 +417,8 @@ class TestMXWeightPerBlockMinmax:
         block_size = dtype.mx_finfo.block_size
 
         from msmodelslim.core.observer import MsMinMaxBlockObserver, MinMaxBlockObserverConfig
-        from msmodelslim.ir.api import calculate_qparam, quantize
-        from msmodelslim.ir.utils import reshape_to_blocks, undo_reshape_to_blocks
+        from msmodelslim.core.quantization_schema.api import calculate_qparam, quantize
+        from msmodelslim.core.quantization_schema.utils import reshape_to_blocks, undo_reshape_to_blocks
 
         obs = MsMinMaxBlockObserver(MinMaxBlockObserverConfig(axes=-1))
         proc_axes = [-1]

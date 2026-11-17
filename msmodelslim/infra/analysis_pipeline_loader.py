@@ -30,7 +30,7 @@ from msmodelslim.core.analysis_service.pipeline_analysis.pipeline_loader_infra i
     AnalysisPipelineLoaderInfra,
     PipelineBuilderInfra,
 )
-from msmodelslim.processor.base import AutoProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.security.path import get_valid_read_path
 

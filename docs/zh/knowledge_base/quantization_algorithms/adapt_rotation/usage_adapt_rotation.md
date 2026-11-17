@@ -50,7 +50,7 @@ flowchart LR
 **操作**：模型适配代码需实现以下接口，相关接口均由 `msmodelslim.model.interface_hub` 汇总提供：
 
 1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。
-2. **`AdaptRotationInterface`**（位于 `msmodelslim.processor.adapt_rotation`）：自适应旋转专用接口，定义 Stage1 与 Stage2 所需的模型子图与旋转映射。
+2. **`AdaptRotationInterface`**（位于 `msmodelslim.core.quantization_algorithm.adapt_rotation`）：自适应旋转专用接口，定义 Stage1 与 Stage2 所需的模型子图与旋转映射。
 3. **`QuaRotInterface`** / **`OnlineQuaRotInterface`**：旋转量化基础接口，提供 LayerNorm 融合映射（`get_ln_fuse_map`）与旋转对（`get_rotate_map`）。
 
 对于基于 HuggingFace Transformers 实现的标准开源 LLM，建议通过组合继承构建适配器：
@@ -109,7 +109,7 @@ spec:
 **操作**：
 
 msModelSlim 实现入口：：
-[查看对应实现目录](../../../../../msmodelslim/processor/adapt_rotation)
+[查看对应实现目录](../../../../../msmodelslim/core/quantization_algorithm/adapt_rotation)
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |

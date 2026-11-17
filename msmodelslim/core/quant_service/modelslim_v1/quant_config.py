@@ -24,10 +24,15 @@ from pydantic import BaseModel, Field, AfterValidator
 from typing_extensions import Self
 
 from msmodelslim.core.const import RunnerType
-from msmodelslim.format.registry import QuantFormatConfigList
-from msmodelslim.processor.base import AutoProcessorConfigList
+from msmodelslim.core.quantization_format.registry import QuantFormatConfigList
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfigList
 from msmodelslim.utils.validation.pydantic import validate_str_length
 from ..interface import BaseQuantConfig
+
+# 注册算法与 DevKit Config，供 spec.process[] 按 type 分派
+import msmodelslim.core.quantization_algorithm  # noqa: F401
+import msmodelslim.core.devkit.group  # noqa: F401
+import msmodelslim.core.devkit.load  # noqa: F401
 
 
 class PriorStageConfig(BaseModel):

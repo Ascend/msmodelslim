@@ -162,7 +162,7 @@ class IRResult:
             return _float_module_from_state_dict(state_dict)
         if self.final_ir == IRKind.W8A8_MXFP8:
             if is_mxfp8_deploy_state(state_dict):
-                from msmodelslim.ir.w8a8_mx_dynamic import (
+                from msmodelslim.core.quantization_schema.w8a8_mx_dynamic import (
                     W8A8MXDynamicPerBlockFakeQuantLinear,
                 )
 
@@ -170,7 +170,7 @@ class IRResult:
             return _float_module_from_state_dict(state_dict)
         if self.final_ir == IRKind.W4A4_MXFP4:
             if is_mxfp8_deploy_state(state_dict):
-                from msmodelslim.ir.w4a4_mx_dynamic import (
+                from msmodelslim.core.quantization_schema.w4a4_mx_dynamic import (
                     W4A4MXDynamicPerBlockFakeQuantLinear,
                 )
 

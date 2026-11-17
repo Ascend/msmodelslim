@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.format.ascendV1_format.ascendV1.AscendV1QuantFormatConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_format.ascendV1_format.ascendV1.AscendV1QuantFormatConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@ AscendV1 保存格式配置，导出昇腾落盘格式的权重文件。
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `AscendV1QuantFormatConfig` |
-| 源码 | [ascendV1.py](../../../../../msmodelslim/format/ascendV1_format/ascendV1.py) |
+| 源码 | [ascendV1.py](../../../../../msmodelslim/core/quantization_format/ascendV1_format/ascendV1.py) |
 
 ## 2. 参数列表
 

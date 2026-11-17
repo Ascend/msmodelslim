@@ -30,8 +30,8 @@ from msmodelslim.core.quant_service.modelslim_v1.quant_service import (
     get_plugin,
 )
 from msmodelslim.core.quant_service.modelslim_v1.save import AscendV1Config, MindIEFormatConfig
-from msmodelslim.format.base import QuantFormatConfig
-from msmodelslim.processor.save.processor import QuantSaveProcessorConfig
+from msmodelslim.core.quantization_format.base import QuantFormatConfig
+from msmodelslim.core.devkit.save import QuantSaveProcessorConfig
 
 
 class TestModelslimV1QuantService:

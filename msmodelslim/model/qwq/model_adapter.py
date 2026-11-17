@@ -28,7 +28,6 @@ from transformers import PreTrainedTokenizerBase
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph.adapter_types import AdapterConfig, MappingConfig
-from msmodelslim.processor.quarot import QuaRotInterface, LAOSOnlineRotationInterface
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security.model import SafeGenerator
@@ -40,6 +39,8 @@ from ..interface_hub import (
     ModelSlimPipelineInterfaceV1,
     StandingHighWithExperienceInterface,
     IterSmoothInterface,
+    QuaRotInterface,
+    LAOSOnlineRotationInterface,
 )
 
 

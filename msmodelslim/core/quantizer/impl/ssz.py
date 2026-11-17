@@ -26,9 +26,9 @@ import torch
 from pydantic import validate_call
 from torch import distributed as dist
 
-import msmodelslim.ir as qir
-from msmodelslim.ir.api import fake_quantize, quantize, dequantize, calculate_qparam
-from msmodelslim.ir.qal import QABCRegistry, QDType, QStorage, QParam, QScope, QScheme
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.api import fake_quantize, quantize, dequantize, calculate_qparam
+from msmodelslim.core.quantization_schema.qal import QABCRegistry, QDType, QStorage, QParam, QScope, QScheme
 from msmodelslim.core.observer import MsMinMaxObserver, MinMaxObserverConfig
 from msmodelslim.utils.distributed.task_scheduler.sync import broadcast_tensor_process_group_safe
 from msmodelslim.utils.distributed.task_scheduler.types import TaskExecutionRecord, TaskSyncContext

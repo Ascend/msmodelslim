@@ -28,16 +28,16 @@ import pytest
 import torch
 from torch import nn
 
-from msmodelslim.processor.flat_quant.flat_quant import (
+from msmodelslim.core.quantization_algorithm.flat_quant.flat_quant import (
     FlatQuantProcessor,
     FlatQuantProcessorConfig,
     npu_available,
 )
-from msmodelslim.processor.flat_quant.flat_quant_interface import FlatQuantInterface
+from msmodelslim.core.quantization_algorithm.flat_quant.flat_quant_interface import FlatQuantInterface
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.core.quantizer.linear import LinearQConfig
 from msmodelslim.core.quantizer.base import QConfig
-from msmodelslim.ir.qal import QDType, QScope
+from msmodelslim.core.quantization_schema.qal import QDType, QScope
 
 
 def _make_qconfig():
@@ -87,7 +87,7 @@ def _make_request(module, name, datas, outputs):
 def _make_processor(model, config):
     """构造 FlatQuantProcessor，mock adapter 以免要求真实模型注册。"""
     adapter = _FlatQuantSubgraphAdapter()
-    with patch("msmodelslim.processor.flat_quant.flat_quant.LayerTrainer", autospec=True):
+    with patch("msmodelslim.core.quantization_algorithm.flat_quant.flat_quant.LayerTrainer", autospec=True):
         proc = FlatQuantProcessor(model=model, config=config, adapter=adapter)
     return proc
 
@@ -118,7 +118,7 @@ def test_flat_quant_processor_runs_full_pipeline_when_config_is_minimal(test_dev
         mock_trainer.train_layer = MagicMock(return_value=[])
 
         with patch(
-            "msmodelslim.processor.flat_quant.flat_quant.LayerTrainer",
+            "msmodelslim.core.quantization_algorithm.flat_quant.flat_quant.LayerTrainer",
             return_value=mock_trainer,
         ):
             proc = FlatQuantProcessor(model=model, config=config, adapter=_FlatQuantSubgraphAdapter())

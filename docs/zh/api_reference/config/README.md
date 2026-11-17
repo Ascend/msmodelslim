@@ -39,15 +39,15 @@
 | `flex_awq_ssz` | [flex_awq_ssz](processor/flex_awq_ssz.md) | FlexAWQSSZ 平滑量化。 |
 | `flex_smooth_quant` | [flex_smooth_quant](processor/flex_smooth_quant.md) | FlexSmoothQuant 平滑量化。 |
 | `float_sparse` | [float_sparse](processor/float_sparse.md) | 浮点稀疏。 |
-| `group` | [group](processor/group.md) | 组合处理器，共享推理过程。 |
+| `group` | [group](processor/group.md) | DevKit：组合处理器，共享推理过程。使用指南见《[Group](../../knowledge_base/devkit/group/usage_group.md)》。 |
 | `iter_smooth` | [iter_smooth](processor/iter_smooth.md) | 迭代平滑。 |
 | `kv_smooth` | [kv_smooth](processor/kv_smooth.md) | KV cache 平滑。 |
 | `linear_quant` | [linear_quant](processor/linear_quant.md) | 线性层量化，含 `qconfig`（激活/权重）。 |
-| `load` | [load](processor/load.md) | 模块加载/卸载。 |
+| `load` | [load](processor/load.md) | DevKit：模块加载/卸载。 |
 | `oasq` | [oasq](processor/oasq.md) | OASQ 离群值感知平滑量化。 |
 | `online_quarot` | [online_quarot](processor/online_quarot.md) | 在线 QuaRot 旋转。 |
 | `quarot` | [quarot](processor/quarot.md) | 离线 QuaRot 旋转。 |
-| `saver` | [saver](processor/saver.md) | 统一保存处理器。 |
+| `saver` | [saver](processor/saver.md) | DevKit：统一保存处理器。 |
 | `smooth_quant` | [smooth_quant](processor/smooth_quant.md) | SmoothQuant 平滑量化。 |
 | `svd_res` | [svd_res](processor/svd_res.md) | SVD 低秩残差补偿。 |
 | `trainable_linear_quant` | [trainable_linear_quant](processor/trainable_linear_quant.md) | 可训练线性量化（TLQ）。 |

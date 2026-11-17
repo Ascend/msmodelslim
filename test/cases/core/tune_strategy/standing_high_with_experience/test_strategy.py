@@ -42,7 +42,7 @@ from msmodelslim.core.tune_strategy.standing_high_with_experience.strategy impor
 from msmodelslim.core.tune_strategy.standing_high_with_experience.standing_high_with_experience_interface import (
     StandingHighWithExperienceInterface,
 )
-from msmodelslim.format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
+from msmodelslim.core.quantization_format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 
 

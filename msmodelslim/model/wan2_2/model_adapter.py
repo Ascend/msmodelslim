@@ -47,13 +47,14 @@ from msmodelslim.model.common.layer_wise_forward import (
 from msmodelslim.utils.cache import to_device
 from msmodelslim.utils.exception import InvalidModelError, SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
-from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
 from ..interface_hub import (
     ModelInfoInterface,
     LegacyMultimodalPipelineInterface,
     OnlineQuaRotInterface,
     IterSmoothInterface,
     OASQInterface,
+    FA3QuantAdapterInterface,
+    FA3QuantPlaceHolder,
 )
 
 MAX_RECURSION_DEPTH = 20

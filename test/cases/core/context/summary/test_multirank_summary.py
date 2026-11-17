@@ -28,10 +28,10 @@ import torch
 import torch.distributed as dist
 from torch import nn
 
-from msmodelslim import ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.context.shared_dict_context.context import SharedDictContext
 from msmodelslim.core.context.summary import SUMMARY_NAMESPACE, SummaryContext, quant_summary
-from msmodelslim.ir.qal import QDType, QParam, QScheme, QScope
+from msmodelslim.core.quantization_schema.qal import QDType, QParam, QScheme, QScope
 from test.cases.utils.distributed.dts_distributed_spawn import run_distributed_spawn, spawn_queue
 
 pytestmark = pytest.mark.skipif(

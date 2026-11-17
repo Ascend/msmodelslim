@@ -37,7 +37,7 @@ from msmodelslim.core.quant_service.multimodal_sd_v1.legacy_pipeline_interface i
 from msmodelslim.core.quant_service.multimodal_sd_v1.pipeline_interface import (
     MultimodalPipelineInterface,
 )
-from msmodelslim.format.format_handler import build_default_format_chain
+from msmodelslim.core.quantization_format.format_handler import build_default_format_chain
 from msmodelslim.infra.file_dataset_loader import FileDatasetLoader
 from msmodelslim.model import IModelFactory
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter

@@ -34,7 +34,7 @@ import torch
 from torch import nn
 
 from msmodelslim.core.quant_service.modelslim_v1.save.mindie_format import MindIEFormatConfig, MindIEFormatSaver
-from msmodelslim.ir.qal import QScope, QDType
+from msmodelslim.core.quantization_schema.qal import QScope, QDType
 from msmodelslim.utils.exception import SchemaValidateError
 
 

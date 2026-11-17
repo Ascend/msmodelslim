@@ -30,7 +30,7 @@ from msmodelslim.app.train.proxy.task import TrainTask, TrainTaskConfig
 from msmodelslim.app.train.qat.task import QATTask, QATTaskConfig
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.train.train_launcher import TrainLauncher
-from msmodelslim.format.checkpoint_format.constants import STRUCTURE_FILE
+from msmodelslim.core.quantization_format.checkpoint_format.constants import STRUCTURE_FILE
 from msmodelslim.model import IModelFactory
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.exception_decorator import exception_catcher

@@ -111,7 +111,7 @@ class TestBuildSubgraphFromAdapter(unittest.TestCase):
                 custom_config={"v_head_dim": 128},
             ),
         )
-        with patch("msmodelslim.processor.anti_outlier.common.VirtualVModuleFromKVFused") as mock_v:
+        with patch("msmodelslim.core.quantization_algorithm.anti_outlier.common.VirtualVModuleFromKVFused") as mock_v:
             built = build_subgraph_from_adapter(self.model, cfg)
         self.assertIsNone(built)
         mock_v.assert_not_called()

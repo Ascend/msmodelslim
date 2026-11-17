@@ -23,7 +23,7 @@ import pytest
 import torch
 from unittest.mock import MagicMock
 
-from msmodelslim.ir.qal import QStorage, QDType, QParam
+from msmodelslim.core.quantization_schema.qal import QStorage, QDType, QParam
 from msmodelslim.core.quantizer.base import QConfig
 from msmodelslim.utils.exception import SchemaValidateError, UnexpectedError
 

@@ -27,7 +27,7 @@ from collections import namedtuple
 import pytest
 import torch
 
-from msmodelslim.ir import (
+from msmodelslim.core.quantization_schema import (
     W4A4DynamicPerGroupFakeQuantLinear,
     W4A4DynamicPerChannelFakeQuantLinear,
     W8A8DynamicPerChannelFakeQuantLinear,

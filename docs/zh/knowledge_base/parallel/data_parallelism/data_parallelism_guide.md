@@ -18,9 +18,9 @@
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 已完成单卡验证的量化算法 | `msmodelslim/processor/`（本仓已有实现或新增实现） | 基类 `support_distributed()` 默认返回 `False`，需按本流程重写 | 单卡量化产物正确，量化流程可完整跑通 |
+| 输入 | 已完成单卡验证的量化算法 | `msmodelslim/core/quantization_algorithm/`（本仓已有实现或新增实现） | 基类 `support_distributed()` 默认返回 `False`，需按本流程重写 | 单卡量化产物正确，量化流程可完整跑通 |
 | 输入 | 模型适配器 | `msmodelslim/model/` | 支持 `layer_wise` 逐层加载（`generate_decoder_layer` 等接口） | `msmodelslim quant` 单卡可命中并逐层加载 |
-| 交付件 | 声明并实现同步的处理器代码 | `msmodelslim/processor/`（原路径原地修改） | `support_distributed()` 返回 `True`；Observer / Processor 按本流程实现跨卡同步 | 通过 `DPLayerWiseRunner` 启动时的分布式支持校验（日志无 `UnsupportedError`） |
+| 交付件 | 声明并实现同步的处理器代码 | `msmodelslim/core/quantization_algorithm/`（原路径原地修改） | `support_distributed()` 返回 `True`；Observer / Processor 按本流程实现跨卡同步 | 通过 `DPLayerWiseRunner` 启动时的分布式支持校验（日志无 `UnsupportedError`） |
 
 ## 4. 流程总览
 
@@ -42,7 +42,7 @@ flowchart LR
 
 **操作**：
 
-1. 在 Processor 类中重写 `support_distributed()`（基类 [`BaseSessionProcessor`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/base.py) 默认返回 `False`）：
+1. 在 Processor 类中重写 `support_distributed()`（基类 [`BaseSessionProcessor`](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/base.py) 默认返回 `False`）：
 
    ```python
    def support_distributed(self) -> bool:
@@ -67,7 +67,7 @@ flowchart LR
 
 **操作**：
 
-1. 在 `preprocess` 中、**所有结构变更完成之后**初始化并注入统计组件`DistHelper`（以 FA3 为例，见 [`processor.py`](../../../../../msmodelslim/processor/quant/fa3/processor.py)）：
+1. 在 `preprocess` 中、**所有结构变更完成之后**初始化并注入统计组件`DistHelper`（以 FA3 为例，见 [`processor.py`](../../../../../msmodelslim/core/quantization_algorithm/quant/fa3/processor.py)）：
 
    ```python
    if dist.is_initialized():
@@ -123,7 +123,7 @@ flowchart LR
 | `sync_gather_tensor_lists` | `tensor_list`；`on_cpu`；`group` | 收集各 rank 的张量列表并展平为一条大列表。适用于校准阶段按 batch 缓存的激活张量在 `postprocess` 一次性合并 |
 
 - **形态 A：Observer 内同步**（统计量累计在 Observer 中）。
-  以 [FA3PerHeadObserver](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/fa3/processor.py)为例, Observer 前向时按共享模块判定传入同步开关 `sync`：
+  以 [FA3PerHeadObserver](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/quant/fa3/processor.py)为例, Observer 前向时按共享模块判定传入同步开关 `sync`：
 
   ```python
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -142,7 +142,7 @@ flowchart LR
   ```
 
 - **形态 B：Processor 内同步**（校准期仅本地缓存激活）。
-  以 [FlexSmoothQuant](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) 为例，hook 仅本地追加激活张量：
+  以 [FlexSmoothQuant](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/anti_outlier/flex_smooth/processor.py) 为例，hook 仅本地追加激活张量：
 
   ```python
   # FlexStatsCollector.create_hook：校准前向只做本地采集
@@ -224,7 +224,7 @@ flowchart LR
 
 | 案例 | 简述 | 链接 |
 | --- | --- | --- |
-| FA3Quant 多卡适配 | Observer 内 `sync_base_operation` 归约 per-head min/max，完备性支持完整示例（本指南步骤 4 含代码片段） | [FA3QuantProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/fa3/processor.py) |
+| FA3Quant 多卡适配 | Observer 内 `sync_base_operation` 归约 per-head min/max，完备性支持完整示例（本指南步骤 4 含代码片段） | [FA3QuantProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/quant/fa3/processor.py) |
 
 ## 8. 术语
 
@@ -239,7 +239,7 @@ flowchart LR
 | --- | --- | --- |
 | `DistHelper` | 模块拓扑分类工具：`is_shared` / `is_local_only` | [dist_helper.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_helper.py) |
 | `sync_base_operation` 等 | 跨 rank 统计量归约工具函数 | [dist_ops.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/utils/distributed/dist_ops.py) |
-| `support_distributed()` | Processor 分布式支持声明（基类默认 `False`） | [processor/base.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/base.py) |
+| `support_distributed()` | Processor 分布式支持声明（基类默认 `False`） | [quantization_algorithm/base.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/base.py) |
 | `ascendv1_saver_distributed` | 分布式保存器（由 `ascendv1_saver` 自动转换） | [ascendv1_distributed.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quant_service/modelslim_v1/save/ascendv1_distributed.py) |
 | `--device npu --device_id 0 1 ...` | 多卡量化入口配置 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
 

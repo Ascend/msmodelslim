@@ -28,7 +28,7 @@ from msmodelslim.core.tune_strategy.common.config_builder.quantization_config im
     QuantizationConfig,
     TuningSearchSpace,
 )
-from msmodelslim.format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
+from msmodelslim.core.quantization_format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
 
 
 def _default_quant_save_list():

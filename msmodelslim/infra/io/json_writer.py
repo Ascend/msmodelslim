@@ -25,16 +25,16 @@ from __future__ import annotations
 
 import os
 from typing import Any
-from msmodelslim.format.ascendV1_format.ascendV1_json_writer_factory_infra import (
+from msmodelslim.core.quantization_format.ascendV1_format.ascendV1_json_writer_factory_infra import (
     AscendV1JsonWriterInfra,
 )
-from msmodelslim.format.checkpoint_format.checkpoint_json_writer_factory_infra import (
+from msmodelslim.core.quantization_format.checkpoint_format.checkpoint_json_writer_factory_infra import (
     CheckpointJsonWriterInfra,
 )
-from msmodelslim.format.mindie_format.mindie_json_writer_factory_infra import (
+from msmodelslim.core.quantization_format.mindie_format.mindie_json_writer_factory_infra import (
     MindIEJsonWriterInfra,
 )
-from msmodelslim.format.compressed_tensors_format.compressed_tensors_json_writer_factory_infra import (
+from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors_json_writer_factory_infra import (
     CompressedTensorJsonWriterInfra,
 )
 from msmodelslim.utils.security import json_safe_dump

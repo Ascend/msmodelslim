@@ -33,8 +33,8 @@ from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph import AdapterConfig
 from msmodelslim.model.deepseek_v3.model_adapter import DeepSeekV3ModelAdapter
-from msmodelslim import ir as qir
-from msmodelslim.processor.quant.fa3 import FA3QuantPlaceHolder
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_algorithm.quant.fa3 import FA3QuantPlaceHolder
 from msmodelslim.utils.exception import InvalidModelError
 
 

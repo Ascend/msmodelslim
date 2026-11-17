@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 import pytest
 import torch
 
-from msmodelslim import ir as _ir  # noqa: F401 — break circular import via quantizer package
+import msmodelslim.core.quantization_schema as _ir  # noqa: F401 — break circular import via quantizer package
 from msmodelslim.core.observer.histogram import (
     HistogramObserver,
     HistogramObserverConfig,

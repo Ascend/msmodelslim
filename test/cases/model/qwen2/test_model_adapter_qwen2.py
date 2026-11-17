@@ -30,7 +30,7 @@ from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph.adapter_types import AdapterConfig, MappingConfig
 from msmodelslim.model.qwen2.model_adapter import Qwen2ModelAdapter
 from msmodelslim.model.interface_hub import RaCompressAnalysisInterface
-from msmodelslim.processor.kv_smooth import KVSmoothFusedType, KVSmoothFusedUnit
+from msmodelslim.core.quantization_algorithm.kv_smooth import KVSmoothFusedType, KVSmoothFusedUnit
 from msmodelslim.utils.exception import InvalidModelError
 
 

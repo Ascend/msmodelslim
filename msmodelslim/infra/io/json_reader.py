@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from msmodelslim.format.compressed_tensors_format.compressed_tensors_json_reader_factory_infra import (
+from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors_json_reader_factory_infra import (
     CompressedTensorJsonReaderInfra,
 )
 from msmodelslim.utils.security import get_valid_read_path, json_safe_load

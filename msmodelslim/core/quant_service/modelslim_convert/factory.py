@@ -37,7 +37,6 @@ from msmodelslim.core.quant_service.modelslim_convert.impl import (
     VirtualModelTreeBuilder,
 )
 from msmodelslim.infra.io.checkpoint_reader import CheckpointReader
-from msmodelslim.processor.convert.registry import register_convert_processors
 
 
 def create_convert_application() -> ConvertApplication:
@@ -47,6 +46,9 @@ def create_convert_application() -> ConvertApplication:
     ``router`` 同时注入 Application（路由规划）与 ConvertExecutor（边执行），
     避免重复 register 导致边表不一致。
     """
+    # Lazy import: convert processors import virtual_module which loads this package.
+    from msmodelslim.core.quantization_algorithm.convert.registry import register_convert_processors
+
     router = register_convert_processors()
     return ConvertApplication(
         checkpoint_reader_factory=CheckpointReader,

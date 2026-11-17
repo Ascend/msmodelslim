@@ -57,7 +57,7 @@ flowchart LR
 **操作**：模型适配代码需实现以下接口，相关接口均由 `msmodelslim.model.interface_hub` 汇总导出：
 
 1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。
-2. **`OASQInterface`**（位于 `msmodelslim.processor.anti_outlier.oasq.interface`）：OASQ 专用接口。
+2. **`OASQInterface`**（位于 `msmodelslim.core.quantization_algorithm.anti_outlier.oasq.interface`）：OASQ 专用接口。
 
 ```python
 from abc import ABC, abstractmethod

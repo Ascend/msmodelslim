@@ -31,9 +31,9 @@ from typing import Optional
 
 import torch
 
-import msmodelslim.ir as qir
-from msmodelslim.ir.api import quantize, dequantize, fake_quantize, calculate_qparam
-from msmodelslim.ir.qal import QABCRegistry, QDType, QStorage, QParam, QScope
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.api import quantize, dequantize, fake_quantize, calculate_qparam
+from msmodelslim.core.quantization_schema.qal import QABCRegistry, QDType, QStorage, QParam, QScope
 from msmodelslim.core.observer import MsMinMaxObserver, MinMaxObserverConfig
 from msmodelslim.utils.exception import SpecError
 from msmodelslim.utils.logging import logger_setter

@@ -27,7 +27,7 @@ from unittest.mock import Mock, patch
 import pytest
 import torch
 
-import msmodelslim.ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.quant_service.modelslim_v1.save.mindie_format import (
     MindIEFormatConfig,
     MindIEFormatSaver,

@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.quant.linear.LinearProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_algorithm.quant.linear.LinearProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `LinearProcessorConfig` |
-| 源码 | [linear.py](../../../../../msmodelslim/processor/quant/linear.py) |
+| 源码 | [linear.py](../../../../../msmodelslim/core/quantization_algorithm/quant/linear.py) |
 
 ## 2. 参数列表
 

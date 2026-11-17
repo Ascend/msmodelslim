@@ -26,16 +26,16 @@ from __future__ import annotations
 import torch
 from safetensors.torch import save_file
 
-from msmodelslim.format.ascendV1_format.ascendV1_tensors_writer_factory_infra import (
+from msmodelslim.core.quantization_format.ascendV1_format.ascendV1_tensors_writer_factory_infra import (
     AscendV1SafetensorsWriterInfra,
 )
-from msmodelslim.format.checkpoint_format.checkpoint_tensors_writer_factory_infra import (
+from msmodelslim.core.quantization_format.checkpoint_format.checkpoint_tensors_writer_factory_infra import (
     CheckpointSafetensorsWriterInfra,
 )
-from msmodelslim.format.compressed_tensors_format.compressed_tensors_safetensors_writer_factory_infra import (
+from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors_safetensors_writer_factory_infra import (
     CompressedTensorSafetensorsWriterInfra,
 )
-from msmodelslim.format.mindie_format.mindie_tensors_writer_factory_infra import (
+from msmodelslim.core.quantization_format.mindie_format.mindie_tensors_writer_factory_infra import (
     MindIESafetensorsWriterInfra,
 )
 from msmodelslim.utils.security import get_valid_write_path

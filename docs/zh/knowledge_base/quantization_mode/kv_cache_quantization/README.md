@@ -3,7 +3,7 @@
 > **词条类别**：量化数据格式（[量化模式](../README.md)）<br>
 > **英文名称**：KV Cache Quantization<br>
 > **应用领域**：KVCache 压缩、长上下文推理加速<br>
-> **msModelSlim 实现**：[`msmodelslim/ir/attention.py`](../../../../../msmodelslim/ir/attention.py)<br>
+> **msModelSlim 实现**：[`msmodelslim/core/quantization_schema/attention.py`](../../../../../msmodelslim/core/quantization_schema/attention.py)<br>
 
 <a id="overview"></a>
 

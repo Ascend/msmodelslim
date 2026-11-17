@@ -3,7 +3,7 @@
 > **词条类别**：量化数据格式（[KVCache 量化](README.md)）<br>
 > **英文名称**：KV Cache Per-Channel Quantization<br>
 > **应用领域**：KVCache 压缩、长上下文推理加速<br>
-> **承载 IR 类**：`FakeQuantDynamicCache`（[`msmodelslim/ir/attention.py`](../../../../../msmodelslim/ir/attention.py)）<br>
+> **承载 IR 类**：`FakeQuantDynamicCache`（[`msmodelslim/core/quantization_schema/attention.py`](../../../../../msmodelslim/core/quantization_schema/attention.py)）<br>
 
 ## 1. 概述
 

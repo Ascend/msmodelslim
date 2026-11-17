@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details.
 
 from torch import nn
 
-from msmodelslim.format.interface import IFormatLoader
+from msmodelslim.core.quantization_format.interface import IFormatLoader
 from msmodelslim.utils.buffer import RuntimeBufferStore, collect_nonpersistent_buffers
 from msmodelslim.utils.logging import get_logger
 

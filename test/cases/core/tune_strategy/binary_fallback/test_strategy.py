@@ -36,9 +36,9 @@ from msmodelslim.core.tune_strategy.binary_fallback.strategy import (
     get_plugin,
 )
 from msmodelslim.core.tune_strategy.interface import EvaluateResult
-from msmodelslim.format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
-from msmodelslim.ir.qal import QDType, QScope
-from msmodelslim.processor.quant.linear import LinearProcessorConfig
+from msmodelslim.core.quantization_format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
+from msmodelslim.core.quantization_schema.qal import QDType, QScope
+from msmodelslim.core.quantization_algorithm.quant.linear import LinearProcessorConfig
 from msmodelslim.utils.exception import SchemaValidateError, SpecError, UnsupportedError
 from msmodelslim.utils.pydantic_model_path import resolve_pydantic_model_path
 

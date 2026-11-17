@@ -32,17 +32,16 @@ from typing import Any, List, Optional, Tuple, Generator, Dict
 from unittest.mock import patch
 
 import torch
-import torch.nn as nn
 from safetensors import safe_open
 from torch import distributed as dist
+from torch import nn
 from tqdm import tqdm
 
-from msmodelslim import ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph import AdapterConfig, MappingConfig, FusionConfig
-from msmodelslim.model.common.layer_wise_forward import generated_decoder_layer_visit_func, \
-    TransformersForwardBreak
+from msmodelslim.model.common.layer_wise_forward import generated_decoder_layer_visit_func, TransformersForwardBreak
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import json_safe_load, json_safe_dump, get_valid_read_path, MAX_READ_FILE_SIZE_32G
@@ -51,8 +50,14 @@ from .convert_fp8_to_bf16 import auto_convert_module_fp8_to_bf16
 from .mtp_quant_module import get_mtp_layer, wrap_mtp_decoder
 from .quarot import get_ln_fuse_map, get_rotate_map
 from ..default.model_adapter import DefaultModelAdapter
-from ..interface_hub import ModelInfoInterface, ModelSlimPipelineInterfaceV1, IterSmoothInterface, \
-    FlexSmoothQuantInterface, QuaRotInterface, AscendV1SaveInterface
+from ..interface_hub import (
+    ModelInfoInterface,
+    ModelSlimPipelineInterfaceV1,
+    IterSmoothInterface,
+    FlexSmoothQuantInterface,
+    QuaRotInterface,
+    AscendV1SaveInterface,
+)
 
 
 @contextmanager
@@ -67,14 +72,15 @@ def default_dtype(dtype):
 
 
 @logger_setter("msmodelslim.model.kimi_k2")
-class KimiK2ModelAdapter(DefaultModelAdapter,
-                         ModelInfoInterface,  # support naive quantization
-                         ModelSlimPipelineInterfaceV1,  # support modelslim v1
-                         IterSmoothInterface,  # support iter smooth
-                         FlexSmoothQuantInterface,  # support flex smooth quant
-                         QuaRotInterface,
-                         AscendV1SaveInterface,
-                         ):
+class KimiK2ModelAdapter(  # pylint: disable=too-many-ancestors
+    DefaultModelAdapter,
+    ModelInfoInterface,  # support naive quantization
+    ModelSlimPipelineInterfaceV1,  # support modelslim v1
+    IterSmoothInterface,  # support iter smooth
+    FlexSmoothQuantInterface,  # support flex smooth quant
+    QuaRotInterface,
+    AscendV1SaveInterface,
+):
     def get_model_type(self) -> str:
         return self.model_type
 
@@ -85,18 +91,20 @@ class KimiK2ModelAdapter(DefaultModelAdapter,
         with default_dtype(torch.bfloat16):
             # 保存原始层数
             origin_layers = self.config.num_hidden_layers
-            get_logger().info(f"Model with {origin_layers} layers totally")
+            get_logger().info("Model with %s layers totally", origin_layers)
 
             # 临时设置为1层进行初始化
             self.config.num_hidden_layers = 1
 
             # 加载只有一层的模型
-            model = SafeGenerator.get_model_from_pretrained(model_path=str(self.model_path),
-                                                            config=self.config,
-                                                            trust_remote_code=self.trust_remote_code,
-                                                            device_map="cpu",
-                                                            torch_dtype="auto",
-                                                            attn_implementation='eager')
+            model = SafeGenerator.get_model_from_pretrained(
+                model_path=str(self.model_path),
+                config=self.config,
+                trust_remote_code=self.trust_remote_code,
+                device_map="cpu",
+                torch_dtype="auto",
+                attn_implementation='eager',
+            )
 
             # 恢复原始层数
             self.config.num_hidden_layers = origin_layers
@@ -108,7 +116,10 @@ class KimiK2ModelAdapter(DefaultModelAdapter,
             # auto convert fp8 to bf16
             auto_convert_module_fp8_to_bf16("", model, str(self.model_path))
             model.eval()
-            get_logger().info(f"Create model with {self.config.num_hidden_layers} layers successfully at first")
+            get_logger().info(
+                "Create model with %s layers successfully at first",
+                self.config.num_hidden_layers,
+            )
             return model
 
     def handle_dataset(self, dataset: Any, device: DeviceType = DeviceType.NPU) -> List[Any]:
@@ -117,21 +128,27 @@ class KimiK2ModelAdapter(DefaultModelAdapter,
     def generate_model_visit(self, model: nn.Module) -> Generator[ProcessRequest, Any, None]:
         return generated_decoder_layer_visit_func(model, transformer_blocks=self.generate_decoder_layer(model))
 
-    def generate_model_forward(self, model: nn.Module, inputs: Any,
-                               ) -> Generator[ProcessRequest, Any, None]:
+    def generate_model_forward(
+        self,
+        model: nn.Module,
+        inputs: Any,
+    ) -> Generator[ProcessRequest, Any, None]:
         # 存储第一个transformer block的输入
         first_block_input: Optional[Tuple] = None
 
         def break_hook(module: nn.Module, hook_args: Tuple[Any, ...], hook_kwargs: Dict[str, Any]):
             nonlocal first_block_input
-            first_block_input = (hook_args, hook_kwargs,)
+            first_block_input = (
+                hook_args,
+                hook_kwargs,
+            )
             raise TransformersForwardBreak()
 
         remove_handler = model.model.layers[0].register_forward_pre_hook(break_hook, with_kwargs=True, prepend=True)
 
         # 执行一次前向传播以获取输入
         try:
-            if isinstance(inputs, list) or isinstance(inputs, tuple):
+            if isinstance(inputs, (list, tuple)):
                 model(inputs[0])
             elif isinstance(inputs, dict):
                 model(**inputs)
@@ -139,8 +156,6 @@ class KimiK2ModelAdapter(DefaultModelAdapter,
                 model(inputs)
         except TransformersForwardBreak:
             pass
-        except Exception as e:
-            raise e
         finally:
             remove_handler.remove()
 
@@ -173,49 +188,45 @@ class KimiK2ModelAdapter(DefaultModelAdapter,
             # OKV_b融合的映射配置：o_proj -> kv_b_proj
             okv_b_mapping_config = MappingConfig(
                 source=f"model.layers.{layer_idx}.self_attn.kv_b_proj",  # KV_b投影层
-                targets=[f"model.layers.{layer_idx}.self_attn.o_proj"]  # 输出投影层
+                targets=[f"model.layers.{layer_idx}.self_attn.o_proj"],  # 输出投影层
             )
 
             # Norm-Linear融合的映射配置1：q_a_proj, kv_a_proj_with_mqa -> input_layernorm
             norm_linear_mapping_config1 = MappingConfig(
                 source=f"model.layers.{layer_idx}.input_layernorm",  # 第一个LayerNorm
-                targets=[f"model.layers.{layer_idx}.self_attn.q_a_proj",
-                         f"model.layers.{layer_idx}.self_attn.kv_a_proj_with_mqa"]  # 注意力层的Q_a,KV_a投影
+                targets=[
+                    f"model.layers.{layer_idx}.self_attn.q_a_proj",
+                    f"model.layers.{layer_idx}.self_attn.kv_a_proj_with_mqa",
+                ],  # 注意力层的Q_a,KV_a投影
             )
 
             # Norm-Linear融合的映射配置2：q_b_proj -> q_a_layernorm
             norm_linear_mapping_config2 = MappingConfig(
                 source=f"model.layers.{layer_idx}.self_attn.q_a_layernorm",  # q_a_layernorm
-                targets=[f"model.layers.{layer_idx}.self_attn.q_b_proj"]  # q_b投影
+                targets=[f"model.layers.{layer_idx}.self_attn.q_b_proj"],  # q_b投影
             )
 
             # 为当前layer添加4个配置
-            adapter_config.extend([
-                AdapterConfig(
-                    subgraph_type="ov",
-                    mapping=okv_b_mapping_config,
-                    extra_config={
-                        'group_method': 'max'
-                    },
-                    fusion=FusionConfig(
-                        fusion_type="kv",
-                        num_attention_heads=self.config.num_attention_heads,
-                        num_key_value_heads=self.config.num_key_value_heads,
-                        custom_config={
-                            'qk_nope_head_dim': self.config.qk_nope_head_dim,
-                            'v_head_dim': self.config.v_head_dim,
-                        }
+            adapter_config.extend(
+                [
+                    AdapterConfig(
+                        subgraph_type="ov",
+                        mapping=okv_b_mapping_config,
+                        extra_config={'group_method': 'max'},
+                        fusion=FusionConfig(
+                            fusion_type="kv",
+                            num_attention_heads=self.config.num_attention_heads,
+                            num_key_value_heads=self.config.num_key_value_heads,
+                            custom_config={
+                                'qk_nope_head_dim': self.config.qk_nope_head_dim,
+                                'v_head_dim': self.config.v_head_dim,
+                            },
+                        ),
                     ),
-                ),
-                AdapterConfig(
-                    subgraph_type="norm-linear",
-                    mapping=norm_linear_mapping_config1
-                ),
-                AdapterConfig(
-                    subgraph_type="norm-linear",
-                    mapping=norm_linear_mapping_config2
-                ),
-            ])
+                    AdapterConfig(subgraph_type="norm-linear", mapping=norm_linear_mapping_config1),
+                    AdapterConfig(subgraph_type="norm-linear", mapping=norm_linear_mapping_config2),
+                ]
+            )
 
         return adapter_config
 
@@ -226,10 +237,8 @@ class KimiK2ModelAdapter(DefaultModelAdapter,
         return [], []
 
     def get_rotate_map(self, block_size):
-        pre_run, rot_pairs, _ = get_rotate_map(self.config,
-                                               block_size,
-                                               num_hidden_layers=self.config.num_hidden_layers)
-        return [pre_run], [pair for pair in rot_pairs.values()]
+        pre_run, rot_pairs, _ = get_rotate_map(self.config, block_size, num_hidden_layers=self.config.num_hidden_layers)
+        return [pre_run], list(rot_pairs.values())
 
     @lru_cache(maxsize=1)
     def get_weight_map(self):
@@ -264,7 +273,7 @@ class KimiK2ModelAdapter(DefaultModelAdapter,
             # these initializations is not necessary because we will load it from the state_dict
             # and these initializations will cost too much time because the DeepSeekV3's decoder layer is too large
             with patch.object(nn.Linear, 'reset_parameters', lambda _self: None), default_dtype(torch.bfloat16):
-                get_logger().info(f'Creating decoder layer {idx}')
+                get_logger().info('Creating decoder layer %s', idx)
                 module_list: nn.ModuleList = model.model.layers
                 template_module = module_list[0]
                 decoder = template_module.__class__(layer_idx=idx, config=self.config)
@@ -274,7 +283,7 @@ class KimiK2ModelAdapter(DefaultModelAdapter,
                 auto_convert_module_fp8_to_bf16(name, decoder, str(self.model_path))
                 decoder.eval()
                 module_list.append(decoder)
-                get_logger().info(f'Create decoder layer {idx} successfully')
+                get_logger().info('Create decoder layer %s successfully', idx)
         return decoder
 
     def load_mtp_if_not_load(self, mtp_decoder: nn.Module):
@@ -330,5 +339,3 @@ class KimiK2ModelAdapter(DefaultModelAdapter,
                 config_data["mla_quantize"] = "w8a8_dynamic"
 
             json_safe_dump(config_data, config_file, indent=2, check_user_stat=False)
-
-        return

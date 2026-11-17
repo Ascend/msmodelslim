@@ -37,7 +37,7 @@ from msmodelslim.model.interface_hub import (
 )
 from msmodelslim.model.kimi_k3 import model_adapter as target
 from msmodelslim.model.kimi_k3.model_adapter import KimiK3ModelAdapter, default_dtype
-from msmodelslim.processor.quant.fa3.processor import FA3QuantProcessor, FA3QuantProcessorConfig
+from msmodelslim.core.quantization_algorithm.quant.fa3.processor import FA3QuantProcessor, FA3QuantProcessorConfig
 from msmodelslim.utils.exception import UnsupportedError
 
 

@@ -38,8 +38,10 @@ from typing import TYPE_CHECKING, Any
 from torch import nn
 
 from msmodelslim.core.quant_service.modelslim_v1.save.utils.safetensors import get_index_json
-from msmodelslim.format.compressed_tensors_format.compressed_tensors import CompressedTensorsQuantFormat
-from msmodelslim.processor.save.processor import QuantSaveProcessor
+from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors import (
+    CompressedTensorsQuantFormat,
+)
+from msmodelslim.core.devkit.save import QuantSaveProcessor
 from msmodelslim.utils.exception import UnexpectedError
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.security import json_safe_dump

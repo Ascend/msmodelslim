@@ -45,7 +45,7 @@ from msmodelslim.core.train.task import (
     TrainHyperparametersConfig,
     CheckpointingConfig,
 )
-from msmodelslim.format.checkpoint_format.constants import STRUCTURE_FILE
+from msmodelslim.core.quantization_format.checkpoint_format.constants import STRUCTURE_FILE
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.plugin import TypedFactory
 from msmodelslim.utils.plugin.plugin_utils import load_plugin_component_class

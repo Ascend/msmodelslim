@@ -45,25 +45,31 @@ from msmodelslim.core.tune_strategy.standing_high_with_experience.standing_high_
     StandingHighWithExperienceInterface,
 )
 from msmodelslim.model import IModel
-from msmodelslim.processor.adapt_rotation import AdaptRotationInterface
-from msmodelslim.processor.analysis.binary_operator.metrics.attention_mse.interface import (
+from msmodelslim.core.quantization_algorithm.adapt_rotation import AdaptRotationInterface
+from msmodelslim.core.quantization_algorithm.analysis.binary_operator.metrics.attention_mse.interface import (
     AttentionMSEAnalysisInterface as amseai,
 )
-from msmodelslim.processor.analysis.binary_operator_model_wise.metrics.mse_model_wise.interface import (
+from msmodelslim.core.quantization_algorithm.analysis.binary_operator_model_wise.metrics.mse_model_wise.interface import (
     MSEModelWiseAnalysisInterface as mmseai,
 )
-from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.interface import (
+from msmodelslim.core.quantization_algorithm.analysis.unary_operator.metrics.ra_compress.interface import (
     RaCompressAnalysisInterface,
 )
-from msmodelslim.processor.anti_outlier.flex_smooth.interface import FlexSmoothQuantInterface
-from msmodelslim.processor.anti_outlier.iter_smooth.interface import IterSmoothInterface
-from msmodelslim.processor.anti_outlier.oasq.interface import OASQInterface
-from msmodelslim.processor.anti_outlier.smooth_quant.interface import SmoothQuantInterface
+from msmodelslim.core.quantization_algorithm.anti_outlier.awq import AWQInterface
+from msmodelslim.core.quantization_algorithm.anti_outlier.flex_smooth.interface import FlexSmoothQuantInterface
+from msmodelslim.core.quantization_algorithm.anti_outlier.iter_smooth.interface import IterSmoothInterface
+from msmodelslim.core.quantization_algorithm.anti_outlier.oasq.interface import OASQInterface
+from msmodelslim.core.quantization_algorithm.anti_outlier.smooth_quant.interface import SmoothQuantInterface
 from msmodelslim.core.infer_engine.interface import FakeQuantInferenceInterface
-from msmodelslim.processor.kv_smooth import KVSmoothFusedInterface
-from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
-from msmodelslim.processor.quarot import LAOSOnlineRotationInterface, OnlineQuaRotInterface, QuaRotInterface
-from msmodelslim.processor.trainable_linear_quant.interface import TLQBlockDataInterface
+from msmodelslim.core.quantization_algorithm.flat_quant import FlatQuantInterface
+from msmodelslim.core.quantization_algorithm.kv_smooth import KVSmoothFusedInterface
+from msmodelslim.core.quantization_algorithm.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
+from msmodelslim.core.quantization_algorithm.quarot import (
+    LAOSOnlineRotationInterface,
+    OnlineQuaRotInterface,
+    QuaRotInterface,
+)
+from msmodelslim.core.quantization_algorithm.trainable_linear_quant.interface import TLQBlockDataInterface
 
 
 class ModelInfoInterface(nami, atmi): ...
@@ -94,6 +100,8 @@ __all__ = [
     'IterSmoothInterface',  # For Iter Smooth, describing the architecture of model.
     'OASQInterface',  # For Outlier-Aware Smoothing Quantization, describing the architecture of model.
     'FlexSmoothQuantInterface',  # For Flex Smooth Quant, describing the architecture of model.
+    'AWQInterface',  # For AWQ, describing the architecture of model.
+    'FlatQuantInterface',  # For FlatQuant, describing the architecture of model.
     'TLQBlockDataInterface',  # For TLQ block I/O (hidden extract/inject/loss mask); optional.
     # remaining interface
     'ModelSlimPipelineInterfaceV0',  # For ModelSlim V0 quant service, describing the pipeline of model inference.

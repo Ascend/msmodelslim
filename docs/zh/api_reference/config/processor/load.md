@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.memory.load.LoadProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.devkit.load.LoadProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `LoadProcessorConfig` |
-| 源码 | [load.py](../../../../../msmodelslim/processor/memory/load.py) |
+| 源码 | [load.py](../../../../../msmodelslim/core/devkit/load.py) |
 
 ## 2. 参数列表
 

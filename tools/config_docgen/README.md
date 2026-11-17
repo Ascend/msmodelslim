@@ -47,8 +47,8 @@ exit_code = main(["--check"])
 输入包括：
 
 - `msmodelslim/core/quant_service/`、`msmodelslim/core/practice/` 中的任务配置和服务规格；
-- `msmodelslim/processor/` 中的处理器配置；
-- `msmodelslim/format/` 中的保存格式配置；
+- `msmodelslim/core/quantization_algorithm/` 中的处理器配置；
+- `msmodelslim/core/quantization_format/` 中的保存格式配置；
 - `msmodelslim/core/tune_strategy/`、`msmodelslim/infra/` 中的自动调优配置；
 - `tools/config_docgen/templates/` 中维护的精选完整 YAML 示例；
 - `catalog.py` 中的目录、slug、来源模块和分派关系；

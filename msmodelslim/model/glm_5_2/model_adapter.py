@@ -34,13 +34,12 @@ from torch import nn
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from msmodelslim import ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInterface
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph import AdapterConfig, MappingConfig, FusionConfig
-from msmodelslim.ir import QuaRotExtraInfoWrapperIR
-from msmodelslim.processor.quarot import QuaRotInterface
+from msmodelslim.core.quantization_schema import QuaRotExtraInfoWrapperIR
 from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import get_valid_read_path, json_safe_load, json_safe_dump, MAX_READ_FILE_SIZE_32G
@@ -57,6 +56,7 @@ from ..interface_hub import (
     FA3QuantPlaceHolder,
     OnlineQuaRotInterface,
     AscendV1SaveInterface,
+    QuaRotInterface,
 )
 from msmodelslim.model.common.utils import _get_expert_range
 

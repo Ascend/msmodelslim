@@ -34,8 +34,8 @@ from torch import nn
 from msmodelslim.utils.security import json_safe_dump
 from msmodelslim import logger
 from msmodelslim.core.base.protocol import BatchProcessRequest
-from msmodelslim.ir.qal.qregistry import QABCRegistry
-from msmodelslim.processor.base import AutoSessionProcessor
+from msmodelslim.core.quantization_schema.qal.qregistry import QABCRegistry
+from msmodelslim.core.quantization_algorithm.base import AutoSessionProcessor
 from msmodelslim.utils.distributed import DistHelper, get_distributed_task_work_queue
 from msmodelslim.utils.logging import logger_setter, get_logger
 from .ascendv1 import AscendV1Saver, AscendV1Config, ASCENDV1_DESC_JSON_NAME, copy_files, remove_quantization_config

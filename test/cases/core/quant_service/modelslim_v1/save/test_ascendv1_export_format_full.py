@@ -35,7 +35,7 @@ import torch
 from torch import nn
 
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Config, AscendV1Saver
-from msmodelslim.ir.qal import QScope, QDType
+from msmodelslim.core.quantization_schema.qal import QScope, QDType
 from msmodelslim.model.interface import IModel
 from msmodelslim.utils.exception import SchemaValidateError
 

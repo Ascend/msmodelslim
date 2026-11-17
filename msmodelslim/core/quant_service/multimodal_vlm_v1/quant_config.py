@@ -29,7 +29,7 @@ from typing_extensions import Self
 from msmodelslim.core.const import RunnerType
 from msmodelslim.core.quant_service.modelslim_v1.quant_config import ModelslimV1QuantConfig, PriorStageConfig
 from msmodelslim.core.quant_service.modelslim_v1.save.saver import AutoSaverConfigList
-from msmodelslim.processor.base import AutoProcessorConfigList
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfigList
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.exception_decorator import exception_handler
 from msmodelslim.utils.validation.value import non_empty_string

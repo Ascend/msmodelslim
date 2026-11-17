@@ -36,7 +36,6 @@ from torch import nn
 
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.base.protocol import ProcessRequest
-from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import json_safe_load
@@ -44,6 +43,7 @@ from msmodelslim.utils.security import json_safe_load
 from ..deepseek_v4.model_adapter import DeepSeekV4ModelAdapter
 from ..common.layer_wise_forward import TransformersForwardBreak
 from .model import DSparkBlock, enable_dspark_moe_comm
+from ..interface_hub import QuaRotInterface
 from .mtp_quant_module import (
     ensure_config_n_mtp_layers,
     ensure_dedicated_mtp_embed,

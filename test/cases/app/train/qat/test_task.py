@@ -9,8 +9,8 @@ import pytest
 from msmodelslim.app.train.qat.algorithm_train_hook import AlgorithmTrainHook
 from msmodelslim.app.train.qat.task import QATTask, QATTaskConfig
 from msmodelslim.core.convert.types import IRKind
-from msmodelslim.format.checkpoint_format.constants import STRUCTURE_FILE
-from msmodelslim.processor.paretoq.convert import (
+from msmodelslim.core.quantization_format.checkpoint_format.constants import STRUCTURE_FILE
+from msmodelslim.core.quantization_algorithm.paretoq.convert import (
     ParetoQToW4A4DynamicProcessor,
     ParetoQToW4A8DynamicProcessor,
 )

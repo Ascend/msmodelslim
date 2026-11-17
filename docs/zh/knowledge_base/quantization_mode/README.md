@@ -50,7 +50,7 @@
 
 ### 2.3 模式索引
 
-以下为 msModelSlim 支持的量化模式全量清单（按量化对象分类），也是各具体量化模式词条的总览入口。表中"承载 IR 类"为 [`msmodelslim/ir/`](../../../../msmodelslim/ir/) 中的类名，类名里的 **FakeQuant**（伪量化）指量化后立即反量化的占位层，用于在浮点计算中模拟真实量化的数值效果：
+以下为 msModelSlim 支持的量化模式全量清单（按量化对象分类），也是各具体量化模式词条的总览入口。表中"承载 IR 类"为 [`msmodelslim/core/quantization_schema/`](../../../../msmodelslim/core/quantization_schema/) 中的类名，类名里的 **FakeQuant**（伪量化）指量化后立即反量化的占位层，用于在浮点计算中模拟真实量化的数值效果：
 
 #### 2.3.1 线性层量化
 
@@ -69,7 +69,7 @@
 | [W4A4 MX 双 Scale 量化](linear_layer_quantization/term_w4a4_mx_dualscale.md) | `W4A4MXDynamicDualScaleFakeQuantLinear` | MXFP4 双 scale / per-block 动态 |
 | [W8A8 稀疏量化](linear_layer_quantization/term_w8a8_sparse.md) | `W8A8StaticFakeQuantLinear`（导出类型 `W8A8S`） | INT8 只用码本子集；`W8A8SC` 为二次压缩形态 |
 | [浮点稀疏量化](linear_layer_quantization/term_float_sparse.md) | `W16A16sLinear` | 16bit 权重/激活，权重置零稀疏；`W16A16SC` 为二次压缩形态 |
-| [SVDQuant 量化](linear_layer_quantization/term_svdquant.md) | `SVDResidualWrapper`（[`svd_residual.py`](../../../../msmodelslim/ir/svd_residual.py)，配合 linear_quant） | 低秩分解 + 残差低比特量化 |
+| [SVDQuant 量化](linear_layer_quantization/term_svdquant.md) | `SVDResidualWrapper`（[`svd_residual.py`](../../../../msmodelslim/core/quantization_schema/svd_residual.py)，配合 linear_quant） | 低秩分解 + 残差低比特量化 |
 
 > 注：prefill 与 decode 是 LLM 推理的两个阶段——prefill 一次处理整个输入 prompt（计算密集），decode 逐个生成 token（访存密集），详见[线性层量化](linear_layer_quantization/README.md)。
 

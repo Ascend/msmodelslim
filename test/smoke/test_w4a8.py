@@ -26,7 +26,7 @@ import tempfile
 import pytest
 import torch
 
-from msmodelslim.ir import W4A8MXDynamicPerBlockFakeQuantLinear
+from msmodelslim.core.quantization_schema import W4A8MXDynamicPerBlockFakeQuantLinear
 
 from .base import FakeLlamaModelAdapter, invoke_test, is_npu_available
 from .utils import check_w4a8_mx_dynamic_per_block_export

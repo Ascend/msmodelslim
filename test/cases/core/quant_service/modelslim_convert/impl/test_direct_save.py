@@ -39,8 +39,10 @@ from msmodelslim.core.quant_service.modelslim_convert.impl.direct_save import (
     worker_staging_dir,
     write_result,
 )
-from msmodelslim.format.compressed_tensors_format.compressed_tensors import CompressedTensorsQuantFormat
-from msmodelslim.processor.save.processor import QuantSaveProcessor
+from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors import (
+    CompressedTensorsQuantFormat,
+)
+from msmodelslim.core.devkit.save import QuantSaveProcessor
 from msmodelslim.utils.exception import UnexpectedError
 
 
@@ -105,7 +107,7 @@ def _hf_saver(writer, format_mock=None):
     format_mock.written_safetensors_writer.return_value = writer
     config = SimpleNamespace(format=MagicMock(), save_directory="")
     adapter = SimpleNamespace(model_path="")
-    with patch("msmodelslim.processor.save.processor.QuantFormatFactory.create", return_value=format_mock):
+    with patch("msmodelslim.core.devkit.save.QuantFormatFactory.create", return_value=format_mock):
         return QuantSaveProcessor(nn.Module(), config, adapter)
 
 

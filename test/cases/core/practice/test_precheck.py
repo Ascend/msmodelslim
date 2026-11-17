@@ -223,6 +223,6 @@ class TestPluginRegistration:
 
     def test_processor_registry_populated_by_quant_config_import(self):
         """processor 注册表不变量：仅 import 后端 quant_config 即完成 processor 注册。"""
-        from msmodelslim.processor.base import AutoProcessorConfig  # noqa: F401
+        from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig  # noqa: F401
 
         assert len(AutoProcessorConfig._registry) > 0

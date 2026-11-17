@@ -51,7 +51,7 @@ flowchart LR
 **操作**：模型适配代码需实现以下接口：
 
 1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。
-2. **`AttentionAnalysisInterface`**（由 `msmodelslim.model.interface_hub` 汇总导出，实现位于 `msmodelslim.processor.analysis.binary_operator.metrics.attention_mse.interface`）：Attention MSE 分析专用接口。
+2. **`AttentionAnalysisInterface`**（由 `msmodelslim.model.interface_hub` 汇总导出，实现位于 `msmodelslim.core.quantization_algorithm.analysis.binary_operator.metrics.attention_mse.interface`）：Attention MSE 分析专用接口。
 
 ```python
 from abc import ABC, abstractmethod

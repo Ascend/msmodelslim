@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.anti_outlier.flex_smooth.processor.FlexAWQSSZProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_algorithm.anti_outlier.flex_smooth.processor.FlexAWQSSZProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@ Flex AWQ SSZ 离群值抑制处理器配置。
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `FlexAWQSSZProcessorConfig` |
-| 源码 | [processor.py](../../../../../msmodelslim/processor/anti_outlier/flex_smooth/processor.py) |
+| 源码 | [processor.py](../../../../../msmodelslim/core/quantization_algorithm/anti_outlier/flex_smooth/processor.py) |
 
 ## 2. 参数列表
 

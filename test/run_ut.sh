@@ -20,8 +20,9 @@ route=$(dirname "$script")
 rootdir=$(dirname "$route")
 kia_dir=$(dirname "$rootdir")/automl_kia
 
-ALL_CASES="pytorch app core ir mindspore common onnx processor quant utils model infra format cli"
-MODELSlim_V1_CASES="app core ir infra processor utils format"
+# ir/processor/format 已迁入 test/cases/core/（quantization_schema/algorithm/format 等），由 core 覆盖
+ALL_CASES="pytorch app core mindspore common onnx quant utils model infra cli"
+MODELSlim_V1_CASES="app core infra utils"
 
 run_tests() {
     local cases="$1"
@@ -89,7 +90,7 @@ usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  --modelslim_v1     Run only modelslim_v1 related test cases (app, core, ir, infra, processor, utils)"
+    echo "  --modelslim_v1     Run only modelslim_v1 related test cases (app, core, infra, utils)"
     echo "  --help            Show this help message"
     echo ""
     echo "Environment:"

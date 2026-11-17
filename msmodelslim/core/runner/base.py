@@ -26,7 +26,7 @@ from torch import nn
 
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.context import IContext
-from msmodelslim.processor import AutoProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 
 
 class BaseRunner:

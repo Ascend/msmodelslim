@@ -28,10 +28,10 @@ from torch import nn
 from typing_extensions import Self, Optional, Dict, Any, Tuple
 
 from msmodelslim.utils.exception import SpecError
-from msmodelslim.ir.qal.qbase import QStorage, QParam, QScheme, QScope, QDType
+from msmodelslim.core.quantization_schema.qal.qbase import QStorage, QParam, QScheme, QScope, QDType
 from msmodelslim.utils.distributed.task_scheduler import DTSMixin
 from msmodelslim.utils.distributed.task_scheduler.types import TaskExecutionRecord, TaskSyncContext
-from msmodelslim.ir.qal.qregistry import QABCRegistry
+from msmodelslim.core.quantization_schema.qal.qregistry import QABCRegistry
 
 
 class QConfig(BaseModel):

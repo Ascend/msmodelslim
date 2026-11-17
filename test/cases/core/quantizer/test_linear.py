@@ -28,8 +28,8 @@ from torch import nn
 
 from msmodelslim.core.quantizer.base import QConfig
 from msmodelslim.core.quantizer.linear import LinearQConfig, LinearQuantizer
-from msmodelslim import ir as qir
-from msmodelslim.ir.qal.qbase import QDType, QScope
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.qal.qbase import QDType, QScope
 from msmodelslim.utils.exception import SchemaValidateError, SpecError
 
 

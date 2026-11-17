@@ -289,7 +289,7 @@ class TestQwen3VLMoeModelAdapter(unittest.TestCase):
     def test_get_rotate_map_return_pre_run_and_pairs_when_called(self, _mock_init):
         """get_rotate_map 应返回 pre_run 列表与 rot_pairs 列表"""
         adapter = create_adapter()
-        from msmodelslim.processor.quarot import QuaRotInterface
+        from msmodelslim.core.quantization_algorithm.quarot import QuaRotInterface
 
         pre_run_list, rot_pairs_list = adapter.get_rotate_map(block_size=64)
 
@@ -846,7 +846,7 @@ class TestQwen3VlMoeModuleFunctions(unittest.TestCase):
 
     def test_qwen3_vl_moe_get_rotate_map_include_visual_and_text_rotations_when_called(self):
         """旋转映射应包含视觉 merger 与文本层"""
-        from msmodelslim.processor.quarot import QuaRotInterface
+        from msmodelslim.core.quantization_algorithm.quarot import QuaRotInterface
 
         pre_run, rot_pairs = _qwen3_vl_moe_get_rotate_map(self.full_config, block_size=64)
 

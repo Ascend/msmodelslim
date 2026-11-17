@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.kv_smooth.processor.KVSmoothProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_algorithm.kv_smooth.processor.KVSmoothProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@ KV cache 平滑处理器配置。
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `KVSmoothProcessorConfig` |
-| 源码 | [processor.py](../../../../../msmodelslim/processor/kv_smooth/processor.py) |
+| 源码 | [processor.py](../../../../../msmodelslim/core/quantization_algorithm/kv_smooth/processor.py) |
 
 ## 2. 参数列表
 

@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.quant.autoround.AutoroundProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_algorithm.quant.autoround.AutoroundProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@ autoround 量化处理器配置。
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `AutoroundProcessorConfig` |
-| 源码 | [autoround.py](../../../../../msmodelslim/processor/quant/autoround.py) |
+| 源码 | [autoround.py](../../../../../msmodelslim/core/quantization_algorithm/quant/autoround.py) |
 
 ## 2. 参数列表
 

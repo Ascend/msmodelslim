@@ -30,7 +30,8 @@ from msmodelslim.core.context import IContext
 from msmodelslim.core.context.summary import SummaryContext
 from msmodelslim.core.runner.generated_runner import GeneratedRunner, get_input_datas
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
-from msmodelslim.processor import LoadProcessorConfig, AutoProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
+from msmodelslim.core.devkit.load import LoadProcessorConfig
 from msmodelslim.utils.logging import logger_setter, get_logger
 
 

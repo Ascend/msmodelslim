@@ -32,8 +32,10 @@ from msmodelslim.core.convert.protocol import ConvertContext
 from msmodelslim.core.quant_service.modelslim_convert.impl.save_adapter import (
     SaveProcessorAdapter,
 )
-from msmodelslim.format.compressed_tensors_format.compressed_tensors import CompressedTensorsQuantFormat
-from msmodelslim.processor.save.processor import QuantSaveProcessor
+from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors import (
+    CompressedTensorsQuantFormat,
+)
+from msmodelslim.core.devkit.save import QuantSaveProcessor
 
 
 def _hf_saver(writer):
@@ -41,7 +43,7 @@ def _hf_saver(writer):
     format_mock.written_safetensors_writer.return_value = writer
     config = SimpleNamespace(format=MagicMock(), save_directory="")
     adapter = SimpleNamespace(model_path="")
-    with patch("msmodelslim.processor.save.processor.QuantFormatFactory.create", return_value=format_mock):
+    with patch("msmodelslim.core.devkit.save.QuantFormatFactory.create", return_value=format_mock):
         return QuantSaveProcessor(nn.Module(), config, adapter)
 
 
@@ -115,7 +117,7 @@ class TestSaveProcessorAdapter:
         """场景：HF 保存默认 part_file_size。
         预期：format 配置为 CompressedTensorsQuantFormatConfig 且 part_file_size=4。
         """
-        from msmodelslim.format.compressed_tensors_format.compressed_tensors import (
+        from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors import (
             CompressedTensorsQuantFormatConfig,
         )
 
@@ -138,7 +140,7 @@ class TestSaveProcessorAdapter:
         """场景：HF 保存 part_file_size=0。
         预期：透传到 format 配置。
         """
-        from msmodelslim.format.compressed_tensors_format.compressed_tensors import (
+        from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors import (
             CompressedTensorsQuantFormatConfig,
         )
 

@@ -32,7 +32,7 @@ def test_bootstrap_convert_worker_registers_paretoq_processors_when_available():
     runner = MagicMock()
     with (
         patch(
-            "msmodelslim.processor.convert.registry.register_convert_processors",
+            "msmodelslim.core.quantization_algorithm.convert.registry.register_convert_processors",
             return_value=router,
         ),
         patch(
@@ -44,7 +44,7 @@ def test_bootstrap_convert_worker_registers_paretoq_processors_when_available():
             return_value=runner,
         ),
         patch(
-            "msmodelslim.processor.paretoq.impl.ParetoQImpl.get_convert_processors",
+            "msmodelslim.core.quantization_algorithm.paretoq.impl.ParetoQImpl.get_convert_processors",
             return_value=[MagicMock(name="w4a8"), MagicMock(name="w4a4")],
         ) as get_procs,
     ):
@@ -64,7 +64,7 @@ def test_bootstrap_convert_worker_continues_when_paretoq_unavailable():
     runner = MagicMock()
     with (
         patch(
-            "msmodelslim.processor.convert.registry.register_convert_processors",
+            "msmodelslim.core.quantization_algorithm.convert.registry.register_convert_processors",
             return_value=router,
         ),
         patch(
@@ -76,7 +76,7 @@ def test_bootstrap_convert_worker_continues_when_paretoq_unavailable():
             return_value=runner,
         ),
         patch(
-            "msmodelslim.processor.paretoq.impl.ParetoQImpl.get_convert_processors",
+            "msmodelslim.core.quantization_algorithm.paretoq.impl.ParetoQImpl.get_convert_processors",
             side_effect=ImportError("no paretoq"),
         ),
     ):

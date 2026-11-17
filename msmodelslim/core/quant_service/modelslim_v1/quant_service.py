@@ -23,9 +23,9 @@ from pathlib import Path
 from typing import Dict, Optional, Literal, List, Type
 
 import torch
-from msmodelslim.processor.save.processor import QuantSaveProcessorConfig
+from msmodelslim.core.devkit.save import QuantSaveProcessorConfig
 
-from msmodelslim.processor.base import AutoProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 from msmodelslim.core.const import RunnerType, DeviceType
 from msmodelslim.core.context import ContextManager, IContextFactory
 from msmodelslim.core.context.summary import quant_summary
@@ -39,7 +39,7 @@ from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.utils.seed import seed_all
 from .quant_config import ModelslimV1QuantConfig
-from msmodelslim.format.base import QuantFormatConfig
+from msmodelslim.core.quantization_format.base import QuantFormatConfig
 from .save import AscendV1Config, MindIEFormatConfig
 from ..interface import BaseQuantConfig, QuantServiceConfig, IQuantService
 

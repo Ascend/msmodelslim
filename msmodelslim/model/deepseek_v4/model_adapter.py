@@ -31,7 +31,6 @@ from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInt
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph import AdapterConfig, MappingConfig
-from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import json_safe_load
@@ -46,6 +45,7 @@ from ..interface_hub import (
     FlexSmoothQuantInterface,
     IterSmoothInterface,
     AscendV1SaveInterface,
+    QuaRotInterface,
 )
 
 

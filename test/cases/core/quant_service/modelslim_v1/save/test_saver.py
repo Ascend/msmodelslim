@@ -33,7 +33,7 @@ from msmodelslim.core.quant_service.modelslim_v1.save.saver import (
     AutoSaverProcessor,
     _convert_hookir_to_wrapper,
 )
-import msmodelslim.ir as qir
+import msmodelslim.core.quantization_schema as qir
 
 
 class TestAutoSaverBaseConfig:

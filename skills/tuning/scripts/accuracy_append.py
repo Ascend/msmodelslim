@@ -63,12 +63,14 @@ def accuracy_append(
     from msmodelslim.infra.yaml_practice_accuracy_manager import YamlTuningAccuracyManager
 
     # F0-9 修复（2026-09-03 实测根因）：v1 practice 的 model_validate 经插件加载触发
-    # processor/__init__.py 全量执行（实测 ~4s+，quant.attention 段 import torch 有 ~2.9s gap），
+    # quantization_algorithm 全量执行（实测 ~4s+，quant.attention 段 import torch 有 ~2.9s gap），
     # 落在框架插件 5s 超时窗口（SIGALRM 原地中断）内会被截断，残留「前 13 类已注册、后段缺失」
     # 的半截 registry：首轮报 303；G3 重试后 registry 只增不减，稳定报 203（linear_quant 不在
     # 期望 tags）。修复 = 先全量预热注册，把耗时导入挪出插件超时窗口；此后插件加载仅注册自身，
     # 秒级完成，retry 退化为纯兜底。
-    import msmodelslim.processor  # noqa: F401
+    import msmodelslim.core.quantization_algorithm  # noqa: F401
+    import msmodelslim.core.devkit.group  # noqa: F401
+    import msmodelslim.core.devkit.load  # noqa: F401
 
     def _run() -> Dict[str, Any]:
         history_path = str(Path(save_path) / "history")

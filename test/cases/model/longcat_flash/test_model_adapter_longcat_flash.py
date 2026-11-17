@@ -39,8 +39,8 @@ from msmodelslim.model.longcat_flash.longcat_flash_mtp import (
     eager_attention_forward,
     repeat_kv,
 )
-from msmodelslim.processor.anti_outlier.iter_smooth import IterSmoothProcessorConfig
-from msmodelslim.processor.quant.linear import LinearProcessorConfig
+from msmodelslim.core.quantization_algorithm.anti_outlier.iter_smooth import IterSmoothProcessorConfig
+from msmodelslim.core.quantization_algorithm.quant.linear import LinearProcessorConfig
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.security import yaml_safe_load
 
@@ -591,7 +591,7 @@ class TestLongCatFlashModelAdapter(unittest.TestCase):
 
             self.assertEqual(prefix, 'model.linear')
             self.assertIs(returned_module, module)
-            model.set_submodule.assert_not_called()
+            model.set_submodule.assert_not_called()  # pylint: disable=no-member
 
     def test_should_cast_and_register_bias_when_ascendv1_preprocess_called_given_router_module(self):
         class LongcatFlashTopkRouter(nn.Module):
@@ -611,7 +611,7 @@ class TestLongCatFlashModelAdapter(unittest.TestCase):
             self.assertIsNot(new_module, router)
             self.assertEqual(new_module.weight.dtype, torch.float32)
             self.assertIn('e_score_correction_bias', dict(new_module.named_parameters(recurse=False)))
-            model.set_submodule.assert_called_once_with('model.router', new_module)
+            model.set_submodule.assert_called_once_with('model.router', new_module)  # pylint: disable=no-member
 
 
 class TestLongCatFlashMTPPublicApi(unittest.TestCase):

@@ -23,7 +23,7 @@ import torch
 
 from msmodelslim.core.quantizer.base import QConfig
 from msmodelslim.core.quantizer.impl.none import ActPerTensorNone
-from msmodelslim.ir.qal.qbase import QDType, QScope
+from msmodelslim.core.quantization_schema.qal.qbase import QDType, QScope
 
 
 class TestActPerTensorNone:

@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 from torch import nn
 
-from msmodelslim.format.interface import IFormatLoader
+from msmodelslim.core.quantization_format.interface import IFormatLoader
 from msmodelslim.utils.buffer import RuntimeBufferStore
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.memory import align_input_dtype_to_module_hook, align_input_to_module_device_hook

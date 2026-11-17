@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.flat_quant.flat_quant.FlatQuantProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_algorithm.flat_quant.flat_quant.FlatQuantProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@ FlatQuant处理器配置：定义量化训练参数、策略、混合精度等
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `FlatQuantProcessorConfig` |
-| 源码 | [flat_quant.py](../../../../../msmodelslim/processor/flat_quant/flat_quant.py) |
+| 源码 | [flat_quant.py](../../../../../msmodelslim/core/quantization_algorithm/flat_quant/flat_quant.py) |
 
 ## 2. 参数列表
 

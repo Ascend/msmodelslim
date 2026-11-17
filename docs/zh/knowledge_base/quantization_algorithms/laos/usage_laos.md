@@ -52,8 +52,8 @@ flowchart LR
 **操作**：模型适配代码需实现以下接口，相关接口均由 `msmodelslim.model.interface_hub` 汇总提供：
 
 1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。
-2. **`LAOSOnlineRotationInterface`**（位于 `msmodelslim.processor.quarot.offline_quarot.quarot_interface`）：LAOS 在线旋转接口，用于描述注意力头维度及各 Decoder 层 O/V、up/down 投影的旋转对。
-3. **`QuaRotInterface`**（位于 `msmodelslim.processor.quarot.offline_quarot.quarot_interface`）：离线旋转核心接口，提供旋转映射、Norm 融合与均值融合等网络结构信息。
+2. **`LAOSOnlineRotationInterface`**（位于 `msmodelslim.core.quantization_algorithm.quarot.offline_quarot.quarot_interface`）：LAOS 在线旋转接口，用于描述注意力头维度及各 Decoder 层 O/V、up/down 投影的旋转对。
+3. **`QuaRotInterface`**（位于 `msmodelslim.core.quantization_algorithm.quarot.offline_quarot.quarot_interface`）：离线旋转核心接口，提供旋转映射、Norm 融合与均值融合等网络结构信息。
 
 对于基于 HuggingFace Transformers 实现的标准开源 LLM，建议通过组合继承构建适配器：
 

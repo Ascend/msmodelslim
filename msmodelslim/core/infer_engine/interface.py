@@ -25,7 +25,7 @@ from pydantic import BaseModel, Field
 from torch import nn
 
 from msmodelslim.core.const import DeviceType
-from msmodelslim.format.interface import IFormatLoader
+from msmodelslim.core.quantization_format.interface import IFormatLoader
 
 
 class InferenceConfig(BaseModel):

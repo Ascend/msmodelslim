@@ -28,10 +28,7 @@ from transformers import PreTrainedTokenizerBase
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph.adapter_types import AdapterConfig, MappingConfig
-from msmodelslim.processor.anti_outlier.awq.interface import AWQInterface
-from msmodelslim.processor.kv_smooth import KVSmoothFusedType, KVSmoothFusedUnit
-from msmodelslim.processor.quarot import QuaRotInterface, LAOSOnlineRotationInterface
-from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
+from msmodelslim.core.quantization_algorithm.kv_smooth import KVSmoothFusedType, KVSmoothFusedUnit
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from ..common.layer_wise_forward import generated_decoder_layer_visit_func, transformers_generated_forward_func
@@ -48,10 +45,15 @@ from ..interface_hub import (
     AdaptRotationInterface,
     FakeQuantInferenceInterface,
     QATLoadInterface,
+    AWQInterface,
+    QuaRotInterface,
+    LAOSOnlineRotationInterface,
+    FA3QuantAdapterInterface,
+    FA3QuantPlaceHolder,
+    FlatQuantInterface,
 )
 
-from msmodelslim.processor.flat_quant import FlatQuantInterface
-from msmodelslim.processor.flat_quant.flat_quant_utils.structure_pair import (
+from msmodelslim.core.quantization_algorithm.flat_quant.flat_quant_utils.structure_pair import (
     AttnNormLinearPair,
     AttnLinearLinearPair,
     MLPNormLinearPair,

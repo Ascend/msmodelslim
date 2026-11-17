@@ -35,9 +35,9 @@ from msmodelslim.core.tune_strategy.standing_high.strategy import (
 )
 from msmodelslim.core.quantizer.base import QConfig
 from msmodelslim.core.quantizer.linear import LinearQConfig
-from msmodelslim.format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
-from msmodelslim.ir.qal import QDType, QScope
-from msmodelslim.processor.quant.linear import LinearProcessorConfig
+from msmodelslim.core.quantization_format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
+from msmodelslim.core.quantization_schema.qal import QDType, QScope
+from msmodelslim.core.quantization_algorithm.quant.linear import LinearProcessorConfig
 from msmodelslim.utils.exception import SchemaValidateError, SpecError, UnsupportedError
 
 

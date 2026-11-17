@@ -43,9 +43,9 @@ from msmodelslim.model.interface_hub import (
     ModelSlimPipelineInterfaceV1,
     ModelInfoInterface,
     LayerWiseOffloadOptionalInterface,
+    QuaRotInterface,
 )
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
-from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import get_valid_read_path, json_safe_load, MAX_READ_FILE_SIZE_32G

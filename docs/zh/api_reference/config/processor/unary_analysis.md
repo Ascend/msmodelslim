@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.analysis.unary_operator.processor.UnaryAnalysisProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_algorithm.analysis.unary_operator.processor.UnaryAnalysisProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `UnaryAnalysisProcessorConfig` |
-| 源码 | [processor.py](../../../../../msmodelslim/processor/analysis/unary_operator/processor.py) |
+| 源码 | [processor.py](../../../../../msmodelslim/core/quantization_algorithm/analysis/unary_operator/processor.py) |
 
 ## 2. 参数列表
 

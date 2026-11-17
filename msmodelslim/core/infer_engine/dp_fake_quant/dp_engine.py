@@ -27,7 +27,7 @@ import torch.multiprocessing as mp
 
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.context import ContextManager, get_current_context
-from msmodelslim.format.interface import IFormatLoader
+from msmodelslim.core.quantization_format.interface import IFormatLoader
 from msmodelslim.utils.config import msmodelslim_config
 from msmodelslim.utils.distributed import find_free_port, setup_distributed
 from msmodelslim.utils.exception import UnsupportedError
@@ -179,7 +179,7 @@ class DPFakeQuantInferenceEngine(FakeQuantInferenceEngine):
         and the flow degrades to pure sample DP.
         """
         # Lazy import for format handling (see IFormatLoader rebuild below).
-        from msmodelslim.format.format_handler import build_default_format_chain
+        from msmodelslim.core.quantization_format.format_handler import build_default_format_chain
 
         with ContextManager(ctx=shared_ctx):
             # Spawned worker starts at the configured default level (CLI -v/-q are not

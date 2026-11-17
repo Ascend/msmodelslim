@@ -30,7 +30,7 @@ from unittest.mock import MagicMock, patch
 import torch
 import torch.nn as nn
 
-import msmodelslim.ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.quant_service.modelslim_v1.save.saver import AutoSaverProcessor
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import (
     AscendV1Saver,

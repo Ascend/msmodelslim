@@ -31,7 +31,7 @@ import fnmatch
 from msmodelslim.core.convert.dtypes import is_e4m3, is_e8m0, is_int8, is_uint8
 from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeModule
 from msmodelslim.core.convert.config import ConvertConfig, ModuleRule
-from msmodelslim.ir.kernels import WEIGHT_SCALE_INV_SUFFIX
+from msmodelslim.core.quantization_schema.kernels import WEIGHT_SCALE_INV_SUFFIX
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
 
 

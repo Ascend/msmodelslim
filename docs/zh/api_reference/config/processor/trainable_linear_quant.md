@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.trainable_linear_quant.config.processor_config.TrainableLinearQuantProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_algorithm.trainable_linear_quant.config.processor_config.TrainableLinearQuantProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `TrainableLinearQuantProcessorConfig` |
-| 源码 | [processor_config.py](../../../../../msmodelslim/processor/trainable_linear_quant/config/processor_config.py) |
+| 源码 | [processor_config.py](../../../../../msmodelslim/core/quantization_algorithm/trainable_linear_quant/config/processor_config.py) |
 
 ## 2. 参数列表
 

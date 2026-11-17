@@ -118,12 +118,12 @@ def bootstrap_convert_worker(
     """
     from msmodelslim.core.convert.protocol import ConvertContext
     from msmodelslim.infra.io.checkpoint_reader import CheckpointReader
-    from msmodelslim.processor.convert.registry import register_convert_processors
+    from msmodelslim.core.quantization_algorithm.convert.registry import register_convert_processors
 
     router = register_convert_processors()
     # QAT deploy edges live in the algorithm package; spawn workers re-query them.
     try:
-        from msmodelslim.processor.paretoq.impl import ParetoQImpl
+        from msmodelslim.core.quantization_algorithm.paretoq.impl import ParetoQImpl
 
         for proc in ParetoQImpl.get_convert_processors():
             router.register_processor(proc)

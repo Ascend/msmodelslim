@@ -24,7 +24,7 @@ from typing import List
 
 from typing_extensions import Self
 
-from msmodelslim.processor.base import AutoProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 
 
 class PipelineBuilderInfra(ABC):

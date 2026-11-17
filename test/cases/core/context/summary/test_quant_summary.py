@@ -26,7 +26,7 @@ import pytest
 import torch
 from torch import nn
 
-from msmodelslim import ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.context.summary import (
     FAQuantStatisticsObserver,
     KVQuantStatisticsObserver,
@@ -39,7 +39,7 @@ from msmodelslim.core.context.summary import (
     quant_summary,
 )
 from msmodelslim.core.context.summary.utils import load_source_weight_bits
-from msmodelslim.ir.qal import QDType, QParam, QScheme, QScope
+from msmodelslim.core.quantization_schema.qal import QDType, QParam, QScheme, QScope
 
 
 def _context(state):

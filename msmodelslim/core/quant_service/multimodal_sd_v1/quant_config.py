@@ -32,7 +32,7 @@ from typing_extensions import Self, Literal
 from torch import nn
 
 from msmodelslim.core.const import RunnerType
-from msmodelslim.processor.base import AutoProcessorConfigList
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfigList
 from msmodelslim.core.quant_service.interface import BaseQuantConfig
 from msmodelslim.core.quant_service.modelslim_v1.quant_config import ModelslimV1QuantConfig, PriorStageConfig
 from msmodelslim.core.quant_service.modelslim_v1.save.saver import AutoSaverConfigList

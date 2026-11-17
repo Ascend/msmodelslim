@@ -21,11 +21,11 @@ See the Mulan PSL v2 for more details.
 
 import torch
 
-import msmodelslim.ir as qir
-from msmodelslim.ir.qal import QABCRegistry, QDType, QStorage, QParam, QScheme
-from msmodelslim.ir.api import quantize, dequantize
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.qal import QABCRegistry, QDType, QStorage, QParam, QScheme
+from msmodelslim.core.quantization_schema.api import quantize, dequantize
 from msmodelslim.utils.logging import logger_setter, get_logger
-from msmodelslim.ir.utils import reshape_to_blocks, undo_reshape_to_blocks
+from msmodelslim.core.quantization_schema.utils import reshape_to_blocks, undo_reshape_to_blocks
 from ..base import AutoWeightQuantizer, QConfig
 
 

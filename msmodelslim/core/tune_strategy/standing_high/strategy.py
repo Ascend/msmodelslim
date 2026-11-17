@@ -37,10 +37,10 @@ from msmodelslim.core.tune_strategy.base import BaseTuningStrategy
 from msmodelslim.core.tune_strategy.dataset_loader_infra import DatasetLoaderInfra
 from msmodelslim.core.tune_strategy.interface import StrategyConfig, EvaluateResult
 from msmodelslim.infra.analysis_pipeline_loader import YamlAnalysisPipelineLoader
-from msmodelslim.ir.qal import QScope, QDType
+from msmodelslim.core.quantization_schema.qal import QScope, QDType
 from msmodelslim.model import IModel
-from msmodelslim.processor.base import AutoProcessorConfigList
-from msmodelslim.processor.quant.linear import LinearProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfigList
+from msmodelslim.core.quantization_algorithm.quant.linear import LinearProcessorConfig
 from msmodelslim.utils.exception import SchemaValidateError, SpecError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.validation.pydantic import at_least_one_element

@@ -24,19 +24,19 @@ from __future__ import annotations
 import os
 
 from msmodelslim import logger
-from msmodelslim.format.ascendV1_format.ascendV1_tensors_writer_factory_infra import (
+from msmodelslim.core.quantization_format.ascendV1_format.ascendV1_tensors_writer_factory_infra import (
     AscendV1SafetensorsWriterFactoryInfra,
     AscendV1SafetensorsWriterInfra,
 )
-from msmodelslim.format.checkpoint_format.checkpoint_tensors_writer_factory_infra import (
+from msmodelslim.core.quantization_format.checkpoint_format.checkpoint_tensors_writer_factory_infra import (
     CheckpointSafetensorsWriterFactoryInfra,
     CheckpointSafetensorsWriterInfra,
 )
-from msmodelslim.format.compressed_tensors_format.compressed_tensors_safetensors_writer_factory_infra import (
+from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors_safetensors_writer_factory_infra import (
     CompressedTensorSafetensorsWriterFactoryInfra,
     CompressedTensorSafetensorsWriterInfra,
 )
-from msmodelslim.format.mindie_format.mindie_tensors_writer_factory_infra import (
+from msmodelslim.core.quantization_format.mindie_format.mindie_tensors_writer_factory_infra import (
     MindIESafetensorsWriterFactoryInfra,
     MindIESafetensorsWriterInfra,
 )

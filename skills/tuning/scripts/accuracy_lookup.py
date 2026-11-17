@@ -57,9 +57,11 @@ def accuracy_lookup(save_path: str, evaluate_config_path: str, practice_path: st
     from msmodelslim.infra.yaml_practice_accuracy_manager import YamlTuningAccuracyManager
 
     # F0-9 修复（2026-09-03 实测根因）：同 accuracy_append——先全量预热注册 processor 子类，
-    # 避免 v1 practice 的 model_validate 在插件 5s 超时窗口内执行 processor/__init__.py 全量
+    # 避免 v1 practice 的 model_validate 在插件 5s 超时窗口内执行 quantization_algorithm 全量
     # 导入被 SIGALRM 截断成半截 registry（首轮 303、retry 后 203）。
-    import msmodelslim.processor  # noqa: F401
+    import msmodelslim.core.quantization_algorithm  # noqa: F401
+    import msmodelslim.core.devkit.group  # noqa: F401
+    import msmodelslim.core.devkit.load  # noqa: F401
 
     def _run() -> Dict[str, Any]:
         history_path = str(Path(save_path) / "history")

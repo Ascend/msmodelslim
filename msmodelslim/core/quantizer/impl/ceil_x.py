@@ -25,13 +25,13 @@ import torch
 from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self
 
-import msmodelslim.ir as qir
-from msmodelslim.ir.api import quantize, dequantize
-from msmodelslim.ir.qal import QABCRegistry, QStorage, QParam, QScheme, QScope, QDType
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.api import quantize, dequantize
+from msmodelslim.core.quantization_schema.qal import QABCRegistry, QStorage, QParam, QScheme, QScope, QDType
 from msmodelslim.core.observer import MsMinMaxBlockObserver, MinMaxBlockObserverConfig
 from msmodelslim.utils.exception import SpecError, SchemaValidateError
 from msmodelslim.utils.logging import logger_setter, get_logger
-from msmodelslim.ir.utils import reshape_to_blocks, undo_reshape_to_blocks
+from msmodelslim.core.quantization_schema.utils import reshape_to_blocks, undo_reshape_to_blocks
 from ..base import AutoWeightQuantizer, QConfig
 
 

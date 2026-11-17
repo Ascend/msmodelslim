@@ -30,12 +30,12 @@ import pytest
 import torch
 from torch import nn
 
-import msmodelslim.ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.quant_service.modelslim_v1.save.interface import AscendV1GlobalModelDtypeInterface
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Config, AscendV1Saver
 from msmodelslim.model import IModel
 from msmodelslim.utils.exception import SchemaValidateError
-from msmodelslim.ir.qal import QParam, QScheme, QStorage, QScope, QDType
+from msmodelslim.core.quantization_schema.qal import QParam, QScheme, QStorage, QScope, QDType
 
 
 def _make_w8a8_static_module(out_features=4, in_features=8):

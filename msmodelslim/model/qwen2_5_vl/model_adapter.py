@@ -40,12 +40,12 @@ from msmodelslim.model.interface_hub import (
     IterSmoothInterface,
     FlexSmoothQuantInterface,
     ModelSlimPipelineInterfaceV1,
+    QuaRotInterface,
 )
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
 from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import get_valid_read_path, json_safe_load, MAX_READ_FILE_SIZE_32G
-from msmodelslim.processor.quarot import QuaRotInterface
 
 
 @logger_setter("msmodelslim.model.qwen2_5_vl")

@@ -3,7 +3,7 @@
 > **词条类别**：量化数据格式（[量化模式](../README.md)）<br>
 > **英文名称**：Linear Layer Quantization<br>
 > **应用领域**：大语言模型量化压缩、推理加速<br>
-> **msModelSlim 实现**：[`msmodelslim/ir/w8a8_static.py`](../../../../../msmodelslim/ir/w8a8_static.py)（`*FakeQuantLinear` 系列）<br>
+> **msModelSlim 实现**：[`msmodelslim/core/quantization_schema/w8a8_static.py`](../../../../../msmodelslim/core/quantization_schema/w8a8_static.py)（`*FakeQuantLinear` 系列）<br>
 
 <a id="overview"></a>
 

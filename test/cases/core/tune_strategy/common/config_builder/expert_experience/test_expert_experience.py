@@ -26,7 +26,7 @@ from msmodelslim.core.tune_strategy.common.config_builder.expert_experience.expe
     ExpertExperienceLoader,
     ExpertExperienceConfigBuilder,
 )
-from msmodelslim.format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
+from msmodelslim.core.quantization_format.ascendV1_format.ascendV1 import AscendV1QuantFormatConfig
 from msmodelslim.utils.exception import UnsupportedError, SchemaValidateError
 
 

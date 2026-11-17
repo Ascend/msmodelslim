@@ -22,9 +22,9 @@ See the Mulan PSL v2 for more details.
 import pytest
 from torch import nn
 
-from msmodelslim import ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.context.summary import SummaryContext, FAQuantStatisticsObserver, FAStats
-from msmodelslim.ir.qal import QDType, QParam, QScheme, QScope
+from msmodelslim.core.quantization_schema.qal import QDType, QParam, QScheme, QScope
 
 
 def _fa_ir(dtype):

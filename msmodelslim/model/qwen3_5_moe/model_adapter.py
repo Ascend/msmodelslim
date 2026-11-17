@@ -51,7 +51,6 @@ from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInt
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.graph import AdapterConfig, MappingConfig
 from msmodelslim.model.common.layer_wise_forward import generated_decoder_layer_visit_func
-from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.model.interface_hub import (
     IterSmoothInterface,
     FlexSmoothQuantInterface,
@@ -61,6 +60,7 @@ from msmodelslim.model.interface_hub import (
     AscendV1SaveInterface,
     FA3QuantAdapterInterface,
     FA3QuantPlaceHolder,
+    QuaRotInterface,
 )
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
 from msmodelslim.infra.dataset_loader.vlm_dataset_loader import VlmCalibSample

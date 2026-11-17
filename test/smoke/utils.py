@@ -27,7 +27,7 @@ from typing import Union, List, Dict, Any, Callable, Optional
 import torch
 from safetensors.torch import safe_open
 
-from msmodelslim.ir import (
+from msmodelslim.core.quantization_schema import (
     W8A8StaticFakeQuantLinear,
     W8A8DynamicPerChannelFakeQuantLinear,
     W8A8DynamicPerGroupFakeQuantLinear,

@@ -31,12 +31,12 @@ from msmodelslim.utils.logging import get_logger
 from .adapter_types import AdapterConfig
 
 if TYPE_CHECKING:
-    from msmodelslim.processor.anti_outlier.common.subgraph_type import Subgraph
+    from msmodelslim.core.quantization_algorithm.anti_outlier.common.subgraph_type import Subgraph
 
 
 def _subgraph_type_module():
     """惰性加载，避免 ``core.graph`` 导入时触发 ``processor`` 循环依赖。"""
-    from msmodelslim.processor.anti_outlier.common import subgraph_type as module
+    from msmodelslim.core.quantization_algorithm.anti_outlier.common import subgraph_type as module
 
     return module
 
@@ -231,7 +231,7 @@ def _kv_fusion_dims(cfg: AdapterConfig) -> Optional[tuple[Any, Any]]:
 
 def _build_ov_qkv_fusion(model: nn.Module, cfg: AdapterConfig) -> Optional[BuiltSubgraph]:
     st = _subgraph_type_module()
-    from msmodelslim.processor.anti_outlier.common import (
+    from msmodelslim.core.quantization_algorithm.anti_outlier.common import (
         VirtualVModuleFromKVFused,
         VirtualVModuleFromQKVFused,
     )

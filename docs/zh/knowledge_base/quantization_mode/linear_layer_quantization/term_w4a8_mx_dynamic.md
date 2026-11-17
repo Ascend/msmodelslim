@@ -3,7 +3,7 @@
 > **词条类别**：量化数据格式（[线性层量化](README.md)）<br>
 > **英文名称**：W4A8 MX Dynamic Quantization<br>
 > **应用领域**：大语言模型量化压缩、推理加速<br>
-> **承载 IR 类**：`W4A8MXDynamicPerBlockFakeQuantLinear`（[`msmodelslim/ir/w4a8_mx_dynamic.py`](../../../../../msmodelslim/ir/w4a8_mx_dynamic.py)）<br>
+> **承载 IR 类**：`W4A8MXDynamicPerBlockFakeQuantLinear`（[`msmodelslim/core/quantization_schema/w4a8_mx_dynamic.py`](../../../../../msmodelslim/core/quantization_schema/w4a8_mx_dynamic.py)）<br>
 
 ## 1. 概述
 

@@ -57,7 +57,7 @@ flowchart LR
 **操作**：模型适配代码需实现以下接口，相关接口均由 `msmodelslim.model.interface_hub` 汇总导出：
 
 1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。
-2. **`RaCompressAnalysisInterface`**（位于 `msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.interface`）：RA Compress 分析接口，`get_proj_names` 与 `get_tokenizer` 两个方法均为必需实现。
+2. **`RaCompressAnalysisInterface`**（位于 `msmodelslim.core.quantization_algorithm.analysis.unary_operator.metrics.ra_compress.interface`）：RA Compress 分析接口，`get_proj_names` 与 `get_tokenizer` 两个方法均为必需实现。
 
 ```python
 from abc import ABC, abstractmethod

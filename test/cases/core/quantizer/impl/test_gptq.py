@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 import pytest
 import torch
 
-from msmodelslim import ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.quantizer.base import AutoWeightQuantizer, QConfig
 from msmodelslim.core.quantizer.impl.gptq import (
     WeightPerChannelGPTQ,
@@ -31,7 +31,7 @@ from msmodelslim.core.quantizer.impl.gptq import (
     calculate_hessian_inv,
     get_ext_value,
 )
-from msmodelslim.ir.qal.qbase import QDType, QScope, QScheme, QStorage, QParam
+from msmodelslim.core.quantization_schema.qal.qbase import QDType, QScope, QScheme, QStorage, QParam
 from msmodelslim.utils.exception import SpecError
 
 

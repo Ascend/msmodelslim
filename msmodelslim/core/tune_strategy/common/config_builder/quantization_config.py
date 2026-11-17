@@ -23,7 +23,7 @@ from typing import Annotated
 
 from msmodelslim.core.practice import Metadata
 from msmodelslim.core.quant_service.modelslim_v1.quant_config import ModelslimV1ServiceConfig
-from msmodelslim.processor.base import AutoProcessorConfigList
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfigList
 from msmodelslim.utils.validation.pydantic import validate_str_length
 
 

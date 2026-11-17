@@ -35,7 +35,7 @@ from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Co
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1_distributed import DistributedAscendV1Config
 from msmodelslim.core.runner.dp_layer_wise_runner import DPLayerWiseRunner
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
-from msmodelslim.processor.base import AutoProcessorConfig, AutoSessionProcessor
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig, AutoSessionProcessor
 from msmodelslim.utils.exception import UnsupportedError
 
 

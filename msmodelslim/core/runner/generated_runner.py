@@ -35,8 +35,8 @@ from msmodelslim.core.context.summary import SummaryContext, quant_summary
 from msmodelslim.core.context.summary.utils import load_source_weight_bits
 from msmodelslim.core.runner.base import BaseRunner
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface
-from msmodelslim.processor import AutoProcessorConfig
-from msmodelslim.processor.base import AutoSessionProcessor
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoSessionProcessor
 from msmodelslim.utils.cache import to_device
 from msmodelslim.utils.cache.memory import load_cached
 from msmodelslim.utils.exception import (

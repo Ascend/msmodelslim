@@ -3,7 +3,7 @@
 > **词条类别**：量化数据格式（[线性层量化](README.md)）<br>
 > **英文名称**：Float Sparse<br>
 > **应用领域**：大语言模型量化压缩、推理加速<br>
-> **承载 IR 类**：`W16A16sLinear`（[`msmodelslim/ir/w16a16s.py`](../../../../../msmodelslim/ir/w16a16s.py)，`nn.Module` 子类，非 `AutoFakeQuantLinear`）<br>
+> **承载 IR 类**：`W16A16sLinear`（[`msmodelslim/core/quantization_schema/w16a16s.py`](../../../../../msmodelslim/core/quantization_schema/w16a16s.py)，`nn.Module` 子类，非 `AutoFakeQuantLinear`）<br>
 > **导出类型**：`W16A16S`；二次压缩部署形态为 `W16A16SC`<br>
 
 ## 1. 概述

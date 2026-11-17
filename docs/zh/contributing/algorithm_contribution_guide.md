@@ -14,10 +14,10 @@
 
 | 类别 | 说明 | 示例目录 |
 | --- | --- | --- |
-| 离群值抑制 | 量化前对激活或权重分布整形 | `processor/anti_outlier/`、`processor/quarot/` |
-| 结构量化 | 权重量化、激活量化、KV Cache、Flash Attention（FA）等 | `processor/quant/` |
-| 模型压缩 | 稀疏化等降低参数量或存储占用的算法 | `processor/sparse/` |
-| 敏感层分析 | 为回退、混精、压缩提供敏感度度量 | `processor/analysis/` |
+| 离群值抑制 | 量化前对激活或权重分布整形 | `core/quantization_algorithm/anti_outlier/`、`core/quantization_algorithm/quarot/` |
+| 结构量化 | 权重量化、激活量化、KV Cache、Flash Attention（FA）等 | `core/quantization_algorithm/quant/` |
+| 模型压缩 | 稀疏化等降低参数量或存储占用的算法 | `core/quantization_algorithm/sparse/` |
+| 敏感层分析 | 为回退、混精、压缩提供敏感度度量 | `core/quantization_algorithm/analysis/` |
 
 **不适用场景**：
 
@@ -185,7 +185,7 @@ flowchart TD
 
 1. **补齐 RFC 其余章节（详细设计）**：将初审通过后约定补齐的内容写全（如 3.2～3.5、测试设计、风险、现有技术、未解决问题、附录等），把总体方案细化到可编码粒度：主要模块职责、配置字段与约束、校准 / 运行时诉求、与前后算法关系、测试计划。细节仍避免堆砌与评审无关的实现噪声；以“开发者按 RFC 能开工”为准。
 
-2. **代码实现**：落点以 RFC 为准，可涉及算法组件、应用流程、领域或模型适配等。遵循《[编码规范](development_guide/coding_standards.md)》与 pre-commit；不引入与场景无关的大依赖。下面以 **Processor 接入**为例介绍接入过程（对照 `msmodelslim/processor/anti_outlier/smooth_quant/`）；其它落点可按 RFC 与仓库既有约定类比落地。
+2. **代码实现**：落点以 RFC 为准，可涉及算法组件、应用流程、领域或模型适配等。遵循《[编码规范](development_guide/coding_standards.md)》与 pre-commit；不引入与场景无关的大依赖。下面以 **Processor 接入**为例介绍接入过程（对照 `msmodelslim/core/quantization_algorithm/anti_outlier/smooth_quant/`）；其它落点可按 RFC 与仓库既有约定类比落地。
 
    > **RFC → Processor 代码落点：**
    >
@@ -198,7 +198,7 @@ flowchart TD
    推荐目录：
 
    ```text
-   msmodelslim/processor/<category>/<algo_name>/
+   msmodelslim/core/quantization_algorithm/<category>/<algo_name>/
    ├── __init__.py          # 导出 Config、Processor
    ├── processor.py         # Config 与 Processor 主体与注册
    ├── interface.py         # [按需] 模型适配接口；依赖模型特有结构时定义，否则可省略
@@ -211,7 +211,7 @@ flowchart TD
    - **处理器前处理 / 后处理（对应算法端到端流程）**：按 RFC 流程在会话生命周期中落地——常见钩子为 `preprocess` / `process` / `postprocess`。需要校准数据时完成“挂接统计 → 跑校准数据 → 用统计结果改写结构或写回参数”；`is_data_free()` 为真时可跳过依赖数据的路径。明确统计对象、作用范围，以及无统计 / 未命中时的跳过或告警策略；与前后 `spec.process` 步骤的数据与结构假设保持兼容。
    - **模型适配接口（对应模型泛化机制）**：算法若需模型侧提供特有结构或信息，将 RFC 中写明的信息诉求定义为 Interface，由 ModelAdapter 实现，并至少提供一个参考适配；未实现接口时应有可诊断的回退或明确失败。不依赖模型特有信息时可省略。
 
-3. **单元测试（与实现同步）**：开发过程中同步补测，而不是实现结束后一次性补。路径与源码目录对应（示例：`msmodelslim/processor/.../xxx.py` → `test/cases/processor/.../test_xxx.py`）；其它模块按仓库既有 `test/cases/` 约定。至少覆盖 Config 校验、核心计算与边界、Processor 在 mock 或小规模假数据下的关键路径、典型失败分支；需要校准的算法可用 mock 或假数据，避免 CI 依赖大模型权重。按《[开发者测试指南](development_guide/testing_guide.md)》执行，确认本次变更相关行覆盖率大于 80%。
+3. **单元测试（与实现同步）**：开发过程中同步补测，而不是实现结束后一次性补。路径与源码目录对应（示例：`msmodelslim/core/quantization_algorithm/.../xxx.py` → `test/cases/core/quantization_algorithm/.../test_xxx.py`）；其它模块按仓库既有 `test/cases/` 约定。至少覆盖 Config 校验、核心计算与边界、Processor 在 mock 或小规模假数据下的关键路径、典型失败分支；需要校准的算法可用 mock 或假数据，避免 CI 依赖大模型权重。按《[开发者测试指南](development_guide/testing_guide.md)》执行，确认本次变更相关行覆盖率大于 80%。
 
 **输出**：已补齐详细设计的 RFC；与 RFC 一致的可合入代码；通过的单元测试（覆盖率达标）。
 

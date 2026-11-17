@@ -23,8 +23,8 @@ import torch
 from pydantic import validate_call
 from torch import nn
 
-from msmodelslim.ir.qal import QStorage
-from msmodelslim.ir import AutoFakeQuantDynamicCache
+from msmodelslim.core.quantization_schema.qal import QStorage
+from msmodelslim.core.quantization_schema import AutoFakeQuantDynamicCache
 from .base import AutoActQuantizer, QConfig
 
 

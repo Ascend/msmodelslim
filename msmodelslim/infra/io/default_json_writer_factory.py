@@ -21,19 +21,19 @@ See the Mulan PSL v2 for more details.
 
 from __future__ import annotations
 
-from msmodelslim.format.ascendV1_format.ascendV1_json_writer_factory_infra import (
+from msmodelslim.core.quantization_format.ascendV1_format.ascendV1_json_writer_factory_infra import (
     AscendV1JsonWriterFactoryInfra,
     AscendV1JsonWriterInfra,
 )
-from msmodelslim.format.checkpoint_format.checkpoint_json_writer_factory_infra import (
+from msmodelslim.core.quantization_format.checkpoint_format.checkpoint_json_writer_factory_infra import (
     CheckpointJsonWriterFactoryInfra,
     CheckpointJsonWriterInfra,
 )
-from msmodelslim.format.compressed_tensors_format.compressed_tensors_json_writer_factory_infra import (
+from msmodelslim.core.quantization_format.compressed_tensors_format.compressed_tensors_json_writer_factory_infra import (
     CompressedTensorJsonWriterFactoryInfra,
     CompressedTensorJsonWriterInfra,
 )
-from msmodelslim.format.mindie_format.mindie_json_writer_factory_infra import (
+from msmodelslim.core.quantization_format.mindie_format.mindie_json_writer_factory_infra import (
     MindIEJsonWriterFactoryInfra,
     MindIEJsonWriterInfra,
 )

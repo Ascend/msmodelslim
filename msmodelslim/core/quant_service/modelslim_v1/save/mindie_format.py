@@ -29,16 +29,16 @@ import torch.distributed as dist
 from pydantic import Field, AfterValidator
 from torch import nn
 
-import msmodelslim.ir as qir
-from msmodelslim.ir.qal.qregistry import QABCRegistry
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.qal.qregistry import QABCRegistry
 from msmodelslim.model import IModel
 from msmodelslim.core.base.protocol import BatchProcessRequest
-from msmodelslim.processor.base import AutoSessionProcessor
+from msmodelslim.core.quantization_algorithm.base import AutoSessionProcessor
 from msmodelslim.utils.distributed import DistHelper
 from msmodelslim.utils.exception import UnsupportedError, SchemaValidateError
 from msmodelslim.utils.logging import logger
 from msmodelslim.utils.security import safe_copy_file
-from msmodelslim.ir.qal import QDType, QScope
+from msmodelslim.core.quantization_schema.qal import QDType, QScope
 from msmodelslim.utils.validation.pydantic import in_range
 from .saver import AutoSaverProcessor, AutoSaverBaseConfig
 from .utils.json import JsonWriter

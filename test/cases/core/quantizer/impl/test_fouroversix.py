@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 import pytest
 import torch
 
-from msmodelslim.ir.qal import QStorage, QDType, QParam
+from msmodelslim.core.quantization_schema.qal import QStorage, QDType, QParam
 from msmodelslim.core.quantizer.base import QConfig
 
 from msmodelslim.core.quantizer.impl.fouroversix import WeightFouroverSixQuantizer

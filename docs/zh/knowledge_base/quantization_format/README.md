@@ -3,7 +3,7 @@
 > **词条类别**：量化数据格式<br>
 > **英文名称**：Quantization Format<br>
 > **应用领域**：大语言模型量化压缩、多模态理解与生成模型量化压缩、推理框架权重加载<br>
-> **msModelSlim 实现**：[`msmodelslim/format/`](../../../../msmodelslim/format/)
+> **msModelSlim 实现**：[`msmodelslim/core/quantization_format/`](../../../../msmodelslim/core/quantization_format/)
 
 ---
 

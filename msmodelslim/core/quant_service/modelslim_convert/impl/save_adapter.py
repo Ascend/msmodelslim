@@ -38,10 +38,10 @@ from torch import nn
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.core.convert.protocol import ConvertContext
-from msmodelslim.format.registry import parse_format_config
+from msmodelslim.core.quantization_format.registry import parse_format_config
 from msmodelslim.model.interface import IModel
 from msmodelslim.model.base import BaseModelAdapter
-from msmodelslim.processor.save.processor import (
+from msmodelslim.core.devkit.save import (
     QuantSaveProcessor,
     QuantSaveProcessorConfig,
 )

@@ -37,7 +37,7 @@ from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1_distributed impor
     DistributedAscendV1Config,
     DistributedAscendV1Saver,
 )
-from msmodelslim.ir.qal import QDType, QScope
+from msmodelslim.core.quantization_schema.qal import QDType, QScope
 
 
 def _copy_file_stub(src_path, dest_path):

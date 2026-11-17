@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 import pytest
 
 from msmodelslim.core.context.summary.utils import BASELINE_BITS, format_bit_set, logical_bits
-from msmodelslim.ir.qal import QDType
+from msmodelslim.core.quantization_schema.qal import QDType
 
 
 @pytest.mark.parametrize(

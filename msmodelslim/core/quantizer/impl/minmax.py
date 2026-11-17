@@ -24,14 +24,14 @@ from typing import Optional
 import torch
 from pydantic import validate_call
 
-import msmodelslim.ir as qir
-from msmodelslim.ir.api import fake_quantize, quantize, dequantize, calculate_qparam
-from msmodelslim.ir.qal import QABCRegistry, QDType, QStorage, QParam, QScope, QScheme
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.api import fake_quantize, quantize, dequantize, calculate_qparam
+from msmodelslim.core.quantization_schema.qal import QABCRegistry, QDType, QStorage, QParam, QScope, QScheme
 from msmodelslim.core.observer import MsMinMaxObserver, MinMaxObserverConfig
 from msmodelslim.utils.exception import SpecError, SchemaValidateError
 from msmodelslim.utils.logging import logger_setter
 from msmodelslim.core.observer import MsMinMaxBlockObserver, MinMaxBlockObserverConfig
-from msmodelslim.ir.utils import reshape_to_blocks, undo_reshape_to_blocks
+from msmodelslim.core.quantization_schema.utils import reshape_to_blocks, undo_reshape_to_blocks
 from ..base import AutoActQuantizer, AutoWeightQuantizer, QConfig
 
 

@@ -731,7 +731,7 @@ class TestGetOnlineRotationConfigs:
             # 创建模拟模型
             mock_model = MagicMock()
             mock_model.named_modules.return_value = [("test.attention", mock_flux_module)]
-            from msmodelslim.processor.quarot import OnlineQuaRotInterface
+            from msmodelslim.core.quantization_algorithm.quarot import OnlineQuaRotInterface
 
             online_quarot_base = OnlineQuaRotInterface
 

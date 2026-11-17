@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.container.group.GroupProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.devkit.group.GroupProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `GroupProcessorConfig` |
-| 源码 | [group.py](../../../../../msmodelslim/processor/container/group.py) |
+| 源码 | [group.py](../../../../../msmodelslim/core/devkit/group.py) |
 
 ## 2. 参数列表
 

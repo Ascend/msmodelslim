@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.save.processor.QuantSaveProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.devkit.save.QuantSaveProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `QuantSaveProcessorConfig` |
-| 源码 | [processor.py](../../../../../msmodelslim/processor/save/processor.py) |
+| 源码 | [save.py](../../../../../msmodelslim/core/devkit/save.py) |
 
 ## 2. 参数列表
 
@@ -22,7 +22,7 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `saver` | `saver` | 处理器类型，固定为 `saver`。 | 无 |
-| `format` | `object` | 必选 | 无 | — | 导出格式配置（单对象），由保存处理器自动注入。 | 《[QuantFormatConfig](../../../../../msmodelslim/format/base.py)》 |
+| `format` | `object` | 必选 | 无 | — | 导出格式配置（单对象），由保存处理器自动注入。 | 《[QuantFormatConfig](../../../../../msmodelslim/core/quantization_format/base.py)》 |
 
 **配置约束**
 

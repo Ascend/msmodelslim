@@ -25,7 +25,7 @@ from torch import nn
 
 from msmodelslim.core.context.summary import SummaryContext, LinearQuantStatisticsObserver, LinearStats
 from msmodelslim.core.context.summary.observers.linear_observer import ir_bits, module_bits
-from msmodelslim.ir import WrapperIR
+from msmodelslim.core.quantization_schema import WrapperIR
 
 
 def _make_observer():

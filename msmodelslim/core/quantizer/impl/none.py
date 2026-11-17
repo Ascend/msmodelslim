@@ -21,8 +21,8 @@ See the Mulan PSL v2 for more details.
 
 import torch
 
-import msmodelslim.ir as qir
-from msmodelslim.ir.qal import QABCRegistry, QScheme, QParam
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.qal import QABCRegistry, QScheme, QParam
 from msmodelslim.utils.logging import logger_setter
 from ..base import AutoActQuantizer, QConfig
 

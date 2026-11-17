@@ -33,7 +33,7 @@ from transformers import PretrainedConfig, PreTrainedTokenizerBase
 
 from msmodelslim.core.const import DeviceType
 from msmodelslim.model.qwen3.model_adapter import Qwen3ModelAdapter
-from msmodelslim.processor.kv_smooth import KVSmoothFusedUnit, KVSmoothFusedType
+from msmodelslim.core.quantization_algorithm.kv_smooth import KVSmoothFusedUnit, KVSmoothFusedType
 
 
 @lru_cache(maxsize=1)

@@ -54,8 +54,8 @@ from msmodelslim.model.interface_hub import (
     LayerWiseOffloadOptionalInterface,
     ModelInfoInterface,
     ModelSlimPipelineInterfaceV1,
+    QuaRotInterface,
 )
-from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
 from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.utils.security import (

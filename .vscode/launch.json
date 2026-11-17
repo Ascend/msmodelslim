@@ -46,9 +46,9 @@
         "-s",
         "test/cases/app",
         "test/cases/core",
-        "test/cases/ir",
+        "test/cases/core/quantization_schema",
         "test/cases/infra",
-        "test/cases/processor",
+        "test/cases/core/quantization_algorithm",
         "test/cases/utils"
       ],
       "cwd": "${workspaceFolder}",

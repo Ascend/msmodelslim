@@ -25,7 +25,7 @@ from typing import Any, Dict, Iterator, Optional, Tuple
 
 from torch import nn
 
-from msmodelslim.ir import (
+from msmodelslim.core.quantization_schema import (
     AutoFakeQuantActivation,
     AutoFakeQuantDynamicCache,
     AutoFakeQuantLinear,

@@ -26,7 +26,7 @@ import tempfile
 import pytest
 import torch
 
-from msmodelslim.ir import (
+from msmodelslim.core.quantization_schema import (
     W8A8StaticFakeQuantLinear,
     W8A8DynamicPerChannelFakeQuantLinear,
     W8A8DynamicPerGroupFakeQuantLinear,

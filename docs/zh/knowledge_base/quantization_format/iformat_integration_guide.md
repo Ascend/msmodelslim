@@ -22,10 +22,10 @@
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
 | 输入 | 目标格式规范 | 上游项目或内部 RFC | 张量键名、dtype、元数据字段可核对 | 与推理侧加载文档对照 |
-| 输入 | QIR 模块类型列表 | `msmodelslim/ir` | 需实现 handler 的 FakeQuant 类型 | 列出模块类名 |
-| 交付件 | IFormat 实现与 Config | `msmodelslim/format/<name>/` | Config 加入 `QuantFormatConfigUnion` | 单测通过 |
+| 输入 | QIR 模块类型列表 | `msmodelslim/core/quantization_schema` | 需实现 handler 的 FakeQuant 类型 | 列出模块类名 |
+| 交付件 | IFormat 实现与 Config | `msmodelslim/core/quantization_format/<name>/` | Config 加入 `QuantFormatConfigUnion` | 单测通过 |
 | 交付件 | YAML 可启用的 `type` | 一键量化 `spec.save` | 与 Config `Literal` 一致 | 配置反序列化成功 |
-| 交付件 | 单元测试 | `test/cases/format/` | 覆盖张量键与元数据 | CI / 本地断言通过 |
+| 交付件 | 单元测试 | `test/cases/core/quantization_format/` | 覆盖张量键与元数据 | CI / 本地断言通过 |
 
 ## 4. 流程总览
 
@@ -43,7 +43,7 @@ flowchart LR
 
 **目标**：理解 `IFormat` / `ExportContext` / `QuantFormatBase` 职责边界，并据此完成新格式适配所需的协议对齐与基类选型。
 
-**操作**：阅读 [`msmodelslim/format/interface.py`](../../../../msmodelslim/format/interface.py) 与 [`msmodelslim/format/base.py`](../../../../msmodelslim/format/base.py)。
+**操作**：阅读 [`msmodelslim/core/quantization_format/interface.py`](../../../../msmodelslim/core/quantization_format/interface.py) 与 [`msmodelslim/core/quantization_format/base.py`](../../../../msmodelslim/core/quantization_format/base.py)。
 
 | 方法 | 是否必须实现 | 职责 |
 | --- | --- | --- |
@@ -73,14 +73,14 @@ def on_float_module(self, prefix: str, module: nn.Module) -> None:
 
 ```python
 from typing import Literal
-from msmodelslim.format.base import QuantFormatConfig
+from msmodelslim.core.quantization_format.base import QuantFormatConfig
 
 class MyQuantFormatConfig(QuantFormatConfig):
     type: Literal["my_format"] = "my_format"
     part_file_size: int = 4
 ```
 
-参考：[`CompressedTensorsQuantFormatConfig`](../../../../msmodelslim/format/compressed_tensors_format/compressed_tensors.py)
+参考：[`CompressedTensorsQuantFormatConfig`](../../../../msmodelslim/core/quantization_format/compressed_tensors_format/compressed_tensors.py)
 
 **输出**：Config 类源文件。
 
@@ -94,8 +94,8 @@ from typing import Dict, Type
 import torch
 from torch import nn
 
-import msmodelslim.ir as qir
-from msmodelslim.format.base import QuantFormatBase, ModuleHandler
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_format.base import QuantFormatBase, ModuleHandler
 
 
 class MyQuantFormat(QuantFormatBase):
@@ -132,7 +132,7 @@ class MyQuantFormat(QuantFormatBase):
             self.safetensors_writer.write(name, param.detach())
 ```
 
-参考：[`CompressedTensorsQuantFormat`](../../../../msmodelslim/format/compressed_tensors_format/compressed_tensors.py)
+参考：[`CompressedTensorsQuantFormat`](../../../../msmodelslim/core/quantization_format/compressed_tensors_format/compressed_tensors.py)
 
 **Handler 编写要点**：
 
@@ -147,10 +147,10 @@ class MyQuantFormat(QuantFormatBase):
 
 **目标**：使 YAML spec.save[].type 能按 type 反序列化为新 Config。
 
-**操作**：在 [msmodelslim/format/registry.py](../../../../msmodelslim/format/registry.py) 中 import 新 Config，并加入 QuantFormatConfigUnion：
+**操作**：在 [msmodelslim/core/quantization_format/registry.py](../../../../msmodelslim/core/quantization_format/registry.py) 中 import 新 Config，并加入 QuantFormatConfigUnion：
 
 ```python
-from msmodelslim.format.my_format.my_format import MyQuantFormatConfig
+from msmodelslim.core.quantization_format.my_format.my_format import MyQuantFormatConfig
 
 QuantFormatConfigUnion = Annotated[
     Union[
@@ -180,7 +180,7 @@ QuantFormatConfigUnion = Annotated[
          part_file_size: 4
    ```
 
-2. 参考 [`test/cases/format/compressed_tensors_format/`](../../../../test/cases/format/compressed_tensors_format)：实现 Mock writer、构造最小 QIR 模型、调用三段生命周期并断言键名 / dtype / 元数据。
+2. 参考 [`test/cases/core/quantization_format/compressed_tensors_format/`](../../../../test/cases/core/quantization_format/compressed_tensors_format)：实现 Mock writer、构造最小 QIR 模型、调用三段生命周期并断言键名 / dtype / 元数据。
 
 3. 按资料标准在 `docs/zh/knowledge_base/quantization_format/<format_name>/` 新增词条与使用指南，并在《[量化格式](README.md)》地图登记链接。
 
@@ -206,5 +206,5 @@ QuantFormatConfigUnion = Annotated[
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
-| `IFormat` | 量化落盘格式协议，需实现三个接口：`prepare_export`、`process_module_tensors`、`finalize_export` | [接口定义](../../../../msmodelslim/format/interface.py) |
-| `QuantFormatFactory` / registry | `QuantFormatConfigUnion` 反序列化与格式工厂构造 | [注册与工厂](../../../../msmodelslim/format/registry.py) |
+| `IFormat` | 量化落盘格式协议，需实现三个接口：`prepare_export`、`process_module_tensors`、`finalize_export` | [接口定义](../../../../msmodelslim/core/quantization_format/interface.py) |
+| `QuantFormatFactory` / registry | `QuantFormatConfigUnion` 反序列化与格式工厂构造 | [注册与工厂](../../../../msmodelslim/core/quantization_format/registry.py) |

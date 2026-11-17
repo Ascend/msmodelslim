@@ -28,11 +28,12 @@ import torch.distributed as dist
 from pydantic import Field, BaseModel, AfterValidator
 from torch import nn
 
-from msmodelslim import logger, ir as qir
-from msmodelslim.ir.qal import QDType, QScope
-from msmodelslim.ir.qal.qregistry import QABCRegistry
+from msmodelslim import logger
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.qal import QDType, QScope
+from msmodelslim.core.quantization_schema.qal.qregistry import QABCRegistry
 from msmodelslim.model import IModel
-from msmodelslim.processor.base import AutoSessionProcessor
+from msmodelslim.core.quantization_algorithm.base import AutoSessionProcessor
 from msmodelslim.utils.distributed import DistHelper
 from msmodelslim.utils.exception import ToDoError, SchemaValidateError
 from msmodelslim.utils.logging import logger_setter

@@ -107,7 +107,7 @@ spec:
 **操作**：
 
 msModelSlim 实现入口：：
-[查看对应实现目录](../../../../../msmodelslim/processor/anti_outlier/flex_smooth)
+[查看对应实现目录](../../../../../msmodelslim/core/quantization_algorithm/anti_outlier/flex_smooth)
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |

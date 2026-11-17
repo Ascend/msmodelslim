@@ -26,11 +26,11 @@ from torch import nn
 
 from msmodelslim.core.graph import AdapterConfig
 from msmodelslim.model.base import BaseModelAdapter
-from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface
-from msmodelslim.processor.quarot import OnlineQuaRotInterface
 from ..interface_hub import (
     IterSmoothInterface,
     OASQInterface,
+    FA3QuantAdapterInterface,
+    OnlineQuaRotInterface,
 )
 
 if TYPE_CHECKING:

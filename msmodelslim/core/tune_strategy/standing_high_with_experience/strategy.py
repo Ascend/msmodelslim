@@ -37,7 +37,7 @@ from msmodelslim.core.tune_strategy.standing_high_with_experience.standing_high_
     StandingHighWithExperienceInterface,
 )
 from msmodelslim.model import IModel
-from msmodelslim.processor.base import AutoSessionProcessor, AutoProcessorConfigList
+from msmodelslim.core.quantization_algorithm.base import AutoSessionProcessor, AutoProcessorConfigList
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
 

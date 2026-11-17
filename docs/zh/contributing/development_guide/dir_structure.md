@@ -77,13 +77,11 @@ msmodelslim/
 ├── app/              # 应用层，对外提供“一键量化、自动调优、模型分析”等功能（V1框架）
 ├── cli/              # 接口层，命令行接口及各功能子命令（V1框架）
 ├── common/           # 与AI框架无关的压缩逻辑，如知识蒸馏、低秩分解、剪枝等（小模型）
-├── core/             # 领域层，各类量化业务知识库（V1框架）
+├── core/             # 领域层，量化算法/模式/格式/DevKit等业务知识库（V1框架）
 ├── infra/            # 基础设施层，各类外部依赖适配知识库（V1框架）
-├── ir/               # 领域层，量化模式知识库，最基础的知识，描述何为量化，如W8A8量化等（V1框架）
 ├── mindspore/        # MindSpore 框架的适配与功能实现（V0框架和小模型）
 ├── model/            # 基础设施层，模型适配知识库，如DeepSeek、Qwen等（V1框架）
 ├── onnx/             # ONNX 框架的适配和功能实现（V0框架和小模型）
-├── processor/        # 领域层，量化算法知识库，描述如何做量化，如GPTQ算法等（V1框架）
 ├── pytorch/          # PyTorch 框架的适配与功能实现（V0框架和小模型）
 ├── quant/            # 多模态量化（V0框架）
 ├── utils/            # 通用模块，如日志、配置、校验、安全等（V1框架）
@@ -97,11 +95,9 @@ V1框架涉及目录如下：
 msmodelslim/
 ├── app/              # 应用层，对外提供“一键量化、自动调优、量化分析”等功能
 ├── cli/              # 接口层，命令行接口及各功能子命令
-├── core/             # 领域层，各类量化业务知识库
+├── core/             # 领域层，量化算法/模式/格式/DevKit等业务知识库
 ├── infra/            # 基础设施层，各类外部依赖适配知识库
-├── ir/               # 领域层，量化模式知识库，最基础的知识，描述何为量化，如W8A8量化等
 ├── model/            # 基础设施层，模型适配知识库，如DeepSeek、Qwen等
-├── processor/        # 领域层，量化算法知识库，描述如何做量化，如GPTQ算法等
 ├── utils/            # 通用模块，如日志、配置、校验、安全等
 ├── Third_Party_Open_Source_Software_Notice
 └── __init__.py
@@ -163,69 +159,38 @@ cli/                          # 接口层，命令行接口及各功能子命令
 ```text
 core/                     # 领域层，按领域积累和管理量化知识
 ├── __init__.py
-├── analysis_service/         # 量化分析服务知识库，量化分析服务使用特定指标分析特定模型以辅助设计该模型的量化方案
-│   ├── __init__.py
-│   ├── interface.py              # 量化分析服务定义和协议
-│   └── pipeline_analysis/        # 基于msModelSlim V1框架流水线的量化分析服务
+├── analysis_service/         # 量化分析服务知识库
+├── devkit/     # DevKit：group / load / save（非算法本体）
+│   ├── group.py
+│   ├── load.py
+│   └── save.py
 ├── base/                     # 基础协议（待移除，现有实现需移入对应的知识库）
-│   ├── __init__.py
-│   ├── processor.py
-│   └── protocol.py
-├── const.py                  # 常量（待移除，现有实现需移入对应的知识库）
-├── context/                  # 上下文知识库，上下文统一管理和共享处理流程中的状态，用户可以将上下文当作无限容量的存储空间
-│   ├── __init__.py
-│   ├── base.py                   # 上下文基类
-│   ├── context_factory.py        # 上下文工厂
-│   ├── interface.py              # 上下文定义和协议
-│   ├── local_dict_context/       # 基于本地字典的上下文
-│   └── shared_dict_context/      # 基于多进程字典的上下文
-├── graph/                    # 子图模式知识库，量化算法均是基于特定模式的模型结构子图，在模型中匹配到并描述清楚子图是应用量化算法的前提
-│   ├── __init__.py
-│   └── adapter_types.py          # 离群值抑制子图模式（待展开，每个子图模式一个文件）
+├── context/                  # 上下文知识库
+├── convert/                  # 离线权重转换（含 processors/）
+├── graph/                    # 子图模式知识库
 ├── observer/                 # 特征统计知识库
-│   ├── __init__.py
-│   ├── histogram.py              # 直方图统计
-│   ├── minmax.py                 # 最大最小统计
-│   └── recall_window.py          # 滑动窗统计
-├── practice/                 # 最佳实践知识库（待优化，目前仅支持一种最佳实践格式）
-│   ├── __init__.py
-│   └── interface.py              # 最佳实践定义
-├── quant_service/            # 量化服务知识库，量化服务将浮点模型转化为量化模型并生成量化权重
-│   ├── __init__.py
-│   ├── dataset_loader_infra.py   # 量化服务提出“数据集加载”基础设施需求
-│   ├── interface.py              # 量化服务定义和协议
-│   ├── key_info_persistence_infra.py
-│   ├── modelslim_v0/             # 基于msModelSlim V0框架的LLM量化服务
-│   ├── modelslim_v1/             # 基于msModelSlim V1框架的LLM量化服务
-│   ├── multimodal_sd_v1/         # 基于msModelSlim V1框架的多模态生成模型量化服务
-│   ├── multimodal_vlm_v1/        # 基于msModelSlim V1框架的多模态理解模型量化服务
-│   └── proxy/                    # 基于上述量化服务的综合性量化服务
+├── practice/                 # 最佳实践知识库
+├── quant_service/            # 量化服务知识库
+├── quantization_algorithm/   # 量化算法知识库（原顶层 processor/）
+│   ├── base.py
+│   ├── analysis/                 # 量化分析类指标算法
+│   ├── anti_outlier/             # SmoothQuant 类离群值抑制算法
+│   ├── quant/                    # 结构量化类算法
+│   ├── quarot/                   # QuaRot 相关处理器
+│   └── ...
+├── quantization_format/      # 量化格式知识库（原顶层 format/）
+├── quantization_schema/      # 量化模式 / QIR 知识库（原顶层 ir/）
 ├── quantizer/                # 权重量化和激活值量化知识库（待梳理）
-│   ├── __init__.py
-│   ├── attention.py
-│   ├── base.py
-│   ├── impl/
-│   └── linear.py
-├── runner/                   # 调度知识库（待梳理）
-│   ├── __init__.py
-│   ├── base.py
-│   ├── dp_layer_wise_runner.py
-│   ├── generated_runner.py
-│   ├── layer_wise_runner.py
-│   ├── model_hook_interface.py
-│   ├── pipeline_interface.py
-│   └── pipeline_parallel_runner.py
-└── tune_strategy/            # 调优策略知识库，调优策略根据精度反馈调整量化配置
-    ├── __init__.py
-    ├── base.py                   # 调优策略基类
-    ├── common/                   # 调优策略通用模块
-    ├── dataset_loader_infra.py   # 调优策略提出“数据集加载”需求
-    ├── interface.py              # 调优策略定义和协议
-    ├── plugin_factory.py         # 基于插件的调优策略工厂
-    ├── standing_high/            # 摸高调优策略
-    ├── standing_high_with_experience/  # 基于专家经验的摸高调优策略
-    └── binary_fallback/          # 二分回退调优策略
+├── runner/                   # 调度知识库
+└── tune_strategy/            # 调优策略知识库
 ```
+
+资料侧对应入口：
+
+- 算法：《[量化算法](../../knowledge_base/quantization_algorithms/README.md)》
+- DevKit：《[DevKit](../../knowledge_base/devkit/README.md)》
+- 模式：《[量化模式](../../knowledge_base/quantization_mode/README.md)》
+- 格式：《[量化格式](../../knowledge_base/quantization_format/README.md)》
 
 ---
 
@@ -252,10 +217,10 @@ infra/                                     # 基础设施，满足其他组件�
 
 ---
 
-# `ir/`目录结构
+# `core/quantization_schema/` 目录结构（原 `ir/`）
 
 ```text
-ir/                           # 领域层，量化模式知识库，量化模式以最精简的方式描述用于替换浮点结构的量化结构
+quantization_schema/          # 领域层，量化模式知识库，以最精简方式描述用于替换浮点结构的量化结构
 ├── __init__.py
 ├── qal/                          # 数据类型定义
 ├── api/                          # 汇总各数据类型的量化、反量化算法
@@ -284,19 +249,20 @@ model/                        # 基础设施层，模型适配知识库，满足
 
 ---
 
-# `processor/` 目录结构
+# `core/quantization_algorithm/` 目录结构（原 `processor/`）
 
 ```text
-processor/                # 领域层，量化算法知识库，集成量化分析、离群值抑制、结构量化算法等
+quantization_algorithm/   # 领域层，量化算法知识库，集成量化分析、离群值抑制、结构量化算法等
 ├── __init__.py
 ├── base.py                   # 算法基类
-├── common/                   # 通用模块
 ├── analysis/                 # 量化分析类指标算法
-├── anti_outlier/             # SmoothQuant类离群值抑制算法
+├── anti_outlier/             # SmoothQuant 类离群值抑制算法
 ├── quant/                    # 结构量化类算法
 ├── quarot/                   # QuaRot 相关处理器
 └── ...                       # 其他算法
 ```
+
+> 说明：`group` / `load` / `saver` 已抽至 `core/devkit/`，资料见《[DevKit](../../knowledge_base/devkit/README.md)》；离线 convert processors 位于 `core/quantization_algorithm/convert/`。
 
 ---
 

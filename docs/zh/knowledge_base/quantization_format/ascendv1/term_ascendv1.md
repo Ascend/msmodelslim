@@ -3,7 +3,7 @@
 > **词条类别**：[量化格式](../README.md)<br>
 > **英文名称**：AscendV1 Quantization Format<br>
 > **应用领域**：昇腾 NPU 推理、大语言模型量化压缩、多模态理解模型量化压缩<br>
-> **msModelSlim 实现**：[`msmodelslim/format/ascendV1_format/`](../../../../../msmodelslim/format/ascendV1_format/)
+> **msModelSlim 实现**：[`msmodelslim/core/quantization_format/ascendV1_format/`](../../../../../msmodelslim/core/quantization_format/ascendV1_format/)
 
 ---
 

@@ -24,15 +24,15 @@ msmodelslim.infra.analysis_pipeline_loader 模块的单元测试
 import pytest
 
 # 触发分析处理器配置子类注册，使 AutoProcessorConfig 能按 type 分派
-import msmodelslim.processor.analysis.unary_operator.processor  # noqa: F401  pylint: disable=unused-import
-import msmodelslim.processor.analysis.binary_operator.processor  # noqa: F401  pylint: disable=unused-import
+import msmodelslim.core.quantization_algorithm.analysis.unary_operator.processor  # noqa: F401  pylint: disable=unused-import
+import msmodelslim.core.quantization_algorithm.analysis.binary_operator.processor  # noqa: F401  pylint: disable=unused-import
 
 from msmodelslim.infra.analysis_pipeline_loader import (
     METRIC_TO_YAML,
     TemplatePipelineBuilder,
     YamlAnalysisPipelineLoader,
 )
-from msmodelslim.processor.base import AutoProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 from msmodelslim.utils.exception import UnsupportedError
 
 

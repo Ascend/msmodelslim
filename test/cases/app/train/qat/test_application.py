@@ -15,7 +15,7 @@ from msmodelslim.app.train.qat.application import (
 from msmodelslim.app.train.qat.task import QATTask, QATTaskConfig
 from msmodelslim.app.train.proxy.task import TrainTask
 from msmodelslim.core.const import DeviceType
-from msmodelslim.format.checkpoint_format.constants import STRUCTURE_FILE
+from msmodelslim.core.quantization_format.checkpoint_format.constants import STRUCTURE_FILE
 from msmodelslim.utils.exception import SchemaValidateError
 
 

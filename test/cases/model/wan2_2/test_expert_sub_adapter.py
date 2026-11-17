@@ -32,8 +32,8 @@ from msmodelslim.model.wan2_2.expert_sub_adapter import (
     Wan2_2HighNoiseSubAdapter,
     Wan2_2LowNoiseSubAdapter,
 )
-from msmodelslim.processor.quant.fa3.interface import FA3QuantAdapterInterface
-from msmodelslim.processor.quarot import OnlineQuaRotInterface
+from msmodelslim.core.quantization_algorithm.quant.fa3.interface import FA3QuantAdapterInterface
+from msmodelslim.core.quantization_algorithm.quarot import OnlineQuaRotInterface
 
 
 class TestWan2_2ExpertSubAdapter:

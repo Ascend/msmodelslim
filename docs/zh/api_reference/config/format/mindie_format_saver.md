@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.format.mindie_format.mindie.MindIEQuantFormatConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_format.mindie_format.mindie.MindIEQuantFormatConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@ MindIE 保存格式配置，导出 MindIE 落盘格式的权重文件。
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `MindIEQuantFormatConfig` |
-| 源码 | [mindie.py](../../../../../msmodelslim/format/mindie_format/mindie.py) |
+| 源码 | [mindie.py](../../../../../msmodelslim/core/quantization_format/mindie_format/mindie.py) |
 
 ## 2. 参数列表
 

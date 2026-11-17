@@ -44,8 +44,8 @@ from msmodelslim.model.interface_hub import (
     IterSmoothInterface,
     FlexSmoothQuantInterface,
     ModelSlimPipelineInterfaceV1,
+    QuaRotInterface,
 )
-from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
 from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger

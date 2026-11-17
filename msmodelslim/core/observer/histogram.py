@@ -124,8 +124,8 @@ from pydantic import BaseModel
 from torch import distributed as dist
 from torch.ao.quantization import HistogramObserver as TorchHistogramObserver
 
-from msmodelslim.ir.qal import QDType, QScope, QStorage
-from msmodelslim.ir.api import calculate_qparam, fake_quantize
+from msmodelslim.core.quantization_schema.qal import QDType, QScope, QStorage
+from msmodelslim.core.quantization_schema.api import calculate_qparam, fake_quantize
 from msmodelslim.utils.exception import SpecError, UnexpectedError
 from msmodelslim.utils.logging import get_logger
 

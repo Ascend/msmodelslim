@@ -109,7 +109,7 @@ msmodelslim analyze attn_head \
 
 - **尚未接入的模型**：须先完成适配器开发与注册，再进入步骤 4。通用适配要求见《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》。
 - **支持矩阵中已接入的模型**：可跳过通用适配，确认所用 `--model_type` 名称即可。
-- **算法侧额外接口**：`RaCompressAnalysisInterface` 以类型判定接入——适配器实现该接口才会被指标侧识别。其中 `get_proj_names()` 返回 Q、K、QKV 三路投影层名称片段（如 `q_proj`、`k_proj`、`qkv_proj`）；空串表示该投影不存在，不会被当作"匹配全部 Linear"。`get_tokenizer()` 返回模型实际使用的 tokenizer（通常是 `AutoTokenizer.from_pretrained(model_path)`）。二者均为必需方法，缺一个适配器无法实例化；未提供 tokenizer（返回 `None` 或抛异常）时，指标侧按内置兜底路径取校准输入首 token 并告警。若适配器未实现该接口，则使用默认模式（`q_proj`、`k_proj`、`qkv_proj`）。接口定义见 [ra_compress/interface.py](../../../msmodelslim/processor/analysis/unary_operator/metrics/ra_compress/interface.py)。
+- **算法侧额外接口**：`RaCompressAnalysisInterface` 以类型判定接入——适配器实现该接口才会被指标侧识别。其中 `get_proj_names()` 返回 Q、K、QKV 三路投影层名称片段（如 `q_proj`、`k_proj`、`qkv_proj`）；空串表示该投影不存在，不会被当作"匹配全部 Linear"。`get_tokenizer()` 返回模型实际使用的 tokenizer（通常是 `AutoTokenizer.from_pretrained(model_path)`）。二者均为必需方法，缺一个适配器无法实例化；未提供 tokenizer（返回 `None` 或抛异常）时，指标侧按内置兜底路径取校准输入首 token 并告警。若适配器未实现该接口，则使用默认模式（`q_proj`、`k_proj`、`qkv_proj`）。接口定义见 [ra_compress/interface.py](../../../msmodelslim/core/quantization_algorithm/analysis/unary_operator/metrics/ra_compress/interface.py)。
 
 完成或修改适配器后，在仓库根目录重新执行 `bash install.sh`，使注册生效。
 
@@ -224,14 +224,14 @@ msmodelslim analyze attn_head \
 | RA Compress | 基于注意力头筛选的 KV Cache 压缩算法 | 本指南 [步骤 1](#步骤-1确认推荐指标) |
 | Induction Head | 具有 prefix matching 能力的注意力头，擅长捕获跨段重复模式 | 本指南 [步骤 5](#步骤-5解读分析结果并交付-mindie-推理框架) |
 | Echo Head | 具有 copying matching 能力的注意力头，倾向于复制前一段对应位置信息 | 本指南 [步骤 5](#步骤-5解读分析结果并交付-mindie-推理框架) |
-| `RaCompressAnalysisInterface` | 模型适配器可选实现的接口：`get_proj_names` 与 `get_tokenizer` 均需实现 | [接口定义](../../../msmodelslim/processor/analysis/unary_operator/metrics/ra_compress/interface.py) |
+| `RaCompressAnalysisInterface` | 模型适配器可选实现的接口：`get_proj_names` 与 `get_tokenizer` 均需实现 | [接口定义](../../../msmodelslim/core/quantization_algorithm/analysis/unary_operator/metrics/ra_compress/interface.py) |
 
 ## 9. 接口文档列表
 
 | 接口或能力 | 简述 | 链接 |
 | --- | --- | --- |
 | `msmodelslim analyze attn_head` | Attention Head 筛选分析命令行入口 | 《[msmodelslim analyze 命令行 API](../api_reference/cli/msmodelslim_analyze.md)》；本指南 [命令行预览](#命令行预览) |
-| `RaCompressAnalysisInterface` | 模型适配器 RA Compress 接口（`get_proj_names` / `get_tokenizer`） | [接口定义](../../../msmodelslim/processor/analysis/unary_operator/metrics/ra_compress/interface.py) |
+| `RaCompressAnalysisInterface` | 模型适配器 RA Compress 接口（`get_proj_names` / `get_tokenizer`） | [接口定义](../../../msmodelslim/core/quantization_algorithm/analysis/unary_operator/metrics/ra_compress/interface.py) |
 
 ## 10. 安全说明
 

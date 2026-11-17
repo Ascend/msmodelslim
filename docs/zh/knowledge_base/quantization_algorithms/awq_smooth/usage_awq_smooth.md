@@ -45,7 +45,7 @@ flowchart LR
 **操作**：模型适配代码需实现以下接口：
 
 1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，由 `msmodelslim.model.interface_hub` 汇总提供，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。
-2. **`AWQInterface`**：AWQ 专用接口，由 `msmodelslim.processor.anti_outlier.awq` 提供，核心方法 `get_adapter_config_for_subgraph()` 返回 AWQ 子图映射配置（子图类型如 `norm-linear`、`linear-linear`、`ov`、`up-down`）。AWQ 处理器强制要求适配器实现该接口。
+2. **`AWQInterface`**：AWQ 专用接口，由 `msmodelslim.core.quantization_algorithm.anti_outlier.awq` 提供，核心方法 `get_adapter_config_for_subgraph()` 返回 AWQ 子图映射配置（子图类型如 `norm-linear`、`linear-linear`、`ov`、`up-down`）。AWQ 处理器强制要求适配器实现该接口。
 
 对于基于 HuggingFace Transformers 实现的标准开源 LLM，建议通过组合继承构建适配器：
 
@@ -55,7 +55,7 @@ from msmodelslim.model.interface_hub import (
     ModelInfoInterface,
     ModelSlimPipelineInterfaceV1 as PipelineInterface,
 )
-from msmodelslim.processor.anti_outlier.awq import (
+from msmodelslim.core.quantization_algorithm.anti_outlier.awq import (
     # ---- AWQ 算法适配接口（本步骤重点）----
     AWQInterface,  # 算法适配：get_adapter_config_for_subgraph 返回 AWQ 子图映射
 )
@@ -102,7 +102,7 @@ spec:
 **操作**：
 
 msModelSlim 实现入口：：
-[查看对应实现目录](../../../../../msmodelslim/processor/anti_outlier/awq)
+[查看对应实现目录](../../../../../msmodelslim/core/quantization_algorithm/anti_outlier/awq)
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |
@@ -187,7 +187,7 @@ msmodelslim quant \
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| `PipelineInterface` | 模型流水线接口，由 `msmodelslim.model.interface_hub` 汇总导出；`AWQInterface` 由 `msmodelslim.processor.anti_outlier.awq` 提供。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
+| `PipelineInterface` | 模型流水线接口，由 `msmodelslim.model.interface_hub` 汇总导出；`AWQInterface` 由 `msmodelslim.core.quantization_algorithm.anti_outlier.awq` 提供。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
 | awq 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《awq 配置说明》](../../../api_reference/config/processor/awq.md) |
 | modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
 | 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |

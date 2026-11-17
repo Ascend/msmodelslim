@@ -25,7 +25,7 @@ from typing import Dict, Optional, Tuple
 
 from torch import nn
 
-from msmodelslim.ir import AutoFakeQuantActivation
+from msmodelslim.core.quantization_schema import AutoFakeQuantActivation
 from msmodelslim.utils.logging import get_logger
 
 from .base_observer import QuantStatisticsObserver

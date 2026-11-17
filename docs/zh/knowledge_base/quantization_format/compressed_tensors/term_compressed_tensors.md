@@ -3,7 +3,7 @@
 > **词条类别**：[量化数据格式](../README.md)<br>
 > **英文名称**：compressed_tensors<br>
 > **应用领域**：HuggingFace / vLLM 生态量化权重交换<br>
-> **msModelSlim 实现**：[`msmodelslim/format/compressed_tensors_format/`](../../../../../msmodelslim/format/compressed_tensors_format/)
+> **msModelSlim 实现**：[`msmodelslim/core/quantization_format/compressed_tensors_format/`](../../../../../msmodelslim/core/quantization_format/compressed_tensors_format/)
 
 ---
 

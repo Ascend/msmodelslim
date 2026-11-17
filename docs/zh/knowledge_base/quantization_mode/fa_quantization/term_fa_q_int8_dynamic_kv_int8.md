@@ -3,7 +3,7 @@
 > **词条类别**：量化数据格式（[FA 量化](README.md)）<br>
 > **英文名称**：FA Q-INT8 Dynamic K/V-INT8 Static Quantization<br>
 > **应用领域**：长上下文推理加速、低精度注意力计算<br>
-> **承载 IR 类**：`FakeQuantActivationPerToken`（Q，[`msmodelslim/ir/activation_dynamic.py`](../../../../../msmodelslim/ir/activation_dynamic.py)）、`INT8FakeQuantActivationPerHead`（K/V，[`msmodelslim/ir/activation_static.py`](../../../../../msmodelslim/ir/activation_static.py)）<br>
+> **承载 IR 类**：`FakeQuantActivationPerToken`（Q，[`msmodelslim/core/quantization_schema/activation_dynamic.py`](../../../../../msmodelslim/core/quantization_schema/activation_dynamic.py)）、`INT8FakeQuantActivationPerHead`（K/V，[`msmodelslim/core/quantization_schema/activation_static.py`](../../../../../msmodelslim/core/quantization_schema/activation_static.py)）<br>
 
 ---
 

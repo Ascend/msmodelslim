@@ -28,12 +28,12 @@ from transformers import PreTrainedTokenizerBase
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.graph import AdapterConfig, MappingConfig, FusionConfig
-from msmodelslim.processor.quarot import QuaRotInterface
 from msmodelslim.model.interface_hub import (
     ModelSlimPipelineInterfaceV1,
     ModelInfoInterface,
     IterSmoothInterface,
     FlexSmoothQuantInterface,
+    QuaRotInterface,
 )
 from msmodelslim.model.common.layer_wise_forward import (
     generated_decoder_layer_visit_func,

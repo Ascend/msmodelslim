@@ -30,8 +30,8 @@ from msmodelslim.core.runner.pipeline_interface import PipelineInterface
 from msmodelslim.core.quant_service.dataset_loader_infra import DatasetLoaderInfra
 from msmodelslim.core.context import ContextManager
 from msmodelslim.core.context.interface import IContextFactory
-from msmodelslim.processor.analysis.distributed_utils import read_layer_analysis_result
-from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress import (
+from msmodelslim.core.quantization_algorithm.analysis.distributed_utils import read_layer_analysis_result
+from msmodelslim.core.quantization_algorithm.analysis.unary_operator.metrics.ra_compress import (
     build_random_token_calib,
     is_random_token_metric,
 )

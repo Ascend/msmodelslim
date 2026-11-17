@@ -135,14 +135,14 @@ def _public_processors(auto_cls: type) -> List[type]:
 def _is_saver_config(cls: type) -> bool:
     try:
         from msmodelslim.core.quant_service.modelslim_v1.save.saver import AutoSaverBaseConfig
-        from msmodelslim.format.base import QuantFormatConfig
+        from msmodelslim.core.quantization_format.base import QuantFormatConfig
     except Exception:
         return "Saver" in cls.__name__ or "Format" in cls.__name__
     return issubclass(cls, AutoSaverBaseConfig) or issubclass(cls, QuantFormatConfig)
 
 
 def _public_formats() -> List[type]:
-    from msmodelslim.format.base import QuantFormatConfig
+    from msmodelslim.core.quantization_format.base import QuantFormatConfig
 
     result = []
     for cls in QuantFormatConfig.__subclasses__():
@@ -191,7 +191,7 @@ def _extra_convert_models() -> List[type]:
 
 def _tlq_op_subclasses() -> List[type]:
     """可训练 TLQ 算子（operations）的派生配置类。"""
-    from msmodelslim.processor.trainable_linear_quant.core.ops.base import TLQOpConfig
+    from msmodelslim.core.quantization_algorithm.trainable_linear_quant.core.ops.base import TLQOpConfig
 
     return [s for s in TLQOpConfig.__subclasses__() if is_pydantic_model(s)]
 
@@ -272,8 +272,8 @@ def _should_keep(cls: type) -> bool:
     tag = raw_type_tag(cls)
     if tag is not None and is_internal_type_tag(tag):
         try:
-            from msmodelslim.format.base import QuantFormatConfig
-            from msmodelslim.processor.base import AutoProcessorConfig
+            from msmodelslim.core.quantization_format.base import QuantFormatConfig
+            from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 
             if issubclass(cls, QuantFormatConfig) or issubclass(cls, AutoProcessorConfig):
                 return False
@@ -290,7 +290,7 @@ def _should_keep(cls: type) -> bool:
 
 
 def _collect_seeds() -> List[type]:
-    from msmodelslim.processor.base import AutoProcessorConfig
+    from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 
     seeds: List[type] = []
     seeds.extend(_root_configs())
@@ -320,8 +320,8 @@ def _collect_seeds() -> List[type]:
 def _category_for(cls: type) -> str:
     from msmodelslim.core.practice.interface import PracticeConfig
     from msmodelslim.core.quant_service.interface import BaseQuantConfig
-    from msmodelslim.format.base import QuantFormatConfig
-    from msmodelslim.processor.base import AutoProcessorConfig
+    from msmodelslim.core.quantization_format.base import QuantFormatConfig
+    from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 
     # PracticeConfig 是 metadata + task 的最佳实践任务配置，作为独立任务页生成，
     # 用于展示 metadata、task（apiversion + spec）与嵌套配置的完整结构。
@@ -340,14 +340,14 @@ def _category_for(cls: type) -> str:
 
 def _refers_to_saver(annotation: Any) -> bool:
     from msmodelslim.core.quant_service.modelslim_v1.save.saver import AutoSaverBaseConfig
-    from msmodelslim.format.base import QuantFormatConfig
+    from msmodelslim.core.quantization_format.base import QuantFormatConfig
 
     return annotation_refers_to(annotation, QuantFormatConfig) or annotation_refers_to(annotation, AutoSaverBaseConfig)
 
 
 def _yaml_paths(models: Sequence[type]) -> Tuple[Dict[type, str], Dict[type, type]]:
-    from msmodelslim.format.base import QuantFormatConfig
-    from msmodelslim.processor.base import AutoProcessorConfig
+    from msmodelslim.core.quantization_format.base import QuantFormatConfig
+    from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 
     paths: Dict[type, str] = {}
     roots: Dict[type, type] = {}
@@ -495,8 +495,8 @@ def _nested_refs(
     formats: Sequence[type],
     slugs: Dict[type, str],
 ) -> List[Tuple[str, str, str]]:
-    from msmodelslim.format.base import QuantFormatConfig
-    from msmodelslim.processor.base import AutoProcessorConfig
+    from msmodelslim.core.quantization_format.base import QuantFormatConfig
+    from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 
     refs: List[Tuple[str, str, str]] = []
     convert_models = _extra_convert_models()[:2]
@@ -583,7 +583,7 @@ def _dispatch_bases_for(cls: type, yaml_path: str) -> Dict[str, str]:
     覆盖：保存格式 / 处理器 / 策略 / 评估服务（已知基础类）、Union 分派
     （如 select_best 按 mode 分派）、单一基础类 + 已注册派生类（如 TLQOpConfig）。
     """
-    from msmodelslim.processor.base import AutoProcessorConfig
+    from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 
     bases: Dict[str, str] = {}
     for name, info in cls.model_fields.items():
@@ -962,7 +962,7 @@ def _unique_slugs(models: Sequence[type]) -> Dict[type, str]:
 
 
 def build_records() -> List[ModelRecord]:
-    from msmodelslim.processor.base import AutoProcessorConfig
+    from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig
 
     _import_known_modules()
 

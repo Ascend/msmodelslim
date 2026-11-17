@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, SerializeAsAny, field_validator
 
-from msmodelslim.format.registry import QuantFormatConfigList
+from msmodelslim.core.quantization_format.registry import QuantFormatConfigList
 from msmodelslim.utils.plugin import TypedConfig
 from msmodelslim.utils.validation.conversion import convert_to_readable_file
 

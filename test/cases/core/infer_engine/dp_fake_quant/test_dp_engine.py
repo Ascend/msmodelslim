@@ -147,7 +147,7 @@ class TestDPFakeQuantInferenceEngine:
             ),
             patch("msmodelslim.core.infer_engine.dp_fake_quant.dp_engine.setup_distributed"),
             patch("msmodelslim.core.infer_engine.dp_fake_quant.dp_engine.set_logger_level"),
-            patch("msmodelslim.format.format_handler.build_default_format_chain") as mock_chain,
+            patch("msmodelslim.core.quantization_format.format_handler.build_default_format_chain") as mock_chain,
         ):
             mock_chain.return_value.handle.return_value = loader
             DPFakeQuantInferenceEngine._dp_worker(

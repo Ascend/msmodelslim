@@ -44,9 +44,9 @@ SLUG_OVERRIDES = {
 }
 
 QUALNAME_SLUGS = {
-    "msmodelslim.processor.quant.autoround.QuantStrategyConfig": "autoround_quant_strategy_config",
-    "msmodelslim.processor.flat_quant.flat_quant.QuantStrategyConfig": "flatquant_quant_strategy_config",
-    "msmodelslim.processor.trainable_linear_quant.config.processor_config.QuantStrategyConfig": "tlq_quant_strategy_config",
+    "msmodelslim.core.quantization_algorithm.quant.autoround.QuantStrategyConfig": "autoround_quant_strategy_config",
+    "msmodelslim.core.quantization_algorithm.flat_quant.flat_quant.QuantStrategyConfig": "flatquant_quant_strategy_config",
+    "msmodelslim.core.quantization_algorithm.trainable_linear_quant.config.processor_config.QuantStrategyConfig": "tlq_quant_strategy_config",
 }
 
 APIVERSION_BY_ROOT = {
@@ -95,14 +95,14 @@ BASE_CLASS_REPRESENTATIVE_TYPE_TAGS = {
 }
 
 SOURCE_REFERENCE_PATHS = {
-    "QuantFormatConfig": "msmodelslim/format/base.py",
+    "QuantFormatConfig": "msmodelslim/core/quantization_format/base.py",
 }
 
 CONFIG_SOURCE_MODULES = (
-    "msmodelslim.processor",
-    "msmodelslim.processor.kv_smooth.processor",
-    "msmodelslim.processor.quarot",
-    "msmodelslim.format.registry",
+    "msmodelslim.core.quantization_algorithm",
+    "msmodelslim.core.quantization_algorithm.kv_smooth.processor",
+    "msmodelslim.core.quantization_algorithm.quarot",
+    "msmodelslim.core.quantization_format.registry",
     "msmodelslim.core.quant_service.modelslim_v1.quant_config",
     "msmodelslim.core.quant_service.multimodal_vlm_v1.quant_config",
     "msmodelslim.core.quant_service.multimodal_sd_v1.quant_config",

@@ -127,7 +127,7 @@ class TestIRResult:
         assert mod.weight.dtype == torch.bfloat16
 
     def test_resolve_module_rebuild_w4a4_from_deploy_state_dict(self):
-        from msmodelslim.ir.w4a4_mx_dynamic import W4A4MXDynamicPerBlockFakeQuantLinear
+        from msmodelslim.core.quantization_schema.w4a4_mx_dynamic import W4A4MXDynamicPerBlockFakeQuantLinear
 
         scale = torch.zeros(8, 1, 1)
         result = IRResult(

@@ -27,7 +27,7 @@ from transformers import PreTrainedTokenizerBase
 
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
-from msmodelslim.processor.kv_smooth import KVSmoothFusedType, KVSmoothFusedUnit
+from msmodelslim.core.quantization_algorithm.kv_smooth import KVSmoothFusedType, KVSmoothFusedUnit
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter
 from msmodelslim.utils.security.model import SafeGenerator

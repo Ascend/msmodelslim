@@ -19,8 +19,8 @@
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 已完成 DP 支持的量化算法 | `msmodelslim/processor/` | `support_distributed()` 返回 `True`，多卡结果与单卡语义等价 | 多卡量化产物与单卡比对一致 |
-| 交付件 | 接入 DTS 的 Processor 代码 | `msmodelslim/processor/` | 算法可拆分为原子化的子任务 | 多卡跑通，结果与未接入时语义等价 |
+| 输入 | 已完成 DP 支持的量化算法 | `msmodelslim/core/quantization_algorithm/` | `support_distributed()` 返回 `True`，多卡结果与单卡语义等价 | 多卡量化产物与单卡比对一致 |
+| 交付件 | 接入 DTS 的 Processor 代码 | `msmodelslim/core/quantization_algorithm/` | 算法可拆分为原子化的子任务 | 多卡跑通，结果与未接入时语义等价 |
 
 ## 4. 流程总览
 
@@ -59,8 +59,8 @@ flowchart LR
 
 1. 将任务逻辑封装为 Processor 实例方法，签名保持简单（如 `def _worker_fn(self, idx) -> None`）。
 2. **业务参数只经 `args` / `kwargs` 传入可序列化值**，不得作为 `submit` 的第二个位置参数。常用模式：
-   - 传**整数索引**，执行时回查本 rank 上内容一致的任务表，以[FlexAWQSSZProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py)为例，`submit(fn=self._worker_fn, args=(idx,), ...)`，`_worker_fn` 内 `adapter_config = self.sorted_configs[idx - 1]`；
-   - 传**模块名**，以[LinearQuant](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/linear.py)为例，`submit(fn=self._dts_calibrate_forward, args=(name,), ...)`，`_dts_calibrate_forward` 内 `self.model.get_submodule(module_name)` 后执行本地逻辑。
+   - 传**整数索引**，执行时回查本 rank 上内容一致的任务表，以[FlexAWQSSZProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/anti_outlier/flex_smooth/processor.py)为例，`submit(fn=self._worker_fn, args=(idx,), ...)`，`_worker_fn` 内 `adapter_config = self.sorted_configs[idx - 1]`；
+   - 传**模块名**，以[LinearQuant](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/quant/linear.py)为例，`submit(fn=self._dts_calibrate_forward, args=(name,), ...)`，`_dts_calibrate_forward` 内 `self.model.get_submodule(module_name)` 后执行本地逻辑。
 
 **输出**：可提交的子任务函数。
 
@@ -153,9 +153,9 @@ flowchart LR
 
 | 案例 | 简述 | 链接 |
 | --- | --- | --- |
-| FlexAWQSSZ 接入 | 逐子图平滑任务化：`submit(args=(idx,))` 回查任务表，`parallel=not (is_non_fusion or has_non_shared_module)`（本指南步骤 4 含完整判定代码） | [FlexAWQSSZProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) |
-| LinearQuant 接入 | 逐模块校准任务化：`submit(fn=_dts_calibrate_forward, args=(name,), dependencies=[name + ".weight_quantizer"], parallel=True)` | [processor/quant/linear.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/quant/linear.py) |
-| FlexSmoothQuant 接入 | 与 FlexAWQSSZ 同族，基于子图优先级的任务化平滑 | [processor/anti_outlier/flex_smooth/processor.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/processor/anti_outlier/flex_smooth/processor.py) |
+| FlexAWQSSZ 接入 | 逐子图平滑任务化：`submit(args=(idx,))` 回查任务表，`parallel=not (is_non_fusion or has_non_shared_module)`（本指南步骤 4 含完整判定代码） | [FlexAWQSSZProcessor](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/anti_outlier/flex_smooth/processor.py) |
+| LinearQuant 接入 | 逐模块校准任务化：`submit(fn=_dts_calibrate_forward, args=(name,), dependencies=[name + ".weight_quantizer"], parallel=True)` | [quant/linear.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/quant/linear.py) |
+| FlexSmoothQuant 接入 | 与 FlexAWQSSZ 同族，基于子图优先级的任务化平滑 | [anti_outlier/flex_smooth/processor.py](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/anti_outlier/flex_smooth/processor.py) |
 
 ## 9. 术语
 

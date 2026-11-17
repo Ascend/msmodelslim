@@ -38,9 +38,9 @@ from msmodelslim.core.quantizer.impl.mse_round import (
     FP32_MIN_NORMAL,
     MXWeightPerBlockMseRound,
 )
-from msmodelslim.ir.api import dequantize, quantize
-from msmodelslim.ir.qal import QDType, QScope, QStorage
-from msmodelslim.ir.utils import reshape_to_blocks
+from msmodelslim.core.quantization_schema.api import dequantize, quantize
+from msmodelslim.core.quantization_schema.qal import QDType, QScope, QStorage
+from msmodelslim.core.quantization_schema.utils import reshape_to_blocks
 from msmodelslim.utils.exception import SpecError
 
 

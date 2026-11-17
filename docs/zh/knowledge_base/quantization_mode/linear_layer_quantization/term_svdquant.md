@@ -4,7 +4,7 @@
 > **英文名称**：SVDQuant Quantization<br>
 > **应用领域**：大语言模型量化压缩、低比特量化精度优化<br>
 > **首次提出**：Li et al., NeurIPS 2024<br>
-> **承载 IR 类**：`SVDResidualWrapper`（[`msmodelslim/ir/svd_residual.py`](../../../../../msmodelslim/ir/svd_residual.py)，`WrapperIR` 子类，配合 `linear_quant` 对残差分量做低比特量化）<br>
+> **承载 IR 类**：`SVDResidualWrapper`（[`msmodelslim/core/quantization_schema/svd_residual.py`](../../../../../msmodelslim/core/quantization_schema/svd_residual.py)，`WrapperIR` 子类，配合 `linear_quant` 对残差分量做低比特量化）<br>
 
 ## 1. 概述
 

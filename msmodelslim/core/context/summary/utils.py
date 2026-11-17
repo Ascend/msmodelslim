@@ -22,8 +22,8 @@ See the Mulan PSL v2 for more details.
 import os
 from typing import Any, Dict, Iterable, Optional
 
-from msmodelslim.ir.kernels import WEIGHT_SCALE_INV_SUFFIX
-from msmodelslim.ir.qal import QDType
+from msmodelslim.core.quantization_schema.kernels import WEIGHT_SCALE_INV_SUFFIX
+from msmodelslim.core.quantization_schema.qal import QDType
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.security import json_safe_load
 

@@ -60,7 +60,7 @@ flowchart LR
 **操作**：模型适配代码需实现以下接口，相关接口均由 `msmodelslim.model.interface_hub` 汇总导出：
 
 1. **`PipelineInterface`**（`ModelSlimPipelineInterfaceV1`）：基础流水线接口，负责模型加载（`init_model`）、数据预处理（`handle_dataset`）、逐层遍历（`generate_model_visit`）、逐层前向（`generate_model_forward`）等。
-2. **`TLQBlockDataInterface`**（位于 `msmodelslim.processor.trainable_linear_quant.interface`）：TLQ 块 I/O 定制接口（可选）。
+2. **`TLQBlockDataInterface`**（位于 `msmodelslim.core.quantization_algorithm.trainable_linear_quant.interface`）：TLQ 块 I/O 定制接口（可选）。
 
 ```python
 from abc import ABC, abstractmethod
@@ -80,7 +80,7 @@ class TLQBlockDataInterface(ABC):
 ```
 
 - **`TLQBlockDataInterface`**：用于 TLQ 块 I/O（hidden extract/inject/loss mask）；未实现时使用默认块数据处理，复杂或非常规块结构须由适配器补齐。
-- 仅使用 `minmax_tune` 和/或 `round_tune` 时一般无需额外接口；使用 `trainable_smooth` 时还须提供 `get_adapter_config_for_subgraph()`（可复用 IterSmooth / OASQ 同名方法，接口约定见 `msmodelslim.processor.trainable_linear_quant.interface` 中的 `TLQSubgraphAdapter`）。
+- 仅使用 `minmax_tune` 和/或 `round_tune` 时一般无需额外接口；使用 `trainable_smooth` 时还须提供 `get_adapter_config_for_subgraph()`（可复用 IterSmooth / OASQ 同名方法，接口约定见 `msmodelslim.core.quantization_algorithm.trainable_linear_quant.interface` 中的 `TLQSubgraphAdapter`）。
 - 若修改了适配器代码，需在仓库根目录重新执行 `bash install.sh` 使适配生效。
 
 对于基于 HuggingFace Transformers 实现的标准开源 LLM，建议通过组合继承快速构建适配器：

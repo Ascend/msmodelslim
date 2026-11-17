@@ -24,8 +24,8 @@ from pydantic import BaseModel, Field, field_validator, AfterValidator
 from typing import Annotated
 
 from msmodelslim.core.practice import Metadata
-from msmodelslim.processor.base import AutoProcessorConfig, AutoProcessorConfigList
-from msmodelslim.processor.quant.linear import LinearProcessorConfig
+from msmodelslim.core.quantization_algorithm.base import AutoProcessorConfig, AutoProcessorConfigList
+from msmodelslim.core.quantization_algorithm.quant.linear import LinearProcessorConfig
 from msmodelslim.utils.exception import UnsupportedError
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.validation.pydantic import validate_str_length

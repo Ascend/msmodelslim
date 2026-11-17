@@ -3,7 +3,7 @@
 > **词条类别**：[量化格式](../README.md)<br>
 > **英文名称**：MindIE SD Quantization Format<br>
 > **应用领域**：多模态生成模型量化压缩、MindIE SD 部署<br>
-> **msModelSlim 实现**：[`msmodelslim/format/mindie_format/`](../../../../../msmodelslim/format/mindie_format/)
+> **msModelSlim 实现**：[`msmodelslim/core/quantization_format/mindie_format/`](../../../../../msmodelslim/core/quantization_format/mindie_format/)
 
 ---
 

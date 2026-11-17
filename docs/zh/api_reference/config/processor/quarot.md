@@ -1,4 +1,4 @@
-<!-- generated-by: tools.config_docgen ; class: msmodelslim.processor.quarot.offline_quarot.quarot.QuaRotProcessorConfig -->
+<!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_algorithm.quarot.offline_quarot.quarot.QuaRotProcessorConfig -->
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
@@ -13,7 +13,7 @@ QuaRot（离线旋转）处理器配置。
 | 项目 | 内容 |
 |------|------|
 | 配置类 | `QuaRotProcessorConfig` |
-| 源码 | [quarot.py](../../../../../msmodelslim/processor/quarot/offline_quarot/quarot.py) |
+| 源码 | [quarot.py](../../../../../msmodelslim/core/quantization_algorithm/quarot/offline_quarot/quarot.py) |
 
 ## 2. 参数列表
 

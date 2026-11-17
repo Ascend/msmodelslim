@@ -25,7 +25,7 @@ import torch
 import torch.distributed as dist
 
 from msmodelslim.core.const import DeviceType
-from msmodelslim.format.interface import IFormatLoader
+from msmodelslim.core.quantization_format.interface import IFormatLoader
 from msmodelslim.utils.buffer import RuntimeBufferStore
 from msmodelslim.utils.exception import UnsupportedError
 from msmodelslim.utils.logging import get_logger, logger_setter

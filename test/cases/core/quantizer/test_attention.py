@@ -23,8 +23,8 @@ import torch
 
 from msmodelslim.core.quantizer.base import QConfig
 from msmodelslim.core.quantizer.attention import DynamicCacheQuantizer
-from msmodelslim.ir import AutoFakeQuantDynamicCache
-from msmodelslim.ir.qal import QDType, QScope
+from msmodelslim.core.quantization_schema import AutoFakeQuantDynamicCache
+from msmodelslim.core.quantization_schema.qal import QDType, QScope
 
 
 def create_test_config():

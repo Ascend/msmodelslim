@@ -53,7 +53,7 @@ class IRRouter:
     @classmethod
     def default(cls) -> IRRouter:
         if cls._DEFAULT is None:
-            from msmodelslim.processor.convert.registry import register_convert_processors
+            from msmodelslim.core.quantization_algorithm.convert.registry import register_convert_processors
 
             cls._DEFAULT = register_convert_processors(cls())
         return cls._DEFAULT

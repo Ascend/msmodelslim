@@ -44,7 +44,7 @@ from msmodelslim.core.quant_service.modelslim_convert.virtual_module import (
 )
 from msmodelslim.core.convert.catalog import TensorCatalog, TensorEntry
 from msmodelslim.core.convert.config import ConvertConfig, ModuleRule
-from msmodelslim.ir.kernels import WEIGHT_SCALE_INV_SUFFIX
+from msmodelslim.core.quantization_schema.kernels import WEIGHT_SCALE_INV_SUFFIX
 from msmodelslim.core.convert.protocol import ConvertContext, IVirtualModelTreeBuilder
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
 from msmodelslim.infra.io.checkpoint_reader import CheckpointReader

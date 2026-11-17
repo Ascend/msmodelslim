@@ -38,7 +38,7 @@ from torch import distributed as dist
 from safetensors import safe_open
 from tqdm import tqdm
 
-from msmodelslim import ir as qir
+import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph import AdapterConfig, MappingConfig, FusionConfig

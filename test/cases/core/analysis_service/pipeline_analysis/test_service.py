@@ -33,14 +33,16 @@ from msmodelslim.core.analysis_service import (
     AnalysisScope,
     PipelineAnalysisService,
 )
-from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress import (
+from msmodelslim.core.quantization_algorithm.analysis.unary_operator.metrics.ra_compress import (
     DUMMY_INPUT_LENGTH,
     PREFIX_TOKEN_ID,
     PLACEHOLDER_DATASET,
     REPET_TIMES,
     RaCompressAnalysisInterface,
 )
-from msmodelslim.processor.analysis.unary_operator.metrics.ra_compress.calib_input import _RandomTokenForward
+from msmodelslim.core.quantization_algorithm.analysis.unary_operator.metrics.ra_compress.calib_input import (
+    _RandomTokenForward,
+)
 from msmodelslim.core.const import DeviceType
 from msmodelslim.utils.exception import InvalidDatasetError, SecurityError
 from msmodelslim.core.runner.pipeline_interface import PipelineInterface

@@ -24,7 +24,7 @@ import math
 import pytest
 import torch
 
-from msmodelslim.ir.qal import QDType, QScope, QStorage, QParam
+from msmodelslim.core.quantization_schema.qal import QDType, QScope, QStorage, QParam
 from msmodelslim.core.quantizer.base import QConfig, AutoWeightQuantizer
 from msmodelslim.core.quantizer.impl.ceil_x import (
     CeilXExtConfig,
