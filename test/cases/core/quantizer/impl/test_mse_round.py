@@ -273,6 +273,66 @@ class TestMXWeightPerBlockMseRound(unittest.TestCase):
             msg=f"forward mse={mse_forward}, block mse_up={mse_up}",
         )
 
+    def test_forward_return_original_shape_when_2d_weight(self):
+        quantizer = MXWeightPerBlockMseRound(_mse_round_config())
+        weight = torch.randn(32, 64)
+        quantizer.init_weight(QStorage(QDType.FLOAT, weight))
+
+        self.assertEqual(quantizer.forward().shape, weight.shape)
+
+    def test_forward_return_original_shape_when_2d_weight_not_aligned_to_block(self):
+        quantizer = MXWeightPerBlockMseRound(_mse_round_config())
+        weight = torch.randn(32, 48)
+        quantizer.init_weight(QStorage(QDType.FLOAT, weight))
+
+        self.assertEqual(quantizer.forward().shape, weight.shape)
+
+    def test_forward_return_block_dequant_in_original_layout_when_2d_weight(self):
+        quantizer = MXWeightPerBlockMseRound(_mse_round_config())
+        weight = torch.randn(32, 64)
+        quantizer.init_weight(QStorage(QDType.FLOAT, weight))
+        _ = quantizer.forward()
+
+        block_dequant = dequantize(quantizer.w_q_storage, quantizer.w_q_param).value
+        expected = block_dequant.reshape(weight.shape)
+
+        self.assertTrue(torch.equal(quantizer.forward(), expected))
+
+    def test_get_q_storage_return_original_shape_when_weight_initialized(self):
+        quantizer = MXWeightPerBlockMseRound(_mse_round_config())
+        weight = torch.randn(32, 64)
+        quantizer.init_weight(QStorage(QDType.FLOAT, weight))
+
+        self.assertEqual(quantizer.get_q_storage().value.shape, weight.shape)
+        self.assertEqual(quantizer.get_q_param().ext["scale"].shape, (32, 2, 1))
+
+    def test_init_weight_defer_quantization_when_weight_initialized(self):
+        quantizer = MXWeightPerBlockMseRound(_mse_round_config())
+        quantizer.init_weight(QStorage(QDType.FLOAT, torch.randn(32, 64)))
+
+        self.assertIsNone(quantizer.w_q_storage)
+        self.assertFalse(quantizer.is_quantized)
+
+    def test_get_q_param_trigger_quantization_when_weight_initialized(self):
+        quantizer = MXWeightPerBlockMseRound(_mse_round_config())
+        quantizer.init_weight(QStorage(QDType.FLOAT, torch.randn(32, 64)))
+
+        self.assertIsNotNone(quantizer.get_q_param().ext["scale"])
+        self.assertTrue(quantizer.is_quantized)
+
+    def test_get_q_storage_trigger_quantization_when_weight_initialized(self):
+        quantizer = MXWeightPerBlockMseRound(_mse_round_config())
+        quantizer.init_weight(QStorage(QDType.FLOAT, torch.randn(32, 64)))
+
+        self.assertIsNotNone(quantizer.get_q_storage().value)
+        self.assertTrue(quantizer.is_quantized)
+
+    def test_forward_return_same_result_when_called_twice(self):
+        quantizer = MXWeightPerBlockMseRound(_mse_round_config())
+        quantizer.init_weight(QStorage(QDType.FLOAT, torch.randn(32, 64)))
+
+        self.assertTrue(torch.equal(quantizer.forward(), quantizer.forward()))
+
     def test_forward_raise_spec_error_when_weight_not_initialized(self):
         quantizer = MXWeightPerBlockMseRound(_mse_round_config())
 

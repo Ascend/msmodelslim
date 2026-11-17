@@ -55,7 +55,13 @@ class MXWeightPerBlockMseRound(AutoWeightQuantizer):
             raise SchemaValidateError(f"Invalid value for 'axes': {self.axes}. Expected int or list[int].")
         self.block_size = config.dtype.mx_finfo.block_size
         self.w_q_param: Optional[QParam] = None
+        # w_q_storage 保持 block shape 用于 forward 反量化，导出时使用 w_q_storage_orig
         self.w_q_storage: Optional[QStorage] = None
+        self.w_q_storage_orig: Optional[QStorage] = None
+        self._orig_shape = None
+        self._padded_shape = None
+        self._axes = None
+        self.is_quantized = False
 
     def _build_qparam(self, shared_exp: torch.Tensor) -> QParam:
         mx_finfo = QDType(self.config.dtype).mx_finfo
@@ -89,27 +95,40 @@ class MXWeightPerBlockMseRound(AutoWeightQuantizer):
         return torch.where(select_up, shared_exp_up, shared_exp_down)
 
     def forward(self, x: Optional[torch.Tensor] = None) -> torch.Tensor:
-        if self.w_q_storage is None or self.w_q_param is None:
-            raise SpecError("No quantized weight was set", action="please call init_weight first")
+        # 惰性量化：与 MXWeightPerBlockMinmax / MXWeightPerBlockCeilX 保持一致，
+        # 首次 forward 时触发量化，DTS 单卡/多卡共用同一入口。
+        if not self.is_quantized:
+            if self.weight is None:
+                raise SpecError("No weight was set", action="please call init_weight first")
+            self._quantize()
+            self.is_quantized = True
+
+        # w_q_storage 与 q_param.ext["scale"] 均为 block shape，需先反量化再还原原始 shape
         dequant_value = dequantize(self.w_q_storage, self.w_q_param).value
+        dequant_value = undo_reshape_to_blocks(dequant_value, self._padded_shape, self._orig_shape, self._axes)
         return dequant_value
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def init_weight(self, weight: QStorage, bias: Optional[torch.Tensor] = None) -> None:
+        # 量化延迟到 forward() 首次调用时执行（惰性量化），
+        # 统一入口确保 DTS 场景下单卡多卡行为一致。
         self.weight = weight
         self.bias = bias
 
-        minmax_config = MinMaxBlockObserverConfig(axes=self.axes)
-        minmax_block_observer = MsMinMaxBlockObserver(minmax_config)
-        weight_value = weight.value.detach()
+    def _quantize(self) -> None:
+        weight_value = self.weight.value.detach()
         axes = self.axes
         axes = [axes] if isinstance(axes, int) else axes
         axes = [x + weight_value.ndim if x < 0 else x for x in axes]
 
+        minmax_config = MinMaxBlockObserverConfig(axes=self.axes)
+        minmax_block_observer = MsMinMaxBlockObserver(minmax_config)
+
         weight_value, axes_, orig_shape, padded_shape = reshape_to_blocks(weight_value, axes, self.block_size)
         shared_exp_axes = [x + 1 for x in axes_] if self.block_size > 0 else axes_
 
-        minmax_block_observer.update(weight_value, sync=self.sync, shared_exp_axes=shared_exp_axes)
+        # DTS 保证每个模块只在一个 rank 上执行量化，权重无需跨 rank 同步
+        minmax_block_observer.update(weight_value, sync=False, shared_exp_axes=shared_exp_axes)
         _, max_val = minmax_block_observer.get_min_max()
 
         mx_finfo = QDType(self.config.dtype).mx_finfo
@@ -131,17 +150,24 @@ class MXWeightPerBlockMseRound(AutoWeightQuantizer):
             mse_up, mse_down, q_param_up.ext["scale"], q_param_down.ext["scale"]
         )
 
+        self._axes = axes
+        self._orig_shape = orig_shape
+        self._padded_shape = padded_shape
         self.w_q_param = self._build_qparam(shared_exp)
         self.w_q_param.ext["axes"] = self.axes
         self.w_q_storage = quantize(float_storage, self.w_q_param)
-        self.w_q_storage.value = undo_reshape_to_blocks(self.w_q_storage.value, padded_shape, orig_shape, axes)
+        # keep w_q_storage in block shape for forward(); store original shape separately
+        w_q_storage_orig_value = undo_reshape_to_blocks(self.w_q_storage.value.clone(), padded_shape, orig_shape, axes)
+        self.w_q_storage_orig = QStorage(self.w_q_storage.dtype, w_q_storage_orig_value)
+        del self.weight
+        self.weight = None
 
     def get_q_storage(self) -> QStorage:
-        if self.w_q_storage is None:
-            raise SpecError("No quantized weight was set", action="please call init_weight first")
-        return self.w_q_storage
+        if self.w_q_storage_orig is None:
+            _ = self.forward(None)
+        return self.w_q_storage_orig
 
     def get_q_param(self) -> QParam:
         if self.w_q_param is None:
-            raise SpecError("No q_param was set", action="please call init_weight first")
+            _ = self.forward(None)
         return self.w_q_param
