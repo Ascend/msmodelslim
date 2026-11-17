@@ -6,11 +6,11 @@
 
 ## 1. 概述
 
-量化数据类型描述量化之后的数值本身：占多少比特、按什么编码、能表示多大范围、如何舍入和截断。本目录收录各类型的概念词条，以及一份函数用法指南。底层原子能力按类型对任意张量做量化与反量化，并带上粒度、静态或动态、对称性，不区分张量来自权重、激活还是 KV。INT8 / INT4 走仿射量化，舍入遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229)；FP8 遵循 [OCP OFP8](https://www.opencompute.org/documents/ocp-8-bit-floating-point-specification-ofp8-revision-1-0-2023-12-01-pdf-1)；MXFP8 / MXFP4 遵循 [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf)；未量化基准 FP16 / BF16 遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229)。
+量化数据类型描述量化之后的数值本身：占多少比特、按什么编码、能表示多大范围、如何舍入和截断。本词条给出 INT8、INT4、FP8、MXFP8、MXFP4 的概念索引，以及未量化基准 FP16 / BF16。`msmodelslim.core.dtype_ops` 按类型对任意张量做量化与反量化，并带上粒度、静态或动态、对称性，不区分张量来自权重、激活还是 KVCache。INT8 / INT4 走仿射量化，舍入遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229)；FP8 遵循 [OCP OFP8](https://www.opencompute.org/documents/ocp-8-bit-floating-point-specification-ofp8-revision-1-0-2023-12-01-pdf-1)；MXFP8 / MXFP4 遵循 [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf)；未量化基准 FP16 / BF16 遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229)。
 
 [量化模式](../quantization_mode/README.md)首先区分量化对象（线性层 / KVCache / FA），再在对象上选用上述能力。不同对象、以及同一对象上不同的量化方式和数据类型，对应不同模式。例如线性层 8bit 可以是 [W8A8 静态量化](../quantization_mode/linear_layer_quantization/term_w8a8_static.md)（[INT8](term_int8.md)）、[W8A8 FP8 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md) 或 [W8A8 MX 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_mx_dynamic.md)。
 
-阅读模式词条前，建议先看[量化与反量化](term_quantization.md)里的公式、scale 和粒度，以及未量化基准 [FP16 / BF16](term_fp16_bf16.md)。具体函数怎么调用见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》；接口清单见《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》。
+阅读模式词条前，建议先看[量化与反量化](term_quantization.md)里的公式、scale 和粒度，以及未量化基准 [FP16 / BF16](term_fp16_bf16.md)。具体函数怎么调用见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。各接口参数见《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》。
 
 ---
 
@@ -27,8 +27,8 @@
 | [FP8](term_fp8.md) | 词条 | OCP OFP8，E4M3 / E5M2 |
 | [MXFP8](term_mxfp8.md) | 词条 | OCP MX，E8M0 + E4M3/E5M2，块长 32 |
 | [MXFP4](term_mxfp4.md) | 词条 | OCP MX，E8M0 + E2M1，块长 32 |
-| 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》 | 流程指南 | 函数命名、粒度、`fmt`、`dtype` 与调用步骤 |
-| 《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》 | Python API | `dtype_ops` 对外接口清单 |
+| 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》 | 流程指南 | 张量级量化、反量化与参数计算函数的调用步骤 |
+| 《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》 | Python API | `msmodelslim.core.dtype_ops` 各接口的参数说明 |
 
 ### 2.2 三种编码家族
 
@@ -40,8 +40,8 @@
 
 ## 3. 关联流程
 
-- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：本目录函数的调用入口。
-- 《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》：本目录对外接口清单。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：张量级量化、反量化与参数计算函数的调用步骤。
+- 《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》：`msmodelslim.core.dtype_ops` 各接口的参数说明。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：数据类型导致的精度问题可通过该流程排查。
 
@@ -49,7 +49,7 @@
 
 ## 4. 关联词条
 
-- [量化模式](../quantization_mode/README.md)：上层概念，先按量化对象选用本目录类型。
+- [量化模式](../quantization_mode/README.md)：上层概念，先按量化对象选用量化数据类型。
 - [线性层量化](../quantization_mode/linear_layer_quantization/README.md)：应用对象。
 - [KVCache 量化](../quantization_mode/kv_cache_quantization/README.md)：应用对象。
 - [FA 量化](../quantization_mode/fa_quantization/README.md)：应用对象。

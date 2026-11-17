@@ -16,8 +16,8 @@
 
 | 格式 | 符号 | 指数 | 尾数 | $e_{\max}$ | $\mathrm{max\_norm}$ |
 |------|------|------|------|-----------|----------------------|
-| E4M3 | 1 | 4 | 3 | 8 | $256\times 1.75=448$ |
-| E5M2 | 1 | 5 | 2 | 15 | $2^{15}\times 1.5=57344$ |
+| E4M3 | 1 | 4 | 3 | 8 | $2^{8}\times 1.75=448$ |
+| E5M2 | 1 | 5 | 2 | 15 | $2^{15}\times 1.75=57344$ |
 
 - $e_{\max}$：最大指数。
 - $\mathrm{max\_norm}$：有限值上界，E4M3 为 448，E5M2 为 57344。
@@ -38,7 +38,7 @@ $$s = \frac{\mathrm{amax}}{\mathrm{max\_norm}}, \qquad x' = \frac{x}{s}, \qquad 
 $$\mathrm{min\_exp} = 2 - 2^{e_{\mathrm{bits}}-1}, \qquad a \leftarrow \mathrm{round}\left(\frac{a}{2^{e_{\mathrm{priv}}}} \cdot 2^{m-2}\right) / 2^{m-2} \cdot 2^{e_{\mathrm{priv}}}$$
 
 - $e_{\mathrm{bits}}$：指数位数。
-- $m$：含隐含位的尾数位数。
+- $m$：实现中的 `mbits`，等于符号位加隐含位加显式尾数位。E4M3 为 5，E5M2 为 4。舍入公式中的 $2^{m-2}$ 对应显式尾数位（E4M3 为 3，E5M2 为 2）。编码表「尾数」列写显式位数，与格式名 E4M3 / E5M2 一致。
 - $e_{\mathrm{priv}}=\lfloor\log_2|a|\rfloor$，先 clamp 到 $\mathrm{min\_exp}$。
 - 无 zero-point。
 
@@ -56,7 +56,7 @@ $$\mathrm{min\_exp} = 2 - 2^{e_{\mathrm{bits}}-1}, \qquad a \leftarrow \mathrm{r
 
 ## 3. 关联流程
 
-- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：本类型函数的调用步骤，含 `fmt` 默认 `e4m3`。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：张量级量化、反量化与参数计算函数的调用步骤。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：本格式导致的精度问题可通过该流程排查。
 

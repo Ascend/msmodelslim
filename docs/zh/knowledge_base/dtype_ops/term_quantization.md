@@ -65,10 +65,10 @@ $$x \approx (q - zero\_point) \times scale$$
 量化粒度指**一份量化参数覆盖的元素范围**。粒度越细，数值分布刻画越准、精度越好，但量化参数数量与计算开销越大。常见的量化粒度和特点如下：
 
 - **per-tensor**：整个张量共享一份 scale。
-- **per-channel**：按输出通道（如权重 W 的 out_dim 列）各一份参数，常用于权重。
+- **per-channel**：沿选定轴各一份参数。同一套公式同时给权重和激活用：挂在权重上就叫 per-channel（如 W 的 out_dim）；挂在激活上、按 token 切行后就叫 per-token。`dtype_ops` 函数都是 `_per_channel_*`。
 - **per-group**：按固定大小分组（如 128个元素）各一份参数，如 [GPTQ](../quantization_algorithms/gptq/term_gptq.md)/[LAOS](../quantization_algorithms/laos/term_laos.md) 的分组量化。
-- **per-token**：按输入行（每个 token）各一份参数，常用于激活的动态量化。
-- **per-head**：按注意力头各一份参数，用于注意力相关张量。
+- **per-token**：激活侧对 per-channel 的习称，按输入行（每个 token）各一份参数，常用于动态量化。
+- **per-head**：注意力布局下把 head 维挪到最后，公式仍是 per-channel。
 - **per-block**：按固定大小分块（如 [MXFP8](term_mxfp8.md)/[MXFP4](term_mxfp4.md) 的 32元素）共享一个块级指数，是 MX 格式的专用粒度；与 per-group 逐组记 scale 不同，per-block 共享的是指数。
 
 ### 2.7 对称性与非对称性
@@ -80,7 +80,7 @@ $$x \approx (q - zero\_point) \times scale$$
 
 ## 3. 关联流程
 
-- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：把本词条公式落到函数调用。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：张量级量化、反量化与参数计算函数的调用步骤。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：数据类型与量化方案导致的精度问题可通过该流程排查与调优。
 

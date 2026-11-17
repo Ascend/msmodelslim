@@ -2,67 +2,35 @@
 
 ## 功能说明
 
-`msmodelslim.core.dtype_ops` 提供张量级量化、反量化与参数计算接口，覆盖 INT8、INT4、FP8、MXFP8、MXFP4。公开入口是模块级函数，类不对外导出。命名、参数与调用步骤见《[量化数据类型 ops 使用流程指南](../../knowledge_base/dtype_ops/usage_dtype_ops.md)》；概念词条见[量化数据类型](../../knowledge_base/dtype_ops/README.md)。
+`msmodelslim.core.dtype_ops` 提供张量级量化、反量化与参数计算接口，覆盖 INT8、INT4、FP8、MXFP8、MXFP4。公开入口是模块级函数，不导出类。命名、调用步骤见《[量化数据类型 ops 使用流程指南](../../knowledge_base/dtype_ops/usage_dtype_ops.md)》；概念词条见[量化数据类型](../../knowledge_base/dtype_ops/README.md)。函数名为 `{类型}_{操作}_{粒度}_{对称性}`。操作为 `calc_qparam`、`quantize`、`dequantize`、`quantize_dynamic`。MX 不加粒度后缀，只接 `_sym`。`per_channel` 同时用于权重和激活：激活侧习称 per-token，仍调用 `_per_channel_*`。入参和返回值相近的接口写在同一篇文档中，各接口的参数与取值见下方文档。
 
-## 函数原型
+## 接口文档
 
-```python
-from msmodelslim.core.dtype_ops import (
-    int8_calc_qparam_per_channel_sym,
-    int8_quantize_per_channel_sym,
-    int8_dequantize_per_channel_sym,
-)
-```
+### INT8
 
-函数名为 `{类型}_{操作}_{粒度}_{sym|asym}`。操作为 `calc_qparam`、`quantize`、`dequantize`、`quantize_dynamic`。MX 不加粒度后缀，只接 `_sym`。
+- [int8_calc_qparam](dtype_ops/int8_calc_qparam.md)
+- [int8_quantize](dtype_ops/int8_quantize.md)
+- [int8_dequantize](dtype_ops/int8_dequantize.md)
+- [int8_quantize_dynamic](dtype_ops/int8_quantize_dynamic.md)
 
-## 接口清单
+### INT4
 
-| 接口 | 功能 |
-| --- | --- |
-| `int8_calc_qparam_per_tensor_sym` / `_per_channel_sym` / `_per_group_sym` | INT8 对称算参 |
-| `int8_quantize_per_tensor_sym` / `_per_channel_sym` / `_per_group_sym` | INT8 对称静态量化 |
-| `int8_dequantize_per_tensor_sym` / `_per_channel_sym` / `_per_group_sym` | INT8 对称反量化 |
-| `int8_quantize_dynamic_per_tensor_sym` / `_per_channel_sym` / `_per_group_sym` | INT8 对称动态量化 |
-| `int8_calc_qparam_per_tensor_asym` / `_per_channel_asym` / `_per_group_asym` | INT8 非对称算参 |
-| `int8_quantize_per_tensor_asym` / `_per_channel_asym` / `_per_group_asym` | INT8 非对称静态量化 |
-| `int8_dequantize_per_tensor_asym` / `_per_channel_asym` / `_per_group_asym` | INT8 非对称反量化 |
-| `int8_quantize_dynamic_per_tensor_asym` / `_per_channel_asym` / `_per_group_asym` | INT8 非对称动态量化 |
-| `int4_calc_qparam_per_tensor_sym` / `_per_channel_sym` / `_per_group_sym` | INT4 对称算参 |
-| `int4_quantize_per_tensor_sym` / `_per_channel_sym` / `_per_group_sym` | INT4 对称静态量化 |
-| `int4_dequantize_per_tensor_sym` / `_per_channel_sym` / `_per_group_sym` | INT4 对称反量化 |
-| `int4_quantize_dynamic_per_tensor_sym` / `_per_channel_sym` / `_per_group_sym` | INT4 对称动态量化 |
-| `int4_calc_qparam_per_tensor_asym` / `_per_channel_asym` / `_per_group_asym` | INT4 非对称算参 |
-| `int4_quantize_per_tensor_asym` / `_per_channel_asym` / `_per_group_asym` | INT4 非对称静态量化 |
-| `int4_dequantize_per_tensor_asym` / `_per_channel_asym` / `_per_group_asym` | INT4 非对称反量化 |
-| `int4_quantize_dynamic_per_tensor_asym` / `_per_channel_asym` / `_per_group_asym` | INT4 非对称动态量化 |
-| `fp8_calc_qparam_per_tensor_sym` / `_per_channel_sym` | FP8 对称算参 |
-| `fp8_quantize_per_tensor_sym` / `_per_channel_sym` | FP8 对称静态量化 |
-| `fp8_dequantize_per_tensor_sym` / `_per_channel_sym` | FP8 对称反量化 |
-| `fp8_quantize_dynamic_per_tensor_sym` / `_per_channel_sym` | FP8 对称动态量化 |
-| `mxfp8_calc_qparam_sym` | MXFP8 算参 |
-| `mxfp8_quantize_sym` | MXFP8 静态量化 |
-| `mxfp8_dequantize_sym` | MXFP8 反量化 |
-| `mxfp8_quantize_dynamic_sym` | MXFP8 动态量化 |
-| `mxfp4_calc_qparam_sym` | MXFP4 算参 |
-| `mxfp4_quantize_sym` | MXFP4 静态量化 |
-| `mxfp4_dequantize_sym` | MXFP4 反量化 |
-| `mxfp4_quantize_dynamic_sym` | MXFP4 动态量化 |
+- [int4_calc_qparam](dtype_ops/int4_calc_qparam.md)
+- [int4_quantize](dtype_ops/int4_quantize.md)
+- [int4_dequantize](dtype_ops/int4_dequantize.md)
+- [int4_quantize_dynamic](dtype_ops/int4_quantize_dynamic.md)
 
-## 调用示例
+### FP8
 
-```python
-import torch
-from msmodelslim.core.dtype_ops import (
-    int8_calc_qparam_per_channel_sym,
-    int8_quantize_per_channel_sym,
-    int8_dequantize_per_channel_sym,
-)
+- [fp8_calc_qparam](dtype_ops/fp8_calc_qparam.md)
+- [fp8_quantize](dtype_ops/fp8_quantize.md)
+- [fp8_dequantize](dtype_ops/fp8_dequantize.md)
+- [fp8_quantize_dynamic](dtype_ops/fp8_quantize_dynamic.md)
 
-w = torch.randn(4, 8)
-scale = int8_calc_qparam_per_channel_sym(w, axis=0)
-q, scale = int8_quantize_per_channel_sym(w, scale, axis=0, dtype=torch.int8)
-w_hat = int8_dequantize_per_channel_sym(q, scale, axis=0)
-```
+### MXFP8
 
-其余组合与参数说明见《[量化数据类型 ops 使用流程指南](../../knowledge_base/dtype_ops/usage_dtype_ops.md)》。
+- [mxfp8](dtype_ops/mxfp8.md)
+
+### MXFP4
+
+- [mxfp4](dtype_ops/mxfp4.md)

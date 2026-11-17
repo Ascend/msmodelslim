@@ -35,7 +35,7 @@
 
 ## 3. 关联流程
 
-- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：量化前的 16bit 张量作为本目录函数的输入。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：张量级量化、反量化与参数计算函数的调用步骤。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：数据类型与量化方案导致的精度问题可通过该流程排查与调优。
 

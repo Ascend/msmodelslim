@@ -19,7 +19,7 @@ $$q_{\min} = -2^{b-1} = -8, \qquad q_{\max} = 2^{b-1} - 1 = 7, \qquad b = 4$$
 - $b$：位宽。
 - $q_{\min}$、$q_{\max}$：有符号整数的端点。
 
-### 2.2 仿射公式
+### 2.2 量化公式
 
 与 [INT8](term_int8.md) 同源。
 
@@ -48,7 +48,7 @@ $$q_{\min} = -2^{b-1} = -8, \qquad q_{\max} = 2^{b-1} - 1 = 7, \qquad b = 4$$
 
 ## 3. 关联流程
 
-- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：本类型函数的调用步骤。
+- 《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》：张量级量化、反量化与参数计算函数的调用步骤。
 - 《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》：量化任务的执行入口。
 - 《[量化精度调优指南](../../user_guide/process_quantization_precision_tuning.md)》：本格式导致的精度问题可通过该流程排查。
 

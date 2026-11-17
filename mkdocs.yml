@@ -103,7 +103,27 @@ nav:
       - 权重转换与使用:
           - 权重转换案例 (AutoAWQ/AutoGPTQ): "zh/best_practices/msmodelslim_quantized_weight_to_autoawq_autogptq.md"
   - 八、Python API:
-      - 量化数据类型 ops: "zh/api_reference/python_api/dtype_ops.md"
+      - 量化数据类型 ops:
+          - 概述: "zh/api_reference/python_api/dtype_ops.md"
+          - INT8:
+              - int8_calc_qparam: "zh/api_reference/python_api/dtype_ops/int8_calc_qparam.md"
+              - int8_quantize: "zh/api_reference/python_api/dtype_ops/int8_quantize.md"
+              - int8_dequantize: "zh/api_reference/python_api/dtype_ops/int8_dequantize.md"
+              - int8_quantize_dynamic: "zh/api_reference/python_api/dtype_ops/int8_quantize_dynamic.md"
+          - INT4:
+              - int4_calc_qparam: "zh/api_reference/python_api/dtype_ops/int4_calc_qparam.md"
+              - int4_quantize: "zh/api_reference/python_api/dtype_ops/int4_quantize.md"
+              - int4_dequantize: "zh/api_reference/python_api/dtype_ops/int4_dequantize.md"
+              - int4_quantize_dynamic: "zh/api_reference/python_api/dtype_ops/int4_quantize_dynamic.md"
+          - FP8:
+              - fp8_calc_qparam: "zh/api_reference/python_api/dtype_ops/fp8_calc_qparam.md"
+              - fp8_quantize: "zh/api_reference/python_api/dtype_ops/fp8_quantize.md"
+              - fp8_dequantize: "zh/api_reference/python_api/dtype_ops/fp8_dequantize.md"
+              - fp8_quantize_dynamic: "zh/api_reference/python_api/dtype_ops/fp8_quantize_dynamic.md"
+          - MXFP8:
+              - mxfp8: "zh/api_reference/python_api/dtype_ops/mxfp8.md"
+          - MXFP4:
+              - mxfp4: "zh/api_reference/python_api/dtype_ops/mxfp4.md"
       - 传统 V0 API:
           - 公共接口: "zh/api_reference/python_api_v0/common_apis.md"
           - 基础模型压缩 API:
