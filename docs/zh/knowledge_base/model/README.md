@@ -7,7 +7,7 @@
 - \- 表示该量化策略暂未通过msModelSlim官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
 - 标记了“一键量化”的“模型名称-量化模式（w8a8s等）”组合可在《[安装](../../install_guide/install_guide.md)》后使用如下《[一键量化](../../user_guide/usage_one_click_quantization.md)》命令行执行模型量化。
 - 因 Qwen 系列推出能力更强的新版本，Qwen1.5-14B/32B/72B 模型已超出维护周期，后续将对该系列老模型实施日落处理，其现网版本量化模式不再提供维护支持。
-- **Qwen3.5 / Qwen3.6** 具备原生多模态（Vision）能力，校准模态说明见《[Qwen3.5 量化说明 - 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md#校准模态支持)》。
+- **Qwen3.5 / Qwen3.6 / Qwen3.8** 具备原生多模态（Vision）能力，校准模态说明见《[Qwen3.5 量化说明 - 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md#校准模态支持)》《[Qwen3.6 量化说明 - 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_6/README.md#校准模态支持)》《[Qwen3.8 量化说明 - 校准模态支持](https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_8/README.md#校准模态支持)》。
 
 ```bash
 msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type ${MODEL_TYPE} --quant_type ${QUANT_TYPE} --trust_remote_code true
@@ -418,7 +418,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
-      <td rowspan="7"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md">Qwen3.5系列</a></strong></td>
+      <td rowspan="5"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_5/README.md">Qwen3.5系列</a></strong></td>
       <td>Qwen3.5-397B-A17B</td>
       <td>transformers==5.2.0</td>
       <td>-</td>
@@ -489,6 +489,7 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
     </tr>
     <tr>
+      <td rowspan="2"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_6/README.md">Qwen3.6系列</a></strong></td>
       <td>Qwen3.6-27B<sup>6</sup></td>
       <td>transformers==5.2.0</td>
       <td>-</td>
@@ -511,6 +512,21 @@ msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device n
       <td>-</td>
       <td>√(一键量化)<sup>4</sup></td>
       <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><strong><a href="https://gitcode.com/Ascend/msmodelslim/blob/master/example/Qwen3_8/README.md">Qwen3.8系列</a></strong></td>
+      <td>Qwen3.8-27B</td>
+      <td>transformers==5.2.0</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>√(一键量化)</td>
+      <td>√(一键量化)</td>
       <td>-</td>
       <td>-</td>
       <td>-</td>

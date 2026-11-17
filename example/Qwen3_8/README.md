@@ -1,0 +1,65 @@
+# Qwen3.8 量化说明
+
+## 模型介绍
+
+**Qwen3.8** 是 Qwen 系列最新的**多模态**模型，核心架构特点包括：原生多模态能力（Vision Encoder + 图文融合）、混合注意力机制（常规 Attention 与 Linear-Attention 交替）、MTP 多 Token 预测分支。
+
+## 校准模态支持
+
+Qwen3.8 适配器按 **VLM（文本 + 可选图像）** 路径处理校准数据（`multimodal_vlm_modelslim_v1`）。推荐使用 `index.jsonl`（见[校准数据路径配置（参考）](../../docs/zh/knowledge_base/ptq/vlm/usage_vision_transformer_quantization.md#dataset---校准数据路径配置)）。
+
+| 有效模态组合 | index.jsonl 字段示意 | 是否支持 |
+|-------------|----------------------|----------|
+| 纯文本 | `{"text":"..."}` | ✅ |
+| 文本 + 图像 | `{"text":"...","image":"xxx.jpg"}` | ✅ |
+| 文本 + 音频 / 视频 | 含 `audio` / `video` | ❌ 当前适配器不消费音频/视频字段 |
+
+约束说明：
+
+- **每条样本必须包含非空 `text`**。
+- **同一量化任务内样本须同质**：不可在同一校准集中混用纯文本与图文样本。
+- 依赖：`transformers==5.2.0`（见 `config.ini` `[ModelAdapterDependencies] qwen3_5_moe`）。纯文本校准的 chat template `content` 须为 list-of-parts 形式（适配器已处理）。
+- **visit（data-free）** 仍会遍历 visual + decoder；**forward（calibration）** 在无 `pixel_values` 时跳过 visual，仅走文本 decoder。
+
+## 使用前准备
+
+- 安装 msModelSlim 工具，详情请参见[《msModelSlim工具安装指南》](../../docs/zh/install_guide/install_guide.md)。
+
+- transformers 版本需要配置安装 5.2.0 版本。
+  - pip install transformers==5.2.0
+
+## 支持的模型版本与量化策略
+
+| 模型系列 | 模型版本 | HuggingFace链接                                                 | W8A8 | W8A16 | W4A8 | W4A16 | W4A4  | 稀疏量化 | KV Cache | Attention | 量化命令                                          |
+|---------|---------|---------------------------------------------------------------|-----|-----|-----|-----|------|---------|----------|-----------|-----------------------------------------------|
+| **Qwen3.8-Dense** | Qwen3.8-27B | [Qwen3.8-27B](https://modelscope.cn/models/Qwen/Qwen3.8-27B)   | ✅ |   | ✅ |        |   |  |  | ✅ | [W8A8C8](#Qwen3.8-27B-w8a8c8)/[W4A8C8](#Qwen3.8-27B-w4a8c8) |
+
+**说明：**
+
+- ✅ 表示该量化策略已通过 msModelSlim 官方验证，功能完整、性能稳定，建议优先采用。
+- 空格表示该量化策略暂未通过 msModelSlim 官方验证，用户可根据实际需求进行配置尝试，但量化效果和功能稳定性无法得到官方保证。
+- 点击量化命令列中的链接可跳转到对应的具体量化命令。
+
+## 量化权重生成
+
+### 使用示例
+
+- 请将{MODEL_PATH}替换为用户实际浮点权重路径，{SAVE_PATH}替换为量化权重保存路径。
+
+#### 1. Qwen3.8-27B
+
+##### <span id="Qwen3.8-27B-w8a8c8">Qwen3.8-27B W8A8C8量化</span>
+
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
+
+  ```shell
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.8-27B --quant_type w8a8c8 --trust_remote_code true --tags vLLM-Ascend Ascend_950
+  ```
+
+##### <span id="Qwen3.8-27B-w4a8c8">Qwen3.8-27B W4A8C8量化</span>
+
+该模型的量化已集成至《[一键量化](../../docs/zh/user_guide/usage_one_click_quantization.md)》。
+
+  ```shell
+  msmodelslim quant --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --device npu --model_type Qwen3.8-27B --quant_type w4a8c8 --trust_remote_code true --tags vLLM-Ascend Ascend_950
+  ```
