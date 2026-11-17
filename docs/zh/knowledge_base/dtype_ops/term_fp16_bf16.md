@@ -6,7 +6,7 @@
 
 ## 1. 概述
 
-**FP16** 与 **BF16** 都是16位浮点格式，每个元素占2字节，编码遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229)。它们是权重和激活常见的未量化格式，也是量化时「减半 / 1/4」这类对比的基准：例如 [INT8](term_int8.md) 的访存减半，就是相对它们而言。FP16 尾数更细，但可表示范围远小于 FP32（最大有限值约 65504）。BF16 的指数范围与 FP32 相同，尾数更粗。量化模式常把它们当作不量化的高精度基线，例如 [W8A16 静态量化](../quantization_mode/linear_layer_quantization/term_w8a16_static.md) 的激活保持 FP16。
+**FP16** 与 **BF16** 都是16位浮点格式，每个元素占2字节，编码遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229)。它们是权重和激活常见的未量化格式，也是量化时「减半 / 1/4」这类对比的基准：例如 [INT8](term_int8.md) 的访存减半，就是相对它们而言。FP16 尾数更细，但可表示范围远小于 FP32（最大有限值约 65504）。BF16 的指数范围与 FP32 相同，尾数更粗。量化模式常把它们当作不量化的高精度基线，例如 [W8A16 静态量化](../quantization_schema/linear_layer_quantization/term_w8a16_static.md) 的激活保持 FP16。
 
 ---
 
@@ -22,7 +22,7 @@
 ### 2.2 使用场景
 
 - **未量化基线**：量化前的权重/激活默认为 16位浮点（FP16 或 BF16，均 2字节），各类量化的压缩比、带宽收益都以它为基准衡量。
-- **高精度保留层**：对量化误差特别敏感的激活（如 [W8A16 静态量化](../quantization_mode/linear_layer_quantization/term_w8a16_static.md) 的激活）保持 FP16，不参与量化。
+- **高精度保留层**：对量化误差特别敏感的激活（如 [W8A16 静态量化](../quantization_schema/linear_layer_quantization/term_w8a16_static.md) 的激活）保持 FP16，不参与量化。
 - **FP16 与 BF16 的选择**：需要大动态范围用 BF16，需要局部精度用 FP16。训练与推理的数值格式通常保持一致——训练一般用 BF16（动态范围与 FP32 相同），推理因此也默认 BF16。
 
 ### 2.3 与相关类型对比
@@ -48,7 +48,7 @@
 - [INT8](term_int8.md)：配套术语，INT8 的压缩收益以本格式为基准衡量。
 - [FP8](term_fp8.md)：同类 8bit 浮点格式。
 - [MXFP8](term_mxfp8.md)：块级共享指数的 8bit 格式。
-- [W8A16 静态量化](../quantization_mode/linear_layer_quantization/term_w8a16_static.md)：配套模式，激活保持 FP16 不量化。
+- [W8A16 静态量化](../quantization_schema/linear_layer_quantization/term_w8a16_static.md)：配套模式，激活保持 FP16 不量化。
 
 ---
 
@@ -56,4 +56,4 @@
 
 1. IEEE. "IEEE Standard for Floating-Point Arithmetic." IEEE 754-2019, 2019. <https://ieeexplore.ieee.org/document/8766229>
 2. Kalamkar D, et al. "A Study of BFLOAT16 for Deep Learning Training." arXiv preprint arXiv:1905.12322, 2019. <https://arxiv.org/abs/1905.12322>
-3. 《[量化模式](../quantization_mode/README.md)》
+3. 《[量化模式](../quantization_schema/README.md)》

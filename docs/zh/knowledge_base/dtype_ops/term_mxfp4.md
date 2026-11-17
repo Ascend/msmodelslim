@@ -47,7 +47,7 @@ $$x'=x/2^{e_{\mathrm{shared}}},\quad q=\mathrm{clamp}(\mathrm{roundTiesToEven\_t
 
 ### 2.4 适用场景与限制
 
-- **适用**：压缩比要求很高的场景，例如 [W4A4 MX 动态量化](../quantization_mode/linear_layer_quantization/term_w4a4_mx_dynamic.md)、[W4A4 MX 双 Scale 量化](../quantization_mode/linear_layer_quantization/term_w4a4_mx_dualscale.md)。
+- **适用**：压缩比要求很高的场景，例如 [W4A4 MX 动态量化](../quantization_schema/linear_layer_quantization/term_w4a4_mx_dynamic.md)、[W4A4 MX 双 Scale 量化](../quantization_schema/linear_layer_quantization/term_w4a4_mx_dualscale.md)。
 - **限制**：依赖硬件MX算子，且4bit精度门槛较高；同时本格式只有对称路径，不支持非对称量化。
 
 ---
@@ -66,8 +66,8 @@ $$x'=x/2^{e_{\mathrm{shared}}},\quad q=\mathrm{clamp}(\mathrm{roundTiesToEven\_t
 - [量化与反量化](term_quantization.md)：前置术语，说明块粒度与对称量化。
 - [MXFP8](term_mxfp8.md)：同类 MX 格式，公式相同、元素为 E4M3/E5M2。
 - [INT4](term_int4.md)：同类 4bit 格式，整数仿射对照。
-- [GEMM](../quantization_mode/term_gemm.md)：配套术语，低比特矩阵乘。
-- [W4A4 MX 动态量化](../quantization_mode/linear_layer_quantization/term_w4a4_mx_dynamic.md)：应用对象，线性层采用本格式。
+- [GEMM](../quantization_schema/term_gemm.md)：配套术语，低比特矩阵乘。
+- [W4A4 MX 动态量化](../quantization_schema/linear_layer_quantization/term_w4a4_mx_dynamic.md)：应用对象，线性层采用本格式。
 
 ---
 

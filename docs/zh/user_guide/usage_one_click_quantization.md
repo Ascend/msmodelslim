@@ -240,7 +240,7 @@ msmodelslim quant \
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
 | 大模型支持矩阵 | 官方验证过的"模型 × 量化模式"支持清单，含依赖库要求 | 《[大模型支持矩阵](../knowledge_base/model/README.md)》 |
-| 量化模式 | `W{权重位数}A{激活位数}[C{KV Cache位数}][S]` 命名规范，如 W8A8 表示权重与激活均量化为8bit | 《[量化模式](../knowledge_base/quantization_mode/README.md)》 |
+| 量化模式 | `W{权重位数}A{激活位数}[C{KV Cache位数}][S]` 命名规范，如 W8A8 表示权重与激活均量化为8bit | 《[量化模式](../knowledge_base/quantization_schema/README.md)》 |
 | 量化格式 | 量化权重的导出格式，如 AscendV1、compressed-tensors 等 | 《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》 |
 
 ## 10. 接口文档列表

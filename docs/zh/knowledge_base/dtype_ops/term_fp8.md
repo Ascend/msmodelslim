@@ -49,7 +49,7 @@ $$\mathrm{min\_exp} = 2 - 2^{e_{\mathrm{bits}}-1}, \qquad a \leftarrow \mathrm{r
 
 ### 2.4 适用场景与限制
 
-- **适用**：权重与激活，例如 [W8A8 FP8 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md)。离群值较多时优先 E4M3，分布更宽时用 E5M2。
+- **适用**：权重与激活，例如 [W8A8 FP8 动态量化](../quantization_schema/linear_layer_quantization/term_w8a8_fp8_dynamic.md)。离群值较多时优先 E4M3，分布更宽时用 E5M2。
 - **限制**：需要硬件FP8 GEMM。E4M3 上界是 448，更大的值靠 scale 缩放。只有对称路径。
 
 ---
@@ -68,8 +68,8 @@ $$\mathrm{min\_exp} = 2 - 2^{e_{\mathrm{bits}}-1}, \qquad a \leftarrow \mathrm{r
 - [量化与反量化](term_quantization.md)：前置术语，说明 scale 与对称量化。
 - [INT8](term_int8.md)：同类8bit格式，整数仿射对照。
 - [MXFP8](term_mxfp8.md)：同类8bit浮点格式，块级共享指数。
-- [GEMM](../quantization_mode/term_gemm.md)：配套术语，低精度矩阵乘。
-- [W8A8 FP8 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md)：应用对象，线性层采用本格式。
+- [GEMM](../quantization_schema/term_gemm.md)：配套术语，低精度矩阵乘。
+- [W8A8 FP8 动态量化](../quantization_schema/linear_layer_quantization/term_w8a8_fp8_dynamic.md)：应用对象，线性层采用本格式。
 
 ---
 

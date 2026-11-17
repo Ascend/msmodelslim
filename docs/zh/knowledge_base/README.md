@@ -6,7 +6,7 @@
 | `quantization_algorithms` | 《[量化算法](quantization_algorithms/README.md)》 |
 | `devkit` | 《[DevKit](devkit/README.md)》 |
 | `dtype_ops` | 《[量化数据类型](dtype_ops/README.md)》 |
-| `quantization_mode` | 《[量化模式](quantization_mode/README.md)》 |
+| `quantization_schema` | 《[量化模式](quantization_schema/README.md)》 |
 | `tuning_strategies` | 《[调优策略](tuning_strategies/README.md)》 |
 | `quantization_format` | 《[量化格式](quantization_format/README.md)》 |
 | `ptq` | 《[训练后量化](ptq/README.md)》 |

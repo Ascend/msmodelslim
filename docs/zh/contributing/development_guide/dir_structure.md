@@ -189,7 +189,7 @@ core/                     # 领域层，按领域积累和管理量化知识
 
 - 算法：《[量化算法](../../knowledge_base/quantization_algorithms/README.md)》
 - DevKit：《[DevKit](../../knowledge_base/devkit/README.md)》
-- 模式：《[量化模式](../../knowledge_base/quantization_mode/README.md)》
+- 模式：《[量化模式](../../knowledge_base/quantization_schema/README.md)》
 - 格式：《[量化格式](../../knowledge_base/quantization_format/README.md)》
 
 ---

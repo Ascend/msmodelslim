@@ -207,7 +207,7 @@ y = int8_dequantize_per_channel_sym(q, scale, axis=-1)
 | FP8 | OCP OFP8 逐元素浮点 | [FP8](term_fp8.md) |
 | MXFP8 | OCP MX 8bit 块级格式 | [MXFP8](term_mxfp8.md) |
 | MXFP4 | OCP MX 4bit 块级格式 | [MXFP4](term_mxfp4.md) |
-| 量化模式 | 按对象选用上述类型 | [量化模式](../quantization_mode/README.md) |
+| 量化模式 | 按对象选用上述类型 | [量化模式](../quantization_schema/README.md) |
 
 ## 8. 相关文档
 

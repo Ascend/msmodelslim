@@ -28,7 +28,7 @@ DevKit 是 msModelSlim V1 量化流水线中的**编排与资源管理**能力�
 |------|------|
 | [量化算法](../quantization_algorithms/README.md) | 算法处理器可出现在 `group.configs` 或与 DevKit 组件同列于 `process`；DevKit 不实现量化公式 |
 | [量化格式](../quantization_format/README.md) | 落盘格式由 `spec.save[]`（如 `ascendv1_saver`）配置，详见量化格式领域 |
-| [量化模式](../quantization_mode/README.md) | 模式描述 IR / FakeQuant 结构；DevKit 不定义新模式 |
+| [量化模式](../quantization_schema/README.md) | 模式描述 IR / FakeQuant 结构；DevKit 不定义新模式 |
 
 ## 4. 源码位置
 

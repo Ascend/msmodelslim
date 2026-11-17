@@ -48,7 +48,7 @@ $$q_i = \mathrm{clamp}(\mathrm{roundTiesToEven\_to\_FP8}(x'_i), \pm\mathrm{max\_
 
 ### 2.4 适用场景与限制
 
-- **适用**：离群值较多、又希望摊薄 scale 开销的 8bit 部署，例如 [W8A8 MX 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_mx_dynamic.md)。
+- **适用**：离群值较多、又希望摊薄 scale 开销的 8bit 部署，例如 [W8A8 MX 动态量化](../quantization_schema/linear_layer_quantization/term_w8a8_mx_dynamic.md)。
 - **限制**：收益依赖硬件 MX 算子。只有对称路径。
 
 ---
@@ -68,8 +68,8 @@ $$q_i = \mathrm{clamp}(\mathrm{roundTiesToEven\_to\_FP8}(x'_i), \pm\mathrm{max\_
 - [FP8](term_fp8.md)：同类 8bit 浮点格式，逐元素对照。
 - [MXFP4](term_mxfp4.md)：同类 MX 格式，元素为 E2M1。
 - [INT8](term_int8.md)：同类 8bit 格式，整数仿射对照。
-- [GEMM](../quantization_mode/term_gemm.md)：配套术语，低精度矩阵乘。
-- [W8A8 MX 动态量化](../quantization_mode/linear_layer_quantization/term_w8a8_mx_dynamic.md)：应用对象，线性层采用本格式。
+- [GEMM](../quantization_schema/term_gemm.md)：配套术语，低精度矩阵乘。
+- [W8A8 MX 动态量化](../quantization_schema/linear_layer_quantization/term_w8a8_mx_dynamic.md)：应用对象，线性层采用本格式。
 
 ---
 

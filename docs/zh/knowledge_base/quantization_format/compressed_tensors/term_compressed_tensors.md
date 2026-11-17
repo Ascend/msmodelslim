@@ -11,7 +11,7 @@
 
 compressed-tensors 是与 HuggingFace / vLLM 生态兼容的[量化格式 量化术语百科词条](../README.md)，字段约定遵循 [vllm-project/compressed-tensors](https://github.com/vllm-project/compressed-tensors) 规范。msModelSlim **导出时内置**该规范的结构定义，量化过程**无需**安装 `compressed-tensors` 包。核心特征是将方案写入 `config.json` → `quantization_config`，权重写入 HF 风格 safetensors。
 
-配置、执行与部署步骤见《[compressed-tensors 使用指南](compressed_tensors_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/README.md)》及下文支持表中的词条链接。
+配置、执行与部署步骤见《[compressed-tensors 使用指南](compressed_tensors_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_schema/README.md)》及下文支持表中的词条链接。
 
 ---
 
@@ -143,12 +143,12 @@ save_directory/
 
 ## 5. <span id="mode-support">量化模式支持情况</span>
 
-> **交付件说明**：表中交付件：quantization_config对应 `config.json` 内 scheme；交付件：safetensors对应 `model*.safetensors`。模式原理见《[量化模式](../../quantization_mode/README.md)》词条。本词条交付件分两列说明：`quantization_config` 与 `model*.safetensors`。
+> **交付件说明**：表中交付件：quantization_config对应 `config.json` 内 scheme；交付件：safetensors对应 `model*.safetensors`。模式原理见《[量化模式](../../quantization_schema/README.md)》词条。本词条交付件分两列说明：`quantization_config` 与 `model*.safetensors`。
 
 | 格式 Preset    | compressed-tensors 是否支持导出 | 量化模式词条 | 交付件：quantization_config                   | 交付件：safetensors                       |
 | ------------ | ------------------------- | ---------------- | ----------------------------------------- | ------------------------------------- |
-| W8A8 Static  | 支持                        | [W8A8 静态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_static.md) | [W8A8 Static scheme](#desc-w8a8-static)   | [W8A8 Static 权重张量](#st-w8a8-static)   |
-| W8A8 Dynamic | 支持                        | [W8A8 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_dynamic.md) | [W8A8 Dynamic scheme](#desc-w8a8-dynamic) | [W8A8 Dynamic 权重张量](#st-w8a8-dynamic) |
+| W8A8 Static  | 支持                        | [W8A8 静态量化](../../quantization_schema/linear_layer_quantization/term_w8a8_static.md) | [W8A8 Static scheme](#desc-w8a8-static)   | [W8A8 Static 权重张量](#st-w8a8-static)   |
+| W8A8 Dynamic | 支持                        | [W8A8 动态量化](../../quantization_schema/linear_layer_quantization/term_w8a8_dynamic.md) | [W8A8 Dynamic scheme](#desc-w8a8-dynamic) | [W8A8 Dynamic 权重张量](#st-w8a8-dynamic) |
 
 ---
 
@@ -220,7 +220,7 @@ save_directory/
 - 不支持分布式导出（`support_distributed() = False`）。
 - KV Cache 量化暂不支持（`kv_cache_scheme = null`）。
 - 仅 W8A8 Static / W8A8 Dynamic 两种 QIR 有 handler。
-- 不展开量化模式原理与算子说明（见《[量化模式](../../quantization_mode/README.md)》）。
+- 不展开量化模式原理与算子说明（见《[量化模式](../../quantization_schema/README.md)》）。
 
 ---
 
@@ -237,4 +237,4 @@ save_directory/
 - [量化格式 量化术语百科词条](../README.md)：上位概念，本词条所属目录。
 - [AscendV1 量化格式 量化术语百科词条](../ascendv1/term_ascendv1.md)：其他，同属量化格式的并列落盘协议。
 - [MindIE SD 量化格式 量化术语百科词条](../mindie_sd/term_mindie_sd.md)：其他，同属量化格式的并列落盘协议。
-- [量化模式](../../quantization_mode/README.md)：配套术语，本格式 Preset 与交付件字段对应各量化模式；详见本页[量化模式支持情况](#mode-support)。
+- [量化模式](../../quantization_schema/README.md)：配套术语，本格式 Preset 与交付件字段对应各量化模式；详见本页[量化模式支持情况](#mode-support)。

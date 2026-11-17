@@ -27,10 +27,10 @@
 
 | 主题 | 路径 |
 |---|---|
-| 量化模式总览 | `docs/zh/knowledge_base/quantization_mode/README.md` |
-| 线性层量化 | `docs/zh/knowledge_base/quantization_mode/linear_layer_quantization/README.md` |
-| KV Cache 量化 | `docs/zh/knowledge_base/quantization_mode/kv_cache_quantization/README.md` |
-| FA 量化 | `docs/zh/knowledge_base/quantization_mode/fa_quantization/README.md` |
+| 量化模式总览 | `docs/zh/knowledge_base/quantization_schema/README.md` |
+| 线性层量化 | `docs/zh/knowledge_base/quantization_schema/linear_layer_quantization/README.md` |
+| KV Cache 量化 | `docs/zh/knowledge_base/quantization_schema/kv_cache_quantization/README.md` |
+| FA 量化 | `docs/zh/knowledge_base/quantization_schema/fa_quantization/README.md` |
 | 算法总览 | `docs/zh/knowledge_base/quantization_algorithms/README.md` |
 | 量化格式 | `docs/zh/knowledge_base/quantization_format/README.md` |
 | AscendV1 | `docs/zh/knowledge_base/quantization_format/ascendv1/ascendv1_usage.md` |

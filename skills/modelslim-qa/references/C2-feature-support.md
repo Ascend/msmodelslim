@@ -114,7 +114,7 @@
 | 模型示例 | `example/<family>/README.md` |
 | 新模型流程 | `docs/zh/user_guide/process_new_model_quantization_tuning.md` |
 | 算法总览 | `docs/zh/knowledge_base/quantization_algorithms/README.md` |
-| 量化模式 | `docs/zh/knowledge_base/quantization_mode/` |
+| 量化模式 | `docs/zh/knowledge_base/quantization_schema/` |
 | KV Cache | `docs/zh/knowledge_base/quantization_algorithms/kvcache_quant/usage_kvcache_quant.md` |
 | FA3 | `docs/zh/knowledge_base/quantization_algorithms/fa3_quant/usage_fa3_quant.md` |
 | 权重转换 | `docs/zh/knowledge_base/ptq/convert/usage_weight_conversion.md` |

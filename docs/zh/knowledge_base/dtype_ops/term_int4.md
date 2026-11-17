@@ -41,7 +41,7 @@ $$q_{\min} = -2^{b-1} = -8, \qquad q_{\max} = 2^{b-1} - 1 = 7, \qquad b = 4$$
 
 ### 2.4 适用场景与限制
 
-- **适用**：权重量化，例如 [W4A8 动态量化](../quantization_mode/linear_layer_quantization/term_w4a8_dynamic.md)、[W4A4 动态量化](../quantization_mode/linear_layer_quantization/term_w4a4_dynamic.md)。精度敏感时配合 GPTQ / LAOS。
+- **适用**：权重量化，例如 [W4A8 动态量化](../quantization_schema/linear_layer_quantization/term_w4a8_dynamic.md)、[W4A4 动态量化](../quantization_schema/linear_layer_quantization/term_w4a4_dynamic.md)。精度敏感时配合 GPTQ / LAOS。
 - **限制**：只有16个档位，一般不用于激活；对离群值比 [MXFP4](term_mxfp4.md) 更敏感。
 
 ---
@@ -60,8 +60,8 @@ $$q_{\min} = -2^{b-1} = -8, \qquad q_{\max} = 2^{b-1} - 1 = 7, \qquad b = 4$$
 - [量化与反量化](term_quantization.md)：前置术语，说明仿射公式与分组粒度。
 - [INT8](term_int8.md)：同类整数格式，公式相同、位宽不同。
 - [MXFP4](term_mxfp4.md)：同类4bit格式，块级共享指数对照。
-- [GEMM](../quantization_mode/term_gemm.md)：配套术语，低比特矩阵乘。
-- [W4A8 动态量化](../quantization_mode/linear_layer_quantization/term_w4a8_dynamic.md)：应用对象，线性层权重采用本格式。
+- [GEMM](../quantization_schema/term_gemm.md)：配套术语，低比特矩阵乘。
+- [W4A8 动态量化](../quantization_schema/linear_layer_quantization/term_w4a8_dynamic.md)：应用对象，线性层权重采用本格式。
 
 ---
 

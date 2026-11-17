@@ -11,7 +11,7 @@
 
 AscendV1 是 msModelSlim 面向昇腾 NPU 推理的[量化格式 量化术语百科词条](../README.md)。推理框架（vLLM Ascend、SGLang、MindIE）通过 `quant_model_description.json` 识别各张量的量化类型，并从 `quant_model_weights*.safetensors` 加载对应参数。它解决昇腾侧量化权重的统一落盘与加载问题。核心特征是覆盖多种量化模式枚举，并与 vLLM Ascend、SGLang、MindIE 加载路径对齐。
 
-配置、执行与部署步骤见《[AscendV1 使用指南](ascendv1_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_mode/README.md)》及下文支持表中的词条链接。
+配置、执行与部署步骤见《[AscendV1 使用指南](ascendv1_usage.md)》。各量化模式的原理与公式见《[量化模式](../../quantization_schema/README.md)》及下文支持表中的词条链接。
 
 ---
 
@@ -195,25 +195,25 @@ optional/
 
 ## 5. <span id="mode-support">量化模式支持情况</span>
 
-> **交付件说明**：表中交付件：量化描述 JSON对应 `quant_model_description.json`；交付件：量化权重文件对应 `quant_model_weights*.safetensors`。模式原理见《[量化模式](../../quantization_mode/README.md)》词条，本表不展开反量化公式与 NPU 算子。本词条交付件分两列说明：描述 JSON 键值与 safetensors 张量字段。
+> **交付件说明**：表中交付件：量化描述 JSON对应 `quant_model_description.json`；交付件：量化权重文件对应 `quant_model_weights*.safetensors`。模式原理见《[量化模式](../../quantization_schema/README.md)》词条，本表不展开反量化公式与 NPU 算子。本词条交付件分两列说明：描述 JSON 键值与 safetensors 张量字段。
 
 | 格式枚举值 | AscendV1 是否支持落盘 | 量化模式词条 | 交付件：量化描述 JSON | 交付件：量化权重文件 |
 | --- | --- | --- | --- | --- |
-| `FLOAT` | 支持 | [量化模式总览](../../quantization_mode/README.md#modes) | [FLOAT 描述键](#desc-float) | [FLOAT 权重张量](#st-float) |
-| `W16A16S` | 支持 | [浮点稀疏量化](../../quantization_mode/linear_layer_quantization/term_float_sparse.md) | [W16A16S 描述键](#desc-w16a16s) | [W16A16S 权重张量](#st-w16a16s) |
-| `W8A8` | 支持 | [W8A8 静态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_static.md) | [W8A8 描述键](#desc-w8a8) | [W8A8 权重张量](#st-w8a8) |
-| `W8A8_DYNAMIC` | 支持 | [W8A8 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_dynamic.md) | [W8A8_DYNAMIC 描述键](#desc-w8a8-dynamic) | [W8A8_DYNAMIC 权重张量](#st-w8a8-dynamic) |
-| `W8A8_MIX` | 支持 | [W8A8 PD-Mix](../../quantization_mode/linear_layer_quantization/term_w8a8_pdmix.md) | [W8A8_MIX 描述键](#desc-w8a8-mix) | [W8A8_MIX 权重张量](#st-w8a8-mix) |
-| `W8A16` | 支持 | [W8A16 静态量化](../../quantization_mode/linear_layer_quantization/term_w8a16_static.md) | [W8A16 描述键](#desc-w8a16) | [W8A16 权重张量](#st-w8a16) |
-| `W4A4_DYNAMIC` | 支持 | [W4A4 动态量化](../../quantization_mode/linear_layer_quantization/term_w4a4_dynamic.md) | [W4A4_DYNAMIC 描述键](#desc-w4a4-dynamic) | [W4A4_DYNAMIC 权重张量](#st-w4a4-dynamic) |
-| `W4A8_DYNAMIC` | 支持 | [W4A8 动态量化](../../quantization_mode/linear_layer_quantization/term_w4a8_dynamic.md) | [W4A8_DYNAMIC 描述键](#desc-w4a8-dynamic) | [W4A8_DYNAMIC 权重张量](#st-w4a8-dynamic) |
-| `WFP8AFP8_DYNAMIC` | 支持 | [W8A8 FP8 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_fp8_dynamic.md) | [WFP8AFP8_DYNAMIC 描述键](#desc-wfp8afp8-dynamic) | [WFP8AFP8_DYNAMIC 权重张量](#st-wfp8afp8-dynamic) |
-| `W8A8_MXFP8` | 支持 | [W8A8 MX 动态量化](../../quantization_mode/linear_layer_quantization/term_w8a8_mx_dynamic.md) | [W8A8_MXFP8 描述键](#desc-mxfp) | [W8A8_MXFP8 权重张量](#st-mxfp) |
-| `W4A8_MXFP` | 支持 | [W4A8 MX 动态量化](../../quantization_mode/linear_layer_quantization/term_w4a8_mx_dynamic.md) | [W4A8_MXFP 描述键](#desc-mxfp) | [W4A8_MXFP 权重张量](#st-mxfp) |
-| `W4A4_MXFP4` | 支持 | [W4A4 MX 动态量化](../../quantization_mode/linear_layer_quantization/term_w4a4_mx_dynamic.md) | [W4A4_MXFP4 描述键](#desc-mxfp) | [W4A4_MXFP4 权重张量](#st-mxfp) |
-| `W4A4_MXFP4_DUALSCALE` | 支持 | [W4A4 MX 双 Scale](../../quantization_mode/linear_layer_quantization/term_w4a4_mx_dualscale.md) | [W4A4_MXFP4_DUALSCALE 描述键](#desc-mxfp-dualscale) | [W4A4_MXFP4_DUALSCALE 权重张量](#st-mxfp-dualscale) |
-| `C8` | 支持 | [KVCache-PerChannel](../../quantization_mode/kv_cache_quantization/term_kv_cache_perchannel.md) | [C8 描述键](#desc-c8) | [C8 权重张量](#st-c8) |
-| `FAQuant` | 支持 | [FA 量化](../../quantization_mode/fa_quantization/README.md) | [FAQuant 描述键](#desc-faquant) | [FAQuant 权重张量](#st-faquant) |
+| `FLOAT` | 支持 | [量化模式总览](../../quantization_schema/README.md#modes) | [FLOAT 描述键](#desc-float) | [FLOAT 权重张量](#st-float) |
+| `W16A16S` | 支持 | [浮点稀疏量化](../../quantization_schema/linear_layer_quantization/term_float_sparse.md) | [W16A16S 描述键](#desc-w16a16s) | [W16A16S 权重张量](#st-w16a16s) |
+| `W8A8` | 支持 | [W8A8 静态量化](../../quantization_schema/linear_layer_quantization/term_w8a8_static.md) | [W8A8 描述键](#desc-w8a8) | [W8A8 权重张量](#st-w8a8) |
+| `W8A8_DYNAMIC` | 支持 | [W8A8 动态量化](../../quantization_schema/linear_layer_quantization/term_w8a8_dynamic.md) | [W8A8_DYNAMIC 描述键](#desc-w8a8-dynamic) | [W8A8_DYNAMIC 权重张量](#st-w8a8-dynamic) |
+| `W8A8_MIX` | 支持 | [W8A8 PD-Mix](../../quantization_schema/linear_layer_quantization/term_w8a8_pdmix.md) | [W8A8_MIX 描述键](#desc-w8a8-mix) | [W8A8_MIX 权重张量](#st-w8a8-mix) |
+| `W8A16` | 支持 | [W8A16 静态量化](../../quantization_schema/linear_layer_quantization/term_w8a16_static.md) | [W8A16 描述键](#desc-w8a16) | [W8A16 权重张量](#st-w8a16) |
+| `W4A4_DYNAMIC` | 支持 | [W4A4 动态量化](../../quantization_schema/linear_layer_quantization/term_w4a4_dynamic.md) | [W4A4_DYNAMIC 描述键](#desc-w4a4-dynamic) | [W4A4_DYNAMIC 权重张量](#st-w4a4-dynamic) |
+| `W4A8_DYNAMIC` | 支持 | [W4A8 动态量化](../../quantization_schema/linear_layer_quantization/term_w4a8_dynamic.md) | [W4A8_DYNAMIC 描述键](#desc-w4a8-dynamic) | [W4A8_DYNAMIC 权重张量](#st-w4a8-dynamic) |
+| `WFP8AFP8_DYNAMIC` | 支持 | [W8A8 FP8 动态量化](../../quantization_schema/linear_layer_quantization/term_w8a8_fp8_dynamic.md) | [WFP8AFP8_DYNAMIC 描述键](#desc-wfp8afp8-dynamic) | [WFP8AFP8_DYNAMIC 权重张量](#st-wfp8afp8-dynamic) |
+| `W8A8_MXFP8` | 支持 | [W8A8 MX 动态量化](../../quantization_schema/linear_layer_quantization/term_w8a8_mx_dynamic.md) | [W8A8_MXFP8 描述键](#desc-mxfp) | [W8A8_MXFP8 权重张量](#st-mxfp) |
+| `W4A8_MXFP` | 支持 | [W4A8 MX 动态量化](../../quantization_schema/linear_layer_quantization/term_w4a8_mx_dynamic.md) | [W4A8_MXFP 描述键](#desc-mxfp) | [W4A8_MXFP 权重张量](#st-mxfp) |
+| `W4A4_MXFP4` | 支持 | [W4A4 MX 动态量化](../../quantization_schema/linear_layer_quantization/term_w4a4_mx_dynamic.md) | [W4A4_MXFP4 描述键](#desc-mxfp) | [W4A4_MXFP4 权重张量](#st-mxfp) |
+| `W4A4_MXFP4_DUALSCALE` | 支持 | [W4A4 MX 双 Scale](../../quantization_schema/linear_layer_quantization/term_w4a4_mx_dualscale.md) | [W4A4_MXFP4_DUALSCALE 描述键](#desc-mxfp-dualscale) | [W4A4_MXFP4_DUALSCALE 权重张量](#st-mxfp-dualscale) |
+| `C8` | 支持 | [KVCache-PerChannel](../../quantization_schema/kv_cache_quantization/term_kv_cache_perchannel.md) | [C8 描述键](#desc-c8) | [C8 权重张量](#st-c8) |
+| `FAQuant` | 支持 | [FA 量化](../../quantization_schema/fa_quantization/README.md) | [FAQuant 描述键](#desc-faquant) | [FAQuant 权重张量](#st-faquant) |
 
 ---
 
@@ -482,7 +482,7 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 
 ### 6.13 FAQuant
 
-> **命名约定**：本节 `{prefix}` 指**注意力模块**全名（如 `model.layers.0.self_attn`），与上文 Linear 的 `{prefix}`（如 `...self_attn.q_proj`）不同。FA 量化的 Q/K/V 分支分别以 `fa_q` / `fa_k` / `fa_v` 子键落盘，而非单一的 `{prefix}.scale` / `{prefix}.offset`。各 FA 整体方案见《[FA 量化](../../quantization_mode/fa_quantization/README.md)》。
+> **命名约定**：本节 `{prefix}` 指**注意力模块**全名（如 `model.layers.0.self_attn`），与上文 Linear 的 `{prefix}`（如 `...self_attn.q_proj`）不同。FA 量化的 Q/K/V 分支分别以 `fa_q` / `fa_k` / `fa_v` 子键落盘，而非单一的 `{prefix}.scale` / `{prefix}.offset`。各 FA 整体方案见《[FA 量化](../../quantization_schema/fa_quantization/README.md)》。
 
 **<span id="desc-faquant">quant_model_description.json</span>**
 
@@ -511,13 +511,13 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 
 | `{prefix}.quant_type` | 对应量化模式 |
 | --- | --- |
-| `INT8` | [FA INT8 PerHead 量化](../../quantization_mode/fa_quantization/term_fa_int8_perhead.md) |
-| `INT8_DYNAMIC` | [FA INT8 动态量化](../../quantization_mode/fa_quantization/term_fa_int8_dynamic.md) |
-| `FP8_DYNAMIC` | [FA FP8 动态量化](../../quantization_mode/fa_quantization/term_fa_fp8_dynamic.md) |
-| `MXFP4_DYNAMIC` | [FA MXFP4 动态量化](../../quantization_mode/fa_quantization/term_fa_mxfp4_dynamic.md) |
-| `Q_INT8_DYNAMIC_KV_INT8` | [FA Q-INT8 动态 K/V-INT8 静态量化](../../quantization_mode/fa_quantization/term_fa_q_int8_dynamic_kv_int8.md) |
-| `Q_FP8_DYNAMIC_KV_FP8` | [FA Q-FP8 动态 K/V-FP8 静态量化](../../quantization_mode/fa_quantization/term_fa_q_fp8_dynamic_kv_fp8.md) |
-| `QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL` | [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](../../quantization_mode/fa_quantization/term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md) |
+| `INT8` | [FA INT8 PerHead 量化](../../quantization_schema/fa_quantization/term_fa_int8_perhead.md) |
+| `INT8_DYNAMIC` | [FA INT8 动态量化](../../quantization_schema/fa_quantization/term_fa_int8_dynamic.md) |
+| `FP8_DYNAMIC` | [FA FP8 动态量化](../../quantization_schema/fa_quantization/term_fa_fp8_dynamic.md) |
+| `MXFP4_DYNAMIC` | [FA MXFP4 动态量化](../../quantization_schema/fa_quantization/term_fa_mxfp4_dynamic.md) |
+| `Q_INT8_DYNAMIC_KV_INT8` | [FA Q-INT8 动态 K/V-INT8 静态量化](../../quantization_schema/fa_quantization/term_fa_q_int8_dynamic_kv_int8.md) |
+| `Q_FP8_DYNAMIC_KV_FP8` | [FA Q-FP8 动态 K/V-FP8 静态量化](../../quantization_schema/fa_quantization/term_fa_q_fp8_dynamic_kv_fp8.md) |
+| `QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL` | [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](../../quantization_schema/fa_quantization/term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md) |
 
 静态分支落盘 `scale` / `offset`：per-head 静态写出 float32 类型的 scale，并写出一个取值为零的 zero-point，INT8 方案为零值 int8、FP8 方案为零值 float32。per-channel 静态（MXFP8）将 E8M0 共享指数编码为 uint8（exp + 127）写为 scale，并随附 uint8 零值 zero-point。动态分支（per-token / per-block）对应激活不落盘 `scale` / `offset`，仅写入上述 `{prefix}.quant_type`。算法配置见《[FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)》。
 
@@ -561,4 +561,4 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 - [量化格式 量化术语百科词条](../README.md)：上位概念，本词条所属目录。
 - [compressed-tensors 量化格式 量化术语百科词条](../compressed_tensors/term_compressed_tensors.md)：其他，同属量化格式的并列落盘协议。
 - [MindIE SD 量化格式 量化术语百科词条](../mindie_sd/term_mindie_sd.md)：其他，同属量化格式的并列落盘协议。
-- [量化模式](../../quantization_mode/README.md)：配套术语，本格式交付件枚举对应各量化模式。
+- [量化模式](../../quantization_schema/README.md)：配套术语，本格式交付件枚举对应各量化模式。

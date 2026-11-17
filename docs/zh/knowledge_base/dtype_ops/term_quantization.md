@@ -43,7 +43,7 @@ $$x \approx (q - zero\_point) \times scale$$
 ### 2.3 为什么要量化
 
 - **减小存储与访存带宽**：权重从 [FP16 / BF16](term_fp16_bf16.md)（2字节每元素）降为 [INT8](term_int8.md)（1字节/元素），权重占用与读取带宽减半；KVCache 同理。
-- **使能低精度矩阵运算**：权重与激活都量化成整数后，矩阵乘可走整数/低精度算子（见 [GEMM](../quantization_mode/term_gemm.md)），在专用硬件上有计算收益。
+- **使能低精度矩阵运算**：权重与激活都量化成整数后，矩阵乘可走整数/低精度算子（见 [GEMM](../quantization_schema/term_gemm.md)），在专用硬件上有计算收益。
 - **压缩 KVCache 显存**：量化缓存的历史 K/V，显著降低长上下文推理的显存占用。
 
 ### 2.4 量化参数：scale 与 zero_point
@@ -90,9 +90,9 @@ $$x \approx (q - zero\_point) \times scale$$
 
 - [量化数据类型](README.md)：上位概念，本词条所属目录。
 - [FP16 / BF16](term_fp16_bf16.md)：配套术语，量化前的 16bit 基准。
-- [GEMM](../quantization_mode/term_gemm.md)：配套术语，量化是整数 GEMM 的前提。
+- [GEMM](../quantization_schema/term_gemm.md)：配套术语，量化是整数 GEMM 的前提。
 - [INT8](term_int8.md)：配套术语，量化最常用的目标格式。
-- [量化模式](../quantization_mode/README.md)：上层概念，量化/反量化在各模式中的具体实施。
+- [量化模式](../quantization_schema/README.md)：上层概念，量化/反量化在各模式中的具体实施。
 
 ---
 

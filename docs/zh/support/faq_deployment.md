@@ -68,5 +68,5 @@ MXFP8 需要显式指定目标格式 `target: W8A8_MXFP8`，并使用昇腾格�
 
 - 转换配置与示例请参见《[权重转换使用指南](../knowledge_base/ptq/convert/usage_weight_conversion.md)》。
 - 量化入口与 `--quant_type` 支持范围请参见《[模型量化使用指南](../user_guide/usage_weight_quantization.md)》。
-- MXFP8 的概念与数据格式请参见《[量化模式总览](../knowledge_base/quantization_mode/README.md)》与《[MXFP8 数据格式](../knowledge_base/dtype_ops/term_mxfp8.md)》。
+- MXFP8 的概念与数据格式请参见《[量化模式总览](../knowledge_base/quantization_schema/README.md)》与《[MXFP8 数据格式](../knowledge_base/dtype_ops/term_mxfp8.md)》。
 - 部署侧的格式与引擎匹配请参见《[主流模型量化部署](../user_guide/process_mainstream_model_deployment.md)》。
