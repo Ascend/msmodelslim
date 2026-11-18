@@ -41,8 +41,9 @@ from msmodelslim.core.train.task import (
     CoreTrainTaskConfig,
     DatasetConfig,
     NestedTrainConfig,
+    QATConfig,
     TrainAlgorithmConfig,
-    TrainHyperparametersConfig,
+    TrainingArgumentsConfig,
     CheckpointingConfig,
 )
 from msmodelslim.core.quantization_format.checkpoint_format.constants import STRUCTURE_FILE
@@ -56,9 +57,10 @@ __all__ = [
     "CheckpointingConfig",
     "DatasetConfig",
     "NestedTrainConfig",
+    "QATConfig",
     "QATTask",
     "QATTaskConfig",
-    "TrainHyperparametersConfig",
+    "TrainingArgumentsConfig",
 ]
 
 _PARETOQ_TENSOR_MAP = {
@@ -88,6 +90,8 @@ class QATTaskConfig(TrainTaskConfig, CoreTrainTaskConfig):
 
     - 继承 ``TrainTaskConfig``：proxy 按 ``type`` 插件分发
     - 继承 ``CoreTrainTaskConfig``：通用训练字段（setup 侧校验后原样下发 worker）
+    - ``train`` 段结构：``training_arguments``（通用，直通 TrainingArguments）
+      + ``qat``（QAT 专属超参）+ ``checkpointing``
     """
 
     model_config = ConfigDict(extra="forbid")

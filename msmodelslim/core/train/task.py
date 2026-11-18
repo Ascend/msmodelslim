@@ -35,6 +35,9 @@ TRAIN_ALGORITHM_PLUGIN_GROUP = "msmodelslim.train_algorithm.plugins"
 _TRAIN_MODEL_CONFIG = ConfigDict(extra="forbid")
 _TRAIN_HYPER_CONFIG = ConfigDict(extra="allow")
 
+# 分块交叉熵默认 chunk 大小（单一事实源，loss.py 反向引用）。
+DEFAULT_CE_CHUNK_SIZE: int = 512
+
 
 @TypedConfig.plugin_entry(entry_point_group=TRAIN_ALGORITHM_PLUGIN_GROUP)
 class TrainAlgorithmConfig(TypedConfig):
@@ -85,19 +88,18 @@ class DatasetConfig(BaseModel):
         return str(convert_to_readable_file(value.strip(), param_name="dataset.path"))
 
 
-class TrainHyperparametersConfig(BaseModel):
-    """通用训练超参（允许扩展字段）。"""
+class TrainingArgumentsConfig(BaseModel):
+    """通用训练参数（train.training_arguments 段）。
+
+    声明字段与 extra 扩展字段（如 max_steps / lr_scheduler_type / save_only_model）
+    均直通 ``transformers.TrainingArguments``；当前 transformers 版本不识别的
+    extra 键由 args_builder 告警丢弃。QAT 专属字段请放入 ``train.qat`` 段。
+    """
 
     model_config = _TRAIN_HYPER_CONFIG
 
-    model_max_length: int = Field(..., gt=0, description="模型输入最大序列长度。")
     num_train_epochs: float = Field(default=1.0, gt=0.0, description="训练轮数。")
     learning_rate: float = Field(default=1e-5, gt=0.0, description="基础学习率。")
-    qparam_lr_scale: float = Field(
-        default=10.0,
-        gt=0.0,
-        description="量化参数相对基础学习率的缩放系数。",
-    )
     per_device_train_batch_size: int = Field(
         default=1,
         ge=1,
@@ -119,10 +121,55 @@ class TrainHyperparametersConfig(BaseModel):
         le=1.0,
         description="warmup 步数占总训练步数的比例。",
     )
+
+
+class QATConfig(BaseModel):
+    """QAT 专属超参块（train.qat 段）；注意区别于任务级 ``QATTaskConfig``。"""
+
+    model_config = _TRAIN_MODEL_CONFIG
+
+    model_max_length: int = Field(
+        ...,
+        gt=0,
+        description="模型输入最大序列长度；由 RankWorker 应用到 tokenizer，非 TrainingArguments 字段。",
+    )
+    qparam_lr_scale: float = Field(
+        default=10.0,
+        gt=0.0,
+        description="量化参数相对基础学习率的缩放系数。",
+    )
+    ce_chunk_size: int = Field(
+        default=DEFAULT_CE_CHUNK_SIZE,
+        ge=1,
+        description="分块交叉熵 chunk 大小。",
+    )
     fake_quant_after_n_steps: Optional[int] = Field(
         default=None,
         ge=0,
         description="训练开始后第 N 步起启用 fake quant；None 表示立即启用。",
+    )
+    log_qparams: bool = Field(
+        default=False,
+        description="启用 qparam 记录与 RelativeAlphaAdamW 优化器。",
+    )
+    alpha_min_ratio: float = Field(
+        default=0.5,
+        gt=0.0,
+        le=1.0,
+        description="log-space alpha 下限相对 PTQ alpha 的比例。",
+    )
+    alpha_max_ratio: float = Field(
+        default=2.0,
+        ge=1.0,
+        description="log-space alpha 上限相对 PTQ alpha 的比例。",
+    )
+    trainable_scope: Optional[str] = Field(
+        default=None,
+        description="可训练参数范围。占位声明字段，当前训练循环未读取。",
+    )
+    freeze_qparams: bool = Field(
+        default=False,
+        description="是否冻结量化参数。占位声明字段，当前训练循环未读取。",
     )
 
 
@@ -150,11 +197,15 @@ class CheckpointingConfig(BaseModel):
 
 
 class NestedTrainConfig(BaseModel):
-    """训练段：超参 + checkpoint。"""
+    """训练段：通用训练参数 + QAT 专属超参 + checkpoint。"""
 
     model_config = _TRAIN_MODEL_CONFIG
 
-    hyperparameters: TrainHyperparametersConfig = Field(..., description="训练超参数。")
+    training_arguments: TrainingArgumentsConfig = Field(
+        ...,
+        description="通用训练参数（直通 transformers.TrainingArguments）。",
+    )
+    qat: QATConfig = Field(..., description="QAT 专属超参（强类型）。")
     checkpointing: CheckpointingConfig = Field(
         default_factory=CheckpointingConfig,
         description="checkpoint 保存与评估策略。",

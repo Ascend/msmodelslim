@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from transformers import PreTrainedTokenizerBase
 
@@ -35,6 +35,9 @@ from msmodelslim.core.train.task import CoreTrainTask, CoreTrainTaskConfig
 from msmodelslim.model import IModel
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import get_logger
+
+# pre_train 钩子未上报 qparam_names 时的兜底（与 fake-quant 壳的参数命名一致）。
+DEFAULT_QPARAM_NAMES: Tuple[str, ...] = ("weight_clip_val",)
 
 
 class RankWorker:
@@ -62,7 +65,7 @@ class RankWorker:
         self.model_adapter = model_adapter
         self.save_path = Path(save_path)
         self.hooks: List[ITrainHook] = list(hooks)
-        self.model_max_length = int(task.train.hyperparameters.model_max_length)
+        self.model_max_length = int(task.train.qat.model_max_length)
         self.dist_info: Dict[str, Any] = {}
         self.tokenizer: Optional[PreTrainedTokenizerBase] = None
         self.model: Any = None
@@ -240,10 +243,7 @@ class RankWorker:
     def _train(self) -> None:
         # callback / trainer 按需懒加载，避免 import RankWorker 时强依赖重训练栈。
         from msmodelslim.core.train.callback import QATCallback  # pylint: disable=no-name-in-module
-        from msmodelslim.core.train.trainer import (  # pylint: disable=no-name-in-module
-            DEFAULT_QPARAM_NAMES,
-            build_qat_trainer,
-        )
+        from msmodelslim.core.train.trainer import QATTrainer  # pylint: disable=no-name-in-module
 
         qparam_names = tuple(self.core_task.qparam_names) or DEFAULT_QPARAM_NAMES
         algorithm_cfg = []
@@ -253,13 +253,10 @@ class RankWorker:
             elif isinstance(algo, dict):
                 algorithm_cfg.append(dict(algo))
 
-        fake_quant_after_n_steps = getattr(
-            self.task_cfg.train.hyperparameters,
-            "fake_quant_after_n_steps",
-            None,
-        )
+        fake_quant_after_n_steps = self.task_cfg.train.qat.fake_quant_after_n_steps
+        source = self.task_cfg.source_model_path
         try:
-            trainer = build_qat_trainer(
+            trainer = QATTrainer(
                 model=self.model,
                 train_cfg=self.task_cfg.train,
                 output_dir=str(self.save_path),
@@ -269,10 +266,8 @@ class RankWorker:
                 qparam_names=qparam_names,
                 algorithm_cfg=algorithm_cfg,
                 callbacks=[QATCallback(fake_quant_after_n_steps=fake_quant_after_n_steps)],
+                source_model_path=str(source) if source else None,
             )
-            source = self.task_cfg.source_model_path
-            if source:
-                trainer.source_model_path = str(source)
 
             get_logger().info(
                 "===========QAT TRAIN LOOP=========== output_dir=%s qparam_names=%s",

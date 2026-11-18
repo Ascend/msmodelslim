@@ -88,7 +88,7 @@ def test_QATApplication_build_task_builds_qat_task_when_config_valid(tmp_path, m
             "type": "qat",
             "algorithm": [{"type": "paretoq", "w_bits": 4}],
             "dataset": {"path": str(dataset)},
-            "train": {"hyperparameters": {"model_max_length": 32}},
+            "train": {"training_arguments": {}, "qat": {"model_max_length": 32}},
         }
     )
     monkeypatch.setattr(

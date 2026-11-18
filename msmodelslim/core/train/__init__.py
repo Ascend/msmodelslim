@@ -32,8 +32,9 @@ from msmodelslim.core.train.task import (
     CoreTrainTaskConfig,
     DatasetConfig,
     NestedTrainConfig,
+    QATConfig,
     TrainAlgorithmConfig,
-    TrainHyperparametersConfig,
+    TrainingArgumentsConfig,
 )
 from msmodelslim.core.train.train_launcher import TrainLauncher
 
@@ -46,9 +47,10 @@ __all__ = [
     "DatasetConfig",
     "ITrainHook",
     "NestedTrainConfig",
+    "QATConfig",
     "QATLoadInterface",
     "TrainAlgorithmConfig",
     "TrainHookContext",
-    "TrainHyperparametersConfig",
+    "TrainingArgumentsConfig",
     "TrainLauncher",
 ]

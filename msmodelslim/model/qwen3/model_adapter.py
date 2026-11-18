@@ -126,7 +126,7 @@ class Qwen3ModelAdapter(  # pylint: disable=too-many-ancestors
     def load_model_for_qat(self) -> nn.Module:
         """Public QAT entry (PTQ-style): like ``load_model`` → ``_load_model``.
 
-        Qwen3 QAT defaults are fixed here (not from YAML hyperparameters):
+        Qwen3 QAT defaults are fixed here (not from YAML train.* config):
         ``torch_dtype=bfloat16``.
         """
         return self._load_model_for_qat(torch_dtype="bfloat16")

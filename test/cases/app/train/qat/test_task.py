@@ -24,7 +24,7 @@ def _cfg(tmp_path: Path, **overrides):
         "type": "qat",
         "algorithm": [{"type": "paretoq", "w_bits": 4, "deploy_act": "a8"}],
         "dataset": {"path": str(dataset)},
-        "train": {"hyperparameters": {"model_max_length": 64}},
+        "train": {"training_arguments": {}, "qat": {"model_max_length": 64}},
     }
     payload.update(overrides)
     return QATTaskConfig.model_validate(payload)
@@ -79,7 +79,7 @@ def test_QATTask_assemble_hooks_raises_when_multiple_algorithms(tmp_path):
                 {"type": "paretoq", "w_bits": 3},
             ],
             "dataset": {"path": str(dataset)},
-            "train": {"hyperparameters": {"model_max_length": 16}},
+            "train": {"training_arguments": {}, "qat": {"model_max_length": 16}},
         }
     )
     task = QATTask(cfg)
@@ -94,7 +94,7 @@ def test_QATTaskConfig_rejects_nested_spec_when_present():
                 "type": "qat",
                 "spec": {
                     "algorithm": [{"type": "paretoq"}],
-                    "train": {"hyperparameters": {"model_max_length": 32}},
+                    "train": {"training_arguments": {}, "qat": {"model_max_length": 32}},
                 },
             }
         )

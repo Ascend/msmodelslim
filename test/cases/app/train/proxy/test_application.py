@@ -27,7 +27,9 @@ def test_proxy_dispatches_by_type(tmp_path):
         "dataset:\n"
         f"  path: {data.as_posix()}\n"
         "train:\n"
-        "  hyperparameters:\n"
+        "  training_arguments:\n"
+        "    learning_rate: 1.0e-5\n"
+        "  qat:\n"
         "    model_max_length: 16\n",
         encoding="utf-8",
     )

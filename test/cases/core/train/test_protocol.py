@@ -7,6 +7,7 @@ import pytest
 from torch import nn
 
 from msmodelslim.core.train.protocol import ITrainHook, QATLoadInterface, TrainHookContext
+from msmodelslim.utils.exception import UnsupportedError
 
 
 def test_TrainHookContext_defaults_extra_when_constructed():
@@ -73,3 +74,36 @@ def test_QATLoadInterface_load_model_for_qat_returns_module_when_implemented():
             return nn.Linear(1, 1)
 
     assert isinstance(_Ok().load_model_for_qat(), nn.Linear)
+
+
+def test_ITrainHook_pre_train_raises_when_super_not_implemented():
+    class _SuperHook(ITrainHook):
+        def pre_train(self, ctx: TrainHookContext) -> None:  # pylint: disable=useless-parent-delegation
+            return super().pre_train(ctx)
+
+    with pytest.raises(UnsupportedError, match="does not support pre_train"):
+        _SuperHook().pre_train(TrainHookContext())
+
+
+def test_QATLoadInterface_load_tokenizer_for_qat_raises_when_super_not_implemented():
+    class _SuperAdapter(QATLoadInterface):
+        def load_tokenizer_for_qat(self, model_max_length):  # pylint: disable=useless-parent-delegation
+            return super().load_tokenizer_for_qat(model_max_length)
+
+        def load_model_for_qat(self):
+            return nn.Linear(1, 1)
+
+    with pytest.raises(UnsupportedError, match="does not support load_tokenizer_for_qat"):
+        _SuperAdapter().load_tokenizer_for_qat(16)
+
+
+def test_QATLoadInterface_load_model_for_qat_raises_when_super_not_implemented():
+    class _SuperAdapter(QATLoadInterface):
+        def load_tokenizer_for_qat(self, model_max_length):
+            return "tok"
+
+        def load_model_for_qat(self):  # pylint: disable=useless-parent-delegation
+            return super().load_model_for_qat()
+
+    with pytest.raises(UnsupportedError, match="does not support load_model_for_qat"):
+        _SuperAdapter().load_model_for_qat()

@@ -19,7 +19,7 @@ def _qat_payload(tmp_path):
         "type": "qat",
         "algorithm": [{"type": "paretoq", "w_bits": 4}],
         "dataset": {"path": str(data)},
-        "train": {"hyperparameters": {"model_max_length": 16}},
+        "train": {"training_arguments": {}, "qat": {"model_max_length": 16}},
     }
 
 
