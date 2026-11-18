@@ -30,12 +30,12 @@ from msmodelslim.core.train.task import (
     CheckpointingConfig,
     CoreTrainTask,
     CoreTrainTaskConfig,
-    DatasetConfig,
     NestedTrainConfig,
     QATConfig,
     TrainAlgorithmConfig,
     TrainingArgumentsConfig,
 )
+from msmodelslim.core.train.train_dataset_builder import TrainDatasetConfig
 from msmodelslim.core.train.train_launcher import TrainLauncher
 
 __all__ = [
@@ -44,12 +44,12 @@ __all__ = [
     "CheckpointingConfig",
     "CoreTrainTask",
     "CoreTrainTaskConfig",
-    "DatasetConfig",
     "ITrainHook",
     "NestedTrainConfig",
     "QATConfig",
     "QATLoadInterface",
     "TrainAlgorithmConfig",
+    "TrainDatasetConfig",
     "TrainHookContext",
     "TrainingArgumentsConfig",
     "TrainLauncher",

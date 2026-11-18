@@ -43,17 +43,6 @@ _KNOWN_LOG_LEVELS = frozenset({"debug", "info", "warning", "error", "critical"})
 def _child_rank_worker_entry(*worker_args) -> None:
     level = os.environ.get(_WORKER_LOG_LEVEL_ENV) or msmodelslim_config.env_vars.log_level
     set_logger_level(level)
-    # Patch pyarrow before any datasets import so forked ranks skip duplicate
-    # extension-type registration (Array2DExtensionType already defined).
-    try:
-        # dataset_build 为训练运行时依赖，按需懒加载。
-        from msmodelslim.core.train.dataset_build import (  # pylint: disable=no-name-in-module
-            _patch_pyarrow_skip_duplicate_extension_types,
-        )
-
-        _patch_pyarrow_skip_duplicate_extension_types()
-    except Exception:
-        get_logger().debug("pyarrow duplicate-extension patch skipped", exc_info=True)
     rank_worker_entry(*worker_args)
 
 

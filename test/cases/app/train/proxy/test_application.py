@@ -25,7 +25,7 @@ def test_proxy_dispatches_by_type(tmp_path):
         "  - type: paretoq\n"
         "    w_bits: 4\n"
         "dataset:\n"
-        f"  path: {data.as_posix()}\n"
+        f"  train_path: {data.as_posix()}\n"
         "train:\n"
         "  training_arguments:\n"
         "    learning_rate: 1.0e-5\n"

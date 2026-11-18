@@ -19,7 +19,7 @@ def _minimal_task(tmp_path) -> CoreTrainTaskConfig:
     return CoreTrainTaskConfig.model_validate(
         {
             "algorithm": [{"type": "paretoq"}],
-            "dataset": {"path": str(data)},
+            "dataset": {"train_path": str(data)},
             "train": {"training_arguments": {}, "qat": {"model_max_length": 16}},
         }
     )
@@ -54,12 +54,15 @@ def _install_fake_accelerate(monkeypatch, state=None) -> None:
     _install_fake_module(monkeypatch, "accelerate", PartialState=MagicMock(return_value=state))
 
 
-def _install_fake_dataset_builder(monkeypatch, builder) -> None:
+def _install_fake_dataset_builder(monkeypatch, build_result):
+    builder_cls = MagicMock()
+    builder_cls.return_value.build.return_value = build_result
     _install_fake_module(
         monkeypatch,
-        "msmodelslim.core.train.dataset_build",
-        build_qat_tokenized_datasets=builder,
+        "msmodelslim.core.train.train_dataset_builder",
+        TrainDatasetBuilder=builder_cls,
     )
+    return builder_cls
 
 
 def _install_fake_trainer_modules(monkeypatch):
@@ -79,8 +82,7 @@ def _setup_running_worker(tmp_path, monkeypatch, hook):
     """组装 run() 全链路所需的边界替身，返回可断言的对象集合。"""
     fake_logger = _stub_logger(monkeypatch)
     _install_fake_accelerate(monkeypatch)
-    builder = MagicMock(return_value=(["s1"], ["s2"]))
-    _install_fake_dataset_builder(monkeypatch, builder)
+    builder = _install_fake_dataset_builder(monkeypatch, (["s1"], ["s2"]))
     callback_cls, trainer_cls = _install_fake_trainer_modules(monkeypatch)
     fake_tok = MagicMock()
     fake_model = MagicMock()
@@ -181,11 +183,18 @@ def test_RankWorker_run_logs_stage_when_tokenizer_load_fails(tmp_path, monkeypat
     _assert_stage_logged(fake_logger, "load_tokenizer")
 
 
-def test_RankWorker_run_logs_stage_when_dataset_build_fails(tmp_path, monkeypatch):
+def test_RankWorker_build_datasets_logs_stage_when_builder_fails(tmp_path, monkeypatch):
     fake_logger = _stub_logger(monkeypatch)
-    _install_fake_accelerate(monkeypatch)
-    _install_fake_dataset_builder(monkeypatch, MagicMock(side_effect=RuntimeError("boom")))
-    worker = _worker(tmp_path, hooks=[MagicMock()])
+    worker = _worker(tmp_path)
+    worker.tokenizer = MagicMock()
+    worker.dist_info = {"world_size": 1}
+    builder = MagicMock()
+    builder.return_value.build.side_effect = RuntimeError("boom")
+    _install_fake_module(
+        monkeypatch,
+        "msmodelslim.core.train.train_dataset_builder",
+        TrainDatasetBuilder=builder,
+    )
     with pytest.raises(RuntimeError, match="boom"):
         worker.run()
     _assert_stage_logged(fake_logger, "build_datasets")
@@ -194,7 +203,7 @@ def test_RankWorker_run_logs_stage_when_dataset_build_fails(tmp_path, monkeypatc
 def test_RankWorker_run_logs_stage_when_model_load_fails(tmp_path, monkeypatch):
     fake_logger = _stub_logger(monkeypatch)
     _install_fake_accelerate(monkeypatch)
-    _install_fake_dataset_builder(monkeypatch, MagicMock(return_value=([], [])))
+    _install_fake_dataset_builder(monkeypatch, ([], []))
     worker = _worker(tmp_path, hooks=[MagicMock()])
     worker.model_adapter.load_model_for_qat.side_effect = RuntimeError("boom")
     with pytest.raises(RuntimeError, match="boom"):
@@ -205,7 +214,7 @@ def test_RankWorker_run_logs_stage_when_model_load_fails(tmp_path, monkeypatch):
 def test_RankWorker_run_logs_stage_when_pre_train_hook_fails(tmp_path, monkeypatch):
     fake_logger = _stub_logger(monkeypatch)
     _install_fake_accelerate(monkeypatch)
-    _install_fake_dataset_builder(monkeypatch, MagicMock(return_value=([], [])))
+    _install_fake_dataset_builder(monkeypatch, ([], []))
     hook = MagicMock()
     hook.pre_train.side_effect = RuntimeError("boom")
     worker = _worker(tmp_path, hooks=[hook])
@@ -217,7 +226,7 @@ def test_RankWorker_run_logs_stage_when_pre_train_hook_fails(tmp_path, monkeypat
 def test_RankWorker_run_raises_when_hooks_empty(tmp_path, monkeypatch):
     fake_logger = _stub_logger(monkeypatch)
     _install_fake_accelerate(monkeypatch)
-    _install_fake_dataset_builder(monkeypatch, MagicMock(return_value=([], [])))
+    _install_fake_dataset_builder(monkeypatch, ([], []))
     worker = _worker(tmp_path, hooks=[])
     with pytest.raises(SchemaValidateError, match="empty pre_train hooks"):
         worker.run()
@@ -227,7 +236,7 @@ def test_RankWorker_run_raises_when_hooks_empty(tmp_path, monkeypatch):
 def test_RankWorker_run_logs_stage_when_trainer_build_fails(tmp_path, monkeypatch):
     fake_logger = _stub_logger(monkeypatch)
     _install_fake_accelerate(monkeypatch)
-    _install_fake_dataset_builder(monkeypatch, MagicMock(return_value=([], [])))
+    _install_fake_dataset_builder(monkeypatch, ([], []))
     _, trainer_cls = _install_fake_trainer_modules(monkeypatch)
     trainer_cls.side_effect = RuntimeError("boom")
     worker = _worker(tmp_path, hooks=[MagicMock()])
@@ -264,9 +273,8 @@ def test_RankWorker_run_passes_task_context_to_trainer_when_built(tmp_path, monk
     worker = ctx["worker"]
     worker.run()
     builder_kwargs = ctx["builder"].call_args.kwargs
+    assert ctx["builder"].call_args.args == (worker.task_cfg.dataset,)
     assert builder_kwargs == {
-        "path": worker.task_cfg.dataset.path,
-        "ratio": 0.0,
         "tokenizer": ctx["tokenizer"],
         "max_length": 16,
         "num_proc": 1,
@@ -308,7 +316,7 @@ def test_RankWorker_run_reports_qparam_names_when_hook_reports(tmp_path, monkeyp
 def test_RankWorker_run_accepts_plain_dict_algorithm_when_task_carries_raw_dicts(tmp_path, monkeypatch):
     fake_logger = _stub_logger(monkeypatch)
     _install_fake_accelerate(monkeypatch)
-    _install_fake_dataset_builder(monkeypatch, MagicMock(return_value=(["s1"], None)))
+    _install_fake_dataset_builder(monkeypatch, (["s1"], None))
     _, trainer_cls = _install_fake_trainer_modules(monkeypatch)
     data = tmp_path / "train.jsonl"
     data.write_text("{}\n", encoding="utf-8")

@@ -188,24 +188,25 @@ class RankWorker:
 
     def _build_datasets(self) -> None:
         # 训练数据构建模块按需懒加载（与 callback/trainer 同属 train 运行时依赖）。
-        from msmodelslim.core.train.dataset_build import (  # pylint: disable=no-name-in-module
-            build_qat_tokenized_datasets,
+        from msmodelslim.core.train.train_dataset_builder import (  # pylint: disable=no-name-in-module
+            TrainDatasetBuilder,
         )
 
         dataset_cfg = self.task_cfg.dataset
         world_size = int(self.dist_info.get("world_size") or 1)
         try:
-            self.train_dataset, self.eval_dataset = build_qat_tokenized_datasets(
-                path=dataset_cfg.path,
-                ratio=float(dataset_cfg.ratio_eval_samples),
+            builder = TrainDatasetBuilder(
+                dataset_cfg,
                 tokenizer=self.tokenizer,
                 max_length=self.model_max_length,
                 num_proc=world_size,
             )
+            self.train_dataset, self.eval_dataset = builder.build()
         except Exception:
             self._fail_stage(
                 "build_datasets",
-                dataset_path=dataset_cfg.path,
+                train_path=dataset_cfg.train_path,
+                eval_path=dataset_cfg.eval_path,
                 ratio_eval_samples=dataset_cfg.ratio_eval_samples,
                 model_max_length=self.model_max_length,
                 world_size=world_size,

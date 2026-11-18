@@ -23,11 +23,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, SerializeAsAny, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SerializeAsAny
 
 from msmodelslim.core.quantization_format.registry import QuantFormatConfigList
+from msmodelslim.core.train.train_dataset_builder import TrainDatasetConfig
 from msmodelslim.utils.plugin import TypedConfig
-from msmodelslim.utils.validation.conversion import convert_to_readable_file
 
 TRAIN_TASK_PLUGIN_GROUP = "msmodelslim.train_task.plugins"
 TRAIN_ALGORITHM_PLUGIN_GROUP = "msmodelslim.train_algorithm.plugins"
@@ -62,30 +62,6 @@ class TrainAlgorithmConfig(TypedConfig):
         validate_by_alias=False,
         serialize_by_alias=False,
     )
-
-
-class DatasetConfig(BaseModel):
-    """通用训练数据集配置。"""
-
-    model_config = _TRAIN_MODEL_CONFIG
-
-    path: str = Field(
-        ...,
-        min_length=1,
-        description="本地 json/jsonl 数据集文件路径（必填，且须为可读文件）。",
-    )
-    ratio_eval_samples: float = Field(
-        default=0.0,
-        ge=0.0,
-        lt=1.0,
-        description="从数据集中划分用于评估的样本比例，取值 [0, 1)。",
-    )
-
-    @field_validator("path")
-    @classmethod
-    def _validate_path_readable(cls, value: str) -> str:
-        # json/jsonl 是文件：用 readable_file（readable_dir 会把文件判失败）
-        return str(convert_to_readable_file(value.strip(), param_name="dataset.path"))
 
 
 class TrainingArgumentsConfig(BaseModel):
@@ -227,7 +203,7 @@ class CoreTrainTaskConfig(BaseModel):
         min_length=1,
         description="训练算法列表（按 type 插件分发，如 paretoq）。",
     )
-    dataset: DatasetConfig = Field(..., description="训练数据集配置。")
+    dataset: TrainDatasetConfig = Field(..., description="训练数据集配置。")
 
     train: NestedTrainConfig = Field(..., description="训练超参与 checkpoint 配置。")
     save: QuantFormatConfigList = Field(

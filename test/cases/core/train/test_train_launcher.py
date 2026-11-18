@@ -2,7 +2,6 @@
 # -*- coding: UTF-8 -*-
 
 import contextlib
-import logging
 import os
 import socket
 import sys
@@ -27,18 +26,10 @@ def _minimal_task(tmp_path) -> CoreTrainTaskConfig:
     return CoreTrainTaskConfig.model_validate(
         {
             "algorithm": [{"type": "paretoq"}],
-            "dataset": {"path": str(data)},
+            "dataset": {"train_path": str(data)},
             "train": {"training_arguments": {}, "qat": {"model_max_length": 16}},
         }
     )
-
-
-def _install_fake_module(monkeypatch, module_name: str, **attrs):
-    module = types.ModuleType(module_name)
-    for key, value in attrs.items():
-        setattr(module, key, value)
-    monkeypatch.setitem(sys.modules, module_name, module)
-    return module
 
 
 def _recording_launcher(record, name, invoke):
@@ -219,47 +210,6 @@ def test_TrainLauncher_launch_picks_free_port_when_master_port_invalid(tmp_path,
     assert int(record[0]["kwargs"]["use_port"]) > 0
 
 
-def test_TrainLauncher_launch_child_entry_invokes_rank_worker_when_pyarrow_patch_succeeds(tmp_path, monkeypatch):
-    entry_mock = MagicMock()
-    patch_mock = MagicMock()
-    set_level_mock = MagicMock()
-    monkeypatch.setattr("msmodelslim.core.train.train_launcher.rank_worker_entry", entry_mock)
-    monkeypatch.setattr("msmodelslim.core.train.train_launcher.set_logger_level", set_level_mock)
-    monkeypatch.setattr(
-        "msmodelslim.core.train.train_launcher.get_root_logger",
-        lambda: SimpleNamespace(getEffectiveLevel=lambda: logging.WARNING),
-    )
-    _install_fake_module(
-        monkeypatch,
-        "msmodelslim.core.train.dataset_build",
-        _patch_pyarrow_skip_duplicate_extension_types=patch_mock,
-    )
-    record = _install_fake_accelerate(monkeypatch, invoke=True)
-    cfg = _minimal_task(tmp_path)
-    adapter = MagicMock()
-    hooks = [MagicMock()]
-    save_path = tmp_path / "out"
-    TrainLauncher().launch(cfg, adapter, save_path, hooks, device=DeviceType.CPU, device_indices=[0, 1])
-    assert [item["name"] for item in record] == ["debug"]
-    patch_mock.assert_called_once()
-    set_level_mock.assert_called_once_with("warning")
-    entry_mock.assert_called_once_with(cfg, adapter, save_path, list(hooks))
-
-
-def test_TrainLauncher_launch_child_entry_runs_when_pyarrow_patch_fails(tmp_path, monkeypatch):
-    entry_mock = MagicMock()
-    fake_logger = MagicMock()
-    monkeypatch.setattr("msmodelslim.core.train.train_launcher.rank_worker_entry", entry_mock)
-    monkeypatch.setattr("msmodelslim.core.train.train_launcher.get_logger", lambda: fake_logger)
-    monkeypatch.setattr("msmodelslim.core.train.train_launcher.set_logger_level", MagicMock())
-    monkeypatch.setitem(sys.modules, "msmodelslim.core.train.dataset_build", None)
-    record = _install_fake_accelerate(monkeypatch, invoke=True)
-    TrainLauncher().launch(_minimal_task(tmp_path), MagicMock(), tmp_path / "out", [], device=DeviceType.NPU)
-    assert [item["name"] for item in record] == ["notebook"]
-    entry_mock.assert_called_once()
-    fake_logger.debug.assert_any_call("pyarrow duplicate-extension patch skipped", exc_info=True)  # pylint: disable=no-member
-
-
 def test_TrainLauncher_launch_child_entry_falls_back_to_config_log_level_when_root_unknown(tmp_path, monkeypatch):
     set_level_mock = MagicMock()
     monkeypatch.setattr("msmodelslim.core.train.train_launcher.rank_worker_entry", MagicMock())
@@ -269,7 +219,6 @@ def test_TrainLauncher_launch_child_entry_falls_back_to_config_log_level_when_ro
         "msmodelslim.core.train.train_launcher.get_root_logger",
         lambda: SimpleNamespace(getEffectiveLevel=lambda: 12345),
     )
-    monkeypatch.setitem(sys.modules, "msmodelslim.core.train.dataset_build", None)
     _install_fake_accelerate(monkeypatch, invoke=True)
     TrainLauncher().launch(_minimal_task(tmp_path), MagicMock(), tmp_path / "out", [], device=DeviceType.NPU)
     set_level_mock.assert_called_once_with(msmodelslim_config.env_vars.log_level)

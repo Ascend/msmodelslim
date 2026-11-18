@@ -23,7 +23,7 @@ def _cfg(tmp_path: Path, **overrides):
     payload = {
         "type": "qat",
         "algorithm": [{"type": "paretoq", "w_bits": 4, "deploy_act": "a8"}],
-        "dataset": {"path": str(dataset)},
+        "dataset": {"train_path": str(dataset)},
         "train": {"training_arguments": {}, "qat": {"model_max_length": 64}},
     }
     payload.update(overrides)
@@ -78,7 +78,7 @@ def test_QATTask_assemble_hooks_raises_when_multiple_algorithms(tmp_path):
                 {"type": "paretoq", "w_bits": 4},
                 {"type": "paretoq", "w_bits": 3},
             ],
-            "dataset": {"path": str(dataset)},
+            "dataset": {"train_path": str(dataset)},
             "train": {"training_arguments": {}, "qat": {"model_max_length": 16}},
         }
     )

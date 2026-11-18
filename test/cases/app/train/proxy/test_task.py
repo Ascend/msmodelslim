@@ -18,7 +18,7 @@ def _qat_payload(tmp_path):
     return {
         "type": "qat",
         "algorithm": [{"type": "paretoq", "w_bits": 4}],
-        "dataset": {"path": str(data)},
+        "dataset": {"train_path": str(data)},
         "train": {"training_arguments": {}, "qat": {"model_max_length": 16}},
     }
 

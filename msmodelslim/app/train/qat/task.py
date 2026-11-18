@@ -35,18 +35,18 @@ from msmodelslim.core.convert.config import (
 )
 from msmodelslim.core.convert.protocol import IIRTransformProcessor
 from msmodelslim.core.convert.types import IRKind
+from msmodelslim.core.quantization_format.checkpoint_format.constants import STRUCTURE_FILE
 from msmodelslim.core.train.protocol import ITrainHook
 from msmodelslim.core.train.task import (
     TRAIN_ALGORITHM_PLUGIN_GROUP,
     CoreTrainTaskConfig,
-    DatasetConfig,
     NestedTrainConfig,
     QATConfig,
     TrainAlgorithmConfig,
     TrainingArgumentsConfig,
     CheckpointingConfig,
 )
-from msmodelslim.core.quantization_format.checkpoint_format.constants import STRUCTURE_FILE
+from msmodelslim.core.train.train_dataset_builder import TrainDatasetConfig
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.utils.plugin import TypedFactory
 from msmodelslim.utils.plugin.plugin_utils import load_plugin_component_class
@@ -55,11 +55,11 @@ from msmodelslim.utils.security import json_safe_load
 
 __all__ = [
     "CheckpointingConfig",
-    "DatasetConfig",
     "NestedTrainConfig",
     "QATConfig",
     "QATTask",
     "QATTaskConfig",
+    "TrainDatasetConfig",
     "TrainingArgumentsConfig",
 ]
 
