@@ -54,10 +54,11 @@ _ASCEND_DST = ("ascendv1", "ascendv1_saver")
 
 
 def _lazy_init_unsaved_modules(context: ConvertContext, tree: nn.Module) -> None:
-    """保存前加载未参与 IR 转换的模块（PassthroughModule、未 quant 的 ModelFreeLinear）。"""
+    """保存前加载未参与 IR 转换的模块（PassthroughModule、Packed W4A8、未 quant 的 ModelFreeLinear）。"""
     from msmodelslim.core.quant_service.modelslim_convert.virtual_module import (
         ModelFreeModule,
     )
+    from msmodelslim.core.quantization_schema import PackedW4A8MXDynamicPerBlockFakeQuantLinear
     from msmodelslim.infra.io.shard_handle_cache import ShardHandleCache
 
     reader = context.reader
@@ -70,7 +71,10 @@ def _lazy_init_unsaved_modules(context: ConvertContext, tree: nn.Module) -> None
     reader.shard_handle_cache = shard_cache
     try:
         for mod in tree.modules():
-            if isinstance(mod, ModelFreeModule) and not mod.lazy_initialized:
+            if (
+                isinstance(mod, (ModelFreeModule, PackedW4A8MXDynamicPerBlockFakeQuantLinear))
+                and not mod.lazy_initialized
+            ):
                 mod.lazy_init(reader, device="cpu")
                 n += 1
     finally:

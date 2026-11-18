@@ -144,6 +144,13 @@ class QuaRotOptionalScopeInfo(BaseModel):
     rotation_map: Dict[str, str] = Field(default_factory=dict)
 
 
+def _w4a8_mxfp_uint8(tensor: torch.Tensor) -> torch.Tensor:
+    """vLLM 用 uint8 参数 copy_ 加载 W4A8_MXFP，int8 / E8M0 只换视图，字节不变。"""
+    if tensor.dtype in (torch.int8, torch.float8_e8m0fnu):
+        return tensor.detach().view(torch.uint8)
+    return tensor
+
+
 ASCENDV1_DESC_JSON_NAME = "quant_model_description.json"
 ASCENDV1_SAFETENSORS_NAME = "quant_model_weights.safetensors"
 DTYPE_PREFIX_MAP = {
@@ -524,6 +531,14 @@ class AscendV1Saver(AutoSaverProcessor):
             )
             if module.bias is not None:
                 self.write_tensor(prefix + ".bias", "FLOAT", module.bias.to(torch.float32))
+
+    def on_packed_w4a8_mx_dynamic_per_block(self, prefix: str, module: qir.PackedW4A8MXDynamicPerBlockFakeQuantLinear):
+        """已打包字节按 checkpoint 叶子名落盘，描述符为 W4A8_MXFP。"""
+        desc = "W4A8_MXFP"
+        self.group_size = 32
+        self.update_quant_type(desc)
+        for name, param in module.named_parameters(recurse=False, prefix=prefix):
+            self.write_tensor(name, desc, _w4a8_mxfp_uint8(param))
 
     def on_float_linear(self, prefix: str, module: nn.Linear):
         self.update_quant_type("FLOAT")

@@ -60,7 +60,7 @@ def infer_source_ir(module: ModelFreeModule, config: ConvertConfig) -> SourceIR:
 
 
 def _is_mxfp4_pair(bindings: dict[str, TensorRef]) -> bool:
-    """``weight_packed`` + ``weight_scale``: uint8/uint8, or int8 + E8M0.
+    """``weight_packed`` + ``weight_scale``: uint8 + uint8, or int8 + E8M0.
 
     Checkpoint ``.weight`` / ``.scale`` is not recognized here. Rename those
     keys to ``weight_packed`` / ``weight_scale`` in the convert YAML first.

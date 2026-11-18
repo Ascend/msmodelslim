@@ -32,9 +32,17 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from msmodelslim.core.quant_service.modelslim_convert.weight_mapping.fused_load import load_logical_tensor
 from msmodelslim.core.convert.protocol import ICheckpointReader
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
+
+__all__ = [
+    "ModelFreeLinear",
+    "ModelFreeModule",
+    "PassthroughModule",
+    "checkpoint_key",
+    "create_model_free_module",
+    "set_submodule_by_path",
+]
 
 
 class ModelFreeModule(nn.Module):  # pylint: disable=abstract-method
@@ -77,6 +85,10 @@ class ModelFreeModule(nn.Module):  # pylint: disable=abstract-method
         """
         if self.lazy_initialized:
             return
+        from msmodelslim.core.quant_service.modelslim_convert.weight_mapping.fused_load import (  # pylint: disable=import-outside-toplevel
+            load_logical_tensor,
+        )
+
         dev = str(device)
         direct: dict[str, list[str]] = {}
         logical_to_ckpt: dict[str, str] = {}
@@ -116,7 +128,7 @@ class ModelFreeLinear(ModelFreeModule):  # pylint: disable=abstract-method
 
 
 class PassthroughModule(ModelFreeModule):  # pylint: disable=abstract-method
-    """Norm / embedding / catalog 余量：原样 FLOAT 落盘。
+    """Norm / embedding / catalog 余量：权重原样落盘。
 
     全部挂 Parameter，供 AscendV1 与 HuggingFace 的 ``on_float_module`` 共用
     ``named_parameters(recurse=False, prefix=...)`` 写出 checkpoint key。

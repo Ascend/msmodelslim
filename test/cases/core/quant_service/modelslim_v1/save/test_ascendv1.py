@@ -32,6 +32,7 @@ from torch import nn
 
 import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.quant_service.modelslim_v1.save.interface import AscendV1GlobalModelDtypeInterface
+from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Config, AscendV1Saver
 from msmodelslim.model import IModel
 from msmodelslim.utils.exception import SchemaValidateError
@@ -650,3 +651,59 @@ class TestSingleVsMergedFaQuantTypeConsistent:
         per_rank_layer_states.setdefault(parent, {})["V"] = list(v_cfg)
         AscendV1Saver.merge_fa_layer_states(merged_meta, per_rank_layer_states)
         assert merged_meta[f"{parent}.quant_type"] == expected
+
+
+class TestW4A8MxfpPassthroughSave:
+    @patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.dist.is_initialized")
+    def test_views_packed_int8_as_uint8_and_labels_w4a8_mxfp(self, mock_dist_init, tmp_path):
+        mock_dist_init.return_value = False
+        saver = AscendV1Saver(
+            nn.Module(),
+            AscendV1Config(save_directory=str(tmp_path)),
+            _MinimalIModel(str(tmp_path)),
+        )
+        handler = saver.process_map[qir.PackedW4A8MXDynamicPerBlockFakeQuantLinear]
+        assert handler.__func__ is AscendV1Saver.on_packed_w4a8_mx_dynamic_per_block
+
+        weight = torch.tensor([-1, 2], dtype=torch.int8)
+        module = qir.PackedW4A8MXDynamicPerBlockFakeQuantLinear(
+            full_name="layers.0.experts.0.w1",
+            tensor_bindings={
+                "weight_packed": TensorRef("weight_packed", "layers.0.experts.0.w1.weight_packed", "s0", "int8", (2,)),
+                "weight_scale": TensorRef("weight_scale", "layers.0.experts.0.w1.weight_scale", "s0", "uint8", (1,)),
+            },
+            source_ir=SourceIR(kind=IRKind.W4A8_MXFP, source_format="mxfp4"),
+        )
+        module._register_logical("weight_packed", weight)
+        module._register_logical("weight_scale", torch.tensor([127], dtype=torch.uint8))
+
+        written = []
+        saver.write_tensor = lambda name, desc, tensor: written.append((name, desc, tensor.detach().clone()))
+        saver.on_packed_w4a8_mx_dynamic_per_block("layers.0.experts.0.w1", module)
+
+        by_name = {name: (desc, tensor) for name, desc, tensor in written}
+        assert by_name["layers.0.experts.0.w1.weight_packed"][0] == "W4A8_MXFP"
+        saved_weight = by_name["layers.0.experts.0.w1.weight_packed"][1]
+        assert saved_weight.dtype == torch.uint8
+        assert torch.equal(saved_weight, weight.view(torch.uint8))
+        assert "layers.0.experts.0.w1.weight" not in by_name
+        assert by_name["layers.0.experts.0.w1.weight_scale"][1].dtype == torch.uint8
+
+        scale_module = qir.PackedW4A8MXDynamicPerBlockFakeQuantLinear(
+            full_name="layers.0.experts.1.w1",
+            tensor_bindings={
+                "weight": TensorRef("weight", "layers.0.experts.1.w1.weight", "s0", "int8", (2,)),
+                "scale": TensorRef("scale", "layers.0.experts.1.w1.scale", "s0", "uint8", (1,)),
+            },
+            source_ir=SourceIR(kind=IRKind.W4A8_MXFP, source_format="mxfp4"),
+        )
+        scale_module._register_logical("weight", weight)
+        scale_module._register_logical("scale", torch.tensor([127], dtype=torch.uint8))
+        written.clear()
+        saver.on_packed_w4a8_mx_dynamic_per_block("layers.0.experts.1.w1", scale_module)
+        names = {name for name, _, _ in written}
+        assert "layers.0.experts.1.w1.scale" in names
+        assert "layers.0.experts.1.w1.weight_scale" not in names
+
+        assert saver.model_quant_type == "W4A8_MXFP"
+        assert saver.group_size == 32

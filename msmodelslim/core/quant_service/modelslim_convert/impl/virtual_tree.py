@@ -44,9 +44,11 @@ from msmodelslim.core.quant_service.modelslim_convert.virtual_module import (
 )
 from msmodelslim.core.convert.catalog import TensorCatalog, TensorEntry
 from msmodelslim.core.convert.config import ConvertConfig, ModuleRule
+from msmodelslim.core.quantization_schema import PackedW4A8MXDynamicPerBlockFakeQuantLinear
 from msmodelslim.core.quantization_schema.kernels import WEIGHT_SCALE_INV_SUFFIX
 from msmodelslim.core.convert.protocol import ConvertContext, IVirtualModelTreeBuilder
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
+from msmodelslim.core.convert.dtypes import is_e8m0, is_int8, is_uint8
 from msmodelslim.infra.io.checkpoint_reader import CheckpointReader
 from msmodelslim.utils.logging import get_logger
 
@@ -57,7 +59,7 @@ def collect_bound_catalog_keys(tree: nn.Module) -> set[str]:
     """All checkpoint keys referenced by ``tensor_bindings`` on the virtual tree."""
     handled: set[str] = set()
     for mod in tree.modules():
-        if isinstance(mod, ModelFreeModule):
+        if isinstance(mod, (ModelFreeModule, PackedW4A8MXDynamicPerBlockFakeQuantLinear)):
             for ref in mod.tensor_bindings.values():
                 handled.add(ref.key)
                 handled.add(checkpoint_key(ref))
@@ -307,25 +309,116 @@ def _submodule_has_leaves(root: nn.Module, path: str) -> bool:
     return len(list(sub.named_children())) > 0
 
 
+def _is_packed_mxfp4_pair(weight: TensorRef | None, scale: TensorRef | None) -> bool:
+    """Packed MXFP4 dtype pair: uint8 + uint8, or int8 + E8M0."""
+    if weight is None or scale is None:
+        return False
+    if is_uint8(weight.dtype) and is_uint8(scale.dtype):
+        return True
+    return is_int8(weight.dtype) and is_e8m0(scale.dtype)
+
+
+def _model_config(context: ConvertContext) -> dict:
+    """``config.json`` via the checkpoint reader. Non-dict results are ignored."""
+    reader = context.reader
+    read = getattr(reader, "read_model_config", None)
+    if not callable(read):
+        return {}
+    loaded = read()
+    return loaded if isinstance(loaded, dict) else {}
+
+
+def _quantization_config(context: ConvertContext) -> dict:
+    """Top-level ``quantization_config``, else the copy under ``text_config``."""
+    raw = _model_config(context)
+    top = raw.get("quantization_config")
+    if isinstance(top, dict):
+        return top
+    text = raw.get("text_config")
+    if isinstance(text, dict):
+        nested = text.get("quantization_config")
+        if isinstance(nested, dict):
+            return nested
+    return {}
+
+
+def _is_w4a8_mxfp_quantization(qc: dict) -> bool:
+    """DeepSeek-V4.1-Flash: ``quant_method=fp8`` and ``activation_scheme=dynamic``.
+
+    Packed MXFP4 is not W4A8_MXFP unless both fields match. Example::
+
+        "quantization_config": {
+            "quant_method": "fp8",
+            "activation_scheme": "dynamic",
+            "weight_block_size": [32, 32],
+            "scale_fmt": "ue8m0",
+            "expert_dtype": "fp4"
+        }
+    """
+    method = str(qc.get("quant_method", "")).strip().lower()
+    scheme = str(qc.get("activation_scheme", "")).strip().lower()
+    return method == "fp8" and scheme == "dynamic"
+
+
+def _passthrough_source_ir(bindings: dict[str, TensorRef], *, w4a8_mxfp: bool) -> SourceIR:
+    """Unmatched packed experts keep checkpoint names, so accept ``weight`` + ``scale`` too.
+
+    W4A8_MXFP is not the default for that dtype pair. It applies only when
+    ``config.json`` says the checkpoint is FP8 with a dynamic activation scheme.
+    """
+    if w4a8_mxfp:
+        for weight_leaf, scale_leaf in (("weight_packed", "weight_scale"), ("weight", "scale")):
+            if _is_packed_mxfp4_pair(bindings.get(weight_leaf), bindings.get(scale_leaf)):
+                return SourceIR(kind=IRKind.W4A8_MXFP, source_format="mxfp4")
+    return SourceIR(kind=IRKind.FLOAT, source_format="bf16")
+
+
+def _passthrough_module_cls(source_ir: SourceIR):
+    if source_ir.kind == IRKind.W4A8_MXFP:
+        return PackedW4A8MXDynamicPerBlockFakeQuantLinear
+    return PassthroughModule
+
+
 def _install_passthrough_group(
     root: nn.Module,
     install_path: str,
     bindings: dict[str, TensorRef],
     matched_paths: set[str],
+    source_ir: SourceIR | None = None,
+    *,
+    w4a8_mxfp: bool = False,
 ) -> int:
+    resolved = source_ir or _passthrough_source_ir(bindings, w4a8_mxfp=w4a8_mxfp)
     if install_path in matched_paths:
         existing = _get_submodule(root, install_path)
-        if isinstance(existing, ModelFreeModule):
+        if isinstance(existing, (ModelFreeModule, PackedW4A8MXDynamicPerBlockFakeQuantLinear)):
             for leaf, ref in bindings.items():
                 if leaf not in existing.tensor_bindings:
                     existing.tensor_bindings[leaf] = ref
-            existing.lazy_initialized = False
+            if isinstance(existing, (PassthroughModule, PackedW4A8MXDynamicPerBlockFakeQuantLinear)):
+                refreshed = _passthrough_source_ir(existing.tensor_bindings, w4a8_mxfp=w4a8_mxfp)
+                desired = _passthrough_module_cls(refreshed)
+                if type(existing) is desired:  # pylint: disable=unidiomatic-typecheck
+                    existing.source_ir = refreshed
+                    existing.lazy_initialized = False
+                else:
+                    set_submodule_by_path(
+                        root,
+                        install_path,
+                        desired(
+                            full_name=install_path,
+                            tensor_bindings=dict(existing.tensor_bindings),
+                            source_ir=refreshed,
+                        ),
+                    )
+            else:
+                existing.lazy_initialized = False
             return len(bindings)
 
-    mod = PassthroughModule(
+    mod = _passthrough_module_cls(resolved)(
         full_name=install_path,
         tensor_bindings=bindings,
-        source_ir=SourceIR(kind=IRKind.FLOAT, source_format="bf16"),
+        source_ir=resolved,
     )
     set_submodule_by_path(root, install_path, mod)
     matched_paths.add(install_path)
@@ -370,18 +463,41 @@ def _attach_preserve_all_catalog(
             meta=dict(entry.meta),
         )
 
+    qc = _quantization_config(context)
+    w4a8_mxfp = _is_w4a8_mxfp_quantization(qc)
     attached = 0
+    w4a8_modules = 0
     for module_path, bindings in groups.items():
+        source_ir = _passthrough_source_ir(bindings, w4a8_mxfp=w4a8_mxfp)
+        if source_ir.kind == IRKind.W4A8_MXFP:
+            w4a8_modules += 1
         if _submodule_has_leaves(root, module_path):
             for leaf, ref in bindings.items():
+                leaf_ir = source_ir if source_ir.kind == IRKind.W4A8_MXFP else None
                 attached += _install_passthrough_group(
                     root,
                     ref.key,
                     {leaf: ref},
                     matched_paths,
+                    source_ir=leaf_ir,
+                    w4a8_mxfp=w4a8_mxfp,
                 )
             continue
-        attached += _install_passthrough_group(root, module_path, bindings, matched_paths)
+        attached += _install_passthrough_group(
+            root,
+            module_path,
+            bindings,
+            matched_paths,
+            source_ir=source_ir,
+            w4a8_mxfp=w4a8_mxfp,
+        )
+    if w4a8_modules:
+        logger.info(
+            "Unmatched packed MXFP4 saved as W4A8_MXFP for %d module(s): quant_method=%s activation_scheme=%s",
+            w4a8_modules,
+            qc.get("quant_method"),
+            qc.get("activation_scheme"),
+        )
 
     logger.info(
         "Attached %d catalog tensor(s) across %d passthrough module(s) (non-linear preserve)",

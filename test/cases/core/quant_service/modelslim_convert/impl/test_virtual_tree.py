@@ -34,7 +34,25 @@ from msmodelslim.core.quant_service.modelslim_convert.impl.virtual_tree import (
     _resolve_bindings,
     collect_bound_catalog_keys,
 )
-from msmodelslim.core.quant_service.modelslim_convert.virtual_module import ModelFreeLinear, PassthroughModule
+from msmodelslim.core.quantization_schema import PackedW4A8MXDynamicPerBlockFakeQuantLinear
+from msmodelslim.core.quant_service.modelslim_convert.virtual_module import (
+    ModelFreeLinear,
+    PassthroughModule,
+)
+
+
+def _packed_mxfp4_catalog(path: str) -> TensorCatalog:
+    catalog = TensorCatalog()
+    catalog.add(TensorEntry(key=f"{path}.weight_packed", shard="s0", dtype="I8", shape=(4, 16)))
+    catalog.add(TensorEntry(key=f"{path}.weight_scale", shard="s0", dtype="F8_E8M0", shape=(4, 1)))
+    return catalog
+
+
+def _context_with_model_config(model_config: dict) -> ConvertContext:
+    context = ConvertContext(config=ConvertConfig(model_path="/m", save_path="/o", module_rules=[]))
+    context.reader = MagicMock()
+    context.reader.read_model_config.return_value = model_config
+    return context
 
 
 class TestCollectBoundCatalogKeys:
@@ -237,4 +255,63 @@ class TestVirtualModelTreeBuilder:
         tree = VirtualModelTreeBuilder().build(context, catalog)
         mod = tree.get_submodule(path)
         assert isinstance(mod, ModelFreeLinear)
+        assert mod.source_ir.kind == IRKind.FLOAT
+
+    def test_build_attach_w4a8_mxfp_passthrough_when_config_is_fp8_dynamic(self):
+        path = "layers.0.ffn.experts.0.w1"
+        catalog = _packed_mxfp4_catalog(path)
+        context = _context_with_model_config(
+            {
+                "quantization_config": {
+                    "quant_method": "fp8",
+                    "activation_scheme": "dynamic",
+                    "weight_block_size": [32, 32],
+                    "scale_fmt": "ue8m0",
+                    "expert_dtype": "fp4",
+                },
+            },
+        )
+        tree = VirtualModelTreeBuilder().build(context, catalog)
+        mod = tree.get_submodule(path)
+        assert type(mod) is PackedW4A8MXDynamicPerBlockFakeQuantLinear  # pylint: disable=unidiomatic-typecheck
+        assert mod.source_ir.kind == IRKind.W4A8_MXFP
+
+    def test_build_attach_w4a8_mxfp_passthrough_for_checkpoint_weight_scale_names(self):
+        path = "layers.1.ffn.experts.0.w1"
+        catalog = TensorCatalog()
+        catalog.add(TensorEntry(key=f"{path}.weight", shard="s0", dtype="I8", shape=(4, 16)))
+        catalog.add(TensorEntry(key=f"{path}.scale", shard="s0", dtype="F8_E8M0", shape=(4, 1)))
+        context = _context_with_model_config(
+            {
+                "text_config": {
+                    "quantization_config": {
+                        "quant_method": "fp8",
+                        "activation_scheme": "dynamic",
+                    },
+                },
+            },
+        )
+        tree = VirtualModelTreeBuilder().build(context, catalog)
+        mod = tree.get_submodule(path)
+        assert type(mod) is PackedW4A8MXDynamicPerBlockFakeQuantLinear  # pylint: disable=unidiomatic-typecheck
+        assert mod.source_ir.kind == IRKind.W4A8_MXFP
+
+    def test_unmatched_packed_mxfp4_stays_float_passthrough_without_fp8_dynamic_config(self):
+        path = "layers.0.ffn.experts.0.w1"
+        catalog = _packed_mxfp4_catalog(path)
+        context = _context_with_model_config({})
+        tree = VirtualModelTreeBuilder().build(context, catalog)
+        mod = tree.get_submodule(path)
+        assert type(mod) is PassthroughModule  # pylint: disable=unidiomatic-typecheck
+        assert mod.source_ir.kind == IRKind.FLOAT
+
+    def test_unmatched_packed_mxfp4_stays_float_when_activation_scheme_is_not_dynamic(self):
+        path = "layers.0.ffn.experts.0.w1"
+        catalog = _packed_mxfp4_catalog(path)
+        context = _context_with_model_config(
+            {"quantization_config": {"quant_method": "fp8", "activation_scheme": "static"}},
+        )
+        tree = VirtualModelTreeBuilder().build(context, catalog)
+        mod = tree.get_submodule(path)
+        assert type(mod) is PassthroughModule  # pylint: disable=unidiomatic-typecheck
         assert mod.source_ir.kind == IRKind.FLOAT
