@@ -7,12 +7,13 @@ from unittest.mock import MagicMock
 import pytest
 import torch
 
+from msmodelslim.core.quantization_algorithm.paretoq.config import DeployAct, ParetoQQuantSpec
+from msmodelslim.core.quantization_algorithm.paretoq.impl import ParetoQFakeQuantLinear
 from msmodelslim.core.quantization_format.checkpoint_format.checkpoint_saver_format import (
     CheckpointSaverFormat,
 )
 from msmodelslim.core.quantization_format.checkpoint_format.constants import STRUCTURE_FILE, WEIGHT_FILE
 from msmodelslim.core.quantization_format.interface import ExportContext
-from msmodelslim.core.quantization_algorithm.paretoq.impl import ParetoQFakeQuantLinear
 
 
 class _JsonWriter:
@@ -73,7 +74,11 @@ def test_CheckpointSaverFormat_on_paretoq_linear_records_meta_when_called():
         _JsonFactory(_JsonWriter()),
         qparam_names=["weight_clip_val"],
     )
-    module = ParetoQFakeQuantLinear(2, 2, w_bits=4, deploy_act="a8")
+    module = ParetoQFakeQuantLinear(
+        2,
+        2,
+        quant_spec=ParetoQQuantSpec(w_bits=4, weight_layerwise=False, deploy_act=DeployAct.A8),
+    )
     fmt.on_paretoq_linear("model.layers.0._fsdp_wrapped_module.mlp", module)
     meta = fmt._modules_meta["model.layers.0.mlp"]
     assert meta["w_bits"] == 4
@@ -100,7 +105,14 @@ def test_CheckpointSaverFormat_finalize_export_writes_json_and_tensors_when_read
         algorithm=[{"type": "paretoq"}],
     )
     fmt.prepare_export()
-    fmt.on_paretoq_linear("layer", ParetoQFakeQuantLinear(2, 2, w_bits=4))
+    fmt.on_paretoq_linear(
+        "layer",
+        ParetoQFakeQuantLinear(
+            2,
+            2,
+            quant_spec=ParetoQQuantSpec(w_bits=4, weight_layerwise=False, deploy_act=DeployAct.A8),
+        ),
+    )
     fmt.finalize_export(MagicMock())
 
     assert "layer.weight" in st.written
@@ -109,3 +121,30 @@ def test_CheckpointSaverFormat_finalize_export_writes_json_and_tensors_when_read
     assert js.payload["modules"]["layer"]["w_bits"] == 4
     assert js.payload["tensors"]["weight_file"] == WEIGHT_FILE
     assert js.payload["qparam_names"] == ["weight_clip_val"]
+
+
+def test_CheckpointSaverFormat_skips_quant_description_when_copying_hf_sidecars(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    save_directory = tmp_path / "checkpoint"
+    save_directory.mkdir()
+    (source / "quant_model_description.json").write_text("{}", encoding="utf-8")
+    (source / "config.json").write_text("{}", encoding="utf-8")
+    ctx = ExportContext(
+        save_directory=save_directory,
+        state_dict={"layer.weight": torch.ones(1)},
+        source_model_path=source,
+    )
+    fmt = CheckpointSaverFormat(
+        ctx,
+        _StFactory(_StWriter()),
+        _JsonFactory(_JsonWriter()),
+        qparam_names=["weight_clip_val"],
+        algorithm=[{"type": "paretoq"}],
+    )
+    fmt.prepare_export()
+
+    fmt.finalize_export(MagicMock())
+
+    assert (save_directory / "config.json").exists()
+    assert not (save_directory / "quant_model_description.json").exists()

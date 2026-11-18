@@ -14,95 +14,194 @@ You may obtain a copy of Mulan PSL v2 at:
 
 THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from typing import Any, Final, Literal, Mapping
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Final, Literal, Optional
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from msmodelslim.core.train.task import TrainAlgorithmConfig
-from msmodelslim.core.quantization_algorithm.paretoq.core import WEIGHT_CLIP_INIT_AMAX
 from msmodelslim.utils.exception import SchemaValidateError
 
-# 与 ``fake_quant_weight`` / convert 边已实现范围一致；YAML 误配时尽早拒绝。
-SUPPORTED_W_BITS: Final = frozenset({0, 1, 2, 3, 4})
-SUPPORTED_A_BITS: Final = frozenset({4, 8})
-_DEPLOY_ACT_TO_A_BITS: Final = {"a4": 4, "a8": 8}
-_A_BITS_TO_DEPLOY_ACT: Final[Mapping[int, Literal["a4", "a8"]]] = {4: "a4", 8: "a8"}
+WeightDType = Literal["int0", "int1", "int2", "int3", "int4"]
+ActDType = Literal["int4", "int8"]
+WeightScope = Literal["per_channel", "layer_wise"]
+ActScope = Literal["per_token", "per_tensor"]
+WeightQParamInit = Literal["amax", "mean2_sqrt_qp"]
+ActQParamInit = Literal["amax"]
+
+_WEIGHT_BITS: Final[dict[str, int]] = {f"int{bits}": bits for bits in range(5)}
+_ACT_SCOPE: Final[dict[str, ActScope]] = {
+    "int4": "per_token",
+    "int8": "per_token",
+}
+
+
+class DeployAct(str, Enum):
+    """ParetoQ 部署期激活模式，同时是 checkpoint 中 ``deploy_act`` 的取值。"""
+
+    A4 = "a4"
+    A8 = "a8"
+
+    def __str__(self) -> str:
+        return self.value
+
+    @classmethod
+    def parse(cls, value: Any) -> "DeployAct":
+        if isinstance(value, cls):
+            return value
+        try:
+            return cls(str(value).lower())
+        except ValueError as exc:
+            choices = ", ".join(mode.value for mode in cls)
+            raise ValueError(f"Unsupported ParetoQ deploy_act={value!r}; expected one of: {choices}") from exc
+
+
+_ACT_DEPLOY: Final[dict[str, DeployAct]] = {
+    "int4": DeployAct.A4,
+    "int8": DeployAct.A8,
+}
+
+
+@dataclass(frozen=True)
+class ParetoQQuantSpec:
+    """ParetoQ 训练壳与部署共用的完整量化规格。"""
+
+    w_bits: int
+    weight_layerwise: bool
+    deploy_act: DeployAct
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "deploy_act", DeployAct.parse(self.deploy_act))
+        if self.w_bits not in (0, 1, 2, 3, 4):
+            raise ValueError(f"Unsupported ParetoQ weight bits={self.w_bits}; expected 0..4")
+
+
+class ParetoQWeightConfig(BaseModel):
+    """对应 YAML ``algorithm[].weight``。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dtype: WeightDType = Field(
+        default="int4",
+        description="权重量化数据类型，支持 `int0`、`int1`、`int2`、`int3`、`int4`。",
+    )
+    scope: WeightScope = Field(
+        default="per_channel",
+        description="权重量化粒度，支持 `per_channel` 或 `layer_wise`。",
+    )
+    symmetric: bool = Field(
+        default=True,
+        description="是否使用对称权重量化；ParetoQ 当前仅支持 `true`。",
+    )
+    qparam_init: WeightQParamInit = Field(
+        default="amax",
+        description="可学习权重裁剪参数 `weight_clip_val` 的初始化策略，支持 `amax` 或 `mean2_sqrt_qp`。",
+    )
+
+    @field_validator("symmetric")
+    @classmethod
+    def _validate_symmetric(cls, value: bool) -> bool:
+        if not value:
+            raise SchemaValidateError(
+                "ParetoQ weight.symmetric must be true",
+                action="Please set algorithm.weight.symmetric to true.",
+            )
+        return value
+
+    @property
+    def w_bits(self) -> int:
+        return _WEIGHT_BITS[self.dtype]
+
+    @property
+    def layerwise(self) -> bool:
+        return self.scope == "layer_wise"
+
+
+class ParetoQActConfig(BaseModel):
+    """对应 YAML ``algorithm[].act``。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dtype: ActDType = Field(
+        default="int8",
+        description="激活量化数据类型，支持 `int4`（A4）或 `int8`（A8）。",
+    )
+    scope: Optional[ActScope] = Field(
+        default=None,
+        description="激活量化粒度；A4/A8 仅支持 `per_token`，省略时按 dtype 自动推导。",
+    )
+    symmetric: bool = Field(
+        default=True,
+        description="是否使用对称激活量化；ParetoQ 当前仅支持 `true`。",
+    )
+    qparam_init: ActQParamInit = Field(
+        default="amax",
+        description="激活量化参数初始化策略，当前仅支持 `amax`。",
+    )
+
+    @field_validator("symmetric")
+    @classmethod
+    def _validate_symmetric(cls, value: bool) -> bool:
+        if not value:
+            raise SchemaValidateError(
+                "ParetoQ act.symmetric must be true",
+                action="Please set algorithm.act.symmetric to true.",
+            )
+        return value
+
+    @model_validator(mode="after")
+    def _validate_scope(self):
+        expected = _ACT_SCOPE[self.dtype]
+        if self.scope is None:
+            self.scope = expected
+        elif self.scope != expected:
+            raise SchemaValidateError(
+                f"ParetoQ act.scope={self.scope!r} is incompatible with act.dtype={self.dtype!r}",
+                action=f"Please set algorithm.act.scope to {expected!r} for dtype {self.dtype!r}.",
+            )
+        return self
+
+    @property
+    def deploy_act(self) -> DeployAct:
+        return _ACT_DEPLOY[self.dtype]
 
 
 class ParetoQConfig(TrainAlgorithmConfig):
     """YAML ``algorithm[]`` item with ``type: paretoq``."""
 
-    type: Literal["paretoq"] = Field(default="paretoq", description="训练量化算法类型，固定为 paretoq。")
-    w_bits: int = Field(
-        default=4,
-        description=(f"权重量化比特宽，由外部 YAML 传入；仅支持 {sorted(SUPPORTED_W_BITS)}（0/2→SEQ，1/3/4→LSQ）。"),
+    type: Literal["paretoq"] = Field(
+        default="paretoq",
+        description="训练量化算法类型，固定为 `paretoq`。",
     )
-    a_bits: int = Field(
-        default=8,
-        description=(f"激活量化比特宽，由外部 YAML 传入；仅支持 {sorted(SUPPORTED_A_BITS)}（4→W4A4，8→W4A8）。"),
+    weight: ParetoQWeightConfig = Field(
+        description="权重量化配置，包含 dtype、scope、symmetric 与 qparam_init。",
     )
-    weight_scope: Literal["per_channel", "layerwise"] = Field(
-        default="per_channel",
-        description="权重量化粒度：per_channel 或 layerwise。",
-    )
-    weight_clip_init: Literal["amax", "mean2_sqrt_qp"] = Field(
-        default=WEIGHT_CLIP_INIT_AMAX,
-        description="可学习 α（weight_clip_val）初始化策略。",
+    act: ParetoQActConfig = Field(
+        description="激活量化配置，包含 dtype、scope、symmetric 与 qparam_init。",
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def _normalize_act_bits(cls, data: Any) -> Any:
-        """兼容旧字段 ``deploy_act``（a4/a8）→ ``a_bits``。"""
-        if not isinstance(data, Mapping):
-            return data
-        payload = dict(data)
-        deploy_act = payload.pop("deploy_act", None)
-        if deploy_act is None:
-            return payload
-        if deploy_act not in _DEPLOY_ACT_TO_A_BITS:
+    @model_validator(mode="after")
+    def _validate_quant_spec(self) -> "ParetoQConfig":
+        try:
+            self.quant_spec
+        except ValueError as exc:
             raise SchemaValidateError(
-                f"Unsupported ParetoQ deploy_act={deploy_act!r}",
-                action=("Please set algorithm.a_bits to 4 or 8 in YAML (legacy deploy_act: 'a4' or 'a8')."),
-            )
-        mapped = _DEPLOY_ACT_TO_A_BITS[deploy_act]
-        if "a_bits" in payload and int(payload["a_bits"]) != mapped:
-            raise SchemaValidateError(
-                f"Conflicting activation bits: a_bits={payload['a_bits']} vs deploy_act={deploy_act!r}",
-                action="Please specify only one of a_bits or deploy_act in the YAML algorithm config.",
-            )
-        payload["a_bits"] = mapped
-        return payload
-
-    @field_validator("w_bits")
-    @classmethod
-    def _validate_w_bits(cls, value: int) -> int:
-        if value not in SUPPORTED_W_BITS:
-            raise SchemaValidateError(
-                f"Unsupported ParetoQ w_bits={value}",
-                action=(
-                    f"Please set algorithm.w_bits in YAML to one of {sorted(SUPPORTED_W_BITS)}; "
-                    "other bit-widths are not implemented."
-                ),
-            )
-        return value
-
-    @field_validator("a_bits")
-    @classmethod
-    def _validate_a_bits(cls, value: int) -> int:
-        if value not in SUPPORTED_A_BITS:
-            raise SchemaValidateError(
-                f"Unsupported ParetoQ a_bits={value}",
-                action=(f"Please set algorithm.a_bits in YAML to one of {sorted(SUPPORTED_A_BITS)} (4→W4A4, 8→W4A8)."),
-            )
-        return value
+                f"Invalid ParetoQ quantization config: {exc}",
+                action="Please check algorithm.weight and algorithm.act.",
+            ) from exc
+        return self
 
     @property
-    def deploy_act(self) -> Literal["a4", "a8"]:
-        """部署侧激活标签，由 ``a_bits`` 派生（供壳模块 / convert meta 使用）。"""
-        return _A_BITS_TO_DEPLOY_ACT[self.a_bits]
+    def quant_spec(self) -> ParetoQQuantSpec:
+        """将 weight/act 两段 YAML 配置折算成模块与部署共用的单一规格。"""
+        return ParetoQQuantSpec(
+            w_bits=self.weight.w_bits,
+            weight_layerwise=self.weight.layerwise,
+            deploy_act=self.act.deploy_act,
+        )

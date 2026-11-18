@@ -33,7 +33,12 @@ from torch import nn
 import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.quant_service.modelslim_v1.save.interface import AscendV1GlobalModelDtypeInterface
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
-from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Config, AscendV1Saver
+from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import (
+    ASCENDV1_DESC_JSON_NAME,
+    AscendV1Config,
+    AscendV1Saver,
+    copy_files,
+)
 from msmodelslim.model import IModel
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.core.quantization_schema.qal import QParam, QScheme, QStorage, QScope, QDType
@@ -171,6 +176,23 @@ class TestW8A8DeqScaleWriteDtype:
         assert tensor.dtype == torch.float32
 
 
+class TestAscendV1CopyFiles:
+    """Tests for AscendV1 description copy protection."""
+
+    def test_copy_files_skips_quant_description_when_source_has_one(self, tmp_path):
+        input_path = tmp_path / "input"
+        output_path = tmp_path / "output"
+        input_path.mkdir()
+        output_path.mkdir()
+        (input_path / ASCENDV1_DESC_JSON_NAME).write_text("{}", encoding="utf-8")
+        (input_path / "config.json").write_text("{}", encoding="utf-8")
+
+        copy_files(str(input_path), str(output_path))
+
+        assert (output_path / "config.json").exists()
+        assert not (output_path / ASCENDV1_DESC_JSON_NAME).exists()
+
+
 def _make_mock_saver():
     """
     创建一个 AscendV1Saver 实例，但跳过 __init__，
@@ -183,6 +205,7 @@ def _make_mock_saver():
     saver.json_writer = MagicMock()
     saver.json_writer.write = MagicMock()
     saver.fa_quant_states = {}  # 用于 update_fa_quant_type 的状态记录
+    saver.model_quant_type = "Unknown"
     return saver
 
 

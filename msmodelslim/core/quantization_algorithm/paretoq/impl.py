@@ -22,7 +22,8 @@ See the Mulan PSL v2 for more details.
 from __future__ import annotations
 
 import fnmatch
-from typing import Any, List, Literal, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, List, Mapping, Optional, Tuple
 
 import torch
 import torch.nn as nn  # pylint: disable=consider-using-from-import
@@ -30,35 +31,43 @@ import torch.nn.functional as F
 
 from msmodelslim.app.train.qat.qat_linear_algorithm import QATLinearAlgorithm
 from msmodelslim.core.convert.protocol import ConvertContext, IIRTransformProcessor
-from msmodelslim.core.quantization_schema import (
-    AutoFakeQuantLinear,
-    int4_per_channel_sym,
-    int4_per_token_sym,
-    int8_per_token_sym,
-)
-from msmodelslim.core.quantization_schema.qal import QDType, QParam, QStorage
-from msmodelslim.core.quantization_algorithm.paretoq.config import ParetoQConfig
+from msmodelslim.core.quantization_algorithm.paretoq.config import DeployAct, ParetoQConfig, ParetoQQuantSpec
 from msmodelslim.core.quantization_algorithm.paretoq.core import (
     fake_quant_weight,
     init_weight_clip_from_weight,
 )
+from msmodelslim.core.quantization_schema import (
+    AutoFakeQuantActivation,
+    AutoFakeQuantDynamicCache,
+    AutoFakeQuantLinear,
+    WrapperIR,
+    int4_per_channel_sym,
+    int4_per_token_sym,
+    int8_per_token_sym,
+)
+from msmodelslim.core.quantization_schema.qal import QDType, QParam, QScheme, QStorage
 from msmodelslim.utils.config_map import ConfigSet
-from msmodelslim.utils.exception import SchemaValidateError
+from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import get_logger
 from msmodelslim.utils.plugin import register_plugin
-
-DeployAct = Literal["a8", "a4"]
-
-_DEPLOY_ACT_SCHEMES = {
-    "a8": int8_per_token_sym,
-    "a4": int4_per_token_sym,
-}
 
 _QPARAM_NAMES: Tuple[str, ...] = ("weight_clip_val",)
 
 
+@dataclass(frozen=True)
+class _DeployRuntime:
+    qscheme: QScheme
+    weight_offset_dtype: Optional[torch.dtype] = None
+
+
+_DEPLOY_RUNTIMES = {
+    DeployAct.A4: _DeployRuntime(qscheme=int4_per_token_sym, weight_offset_dtype=torch.int32),
+    DeployAct.A8: _DeployRuntime(qscheme=int8_per_token_sym),
+}
+
+
 class ParetoQFakeQuantLinear(nn.Linear):
-    """ParetoQ fake-quant linear：训练期 weight-only LSQ 壳；部署走 ``deploy()``。"""
+    """ParetoQ 训练壳：浮点 master weight + 可学习 ``weight_clip_val``。"""
 
     def __init__(
         self,
@@ -66,33 +75,38 @@ class ParetoQFakeQuantLinear(nn.Linear):
         out_features: int,
         bias: bool = True,
         *,
-        w_bits: int = 16,
-        weight_layerwise: bool = False,
-        deploy_act: DeployAct = "a8",
+        quant_spec: ParetoQQuantSpec,
         weight_clip_val: Optional[torch.Tensor] = None,
         device=None,
         dtype=None,
     ):
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__(in_features, out_features, bias=bias, **factory_kwargs)
-        self.w_bits = w_bits
-        self.weight_layerwise = weight_layerwise
-        self.deploy_act = deploy_act
-        if self.w_bits < 16:
-            if weight_clip_val is not None:
-                self.weight_clip_val = nn.Parameter(
-                    weight_clip_val.detach().to(device=self.weight.device, dtype=self.weight.dtype).clone()
-                )
-            else:
-                # 占位；QAT 路径由 ``ParetoQImpl.init_weight_clip_val`` 填充。
-                self.weight_clip_val = nn.Parameter(
-                    torch.zeros(
-                        self.out_features,
-                        1,
-                        device=self.weight.device,
-                        dtype=self.weight.dtype,
-                    )
-                )
+        self.quant_spec = quant_spec
+        if self.w_bits >= 16:
+            return
+        if weight_clip_val is None:
+            weight_clip_val = torch.zeros(
+                self.out_features,
+                1,
+                device=self.weight.device,
+                dtype=self.weight.dtype,
+            )
+        self.weight_clip_val = nn.Parameter(
+            weight_clip_val.detach().to(device=self.weight.device, dtype=self.weight.dtype).clone()
+        )
+
+    @property
+    def w_bits(self) -> int:
+        return self.quant_spec.w_bits
+
+    @property
+    def weight_layerwise(self) -> bool:
+        return self.quant_spec.weight_layerwise
+
+    @property
+    def deploy_act(self) -> DeployAct:
+        return self.quant_spec.deploy_act
 
     @classmethod
     def from_qat_tensors(
@@ -101,22 +115,19 @@ class ParetoQFakeQuantLinear(nn.Linear):
         weight_clip_val: torch.Tensor,
         bias: Optional[torch.Tensor] = None,
         *,
-        w_bits: int,
-        weight_layerwise: bool = False,
-        deploy_act: DeployAct = "a8",
+        quant_spec: ParetoQQuantSpec,
     ) -> "ParetoQFakeQuantLinear":
-        """从 checkpoint 张量（W + 已训练 α）构建可部署壳。"""
-        if w_bits >= 16:
-            raise ValueError(f"from_qat_tensors requires w_bits < 16 for deploy, got {w_bits}")
+        """从 QAT checkpoint 的浮点 weight、α 和可选 bias 还原训练壳。"""
+        if quant_spec.w_bits >= 16:
+            raise ValueError(f"from_qat_tensors requires w_bits < 16 for deploy, got {quant_spec.w_bits}")
         if weight.ndim != 2:
             raise ValueError(f"from_qat_tensors expects 2D weight, got shape {tuple(weight.shape)}")
+
         module = cls(
             weight.shape[1],
             weight.shape[0],
             bias=bias is not None,
-            w_bits=w_bits,
-            weight_layerwise=weight_layerwise,
-            deploy_act=deploy_act,
+            quant_spec=quant_spec,
             weight_clip_val=weight_clip_val,
             device=weight.device,
             dtype=weight.dtype,
@@ -127,7 +138,7 @@ class ParetoQFakeQuantLinear(nn.Linear):
                 module.bias.copy_(bias.detach())
         return module
 
-    def forward(self, input_):
+    def forward(self, input_: torch.Tensor) -> torch.Tensor:
         if self.w_bits >= 16:
             weight = self.weight
         else:
@@ -140,21 +151,21 @@ class ParetoQFakeQuantLinear(nn.Linear):
         return F.linear(input_, weight, self.bias)
 
     def deploy(self) -> nn.Module:
-        """将训练好的浮点 W + α 转为可部署 IR（如 W4A8 / W4A4）。不原地修改 ``self``。"""
+        """将浮点 W + α 转为目标伪量化 IR；不原地修改 ``self``。"""
         if self.w_bits >= 16:
             raise ValueError(
                 "Cannot deploy fp16/passthrough ParetoQFakeQuantLinear "
                 f"(w_bits={self.w_bits}); expected quantized shell with w_bits < 16"
             )
 
-        act_scheme = _DEPLOY_ACT_SCHEMES[self.deploy_act]
+        deploy_runtime = _DEPLOY_RUNTIMES[self.deploy_act]
         alpha = self.weight_clip_val.detach()
         q_w = self._quantize_weight(self.weight.detach(), alpha, self.w_bits)
         scale = alpha.squeeze(-1) if alpha.dim() > 1 else alpha
-        x_q_param = QParam(scheme=act_scheme, ext={"axes": -1})
+        x_q_param = QParam(scheme=deploy_runtime.qscheme, ext={"axes": -1})
         w_ext = {"scale": scale}
-        if self.deploy_act == "a4":
-            w_ext["offset"] = torch.zeros_like(scale, dtype=torch.int32)
+        if deploy_runtime.weight_offset_dtype is not None:
+            w_ext["offset"] = torch.zeros_like(scale, dtype=deploy_runtime.weight_offset_dtype)
         w_q_param = QParam(scheme=int4_per_channel_sym, ext=w_ext)
         w_q = QStorage(dtype=QDType.INT4, value=q_w)
         bias = self.bias.detach() if self.bias is not None else None
@@ -176,6 +187,14 @@ class ParetoQFakeQuantLinear(nn.Linear):
         return (weight / alpha).round().clamp(qn, qp)
 
 
+def _spec_from_checkpoint_meta(meta: Mapping[str, Any]) -> ParetoQQuantSpec:
+    return ParetoQQuantSpec(
+        w_bits=int(meta.get("w_bits", 4)),
+        weight_layerwise=bool(meta.get("weight_layerwise", False)),
+        deploy_act=meta.get("deploy_act") or DeployAct.A8,
+    )
+
+
 def _set_submodule(root: nn.Module, full_name: str, module: nn.Module) -> None:
     set_child = getattr(root, "set_submodule", None)
     if callable(set_child):
@@ -188,12 +207,50 @@ def _set_submodule(root: nn.Module, full_name: str, module: nn.Module) -> None:
     setattr(parent, child, module)
 
 
+def _build_shell_from_float(
+    impl: "ParetoQImpl",
+    name: str,
+    source: nn.Linear,
+) -> ParetoQFakeQuantLinear:
+    shell = ParetoQFakeQuantLinear(
+        source.in_features,
+        source.out_features,
+        bias=source.bias is not None,
+        quant_spec=impl.config.quant_spec,
+        device=source.weight.device,
+        dtype=source.weight.dtype,
+    )
+    if not impl._module_is_meta(source):
+        with torch.no_grad():
+            shell.weight.copy_(source.weight)
+            if source.bias is not None:
+                shell.bias.copy_(source.bias)
+            shell.weight_clip_val.copy_(
+                init_weight_clip_from_weight(
+                    source.weight,
+                    impl.config.quant_spec.w_bits,
+                    impl.config.weight.qparam_init,
+                ).to(
+                    device=shell.weight_clip_val.device,
+                    dtype=shell.weight_clip_val.dtype,
+                )
+            )
+    get_logger().debug("ParetoQ: %s -> ParetoQFakeQuantLinear", name)
+    return shell
+
+
+# Source-type dispatch table: add a PTQ IR builder here when a new input IR is supported.
+_SOURCE_BUILDERS = {
+    nn.Linear: _build_shell_from_float,
+}
+
+
 class ParetoQImpl(QATLinearAlgorithm):
     """
     ParetoQ 对 ``QATLinearAlgorithm`` 的实现（由 ``AlgorithmTrainHook`` 委托）：
 
-    - ``replace_linears``：替换匹配的 ``nn.Linear`` 为 FakeQuant 壳
-    - ``init_weight_clip_val``：初始化可学习 α
+    - ``replace_linears``：按源模块类型分发表替换 FLOAT Linear（及后续注册的 PTQ IR），
+      并在建壳时完成可学习 α 初始化
     - convert：从虚拟模块物化壳并 ``deploy()``
     """
 
@@ -206,64 +263,49 @@ class ParetoQImpl(QATLinearAlgorithm):
     def qparam_names(self) -> Tuple[str, ...]:
         return _QPARAM_NAMES
 
-    def replace_linears(self, model: nn.Module) -> List[ParetoQFakeQuantLinear]:
-        """按 include/exclude 将精确类型为 ``nn.Linear`` 的模块替换为 FakeQuant 壳。"""
+    def replace_linears(self, model: nn.Module) -> List[Tuple[str, ParetoQFakeQuantLinear]]:
+        """按源模块类型分发替换，并在建壳时完成 α 初始化。"""
         self.model = model
-        cfg = self.config
-        layerwise = cfg.weight_scope == "layerwise"
-        targets: List[Tuple[str, nn.Linear]] = []
+        shells: List[Tuple[str, ParetoQFakeQuantLinear]] = []
         for name, module in list(model.named_modules()):
-            # Exact type: subclasses such as the fake-quant shell must not be replaced again.
-            if not name or type(module) is not nn.Linear:  # pylint: disable=unidiomatic-typecheck
+            if not name:
                 continue
-            if name not in self.include or name in self.exclude:
+            # Exact type lookup prevents replacing ParetoQ shells via the nn.Linear row.
+            builder = _SOURCE_BUILDERS.get(type(module))  # pylint: disable=unidiomatic-typecheck
+            if builder is None:
+                if isinstance(
+                    module,
+                    (AutoFakeQuantLinear, AutoFakeQuantActivation, AutoFakeQuantDynamicCache, WrapperIR),
+                ):
+                    raise UnsupportedError(
+                        f"ParetoQ replace_linears does not support IR {type(module).__name__} at '{name}'",
+                        action="Only FLOAT nn.Linear modules are supported in this release.",
+                    )
                 continue
-            targets.append((name, module))
 
-        shells: List[ParetoQFakeQuantLinear] = []
-        for name, linear in targets:
-            shell = ParetoQFakeQuantLinear(
-                linear.in_features,
-                linear.out_features,
-                bias=linear.bias is not None,
-                w_bits=cfg.w_bits,
-                weight_layerwise=layerwise,
-                deploy_act=cfg.deploy_act,
-                device=linear.weight.device,
-                dtype=linear.weight.dtype,
-            )
-            with torch.no_grad():
-                shell.weight.copy_(linear.weight)
-                if linear.bias is not None:
-                    shell.bias.copy_(linear.bias)
+            if name not in self.include or name in self.exclude:
+                # Registered PTQ IR outside include/exclude must fail closed.
+                if isinstance(module, AutoFakeQuantLinear):
+                    raise UnsupportedError(
+                        f"Quant IR '{name}' is outside the ParetoQ include/exclude scope",
+                        action="Please include every quantized PTQ layer, or export those layers as FLOAT.",
+                    )
+                continue
+
+            shell = builder(self, name, module)
             _set_submodule(model, name, shell)
-            shells.append(shell)
-            get_logger().debug("ParetoQ: %s -> ParetoQFakeQuantLinear", name)
+            shells.append((name, shell))
 
         get_logger().info(
             "ParetoQ replace_linears: replaced %s Linear(s) (w_bits=%s)",
             len(shells),
-            cfg.w_bits,
+            self.config.quant_spec.w_bits,
         )
         return shells
 
-    def init_weight_clip_val(self, shells: List[ParetoQFakeQuantLinear]) -> None:
-        """按 ``weight_clip_init`` 策略，用浮点权重初始化每层可学习 α。"""
-        init_method = self.config.weight_clip_init
-        w_bits = self.config.w_bits
-        for shell in shells:
-            with torch.no_grad():
-                shell.weight_clip_val.copy_(
-                    init_weight_clip_from_weight(shell.weight, w_bits, init_method).to(
-                        device=shell.weight.device,
-                        dtype=shell.weight.dtype,
-                    )
-                )
-        get_logger().info(
-            "ParetoQ init_weight_clip_val: inited %s shell(s) method=%s",
-            len(shells),
-            init_method,
-        )
+    @staticmethod
+    def _module_is_meta(module: nn.Module) -> bool:
+        return any(p.is_meta for p in module.parameters())
 
     @staticmethod
     def _module_defaults(module_path: str, context: ConvertContext | None) -> dict[str, Any]:
@@ -313,26 +355,19 @@ class ParetoQImpl(QATLinearAlgorithm):
             )
 
         meta = cls._module_defaults(module.full_name, context)
-        w_bits = int(meta.get("w_bits", 4))
-        if w_bits < 0 or w_bits > 4:
+        try:
+            quant_spec = _spec_from_checkpoint_meta(meta)
+        except ValueError as exc:
             raise SchemaValidateError(
-                f"ParetoQ convert cannot deploy module {module.full_name!r} with w_bits={w_bits}",
-                action="Please use a quantized shell with w_bits in [0, 4].",
-            )
-        deploy_act = str(meta.get("deploy_act") or "a8")
-        if deploy_act not in ("a8", "a4"):
-            raise SchemaValidateError(
-                f"Unsupported deploy_act={deploy_act!r} for module {module.full_name!r}",
-                action="Please use deploy_act a8 or a4.",
-            )
+                f"Invalid ParetoQ metadata for module {module.full_name!r}: {exc}",
+                action="Please use w_bits in [0, 4] and deploy_act a8 or a4.",
+            ) from exc
 
         return ParetoQFakeQuantLinear.from_qat_tensors(
             weight,
             alpha,
             getattr(module, "bias", None),
-            w_bits=w_bits,
-            weight_layerwise=bool(meta.get("weight_layerwise", False)),
-            deploy_act=deploy_act,
+            quant_spec=quant_spec,
         )
 
     @classmethod

@@ -59,7 +59,7 @@ def test_ParetoQDeployProcessor_delegates_transform_when_called(processor_cls, m
     assert called["context"] is context
 
 
-def test_get_paretoq_convert_processors_returns_both_deploy_edges_when_called():
+def test_get_paretoq_convert_processors_returns_all_deploy_edges_when_called():
     names = {type(p).__name__ for p in get_paretoq_convert_processors()}
     assert names == {
         ParetoQToW4A8DynamicProcessor.__name__,

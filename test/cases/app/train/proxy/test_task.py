@@ -17,7 +17,13 @@ def _qat_payload(tmp_path):
     data.write_text("{}\n", encoding="utf-8")
     return {
         "type": "qat",
-        "algorithm": [{"type": "paretoq", "w_bits": 4}],
+        "algorithm": [
+            {
+                "type": "paretoq",
+                "weight": {"dtype": "int4"},
+                "act": {"dtype": "int8"},
+            }
+        ],
         "dataset": {"train_path": str(data)},
         "train": {"training_arguments": {}, "qat": {"model_max_length": 16}},
     }

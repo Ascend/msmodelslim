@@ -9,18 +9,6 @@ import math
 import torch
 
 
-def _owned_snapshot(tensor: torch.Tensor) -> torch.Tensor:
-    """Copy into storage FSDP2 cannot free via ``resize_(0)`` after forward.
-
-    ``clone()`` may still alias the all-gather buffer on Ascend; ``empty`` +
-    ``copy_`` allocates a new block. Call only from ``autograd.Function.forward``.
-    """
-    local = tensor.to_local() if type(tensor).__name__ == "DTensor" else tensor
-    snap = torch.empty(local.shape, device=local.device, dtype=local.dtype)
-    snap.copy_(local)
-    return snap
-
-
 class LsqBinaryTernaryExtension(torch.autograd.Function):
     """Modified from Learned Step-size Quantization (https://arxiv.org/abs/1902.08153)."""
 
@@ -36,42 +24,54 @@ class LsqBinaryTernaryExtension(torch.autograd.Function):
             qn = -(2 ** (num_bits - 1))
             qp = 2 ** (num_bits - 1) - 1
 
-        eps = torch.tensor(0.00001, device=alpha.device).float()
-        alpha = torch.where(alpha > eps, alpha, eps)
         # Own storage: FSDP2 may free the all-gathered weight before backward.
-        input = _owned_snapshot(input)
-        alpha = _owned_snapshot(alpha)
 
         grad_scale = 1.0 / math.sqrt(input.numel()) if not qp else 1.0 / math.sqrt(input.numel() * qp)
-        ctx.save_for_backward(input, alpha)
-        ctx.other = grad_scale, qn, qp, layerwise
         with torch.no_grad():
+            # Match yang/Megatron exactly: the fp32 eps tensor promotes alpha to
+            # fp32, so ratio/rounding/multiply run in fp32; the fake-quant
+            # result is cast back to the parameter dtype (bf16 in QAT).
+            eps = torch.tensor(0.00001, device=alpha.device).float()
+            alpha_f = torch.where(alpha > eps, alpha, eps)
+            ratio = input.div(alpha_f)
             if num_bits == 1:
-                q_w = input.sign()
+                q_w = ratio.sign()
             else:
-                q_w = (input / alpha).round().clamp(qn, qp)
-            return q_w * alpha
+                q_w = ratio.round().clamp(qn, qp)
+            # Save UNROUNDED ratio: backward needs (round(ratio) - ratio) for
+            # the LSQ rounding-error gradient; saving rounded q_w makes it 0.
+            # ratio is a fresh tensor from div(), not an FSDP2 all-gather view,
+            # so no _owned_snapshot needed.
+            ctx.save_for_backward(ratio)
+            ctx.other = grad_scale, qn, qp, layerwise
+            return (q_w * alpha_f).to(input.dtype)
 
     @staticmethod
     def backward(ctx, grad_output):
         if ctx.num_bits >= 16:
             return grad_output, None, None, None
 
-        input_, alpha = ctx.saved_tensors
+        ratio = ctx.saved_tensors[0]  # unrounded input/alpha (fp32)
         grad_scale, qn, qp, layerwise = ctx.other
-        q_w = input_ / alpha
-        indicate_small = (q_w < qn).float()
-        indicate_big = (q_w > qp).float()
+        indicate_small = (ratio < qn).float()
+        indicate_big = (ratio > qp).float()
         indicate_middle = 1.0 - indicate_small - indicate_big
+
+        # Same expression as yang/Megatron: pass grad where in range, zero outside.
+        grad_input = indicate_middle * grad_output
+
         if ctx.num_bits == 1:
+            # For 1-bit, grad_alpha uses sign(ratio) == input.sign()
+            sign_ratio = ratio.sign()
             if layerwise:
-                grad_alpha = ((input_.sign()) * grad_output * grad_scale).sum().unsqueeze(dim=0)
+                grad_alpha = (sign_ratio * grad_output * grad_scale).sum().unsqueeze(dim=0)
             else:
-                grad_alpha = (input_.sign()) * grad_output * grad_scale
+                grad_alpha = sign_ratio * grad_output * grad_scale
                 grad_alpha = torch.sum(grad_alpha, dim=-1, keepdim=True)
         else:
+            # (small*qn + big*qp + middle*(round(q_w) - q_w)) * grad_output * grad_scale
             grad_alpha_raw = (
-                (indicate_small * qn + indicate_big * qp + indicate_middle * (-q_w + q_w.round()))
+                (indicate_small * qn + indicate_big * qp + indicate_middle * (-ratio + ratio.round()))
                 * grad_output
                 * grad_scale
             )
@@ -80,7 +80,6 @@ class LsqBinaryTernaryExtension(torch.autograd.Function):
             else:
                 grad_alpha = torch.sum(grad_alpha_raw, dim=-1, keepdim=True)
 
-        grad_input = indicate_middle * grad_output
         return grad_input, grad_alpha, None, None
 
 
@@ -99,13 +98,7 @@ class StretchedElasticQuant(torch.autograd.Function):
             qn = -(2 ** (num_bits - 1))
             qp = 2 ** (num_bits - 1) - 1
 
-        eps = torch.tensor(0.00001, device=alpha.device).float()
-        alpha = torch.where(alpha > eps, alpha, eps)
-        input = _owned_snapshot(input)
-        alpha = _owned_snapshot(alpha)
-
         grad_scale = 1.0 / math.sqrt(input.numel()) if not qp else 1.0 / math.sqrt(input.numel() * qp)
-        ctx.save_for_backward(input, alpha)
         clip_val = 1 - 1e-2
         if num_bits == 0:
             n_levels = 1.5
@@ -115,53 +108,54 @@ class StretchedElasticQuant(torch.autograd.Function):
             shift = 0.5
         qp = (n_levels - shift) / n_levels
         qn = -qp
-        ctx.other = grad_scale, qn, qp, layerwise
+        ctx.other = grad_scale, qn, qp, layerwise, clip_val, n_levels, shift
         with torch.no_grad():
+            # Same fp32 promotion + dtype cast as the LSQ path / yang.
+            eps = torch.tensor(0.00001, device=alpha.device).float()
+            alpha_f = torch.where(alpha > eps, alpha, eps)
+            ratio = input.div(alpha_f)
             if num_bits == 1:
-                q_w = input.sign()
+                q_w = ratio.sign()
             else:
-                q_w = (
-                    torch.round(torch.clamp(input / alpha, -clip_val, clip_val) * n_levels - shift) + shift
-                ) / n_levels
-            return q_w * alpha
+                q_w = ratio.clamp(-clip_val, clip_val).mul_(n_levels).sub_(shift)
+                q_w.round_().add_(shift).div_(n_levels)
+            # Save UNROUNDED ratio: backward needs quantized_q_w - ratio for
+            # the LSQ gradient; saving already-quantized q_w makes it 0.
+            ctx.save_for_backward(ratio)
+            return (q_w * alpha_f).to(input.dtype)
 
     @staticmethod
     def backward(ctx, grad_output):
         if ctx.num_bits >= 16:
             return grad_output, None, None, None
 
-        input_, alpha = ctx.saved_tensors
-        grad_scale, qn, qp, layerwise = ctx.other
-        q_w = input_ / alpha
-        clip_val = 1 - 1e-2
-        if ctx.num_bits == 0:
-            n_levels = 1.5
-            shift = 0
-        else:
-            n_levels = 2 ** (ctx.num_bits - 1)
-            shift = 0.5
-        indicate_small = (q_w < -clip_val).float()
-        indicate_big = (q_w > clip_val).float()
+        ratio = ctx.saved_tensors[0]  # unrounded input/alpha
+        grad_scale, qn, qp, layerwise, clip_val, n_levels, shift = ctx.other
+        indicate_small = (ratio < -clip_val).float()
+        indicate_big = (ratio > clip_val).float()
         indicate_middle = 1.0 - indicate_small - indicate_big
+        grad_input = indicate_middle * grad_output
         if ctx.num_bits == 1:
+            # For 1-bit, grad_alpha uses sign(ratio) == input.sign()
+            sign_ratio = ratio.sign()
             if layerwise:
-                grad_alpha = ((input_.sign()) * grad_output * grad_scale).sum().unsqueeze(dim=0)
+                grad_alpha = (sign_ratio * grad_output * grad_scale).sum().unsqueeze(dim=0)
             else:
-                grad_alpha = (input_.sign()) * grad_output * grad_scale
+                grad_alpha = sign_ratio * grad_output * grad_scale
                 grad_alpha = torch.sum(grad_alpha, dim=-1, keepdim=True)
         else:
-            quantized_q_w = (torch.round(torch.clamp(q_w, -clip_val, clip_val) * n_levels - shift) + shift) / n_levels
-            grad_alpha_raw = (
-                (indicate_small * qn + indicate_big * qp + indicate_middle * (-q_w + quantized_q_w))
-                * grad_output
-                * grad_scale
-            )
+            quantized_q_w = ratio.clamp(-clip_val, clip_val).mul_(n_levels).sub_(shift)
+            quantized_q_w.round_().add_(shift).div_(n_levels)
+            grad_alpha_raw = quantized_q_w.sub_(ratio)  # quantized_q_w - ratio (nonzero!)
+            grad_alpha_raw.mul_(indicate_middle)
+            grad_alpha_raw.add_(indicate_small * qn)
+            grad_alpha_raw.add_(indicate_big * qp)
+            grad_alpha_raw.mul_(grad_output).mul_(grad_scale)
             if layerwise:
                 grad_alpha = grad_alpha_raw.sum().unsqueeze(dim=0)
             else:
                 grad_alpha = torch.sum(grad_alpha_raw, dim=-1, keepdim=True)
 
-        grad_input = indicate_middle * grad_output
         return grad_input, grad_alpha, None, None
 
 

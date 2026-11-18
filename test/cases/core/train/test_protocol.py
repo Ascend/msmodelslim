@@ -20,12 +20,11 @@ def test_TrainHookContext_defaults_model_when_constructed():
     assert ctx.model is None
 
 
-def test_ITrainHook_raises_when_not_implemented():
-    class _Bad(ITrainHook):
+def test_ITrainHook_is_structural_when_method_missing():
+    class _Bad:
         pass
 
-    with pytest.raises(TypeError):
-        _Bad()
+    assert not isinstance(_Bad(), ITrainHook)
 
 
 def test_ITrainHook_isinstance_true_when_pre_train_defined():

@@ -72,7 +72,7 @@ class ParetoQToW4A4DynamicProcessor(_ParetoQDeployProcessor):
 
 
 def get_paretoq_convert_processors() -> List[IIRTransformProcessor]:
-    """算法侧闭环：返回 ParetoQ → deploy 所需的 convert 边。"""
+    """Return ParetoQ deploy edges."""
     return [
         ParetoQToW4A8DynamicProcessor(),
         ParetoQToW4A4DynamicProcessor(),

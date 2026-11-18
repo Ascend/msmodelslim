@@ -53,12 +53,15 @@ def copy_files(input_path, output_path):
     复制模型配置文件
     @param input_path: 源目录
     @param output_path: 目标目录
+
     """
     for file in os.listdir(input_path):
         if not any((file.endswith(subfix) for subfix in ['.json', '.py', '.txt', '.jinja'])):
             continue
 
         if any((file.endswith(subfix) for subfix in ['index.json'])):
+            continue
+        if file == ASCENDV1_DESC_JSON_NAME:
             continue
 
         ori_file = os.path.join(input_path, file)

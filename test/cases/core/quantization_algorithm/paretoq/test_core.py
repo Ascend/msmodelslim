@@ -45,6 +45,62 @@ def test_fake_quant_weight_keeps_shape_when_w2_seq():
     assert out.shape == weight.shape
 
 
+@pytest.mark.parametrize("w_bits", [1, 3, 4])
+def test_fake_quant_weight_clamps_weight_when_quantized(w_bits):
+    weight = torch.tensor([[-100.0, -0.4, 0.4, 100.0]])
+    alpha = torch.ones(1, 1)
+
+    out = fake_quant_weight(weight, alpha, w_bits=w_bits, weight_layerwise=False)
+
+    qp = 1 if w_bits == 1 else 2 ** (w_bits - 1) - 1
+    assert out.max().item() <= qp
+
+
+def test_fake_quant_weight_returns_zero_when_weight_is_zero():
+    weight = torch.zeros(2, 3)
+    alpha = torch.ones(2, 1)
+
+    out = fake_quant_weight(weight, alpha, w_bits=4, weight_layerwise=False)
+
+    assert torch.equal(out, torch.zeros(2, 3))
+
+
+def test_fake_quant_weight_keeps_output_finite_when_alpha_is_zero():
+    weight = torch.tensor([[-1.0, 0.0, 1.0]])
+    alpha = torch.zeros(1, 1)
+
+    out = fake_quant_weight(weight, alpha, w_bits=4, weight_layerwise=False)
+
+    assert torch.isfinite(out).all()
+
+
+def test_fake_quant_weight_preserves_bfloat16_dtype_when_input_is_bfloat16():
+    weight = torch.tensor([[-1.0, 0.0, 1.0]], dtype=torch.bfloat16)
+    alpha = torch.ones(1, 1, dtype=torch.bfloat16)
+
+    out = fake_quant_weight(weight, alpha, w_bits=4, weight_layerwise=False)
+
+    assert out.dtype == torch.bfloat16
+
+
+def test_fake_quant_weight_returns_layerwise_alpha_gradient_shape_when_backward():
+    weight = torch.tensor([[0.1, -0.2, 0.3], [0.4, -0.5, 0.6]], requires_grad=True)
+    alpha = torch.ones(1, requires_grad=True)
+
+    fake_quant_weight(weight, alpha, w_bits=4, weight_layerwise=True).sum().backward()
+
+    assert alpha.grad.shape == (1,)
+
+
+def test_fake_quant_weight_returns_per_channel_alpha_gradient_shape_when_backward():
+    weight = torch.tensor([[0.1, -0.2, 0.3], [0.4, -0.5, 0.6]], requires_grad=True)
+    alpha = torch.ones(2, 1, requires_grad=True)
+
+    fake_quant_weight(weight, alpha, w_bits=4, weight_layerwise=False).sum().backward()
+
+    assert alpha.grad.shape == (2, 1)
+
+
 def test_fake_quant_weight_raises_when_w_bits_unsupported():
     weight = torch.randn(2, 2)
     alpha = torch.ones(2, 1)

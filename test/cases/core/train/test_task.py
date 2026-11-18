@@ -58,10 +58,16 @@ def test_TrainAlgorithmConfig_rejects_unknown_keys_when_type_omitted():
 
 
 def test_TrainAlgorithmConfig_dispatches_to_plugin_when_type_registered():
-    cfg = TrainAlgorithmConfig.model_validate({"type": "paretoq", "w_bits": 4})
+    cfg = TrainAlgorithmConfig.model_validate(
+        {
+            "type": "paretoq",
+            "weight": {"dtype": "int4"},
+            "act": {"dtype": "int8"},
+        }
+    )
     assert isinstance(cfg, TrainAlgorithmConfig)
     assert cfg.type == "paretoq"
-    assert cfg.w_bits == 4
+    assert cfg.weight.w_bits == 4
 
 
 def test_NestedTrainConfig_defaults_checkpointing_when_omitted():
@@ -106,7 +112,13 @@ def test_CoreTrainTaskConfig_assembles_when_fields_valid(tmp_path):
     data.write_text("{}\n", encoding="utf-8")
     cfg = CoreTrainTaskConfig.model_validate(
         {
-            "algorithm": [{"type": "paretoq", "w_bits": 4}],
+            "algorithm": [
+                {
+                    "type": "paretoq",
+                    "weight": {"dtype": "int4"},
+                    "act": {"dtype": "int8"},
+                }
+            ],
             "dataset": {"train_path": str(data)},
             "train": {"training_arguments": {}, "qat": {"model_max_length": 128}},
         }
@@ -120,7 +132,13 @@ def test_CoreTrainTask_defaults_checkpoint_fields_when_constructed(tmp_path):
     data.write_text("{}\n", encoding="utf-8")
     cfg = CoreTrainTaskConfig.model_validate(
         {
-            "algorithm": [{"type": "paretoq"}],
+            "algorithm": [
+                {
+                    "type": "paretoq",
+                    "weight": {"dtype": "int4"},
+                    "act": {"dtype": "int8"},
+                }
+            ],
             "dataset": {"train_path": str(data)},
             "train": {"training_arguments": {}, "qat": {"model_max_length": 16}},
         }

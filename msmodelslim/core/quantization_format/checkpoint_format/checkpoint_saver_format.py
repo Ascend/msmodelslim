@@ -66,6 +66,8 @@ _WEIGHT_FILE = WEIGHT_FILE
 
 _HF_COPY_SUFFIXES = (".json", ".py", ".txt", ".jinja")
 _HF_SKIP_SUFFIXES = ("index.json",)
+# Source AscendV1 FLOAT description must not land in QAT checkpoint dirs.
+_HF_SKIP_NAMES = frozenset({"quant_model_description.json"})
 
 
 class CheckpointSaverFormat(QuantFormatBase):
@@ -198,6 +200,8 @@ class CheckpointSaverFormat(QuantFormatBase):
             return
         for file in os.listdir(input_path):
             if file == STRUCTURE_FILE:
+                continue
+            if file in _HF_SKIP_NAMES:
                 continue
             if not any(file.endswith(suffix) for suffix in _HF_COPY_SUFFIXES):
                 continue

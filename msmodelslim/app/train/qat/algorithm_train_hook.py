@@ -36,10 +36,10 @@ __all__ = [
 
 class AlgorithmTrainHook(ITrainHook):
     """
-    显式实现 ``ITrainHook``：编排 ``QATLinearAlgorithm`` 能力。
+    结构化满足 ``ITrainHook``：编排算法能力（不显式继承 Protocol）。
 
-    ``pre_train`` 顺序调用算法的 ``replace_linears`` → ``init_weight_clip_val``，
-    并回写 ``qparam_names``；算法类本身不暴露 ``pre_train``。
+    ``pre_train`` 调用 ``replace_linears`` 完成结构替换与量化参数初始化，
+    并回写 ``qparam_names``。
     """
 
     def __init__(self, config: TrainAlgorithmConfig, factory: TypedFactory):
@@ -68,10 +68,8 @@ class AlgorithmTrainHook(ITrainHook):
                 action="Please load the model before invoking pre_train hooks.",
             )
         impl = self._ensure(model)
-        # 1. 替换匹配的 nn.Linear
-        shells = impl.replace_linears(model)
-        # 2. 初始化 weight_clip_val
-        impl.init_weight_clip_val(shells)
+        # 所有 rank 都必须执行相同的结构变换，保证 FSDP 参数布局一致。
+        impl.replace_linears(model)
 
         names = list(impl.qparam_names())
         ctx.extra["qparam_names"] = names

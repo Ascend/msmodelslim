@@ -24,6 +24,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 import torch
 
 from msmodelslim.core.const import DeviceType
@@ -271,7 +272,6 @@ class TestTransformersModelGetBatchTokenizedData(unittest.TestCase):
             self.assertIsInstance(result, list)
             # 4个数据，batch_size=2，应该有2个batch
             self.assertEqual(len(result), 2)
-
             # 验证_get_padding_data被调用两次
             self.assertEqual(adapter._get_padding_data.call_count, 2)
 
@@ -285,6 +285,60 @@ class TestTransformersModelGetBatchTokenizedData(unittest.TestCase):
                 adapter._get_batch_tokenized_data('not_a_list', batch_size=2, device=DeviceType.CPU)
 
             self.assertIn("calib_list must be a list", str(context.exception))
+
+
+class TestTransformersModelQATAscendV1Load:
+    def _adapter(self, tmp_path):
+        with (
+            patch.object(TransformersModel, '_load_config', return_value=MagicMock(use_cache=True)),
+            patch.object(TransformersModel, '_load_tokenizer', return_value=MagicMock()),
+            patch.object(TransformersModel, '_get_model_pedigree', return_value='llama'),
+            patch.object(TransformersModel, '_get_model_type', return_value='llama'),
+        ):
+            return TransformersModel('llama', Path(tmp_path), trust_remote_code=False)
+
+    def _load(self, tmp_path, *, nonmain=False, loader=None):
+        adapter = self._adapter(tmp_path)
+        model = MagicMock()
+        loader = MagicMock() if loader is None else loader
+        handler = MagicMock()
+        handler.handle.return_value = loader
+
+        with (
+            patch(
+                'msmodelslim.core.quantization_format.format_handler.build_default_format_chain', return_value=handler
+            ),
+            patch.object(adapter, '_build_qat_empty_model', return_value=model),
+            patch('msmodelslim.model.common.transformers._is_fsdp_nonmain_rank', return_value=nonmain),
+        ):
+            result = adapter._load_model_for_qat_from_ascendv1(torch_dtype=torch.bfloat16)
+        return adapter, model, loader, result
+
+    def test_load_qat_ascendv1_binds_adapter_when_loading(self, tmp_path):
+        adapter, _, loader, _ = self._load(tmp_path)
+
+        loader.bind_adapter.assert_called_once_with(adapter)
+
+    @pytest.mark.parametrize('nonmain', [False, True])
+    def test_load_qat_ascendv1_applies_ir_when_loading(self, tmp_path, nonmain):
+        _, model, loader, _ = self._load(tmp_path, nonmain=nonmain)
+
+        loader.apply_ir.assert_called_once_with(model)
+
+    def test_load_qat_ascendv1_returns_model_when_loading(self, tmp_path):
+        _, model, _, result = self._load(tmp_path)
+
+        assert result is model
+
+    def test_load_qat_ascendv1_hydrates_when_main_rank(self, tmp_path):
+        _, model, loader, _ = self._load(tmp_path)
+
+        loader.hydrate.assert_called_once_with(model)
+
+    def test_load_qat_ascendv1_skips_hydrate_when_nonmain_rank(self, tmp_path):
+        _, _, loader, _ = self._load(tmp_path, nonmain=True)
+
+        loader.hydrate.assert_not_called()
 
 
 class TestTransformersModelGetPaddingData(unittest.TestCase):

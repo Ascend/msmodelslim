@@ -367,3 +367,30 @@ class TestHelpers:
         model.quantizer = module
 
         assert fmt.hydrate(model) is None  # hydrate 无返回值；关键是跳过不抛错
+
+
+class TestUnsupportedLinearLabel:
+    """AscendV1Format 对未注册 linear label 应 fail-closed。"""
+
+    def test_apply_ir_raises_when_export_contains_unsupported_linear_label(self, tmp_path):
+        class _Model(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.proj = nn.Linear(4, 3)
+
+        tensors = {
+            "proj.weight": torch.tensor([[-2, 1, 0, 3], [4, -1, 2, 0], [1, 1, 1, 1]], dtype=torch.int8),
+            "proj.weight_scale": torch.tensor([[0.1], [0.2], [0.3]], dtype=torch.float32),
+            "proj.weight_offset": torch.zeros(3, 1, dtype=torch.float32),
+        }
+        save_file(tensors, str(tmp_path / ASCENDV1_SAFETENSORS_NAME))
+        description = {
+            "proj.weight": "W4A16",
+            "proj.weight_scale": "W4A16",
+            "proj.weight_offset": "W4A16",
+        }
+        (tmp_path / ASCENDV1_DESC_JSON_NAME).write_text(json.dumps(description), encoding="utf-8")
+        fmt = AscendV1Format(str(tmp_path))
+
+        with pytest.raises(UnsupportedError, match="W4A16"):
+            fmt.apply_ir(_Model())

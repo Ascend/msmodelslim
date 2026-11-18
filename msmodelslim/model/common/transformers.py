@@ -18,9 +18,11 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=no-name-in-module
 
+import os
 import re
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +36,38 @@ from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.model.interface_hub import AscendV1GlobalModelDtypeInterface
 from msmodelslim.utils.security.model import SafeGenerator
 from ..base import BaseModelAdapter
+
+
+def _is_fsdp_nonmain_rank() -> bool:
+    """True for non-zero ranks when Accelerate FSDP CPU-RAM-efficient loading is on.
+
+    In that mode only rank 0 loads real weights; other ranks must hold an
+    (empty) meta model so that ``accelerator.prepare`` can broadcast rank 0's
+    shards. Building a full CPU model on every rank would blow host RAM
+    (16 x 62 GB for a 32B model).
+    """
+    if not (torch.distributed.is_available() and torch.distributed.is_initialized()):
+        return False
+    try:
+        from transformers.modeling_utils import is_fsdp_enabled
+
+        if not is_fsdp_enabled():
+            return False
+    except Exception:  # pragma: no cover - diagnostic only
+        return False
+    return int(os.environ.get("LOCAL_RANK", "0")) != 0
+
+
+class _QATLoadMode(Enum):
+    META = "meta"
+    ASCENDV1 = "ascendv1"
+    PRETRAINED = "pretrained"
+
+
+@dataclass(frozen=True)
+class _QATLoadPlan:
+    mode: _QATLoadMode
+    torch_dtype: Any
 
 
 class TransformersModel(BaseModelAdapter, AscendV1GlobalModelDtypeInterface):
@@ -118,6 +152,46 @@ class TransformersModel(BaseModelAdapter, AscendV1GlobalModelDtypeInterface):
             trust_remote_code=self.trust_remote_code,
         )
 
+    def _resolve_qat_torch_dtype(self, torch_dtype: Any) -> Any:
+        if torch_dtype is None or torch_dtype == "auto":
+            return self.get_global_model_torch_dtype()
+        return torch_dtype
+
+    def _load_model_for_qat_from_ascendv1(
+        self,
+        *,
+        torch_dtype: Any = "auto",
+    ) -> PreTrainedModel:
+        """Build the HF shell, apply the AscendV1 fake-quant IR loader, then hydrate
+        weights on rank 0 only.
+
+        The loaded IR is consumed by the QAT algorithm's source dispatch table;
+        unsupported quant IR is rejected by the algorithm itself.
+        """
+        from msmodelslim.core.quantization_format.format_handler import build_default_format_chain
+        from msmodelslim.utils.logging import get_logger
+
+        resolved = self._resolve_qat_torch_dtype(torch_dtype)
+        loader = build_default_format_chain().handle(str(self.model_path), device="cpu")
+        loader.bind_adapter(self)
+
+        model = self._build_qat_empty_model(torch_dtype=resolved)
+        loader.apply_ir(model)
+        if _is_fsdp_nonmain_rank():
+            get_logger().info(
+                "QAT AscendV1 load: applied IR structure on non-main rank (hydrate skipped) path=%s dtype=%s",
+                self.model_path,
+                resolved,
+            )
+        else:
+            loader.hydrate(model)
+            get_logger().info(
+                "QAT AscendV1 load: applied IR and hydrated weights path=%s dtype=%s",
+                self.model_path,
+                resolved,
+            )
+        return model
+
     def _load_model_for_qat(
         self,
         *,
@@ -128,14 +202,62 @@ class TransformersModel(BaseModelAdapter, AscendV1GlobalModelDtypeInterface):
         Rank placement is handled by Accelerate env
         (``FSDP_CPU_RAM_EFFICIENT_LOADING``) + Transformers ``from_pretrained``
         after the process group is initialized. Trainer/FSDP wraps later.
-        """
-        model_kwargs = {}
-        model_kwargs["attn_implementation"] = "flash_attention_2"
 
+        When ``--model_path`` points to a recognized fake-quant export, build the
+        model via ``from_config`` and let the format loader apply FakeQuant IR.
+        """
+        plan = self._resolve_qat_load_plan(torch_dtype=torch_dtype)
+        if plan.mode is _QATLoadMode.META:
+            model = self._build_qat_empty_model(torch_dtype=plan.torch_dtype)
+        elif plan.mode is _QATLoadMode.ASCENDV1:
+            model = self._load_model_for_qat_from_ascendv1(torch_dtype=plan.torch_dtype)
+        else:
+            model = self._load_qat_pretrained_model(torch_dtype=plan.torch_dtype)
+        return model
+
+    def _resolve_qat_load_plan(self, *, torch_dtype: Any) -> _QATLoadPlan:
+        from msmodelslim.core.quantization_format.format_handler import build_default_format_chain
+
+        if build_default_format_chain().can_handle(str(self.model_path)):
+            return _QATLoadPlan(mode=_QATLoadMode.ASCENDV1, torch_dtype=torch_dtype)
+        if _is_fsdp_nonmain_rank():
+            return _QATLoadPlan(
+                mode=_QATLoadMode.META,
+                torch_dtype=self._resolve_qat_torch_dtype(torch_dtype),
+            )
+        return _QATLoadPlan(mode=_QATLoadMode.PRETRAINED, torch_dtype=torch_dtype)
+
+    def _build_qat_empty_model(self, *, torch_dtype: Any) -> PreTrainedModel:
+        """Build a meta/empty HF shell for QAT (FSDP non-main rank or AscendV1 apply_ir).
+
+        Only rank 0 materializes full weights; other ranks keep this shell so
+        ``accelerator.prepare`` can broadcast rank0 state without blowing host RAM.
+        """
+        from accelerate import init_empty_weights
+        from transformers import AutoModelForCausalLM
+
+        if hasattr(self.config, "use_cache"):
+            self.config.use_cache = False
+        with init_empty_weights(include_buffers=False):
+            model = AutoModelForCausalLM.from_config(  # nosec B615: local config only
+                self.config,
+                torch_dtype=torch_dtype,
+                trust_remote_code=self.trust_remote_code,
+            )
+        # from_config under init_empty_weights leaves lm_head / embed_tokens as
+        # separate meta params even when tie_word_embeddings=True. Rank0's
+        # from_pretrained keeps them tied, so FSDP2 param remapping then fails
+        # with: missing ['lm_head.weight']. Re-tie to match rank0.
+        if getattr(self.config, "tie_word_embeddings", False) and hasattr(model, "tie_weights"):
+            model.tie_weights()
+        return model
+
+    def _load_qat_pretrained_model(self, *, torch_dtype: Any) -> PreTrainedModel:
+        # Do not force flash_attention_2: Ascend/NPU envs typically lack flash_attn
+        # and Transformers will raise ImportError during from_pretrained.
         return SafeGenerator.get_model_from_pretrained(
             model_path=str(self.model_path),
             torch_dtype=torch_dtype,
-            **model_kwargs,
         )
 
     def _get_model_type(self, model_type: str) -> str:

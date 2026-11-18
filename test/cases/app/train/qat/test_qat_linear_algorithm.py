@@ -3,7 +3,7 @@
 
 # pylint: disable=abstract-class-instantiated
 
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Tuple
 
 import pytest
 from torch import nn
@@ -13,14 +13,8 @@ from msmodelslim.core.convert.protocol import IIRTransformProcessor
 
 
 class _ConcreteQATLinearAlgorithm(QATLinearAlgorithm):
-    def __init__(self) -> None:
-        self.last_shells: Optional[List[nn.Module]] = None
-
-    def replace_linears(self, model: nn.Module) -> List[nn.Module]:
-        return [model]
-
-    def init_weight_clip_val(self, shells: Sequence[nn.Module]) -> None:
-        self.last_shells = list(shells)
+    def replace_linears(self, model: nn.Module) -> List[Tuple[str, nn.Module]]:
+        return [("model", model)]
 
     def qparam_names(self) -> Tuple[str, ...]:
         return ("weight_clip_val",)
@@ -40,11 +34,8 @@ def test_QATLinearAlgorithm_raises_when_abstract_methods_missing():
 
 def test_QATLinearAlgorithm_requires_get_convert_processors_when_other_methods_defined():
     class _MissingConvert(QATLinearAlgorithm):
-        def replace_linears(self, model: nn.Module) -> List[nn.Module]:
+        def replace_linears(self, model: nn.Module) -> List[Tuple[str, nn.Module]]:
             return []
-
-        def init_weight_clip_val(self, shells: Sequence[nn.Module]) -> None:
-            return None
 
         def qparam_names(self) -> Tuple[str, ...]:
             return ()
@@ -56,14 +47,7 @@ def test_QATLinearAlgorithm_requires_get_convert_processors_when_other_methods_d
 def test_QATLinearAlgorithm_replace_linears_returns_shells_when_implemented():
     model = nn.Linear(2, 2)
     impl = _ConcreteQATLinearAlgorithm()
-    assert impl.replace_linears(model) == [model]
-
-
-def test_QATLinearAlgorithm_init_weight_clip_val_receives_shells_when_called():
-    shell = nn.Linear(1, 1)
-    impl = _ConcreteQATLinearAlgorithm()
-    impl.init_weight_clip_val([shell])
-    assert impl.last_shells == [shell]
+    assert impl.replace_linears(model) == [("model", model)]
 
 
 def test_QATLinearAlgorithm_qparam_names_returns_tuple_when_implemented():

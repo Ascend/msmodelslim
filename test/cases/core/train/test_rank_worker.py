@@ -18,7 +18,13 @@ def _minimal_task(tmp_path) -> CoreTrainTaskConfig:
     data.write_text("{}\n", encoding="utf-8")
     return CoreTrainTaskConfig.model_validate(
         {
-            "algorithm": [{"type": "paretoq"}],
+            "algorithm": [
+                {
+                    "type": "paretoq",
+                    "weight": {"dtype": "int4"},
+                    "act": {"dtype": "int8"},
+                }
+            ],
             "dataset": {"train_path": str(data)},
             "train": {"training_arguments": {}, "qat": {"model_max_length": 16}},
         }

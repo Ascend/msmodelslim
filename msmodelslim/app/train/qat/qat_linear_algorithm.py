@@ -22,7 +22,7 @@ See the Mulan PSL v2 for more details.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Sequence, Tuple
+from typing import List, Tuple
 
 from torch import nn
 
@@ -44,38 +44,26 @@ class QATLinearAlgorithm(ABC):
     - 不负责训练循环、checkpoint 选优或 convert 路由注册本身。
 
     约定：
-    - 由 ``AlgorithmTrainHook.pre_train`` 按 ``replace_linears`` → ``init_weight_clip_val``
-      顺序调用；``qparam_names`` 回写到训练任务供优化器分组使用；
+    - 由 ``AlgorithmTrainHook.pre_train`` 调用 ``replace_linears``；
+      ``qparam_names`` 回写到训练任务供优化器分组使用；
     - ``QATTask.register_convert`` 调用 ``get_convert_processors`` 并挂到 ``IRRouter``。
     """
 
     @abstractmethod
-    def replace_linears(self, model: nn.Module) -> List[nn.Module]:
+    def replace_linears(self, model: nn.Module) -> List[Tuple[str, nn.Module]]:
         """
-        将匹配的 ``nn.Linear`` 原地替换为算法伪量化壳。
+        将匹配的 FLOAT Linear / 预量化 IR 原地替换为算法伪量化壳，
+        并在建壳时完成可学习量化参数初始化。
 
         参数:
             model: 已加载的训练模型
 
         返回:
-            本次替换得到的伪量化壳列表（供 ``init_weight_clip_val`` 使用）
+            本次替换得到的 ``(模块全限定名, 伪量化壳)`` 列表
         """
         raise UnsupportedError(
             f"{self.__class__.__name__} does not support replace_linears",
             action="Please implement replace_linears on the QAT linear algorithm plugin.",
-        )
-
-    @abstractmethod
-    def init_weight_clip_val(self, shells: Sequence[nn.Module]) -> None:
-        """
-        初始化伪量化壳上的可学习量化参数（如 weight_clip_val / α）。
-
-        参数:
-            shells: ``replace_linears`` 返回的壳模块列表
-        """
-        raise UnsupportedError(
-            f"{self.__class__.__name__} does not support init_weight_clip_val",
-            action="Please implement init_weight_clip_val on the QAT linear algorithm plugin.",
         )
 
     @abstractmethod
