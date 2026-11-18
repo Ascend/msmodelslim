@@ -24,7 +24,7 @@ ABS_DIR_PATH=`readlink -f "${1:-$RUN_FUZZ_SHELL_PATH}"`  # If got 1 parameter, r
 AUTOML_PATH=$(dirname `dirname $RUN_FUZZ_SHELL_PATH`)
 echo ">>>> ABS_DIR_PATH: $ABS_DIR_PATH, AUTOML_PATH: $AUTOML_PATHW"
 
-SOURCE_CODE=${AUTOML_PATH}/msmodelslim,${AUTOML_PATH}/ascend_utils
+SOURCE_CODE=${AUTOML_PATH}/msmodelslim,${AUTOML_PATH}/v0/msmodelslim,${AUTOML_PATH}/v0/ascend_utils
 CASES=()
 RESULTS=()
 for FUZZ_PY_FILE in `find ${ABS_DIR_PATH} -name fuzz_test.py`; do
@@ -35,7 +35,7 @@ for FUZZ_PY_FILE in `find ${ABS_DIR_PATH} -name fuzz_test.py`; do
     if [ ! -e $SAMPLE_PATH ]; then
         SAMPLE_PATH=""  # sample path not exists, skip specifying
     fi
-    PYTHONPATH="${AUTOML_PATH}:$PYTHONPATH" python3 -m coverage run --source=${SOURCE_CODE} -p ${TEST_PATH}/fuzz_test.py $SAMPLE_PATH -atheris_runs=$ATHERIS_RUNS
+    python3 -m coverage run --source=${SOURCE_CODE} -p ${RUN_FUZZ_SHELL_PATH}/run_fuzz_case.py ${TEST_PATH}/fuzz_test.py $SAMPLE_PATH -atheris_runs=$ATHERIS_RUNS
     RESULT=$?
 
     TEST_PATH_SPLIT=(${TEST_PATH[@]/fuzz\// })

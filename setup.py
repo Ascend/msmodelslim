@@ -174,6 +174,47 @@ whl_version = os.getenv('WHL_VERSION')
 if whl_version is not None:
     __version__ = whl_version
 
+
+def _discover_v0_msmodelslim_roots():
+    """Discover V0 msmodelslim children that extend the installed package path."""
+    source_root = os.path.join('v0', 'msmodelslim')
+    return {
+        f'msmodelslim/{name}': f'msmodelslim.{name}'
+        for name in sorted(os.listdir(source_root))
+        if os.path.isfile(os.path.join(source_root, name, '__init__.py'))
+    }
+
+
+_V0_PACKAGE_ROOTS = {
+    'ascend_utils': 'ascend_utils',
+    'modelslim': 'modelslim',
+    **_discover_v0_msmodelslim_roots(),
+}
+
+
+def _find_v0_packages():
+    """Map packages under v0/ to their existing installed names."""
+    packages = []
+    package_dir = {}
+
+    for source_root, target_root in _V0_PACKAGE_ROOTS.items():
+        source_dir = os.path.join('v0', source_root)
+        if not os.path.isfile(os.path.join(source_dir, '__init__.py')):
+            raise RuntimeError(f'Invalid V0 package root: {source_dir}')
+
+        packages.append(target_root)
+        package_dir[target_root] = source_dir
+
+        for child in find_packages(where=source_dir):
+            package = f'{target_root}.{child}'
+            packages.append(package)
+            package_dir[package] = os.path.join(source_dir, *child.split('.'))
+
+    return packages, package_dir
+
+
+_v0_packages, _v0_package_dir = _find_v0_packages()
+
 setup(
     name='msmodelslim',
     version=__version__,
@@ -185,18 +226,15 @@ setup(
         'sdist': _SdistWithBuildInfo,
         'develop': _DevelopWithSymlinks,
     },
-    packages=find_packages(
-        exclude=[
-            'precision_tool',
-            'security',
-        ]
-    )
-    + ['msmodelslim.config', 'msmodelslim.lab_calib', 'msmodelslim.lab_practice'],
+    packages=find_packages()
+    + ['msmodelslim.config', 'msmodelslim.lab_calib', 'msmodelslim.lab_practice']
+    + _v0_packages,
     package_dir={
         'msmodelslim': 'msmodelslim',
         'msmodelslim.config': 'config',
         'msmodelslim.lab_calib': 'lab_calib',
         'msmodelslim.lab_practice': 'lab_practice',
+        **_v0_package_dir,
     },
     package_data={
         '': [

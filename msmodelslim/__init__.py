@@ -19,10 +19,26 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
+import sys
+from pathlib import Path
+
+
+_v0_root = Path(__file__).resolve().parent.parent / "v0"
+if _v0_root.is_dir():
+    _v0_root_str = str(_v0_root)
+    if _v0_root_str not in sys.path:
+        sys.path.insert(0, _v0_root_str)
+
+    _v0_msmodelslim = _v0_root / "msmodelslim"
+    if _v0_msmodelslim.is_dir():
+        _v0_msmodelslim_str = str(_v0_msmodelslim)
+        if _v0_msmodelslim_str not in __path__:
+            __path__.append(_v0_msmodelslim_str)
+
 __all__ = ['set_logger_level', 'logger']
 
-from msmodelslim.utils.logging import logger, set_logger_level
-from msmodelslim.utils.patch import patch_torch, patch_pydantic
+from msmodelslim.utils.logging import logger, set_logger_level  # noqa: E402
+from msmodelslim.utils.patch import patch_torch, patch_pydantic  # noqa: E402
 
 patch_torch()
 patch_pydantic()

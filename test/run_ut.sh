@@ -98,9 +98,9 @@ usage() {
     echo ""
     echo "Coverage scope:"
     echo "  Excluded: the per-model directories under msmodelslim/model"
-    echo "  Included: all other modules under msmodelslim and ascend_utils, including"
-    echo "            msmodelslim/pytorch, msmodelslim/onnx, msmodelslim/mindspore and the"
-    echo "            msmodelslim/model framework layer"
+    echo "  Included: all modules under msmodelslim, v0/msmodelslim and v0/ascend_utils,"
+    echo "            including v0/msmodelslim/pytorch, v0/msmodelslim/onnx,"
+    echo "            v0/msmodelslim/mindspore and the msmodelslim/model framework layer"
     echo ""
     echo "Examples:"
     echo "  $0                Run all test cases (default)"
@@ -108,14 +108,14 @@ usage() {
 }
 
 if [ -e $kia_dir ]; then
-    mkdir ${rootdir}/msmodelslim/pytorch/quant/ptq_tools/ptq_kia
-    mkdir ${rootdir}/msmodelslim/onnx/squant_ptq/onnx_ptq_kia
+    mkdir -p ${rootdir}/v0/msmodelslim/pytorch/quant/ptq_tools/ptq_kia
+    mkdir -p ${rootdir}/v0/msmodelslim/onnx/squant_ptq/onnx_ptq_kia
 
-    cp ${kia_dir}/quant_funcs.* ${rootdir}/msmodelslim/pytorch/quant/ptq_tools/ptq_kia -rf
-    cp ${kia_dir}/weight_transform.* ${rootdir}/msmodelslim/pytorch/quant/ptq_tools/ptq_kia -rf
+    cp ${kia_dir}/quant_funcs.* ${rootdir}/v0/msmodelslim/pytorch/quant/ptq_tools/ptq_kia -rf
+    cp ${kia_dir}/weight_transform.* ${rootdir}/v0/msmodelslim/pytorch/quant/ptq_tools/ptq_kia -rf
 
-    cp ${kia_dir}/quant_funcs_onnx.* ${rootdir}/msmodelslim/onnx/squant_ptq/onnx_ptq_kia -rf
-    cp ${kia_dir}/weight_transform_onnx.* ${rootdir}/msmodelslim/onnx/squant_ptq/onnx_ptq_kia -rf
+    cp ${kia_dir}/quant_funcs_onnx.* ${rootdir}/v0/msmodelslim/onnx/squant_ptq/onnx_ptq_kia -rf
+    cp ${kia_dir}/weight_transform_onnx.* ${rootdir}/v0/msmodelslim/onnx/squant_ptq/onnx_ptq_kia -rf
 fi
 
 export PYTHONPATH="${rootdir}":$PYTHONPATH
@@ -128,14 +128,14 @@ chmod o= ${route}/resources -R  # Others no permission
 chmod g-w ${route}/resources -R  # Group not writable
 
 ret=0
-code_dir=${rootdir}/msmodelslim,${rootdir}/ascend_utils
+code_dir=${rootdir}/msmodelslim,${rootdir}/v0/msmodelslim,${rootdir}/v0/ascend_utils
 # ---------------------------------------------------------------------------
 # Coverage scope
 #   Only the per-model directories under msmodelslim/model are kept out of
 #   the line-coverage denominator: they merely wire a model to the framework
 #   interfaces and are frozen once the model has landed.
 #   Everything else is measured, including the v0 implementations
-#   (msmodelslim/pytorch, msmodelslim/onnx, msmodelslim/mindspore) and the
+#   (v0/msmodelslim/pytorch, v0/msmodelslim/onnx, v0/msmodelslim/mindspore) and the
 #   msmodelslim/model framework layer (MODEL_FRAMEWORK_DIRS).
 #   Keep MODEL_FRAMEWORK_DIRS in sync when a framework subdirectory is added.
 # ---------------------------------------------------------------------------

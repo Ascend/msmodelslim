@@ -16,7 +16,7 @@ msModelSlim支持了广泛使用的SmoothQuant、GPTQ、HQQ等大模型量化算
 
 msModelSlim V1框架仍在成长过程中，未完全覆盖V0框架能力和小模型压缩功能，仍需要历史代码填补功能缺失。
 
-目前三套代码共存于msModelSlim代码仓，尽量以目录隔离，后续将逐步整理归一。
+目前 V0 与 V1 代码共存于同一代码仓。V0 源码集中存放在根目录 `v0/` 下，与 V1 源码目录隔离；安装时由 `setup.py` 展开到原有的安装目录和导入路径。
 
 ---
 
@@ -24,18 +24,27 @@ msModelSlim V1框架仍在成长过程中，未完全覆盖V0框架能力和小�
 
 ```text
 msmodelslim/
-├── ascend_utils/          # 小模型剪枝、量化、蒸馏等压缩功能的基础依赖（小模型）
 ├── config/                # 全局配置目录（V1框架）
 ├── docs/                  # 项目文档，如安装指南、快速入门、算法说明、功能指南、案例集等
 ├── example/               # 各模型的量化示例（主要为V0框架量化脚本，但V1量化过程FAQ在此统一管理）
 ├── lab_calib/             # 量化校准数据集示例，如json、jsonl、图片等（V1框架）
 ├── lab_practice/          # 各模型最佳实践量化配置（V1框架）
-├── modelslim/             # 兼容modelslim别名（V0框架）
-├── msmodelslim/           # 源代码
-├── precision_tool/        # 伪量化精度评估工具（V0框架）
-├── security/              # 安全检查基础模块（V0框架）
+├── msmodelslim/           # V1框架源代码
+├── pre-commit/            # Git 预提交检查配置
 ├── skills/                # Agent Skills（资料管理、量化安装/适配/量化/策略/调优/测评等）
 ├── test/                  # 测试用例与测试脚本
+├── tools/                 # 开发与文档生成工具
+├── v0/                    # V0框架和小模型压缩源代码，安装时展开到原有安装目录
+│   ├── ascend_utils/      # ascend_utils 包
+│   ├── modelslim/         # modelslim 兼容包
+│   ├── msmodelslim/       # 安装后展开为 msmodelslim 的 V0 包
+│   │   ├── common/
+│   │   ├── mindspore/
+│   │   ├── onnx/
+│   │   ├── pytorch/
+│   │   └── quant/
+│   ├── precision_tool/    # 伪量化精度评估工具
+│   └── security/          # 安全检查
 ├── install.sh             # 安装脚本
 ├── requirements.txt       # 第三方依赖列表
 ├── pytest.ini             # 测试配置
@@ -66,7 +75,7 @@ msmodelslim/
 └── setup.py               # 打包与安装配置脚本
 ```
 
-> 说明：以上为最外层项目结构，源代码主要集中在 `msmodelslim/` 子目录中，下面重点展开。
+> 说明：以上为最外层项目结构，V1 源代码主要集中在下文的 `msmodelslim/` 子目录中，V0 源代码集中在 `v0/` 中。
 
 ---
 
@@ -76,14 +85,9 @@ msmodelslim/
 msmodelslim/
 ├── app/              # 应用层，对外提供“一键量化、自动调优、模型分析”等功能（V1框架）
 ├── cli/              # 接口层，命令行接口及各功能子命令（V1框架）
-├── common/           # 与AI框架无关的压缩逻辑，如知识蒸馏、低秩分解、剪枝等（小模型）
 ├── core/             # 领域层，量化算法/模式/格式/DevKit等业务知识库（V1框架）
 ├── infra/            # 基础设施层，各类外部依赖适配知识库（V1框架）
-├── mindspore/        # MindSpore 框架的适配与功能实现（V0框架和小模型）
 ├── model/            # 基础设施层，模型适配知识库，如DeepSeek、Qwen等（V1框架）
-├── onnx/             # ONNX 框架的适配和功能实现（V0框架和小模型）
-├── pytorch/          # PyTorch 框架的适配与功能实现（V0框架和小模型）
-├── quant/            # 多模态量化（V0框架）
 ├── utils/            # 通用模块，如日志、配置、校验、安全等（V1框架）
 ├── Third_Party_Open_Source_Software_Notice
 └── __init__.py
@@ -160,14 +164,16 @@ cli/                          # 接口层，命令行接口及各功能子命令
 core/                     # 领域层，按领域积累和管理量化知识
 ├── __init__.py
 ├── analysis_service/         # 量化分析服务知识库
-├── devkit/     # DevKit：group / load / save（非算法本体）
-│   ├── group.py
-│   ├── load.py
-│   └── save.py
 ├── base/                     # 基础协议（待移除，现有实现需移入对应的知识库）
 ├── context/                  # 上下文知识库
 ├── convert/                  # 离线权重转换（含 processors/）
+├── devkit/                   # DevKit：group / load / save（非算法本体）
+│   ├── group.py
+│   ├── load.py
+│   └── save.py
+├── dtype_ops/                # 各数据格式的量化、反量化算子
 ├── graph/                    # 子图模式知识库
+├── infer_engine/             # 伪量化推理引擎
 ├── observer/                 # 特征统计知识库
 ├── practice/                 # 最佳实践知识库
 ├── quant_service/            # 量化服务知识库
@@ -182,6 +188,7 @@ core/                     # 领域层，按领域积累和管理量化知识
 ├── quantization_schema/      # 量化模式 / QIR 知识库（原顶层 ir/）
 ├── quantizer/                # 权重量化和激活值量化知识库（待梳理）
 ├── runner/                   # 调度知识库
+├── train/                    # 训练任务、训练钩子与启动器
 └── tune_strategy/            # 调优策略知识库
 ```
 
