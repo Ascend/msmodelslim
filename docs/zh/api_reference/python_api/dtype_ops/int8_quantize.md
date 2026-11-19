@@ -22,7 +22,7 @@ int8_quantize_per_group_asym(x, scale, offset, axis, group_size, dtype=None, ste
 | x | 输入 | 待量化浮点张量。 | 必选。<br>数据类型：torch.Tensor。<br>可转为 float32。 |
 | scale | 输入 | 量化 scale。 | 必选。<br>数据类型：torch.Tensor，float32。<br>须能广播到 x。 |
 | offset | 输入 | 整数 zero-point。 | `_asym` 必选。<br>数据类型：torch.Tensor。<br>`_sym` 不传。 |
-| axis | 输入 | 量化轴。 | `_per_channel_*`、`_per_group_*` 必选。<br>数据类型：int。<br>`_per_tensor_*` 不传。 |
+| axis | 输入 | 量化轴。 | `_per_channel_*`、`_per_group_*` 必选。<br>`_per_tensor_*` 不传。<br>数据类型：int。 |
 | group_size | 输入 | 分组大小。 | `_per_group_*` 必选。<br>数据类型：int。<br>axis 维长度须整除 group_size。 |
 | dtype | 输入 | 量化网格存储类型。 | 可选。<br>数据类型：torch.dtype。<br>默认 None，表示 float32。<br>低精度存储常用 torch.int8。非 float32 不能反传。 |
 | ste_clamp | 输入 | 饱和是否使用 STE。 | 可选。<br>数据类型：bool。<br>默认 True：前向饱和、反向恒等。<br>False 时饱和位置梯度为 0。 |
@@ -39,22 +39,4 @@ from msmodelslim.core.dtype_ops import int8_quantize_per_channel_sym
 x = torch.randn(4, 8)
 scale = torch.tensor(0.1)
 q, scale = int8_quantize_per_channel_sym(x, scale, axis=0, dtype=torch.int8)
-```
-
-## 联合调用示例
-
-静态路径按算参、量化、反量化依次调用，粒度与对称性须保持一致。
-
-```python
-import torch
-from msmodelslim.core.dtype_ops import (
-    int8_calc_qparam_per_channel_sym,
-    int8_quantize_per_channel_sym,
-    int8_dequantize_per_channel_sym,
-)
-
-w = torch.randn(4, 8)
-scale = int8_calc_qparam_per_channel_sym(w, axis=0)
-q, scale = int8_quantize_per_channel_sym(w, scale, axis=0, dtype=torch.int8)
-w_hat = int8_dequantize_per_channel_sym(q, scale, axis=0)
 ```

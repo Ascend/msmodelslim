@@ -20,7 +20,7 @@ int8_calc_qparam_per_group_asym(x, axis, group_size)
 | 参数名 | 输入/返回值 | 含义 | 使用限制 |
 | ------ | ------ | ------ | ------ |
 | x | 输入 | 待量化浮点张量。 | 必选。<br>数据类型：torch.Tensor。<br>可转为 float32。 |
-| axis | 输入 | 量化轴。 | `_per_channel_*`、`_per_group_*` 必选。<br>数据类型：int。<br>`_per_tensor_*` 不传。 |
+| axis | 输入 | 量化轴。 | `_per_channel_*`、`_per_group_*` 必选。<br>`_per_tensor_*` 不传。<br>数据类型：int。 |
 | group_size | 输入 | 分组大小。 | `_per_group_*` 必选。<br>数据类型：int。<br>axis 维长度须整除 group_size。 |
 | scale | 返回值 | 量化 scale。 | 数据类型：torch.Tensor，float32。<br>对称：scale = amax / 127。<br>非对称：scale = (xmax - xmin) / 255。<br>区间强制包含 0。 |
 | offset | 返回值 | 整数 zero-point。 | 仅 `_asym` 返回。<br>数据类型：torch.Tensor。<br>公式：offset = round(-xmin / scale) + (-128)。 |

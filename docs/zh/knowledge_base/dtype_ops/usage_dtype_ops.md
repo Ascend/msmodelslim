@@ -1,4 +1,4 @@
-# 量化数据类型 ops使用流程指南
+# 量化数据类型 ops 使用流程指南
 
 ## 1. 适用范围
 
@@ -13,7 +13,7 @@
 不适用于：
 
 - 选择整层量化模式或编写 YAML 配方，请改走《[一键量化使用指南](../../user_guide/usage_one_click_quantization.md)》与对应模式词条；
-- 存储打包（两个4bit打进一个字节），本层不做 pack / unpack。
+- 存储打包（两个 4bit 打进一个字节），本层不做 pack / unpack。
 
 类型定义见[量化数据类型](README.md)下各词条。公式见[量化与反量化](term_quantization.md)。各接口参数见《[量化数据类型 ops Python API](../../api_reference/python_api/dtype_ops.md)》。
 
@@ -41,20 +41,21 @@
 ## 4. 流程总览
 
 ```mermaid
+%%{init: {"flowchart": {"curve": "linear"}}}%%
 flowchart TD
-  A[选择数据类型、粒度与对称性] --> B[按场景选择静态或动态]
-  B --> C[静态：计算量化参数后量化]
-  B --> D[动态：在线计算参数并量化]
-  C --> E[执行反量化]
-  D --> E
-  E --> F[选择输出精度与反传]
+  A[选择数据类型、粒度与对称性] --> C[按场景选择静态或动态]
+  C --- B[可选：选择输出精度与反传]
+  C --> D[静态：计算量化参数后量化]
+  C --> E[动态：在线计算参数并量化]
+  D --> F[执行反量化]
+  E --> F
 ```
 
 - **选择数据类型、粒度与对称性**：先定编码家族，再定函数名里的粒度与对称性。
-- **按场景选择静态或动态**：离线权重走静态路径；在线激活走动态路径。
+- **按场景选择静态或动态**：静态、动态针对激活。校准后用已有 scale 走静态；在线统计走动态。
+- **选择输出精度与反传（可选）**：默认 float32 网格、饱和用 STE。量化参数要不要训练、`q` 要不要存低精度，才改这里的调用和参数。
 - **计算量化参数**：静态路径先调用算参函数；动态路径由动态量化函数内部完成。
 - **执行量化与反量化**：得到 `q` 与原样返回的参数，再用同一组量化参数把 `q` 还原为 float32。
-- **选择输出精度与反传**：需要低精度存储时再传输出类型。非 float32 的 `q` 不能反传。
 
 ## 5. 操作步骤
 
@@ -75,7 +76,61 @@ flowchart TD
 
 **输出**：一组确定的函数名与粒度参数。
 
-### 步骤 2：计算量化参数
+### 步骤 2：按场景选择静态或动态
+
+**目标**：静态、动态针对激活。静态用校准好的参数；动态在函数内当场统计。
+
+**操作**：
+
+| 场景 | 调用 | 量化参数 |
+| --- | --- | --- |
+| 激活静态 | 先 `calc_qparam` 再 `quantize` | 校准得到，调用方传入 |
+| 激活动态 | `quantize_dynamic` | 当场计算 |
+| 推理反量化 | `dequantize` | 使用量化时返回的参数；`q` 可以是 float32 或已转换的低精度 |
+
+量化参数要不要训练，不是静态和动态的区别，见步骤 3。
+
+**输出**：与步骤 5 相同的返回值。
+
+### 步骤 3：选择输出精度与反传（可选）
+
+本步骤可以跳过。不训练量化参数、也不把权重存成低精度时，用后续步骤4、5即可。
+
+`dtype`、`ste_clamp` 只出现在 `quantize` / `quantize_dynamic`。
+
+| 参数或调用 | 默认 | 什么时候用 |
+| --- | --- | --- |
+| `detach` | 不训练:对权重调 `quantize_dynamic`，内部默认 `detach` | 要训练：走 `calc_qparam` 和 `quantize`，不要 `detach`，让 scale 进计算图。 |
+| `dtype` | `None`，即 float32 网格，可以反传 | 训练要反传：不传，或显式 `torch.float32`。要把 `q` 存成低精度：INT8 / INT4 / MXFP4 传 `torch.int8`；FP8 / MXFP8 传对应 `float8`。非 float32 不能反传。 |
+| `ste_clamp` | `True`：前向饱和、反向恒等，饱和位置梯度仍为 1 | 只有不希望饱和位置还有梯度时才传 `False`。`round_ste` 始终开启，不用传。 |
+
+```python
+import torch
+from msmodelslim.core.dtype_ops import (
+    int8_calc_qparam_per_channel_sym, int8_quantize_per_channel_sym,
+    int8_dequantize_per_channel_sym, int8_quantize_dynamic_per_channel_sym,
+)
+
+w = torch.randn(4, 8, requires_grad=True)
+
+# 场景 1：不训练量化参数。对权重调 dynamic 即可，内部已 detach。dtype传fp32。
+q, scale = int8_quantize_dynamic_per_channel_sym(w, axis=0, dtype=torch.float32)
+w_hat = int8_dequantize_per_channel_sym(q, scale, axis=0)
+
+# 场景 2：要训练量化参数。走 calc_qparam 和 quantize，不要 detach。dtype传fp32。
+scale = int8_calc_qparam_per_channel_sym(w, axis=0)
+q, scale = int8_quantize_per_channel_sym(w, scale, axis=0, dtype=torch.float32)
+w_hat = int8_dequantize_per_channel_sym(q, scale, axis=0)
+
+# 场景 3：训练量化参数，但不希望饱和位置还有梯度。才传 ste_clamp=False。
+q, scale = int8_quantize_per_channel_sym(
+    w, scale, axis=0, dtype=torch.float32, ste_clamp=False
+)
+```
+
+**输出**：float32 网格可对损失 `backward`；低精度 `q` 只适合保存或推理。
+
+### 步骤 4：计算量化参数
 
 **目标**：得到可广播、可落盘的 scale / offset / shared_exp。
 
@@ -111,11 +166,11 @@ se = mxfp4_calc_qparam_sym(w, axis=-1)
 
 **输出**：float32 scale（及可选 offset），或 `uint8` E8M0。
 
-### 步骤 3：执行量化与反量化
+### 步骤 5：执行量化与反量化
 
 **目标**：得到与输入同形状的量化网格，并能还原为 float32。
 
-**操作**：默认不传 `dtype` 时，`q` 是 float32 网格。需要低精度存储时再传 `dtype`：INT8 / INT4 / MXFP4 常用 `torch.int8`；FP8 / MXFP8 用对应 `float8`。都是逐元素转换，不打包。非 float32 的 `q` 不能反传。本步骤只调用量化与反量化；量化参数来自步骤 2。
+**操作**：默认不传 `dtype` 时，`q` 是 float32 网格。需要低精度存储时再传 `dtype`：INT8 / INT4 / MXFP4 常用 `torch.int8`；FP8 / MXFP8 用对应 `float8`。都是逐元素转换，不打包。非 float32 的 `q` 不能反传。本步骤只调用量化与反量化；量化参数来自步骤 4。
 
 ```python
 import torch
@@ -147,48 +202,32 @@ w_mx = mxfp4_dequantize_sym(q_mx4, se, axis=-1)
 
 **输出**：`(q, scale)` 或 `(q, scale, offset)` 或 `(q, shared_exp)`，以及 float32 还原张量。
 
-### 步骤 4：按场景选择静态或动态
+### 联合调用示例
 
-**目标**：静态参数由调用方准备，动态参数在函数内计算并脱离计算图。
-
-**操作**：
-
-| 场景 | 调用 | 量化参数 |
-| --- | --- | --- |
-| 离线权重量化 | 先 `calc_qparam` 再 `quantize` | 传入的 scale / offset / shared_exp 原样返回 |
-| 推理反量化 | `dequantize` | 使用量化时返回的参数；`q` 可以是 float32 或已转换的低精度 |
-| 在线 / 动态量化 | `quantize_dynamic` | 当场计算参数，`detach` 后和 `q` 一起返回 |
-
-静态训练若要把参数当常数，在调用 `quantize` 前对参数 `detach`。
-
-**输出**：与步骤 3 相同的返回值；动态路径的参数已 `detach`。
-
-### 步骤 5：选择输出精度与反传
-
-**目标**：分清 float32 网格（能反传）和低精度存储（不能反传）。
-
-**操作**：`dtype` 决定 `q` 的类型。`ste_clamp` 只出现在 `quantize` / `quantize_dynamic`，默认 `True`：前向饱和、反向恒等，饱和位置梯度仍为 1；`False` 时饱和位置梯度为 0。`round_ste` 始终开启。
+按上面的顺序走完一条静态路径和一条动态路径。粒度、对称性、`axis` 全程保持一致。
 
 ```python
 import torch
 from msmodelslim.core.dtype_ops import (
-    int8_calc_qparam_per_channel_sym, int8_quantize_per_channel_sym,
-    int8_dequantize_per_channel_sym, int8_quantize_dynamic_per_channel_sym,
+    int8_calc_qparam_per_channel_sym,
+    int8_quantize_per_channel_sym,
+    int8_dequantize_per_channel_sym,
+    int8_quantize_dynamic_per_channel_sym,
 )
 
-scale = int8_calc_qparam_per_channel_sym(x.detach(), axis=-1).detach()
-q, scale = int8_quantize_per_channel_sym(x, scale, axis=-1, dtype=torch.float32)
-y = int8_dequantize_per_channel_sym(q, scale, axis=-1)
+w = torch.randn(4, 8)
+x = torch.randn(2, 8, requires_grad=True)
 
-q, scale = int8_quantize_per_channel_sym(
-    x, scale, axis=-1, dtype=torch.float32, ste_clamp=False
-)
+# 权重落盘：不训练量化参数，把 q 存成 int8
+scale = int8_calc_qparam_per_channel_sym(w, axis=0)
+q, scale = int8_quantize_per_channel_sym(w, scale, axis=0, dtype=torch.int8)
+w_hat = int8_dequantize_per_channel_sym(q, scale, axis=0)
 
+# 激活动态：在线统计 scale
 q, scale = int8_quantize_dynamic_per_channel_sym(x, axis=-1, dtype=torch.float32)
 y = int8_dequantize_per_channel_sym(q, scale, axis=-1)
+y.sum().backward()
 ```
-
-**输出**：float32 网格可对损失 `backward`；低精度 `q` 只适合保存或推理。
 
 ## 6. 验收条件
 
