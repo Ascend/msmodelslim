@@ -17,7 +17,7 @@ fp8_dequantize_per_channel_sym(q, scale, axis)
 | ------ | ------ | ------ | ------ |
 | q | 输入 | FP8 量化网格。 | 必选。<br>数据类型：torch.Tensor。<br>可为 float32 或 float8。 |
 | scale | 输入 | 量化时使用的 scale。 | 必选。<br>数据类型：torch.Tensor，float32。 |
-| axis | 输入 | 量化轴。 | `_per_channel_*` 必选。<br>数据类型：int。<br>`_per_tensor_*` 不传。 |
+| axis | 输入 | 量化轴。 | `_per_channel_*` 必选。<br>`_per_tensor_*` 不传。<br>数据类型：int。 |
 | x_hat | 返回值 | 反量化浮点张量。 | 数据类型：torch.Tensor，float32。<br>形状与 q 一致。 |
 
 ## 调用示例
