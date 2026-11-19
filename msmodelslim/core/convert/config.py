@@ -34,8 +34,18 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from msmodelslim.core.convert.types import IRKind
 
-# MX 目标只在昇腾 NPU 上部署，落盘须走 AscendV1，不用 HF/compressed_tensors。
-_MX_TARGET_IRS = frozenset({IRKind.W8A8_MXFP8, IRKind.W4A4_MXFP4})
+# MX 与动态整型目标只在昇腾 NPU 上部署，落盘须走 AscendV1，不用 HF/compressed_tensors。
+_ASCENDV1_ONLY_TARGET_IRS = frozenset(
+    {
+        IRKind.W8A8_MXFP8,
+        IRKind.W4A4_MXFP4,
+        IRKind.W8A16_INT8,
+        IRKind.W8A16_INT8_ASYM,
+        IRKind.W8A8_INT8,
+        IRKind.W4A8_INT4,
+        IRKind.W4A4_INT4,
+    }
+)
 _ASCENDV1_DST_FORMATS = frozenset({"ascendv1", "ascendv1_saver"})
 
 
@@ -165,15 +175,17 @@ class ConvertConfig(BaseModel):
 
     @model_validator(mode="after")
     def _mx_requires_ascendv1(self) -> ConvertConfig:
-        """W8A8_MXFP8 与 W4A4_MXFP4 的 dst_format 必须为 ascendv1。"""
-        mx_targets = [
-            r.target_ir.value for r in self.convert_rules if r.action == "transform" and r.target_ir in _MX_TARGET_IRS
+        """MX 与整型转换目标的 dst_format 必须为 ascendv1。"""
+        ascend_targets = [
+            r.target_ir.value
+            for r in self.convert_rules
+            if r.action == "transform" and r.target_ir in _ASCENDV1_ONLY_TARGET_IRS
         ]
-        if not mx_targets:
+        if not ascend_targets:
             return self
         dst = self.dst_format.lower()
         if dst not in _ASCENDV1_DST_FORMATS:
-            names = ", ".join(dict.fromkeys(mx_targets))
+            names = ", ".join(dict.fromkeys(ascend_targets))
             raise ValueError(
                 f"target_ir {names} requires dst_format ascendv1 (Ascend NPU deployment); "
                 f"got dst_format={self.dst_format!r}. Use huggingface/compressed_tensors only for "

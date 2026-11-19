@@ -46,7 +46,7 @@ $$ \hat{x} = \text{round}\left(\frac{x}{\Delta_{\text{block}}}\right) $$
 
 - **Data-free 特性**：无需校准数据集，无需加载模型代码，纯权重离线计算。
 - **无损转换**：`FP8_BLOCK → FLOAT`、`INT4_PACKED → FLOAT`、`MXFP4_PACKED → FLOAT`，以及满足条件时的 `FP8_BLOCK → W8A8_MXFP8` 直转。
-- **有损转换**：`FLOAT → W8A8_MXFP8` 与 `FLOAT → W4A4_MXFP4` 为有损转换（重新量化引入量化误差）。不满足直转条件的 `FP8_BLOCK → W8A8_MXFP8` 先反量化再量化，后半段有损。
+- **有损转换**：`FLOAT → W8A8_MXFP8`、`FLOAT → W4A4_MXFP4`，以及 `FLOAT → W8A16_INT8` / `W8A16_INT8_ASYM` / `W8A8_INT8` / `W4A8_INT4` / `W4A4_INT4` 为有损转换（重新量化引入量化误差）。`FP8_BLOCK` 到 W8A16 / W8A8、`MXFP4_PACKED → W4A8_INT4` 先反量化到 `FLOAT` 再量化。不满足直转条件的 `FP8_BLOCK → W8A8_MXFP8` 同样先反量化再量化，后半段有损。
 - **自动路由**：`route: auto` 时自动推断源 IR 并选择转换路径，支持多步串联。
 - **7 阶段流水线**：从读 catalog 到落盘，全流程无需模型 forward。
 - **多种保存格式**：`ascend_v1`（MXFP8 部署）、`huggingface`（HF 生态）。
@@ -111,7 +111,7 @@ spec:
 ### 5.2 使用限制
 
 - **仅转换线性层**：仅 `linears.match` 中匹配的模块参与转换，未匹配权重原样保留。
-- **不能替代常规量化**：无法进行需要校准的量化（如 W8A8 INT8 需激活统计）。
+- **不能替代常规量化**：无法进行需要校准的量化。
 - **MXFP8 格式唯一**：MXFP8 必须用 `ascend_v1` 落盘，不支持 HuggingFace 格式。
 - **无模型代码加载**：无法处理需要模型结构理解的结构变换。
 

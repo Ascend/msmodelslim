@@ -33,6 +33,15 @@ from msmodelslim.core.convert.edges import RouteConstraints, TransformEdge
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
 
 _MXFP8_DEPLOY_KEYS = frozenset({"weight", "weight_scale", "weight_offset"})
+_INT_CONVERT_IRS = frozenset(
+    {
+        IRKind.W8A16_INT8,
+        IRKind.W8A16_INT8_ASYM,
+        IRKind.W8A8_INT8,
+        IRKind.W4A8_INT4,
+        IRKind.W4A4_INT4,
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -78,6 +87,58 @@ def _restore_state_dict(state_dict: dict[str, Any]) -> dict[str, Any]:
 def is_mxfp8_deploy_state(state_dict: dict[str, Any]) -> bool:
     """判断 state_dict 是否来自 ``W8A8MXDynamicPerBlockFakeQuantLinear.deploy()``。"""
     return _MXFP8_DEPLOY_KEYS.issubset(state_dict.keys())
+
+
+def _rebuild_int_fakequant(module_path: str, final_ir: IRKind, state_dict: dict[str, Any]) -> nn.Module:
+    """从 state_dict 重建整型 FakeQuant。scheme 按 final_ir 区分。
+
+    对称 W8A16 用 ``int8_per_channel_sym``，得到 ``W8A16StaticPerChannelFakeQuantLinear``。
+    非对称 W8A16 用 ``int8_per_channel_asym_neg_offset``，得到
+    ``W8A16PerChannelNegOffsetFakeQuantLinear``。参数里的 offset 已是 ``-zp``，
+    该类 forward 会再取一次负。
+    """
+    import msmodelslim.core.quantization_schema as qir
+    from msmodelslim.core.quantization_schema.const import (
+        float_per_tensor_sym,
+        int4_per_channel_sym,
+        int4_per_token_sym,
+        int8_per_channel_asym_neg_offset,
+        int8_per_channel_sym,
+        int8_per_token_sym,
+    )
+    from msmodelslim.core.quantization_schema.qal import QDType, QParam, QStorage
+
+    # (activation scheme, weight scheme, storage dtype, whether the module stores weight_offset)
+    specs = {
+        IRKind.W8A16_INT8: (float_per_tensor_sym, int8_per_channel_sym, QDType.INT8, True),
+        IRKind.W8A16_INT8_ASYM: (float_per_tensor_sym, int8_per_channel_asym_neg_offset, QDType.INT8, True),
+        IRKind.W8A8_INT8: (int8_per_token_sym, int8_per_channel_sym, QDType.INT8, False),
+        IRKind.W4A8_INT4: (int8_per_token_sym, int4_per_channel_sym, QDType.INT4, False),
+        IRKind.W4A4_INT4: (int4_per_token_sym, int4_per_channel_sym, QDType.INT4, True),
+    }
+    x_scheme, w_scheme, qdtype, needs_offset = specs[final_ir]
+    weight = state_dict.get("weight")
+    scale = state_dict.get("weight_scale")
+    offset = state_dict.get("weight_offset") if needs_offset else None
+    if weight is None or scale is None or (needs_offset and offset is None):
+        raise ValueError(f"Cannot rebuild module for {module_path} with final_ir={final_ir!r} from state_dict")
+    ext = {"scale": scale}
+    if needs_offset:
+        ext["offset"] = offset
+    return qir.AutoFakeQuantLinear.create(
+        QParam(scheme=x_scheme),
+        QParam(scheme=w_scheme, ext=ext),
+        QStorage(dtype=qdtype, value=weight),
+        state_dict.get("bias"),
+    )
+
+
+def _passthrough_module_from_state_dict(state_dict: dict[str, Any]) -> nn.Module:
+    """跳过量化的模块原样落盘：每个张量保持原 dtype，保存时走 ``on_float_module``。"""
+    mod = nn.Module()
+    for name, tensor in state_dict.items():
+        mod.register_parameter(name, nn.Parameter(tensor.detach(), requires_grad=False))
+    return mod
 
 
 def _float_module_from_state_dict(state_dict: dict[str, Any]) -> nn.Module:
@@ -176,6 +237,10 @@ class IRResult:
 
                 return W4A4MXDynamicPerBlockFakeQuantLinear.from_deploy_state_dict(state_dict)
             return _float_module_from_state_dict(state_dict)
+        if self.final_ir in _INT_CONVERT_IRS:
+            if "weight_scale" not in state_dict:
+                return _passthrough_module_from_state_dict(state_dict)
+            return _rebuild_int_fakequant(self.module_path, self.final_ir, state_dict)
         raise ValueError(
             f"Cannot rebuild module for {self.module_path} with final_ir={self.final_ir!r} from state_dict"
         )

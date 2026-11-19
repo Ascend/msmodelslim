@@ -115,8 +115,8 @@
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `match` | `list[string]` | 可选 | `[]` | — | 匹配的线性层名称模式列表。 | 无 |
-| `target` | `string` | 必选 | 无 | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP`、`INT4_PACKED`、`MXFP4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`PARETOQ_FLOAT`、`W4A8_DYNAMIC`、`W4A4_DYNAMIC`、`UNKNOWN` | 转换目标 IR 类型，如 `W8A8_MXFP8`、`INT4_PACKED` 等。 | 无 |
-| `route` | `list[string] / string` | 可选 | `auto` | 列表元素：`FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP`、`INT4_PACKED`、`MXFP4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`PARETOQ_FLOAT`、`W4A8_DYNAMIC`、`W4A4_DYNAMIC`、`UNKNOWN`；`auto` | 转换路径：显式 IR 列表（首元素为源 IR），或 `auto` 由虚拟树按权重 dtype 推断。 | 无 |
+| `target` | `string` | 必选 | 无 | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP`、`W8A16_INT8`、`W8A16_INT8_ASYM`、`W8A8_INT8`、`W4A8_INT4`、`W4A4_INT4`、`INT4_PACKED`、`MXFP4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`PARETOQ_FLOAT`、`W4A8_DYNAMIC`、`W4A4_DYNAMIC`、`UNKNOWN` | 转换目标 IR 类型，如 `W8A8_MXFP8`、`W8A16_INT8`、`W8A16_INT8_ASYM`、`W8A8_INT8`、`W4A8_INT4`、`W4A4_INT4`。BF16 从 `FLOAT` 直达；FP8 block 到 W8A16 / W8A8、MXFP4 packed 到 `W4A8_INT4` 经 `FLOAT` 两跳。 | 无 |
+| `route` | `list[string] / string` | 可选 | `auto` | 列表元素：`FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP`、`W8A16_INT8`、`W8A16_INT8_ASYM`、`W8A8_INT8`、`W4A8_INT4`、`W4A4_INT4`、`INT4_PACKED`、`MXFP4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`PARETOQ_FLOAT`、`W4A8_DYNAMIC`、`W4A4_DYNAMIC`、`UNKNOWN`；`auto` | 转换路径：显式 IR 列表（首元素为源 IR），或 `auto` 由虚拟树按权重 dtype 推断。 | 无 |
 
 **配置约束**
 
@@ -156,7 +156,7 @@
 |----------|------|-----------|--------|----------------|------|----------|
 | `src_format` | `string` | 可选 | `auto` | — | 源权重格式；`auto` 由模型适配器/权重目录自动推断。 | 无 |
 | `dst_format` | `string` | 可选 | `ascendv1` | — | 目标保存格式：`ascendv1`（昇腾，与 `SaveConfig.type` 的 `ascend_v1`/`ascendv1`/`ascendv1_saver` 等价）；`compressed_tensors`（HF 兼容 safetensors）；`huggingface`/`hf` 是 `compressed_tensors` 的别名。 | 无 |
-| `dst_ir` | `string / null` | 可选 | `null` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP`、`INT4_PACKED`、`MXFP4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`PARETOQ_FLOAT`、`W4A8_DYNAMIC`、`W4A4_DYNAMIC`、`UNKNOWN`；或 null | 目标 IR 类型；不设置时由目标格式决定。 | 无 |
+| `dst_ir` | `string / null` | 可选 | `null` | `FLOAT`、`FP8_BLOCK`、`W8A8_MXFP8`、`W4A4_MXFP4`、`W4A8_MXFP`、`W8A16_INT8`、`W8A16_INT8_ASYM`、`W8A8_INT8`、`W4A8_INT4`、`W4A4_INT4`、`INT4_PACKED`、`MXFP4_PACKED`、`NVFP4_MODELOPT`、`HIFP4`、`PARETOQ_FLOAT`、`W4A8_DYNAMIC`、`W4A4_DYNAMIC`、`UNKNOWN`；或 null | 目标 IR 类型；不设置时由目标格式决定。 | 无 |
 
 **配置约束**
 

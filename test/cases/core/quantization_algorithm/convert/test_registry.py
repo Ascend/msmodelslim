@@ -26,6 +26,31 @@ class TestRegisterConvertProcessors:
             "Int4PackedToFloatProcessor"
         ]
         assert [e.processor_name for e in router.resolve(IRKind.FLOAT, IRKind.W8A8_MXFP8)] == ["MxFp8QuantProcessor"]
+        assert [e.processor_name for e in router.resolve(IRKind.FLOAT, IRKind.W4A4_INT4)] == ["W4A4Int4QuantProcessor"]
+        assert [e.processor_name for e in router.resolve(IRKind.FLOAT, IRKind.W8A16_INT8)] == [
+            "W8A16Int8QuantProcessor"
+        ]
+        assert [e.processor_name for e in router.resolve(IRKind.FLOAT, IRKind.W8A16_INT8_ASYM)] == [
+            "W8A16Int8AsymQuantProcessor"
+        ]
+        assert [e.processor_name for e in router.resolve(IRKind.FLOAT, IRKind.W8A8_INT8)] == ["W8A8Int8QuantProcessor"]
+        assert [e.processor_name for e in router.resolve(IRKind.FLOAT, IRKind.W4A8_INT4)] == ["W4A8Int4QuantProcessor"]
+        assert [e.processor_name for e in router.resolve(IRKind.MXFP4_PACKED, IRKind.W4A8_INT4)] == [
+            "MxFp4PackedToFloatProcessor",
+            "W4A8Int4QuantProcessor",
+        ]
+        assert [e.processor_name for e in router.resolve(IRKind.FP8_BLOCK, IRKind.W8A16_INT8)] == [
+            "Fp8BlockToFloatProcessor",
+            "W8A16Int8QuantProcessor",
+        ]
+        assert [e.processor_name for e in router.resolve(IRKind.FP8_BLOCK, IRKind.W8A16_INT8_ASYM)] == [
+            "Fp8BlockToFloatProcessor",
+            "W8A16Int8AsymQuantProcessor",
+        ]
+        assert [e.processor_name for e in router.resolve(IRKind.FP8_BLOCK, IRKind.W8A8_INT8)] == [
+            "Fp8BlockToFloatProcessor",
+            "W8A8Int8QuantProcessor",
+        ]
 
     def test_default_registration_is_cached_singleton_when_called_twice(self):
         first = IRRouter.default()

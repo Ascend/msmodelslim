@@ -29,6 +29,7 @@ from msmodelslim.core.quantization_algorithm.convert.fp8_block_to_mxfp8 import F
 from msmodelslim.core.quantization_algorithm.convert.int4_to_float import Int4PackedToFloatProcessor
 from msmodelslim.core.quantization_algorithm.convert.mxfp4_quant import MxFp4QuantProcessor
 from msmodelslim.core.quantization_algorithm.convert.mxfp4_to_float import MxFp4PackedToFloatProcessor
+from msmodelslim.core.quantization_algorithm.convert.int_quant import INT_QUANT_PROCESSORS
 from msmodelslim.core.quantization_algorithm.convert.mxfp8_quant import MxFp8QuantProcessor
 
 _REGISTERED = False
@@ -46,6 +47,7 @@ def register_convert_processors(router: IRRouter | None = None) -> IRRouter:
         MxFp4PackedToFloatProcessor(),
         MxFp8QuantProcessor(),
         MxFp4QuantProcessor(),
+        *INT_QUANT_PROCESSORS,
     ):
         r.register_processor(proc)
     _REGISTERED = True

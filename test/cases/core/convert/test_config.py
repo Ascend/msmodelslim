@@ -52,6 +52,45 @@ class TestConvertConfig:
                     convert_rules=[ConvertRule(match="layers.*", target_ir=IRKind.W4A4_MXFP4)],
                 )
 
+    @pytest.mark.parametrize(
+        "target_ir",
+        [
+            IRKind.W8A16_INT8,
+            IRKind.W8A16_INT8_ASYM,
+            IRKind.W8A8_INT8,
+            IRKind.W4A8_INT4,
+            IRKind.W4A4_INT4,
+        ],
+    )
+    @pytest.mark.parametrize("dst_format", ["huggingface", "compressed_tensors"])
+    def test_convert_config_raise_error_when_int_target_with_non_ascend_dst(self, target_ir, dst_format):
+        with pytest.raises(SchemaValidateError, match=f"{target_ir.value} requires dst_format ascendv1"):
+            ConvertConfig(
+                model_path="/m",
+                save_path="/o",
+                dst_format=dst_format,
+                convert_rules=[ConvertRule(match="layers.*", target_ir=target_ir)],
+            )
+
+    @pytest.mark.parametrize(
+        "target_ir",
+        [
+            IRKind.W8A16_INT8,
+            IRKind.W8A16_INT8_ASYM,
+            IRKind.W8A8_INT8,
+            IRKind.W4A8_INT4,
+            IRKind.W4A4_INT4,
+        ],
+    )
+    def test_convert_config_pass_when_int_target_with_ascendv1_dst(self, target_ir):
+        cfg = ConvertConfig(
+            model_path="/m",
+            save_path="/o",
+            dst_format="ascendv1",
+            convert_rules=[ConvertRule(match="layers.*", target_ir=target_ir)],
+        )
+        assert cfg.dst_format == "ascendv1"
+
     def test_convert_config_pass_when_mxfp8_with_ascendv1_dst(self):
         cfg = ConvertConfig(
             model_path="/m",

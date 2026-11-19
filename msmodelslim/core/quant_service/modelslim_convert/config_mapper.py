@@ -99,7 +99,13 @@ class LinearConvertConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     match: List[str] = Field(default_factory=list, description="匹配的线性层名称模式列表。")
-    target: IRKind = Field(description="转换目标 IR 类型，如 `W8A8_MXFP8`、`INT4_PACKED` 等。")
+    target: IRKind = Field(
+        description=(
+            "转换目标 IR 类型，如 `W8A8_MXFP8`、`W8A16_INT8`、`W8A16_INT8_ASYM`、"
+            "`W8A8_INT8`、`W4A8_INT4`、`W4A4_INT4`。BF16 从 `FLOAT` 直达；"
+            "FP8 block 到 W8A16 / W8A8、MXFP4 packed 到 `W4A8_INT4` 经 `FLOAT` 两跳。"
+        )
+    )
     route: Union[List[IRKind], Literal["auto"]] = Field(
         default="auto", description="转换路径：显式 IR 列表（首元素为源 IR），或 `auto` 由虚拟树按权重 dtype 推断。"
     )

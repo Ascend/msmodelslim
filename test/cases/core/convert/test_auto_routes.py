@@ -69,3 +69,28 @@ class TestResolveAutoRoute:
     def test_resolve_auto_route_return_mxfp4_edges(self):
         assert resolve_auto_route(IRKind.MXFP4_PACKED, IRKind.FLOAT) == [IRKind.MXFP4_PACKED, IRKind.FLOAT]
         assert resolve_auto_route(IRKind.FLOAT, IRKind.W4A4_MXFP4) == [IRKind.FLOAT, IRKind.W4A4_MXFP4]
+        assert resolve_auto_route(IRKind.MXFP4_PACKED, IRKind.W4A8_INT4) == [
+            IRKind.MXFP4_PACKED,
+            IRKind.FLOAT,
+            IRKind.W4A8_INT4,
+        ]
+
+    @pytest.mark.parametrize(
+        "dst_ir",
+        [
+            IRKind.W8A16_INT8,
+            IRKind.W8A16_INT8_ASYM,
+            IRKind.W8A8_INT8,
+            IRKind.W4A8_INT4,
+            IRKind.W4A4_INT4,
+        ],
+    )
+    def test_resolve_auto_route_return_float_to_int(self, dst_ir):
+        assert resolve_auto_route(IRKind.FLOAT, dst_ir) == [IRKind.FLOAT, dst_ir]
+
+    @pytest.mark.parametrize(
+        "dst_ir",
+        [IRKind.W8A16_INT8, IRKind.W8A16_INT8_ASYM, IRKind.W8A8_INT8],
+    )
+    def test_resolve_auto_route_return_fp8_block_to_int_via_float(self, dst_ir):
+        assert resolve_auto_route(IRKind.FP8_BLOCK, dst_ir) == [IRKind.FP8_BLOCK, IRKind.FLOAT, dst_ir]

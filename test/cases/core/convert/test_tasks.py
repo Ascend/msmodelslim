@@ -142,3 +142,49 @@ class TestIRResult:
         mod = result.resolve_module()
         assert isinstance(mod, W4A4MXDynamicPerBlockFakeQuantLinear)
         assert mod.weight.shape == (8, 32)
+
+    @pytest.mark.parametrize(
+        ("final_ir", "cls_name", "with_offset"),
+        [
+            (IRKind.W8A16_INT8, "W8A16StaticPerChannelFakeQuantLinear", True),
+            (IRKind.W8A16_INT8_ASYM, "W8A16PerChannelNegOffsetFakeQuantLinear", True),
+            (IRKind.W8A8_INT8, "W8A8DynamicPerChannelFakeQuantLinear", False),
+            (IRKind.W4A8_INT4, "W4A8DynamicFakeQuantLinear", False),
+            (IRKind.W4A4_INT4, "W4A4DynamicPerChannelFakeQuantLinear", True),
+        ],
+    )
+    def test_resolve_module_rebuild_int_fakequant_from_state_dict(self, final_ir, cls_name, with_offset):
+        state_dict = {
+            "weight": torch.randint(-8, 8, (4, 8), dtype=torch.int8),
+            "weight_scale": torch.ones(4),
+            "bias": torch.zeros(4),
+        }
+        if with_offset:
+            state_dict["weight_offset"] = torch.zeros(4)
+        packed = {key: PortableTensor.from_tensor(value) for key, value in state_dict.items()}
+        mod = IRResult(module_path="layers.0.q_proj", final_ir=final_ir, state_dict=packed).resolve_module()
+        assert type(mod).__name__ == cls_name
+        assert mod.weight.shape == (4, 8)
+        assert mod.weight.dtype == torch.int8
+        assert mod.bias.shape == (4,)
+        if with_offset:
+            assert torch.equal(mod.weight_offset, torch.zeros(4))
+
+    def test_resolve_module_passthrough_when_int_target_has_no_weight_scale(self):
+        """非二维权重被跳过时没有 weight_scale，多进程应按原张量落盘。"""
+        weight = torch.randn(4, dtype=torch.bfloat16)
+        extra = torch.zeros(2, dtype=torch.float32)
+        packed = {
+            "weight": PortableTensor.from_tensor(weight),
+            "scale": PortableTensor.from_tensor(extra),
+        }
+        mod = IRResult(
+            module_path="layers.0.norm",
+            final_ir=IRKind.W4A4_INT4,
+            state_dict=packed,
+        ).resolve_module()
+        assert type(mod).__name__ == "Module"
+        assert mod.weight.dtype == torch.bfloat16
+        assert torch.equal(mod.weight, weight)
+        assert mod.scale.dtype == torch.float32
+        assert torch.equal(mod.scale, extra)
