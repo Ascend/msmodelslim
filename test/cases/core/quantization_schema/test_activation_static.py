@@ -21,10 +21,18 @@ See the Mulan PSL v2 for more details.
 
 from unittest.mock import patch, MagicMock
 
+import pytest
 import torch
 from torch import nn
 
-from msmodelslim.core.quantization_schema.qal import QParam, QScope
+from msmodelslim.core.quantization_schema import (
+    AutoFakeQuantActivation,
+    HIF8FakeQuantActivationPerHead,
+    HIF8FakeQuantActivationPerTensor,
+)
+from msmodelslim.core.quantization_schema.api.impl.hif8_quantization import hif8_round
+from msmodelslim.core.quantization_schema.const import hif8_per_tensor_sym, hif8_per_head_sym
+from msmodelslim.core.quantization_schema.qal import QParam, QScope, QStorage
 
 
 class BaseActivationTestMixin:
@@ -220,3 +228,67 @@ class BaseActivationTestMixin:
         module = self.module_class(self.q_param)  # pylint: disable=not-callable
         self.assertIsInstance(module.input_scale, nn.Parameter)
         self.assertFalse(module.input_scale.requires_grad)
+
+
+@pytest.mark.parametrize("scope", ["per_tensor", "per_head"])
+@pytest.mark.parametrize("dtype", [torch.float16, torch.bfloat16, torch.float32, torch.float64])
+@pytest.mark.parametrize("noncontiguous", [False, True])
+def test_hif8_static_matches_scaled_grid_when_input_dtype_and_layout_vary(scope, dtype, noncontiguous):
+    scales = torch.tensor([0.3]) if scope == "per_tensor" else torch.tensor([0.3, 8.0])
+    scheme = hif8_per_tensor_sym if scope == "per_tensor" else hif8_per_head_sym
+    module = AutoFakeQuantActivation.create(QParam(scheme, ext={"scale": scales}))
+    assert isinstance(
+        module,
+        HIF8FakeQuantActivationPerTensor if scope == "per_tensor" else HIF8FakeQuantActivationPerHead,
+    )
+    values = torch.tensor([-26.0, 1.05, 32768.0, 0.0], dtype=dtype).reshape(1, 1, 2, 2).repeat(2, 2, 1, 1)
+    if noncontiguous:
+        values = values.transpose(-1, -2)
+    broadcast = scales.reshape(()) if scope == "per_tensor" else scales.reshape(1, -1, 1, 1)
+    expected = (hif8_round(values.float() / broadcast, saturate=True) * broadcast).to(dtype)
+    output = module(values)
+    torch.testing.assert_close(output, expected, rtol=0, atol=0)
+    assert output.dtype == dtype and output.shape == values.shape
+
+
+@pytest.mark.parametrize("scope", ["per_tensor", "per_head"])
+def test_hif8_static_preserves_fp32_scale_when_meta_module_loads_state(scope):
+    scheme = hif8_per_tensor_sym if scope == "per_tensor" else hif8_per_head_sym
+    scale = torch.tensor([1e-8]) if scope == "per_tensor" else torch.tensor([1e-8, 0.3])
+    module = AutoFakeQuantActivation.create(QParam(scheme, ext={"scale": scale}))
+    target = AutoFakeQuantActivation.create(QParam(scheme, ext={"scale": torch.empty_like(scale, device="meta")}))
+    target.to_empty(device="cpu")
+    target.load_state_dict(module.state_dict())
+    torch.testing.assert_close(target.input_scale, scale, rtol=0, atol=0)
+    assert target.input_scale.dtype == torch.float32 and not target.input_scale.requires_grad
+
+
+@pytest.mark.parametrize("scope", ["per_tensor", "per_head"])
+@pytest.mark.parametrize("storage_dtype", [torch.float16, torch.bfloat16])
+def test_hif8_static_restores_scale_in_fp32_when_storage_context_is_low_precision(scope, storage_dtype):
+    scheme = hif8_per_tensor_sym if scope == "per_tensor" else hif8_per_head_sym
+    scales = torch.tensor([0.3]) if scope == "per_tensor" else torch.tensor([0.3, 8.0])
+    module = AutoFakeQuantActivation.create(QParam(scheme, ext={"scale": scales}))
+    values = torch.tensor([7.8, 262144.0]).reshape(1, 2, 1, 1)
+    broadcast = scales.reshape(()) if scope == "per_tensor" else scales.reshape(1, 2, 1, 1)
+    expected = hif8_round(values / broadcast, saturate=True) * broadcast
+    with QStorage.set_value_float_type(storage_dtype):
+        actual = module(values)
+    torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
+
+@pytest.mark.parametrize("scope", ["per_tensor", "per_head"])
+def test_hif8_static_rejects_parameters_when_scale_is_missing(scope):
+    scheme = hif8_per_tensor_sym if scope == "per_tensor" else hif8_per_head_sym
+    with pytest.raises(ValueError, match="scale"):
+        AutoFakeQuantActivation.create(QParam(scheme, ext={}))
+
+
+@pytest.mark.parametrize("scope", ["per_tensor", "per_head"])
+def test_hif8_static_saturates_infinities_when_quantizing_special_values(scope):
+    scheme = hif8_per_tensor_sym if scope == "per_tensor" else hif8_per_head_sym
+    module = AutoFakeQuantActivation.create(QParam(scheme, ext={"scale": torch.ones(1)}))
+    values = torch.tensor([float("nan"), float("inf"), -float("inf"), -0.0]).reshape(1, 1, 1, 4)
+    expected = torch.tensor([float("nan"), 32768.0, -32768.0, 0.0]).reshape_as(values)
+    torch.testing.assert_close(module(values), expected, rtol=0, atol=0, equal_nan=True)
+    assert module(torch.empty(1, 1, 0, 4)).shape == (1, 1, 0, 4)

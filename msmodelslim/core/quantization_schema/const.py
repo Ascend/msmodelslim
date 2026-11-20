@@ -37,6 +37,8 @@ mxfp4_dual_scale_sym = QScheme(scope=QScope.DUAL_SCALE, dtype=QDType.MXFP4, symm
 mxfp8_per_block_sym = QScheme(scope=QScope.PER_BLOCK, dtype=QDType.MXFP8, symmetric=True)
 mxfp8_per_channel_sym = QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.MXFP8, symmetric=True)
 int8_per_head_sym = QScheme(scope=QScope.PER_HEAD, dtype=QDType.INT8, symmetric=True)
+hif8_per_tensor_sym = QScheme(scope=QScope.PER_TENSOR, dtype=QDType.HiF8, symmetric=True)
+hif8_per_head_sym = QScheme(scope=QScope.PER_HEAD, dtype=QDType.HiF8, symmetric=True)
 
 int4_per_token_asym = QScheme(scope=QScope.PER_TOKEN, dtype=QDType.INT4, symmetric=False)
 int4_per_token_sym = QScheme(scope=QScope.PER_TOKEN, dtype=QDType.INT4, symmetric=True)

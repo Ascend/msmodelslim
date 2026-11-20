@@ -460,6 +460,20 @@ class DeepSeekV4DSparkModelAdapter(DeepSeekV4ModelAdapter):  # pylint: disable=t
         args.dspark_block_size = config_data.get("dspark_block_size", 0)
         args.dspark_noise_token_id = config_data.get("dspark_noise_token_id", 0)
         args.dspark_markov_rank = config_data.get("dspark_markov_rank", 0)
+
+        rope_scaling = config_data.get("rope_scaling")
+        if (
+            args.dspark_block_size
+            and isinstance(rope_scaling, dict)
+            and rope_scaling.get("rope_type", rope_scaling.get("type")) == "yarn"
+        ):
+            args.rope_factor = rope_scaling.get("factor", args.rope_factor)
+            args.beta_fast = rope_scaling.get("beta_fast", args.beta_fast)
+            args.beta_slow = rope_scaling.get("beta_slow", args.beta_slow)
+            args.original_seq_len = rope_scaling.get("original_max_position_embeddings", args.original_seq_len)
+            args.rope_theta = config_data.get("rope_theta", args.rope_theta)
+            args.compress_rope_theta = config_data.get("compress_rope_theta", args.compress_rope_theta)
+
         args.vocab_size = config_data.get("vocab_size", getattr(args, "vocab_size", 129280))
         args.hc_mult = config_data.get("hc_mult", getattr(args, "hc_mult", 4))
 

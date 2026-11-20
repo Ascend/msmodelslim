@@ -70,6 +70,7 @@ class QDType(str, Enum):
     MXFP8 = "mxfp8"
     MXFP4 = "mxfp4"
     FP8_E4M3 = "fp8_e4m3"
+    HiF8 = "hif8"
 
     PLACEHOLDER = "placeholder"
 

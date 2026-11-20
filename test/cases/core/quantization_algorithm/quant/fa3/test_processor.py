@@ -22,14 +22,17 @@ See the Mulan PSL v2 for more details.
 import unittest
 from unittest.mock import Mock, patch
 
+import pytest
 import torch
 from torch import nn
 
 from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.core.quantization_schema import (
     FP8FakeQuantActivationPerHead,
-    FakeQuantActivationPerToken,
     FakeQuantActivationPerBlock,
+    FakeQuantActivationPerToken,
+    HIF8FakeQuantActivationPerHead,
+    HIF8FakeQuantActivationPerTensor,
 )
 from msmodelslim.core.quantization_algorithm.quant.fa3 import (
     FA3QuantProcessor,
@@ -566,6 +569,116 @@ class TestFA3PerChannelObserver(unittest.TestCase):
         self.assertEqual(tuple(observer.max_val.shape), (8,))
         self.assertTrue(torch.allclose(observer.min_val, torch.tensor([-2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])))
         self.assertTrue(torch.allclose(observer.max_val, torch.tensor([0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])))
+
+
+@pytest.mark.parametrize("scope", [QScope.PER_TENSOR, QScope.PER_HEAD])
+@pytest.mark.parametrize(
+    ("method", "ext", "fixed_scale"),
+    [
+        ("static", {"static_scale": 8}, 8.0),
+        ("static", {"static_scale": 15}, 15.0),
+        ("static", {"static_scale": 32768}, 32768.0),
+        ("static", {"static_scale": "15"}, 8.0),
+        ("static", {"static_scale": 16}, 8.0),
+        ("static", {}, 8.0),
+        ("static", {"static_scale": None}, 8.0),
+        ("minmax", {}, None),
+    ],
+)
+def test_fa3_hif8_installs_ir_when_static_scope_is_selected(scope, method, ext, fixed_scale):
+    model = nn.Module()
+    request = BatchProcessRequest(name="", module=model, datas=[])
+    adapter = create_mock_adapter()
+    adapter.inject_fa3_placeholders.side_effect = lambda _, module, should_inject: module.add_module(
+        "fa_q", FA3QuantPlaceHolder(num_heads=2)
+    )
+    config = create_processor_config(
+        qconfig=QConfig(dtype=QDType.HiF8, scope=scope, symmetric=True, method=method, ext=ext),
+    )
+    processor = FA3QuantProcessor(model, config, adapter)
+
+    assert processor.is_data_free() == (method == "static")
+    processor.preprocess(request)
+    if method == "static":
+        assert isinstance(model.fa_q, FA3QuantPlaceHolder)
+        with patch("msmodelslim.core.quantization_algorithm.quant.fa3.processor.calculate_qparam") as calculate:
+            processor.process(request)
+            processor.postprocess(request)
+        calculate.assert_not_called()
+    else:
+        samples = torch.tensor([32768.0, 65536.0]).reshape(1, 2, 1, 1)
+        torch.testing.assert_close(model.fa_q(samples), samples)
+        processor.postprocess(request)
+
+    if scope == QScope.PER_TENSOR:
+        assert isinstance(model.fa_q, HIF8FakeQuantActivationPerTensor)
+        expected = torch.tensor([2.0 if fixed_scale is None else fixed_scale])
+    else:
+        assert isinstance(model.fa_q, HIF8FakeQuantActivationPerHead)
+        expected = torch.tensor([1.0, 2.0]) if fixed_scale is None else torch.full((2,), fixed_scale)
+    torch.testing.assert_close(model.fa_q.input_scale, expected)
+
+
+@pytest.mark.parametrize("shared,expected_scale", [(False, 1.0), (True, 2.0)])
+def test_fa3_per_tensor_uses_global_extrema_when_module_is_shared(shared, expected_scale):
+    model = nn.Module()
+    model.layer = nn.Module()
+    model.layer.fa_q = FA3QuantPlaceHolder()
+    request = BatchProcessRequest(name="layer", module=model.layer, datas=[])
+    config = create_processor_config(qconfig=create_qconfig(QDType.HiF8, QScope.PER_TENSOR))
+    processor = FA3QuantProcessor(model, config, create_mock_adapter())
+    helper = Mock()
+    helper.is_shared.return_value = shared
+    samples = torch.tensor([-16384.0, 32768.0]).reshape(1, 1, 1, 2)
+
+    def sync_extreme(value, op):
+        value.fill_(-65536.0 if op == "min" else 32768.0)
+
+    with (
+        patch("msmodelslim.core.quantization_algorithm.quant.fa3.processor.dist.is_initialized", return_value=True),
+        patch("msmodelslim.core.quantization_algorithm.quant.fa3.processor.DistHelper", return_value=helper),
+        patch("msmodelslim.core.observer.minmax.sync_base_operation", side_effect=sync_extreme) as sync,
+    ):
+        processor.preprocess(request)
+        assert model.layer.fa_q(samples) is samples
+
+    helper.is_shared.assert_called_once_with("layer.fa_q")
+    assert [call.kwargs["op"] for call in sync.call_args_list] == (["min", "max"] if shared else [])
+
+    processor.postprocess(request)
+    torch.testing.assert_close(model.layer.fa_q.input_scale, torch.tensor([expected_scale]))
+
+
+def test_fa3_postprocess_rejects_fixed_per_head_scale_when_adapter_omits_num_heads():
+    model = nn.Module()
+    request = BatchProcessRequest(name="", module=model, datas=[])
+    adapter = create_mock_adapter()
+    adapter.inject_fa3_placeholders.side_effect = lambda _, module, should_inject: module.add_module(
+        "fa_q", FA3QuantPlaceHolder()
+    )
+    config = create_processor_config(qconfig=create_qconfig(QDType.HiF8, QScope.PER_HEAD, method="static"))
+    processor = FA3QuantProcessor(model, config, adapter)
+
+    processor.preprocess(request)
+    with pytest.raises(SchemaValidateError, match="The model adapter did not declare num_heads for FA3 node 'fa_q'"):
+        processor.postprocess(request)
+
+
+def test_fa3_postprocess_rejects_fixed_scale_when_dtype_is_not_hif8():
+    model = nn.Module()
+    request = BatchProcessRequest(name="", module=model, datas=[])
+    adapter = create_mock_adapter()
+    adapter.inject_fa3_placeholders.side_effect = lambda _, module, should_inject: module.add_module(
+        "fa_q", FA3QuantPlaceHolder(num_heads=2)
+    )
+    config = create_processor_config(
+        qconfig=QConfig(dtype=QDType.INT8, scope=QScope.PER_HEAD, symmetric=True, method="static"),
+    )
+    processor = FA3QuantProcessor(model, config, adapter)
+
+    processor.preprocess(request)
+    with pytest.raises(UnsupportedError, match="supports only HiF8"):
+        processor.postprocess(request)
 
 
 if __name__ == '__main__':

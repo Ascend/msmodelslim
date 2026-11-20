@@ -20,7 +20,10 @@ See the Mulan PSL v2 for more details.
 """
 
 import os.path
-from typing import List, Any, Generator, Optional, Tuple, Dict
+from functools import wraps
+from importlib import import_module
+from types import MethodType
+from typing import List, Any, Generator, Optional, Tuple, Dict, Callable
 from unittest.mock import patch
 
 import torch
@@ -30,6 +33,7 @@ from torch import nn
 from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInterface
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
+from msmodelslim.core.infer_engine.interface import FakeQuantInferenceInterface
 from msmodelslim.core.graph import AdapterConfig, MappingConfig
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
@@ -46,6 +50,7 @@ from ..interface_hub import (
     IterSmoothInterface,
     AscendV1SaveInterface,
     QuaRotInterface,
+    FA3QuantAdapterInterface,
 )
 
 
@@ -58,6 +63,8 @@ class DeepSeekV4ModelAdapter(  # pylint: disable=too-many-ancestors
     FlexSmoothQuantInterface,
     QuaRotInterface,
     AscendV1SaveInterface,
+    FA3QuantAdapterInterface,
+    FakeQuantInferenceInterface,
 ):
     def get_model_pedigree(self) -> str:
         return 'deepseek_v4'
@@ -554,6 +561,220 @@ class DeepSeekV4ModelAdapter(  # pylint: disable=too-many-ancestors
         self, prefix: str, module: nn.Module, model: nn.Module
     ) -> Tuple[str, nn.Module]:
         return prefix, module
+
+    def build_meta_model(self) -> nn.Module:
+        """Build the layer-offloaded evaluator for the DeepSeek-V4 backbone."""
+        from .fake_quant_inference import build_meta_model
+
+        model = build_meta_model(self.config)
+        model.eos_token_id = self.tokenizer.eos_token_id
+        return model
+
+    # ===== FA3QuantAdapterInterface =====
+    def inject_fa3_placeholders(
+        self,
+        root_name: str,
+        root_module: nn.Module,
+        should_inject: Callable[[str], bool],
+    ) -> None:
+        """在真实 Q 和共享 KV 边界安装占位模块，供 FA3 Processor 采集和量化。
+
+        Attention 在注意力计算前量化 Q 和拼接后的共享 KV，Indexer 使用 Q/压缩 KV。
+        同一份 latent KV 同时参与 QK/PV，保留原有缓存写入流程。
+        """
+        from msmodelslim.core.quantization_algorithm.quant.fa3 import FA3QuantPlaceHolder
+        from .model import Attention, Indexer, rotate_activation
+
+        def _wrap_indexer_forward(indexer_mod: nn.Module):
+            deepseek_module = import_module(indexer_mod.forward.__module__)
+            apply_rotary_emb = deepseek_module.apply_rotary_emb
+
+            @wraps(indexer_mod.forward)
+            def new_indexer_forward(
+                self,
+                x: torch.Tensor,
+                qr: torch.Tensor,
+                start_pos: int,
+                freqs_cis: torch.Tensor,
+                offset: int,
+            ):
+                bsz, seqlen, _ = x.size()
+                ratio = self.compress_ratio
+                rd = self.rope_head_dim
+                end_pos = start_pos + seqlen
+                if self.compressor.kv_cache is None:
+                    self.compressor.kv_cache = self.kv_cache
+                q = self.wq_b(qr)
+                n_heads = getattr(self, "n_local_heads", self.n_heads)
+                q = q.reshape(bsz, seqlen, n_heads, self.head_dim)
+                apply_rotary_emb(q[..., -rd:], freqs_cis)
+                q = rotate_activation(q)
+
+                # ===== 插入 FA3 占位 =====
+                if hasattr(self, 'fa_q'):
+                    q_input = q.transpose(1, 2).contiguous()
+                    q_output = self.fa_q(q_input)
+                    q = q_output.transpose(1, 2).contiguous()
+
+                # =========================
+
+                self.compressor(x, start_pos, freqs_cis)
+                kv_len = end_pos // ratio
+                k = self.kv_cache[:bsz, :kv_len]
+                if kv_len > 0:
+                    k_input = k.unsqueeze(1)
+                    if hasattr(self, "fa_v"):
+                        _ = self.fa_v(k_input)
+                    if hasattr(self, "fa_k"):
+                        k_output = self.fa_k(k_input)
+                        k = k_output.squeeze(1)
+
+                weights = self.weights_proj(x) * (self.softmax_scale * self.n_heads**-0.5)
+                index_score = torch.einsum("bshd,btd->bsht", q, k)
+                index_score = (index_score.relu_() * weights.unsqueeze(-1)).sum(dim=2)
+                if start_pos == 0:
+                    device = index_score.device
+                    mask = (
+                        torch.arange(seqlen // ratio, device=device).repeat(seqlen, 1)
+                        >= torch.arange(1, seqlen + 1, device=device).unsqueeze(1) // ratio
+                    )
+                    index_score += torch.where(mask, float("-inf"), 0)
+                topk_idxs = index_score.topk(min(self.index_topk, end_pos // ratio), dim=-1)[1]
+                if start_pos == 0:
+                    mask = topk_idxs >= torch.arange(1, seqlen + 1, device=topk_idxs.device).unsqueeze(1) // ratio
+                    topk_idxs = torch.where(mask, -1, topk_idxs + offset)
+                else:
+                    topk_idxs += offset
+                return topk_idxs
+
+            # Bind the original A6 forward; this does not invoke it.
+            # pylint: disable-next=no-value-for-parameter
+            indexer_mod.forward = new_indexer_forward.__get__(indexer_mod, indexer_mod.__class__)
+
+        def _wrap_attention_forward(attn_mod: nn.Module):
+            from .model import apply_rotary_emb, get_window_topk_idxs, get_compress_topk_idxs, sparse_attn
+
+            attention_interface = sparse_attn
+
+            def new_forward(self, x: torch.Tensor, start_pos: int):
+                """
+                Forward pass for the Multi-Head Latent Attention (MLA) Layer.
+
+                Args:
+                    x (torch.Tensor): Input tensor of shape (batch_size, seq_len, dim).
+                    start_pos (int): Starting position in the sequence for caching.
+
+                Returns:
+                    torch.Tensor: Output tensor with the same shape as the input.
+                """
+                bsz, seqlen, _ = x.size()
+                freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen]
+                win = self.window_size
+                ratio = self.compress_ratio
+                rd = self.rope_head_dim
+                if self.compress_ratio > 1 and self.compressor.kv_cache is None:
+                    self.compressor.kv_cache = self.kv_cache[:, win:]
+                # q
+                qr = q = self.q_norm(self.wq_a(x))
+                q = self.wq_b(q).unflatten(-1, (self.n_local_heads, self.head_dim))
+                q *= torch.rsqrt(q.square().mean(-1, keepdim=True) + self.eps)
+                apply_rotary_emb(q[..., -rd:], freqs_cis)
+
+                # win kv & topk_idxs
+                kv = self.wkv(x)
+                kv = self.kv_norm(kv)
+                apply_rotary_emb(kv[..., -rd:], freqs_cis)
+                topk_idxs = get_window_topk_idxs(win, bsz, seqlen, start_pos).to(x.device)
+                if self.compress_ratio > 1:
+                    offset = kv.size(1) if start_pos == 0 else win
+                    if self.indexer is not None:
+                        compress_topk_idxs = self.indexer(x, qr, start_pos, freqs_cis, offset)
+                    else:
+                        compress_topk_idxs = get_compress_topk_idxs(ratio, bsz, seqlen, start_pos, offset).to(x.device)
+                    topk_idxs = torch.cat([topk_idxs, compress_topk_idxs], dim=-1)
+                topk_idxs = topk_idxs.int()
+
+                # compress kv & attn
+                # if start_pos == 0:
+                # Preserve the native Attention prefill branch.
+                if True:  # pylint: disable=using-constant-test
+                    self.kv_cache[:bsz, : min(win, seqlen)] = kv[:, -win:]
+                    if self.compress_ratio > 1:
+                        if (kv_compress := self.compressor(x, start_pos, freqs_cis)) is not None:
+                            kv = torch.cat([kv, kv_compress], dim=1)
+                    # We performed QAT here, kv could also use fp8 format, though current implementation uses bf16
+                    # ===== FA3 placeholders (after RoPE / cache, before attention kernel) =====
+                    if hasattr(self, "fa_q"):
+                        q = self.fa_q(q.transpose(1, 2).contiguous()).transpose(1, 2).contiguous()
+                    if hasattr(self, "fa_k"):
+                        # K and V share the same latent: (B, T, D) -> (B, 1, T, D).
+                        kv = self.fa_k(kv.unsqueeze(1)).squeeze(1)
+                    # ========================================================================
+                    o = attention_interface(q, kv, self.attn_sink, topk_idxs, self.softmax_scale)
+                else:
+                    self.kv_cache[:bsz, start_pos % win] = kv.squeeze(1)
+                    if self.compress_ratio > 1:
+                        self.compressor(x, start_pos, freqs_cis)
+                    kv = self.kv_cache[:bsz]
+                    # ===== FA3 placeholders (after RoPE / cache, before attention kernel) =====
+                    if hasattr(self, "fa_q"):
+                        q = self.fa_q(q.transpose(1, 2).contiguous()).transpose(1, 2).contiguous()
+                    if hasattr(self, "fa_k"):
+                        # K and V share the same latent: (B, T, D) -> (B, 1, T, D).
+                        kv = self.fa_k(kv.unsqueeze(1)).squeeze(1)
+                    # ========================================================================
+                    o = attention_interface(q, kv, self.attn_sink, topk_idxs, self.softmax_scale)
+                apply_rotary_emb(o[..., -rd:], freqs_cis, True)
+
+                # o
+                o = o.view(bsz, seqlen, self.n_local_groups, -1)
+                # self.wo_a.weight [8192, 4096]; self.n_local_groups=8; self.o_lora_rank=1024
+                wo_a = self.wo_a.weight.view(self.n_local_groups, self.o_lora_rank, -1)
+                o = torch.einsum("bsgd,grd->bsgr", o, wo_a)
+                x = self.wo_b(o.flatten(2))
+                return x
+
+            attn_mod.forward = MethodType(new_forward, attn_mod)
+
+        for name, module in list(root_module.named_modules()):
+            full_name = ".".join(part for part in (root_name, name) if part)
+            if isinstance(module, Attention):
+                boundaries = (("fa_q", 1.0), ("fa_k", 1.0))
+            elif isinstance(module, Indexer):
+                # Retain the legacy V export slot when the recipe selects it.
+                boundaries = (("fa_q", 0.9999), ("fa_k", 0.9999), ("fa_v", 1.0))
+            else:
+                continue
+
+            parent_selected = should_inject(full_name)
+            selected = False
+            for boundary, ratio in boundaries:
+                target_name = f"{full_name}.{boundary}" if full_name else boundary
+                if not parent_selected and not should_inject(target_name):
+                    continue
+                selected = True
+                # Preserve observers and IR installed by an earlier FA3 processor.
+                if not hasattr(module, boundary):
+                    num_heads = 1
+                    if boundary == "fa_q":
+                        num_heads = (
+                            module.n_local_heads
+                            if isinstance(module, Attention)
+                            else getattr(module, "n_local_heads", module.n_heads)
+                        )
+                    module.add_module(
+                        boundary,
+                        FA3QuantPlaceHolder(
+                            ratio=ratio,
+                            num_heads=num_heads,
+                        ),
+                    )
+            if not selected:
+                continue
+            if isinstance(module, Indexer):
+                _wrap_indexer_forward(module)
+            else:
+                _wrap_attention_forward(module)
 
     def _load_config(self, trust_remote_code=False) -> object:
         config_data = json_safe_load(os.path.join(self.model_path, "config.json"))

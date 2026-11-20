@@ -61,6 +61,8 @@ __all__ = [
     "MXFP8FakeQuantActivationPerChannel",
     "FakeQuantActivationPerToken",
     "FakeQuantActivationPerBlock",
+    "HIF8FakeQuantActivationPerTensor",
+    "HIF8FakeQuantActivationPerHead",
     "FlatQuantOnlineWrapper",
     "FlatQuantOnlineHookIR",
     "NonFusionSmoothQuantWrapper",
@@ -89,6 +91,8 @@ __all__ = [
     "mxfp8_per_block_sym",
     "mxfp8_per_channel_sym",
     "float_per_tensor_sym",
+    "hif8_per_tensor_sym",
+    "hif8_per_head_sym",
     "fp8_e4m3_per_head_sym",
     "fp8_e4m3_per_token_sym",
     "fp8_e4m3_per_tensor_sym",
@@ -104,6 +108,7 @@ from .int8_activation_static import INT8FakeQuantActivationPerHead
 from .fp8_activation_static import FP8FakeQuantActivationPerHead
 from .mxfp8_activation_static import MXFP8FakeQuantActivationPerChannel
 from .activation_static import FakeQuantActivationPerHead
+from .hif8_activation_static import HIF8FakeQuantActivationPerTensor, HIF8FakeQuantActivationPerHead
 from .activation_dynamic import FakeQuantActivationPerToken, FakeQuantActivationPerBlock
 from .api.impl import int_quantization, fp_quantization, mx_quantization
 from .attention import FakeQuantDynamicCache
@@ -136,6 +141,8 @@ from .const import (
     fp8_e4m3_per_channel_sym,
     fp8_e4m3_per_head_sym,
     float_per_tensor_sym,
+    hif8_per_tensor_sym,
+    hif8_per_head_sym,
     int8_per_head_sym,
 )
 from .flatquant import FlatQuantOnlineWrapper, FlatQuantOnlineHookIR

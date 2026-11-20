@@ -22,6 +22,7 @@ AscendV1 FA3 per-head static decoder. Inverse of AscendV1Saver per-head handlers
 
   static per-head : {prefix}.scale / .offset tagged FAQuant
   Handles both INT8 and FP8 static per-head; the scheme is provided by the caller.
+  HiF8 uses the same per-head contract.
 """
 
 from typing import Optional, Type
@@ -34,8 +35,9 @@ from msmodelslim.core.quantization_format.common.ir_builder.activation import (
     Fa3PerHeadStructureSpec,
 )
 from msmodelslim.core.quantization_format.common.tensor_utils import require_keys, squeeze_shape
-from msmodelslim.core.quantization_schema.const import fp8_e4m3_per_head_sym, int8_per_head_sym
+from msmodelslim.core.quantization_schema.const import fp8_e4m3_per_head_sym, hif8_per_head_sym, int8_per_head_sym
 from msmodelslim.core.quantization_schema.fp8_activation_static import FP8FakeQuantActivationPerHead
+from msmodelslim.core.quantization_schema.hif8_activation_static import HIF8FakeQuantActivationPerHead
 from msmodelslim.core.quantization_schema.int8_activation_static import INT8FakeQuantActivationPerHead
 from msmodelslim.core.quantization_schema.qal import QScheme
 
@@ -52,6 +54,7 @@ class Fa3PerHeadDecoder(Fa3IrDecoder):
     _IR_CLS_MAP = {
         int8_per_head_sym: INT8FakeQuantActivationPerHead,
         fp8_e4m3_per_head_sym: FP8FakeQuantActivationPerHead,
+        hif8_per_head_sym: HIF8FakeQuantActivationPerHead,
     }
 
     def ir_type(self, scheme: QScheme) -> Type[nn.Module]:

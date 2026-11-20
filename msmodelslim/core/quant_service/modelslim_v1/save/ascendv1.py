@@ -158,6 +158,7 @@ ASCENDV1_DESC_JSON_NAME = "quant_model_description.json"
 ASCENDV1_SAFETENSORS_NAME = "quant_model_weights.safetensors"
 DTYPE_PREFIX_MAP = {
     QDType.FP8_E4M3: "FP8",
+    QDType.HiF8: "HIF8",
     QDType.INT8: "INT8",
     QDType.MXFP4: "MXFP4",
     QDType.MXFP8: "MXFP8",
@@ -590,6 +591,16 @@ class AscendV1Saver(AutoSaverProcessor):
         # FA3 FP8静态保存策略
         self._save_activation_per_head(prefix, module, torch.float32)
 
+    def on_hif8_activation_per_head(self, prefix: str, module: qir.HIF8FakeQuantActivationPerHead):
+        self._save_activation_per_head(prefix, module, torch.float32)
+
+    def on_hif8_activation_per_tensor(self, prefix: str, module: qir.HIF8FakeQuantActivationPerTensor):
+        scale = module.input_scale.to(torch.float32).reshape(1)
+        self.write_tensor(prefix + ".scale", "FAQuant", scale)
+        self.write_tensor(prefix + ".offset", "FAQuant", torch.zeros_like(scale))
+        self.update_fa_quant_type(prefix, module, scope_tag="PER_TENSOR")
+        self.update_global_fa_quant_type('FAKQuant')
+
     def on_activation_per_token(self, prefix: str, module: qir.FakeQuantActivationPerToken):
         # FA3动态量化保存策略
         self.update_fa_quant_type(prefix, module)
@@ -610,7 +621,7 @@ class AscendV1Saver(AutoSaverProcessor):
         self.update_fa_quant_type(prefix, module)
         self.update_global_fa_quant_type('FAKQuant')
 
-    def update_fa_quant_type(self, prefix: str, module):
+    def update_fa_quant_type(self, prefix: str, module, scope_tag: str = ""):
         """
         拼装和更新FA3量化策略字符串
         """
@@ -625,7 +636,7 @@ class AscendV1Saver(AutoSaverProcessor):
         is_dynamic = scope in (QScope.PER_TOKEN, QScope.PER_BLOCK)
         strategy = "DYNAMIC" if is_dynamic else "STATIC"
         # per_channel 静态需在描述串中显式带 PER_CHANNEL（如 V_MXFP8_PER_CHANNEL）
-        scope_tag = "PER_CHANNEL" if scope == QScope.PER_CHANNEL else ""
+        scope_tag = "PER_CHANNEL" if scope == QScope.PER_CHANNEL else scope_tag
 
         if parent_prefix not in self.fa_quant_states:
             self.fa_quant_states[parent_prefix] = {}
