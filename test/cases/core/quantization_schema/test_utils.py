@@ -33,8 +33,11 @@ def test_reshape_to_blocks_splits_axis_into_tiles():
 
     assert reshaped.shape == (2, 2, 2)
     assert axes == [1]
-    assert list(orig_shape) == [2, 4, 1]
-    assert list(padded_shape) == [2, 4, 1]
+    # A6 returns the unexpanded shapes: no extra tile dim is inserted, so a
+    # (2, 4) input with block_size 2 keeps orig/padded shape (2, 4).
+    # (A5 returned [2, 4, 1]; keep this file in sync with msmodelslim/core/quantization_schema/utils.py.)
+    assert list(orig_shape) == [2, 4]
+    assert list(padded_shape) == [2, 4]
     assert torch.equal(reshaped.reshape(2, 4), a)
 
 
@@ -53,7 +56,7 @@ def test_reshape_pads_and_undo_restores_non_divisible_shape():
     reshaped, axes, orig_shape, padded_shape = reshape_to_blocks(a, [1], 2)
 
     assert reshaped.shape == (2, 2, 2)
-    assert list(padded_shape) == [2, 4, 1]
+    assert list(padded_shape) == [2, 4]  # (2, 3) padded to (2, 4), no tile dim
     assert torch.equal(undo_reshape_to_blocks(reshaped.clone(), padded_shape, orig_shape, axes), a)
 
 

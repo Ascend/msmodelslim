@@ -24,6 +24,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -31,6 +32,7 @@ import torch
 from torch import nn
 
 import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema import AutoFakeQuantDynamicCache
 from msmodelslim.core.quant_service.modelslim_v1.save.interface import AscendV1GlobalModelDtypeInterface
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import (
@@ -40,6 +42,7 @@ from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import (
     copy_files,
 )
 from msmodelslim.model import IModel
+from msmodelslim.core.quantizer.base import QConfig
 from msmodelslim.utils.exception import SchemaValidateError
 from msmodelslim.core.quantization_schema.qal import QParam, QScheme, QStorage, QScope, QDType
 
@@ -730,3 +733,125 @@ class TestW4A8MxfpPassthroughSave:
 
         assert saver.model_quant_type == "W4A8_MXFP"
         assert saver.group_size == 32
+
+
+def _make_kv_mock_saver():
+    """创建一个跳过 __init__ 的 mock saver，注入 KV cache 保存相关属性。"""
+    with patch.object(AscendV1Saver, '__init__', return_value=None):
+        saver = AscendV1Saver(model=None, config=None, adapter=None)
+    saver.write_tensor = MagicMock()
+    saver.json_writer = MagicMock()
+    saver.json_append = {}
+    saver._per_layer_kv_schemes = {}
+    return saver
+
+
+def _make_kv_ir(dtype, scope, scale=None):
+    """根据 dtype/scope 创建对应的动态缓存伪量化 IR。"""
+    if scale is None:
+        scale = torch.ones(4, dtype=torch.float32)
+    qconfig = QConfig(dtype=dtype, scope=scope, symmetric=True, method="minmax")
+    q_param = QParam(scheme=qconfig.to_scheme(), ext={"scale": scale})
+    return AutoFakeQuantDynamicCache.create(q_param)
+
+
+class TestOnDynamicCacheFp8PerChannel:
+    """FP8 per_channel 静态保存"""
+
+    def test_static_writes_k_and_v_scale(self):
+        saver = _make_kv_mock_saver()
+        k_ir = _make_kv_ir(QDType.FP8_E4M3, QScope.PER_CHANNEL)
+        v_ir = _make_kv_ir(QDType.FP8_E4M3, QScope.PER_CHANNEL)
+        saver.on_dynamic_cache_fp8_per_channel("model.layers.0.self_attn.key_states", k_ir)
+        saver.on_dynamic_cache_fp8_per_channel("model.layers.0.self_attn.value_states", v_ir)
+        calls = [c[0][:2] for c in saver.write_tensor.call_args_list]
+        assert ("model.layers.0.self_attn.k_proj.k_scale", "FP8_PER_CHANNEL") in calls
+        assert ("model.layers.0.self_attn.v_proj.v_scale", "FP8_PER_CHANNEL") in calls
+
+    def test_dynamic_writes_no_scale(self):
+        saver = _make_kv_mock_saver()
+        k_ir = _make_kv_ir(QDType.FP8_E4M3, QScope.PER_TOKEN)
+        v_ir = _make_kv_ir(QDType.FP8_E4M3, QScope.PER_TOKEN)
+        saver.on_dynamic_cache_fp8_per_channel("model.layers.0.self_attn.key_states", k_ir)
+        saver.on_dynamic_cache_fp8_per_channel("model.layers.0.self_attn.value_states", v_ir)
+        saver.write_tensor.assert_not_called()
+        saver.json_writer.write.assert_any_call("model.layers.0.self_attn.quant_type", "KV_FP8_PER_TOKEN")
+
+
+class TestOnDynamicCacheFP4PerChannel:
+    """FP4_E2M1 per_channel 静态保存"""
+
+    def test_static_writes_k_and_v_scale(self):
+        saver = _make_kv_mock_saver()
+        k_ir = _make_kv_ir(QDType.FP4_E2M1, QScope.PER_CHANNEL)
+        v_ir = _make_kv_ir(QDType.FP4_E2M1, QScope.PER_CHANNEL)
+        saver.on_dynamic_cache_fp4_per_channel("model.layers.0.self_attn.key_states", k_ir)
+        saver.on_dynamic_cache_fp4_per_channel("model.layers.0.self_attn.value_states", v_ir)
+        calls = [c[0][:2] for c in saver.write_tensor.call_args_list]
+        assert ("model.layers.0.self_attn.k_proj.k_scale", "FP4_E2M1_PER_CHANNEL") in calls
+        assert ("model.layers.0.self_attn.v_proj.v_scale", "FP4_E2M1_PER_CHANNEL") in calls
+
+    def test_dynamic_writes_no_scale(self):
+        saver = _make_kv_mock_saver()
+        k_ir = _make_kv_ir(QDType.FP4_E2M1, QScope.PER_TOKEN)
+        v_ir = _make_kv_ir(QDType.FP4_E2M1, QScope.PER_TOKEN)
+        saver.on_dynamic_cache_fp4_per_channel("model.layers.0.self_attn.key_states", k_ir)
+        saver.on_dynamic_cache_fp4_per_channel("model.layers.0.self_attn.value_states", v_ir)
+        saver.write_tensor.assert_not_called()
+        saver.json_writer.write.assert_any_call("model.layers.0.self_attn.quant_type", "KV_FP4_E2M1_PER_TOKEN")
+
+
+class TestOnDynamicCacheFP4PerHead:
+    """FP4_E2M1 per_head 静态保存"""
+
+    def test_static_writes_k_and_v_scale(self):
+        saver = _make_kv_mock_saver()
+        k_ir = _make_kv_ir(QDType.FP4_E2M1, QScope.PER_HEAD)
+        v_ir = _make_kv_ir(QDType.FP4_E2M1, QScope.PER_HEAD)
+        saver.on_dynamic_cache_fp4_per_head("model.layers.0.self_attn.key_states", k_ir)
+        saver.on_dynamic_cache_fp4_per_head("model.layers.0.self_attn.value_states", v_ir)
+        calls = [c[0][:2] for c in saver.write_tensor.call_args_list]
+        assert ("model.layers.0.self_attn.k_proj.k_scale", "FP4_E2M1_PER_HEAD") in calls
+        assert ("model.layers.0.self_attn.v_proj.v_scale", "FP4_E2M1_PER_HEAD") in calls
+
+    def test_dynamic_writes_no_scale(self):
+        saver = _make_kv_mock_saver()
+        k_ir = _make_kv_ir(QDType.FP4_E2M1, QScope.PER_TOKEN)
+        v_ir = _make_kv_ir(QDType.FP4_E2M1, QScope.PER_TOKEN)
+        saver.on_dynamic_cache_fp4_per_head("model.layers.0.self_attn.key_states", k_ir)
+        saver.on_dynamic_cache_fp4_per_head("model.layers.0.self_attn.value_states", v_ir)
+        saver.write_tensor.assert_not_called()
+
+
+class TestOnDynamicCacheC8:
+    """INT8 per_channel 静态保存"""
+
+    def test_c8_writes_scale_and_offset(self):
+        saver = _make_kv_mock_saver()
+        cache = SimpleNamespace(kv_cache_scale=torch.ones(2), kv_cache_offset=torch.zeros(2))
+        saver.on_dynamic_cache_int8_per_channel("model.layers.0.self_attn.key_states", cache)
+        calls = [c[0][:2] for c in saver.write_tensor.call_args_list]
+        assert ("model.layers.0.self_attn.k_proj.kv_cache_scale", "INT8_PER_CHANNEL") in calls
+        assert ("model.layers.0.self_attn.k_proj.kv_cache_offset", "INT8_PER_CHANNEL") in calls
+
+
+class TestUpdateKvCacheType:
+    """update_kv_cache_type 写入 per-layer quant_type + 全局 C8"""
+
+    def test_update_writes_kv_quant_type(self):
+        saver = _make_kv_mock_saver()
+        module = SimpleNamespace(x_q_scheme=SimpleNamespace(dtype=QDType.MXFP8, scope=QScope.PER_TOKEN))
+        saver.update_kv_cache_type("model.layers.0.self_attn.key_states", module)
+        saver.json_writer.write.assert_any_call("model.layers.0.self_attn.quant_type", "K_MXFP8_PER_TOKEN")
+
+    def test_update_unknown_branch_skips(self):
+        saver = _make_kv_mock_saver()
+        module = SimpleNamespace(x_q_scheme=SimpleNamespace(dtype=QDType.MXFP8, scope=QScope.PER_TOKEN))
+        saver.update_kv_cache_type("model.layers.0.self_attn.query", module)
+        saver.json_writer.write.assert_not_called()
+
+    def test_update_missing_scheme_skips(self):
+        saver = _make_kv_mock_saver()
+        module = SimpleNamespace()
+        saver.update_kv_cache_type("model.layers.0.self_attn.key_states", module)
+        saver.json_writer.write.assert_not_called()

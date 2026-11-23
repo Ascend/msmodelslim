@@ -1,0 +1,30 @@
+apiversion: modelslim_v1
+
+spec:
+  process:
+    - type: "linear_quant"
+      qconfig:
+        act:
+          scope: "per_block"
+          dtype: "hif4"
+          symmetric: True
+          method: "minmax"
+          ext:
+            scale_ratio: 0.95
+            clip2: 3.6
+            clip3: 1.8
+        weight:
+          scope: "per_block"
+          dtype: "hif4"
+          symmetric: True
+          method: "minmax"
+          ext:
+            scale_ratio: 0.95
+            clip2: 3.6
+            clip3: 1.8
+      include:
+        - "*"
+
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4

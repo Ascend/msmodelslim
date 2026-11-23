@@ -31,6 +31,10 @@ from msmodelslim.utils.exception import SchemaValidateError
 FP8_E4M3_MAX = 448
 FP8_E4M3_MIN = -448
 
+# FP4_E2M1的量化范围 [-6, 6]
+FP4_E2M1_MAX = 6.0
+FP4_E2M1_MIN = -6.0
+
 
 @QFuncRegistry.register(dispatch_key=(QDType.FP8_E4M3, QScope.PER_TOKEN, True), api_name="calculate_qparam")
 @QFuncRegistry.register(dispatch_key=(QDType.FP8_E4M3, QScope.PER_CHANNEL, True), api_name="calculate_qparam")
@@ -41,6 +45,28 @@ def calculate_fp8_qparam(
 ) -> QParam:
     amax = torch.maximum(min_val.abs(), max_val.abs())
     scale = amax.clamp(min=1e-12) / FP8_E4M3_MAX
+    offset = torch.zeros_like(scale)
+
+    return QParam(
+        scheme=QScheme(
+            dtype=q_dtype,
+            scope=q_scope,
+            symmetric=symmetric,
+        ),
+        ext={"scale": scale, "offset": offset},
+    )
+
+
+@QFuncRegistry.register(dispatch_key=(QDType.FP4_E2M1, QScope.PER_TOKEN, True), api_name="calculate_qparam")
+@QFuncRegistry.register(dispatch_key=(QDType.FP4_E2M1, QScope.PER_BLOCK, True), api_name="calculate_qparam")
+@QFuncRegistry.register(dispatch_key=(QDType.FP4_E2M1, QScope.PER_CHANNEL, True), api_name="calculate_qparam")
+@QFuncRegistry.register(dispatch_key=(QDType.FP4_E2M1, QScope.PER_TENSOR, True), api_name="calculate_qparam")
+@QFuncRegistry.register(dispatch_key=(QDType.FP4_E2M1, QScope.PER_HEAD, True), api_name="calculate_qparam")
+def calculate_fp4_e2m1_qparam(
+    min_val: torch.Tensor, max_val: torch.Tensor, q_dtype: QDType, q_scope: QScope, symmetric: bool, **kwargs
+) -> QParam:
+    amax = torch.maximum(min_val.abs(), max_val.abs())
+    scale = amax.clamp(min=1e-12) / FP4_E2M1_MAX
     offset = torch.zeros_like(scale)
 
     return QParam(
@@ -77,12 +103,52 @@ def fp8_quantize(tensor: QStorage, q_param: QParam) -> QStorage:
     return tensor.same_like(input_tensor).to(q_dtype)
 
 
+@QFuncRegistry.register(dispatch_key=(QDType.FLOAT, QDType.FP4_E2M1, QScope.PER_BLOCK, True), api_name="quantize")
+@QFuncRegistry.register(dispatch_key=(QDType.FLOAT, QDType.FP4_E2M1, QScope.PER_CHANNEL, True), api_name="quantize")
+@QFuncRegistry.register(dispatch_key=(QDType.FLOAT, QDType.FP4_E2M1, QScope.PER_TOKEN, True), api_name="quantize")
+@QFuncRegistry.register(dispatch_key=(QDType.FLOAT, QDType.FP4_E2M1, QScope.PER_TENSOR, True), api_name="quantize")
+def fp4_e2m1_quantize(tensor: QStorage, q_param: QParam) -> QStorage:
+    scale = q_param.ext["scale"]
+    if scale is None:
+        raise SchemaValidateError("scale is None", action="Please check the q_param")
+    offset = q_param.ext["offset"] if "offset" in q_param.ext else torch.zeros_like(scale)
+    inplace = q_param.ext.get("inplace", False)
+    input_tensor = tensor.value
+    if inplace:
+        input_tensor = input_tensor.div_(scale).add_(offset)
+    else:
+        input_tensor = input_tensor / scale + offset
+
+    q_dtype = q_param.scheme.dtype
+    input_tensor = input_tensor.clamp(min=FP4_E2M1_MIN, max=FP4_E2M1_MAX)
+
+    return tensor.same_like(input_tensor).to(q_dtype)
+
+
 @QFuncRegistry.register(
     dispatch_key=(QDType.FP8_E4M3, QDType.FP8_E4M3, QScope.PER_CHANNEL, True), api_name="dequantize"
 )
 @QFuncRegistry.register(dispatch_key=(QDType.FP8_E4M3, QDType.FP8_E4M3, QScope.PER_TOKEN, True), api_name="dequantize")
 @QFuncRegistry.register(dispatch_key=(QDType.FP8_E4M3, QDType.FP8_E4M3, QScope.PER_TENSOR, True), api_name="dequantize")
 def fp8_dequantize(tensor: QStorage, q_param: QParam) -> QStorage:
+    scale = q_param.ext["scale"]
+    offset = q_param.ext["offset"] if "offset" in q_param.ext else torch.zeros_like(scale)
+    inplace = q_param.ext.get("inplace", False)
+    input_tensor = tensor.value
+    if inplace:
+        input_tensor = input_tensor.sub_(offset).mul_(scale)
+    else:
+        input_tensor = (input_tensor.to(offset.dtype) - offset) * scale
+    return tensor.same_like(input_tensor).to(QDType.FLOAT)
+
+
+@QFuncRegistry.register(dispatch_key=(QDType.FP4_E2M1, QDType.FP4_E2M1, QScope.PER_BLOCK, True), api_name="dequantize")
+@QFuncRegistry.register(
+    dispatch_key=(QDType.FP4_E2M1, QDType.FP4_E2M1, QScope.PER_CHANNEL, True), api_name="dequantize"
+)
+@QFuncRegistry.register(dispatch_key=(QDType.FP4_E2M1, QDType.FP4_E2M1, QScope.PER_TOKEN, True), api_name="dequantize")
+@QFuncRegistry.register(dispatch_key=(QDType.FP4_E2M1, QDType.FP4_E2M1, QScope.PER_TENSOR, True), api_name="dequantize")
+def fp4_e2m1_dequantize(tensor: QStorage, q_param: QParam) -> QStorage:
     scale = q_param.ext["scale"]
     offset = q_param.ext["offset"] if "offset" in q_param.ext else torch.zeros_like(scale)
     inplace = q_param.ext.get("inplace", False)

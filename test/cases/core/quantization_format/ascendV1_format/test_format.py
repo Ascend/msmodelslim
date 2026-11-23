@@ -29,6 +29,7 @@ from unittest.mock import patch
 
 import pytest
 import torch
+from safetensors import safe_open
 from safetensors.torch import save_file
 from torch import nn
 
@@ -37,12 +38,24 @@ from msmodelslim.core.quantization_format.ascendV1_format.format import (
     ASCENDV1_SAFETENSORS_NAME,
     AscendV1Format,
 )
-from msmodelslim.core.quantization_schema.attention import FakeQuantDynamicCache
+import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.base.protocol import BatchProcessRequest
+from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Config, AscendV1Saver
+from msmodelslim.core.quantization_format.ascendV1_format.decoder import _parse_fa_quant_type
 from msmodelslim.core.quantization_schema.const import int8_per_channel_sym, int8_per_head_sym
 from msmodelslim.core.quantization_schema.int8_activation_static import INT8FakeQuantActivationPerHead
 from msmodelslim.core.quantization_schema.qal import QParam
 from msmodelslim.core.quantization_schema.w8a8_static import W8A8StaticFakeQuantLinear
 from msmodelslim.core.quantization_algorithm.quant.fa3.interface import FA3QuantAdapterInterface
+from msmodelslim.core.quantization_schema.attention_dynamic import FakeQuantDynamicCache
+from msmodelslim.core.quantization_schema.const import (
+    fp8_e4m3_per_head_sym,
+    fp8_e4m3_per_token_sym,
+    hif8_per_head_sym,
+    hif8_per_tensor_sym,
+    int8_per_token_sym,
+)
+from msmodelslim.model.base import BaseModelAdapter
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 
 
@@ -394,3 +407,116 @@ class TestUnsupportedLinearLabel:
 
         with pytest.raises(UnsupportedError, match="W4A16"):
             fmt.apply_ir(_Model())
+
+
+class _HiF8ToyModel(nn.Module):
+    def __init__(self, activation=None):
+        super().__init__()
+        self.linear = nn.Linear(2, 2)
+        self.attn = nn.Module()
+        self.attn.fa_q = activation if activation is not None else nn.Identity()
+        self.attn.fa_k = nn.Identity()
+
+    def forward(self, values):
+        return self.attn.fa_q(self.linear(values))
+
+
+def _save_hif8_toy(model, output_path, source_path):
+    output_path.mkdir()
+    saver = AscendV1Saver(
+        model,
+        AscendV1Config(save_directory=str(output_path), part_file_size=0),
+        BaseModelAdapter("FA3HiF8Toy", source_path),
+    )
+    saver.postprocess(BatchProcessRequest(name="", module=model))
+    saver.post_run()
+    return json.loads((output_path / ASCENDV1_DESC_JSON_NAME).read_text(encoding="utf-8"))
+
+
+@pytest.mark.parametrize(
+    "scheme,scales,dynamic_k",
+    [
+        (hif8_per_tensor_sym, [8.0], False),
+        (hif8_per_tensor_sym, [15.0], False),
+        (hif8_per_tensor_sym, [32768.0], False),
+        (hif8_per_head_sym, [8.0, 8.0], False),
+        (hif8_per_head_sym, [15.0, 15.0], False),
+        (hif8_per_head_sym, [32768.0, 32768.0], False),
+        (hif8_per_head_sym, [1.0, 16.0], False),
+        (hif8_per_head_sym, [15.0], False),
+        (hif8_per_tensor_sym, [15.0], True),
+        (hif8_per_head_sym, [15.0], True),
+    ],
+)
+def test_hif8_export_roundtrip_preserves_scales_and_numerics_when_static(tmp_path, scheme, scales, dynamic_k):
+    original = tmp_path / "original"
+    original.mkdir()
+    (original / "config.json").write_text('{"model_type":"FA3HiF8Toy"}', encoding="utf-8")
+    activation = qir.AutoFakeQuantActivation.create(QParam(scheme, ext={"scale": torch.tensor(scales)}))
+    source = _HiF8ToyModel(activation)
+    if dynamic_k:
+        source.attn.fa_k = qir.AutoFakeQuantActivation.create(QParam(int8_per_token_sym))
+    with torch.no_grad():
+        source.linear.weight.copy_(torch.eye(2))
+        source.linear.bias.zero_()
+    heads = len(scales) if scheme == hif8_per_head_sym else 2
+    values = torch.tensor([25.0, 26.0]).reshape(1, 1, 1, 2).expand(2, heads, 3, 2)
+    expected = source(values)
+    export = tmp_path / ("mixed" if dynamic_k else "export")
+    description = _save_hif8_toy(source, export, original)
+    expected_type = "Q_HIF8_PER_TENSOR" if scheme == hif8_per_tensor_sym else "Q_HIF8"
+    if dynamic_k:
+        expected_type += "_K_INT8_DYNAMIC"
+    assert description["attn.quant_type"] == expected_type
+    assert description["fa_quant_type"] == "FAKQuant"
+    assert description["attn.fa_q.scale"] == description["attn.fa_q.offset"] == "FAQuant"
+    assert not any(key.startswith("fa3.") for key in description.get("optional", {}))
+    scale_shape = (1,) if scheme == hif8_per_tensor_sym else (heads, 1)
+    with safe_open(str(export / ASCENDV1_SAFETENSORS_NAME), framework="pt", device="cpu") as tensors:
+        scale = tensors.get_tensor("attn.fa_q.scale")
+        offset = tensors.get_tensor("attn.fa_q.offset")
+        assert scale.dtype == offset.dtype == torch.float32
+        assert tuple(scale.shape) == tuple(offset.shape) == scale_shape
+        torch.testing.assert_close(scale.reshape(-1), torch.tensor(scales))
+        assert not offset.any()
+    restored = _HiF8ToyModel()
+    loader = AscendV1Format(str(export))
+    loader.bind_adapter(_FA3Adapter())
+    loader.apply_ir(restored)
+    assert restored.attn.fa_q.input_scale.is_meta
+    loader.hydrate(restored)
+    torch.testing.assert_close(restored(values), expected, rtol=0, atol=0)
+    torch.testing.assert_close(restored.attn.fa_q.input_scale, source.attn.fa_q.input_scale, rtol=0, atol=0)
+    if dynamic_k:
+        mixed_values = torch.tensor([[[[25.0, 26.0]]]])
+        torch.testing.assert_close(restored.attn.fa_q(mixed_values), source.attn.fa_q(mixed_values), rtol=0, atol=0)
+        torch.testing.assert_close(restored.attn.fa_k(mixed_values), source.attn.fa_k(mixed_values), rtol=0, atol=0)
+        assert restored.attn.fa_k.x_q_scheme == int8_per_token_sym
+    loader.apply_ir(restored)
+    loader.hydrate(restored)
+    torch.testing.assert_close(restored(values), expected, rtol=0, atol=0)
+    resaved = _save_hif8_toy(restored, tmp_path / "resaved", original)
+    assert resaved == description
+
+
+@pytest.mark.parametrize(
+    "quant_type,expected",
+    [
+        ("INT8", {branch: int8_per_head_sym for branch in "QKV"}),
+        ("FP8", {branch: fp8_e4m3_per_head_sym for branch in "QKV"}),
+        ("INT8_DYNAMIC", {branch: int8_per_token_sym for branch in "QKV"}),
+        ("FP8_DYNAMIC", {branch: fp8_e4m3_per_token_sym for branch in "QKV"}),
+        ("HIF8", {branch: hif8_per_head_sym for branch in "QKV"}),
+        ("HIF8_PER_TENSOR", {branch: hif8_per_tensor_sym for branch in "QKV"}),
+        ("Q_HIF8_PER_TENSOR_K_INT8_DYNAMIC", {"Q": hif8_per_tensor_sym, "K": int8_per_token_sym}),
+        ("Q_HIF8_K_HIF8_PER_TENSOR", {"Q": hif8_per_head_sym, "K": hif8_per_tensor_sym}),
+    ],
+)
+def test_fa3_descriptor_preserves_scope_and_static_semantics_when_format_varies(quant_type, expected):
+    assert _parse_fa_quant_type(quant_type) == expected
+
+
+@pytest.mark.parametrize("quant_type", ["Q_HIF8_PER_CHANNEL", "Q_HIF8_PER_TOKEN", "Q_HIF8_DYNAMIC"])
+def test_fa3_descriptor_rejects_unregistered_scheme_when_scope_or_dynamic_suffix_is_present(quant_type):
+    with pytest.raises(SchemaValidateError, match="Unsupported FA3 quant_type"):
+        _parse_fa_quant_type(quant_type)

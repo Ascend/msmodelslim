@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details.
 """
 
 from abc import ABC, abstractmethod
-from typing import Callable
+from typing import Callable, Optional
 
 import torch
 from torch import nn
@@ -54,7 +54,7 @@ class FA3QuantAdapterInterface(ABC):
 class FA3QuantPlaceHolder(nn.Module):
     """占位模块：供适配器在模型中插入，后续由 Processor 替换为监听器/IR。"""
 
-    def __init__(self, ratio: float = 1.0):
+    def __init__(self, ratio: float = 1.0, *, num_heads: Optional[int] = None):
         super().__init__()
         if not isinstance(ratio, float) or ratio < 0.0 or ratio > 1.0:
             raise SchemaValidateError(
@@ -62,6 +62,7 @@ class FA3QuantPlaceHolder(nn.Module):
                 action="Please check your model adapter.",
             )
         self.ratio = ratio
+        self.num_heads = num_heads
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x

@@ -32,7 +32,7 @@ from typing import Tuple
 import torch
 from torch import nn
 
-from msmodelslim.core.quantization_schema.attention import FakeQuantDynamicCache
+from msmodelslim.core.quantization_schema.attention_dynamic import FakeQuantDynamicCache
 from msmodelslim.core.quantization_schema.qal import QParam
 from msmodelslim.core.quantization_schema.qal.qregistry import QABCRegistry
 from msmodelslim.utils.exception import SchemaValidateError

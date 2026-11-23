@@ -40,6 +40,7 @@ from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph import AdapterConfig, MappingConfig, FusionConfig
 from msmodelslim.core.quantization_schema import QuaRotExtraInfoWrapperIR
+from msmodelslim.core.quantization_algorithm.quarot import QuaRotInterface
 from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import get_valid_read_path, json_safe_load, json_safe_dump, MAX_READ_FILE_SIZE_32G
@@ -56,8 +57,9 @@ from ..interface_hub import (
     FA3QuantPlaceHolder,
     OnlineQuaRotInterface,
     AscendV1SaveInterface,
-    QuaRotInterface,
+    DynamicCacheAdapterInterface,
 )
+
 from msmodelslim.model.common.utils import _get_expert_range
 
 
@@ -76,6 +78,7 @@ class GLM52ModelAdapter(  # pylint: disable=too-many-ancestors
     FA3QuantAdapterInterface,
     OnlineQuaRotInterface,
     AscendV1SaveInterface,
+    DynamicCacheAdapterInterface,
 ):
     def get_model_pedigree(self) -> str:
         return 'glm_5_2'
@@ -584,10 +587,10 @@ class GLM52ModelAdapter(  # pylint: disable=too-many-ancestors
                 else:
                     k = rotate_activation(k)
 
-                if hasattr(self, 'fa3_q'):
-                    q = self.fa3_q(q)
-                if hasattr(self, 'fa3_k'):
-                    k = self.fa3_k(k)
+                if hasattr(self, 'fa_q'):
+                    q = self.fa_q(q)
+                if hasattr(self, 'fa_k'):
+                    k = self.fa_k(k)
 
                 q_scale = torch.ones(*q.size()[:-1], q.size(-1) // 128, dtype=torch.float32).npu()
                 weights = self.weights_proj(x) * self.n_heads**-0.5
@@ -614,11 +617,11 @@ class GLM52ModelAdapter(  # pylint: disable=too-many-ancestors
                 continue
 
             if name != "":
-                root_module.set_submodule(f'{name}.fa3_q', FA3QuantPlaceHolder(ratio=0.9999))
-                root_module.set_submodule(f'{name}.fa3_k', FA3QuantPlaceHolder(ratio=0.9999))
+                root_module.set_submodule(f'{name}.fa_q', FA3QuantPlaceHolder(ratio=0.9999))
+                root_module.set_submodule(f'{name}.fa_k', FA3QuantPlaceHolder(ratio=0.9999))
             else:
-                root_module.set_submodule('fa3_q', FA3QuantPlaceHolder(ratio=0.9999))
-                root_module.set_submodule('fa3_k', FA3QuantPlaceHolder(ratio=0.9999))
+                root_module.set_submodule('fa_q', FA3QuantPlaceHolder(ratio=0.9999))
+                root_module.set_submodule('fa_k', FA3QuantPlaceHolder(ratio=0.9999))
             _wrap_indexer_forward(module)
 
         # ---- knope quantization simulation for kv_cache compression ----
@@ -686,6 +689,23 @@ class GLM52ModelAdapter(  # pylint: disable=too-many-ancestors
                 root_module.set_submodule('knope_p', FA3QuantPlaceHolder(ratio=0.9999))
             _wrap_kvcache_compress(module, quant_dtype=_knope_quant_dtype)
 
+    def inject_kvcache_placeholders(
+        self,
+        root_name: str,
+        root_module: nn.Module,
+        should_inject: Callable[[str], bool],
+        placeholder_factory: Callable[[], nn.Module],
+    ) -> Dict[str, nn.Module]:
+        attention_layers = {}
+        for name, module in root_module.named_modules():
+            full_name = f"{root_name}.{name}" if root_name else name
+            if not should_inject(full_name):
+                continue
+            module.add_module("key_states_quantizer", placeholder_factory())
+            module.add_module("value_states_quantizer", placeholder_factory())
+            attention_layers[full_name] = module
+        return attention_layers
+
     def get_attention_module_cls(self) -> str:
         return "MLA"
 
@@ -705,28 +725,6 @@ class GLM52ModelAdapter(  # pylint: disable=too-many-ancestors
         return None
 
     def ascendv1_save_postprocess(self, model: nn.Module, save_directory: str) -> None:
-        # TODO(临时兼容): 将 FA3 per-layer quant_type 还原为旧版无前缀格式
-        # (QK_INT8_DYNAMIC -> INT8_DYNAMIC, Q_INT8_DYNAMIC -> INT8_DYNAMIC, V_FP8_DYNAMIC -> FP8_DYNAMIC ...)。
-        # 待推理框架适配 QK_/Q_/K_/V_ 等带前缀的混合量化标识后, 删除以下整段即可。
-        description_path = os.path.join(save_directory, "quant_model_description.json")
-        if os.path.exists(description_path):
-            description_data = json_safe_load(description_path, check_user_stat=False)
-            changed = False
-            for key in list(description_data.keys()):
-                if not key.endswith(".quant_type"):
-                    continue
-                value = description_data[key]
-                if not isinstance(value, str):
-                    continue
-                parts = value.split('_')
-                if parts and parts[0] and set(parts[0]) <= set('QKVP'):
-                    new_value = '_'.join(parts[1:])
-                    if new_value != value:
-                        description_data[key] = new_value
-                        changed = True
-            if changed:
-                json_safe_dump(description_data, description_path, indent=2, check_user_stat=False)
-
         global_rotation, norm_weight = None, None
 
         # catch the global rotation

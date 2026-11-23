@@ -1,0 +1,32 @@
+# Copyright (c) Huawei Technologies Co., Ltd. 2026. All rights reserved.
+apiversion: modelslim_convert
+
+metadata:
+  config_id: Qwen3-32B BF16 to HIFP4
+  verified_model_types:
+    - Qwen3-32B
+
+spec:
+  defaults:
+    src_format: bf16
+    dst_format: ascendv1
+    dst_ir: HIFP4
+
+  linears:
+    - match:
+        - "model.layers.*.self_attn.q_proj"
+        - "model.layers.*.self_attn.k_proj"
+        - "model.layers.*.self_attn.v_proj"
+        - "model.layers.*.self_attn.o_proj"
+        - "model.layers.*.mlp.gate_proj"
+        - "model.layers.*.mlp.up_proj"
+        - "model.layers.*.mlp.down_proj"
+      target: HIFP4
+      route: auto
+
+  save:
+    - type: ascendv1
+      part_file_size: 4
+
+  parallel:
+    workers: 8

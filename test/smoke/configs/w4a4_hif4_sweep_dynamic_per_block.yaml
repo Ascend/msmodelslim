@@ -1,0 +1,27 @@
+apiversion: modelslim_v1
+
+spec:
+  process:
+    - type: "linear_quant"
+      qconfig:
+        act:
+          scope: "per_block"
+          dtype: "hif4"
+          symmetric: True
+          method: "minmax"
+          ext:
+            scale_ratio: 1
+        weight:
+          scope: "per_block"
+          dtype: "hif4"
+          symmetric: True
+          method: "hif4_sweep"
+          ext:
+            w_sweep_lower: -3
+            w_sweep_upper: 4
+      include:
+        - "*"
+
+  save:
+    - type: "ascendv1_saver"
+      part_file_size: 4

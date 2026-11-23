@@ -84,6 +84,8 @@ class AutoSaverProcessor(AutoSessionProcessor):
             qir.W4A4DynamicPerChannelFakeQuantLinear: self.on_w4a4_dynamic_per_channel,
             qir.W4A4DynamicPerGroupFakeQuantLinear: self.on_w4a4_dynamic_per_group,
             qir.W8A8MXDynamicPerBlockFakeQuantLinear: self.on_w8a8_mx_dynamic_per_block,
+            qir.W4A8HiFxMXDynamicPerBlockFakeQuantLinear: self.on_w4a8_hif4_mxfp8_dynamic_per_block,
+            qir.W4A4Hif4DynamicPerBlockFakeQuantLinear: self.on_w4a4_hif4_dynamic_per_block,
             qir.W4A8MXDynamicPerBlockFakeQuantLinear: self.on_w4a8_mx_dynamic_per_block,
             qir.PackedW4A8MXDynamicPerBlockFakeQuantLinear: self.on_packed_w4a8_mx_dynamic_per_block,
             qir.W4A4MXDynamicPerBlockFakeQuantLinear: self.on_w4a4_mx_dynamic_per_block,
@@ -92,11 +94,19 @@ class AutoSaverProcessor(AutoSessionProcessor):
             nn.Linear: self.on_float_linear,
             nn.Module: self.on_float_module,
             qir.FakeQuantDynamicCache: self.on_dynamic_cache,
+            qir.FakeQuantCacheINT8PerChannel: self.on_dynamic_cache_int8_per_channel,
+            qir.FakeQuantCacheFP8PerChannel: self.on_dynamic_cache_fp8_per_channel,
+            qir.FakeQuantCacheFP8PerHead: self.on_dynamic_cache_fp8_per_channel,
+            qir.FakeQuantCacheFP4PerChannel: self.on_dynamic_cache_fp4_per_channel,
+            qir.FakeQuantCacheFP4PerHead: self.on_dynamic_cache_fp4_per_head,
             qir.INT8FakeQuantActivationPerHead: self.on_int8_activation_per_head,
             qir.FP8FakeQuantActivationPerHead: self.on_fp8_activation_per_head,
+            qir.HIF8FakeQuantActivationPerHead: self.on_hif8_activation_per_head,
+            qir.HIF8FakeQuantActivationPerTensor: self.on_hif8_activation_per_tensor,
             qir.MXFP8FakeQuantActivationPerChannel: self.on_mxfp8_activation_per_channel,
             qir.FakeQuantActivationPerToken: self.on_activation_per_token,
             qir.FakeQuantActivationPerBlock: self.on_activation_per_block,
+            qir.FakeQuantActivationPerBlockHif4: self.on_activation_per_block,
             qir.W16A16sLinear: self.on_w16a16s,
             qir.QuarotOnlineHeadRotationWrapper: self.on_rotation_wrapper,
             qir.QuarotOnlineKroneckerRotationWrapper: self.on_kronecker_rotation_wrapper,
@@ -212,6 +222,16 @@ class AutoSaverProcessor(AutoSessionProcessor):
             f"You should implement the on_packed_w4a8_mx_dynamic_per_block method for {self.__class__.__name__}"
         )
 
+    def on_w4a8_hif4_mxfp8_dynamic_per_block(self, prefix: str, module: qir.W4A8HiFxMXDynamicPerBlockFakeQuantLinear):
+        raise NotImplementedError(
+            f"You should implement the on_w4a4_hif4_dynamic_per_block method for {self.__class__.__name__}"
+        )
+
+    def on_w4a4_hif4_dynamic_per_block(self, prefix: str, module: qir.W4A4Hif4DynamicPerBlockFakeQuantLinear):
+        raise NotImplementedError(
+            f"You should implement the on_w4a4_hif4_dynamic_per_block method for {self.__class__.__name__}"
+        )
+
     def on_w4a4_mx_dynamic_dual_scale(self, prefix: str, module: qir.W4A4MXDynamicDualScaleFakeQuantLinear):
         raise NotImplementedError(
             f"You should implement the on_w4a4_mx_dynamic_dual_scale method for {self.__class__.__name__}"
@@ -228,6 +248,22 @@ class AutoSaverProcessor(AutoSessionProcessor):
 
     def on_dynamic_cache(self, prefix: str, module: qir.FakeQuantDynamicCache):
         raise NotImplementedError(f"You should implement the on_dynamic_cache method for {self.__class__.__name__}")
+
+    def on_dynamic_cache_int8_per_channel(self, prefix: str, module: qir.FakeQuantCacheINT8PerChannel):
+        raise NotImplementedError(f"You should implement the on_dynamic_cache method for {self.__class__.__name__}")
+
+    def on_dynamic_cache_fp8_per_channel(self, prefix: str, module: qir.AutoFakeQuantDynamicCache):
+        raise NotImplementedError(f"You should implement the on_dynamic_cache method for {self.__class__.__name__}")
+
+    def on_dynamic_cache_fp4_per_channel(self, prefix: str, module: qir.AutoFakeQuantDynamicCache):
+        raise NotImplementedError(
+            f"You should implement the on_dynamic_cache_fp4_per_channel method for {self.__class__.__name__}"
+        )
+
+    def on_dynamic_cache_fp4_per_head(self, prefix: str, module: qir.AutoFakeQuantDynamicCache):
+        raise NotImplementedError(
+            f"You should implement the on_dynamic_cache_fp4_per_head method for {self.__class__.__name__}"
+        )
 
     def on_activation_per_token(self, prefix: str, module: qir.FakeQuantActivationPerToken):
         raise NotImplementedError(
@@ -247,6 +283,16 @@ class AutoSaverProcessor(AutoSessionProcessor):
     def on_fp8_activation_per_head(self, prefix: str, module: qir.FP8FakeQuantActivationPerHead):
         raise NotImplementedError(
             f"You should implement the on_fp8_activation_per_head method for {self.__class__.__name__}"
+        )
+
+    def on_hif8_activation_per_head(self, prefix: str, module: qir.HIF8FakeQuantActivationPerHead):
+        raise NotImplementedError(
+            f"You should implement the on_hif8_activation_per_head method for {self.__class__.__name__}"
+        )
+
+    def on_hif8_activation_per_tensor(self, prefix: str, module: qir.HIF8FakeQuantActivationPerTensor):
+        raise NotImplementedError(
+            f"You should implement the on_hif8_activation_per_tensor method for {self.__class__.__name__}"
         )
 
     def on_mxfp8_activation_per_channel(self, prefix: str, module: qir.MXFP8FakeQuantActivationPerChannel):

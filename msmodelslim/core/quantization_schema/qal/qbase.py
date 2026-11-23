@@ -35,7 +35,9 @@ def _get_format_params(elem_format):
         "mxfp8_e4m3": {"ebits": 4, "mbits": 5, "emax_offset": 0},  # emax = 2^(ebits - 1)
         "mxfp8_e5m2": {"ebits": 5, "mbits": 4, "emax_offset": -1},  # emax = 2^(ebits - 1) - 1
         "mxint8": {"ebits": 0, "mbits": 8, "emax_offset": 0},  # emax = 0
+        "fp4_e2m1": {"ebits": 2, "mbits": 1, "emax_offset": 0},  # FP4: e2m1 (4-bit float)
         "mxint4": {"ebits": 0, "mbits": 4, "emax_offset": 0},  # emax = 0
+        "hif4": {"ebits": 0, "mbits": 3, "emax_offset": 0},  # emax = mbits-1; emin =0
     }
 
     if elem_format not in format_info:
@@ -48,13 +50,20 @@ def _get_format_params(elem_format):
 
     # 计算 emax
     if ebits == 0:
-        emax = 0
+        if elem_format == "hif4":
+            emax = mbits - 1
+        else:
+            emax = 0
     else:
         emax = 2 ** (ebits - 1) + emax_offset
 
     # 计算 max_norm
     if elem_format == "mxfp8_e4m3":
         max_norm = 2**emax * 1.75  # (1 + fraction) * 2 ^ (e-bias) fraction = 2^(-1) + 2^(-2)
+    elif elem_format == "hif4":
+        max_norm = 2**emax * float(2 ** (mbits + 1) - 1) / (2**mbits)
+    elif elem_format == "fp4_e2m1":
+        max_norm = 2**emax * (2 - 2 ** (-mbits))
     else:
         # 注意：当 mbits == 0 时此式可能无效，但当前所有格式 mbits >= 3
         max_norm = 2**emax * float(2 ** (mbits - 1) - 1) / (2 ** (mbits - 2))
@@ -69,7 +78,10 @@ class QDType(str, Enum):
     INT4 = "int4"
     MXFP8 = "mxfp8"
     MXFP4 = "mxfp4"
+    HiF4 = "hif4"
     FP8_E4M3 = "fp8_e4m3"
+    FP4_E2M1 = "fp4_e2m1"
+    HiF8 = "hif8"
 
     PLACEHOLDER = "placeholder"
 
@@ -88,6 +100,16 @@ class QDType(str, Enum):
             raise SchemaValidateError(f"Unknown QDType for finfo: {self}")
         return Finfo(32, 8, False, *_get_format_params(elem_format))
 
+    @property
+    def hifx_finfo(self):
+        if not self.value.lower().startswith("hif"):
+            raise SchemaValidateError(f"hifx finfo not defined for {self}")
+        Finfo = namedtuple(
+            'finfo',
+            ['block_size', 'k_outer_bits', 'k_bits', 'blk_outer_size', 'axes', 'ebits', 'mbits', 'emax', 'max_norm'],
+        )
+        return Finfo(64, 1, 4, 1, -1, *_get_format_params(self.value))
+
 
 class QScope(str, Enum):
     PER_TENSOR = "per_tensor"
@@ -97,6 +119,7 @@ class QScope(str, Enum):
     PER_TOKEN = "per_token"  # nosec B105
     PD_MIX = "pd_mix"
     PER_HEAD = "per_head"
+    PER_TILE = "per_tile"
     DUAL_SCALE = "dual_scale"
     PER_CHANNEL_NEG_OFFSET = "per_channel_neg_offset"
 

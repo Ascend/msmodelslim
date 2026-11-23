@@ -25,6 +25,7 @@ group sharing the same quantization shape).
 from .base import Fa3IrDecoder, IrDecoder, KvCacheIrDecoder, LinearIrDecoder
 from .fa3_per_block import Fa3PerBlockDecoder
 from .fa3_per_head import Fa3PerHeadDecoder
+from .fa3_per_tensor import Fa3PerTensorDecoder
 from .fa3_per_token import Fa3PerTokenDecoder
 from .kv_cache_c8 import KvCacheC8Decoder
 from .w8a8_dynamic import W8A8DynamicDecoder
@@ -40,6 +41,7 @@ __all__ = [
     "W8A8DynamicDecoder",
     "W8A8MxDecoder",
     "Fa3PerHeadDecoder",
+    "Fa3PerTensorDecoder",
     "Fa3PerTokenDecoder",
     "Fa3PerBlockDecoder",
     "KvCacheC8Decoder",

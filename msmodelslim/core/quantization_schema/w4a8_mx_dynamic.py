@@ -26,9 +26,9 @@ from torch.nn import functional as F
 
 from msmodelslim.core.convert.protocol import ICheckpointReader
 from msmodelslim.core.convert.types import IRKind, SourceIR, TensorRef
-from msmodelslim.core.observer import MsMinMaxBlockObserver, MinMaxBlockObserverConfig
+from msmodelslim.core.quantization_schema.qal import QABCRegistry, QScope, QScheme, QParam, QStorage, QDType
 from msmodelslim.core.quantization_schema.api import calculate_qparam, fake_quantize, dequantize
-from msmodelslim.core.quantization_schema.qal import QABCRegistry, QDType, QParam, QScheme, QScope, QStorage
+from msmodelslim.core.observer import MsMinMaxBlockObserver, MinMaxBlockObserverConfig
 from msmodelslim.core.quantization_schema.utils import reshape_to_blocks, undo_reshape_to_blocks
 from msmodelslim.core.quantization_schema import AutoFakeQuantLinear
 from msmodelslim.core.quantization_schema import mxfp4_per_block_sym, mxfp8_per_block_sym
@@ -80,7 +80,7 @@ class W4A8MXDynamicPerBlockFakeQuantLinear(AutoFakeQuantLinear):
             symmetric=self.x_scheme.symmetric,
         )
         x_q_dq = fake_quantize(QStorage(QDType.FLOAT, x), x_q_param)
-        x_q_dq.value = undo_reshape_to_blocks(x_q_dq.value, padded_shape, orig_shape, axes)
+        x_q_dq.value = undo_reshape_to_blocks(x_q_dq.value, padded_shape, orig_shape)
 
         w_q_storage = QStorage(dtype=self.w_scheme.dtype, value=self.weight)
         axes = self.w_axes
@@ -94,7 +94,7 @@ class W4A8MXDynamicPerBlockFakeQuantLinear(AutoFakeQuantLinear):
             ext={"scale": self.weight_scale.data},
         )
         weight_q_dq = dequantize(w_q_storage, w_q_param)
-        weight_q_dq.value = undo_reshape_to_blocks(weight_q_dq.value, w_padded_shape, w_orig_shape, axes)
+        weight_q_dq.value = undo_reshape_to_blocks(weight_q_dq.value, w_padded_shape, w_orig_shape)
 
         return F.linear(x_q_dq.value, weight_q_dq.value, self.bias)
 

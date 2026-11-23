@@ -20,7 +20,7 @@ See the Mulan PSL v2 for more details.
 """
 
 from dataclasses import dataclass
-from typing import Optional, Tuple, Type
+from typing import Optional, Tuple
 
 import torch
 from torch import nn
@@ -29,9 +29,14 @@ from msmodelslim.core.quantization_schema.activation_dynamic import (
     FakeQuantActivationPerBlock,
     FakeQuantActivationPerToken,
 )
+from msmodelslim.core.quantization_schema.auto import AutoFakeQuantActivation
 from msmodelslim.core.quantization_schema.fp8_activation_static import FP8FakeQuantActivationPerHead
 from msmodelslim.core.quantization_schema.int8_activation_static import INT8FakeQuantActivationPerHead
-from msmodelslim.core.quantization_schema.qal import QDType, QParam, QScheme
+from msmodelslim.core.quantization_schema.hif8_activation_static import (
+    HIF8FakeQuantActivationPerHead,
+    HIF8FakeQuantActivationPerTensor,
+)
+from msmodelslim.core.quantization_schema.qal import QParam, QScheme
 from msmodelslim.core.quantization_schema.qal.qregistry import QABCRegistry
 from msmodelslim.utils.exception import SchemaValidateError
 
@@ -70,14 +75,22 @@ class Fa3DynamicParamSet:
     scheme: QScheme
 
 
-def _per_head_ir_cls(scheme: QScheme) -> Type[nn.Module]:
-    if scheme.dtype == QDType.INT8:
-        return INT8FakeQuantActivationPerHead
-    return FP8FakeQuantActivationPerHead
+@dataclass
+class Fa3PerTensorStructureSpec(IrStructureSpec):
+    input_scale_shape: Tuple[int, ...]
+    scheme: QScheme
+
+
+@dataclass
+class Fa3PerTensorParamSet:
+    """One scale for a static FA3 activation tensor."""
+
+    scale: torch.Tensor
+    scheme: QScheme
 
 
 @QABCRegistry.multi_register(
-    dispatch_key=[INT8FakeQuantActivationPerHead, FP8FakeQuantActivationPerHead],
+    dispatch_key=[INT8FakeQuantActivationPerHead, FP8FakeQuantActivationPerHead, HIF8FakeQuantActivationPerHead],
     abc_type=IrBuilder,
 )
 class Fa3PerHeadIrBuilder(IrBuilder):
@@ -97,13 +110,19 @@ class Fa3PerHeadIrBuilder(IrBuilder):
             )
         scale = _meta_empty(structure.input_scale_shape, torch.float32)
         x_q_param = QParam(scheme=structure.scheme, ext={"scale": scale})
-        ir_cls = _per_head_ir_cls(structure.scheme)
-        new_module = ir_cls(x_q_param)
+        new_module = AutoFakeQuantActivation.create(x_q_param)
         set_module(model, module_name, new_module)
         return TransformResult(mode=ApplyMode.INSERT, module=new_module)
 
     def bind_from_param_set(self, ir_module: nn.Module, param_set: Fa3PerHeadParamSet) -> None:
-        if not isinstance(ir_module, (INT8FakeQuantActivationPerHead, FP8FakeQuantActivationPerHead)):
+        if not isinstance(
+            ir_module,
+            (
+                INT8FakeQuantActivationPerHead,
+                FP8FakeQuantActivationPerHead,
+                HIF8FakeQuantActivationPerHead,
+            ),
+        ):
             raise SchemaValidateError(
                 f"Expected FA3 per-head FakeQuantActivation, got {type(ir_module).__name__}",
                 action="Please run transform_shell before bind_from_param_set.",
@@ -120,6 +139,44 @@ class Fa3PerHeadIrBuilder(IrBuilder):
             device = param.device
             break
         _copy_module_params(ir_module, filled, device)
+
+
+@QABCRegistry.register(dispatch_key=HIF8FakeQuantActivationPerTensor, abc_class=IrBuilder)
+class Fa3PerTensorIrBuilder(IrBuilder):
+    def transform_shell(
+        self,
+        model: nn.Module,
+        module_name: str,
+        source_module: nn.Module,
+        *,
+        structure: Fa3PerTensorStructureSpec,
+    ) -> TransformResult:
+        del source_module
+        if not isinstance(structure, Fa3PerTensorStructureSpec):
+            raise SchemaValidateError(
+                f"Fa3PerTensorIrBuilder expects Fa3PerTensorStructureSpec, got {type(structure).__name__}",
+                action="Please pass IR-semantic structure from the Format translator.",
+            )
+        scale = _meta_empty(structure.input_scale_shape, torch.float32)
+        x_q_param = QParam(scheme=structure.scheme, ext={"scale": scale})
+        new_module = AutoFakeQuantActivation.create(x_q_param)
+        set_module(model, module_name, new_module)
+        return TransformResult(mode=ApplyMode.INSERT, module=new_module)
+
+    def bind_from_param_set(self, ir_module: nn.Module, param_set: Fa3PerTensorParamSet) -> None:
+        if not isinstance(ir_module, HIF8FakeQuantActivationPerTensor):
+            raise SchemaValidateError(
+                f"Expected FA3 per-tensor FakeQuantActivation, got {type(ir_module).__name__}",
+                action="Please run transform_shell before bind_from_param_set.",
+            )
+        if not isinstance(param_set, Fa3PerTensorParamSet):
+            raise SchemaValidateError(
+                f"Expected Fa3PerTensorParamSet, got {type(param_set).__name__}",
+                action="Please translate Format tensors into a Fa3PerTensorParamSet first.",
+            )
+        x_q_param = QParam(scheme=param_set.scheme, ext={"scale": param_set.scale})
+        filled = type(ir_module)(x_q_param)
+        _copy_module_params(ir_module, filled, param_set.scale.device)
 
 
 @QABCRegistry.register(dispatch_key=FakeQuantActivationPerToken, abc_class=IrBuilder)

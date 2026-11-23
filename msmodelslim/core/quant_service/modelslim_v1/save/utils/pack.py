@@ -122,3 +122,102 @@ def pack_fp4_to_uint8(x: torch.Tensor) -> torch.Tensor:
     # Pack pairs of 4-bit values into 8-bit values
     packed = (indices[:, 0] | (indices[:, 1] << 4)).to(torch.uint8)
     return packed.reshape(m, n // 2)
+
+
+def pack_hif4_weight_to_uint8(x: torch.Tensor) -> torch.Tensor:
+    float_to_e1m2 = [0.00, 0.25, 0.50, 0.75, 1.00, 1.25, 1.50, 1.75]
+    m, n = x.shape
+    device = x.device
+    # Create lookup table for hif4 values to indices
+    # Map the absolute values to 0-7 indices
+    k_e1m2 = torch.tensor(float_to_e1m2, device=device, dtype=x.dtype)
+    # Find closest valid hif4 value index for each element
+    abs_x = torch.abs(x)
+    abs_diff_x = torch.abs(abs_x.unsqueeze(-1) - k_e1m2)  # [m, n, 8]
+    abs_indices = torch.argmin(abs_diff_x, dim=-1)  # [m, n]
+    # Apply sign bit (bit 3) to get final 4-bit representation
+    indices = abs_indices + (torch.signbit(x).to(torch.long) << 3)
+    # Reshape to prepare for packing pairs of values
+    indices = indices.reshape(-1)
+    # Handle odd length by padding if necessary
+    if indices.numel() % 2 != 0:
+        indices = torch.cat([indices, torch.zeros(1, dtype=torch.long, device=device)])
+    # Reshape to pair consecutive elements
+    indices = indices.reshape(-1, 2)
+    # Pack pairs of 4-bit values into 8-bit values
+    packed = (indices[:, 0] | (indices[:, 1] << 4)).to(torch.uint8)
+    return packed.reshape(m, n // 2)
+
+
+def pack_hif4_scale_e1_to_uint8(scale_tensor: torch.Tensor):
+    """
+    Converts the scale tensor whose value is 1.0 or 2.0
+    into bit flags and aggregates them into uint8
+    specifically, weight_scale_lv2 and weight_scale_lv3 in the hifloat4 format
+    """
+    # 1. Map 1.0/2.0 to integer 0/1
+    bits = (scale_tensor == 2.0).to(torch.uint8)
+
+    # 2. Aggregate in groups of 8-bit E1 for byte-level processing.
+    original_shape = scale_tensor.shape
+    bits_reshaped = bits.view(-1, 8)
+
+    # 3. big-endian,using tensor multiplication to simulate bit operations. [2^0, 2^1, ..., 2^7]
+    weights = torch.tensor([128, 64, 32, 16, 8, 4, 2, 1], dtype=torch.uint8, device=bits.device)
+
+    # 4. Aggregated into an 8-bit integer through dot product (sum of displacements)
+    uint8_tensor = (bits_reshaped * weights).sum(dim=-1, dtype=torch.uint8)
+    new_shape = list(original_shape[:-3]) + [-1]
+    return uint8_tensor.view(new_shape)
+
+
+def pack_hif4_scale_to_fp32(scale_factor, scale_lv2, scale_lv3):
+    """
+    pack the three level scale of the hif4 format into the float32 format.
+    scale_factor: data range is E6M2, and the storage format is float32.
+    scale_lv2/scale_lv3: data range is (1,2)
+    """
+
+    def _to_e6m2_bits(x: torch.Tensor, bias: int = 48) -> torch.Tensor:
+        """
+        FP32 -> BF16-style relative rounding (7-bit mantissa) -> E6M2 -> uint8(bits)
+
+        E6M2:
+            exponent : 6 bits (bias=48)
+            mantissa : 2 bits
+            value = (1 + mant/4) * 2^(exp-bias)
+        """
+        x = x.float()
+        E = torch.floor(torch.log2(torch.clamp(x.abs(), min=2.0 ** (-126))))
+        E = torch.clamp(E, min=-126)
+        x = torch.round(x * torch.exp2(-E + 7)) * torch.exp2(E - 7)
+
+        x = torch.clamp(
+            x,
+            min=2.0 ** (-bias),
+            max=2.0**15 * 1.5,
+        )
+        E = torch.floor(torch.log2(x))
+        x = torch.round(x * torch.exp2(-E + 2)) * torch.exp2(E - 2)
+
+        E = torch.floor(torch.log2(x))
+        M = x / torch.exp2(E)
+        exp_bits = (E + bias).to(torch.uint8)
+        mant = torch.round((M - 1.0) * 4)
+        carry = mant >= 4
+        mant = torch.where(carry, torch.zeros_like(mant), mant)
+        mant_bits = torch.clamp(mant, 0, 3).to(torch.uint8)
+        return (exp_bits << 2) | mant_bits
+
+    f_u8 = _to_e6m2_bits(scale_factor.squeeze()).to(torch.int32)
+    if f_u8.dim() < scale_lv2.dim():
+        f_u8 = f_u8.unsqueeze(-1)
+
+    l2_u8 = pack_hif4_scale_e1_to_uint8(scale_lv2).to(torch.int32)
+    l3_u8 = pack_hif4_scale_e1_to_uint8(scale_lv3).to(torch.int32)
+    # assume the last dimension [..., 1] is the high bit and [..., 0] is the low bit
+    l3_u16 = (l3_u8[..., 1:2] << 8) | (l3_u8[..., 0:1])
+
+    packed_int32 = (f_u8 << 24) | (l2_u8 << 16) | (l3_u16 & 0xFFFF)
+    packed_int32 = packed_int32.squeeze(-1)
+    return packed_int32.view(torch.float32)

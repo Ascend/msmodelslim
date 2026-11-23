@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+
 """
 -------------------------------------------------------------------------
 This file is part of the MindStudio project.
@@ -26,8 +27,8 @@ import torch.nn as nn
 from msmodelslim.core.quantization_schema.api import fake_quantize
 from msmodelslim.core.quantization_schema.qal import QABCRegistry, QDType, QParam, QStorage
 from msmodelslim.utils.logging import logger_setter
-from .auto import AutoFakeQuantDynamicCache
-from .const import int8_per_channel_sym, int8_per_channel_asym
+from msmodelslim.core.quantization_schema.auto import AutoFakeQuantDynamicCache
+from msmodelslim.core.quantization_schema.const import int8_per_channel_sym, int8_per_channel_asym
 
 
 @QABCRegistry.multi_register(
@@ -38,19 +39,16 @@ from .const import int8_per_channel_sym, int8_per_channel_asym
     abc_type=AutoFakeQuantDynamicCache,
 )
 @logger_setter()
-class FakeQuantDynamicCache(AutoFakeQuantDynamicCache):
+class FakeQuantCacheINT8PerChannel(AutoFakeQuantDynamicCache):
     """
-    动态缓存伪量化IR。
+    INT8 per-channel static KV cache.
 
     动态缓存伪量化方式可以用以下参数描述：
         kv_cache_scale: KV缓存的量化参数，类型为torch.Tensor, dtype为torch.float32
         kv_cache_offset: KV缓存的量化参数，类型为torch.Tensor, dtype为torch.int32
     """
 
-    def __init__(
-        self,
-        x_q_param: QParam,
-    ):
+    def __init__(self, x_q_param: QParam):
         super().__init__()
 
         self.x_q_scheme = x_q_param.scheme
@@ -61,7 +59,12 @@ class FakeQuantDynamicCache(AutoFakeQuantDynamicCache):
         x = x.transpose(-2, -3)
         x_shape = x.shape
         x = x.reshape(-1, x.shape[-1] * x.shape[-2])
-        x_q_param = QParam(scheme=self.x_q_scheme, ext={"scale": self.kv_cache_scale, "offset": self.kv_cache_offset})
+        scale = self.kv_cache_scale.to(x.device, non_blocking=True)
+        offset = self.kv_cache_offset.to(x.device, non_blocking=True) if self.kv_cache_offset is not None else None
+        ext = {"scale": scale}
+        if offset is not None:
+            ext["offset"] = offset
+        x_q_param = QParam(scheme=self.x_q_scheme, ext=ext)
         x_q_dq = fake_quantize(QStorage(QDType.FLOAT, x), x_q_param).value
         x_q_dq = x_q_dq.reshape(x_shape)
         x_q_dq = x_q_dq.transpose(-2, -3).to(x.dtype)

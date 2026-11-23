@@ -27,13 +27,13 @@ from typing import Any, Dict, List, Optional, Set
 import torch
 from torch import nn
 
-from msmodelslim.core.quantization_schema.attention import FakeQuantDynamicCache
 from msmodelslim.core.quantization_schema.auto import (
     AutoFakeQuantActivation,
     AutoFakeQuantDynamicCache,
     AutoFakeQuantLinear,
 )
 from msmodelslim.core.quantization_algorithm.quant.fa3.interface import FA3QuantAdapterInterface
+from msmodelslim.core.quantization_schema.attention_dynamic import FakeQuantDynamicCache
 from msmodelslim.utils.exception import SchemaValidateError, UnsupportedError
 from msmodelslim.utils.logging import get_logger, logger_setter
 from msmodelslim.utils.security import json_safe_load

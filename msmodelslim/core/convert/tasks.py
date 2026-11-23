@@ -64,7 +64,8 @@ class PortableTensor:
     @classmethod
     def from_tensor(cls, tensor: torch.Tensor) -> "PortableTensor":
         contiguous = tensor.detach().cpu().contiguous()
-        byte_view = contiguous.view(torch.uint8).reshape(-1)
+        data = contiguous.reshape(1) if contiguous.dim() == 0 else contiguous
+        byte_view = data.view(torch.uint8).reshape(-1)
         return cls(
             raw=bytes(byte_view.numpy().tobytes()),
             dtype_name=str(contiguous.dtype).removeprefix("torch."),
@@ -241,6 +242,12 @@ class IRResult:
             if "weight_scale" not in state_dict:
                 return _passthrough_module_from_state_dict(state_dict)
             return _rebuild_int_fakequant(self.module_path, self.final_ir, state_dict)
+        if self.final_ir == IRKind.HIFP4:
+            from msmodelslim.core.quantization_schema.w4a8_hifx_mx_dynamic import (
+                W4A8HiFxMXDynamicPerBlockFakeQuantLinear,
+            )
+
+            return W4A8HiFxMXDynamicPerBlockFakeQuantLinear.from_hif4_export_state_dict(state_dict)
         raise ValueError(
             f"Cannot rebuild module for {self.module_path} with final_ir={self.final_ir!r} from state_dict"
         )

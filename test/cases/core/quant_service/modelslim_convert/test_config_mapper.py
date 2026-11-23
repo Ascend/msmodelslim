@@ -93,7 +93,7 @@ class TestSpecToConvertConfig:
         assert cfg.convert_rules[0].target_ir == IRKind.W8A8_MXFP8
         assert cfg.dst_format == "ascendv1"
         assert cfg.part_file_size == 4
-        assert cfg.parallel.max_workers == 8
+        assert cfg.model_dump()["parallel"]["max_workers"] == 8
         assert cfg.model_family == "qwen3_5_moe"
 
     def test_spec_to_convert_config_map_part_file_size_when_save_given(self):
@@ -212,7 +212,7 @@ class TestSpecToConvertConfig:
             }
         )
         cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o")
-        assert cfg.parallel.worker_backend == "thread"
+        assert cfg.model_dump()["parallel"]["worker_backend"] == "thread"
 
     def test_spec_to_convert_config_use_fixed_dependency_group_and_shard_cache(self):
         spec = ModelslimConvertServiceConfig.model_validate(
@@ -222,9 +222,10 @@ class TestSpecToConvertConfig:
             }
         )
         cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o")
-        assert cfg.parallel.task_granularity == "dependency_group"
-        assert cfg.parallel.shard_cache_size == 1
-        assert cfg.parallel.worker_threads == 4
+        parallel = cfg.model_dump()["parallel"]
+        assert parallel["task_granularity"] == "dependency_group"
+        assert parallel["shard_cache_size"] == 1
+        assert parallel["worker_threads"] == 4
 
     def test_spec_to_convert_config_no_inflight_memory_limit_by_default(self):
         spec = ModelslimConvertServiceConfig.model_validate(
@@ -234,7 +235,7 @@ class TestSpecToConvertConfig:
             }
         )
         cfg = spec_to_convert_config(spec, model_path="/m", save_path="/o")
-        assert cfg.parallel.max_inflight_bytes is None
+        assert cfg.model_dump()["parallel"]["max_inflight_bytes"] is None
 
     def test_spec_to_convert_config_map_merge_op_when_preprocess_has_merge(self):
         spec = ModelslimConvertServiceConfig.model_validate(

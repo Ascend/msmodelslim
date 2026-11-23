@@ -25,6 +25,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
+import torch
 from torch import nn
 
 from msmodelslim.core.convert.config import ConvertConfig
@@ -135,6 +136,28 @@ class TestSaveProcessorAdapter:
             cfg = mock_cls.call_args[0][1]
             assert isinstance(cfg.format, CompressedTensorsQuantFormatConfig)
             assert cfg.format.part_file_size == 4
+
+    def test_save_raise_error_when_hifp4_module_saved_to_hf(self):
+        from msmodelslim.core.quantization_schema.w4a8_hifx_mx_dynamic import W4A8HiFxMXDynamicPerBlockFakeQuantLinear
+
+        tree = nn.Module()
+        tree.add_module(
+            "linear",
+            W4A8HiFxMXDynamicPerBlockFakeQuantLinear.from_hif4_export_state_dict(
+                {
+                    "weight": torch.zeros(8, 8),
+                    "weight_scale_factor": torch.ones(1),
+                    "weight_scale_lv2": torch.ones(1),
+                    "weight_scale_lv3": torch.ones(1),
+                },
+            ),
+        )
+        config = ConvertConfig(model_path="/m", save_path="/out", dst_format="huggingface")
+        context = ConvertContext(config=config)
+        context.reader = MagicMock()
+
+        with pytest.raises(ValueError, match="HIFP4 modules are not compatible"):
+            SaveProcessorAdapter().save(context, tree)
 
     def test_save_compressed_tensors_use_part_file_size_when_config_set(self):
         """场景：HF 保存 part_file_size=0。

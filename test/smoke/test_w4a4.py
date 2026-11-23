@@ -32,6 +32,7 @@ from msmodelslim.core.quantization_schema import (
     W4A4DynamicPerChannelFakeQuantLinear,
     W8A8DynamicPerChannelFakeQuantLinear,
     W4A4MXDynamicPerBlockFakeQuantLinear,
+    W4A4Hif4DynamicPerBlockFakeQuantLinear,
 )
 from .base import FakeLlamaModelAdapter, invoke_test, is_npu_available
 from .utils import (
@@ -41,6 +42,8 @@ from .utils import (
     check_w8a8_dynamic_per_channel_export,
     check_tensors_by_mapping,
     check_w4a4_mx_dynamic_per_block_export,
+    check_w4a4_hif4_dynamic_per_block_export,
+    check_w4a4_hif4_sweep_dynamic_per_block_export,
 )
 
 
@@ -290,6 +293,82 @@ def test_w4a4_mx_dynamic_per_block_quantization(test_device, test_dtype):
             model_adapter=model_adapter,
             tmp_dir=tmp_dir,
             expected_quant_types="W4A4_MXFP4",
+            module_checkers=module_checkers,
+        )
+
+    finally:
+        if os.path.exists(tmp_dir):
+            shutil.rmtree(tmp_dir)
+
+
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
+@pytest.mark.smoke
+def test_w4a4_hif4_dynamic_per_block_quantization(test_device, test_dtype):
+    """测试W4A4 per_token量化功能（act: per_token, weight: per_channel）"""
+    torch.set_default_dtype(test_dtype)
+    tmp_dir = tempfile.mkdtemp()
+
+    try:
+        model_adapter = invoke_test("w4a4_hif4_dynamic_per_block.yaml", tmp_dir)
+
+        assert isinstance(model_adapter, FakeLlamaModelAdapter), "model_adapter should be FakeLlamaModelAdapter"
+
+        # 使用公共函数进行伪量化测试
+        module_checkers = {W4A4Hif4DynamicPerBlockFakeQuantLinear: check_w4a4_hif4_dynamic_per_block_export}
+
+        run_fake_quantization_test(
+            model_adapter=model_adapter,
+            tmp_dir=tmp_dir,
+            expected_quant_types="W4A4_HIFP4",
+            module_checkers=module_checkers,
+        )
+
+    finally:
+        if os.path.exists(tmp_dir):
+            shutil.rmtree(tmp_dir)
+
+
+@pytest.mark.parametrize(
+    "test_device, test_dtype",
+    [
+        pytest.param("cpu", torch.float32),
+        pytest.param(
+            "npu", torch.float16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+        pytest.param(
+            "npu", torch.bfloat16, marks=pytest.mark.skipif(not is_npu_available(), reason="NPU not available")
+        ),
+    ],
+)
+@pytest.mark.smoke
+def test_w4a4_hif4_sweep_dynamic_per_block_quantization(test_device, test_dtype):
+    """测试W4A4 HiF4 Sweep量化功能（act+weight均使用hif4_sweep方法）"""
+    torch.set_default_dtype(test_dtype)
+    tmp_dir = tempfile.mkdtemp()
+
+    try:
+        model_adapter = invoke_test("w4a4_hif4_sweep_dynamic_per_block.yaml", tmp_dir)
+
+        assert isinstance(model_adapter, FakeLlamaModelAdapter), "model_adapter should be FakeLlamaModelAdapter"
+
+        # 使用公共函数进行伪量化测试
+        module_checkers = {W4A4Hif4DynamicPerBlockFakeQuantLinear: check_w4a4_hif4_sweep_dynamic_per_block_export}
+
+        run_fake_quantization_test(
+            model_adapter=model_adapter,
+            tmp_dir=tmp_dir,
+            expected_quant_types="W4A4_HIFP4",
             module_checkers=module_checkers,
         )
 

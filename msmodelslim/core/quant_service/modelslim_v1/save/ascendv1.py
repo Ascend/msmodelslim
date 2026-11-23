@@ -19,6 +19,8 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
+# pylint: disable=too-many-lines
+
 import os
 from typing import Dict, Any, Optional, List, Literal, Annotated
 from unittest.mock import patch
@@ -44,7 +46,13 @@ from .interface import AscendV1SaveInterface, AscendV1GlobalModelDtypeInterface
 from .saver import AutoSaverProcessor, AutoSaverBaseConfig, _convert_hookir_to_wrapper
 from .utils.deqscale import deqscale2int64_by_dtype
 from .utils.json import JsonWriter
-from .utils.pack import w4a8_pack_int4, process_scale, pack_fp4_to_uint8
+from .utils.pack import (
+    w4a8_pack_int4,
+    process_scale,
+    pack_fp4_to_uint8,
+    pack_hif4_weight_to_uint8,
+    pack_hif4_scale_to_fp32,
+)
 from .utils.safetensors import SafetensorsWriter, BufferedSafetensorsWriter
 
 
@@ -156,12 +164,21 @@ def _w4a8_mxfp_uint8(tensor: torch.Tensor) -> torch.Tensor:
 
 ASCENDV1_DESC_JSON_NAME = "quant_model_description.json"
 ASCENDV1_SAFETENSORS_NAME = "quant_model_weights.safetensors"
-DTYPE_PREFIX_MAP = {
-    QDType.FP8_E4M3: "FP8",
-    QDType.INT8: "INT8",
-    QDType.MXFP4: "MXFP4",
-    QDType.MXFP8: "MXFP8",
-}
+DTYPE_PREFIX_MAP = {}
+for _dtype in QDType:
+    if _dtype == QDType.PLACEHOLDER:
+        continue
+    if _dtype == QDType.FP8_E4M3:
+        DTYPE_PREFIX_MAP[_dtype] = "FP8"
+    else:
+        DTYPE_PREFIX_MAP[_dtype] = _dtype.value.upper()
+
+SCOPE_MAP = {}
+for _scope in QScope:
+    if _scope == QScope.PLACEHOLDER:
+        continue
+    SCOPE_MAP[_scope] = _scope.value.upper()
+KV_BRANCH_LETTER = {"key_states_quantizer": "K", "value_states_quantizer": "V"}
 
 
 @QABCRegistry.register(dispatch_key=AscendV1Config, abc_class=AutoSessionProcessor)
@@ -186,10 +203,12 @@ class AscendV1Saver(AutoSaverProcessor):
         'WFP8AFP8_DYNAMIC',
         'W8A8_MXFP8',  # 8-bit 浮点量化
         'W4A8_MXFP',  # 4w 浮点量化
+        'W4A8_HIFP4_MXFP8',
         'W4A4_DYNAMIC',  # 4w4a → 高优先级
         'W4A4_MXFP4',
         'W4A4_MXFP4_DUALSCALE',
         'W4A4_MXFP4_SVD',
+        'W4A4_HIFP4',
     ]
 
     def __init__(self, model: nn.Module, config: AscendV1Config, adapter: object, **kwargs: Dict[str, Any]):
@@ -206,6 +225,7 @@ class AscendV1Saver(AutoSaverProcessor):
         self.quarot_info: Optional[qir.QuarotOnlineRotationInfo] = None
         self.desc_quant = None
         self.fa_quant_states = {}
+        self._per_layer_kv_schemes: Dict[str, Dict[str, tuple]] = {}
 
         self.version = "1.0.0"
         self.model_quant_type = "Unknown"
@@ -222,6 +242,8 @@ class AscendV1Saver(AutoSaverProcessor):
         _convert_hookir_to_wrapper(self.model)
         for name, sub_module in self.model.named_modules(memo=self.processed_modules):
             self._process_module_maybe_wrapper_ir(name, sub_module)
+
+        self.update_global_kv_quant_type()
 
         for key, val in self.json_append.items():
             self.json_writer.write(key, val)
@@ -543,6 +565,38 @@ class AscendV1Saver(AutoSaverProcessor):
         for name, param in module.named_parameters(recurse=False, prefix=prefix):
             self.write_tensor(name, desc, _w4a8_mxfp_uint8(param))
 
+    def on_w4a8_hif4_mxfp8_dynamic_per_block(self, prefix: str, module: qir.W4A8HiFxMXDynamicPerBlockFakeQuantLinear):
+        self.update_quant_type("W4A8_HIFP4_MXFP8")
+
+        with torch.device(module.weight.device):
+            self.group_size = 64
+            self.write_tensor(prefix + ".weight", "W4A8_HIFP4_MXFP8", pack_hif4_weight_to_uint8(module.weight.cpu()))
+
+            self.write_tensor(
+                prefix + ".weight_scale",
+                "W4A8_HIFP4_MXFP8",
+                (
+                    pack_hif4_scale_to_fp32(
+                        module.weight_scale_factor.cpu(), module.weight_scale_lv2.cpu(), module.weight_scale_lv3.cpu()
+                    )
+                ),
+            )
+
+    def on_w4a4_hif4_dynamic_per_block(self, prefix: str, module: qir.W4A4Hif4DynamicPerBlockFakeQuantLinear):
+        self.update_quant_type("W4A4_HIFP4")
+        with torch.device(module.weight.device):
+            self.group_size = 64
+            self.write_tensor(prefix + ".weight", "W4A4_HIFP4", pack_hif4_weight_to_uint8(module.weight.cpu()))
+            self.write_tensor(
+                prefix + ".weight_scale",
+                "W4A4_HIFP4",
+                (
+                    pack_hif4_scale_to_fp32(
+                        module.weight_scale_factor.cpu(), module.weight_scale_lv2.cpu(), module.weight_scale_lv3.cpu()
+                    )
+                ),
+            )
+
     def on_float_linear(self, prefix: str, module: nn.Linear):
         self.update_quant_type("FLOAT")
 
@@ -552,19 +606,182 @@ class AscendV1Saver(AutoSaverProcessor):
         for name, param in module.named_parameters(recurse=False, prefix=prefix):
             self.write_tensor(name, "FLOAT", param)
 
-    def on_dynamic_cache(self, prefix: str, module: qir.FakeQuantDynamicCache):
+    def _kv_cache_dtype_str(self, scheme) -> str:
+        """拼装 KV cache 量化类型字符串。
+
+        规则：
+        - 输出格式：{精度格式}_{量化策略}
+        - 精度格式：INT8, FP8, MXFP4, HiF4
+        - 量化策略：PER_CHANNEL, PER_TOKEN, PER_TILE, PER_BLOCK
+        - INT8/FP8 支持 per_channel 静态量化；
+        - MXFP4/HiF4 仅支持动态量化（per_block/per_token/per_tile）；
+        - 动态量化运行时计算 scale，工具侧不保存 scale。
+        """
+        dtype = DTYPE_PREFIX_MAP.get(scheme.dtype)
+        if not dtype:
+            raise SchemaValidateError(f"KV cache Unsupported dtype: {scheme.dtype}")
+
+        scope_str = SCOPE_MAP.get(scheme.scope)
+        if scope_str is None:
+            raise SchemaValidateError(f"KV cache Unsupported scope: {scheme.scope}")
+
+        return f"{dtype}_{scope_str}"
+
+    def _merge_kv_schemes(self, layer_schemes: Dict[str, str]) -> str:
+        """将当前层的 K/V 配置合并为 quant_type 字符串。
+
+        规则：
+        - 格式：{张量K}_{精度格式}_{量化策略}_{张量V}_{精度格式}_{量化策略}
+        - 同样的 {精度格式}_{量化策略} 合并为 KV 前缀
+        - 例如：K_FP8_PER_CHANNEL_V_FP8_PER_CHANNEL -> KV_FP8_PER_CHANNEL
+        """
+        config_to_branches = {}
+        for expected_branch in ['K', 'V']:
+            if expected_branch in layer_schemes:
+                cfg = layer_schemes[expected_branch]
+                if cfg not in config_to_branches:
+                    config_to_branches[cfg] = []
+                config_to_branches[cfg].append(expected_branch)
+        parts = []
+        for cfg_dtype, branches in config_to_branches.items():
+            branch_prefix = "".join(branches)
+            parts.append(f"{branch_prefix}_{cfg_dtype}")
+        return "_".join(parts)
+
+    def update_kv_cache_type(self, prefix: str, module) -> None:
+        """收集 KV cache 各分支（K/V）的量化配置，写入当前层的 kv_quant_type。
+
+        写入键格式: {layer_prefix}.quant_type （如 model.layers.0.self_attn.quant_type）。
+        全局字段在 post_run 中通过 update_global_kv_quant_type 一次性写入。
+        """
+        parent_prefix, last = prefix.rsplit('.', 1)
+        if "key_states" in last:
+            branch = "K"
+        elif "value_states" in last:
+            branch = "V"
+        else:
+            return
+        scheme = getattr(module, 'x_q_scheme', None)
+        if scheme is None:
+            return
+        dtype = self._kv_cache_dtype_str(scheme)
+
+        if parent_prefix not in self._per_layer_kv_schemes:
+            self._per_layer_kv_schemes[parent_prefix] = {}
+        self._per_layer_kv_schemes[parent_prefix][branch] = dtype
+
+        quant_type_key = f"{parent_prefix}.quant_type"
+        merged = self._merge_kv_schemes(self._per_layer_kv_schemes[parent_prefix])
+        self.json_writer.write(quant_type_key, merged)
+
+    def update_global_kv_quant_type(self) -> None:
+        """在 post_run 中调用一次，根据所有层的配置决定全局 kv_cache_type/kv_quant_type。"""
+        if not self._per_layer_kv_schemes:
+            return
+
+        # 当所有层均为 INT8_PER_CHANNEL 时写入 kv_cache_type
+        all_int8_per_channel = all(
+            cfg == "INT8_PER_CHANNEL"
+            for layer_schemes in self._per_layer_kv_schemes.values()
+            for cfg in layer_schemes.values()
+        )
+        if all_int8_per_channel:
+            self.json_append['cache_type'] = 'C8'
+            # A5 的读取端（format.py `_apply_kv_cache_ir`）与 v0 老工具都按 `kv_cache_type`
+            # 识别 C8 KV cache；A6 新增的 `cache_type` 在仓内没有读取方。两套键同时写，避免
+            # 「保存 → 转换」回环丢掉 C8 IR。
+            self.json_append['kv_cache_type'] = 'C8'
+            self.json_append['kv_quant_type'] = 'C8'
+
+        self.json_append['quant_type'] = 'C8'
+
+    def _resolve_scale_name(self, scale_name, project: str) -> str:
+        """解析 scale/offset 参数名：支持常量名（各分支同名）或按 project 动态生成。"""
+        if callable(scale_name):
+            return scale_name(project)
+        return scale_name
+
+    def _is_dynamic_kv_branch(self, module) -> bool:
+        """判断 KV cache 分支是否为动态量化（per_token/per_block，运行时计算 scale）。"""
+        scope = getattr(getattr(module, 'x_q_scheme', None), 'scope', None)
+        return scope in (QScope.PER_TOKEN, QScope.PER_TILE, QScope.PER_BLOCK)
+
+    def _save_kv_cache_scale(
+        self,
+        prefix: str,
+        module,
+        quant_type: str,
+        scale_name,
+        offset_name: Optional[callable] = None,
+        scale_transform: Optional[callable] = None,
+    ) -> None:
+        """保存 per_channel 静态 KV cache 分支的 scale/offset。
+
+        各方案通过 quant_type/scale_name/offset_name/scale_transform 灵活配置保存差异，
+        无需为每个方案单独实现一套保存逻辑。
+
+        - 动态分支（per_token/per_block）在运行时计算 scale，工具侧不保存，直接跳过；
+        - 静态分支（per_channel）按分支写入 k_proj/v_proj 对应的 scale（及可选 offset）。
+        - offset 字段仅为 INT8 类型存在；
+        - scale_name/offset_name 可为常量名（各分支同名，如 "kv_cache_scale"），
+          也可为接收 project（k_proj/v_proj）并返回参数名的函数（如 lambda p: f"{p[0]}_scale"）。
+        """
         prefix_list = prefix.split(".")
         prefix_no_last = '.'.join(prefix_list[:-1])
-        if "key_states" in prefix_list[-1]:
-            self.write_tensor(prefix_no_last + ".k_proj.kv_cache_scale", "C8", module.kv_cache_scale)
-            self.write_tensor(prefix_no_last + ".k_proj.kv_cache_offset", "C8", module.kv_cache_offset)
-        elif "value_states" in prefix_list[-1]:
-            self.write_tensor(prefix_no_last + ".v_proj.kv_cache_scale", "C8", module.kv_cache_scale)
-            self.write_tensor(prefix_no_last + ".v_proj.kv_cache_offset", "C8", module.kv_cache_offset)
+        current_module_name = prefix_list[-1]
+
+        # 动态配置（per_token/per_block）由部署侧运行时计算 scale，工具侧不保存 scale。
+        if self._is_dynamic_kv_branch(module):
+            logger.warning("Skip writing %s scale for dynamic branch: %s", quant_type, prefix)
+            return
+
+        if "key_states" in current_module_name:
+            project = "k_proj"
+        elif "value_states" in current_module_name:
+            project = "v_proj"
         else:
             raise ValueError(f"Unknown dynamic cache prefix: {prefix}")
-        self.json_append['kv_cache_type'] = "C8"
-        self.json_append['kv_quant_type'] = "C8"
+
+        scale = module.kv_cache_scale
+        if scale_transform is not None:
+            scale = scale_transform(scale)
+
+        self.write_tensor(
+            f"{prefix_no_last}.{project}.{self._resolve_scale_name(scale_name, project)}", quant_type, scale
+        )
+        if offset_name:
+            offset = self._resolve_scale_name(offset_name, project)
+            self.write_tensor(f"{prefix_no_last}.{project}.{offset}", quant_type, module.kv_cache_offset)
+
+    def on_dynamic_cache(self, prefix: str, module: qir.FakeQuantDynamicCache):
+        """Dynamic KV cache (per-token/per-tile/per-block) — no scale saved at export time."""
+        self.update_kv_cache_type(prefix, module)
+
+    def on_dynamic_cache_int8_per_channel(self, prefix: str, module: qir.FakeQuantCacheINT8PerChannel):
+        """INT8 per_channel 静态 KV cache 保存。"""
+        self._save_kv_cache_scale(prefix, module, "INT8_PER_CHANNEL", "kv_cache_scale", offset_name="kv_cache_offset")
+        self.update_kv_cache_type(prefix, module)
+
+    def on_dynamic_cache_fp8_per_channel(self, prefix: str, module: qir.FakeQuantCacheFP8PerChannel):
+        """FP8 per_channel 静态 KV cache 保存。
+        仅静态分支（per_channel）保存 k_scale / v_scale（FP8_PER_CHANNEL）；动态分支不保存 scale。
+        """
+        self._save_kv_cache_scale(prefix, module, "FP8_PER_CHANNEL", lambda p: f"{p[0]}_scale")
+        self.update_kv_cache_type(prefix, module)
+
+    def on_dynamic_cache_fp4_per_channel(self, prefix: str, module: qir.FakeQuantCacheFP4PerChannel):
+        """FP4_E2M1 per_channel 静态 KV cache 保存。
+        仅静态分支（per_channel）保存 k_scale / v_scale（FP4_E2M1_PER_CHANNEL）；动态分支不保存 scale。
+        """
+        self._save_kv_cache_scale(prefix, module, "FP4_E2M1_PER_CHANNEL", lambda p: f"{p[0]}_scale")
+        self.update_kv_cache_type(prefix, module)
+
+    def on_dynamic_cache_fp4_per_head(self, prefix: str, module: qir.FakeQuantCacheFP4PerHead):
+        """FP4_E2M1 per_head 静态 KV cache 保存。
+        仅静态分支（per_head）保存 k_scale / v_scale（FP4_E2M1_PER_HEAD）；动态分支不保存 scale。
+        """
+        self._save_kv_cache_scale(prefix, module, "FP4_E2M1_PER_HEAD", lambda p: f"{p[0]}_scale")
+        self.update_kv_cache_type(prefix, module)
 
     def on_w16a16s(self, prefix: str, module: qir.W16A16sLinear):
         self.update_quant_type("W16A16S")
@@ -590,6 +807,16 @@ class AscendV1Saver(AutoSaverProcessor):
         # FA3 FP8静态保存策略
         self._save_activation_per_head(prefix, module, torch.float32)
 
+    def on_hif8_activation_per_head(self, prefix: str, module: qir.HIF8FakeQuantActivationPerHead):
+        self._save_activation_per_head(prefix, module, torch.float32)
+
+    def on_hif8_activation_per_tensor(self, prefix: str, module: qir.HIF8FakeQuantActivationPerTensor):
+        scale = module.input_scale.to(torch.float32).reshape(1)
+        self.write_tensor(prefix + ".scale", "FAQuant", scale)
+        self.write_tensor(prefix + ".offset", "FAQuant", torch.zeros_like(scale))
+        self.update_fa_quant_type(prefix, module, scope_tag="PER_TENSOR")
+        self.update_global_fa_quant_type('FAKQuant')
+
     def on_activation_per_token(self, prefix: str, module: qir.FakeQuantActivationPerToken):
         # FA3动态量化保存策略
         self.update_fa_quant_type(prefix, module)
@@ -610,7 +837,7 @@ class AscendV1Saver(AutoSaverProcessor):
         self.update_fa_quant_type(prefix, module)
         self.update_global_fa_quant_type('FAKQuant')
 
-    def update_fa_quant_type(self, prefix: str, module):
+    def update_fa_quant_type(self, prefix: str, module, scope_tag: str = ""):
         """
         拼装和更新FA3量化策略字符串
         """
@@ -625,7 +852,7 @@ class AscendV1Saver(AutoSaverProcessor):
         is_dynamic = scope in (QScope.PER_TOKEN, QScope.PER_BLOCK)
         strategy = "DYNAMIC" if is_dynamic else "STATIC"
         # per_channel 静态需在描述串中显式带 PER_CHANNEL（如 V_MXFP8_PER_CHANNEL）
-        scope_tag = "PER_CHANNEL" if scope == QScope.PER_CHANNEL else ""
+        scope_tag = "PER_CHANNEL" if scope == QScope.PER_CHANNEL else scope_tag
 
         if parent_prefix not in self.fa_quant_states:
             self.fa_quant_states[parent_prefix] = {}
@@ -640,6 +867,53 @@ class AscendV1Saver(AutoSaverProcessor):
     def update_global_fa_quant_type(self, states=None):
         if self.fa_quant_states:
             self.json_append['fa_quant_type'] = states
+
+    # ---- 分布式 KV cache quant_type 聚合 ----
+    # 多卡分发按子模块粒度(key_states_quantizer/value_states_quantizer 会分到不同 rank),
+    # 单 rank 只能见到部分分支, 无法拼出完整 quant_type。因此把每层已见分支状态单独落为 json key,
+    # 由 DistributedAscendV1Saver._merge_json_files 在合并时跨 rank 汇总后统一拼串。
+    KV_LAYER_STATE_PREFIX = "kv_layer_states"
+
+    def record_kv_layer_states(self) -> None:
+        """把本 saver(本 rank)已见到的每层 KV 分支状态写成独立 json key, 供分布式 merge 聚合。
+
+        分支状态结构: kv_layer_states/<parent> = {"K": "HIF4_PER_BLOCK", "V": "HIF4_PER_BLOCK"}
+        (branch → dtype_str, 值可直接 json 序列化)
+        无 KV 分支时跳过。
+        """
+        if not self._per_layer_kv_schemes:
+            return
+        for parent, layer_schemes in self._per_layer_kv_schemes.items():
+            key = f"{self.KV_LAYER_STATE_PREFIX}/{parent}"
+            self.json_writer.write(key, dict(layer_schemes))
+
+    @classmethod
+    def merge_kv_layer_states(cls, merged_meta: dict, per_rank_layer_states: dict) -> None:
+        """把各 rank 的同层 KV 分支状态合并, 在 merged_meta 中写完整 quant_type。
+
+        Args:
+            merged_meta: 最终要写盘的顶层 json (已有各 rank 合并内容)。
+            per_rank_layer_states: {parent: {"K": str, "V": str}} 已跨 rank 汇总的层状态。
+        """
+        kv_parents = sorted(set(per_rank_layer_states))
+        for parent in kv_parents:
+            parent_layer_state = per_rank_layer_states.get(parent, {})
+            if not parent_layer_state:
+                continue
+            # 使用已有的 _merge_kv_schemes 逻辑重新拼装完整 quant_type
+            config_to_branches = {}
+            for expected_branch in ['K', 'V']:
+                if expected_branch in parent_layer_state:
+                    cfg = parent_layer_state[expected_branch]
+                    if cfg not in config_to_branches:
+                        config_to_branches[cfg] = []
+                    config_to_branches[cfg].append(expected_branch)
+            parts = []
+            for cfg_dtype, branches in config_to_branches.items():
+                branch_prefix = "".join(branches)
+                parts.append(f"{branch_prefix}_{cfg_dtype}")
+            merged_quant_type = "_".join(parts)
+            merged_meta[f"{parent}.quant_type"] = merged_quant_type
 
     # ---- 分布式 FA quant_type 聚合 ----
     # 多卡分发按子模块粒度(fa_q/fa_k/fa_v 会分到不同 rank), 单 rank 只能见到部分分支,

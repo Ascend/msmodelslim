@@ -210,6 +210,15 @@ def _build_case(method_name: str):
     elif method_name == "on_dynamic_cache":
         return (
             "model.layers.0.self_attn.key_states",
+            SimpleNamespace(x_q_scheme=SimpleNamespace(dtype=QDType.MXFP8, scope=QScope.PER_TOKEN)),
+            "model.layers.0.self_attn.quant_type",
+            "K_MXFP8_PER_TOKEN",
+            0,
+            False,
+        )
+    elif method_name == "on_dynamic_cache_int8_per_channel":
+        return (
+            "model.layers.0.self_attn.key_states",
             SimpleNamespace(kv_cache_scale=torch.ones(2), kv_cache_offset=torch.zeros(2)),
             "model.layers.0.self_attn.k_proj.kv_cache_scale",
             "C8",

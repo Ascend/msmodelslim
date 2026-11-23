@@ -36,6 +36,7 @@ __all__ = [
     "MXActDualScaleMinmax",
     "MXWeightPerBlockMseRound",
     "MXWeightPerBlockCeilX",
+    "HiFxWeightPerBlockSweep",
 ]
 
 from .impl.histogram import ActPerTensorHistogram
@@ -55,3 +56,4 @@ from .impl.dualscale import MXWeightDualScaleMinmax, MXActDualScaleMinmax
 from .impl.mse_round import MXWeightPerBlockMseRound
 from .impl.fouroversix import WeightFouroverSixQuantizer
 from .impl.ceil_x import MXWeightPerBlockCeilX
+from .impl.hif4_sweep import HiFxWeightPerBlockSweep

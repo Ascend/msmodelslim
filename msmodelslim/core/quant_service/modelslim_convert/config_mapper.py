@@ -254,6 +254,15 @@ _SOURCE_IR_BINDINGS: Dict[IRKind, Tuple[str, Dict[str, str]]] = {
             "bias": "{module}.bias",
         },
     ),
+    IRKind.NVFP4_MODELOPT: (
+        "nvfp4_modelopt",
+        {
+            "weight": "{module}.weight",
+            "weight_scale": "{module}.weight_scale",
+            "weight_scale_2": "{module}.weight_scale_2",
+            "bias": "{module}.bias",
+        },
+    ),
     IRKind.FLOAT: ("bf16", {"weight": "{module}.weight"}),
     IRKind.MXFP4_PACKED: (
         "mxfp4_packed",
@@ -269,6 +278,7 @@ _SOURCE_IR_BINDINGS: Dict[IRKind, Tuple[str, Dict[str, str]]] = {
 _AUTO_TENSOR_MAP: Dict[str, str] = {
     "weight": "{module}.weight",
     "weight_scale_inv": "{module}.weight_scale_inv",
+    "weight_scale_2": "{module}.weight_scale_2",
     "weight_packed": "{module}.weight_packed",
     "weight_scale": "{module}.weight_scale",
     "weight_shape": "{module}.weight_shape",

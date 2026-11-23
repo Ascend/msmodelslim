@@ -90,6 +90,32 @@ def _lazy_init_unsaved_modules(context: ConvertContext, tree: nn.Module) -> None
         logger.info("Lazy-loaded %d module(s) before save (passthrough / FLOAT linear)", n)
 
 
+def _assert_hf_save_is_compatible(tree: nn.Module) -> None:
+    """
+    HF/compressed_tensors 仅支持 FLOAT 侧导出。
+
+    若树中仍包含 HIFP4 carrier 模块，继续保存会退化为按浮点参数写盘，
+    产生体积异常且不兼容 AscendV1 的无效导出件。
+    """
+    from msmodelslim.core.quantization_schema.w4a4_hif4_dynamic import W4A4Hif4DynamicPerBlockFakeQuantLinear
+    from msmodelslim.core.quantization_schema.w4a8_hifx_mx_dynamic import W4A8HiFxMXDynamicPerBlockFakeQuantLinear
+
+    unsupported = []
+    for name, module in tree.named_modules():
+        if not name:
+            continue
+        if isinstance(module, (W4A8HiFxMXDynamicPerBlockFakeQuantLinear, W4A4Hif4DynamicPerBlockFakeQuantLinear)):
+            unsupported.append((name, type(module).__name__))
+            if len(unsupported) >= 5:
+                break
+    if unsupported:
+        samples = ", ".join(f"{n}({t})" for n, t in unsupported)
+        raise ValueError(
+            "HIFP4 modules are not compatible with dst_format huggingface/compressed_tensors. "
+            f"Use dst_format=ascendv1. sample_modules=[{samples}]"
+        )
+
+
 def _build_adapter(context: ConvertContext) -> IModel:
     model_type = context.config.model_family or "convert"
     return BaseModelAdapter(
@@ -121,6 +147,7 @@ def _create_saver(context: ConvertContext, tree: nn.Module, save_dir: str | None
     part_file_size = context.config.part_file_size
 
     if dst in _HF_DST:
+        _assert_hf_save_is_compatible(tree)
         format_cfg = parse_format_config({"type": "compressed_tensors", "part_file_size": part_file_size})
         cfg = QuantSaveProcessorConfig(type="saver", format=format_cfg)
         cfg.set_save_directory(save_dir)

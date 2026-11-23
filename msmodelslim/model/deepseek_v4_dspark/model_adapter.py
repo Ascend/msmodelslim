@@ -36,6 +36,7 @@ from torch import nn
 
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.base.protocol import ProcessRequest
+from msmodelslim.core.quantization_algorithm.quarot import QuaRotInterface
 from msmodelslim.utils.exception import InvalidModelError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import json_safe_load
@@ -43,7 +44,6 @@ from msmodelslim.utils.security import json_safe_load
 from ..deepseek_v4.model_adapter import DeepSeekV4ModelAdapter
 from ..common.layer_wise_forward import TransformersForwardBreak
 from .model import DSparkBlock, enable_dspark_moe_comm
-from ..interface_hub import QuaRotInterface
 from .mtp_quant_module import (
     ensure_config_n_mtp_layers,
     ensure_dedicated_mtp_embed,
@@ -460,6 +460,20 @@ class DeepSeekV4DSparkModelAdapter(DeepSeekV4ModelAdapter):  # pylint: disable=t
         args.dspark_block_size = config_data.get("dspark_block_size", 0)
         args.dspark_noise_token_id = config_data.get("dspark_noise_token_id", 0)
         args.dspark_markov_rank = config_data.get("dspark_markov_rank", 0)
+
+        rope_scaling = config_data.get("rope_scaling")
+        if (
+            args.dspark_block_size
+            and isinstance(rope_scaling, dict)
+            and rope_scaling.get("rope_type", rope_scaling.get("type")) == "yarn"
+        ):
+            args.rope_factor = rope_scaling.get("factor", args.rope_factor)
+            args.beta_fast = rope_scaling.get("beta_fast", args.beta_fast)
+            args.beta_slow = rope_scaling.get("beta_slow", args.beta_slow)
+            args.original_seq_len = rope_scaling.get("original_max_position_embeddings", args.original_seq_len)
+            args.rope_theta = config_data.get("rope_theta", args.rope_theta)
+            args.compress_rope_theta = config_data.get("compress_rope_theta", args.compress_rope_theta)
+
         args.vocab_size = config_data.get("vocab_size", getattr(args, "vocab_size", 129280))
         args.hc_mult = config_data.get("hc_mult", getattr(args, "hc_mult", 4))
 

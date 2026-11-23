@@ -1,10 +1,11 @@
+# adapt_rotation 配置说明
+
 <!-- generated-by: tools.config_docgen ; class: msmodelslim.core.quantization_algorithm.adapt_rotation.adapt_rotation.AdaptRotationProcessorConfig -->
+
 > **自动生成文档，请勿手工修改。**
 >
 > 本页由 `tools.config_docgen` 根据源码注解生成。
 > 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
-
-# adapt_rotation 配置说明
 
 ## 1. 配置概述
 

@@ -22,3 +22,5 @@ See the Mulan PSL v2 for more details.
 from . import int_quantization  # noqa: F401
 from . import mx_quantization  # noqa: F401
 from . import fp_quantization  # noqa: F401
+from . import hifx_quantization  # noqa: F401
+from . import hif8_quantization  # noqa: F401

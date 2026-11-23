@@ -43,7 +43,7 @@ from msmodelslim.utils.validation.pydantic import in_range
 from .saver import AutoSaverProcessor, AutoSaverBaseConfig
 from .utils.json import JsonWriter
 from .utils.safetensors import SafetensorsWriter, BufferedSafetensorsWriter
-from .utils.pack import pack_fp4_to_uint8
+from .utils.pack import pack_fp4_to_uint8, pack_hif4_weight_to_uint8, pack_hif4_scale_to_fp32
 
 
 def copy_files(input_path, output_path):
@@ -123,6 +123,7 @@ DTYPE_PREFIX_MAP = {
     QDType.INT8: "INT8",
     QDType.MXFP4: "MXFP4",
     QDType.MXFP8: "MXFP8",
+    QDType.HiF4: "HIFP4",
 }
 
 
@@ -170,7 +171,9 @@ def save_this_rank_only():
 
 
 @QABCRegistry.register(dispatch_key=MindIEFormatConfig, abc_class=AutoSessionProcessor)
-class MindIEFormatSaver(AutoSaverProcessor):
+class MindIEFormatSaver(  # pylint: disable=abstract-method
+    AutoSaverProcessor
+):
     """
     mindie_format 量化模型保存器。该保存器将量化模型保存为 MindieFormat 格式。
 
@@ -432,6 +435,40 @@ class MindIEFormatSaver(AutoSaverProcessor):
         if ValidJsonExt.JSON_APPEND not in self.json_append:
             self.json_append[ValidJsonExt.JSON_APPEND] = dict()
         self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W4A4_MXFP4_DUALSCALE"
+
+    def on_w4a4_hif4_dynamic_per_block(self, prefix: str, module: qir.W4A4Hif4DynamicPerBlockFakeQuantLinear):
+        with torch.device(module.weight.device):
+            self.group_size = 64
+            self.write_tensor(prefix + ".weight", "W4A4_HIFP4", pack_hif4_weight_to_uint8(module.weight.cpu()))
+            self.write_tensor(
+                prefix + ".weight_scale",
+                "W4A4_HIFP4",
+                (
+                    pack_hif4_scale_to_fp32(
+                        module.weight_scale_factor.cpu(), module.weight_scale_lv2.cpu(), module.weight_scale_lv3.cpu()
+                    )
+                ),
+            )
+        if ValidJsonExt.JSON_APPEND not in self.json_append:
+            self.json_append[ValidJsonExt.JSON_APPEND] = dict()
+        self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W4A4_HIFP4"
+
+    def on_w4a8_hif4_mxfp8_dynamic_per_block(self, prefix: str, module: qir.W4A8HiFxMXDynamicPerBlockFakeQuantLinear):
+        with torch.device(module.weight.device):
+            self.group_size = 64
+            self.write_tensor(prefix + ".weight", "W4A8_HIFP4_MXFP8", pack_hif4_weight_to_uint8(module.weight.cpu()))
+            self.write_tensor(
+                prefix + ".weight_scale",
+                "W4A8_HIFP4_MXFP8",
+                (
+                    pack_hif4_scale_to_fp32(
+                        module.weight_scale_factor.cpu(), module.weight_scale_lv2.cpu(), module.weight_scale_lv3.cpu()
+                    )
+                ),
+            )
+        if ValidJsonExt.JSON_APPEND not in self.json_append:
+            self.json_append[ValidJsonExt.JSON_APPEND] = dict()
+        self.json_append[ValidJsonExt.JSON_APPEND]['model_quant_type'] = "W4A8_HIFP4_MXFP8"
 
     def on_online_rotation_wrapper(self, prefix: str, module: qir.OnlineRotationWrapper):
         """

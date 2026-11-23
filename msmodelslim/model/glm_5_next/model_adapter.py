@@ -22,6 +22,7 @@ See the Mulan PSL v2 for more details.
 import os.path
 from collections import defaultdict
 from functools import lru_cache
+from types import MethodType
 from typing import List, Any, Generator, Optional, Tuple, Dict, Union, Callable
 from unittest.mock import patch
 
@@ -36,6 +37,7 @@ from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.const import DeviceType
 from msmodelslim.core.graph import AdapterConfig, MappingConfig, FusionConfig
 from msmodelslim.core.quantization_schema import QuaRotExtraInfoWrapperIR
+from msmodelslim.core.quantization_algorithm.quarot import QuaRotInterface
 from msmodelslim.utils.exception import InvalidModelError, UnsupportedError
 from msmodelslim.utils.logging import logger_setter, get_logger
 from msmodelslim.utils.security import (
@@ -45,17 +47,18 @@ from msmodelslim.utils.security import (
     MAX_READ_FILE_SIZE_32G,
 )
 from msmodelslim.utils.security.model import SafeGenerator
-from .model import Transformer, NextPredDecoderLayer
+from .model import Indexer, NextPredDecoderLayer, Transformer
 from .quarot import _get_full_expert_range, get_ln_fuse_map, get_rotate_map
 from .mtp_quant_module import MTPExtraModule, wrap_mtp_decoder, remove_zero_and_shift
 from ..common.layer_wise_forward import TransformersForwardBreak
 from ..common.transformers import TransformersModel
 from ..glm_5.convert_fp8_to_bf16 import auto_convert_module_fp8_to_bf16
 from ..interface_hub import (
+    FA3QuantAdapterInterface,
+    FA3QuantPlaceHolder,
     ModelSlimPipelineInterfaceV1,
     FlexSmoothQuantInterface,
     AscendV1SaveInterface,
-    QuaRotInterface,
 )
 
 
@@ -67,6 +70,7 @@ class Glm5NextModelAdapter(  # pylint: disable=too-many-ancestors
     FlexSmoothQuantInterface,
     QuaRotInterface,
     AscendV1SaveInterface,
+    FA3QuantAdapterInterface,
 ):
     def get_model_pedigree(self) -> str:
         return 'glm_5_next'
@@ -622,6 +626,35 @@ class Glm5NextModelAdapter(  # pylint: disable=too-many-ancestors
                 return text_config.indexer_types[layer_idx] != "shared"
         return False
 
+    def inject_fa3_placeholders(
+        self, root_name: str, root_module: nn.Module, should_inject: Callable[[str], bool]
+    ) -> None:
+        """Install FA3 branches and bind the quantization forward on selected Indexers."""
+
+        def _wrap_indexer_forward(indexer_mod: Indexer):
+            def new_indexer_forward(indexer, hidden_states, q_resid, attention_mask=None, **kwargs):
+                # FA3 expects [batch, heads, sequence, head_dim]; pooled K has one head.
+                def quantize_q(q):
+                    return indexer.fa_q(q.transpose(0, 1).unsqueeze(0))[0].transpose(0, 1)
+
+                def quantize_k(k):
+                    return indexer.fa_k(k[None, None])[0, 0]
+
+                return indexer.select_indices(
+                    hidden_states, q_resid, attention_mask, transform_q=quantize_q, transform_k=quantize_k
+                )
+
+            indexer_mod.forward = MethodType(new_indexer_forward, indexer_mod)
+
+        for name, module in root_module.named_modules(prefix=root_name):
+            if not isinstance(module, Indexer) or not self._layer_has_indexer(module.layer_idx):
+                continue
+            if should_inject(name):
+                for branch in ("fa_q", "fa_k"):
+                    if not hasattr(module, branch):
+                        module.add_module(branch, FA3QuantPlaceHolder())
+                _wrap_indexer_forward(module)
+
     def _layer_has_kpool_compress(self) -> bool:
         """是否启用 kpool 压缩（deploy 侧 index_kpool > 1 且 index_kpool_compress）。
 
@@ -904,24 +937,6 @@ class Glm5NextModelAdapter(  # pylint: disable=too-many-ancestors
 
     def ascendv1_save_postprocess(self, model: nn.Module, save_directory: str) -> None:
         self._save_vlm_assets(save_directory)
-        description_path = os.path.join(save_directory, "quant_model_description.json")
-        if os.path.exists(description_path):
-            description_data = json_safe_load(description_path, check_user_stat=False)
-            changed = False
-            for key in list(description_data.keys()):
-                if not key.endswith(".quant_type"):
-                    continue
-                value = description_data[key]
-                if not isinstance(value, str):
-                    continue
-                parts = value.split('_')
-                if parts and parts[0] and set(parts[0]) <= set('QKVP'):
-                    new_value = '_'.join(parts[1:])
-                    if new_value != value:
-                        description_data[key] = new_value
-                        changed = True
-            if changed:
-                json_safe_dump(description_data, description_path, indent=2, check_user_stat=False)
 
         global_rotation = None
         for _, module in model.named_modules():

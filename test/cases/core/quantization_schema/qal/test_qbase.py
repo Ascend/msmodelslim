@@ -23,7 +23,7 @@ import unittest
 
 import torch
 
-from msmodelslim.core.quantization_schema.qal.qbase import QDType, QScope, QScheme, QParam, QStorage
+from msmodelslim.core.quantization_schema.qal.qbase import QDType, QScope, QScheme, QParam, QStorage, _get_format_params
 
 
 class TestQDType(unittest.TestCase):
@@ -37,6 +37,7 @@ class TestQDType(unittest.TestCase):
         self.assertEqual(QDType.MXFP8.value, "mxfp8")
         self.assertEqual(QDType.MXFP4.value, "mxfp4")
         self.assertEqual(QDType.FP8_E4M3.value, "fp8_e4m3")
+        self.assertEqual(QDType.FP4_E2M1.value, "fp4_e2m1")
         self.assertEqual(QDType.PLACEHOLDER.value, "placeholder")
 
     def test_enum_should_be_str_subclass(self):
@@ -68,7 +69,7 @@ class TestQDType(unittest.TestCase):
 
     def test_mx_finfo_should_raise_for_non_mx_types(self):
         """测试非 MX 类型访问 mx_finfo 时抛出异常"""
-        non_mx_types = [QDType.FLOAT, QDType.INT8, QDType.INT4, QDType.FP8_E4M3, QDType.PLACEHOLDER]
+        non_mx_types = [QDType.FLOAT, QDType.INT8, QDType.INT4, QDType.FP8_E4M3, QDType.FP4_E2M1, QDType.PLACEHOLDER]
         for dtype in non_mx_types:
             with self.subTest(dtype=dtype):
                 with self.assertRaises(Exception):
@@ -284,6 +285,46 @@ class TestQStorage(unittest.TestCase):
         storage.reshape(torch.Size([4]))
         # 注意：当前实现有 bug，reshape 结果未赋值回去
         self.assertEqual(storage.value.shape, original_shape)
+
+
+class TestQDTypeFP4_E2M1(unittest.TestCase):
+    """测试 FP4_E2M1 QDType"""
+
+    def test_mx_finfo_should_raise_for_fp4_e2m1(self):
+        with self.assertRaises(Exception):
+            _ = QDType.FP4_E2M1.mx_finfo
+
+    def test_get_format_params_should_return_correct_values(self):
+        ebits, mbits, emax, max_norm = _get_format_params("fp4_e2m1")
+        self.assertEqual(ebits, 2)
+        self.assertEqual(mbits, 1)
+        self.assertEqual(emax, 2)
+        self.assertAlmostEqual(max_norm, 6.0)
+
+    def test_scheme_fp4_e2m1_per_token_sym(self):
+        scheme = QScheme(scope=QScope.PER_TOKEN, dtype=QDType.FP4_E2M1, symmetric=True)
+        self.assertEqual(scheme.dtype, QDType.FP4_E2M1)
+        self.assertEqual(scheme.scope, QScope.PER_TOKEN)
+        self.assertTrue(scheme.symmetric)
+
+    def test_scheme_fp4_e2m1_per_channel_sym(self):
+        scheme = QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.FP4_E2M1, symmetric=True)
+        self.assertEqual(scheme.dtype, QDType.FP4_E2M1)
+        self.assertEqual(scheme.scope, QScope.PER_CHANNEL)
+        self.assertTrue(scheme.symmetric)
+
+    def test_scheme_fp4_e2m1_per_head_sym(self):
+        scheme = QScheme(scope=QScope.PER_HEAD, dtype=QDType.FP4_E2M1, symmetric=True)
+        self.assertEqual(scheme.dtype, QDType.FP4_E2M1)
+        self.assertEqual(scheme.scope, QScope.PER_HEAD)
+        self.assertTrue(scheme.symmetric)
+
+    def test_to_fp4_e2m1_should_convert_to_torch_float32(self):
+        value = torch.tensor([1.0, 2.0, 3.0])
+        storage = QStorage(dtype=QDType.FLOAT, value=value)
+        storage.to(QDType.FP4_E2M1)
+        self.assertEqual(storage.dtype, QDType.FP4_E2M1)
+        self.assertEqual(storage.value.dtype, torch.float32)
 
 
 if __name__ == '__main__':

@@ -233,14 +233,84 @@ class Indexer(nn.Module):
         self.index_kpool_compress_ape = nn.Parameter(torch.zeros(self.index_kpool, self.head_dim))
         self.index_kpool_compress_gate = nn.Parameter(torch.zeros(self.head_dim, self.hidden_size))
 
+    @staticmethod
+    def _rotate(x):
+        """Normalized Walsh-Hadamard rotation along the index head dimension."""
+        dim = x.shape[-1]
+        if dim & (dim - 1):
+            raise ValueError("Indexer head dimension must be a power of two")
+        values = x.float()
+        stride = 1
+        while stride < dim:
+            left, right = values.unflatten(-1, (-1, 2, stride)).unbind(-2)
+            values = torch.stack((left + right, left - right), dim=-2).flatten(-3)
+            stride *= 2
+        return (values * dim**-0.5).to(x.dtype)
+
+    def _select_tokens(self, hidden, residual, transform_q, transform_k):
+        """Score completed K pools in a single unpadded calibration sequence."""
+        length = hidden.size(0)
+        pool = self.index_kpool
+        if self.index_topk % pool:
+            raise ValueError("index_topk must be divisible by index_kpool")
+        visible = torch.arange(1, length + 1, device=hidden.device)
+        complete = visible // pool
+        n_pools = length // pool
+        q = self._rotate(self.wq_b(residual).reshape(length, self.n_heads, self.head_dim))
+        if transform_q is not None:
+            q = transform_q(q)
+        selected = visible.new_empty((length, 0))
+        if n_pools:
+            history = hidden[: n_pools * pool]
+            gate = self.index_kpool_compress_gate
+            logits = gate(history) if isinstance(gate, nn.Module) else F.linear(history, gate)
+            logits = logits.reshape(n_pools, pool, self.head_dim).float() + self.index_kpool_compress_ape.float()
+            keys = self.k_norm(self.wk(history)).reshape_as(logits)
+            k = self._rotate((logits.softmax(dim=1) * keys.float()).sum(dim=1).to(q.dtype))
+            if transform_k is not None:
+                k = transform_k(k)
+            weights = self.weights_proj(hidden).float() * (self.softmax_scale * self.n_heads**-0.5)
+            pool_ids = torch.arange(n_pools, device=hidden.device)
+            offsets = torch.arange(pool, device=hidden.device)
+            blocks = []
+            for start in range(0, length, 64):
+                rows = slice(start, start + 64)
+                dots = q[rows].float() @ k.float().T
+                scores = (dots.relu() * weights[rows, :, None]).sum(1)
+                scores.masked_fill_(pool_ids >= complete[rows, None], -torch.inf)
+                values, ids = scores.topk(min(n_pools, self.index_topk // pool))
+                tokens = ids.unsqueeze(-1) * pool + offsets
+                blocks.append(tokens.masked_fill(~values.isfinite().unsqueeze(-1), -1).flatten(1))
+            selected = torch.cat(blocks)
+        if self.index_kpool_always_select_tail:
+            tail = complete[:, None] * pool + torch.arange(pool - 1, device=hidden.device)
+            selected = torch.cat((selected, tail.masked_fill(tail >= visible[:, None], -1)), dim=1)
+        return selected
+
     def forward(self, hidden_states, q_resid, attention_mask=None, **kwargs):
-        return torch.zeros(
-            hidden_states.shape[0],
-            hidden_states.shape[1],
-            self.index_topk,
-            dtype=torch.long,
-            device=hidden_states.device,
-        )
+        return self.select_indices(hidden_states, q_resid, attention_mask)
+
+    def select_indices(self, hidden_states, q_resid, attention_mask, *, transform_q=None, transform_k=None):
+        if self.qk_rope_head_dim:
+            raise ValueError("GLM-5.3-Flash Indexer expects qk_rope_head_dim=0")
+        batch, length = hidden_states.shape[:2]
+        if attention_mask is not None and attention_mask.shape != (batch, length):
+            raise ValueError("Indexer expects a [batch, sequence] token mask")
+        pool = self.index_kpool
+        width = min(length // pool * pool, self.index_topk)
+        if self.index_kpool_always_select_tail:
+            width += pool - 1
+        result = torch.full((batch, length, width), -1, device=hidden_states.device, dtype=torch.long)
+        for row in range(batch):
+            positions = torch.arange(length, device=result.device)
+            if attention_mask is not None:
+                positions = positions[attention_mask[row].bool()]
+            if positions.numel():
+                indices = self._select_tokens(
+                    hidden_states[row, positions], q_resid[row, positions], transform_q, transform_k
+                )
+                result[row, positions, : indices.size(1)] = positions[indices.clamp_min(0)].masked_fill(indices < 0, -1)
+        return result
 
 
 class DeepseekSparseAttention(nn.Module):
@@ -288,7 +358,7 @@ class DeepseekSparseAttention(nn.Module):
 
         topk_indices = kwargs.get('prev_topk_indices', None)
         if topk_indices is None:
-            topk_indices = self.indexer(hidden_states, q_resid)
+            topk_indices = self.indexer(hidden_states, q_resid, kwargs.get("attention_mask"))
 
         # 构建 topk 稀疏注意力掩码
         kv_length = key_states.shape[2]
@@ -313,7 +383,7 @@ class DeepseekSparseAttention(nn.Module):
         attn_weights = torch.matmul(query_states.float(), key_states.transpose(-2, -1).float()) * self.scaling
         if attention_mask is not None:
             attn_weights = attn_weights + attention_mask
-        attn_weights = F.softmax(attn_weights, dim=-1).to(query_states.dtype)
+        attn_weights = F.softmax(attn_weights, dim=-1).masked_fill(~mask.unsqueeze(1), 0).to(query_states.dtype)
         attn_output = torch.matmul(attn_weights, value_states)
         attn_output = attn_output.transpose(1, 2).contiguous().reshape(batch_size, seq_length, -1)
         attn_output = self.o_proj(attn_output)

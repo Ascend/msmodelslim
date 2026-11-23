@@ -50,6 +50,8 @@ def infer_source_ir(module: ModelFreeModule, config: ConvertConfig) -> SourceIR:
         return SourceIR(kind=IRKind.FP8_BLOCK, evidence=["weight_scale_inv"])
     if _is_mxfp4_pair(bindings):
         return SourceIR(kind=IRKind.MXFP4_PACKED, evidence=["mxfp4 dtype pair"])
+    if "weight_scale" in keys and "weight_scale_2" in keys:
+        return SourceIR(kind=IRKind.NVFP4_MODELOPT, evidence=["weight_scale", "weight_scale_2"])
     if "weight_packed" in keys:
         return SourceIR(kind=IRKind.INT4_PACKED, evidence=["weight_packed"])
     if "weight" in keys and is_e4m3(bindings["weight"].dtype):

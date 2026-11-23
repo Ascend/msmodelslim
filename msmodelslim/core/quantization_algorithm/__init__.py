@@ -82,7 +82,7 @@ from .anti_outlier import (
     FlexAWQSSZProcessor,
 )
 from .base import AutoProcessorConfig
-from .quant.attention import DynamicCacheProcessorConfig, DynamicCacheQuantProcessor
+from .quant.kvcache import DynamicCacheProcessorConfig, DynamicCacheQuantProcessor
 from .quant.autoround import AutoroundQuantProcessor
 from .trainable_linear_quant import (
     TrainableLinearQuantProcessor,

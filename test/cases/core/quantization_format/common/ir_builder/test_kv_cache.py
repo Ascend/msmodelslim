@@ -30,8 +30,8 @@ from msmodelslim.core.quantization_format.common.ir_builder.kv_cache import (
     KvCacheParamSet,
     KvCacheStructureSpec,
 )
-from msmodelslim.core.quantization_schema.attention import FakeQuantDynamicCache
 from msmodelslim.core.quantization_schema.const import int8_per_channel_sym
+from msmodelslim.core.quantization_schema.attention_dynamic import FakeQuantDynamicCache
 from msmodelslim.utils.exception import SchemaValidateError
 
 

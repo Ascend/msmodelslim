@@ -135,6 +135,19 @@ def _mindie_post_run_case(method_name: str):
             "model.layers.0.self_attn.quant_type",
             None,
         )
+    if method_name == "on_w4a8_hif4_mxfp8_dynamic_per_block":
+        weight = torch.randn(4, 4, dtype=torch.float32)
+        return (
+            "m.hif4",
+            SimpleNamespace(
+                weight=weight,
+                weight_scale_factor=torch.ones(4, dtype=torch.float32),
+                weight_scale_lv2=torch.ones(4, dtype=torch.float32),
+                weight_scale_lv3=torch.ones(4, dtype=torch.float32),
+            ),
+            "m.hif4.weight",
+            "w4a8_hifp4_mxfp8",
+        )
     raise AssertionError(method_name)
 
 
@@ -148,6 +161,7 @@ def _mindie_expected_desc_value(method_name: str):
         "on_float_module": "FLOAT",
         "on_activation_per_token": "Q_FP8_DYNAMIC",
         "on_activation_per_block": "Q_MXFP4_DYNAMIC",
+        "on_w4a8_hif4_mxfp8_dynamic_per_block": "W4A8_HIFP4_MXFP8",
     }[method_name]
 
 

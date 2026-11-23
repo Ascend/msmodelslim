@@ -101,6 +101,27 @@ class TestConvertConfig:
         )
         assert cfg.dst_format == "ascendv1"
 
+    def test_convert_config_raise_error_when_hifp4_with_non_ascend_dst(self):
+        with pytest.raises(SchemaValidateError, match="HIFP4 requires dst_format ascendv1"):
+            ConvertConfig(
+                model_path="/m",
+                save_path="/o",
+                dst_format="huggingface",
+                convert_rules=[
+                    ConvertRule(match="layers.*", target_ir=IRKind.HIFP4),
+                ],
+            )
+
+    def test_convert_config_pass_when_hifp4_with_ascendv1_dst(self):
+        cfg = ConvertConfig(
+            model_path="/m",
+            save_path="/o",
+            dst_format="ascendv1",
+            module_rules=[ModuleRule(match="layers.*", source_format="bf16")],
+            convert_rules=[ConvertRule(match="layers.*", target_ir=IRKind.HIFP4)],
+        )
+        assert cfg.dst_format == "ascendv1"
+
     def test_convert_config_pass_when_valid_module_and_convert_rules(self):
         cfg = ConvertConfig(
             model_path="/data/model",
@@ -114,7 +135,7 @@ class TestConvertConfig:
             ],
             convert_rules=[ConvertRule(match="layers.*.q_proj", target_ir=IRKind.FLOAT)],
         )
-        assert cfg.parallel.max_workers == 1  # 校验默认并行配置
+        assert cfg.model_dump()["parallel"]["max_workers"] == 1  # 校验默认并行配置
 
     def test_convert_config_raise_error_when_save_path_empty(self):
         with pytest.raises(SchemaValidateError):

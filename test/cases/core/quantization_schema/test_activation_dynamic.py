@@ -26,9 +26,16 @@ import torch
 from msmodelslim.core.quantization_schema.activation_dynamic import (
     FakeQuantActivationPerToken,
     FakeQuantActivationPerBlock,
+    FakeQuantActivationPerBlockHif4,
 )
 from msmodelslim.core.quantization_schema.qal import QParam, QScope, QDType
-from msmodelslim.core.quantization_schema.const import fp8_e4m3_per_token_sym, mxfp4_per_block_sym, mxfp8_per_block_sym
+from msmodelslim.core.quantization_schema.const import (
+    fp8_e4m3_per_token_sym,
+    fp4_e2m1_per_token_sym,
+    mxfp4_per_block_sym,
+    mxfp8_per_block_sym,
+    hif4_per_block_sym,
+)
 
 
 class TestFakeQuantActivationPerToken(unittest.TestCase):
@@ -220,6 +227,75 @@ class TestFakeQuantActivationPerBlockMXFP8(unittest.TestCase):
         self.assertEqual(ir_module.x_q_scheme.scope, QScope.PER_BLOCK)
         self.assertEqual(ir_module.x_q_scheme.dtype, QDType.MXFP8)
         self.assertTrue(ir_module.x_q_scheme.symmetric)
+
+
+class TestFakeQuantActivationPerBlockHif4(unittest.TestCase):
+    """测试 FakeQuantActivationPerBlockHif4（HiF4 per-block 动态量化）"""
+
+    def setUp(self):
+        self.q_param = QParam(scheme=hif4_per_block_sym)
+
+    def test_init(self):
+        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        self.assertEqual(ir_module.x_q_scheme, hif4_per_block_sym)
+
+    def test_forward_4d_shape(self):
+        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        x = torch.randn(2, 4, 10, 128)
+        with torch.no_grad():
+            output = ir_module(x)
+        self.assertEqual(output.shape, x.shape)
+
+    def test_forward_preserves_dtype(self):
+        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        x = torch.randn(2, 4, 10, 64, dtype=torch.float32)
+        with torch.no_grad():
+            output = ir_module(x)
+        self.assertEqual(output.dtype, torch.float32)
+
+    def test_forward_non_block_aligned_dim(self):
+        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        x = torch.randn(2, 4, 10, 50)
+        with torch.no_grad():
+            output = ir_module(x)
+        self.assertEqual(output.shape, x.shape)
+
+    def test_forward_produces_finite_output(self):
+        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        x = torch.randn(2, 4, 10, 128)
+        with torch.no_grad():
+            output = ir_module(x)
+        self.assertTrue(torch.isfinite(output).all())
+
+    def test_scheme_property(self):
+        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        self.assertEqual(ir_module.x_q_scheme.scope, QScope.PER_BLOCK)
+        self.assertEqual(ir_module.x_q_scheme.dtype, QDType.HiF4)
+        self.assertTrue(ir_module.x_q_scheme.symmetric)
+
+
+class TestFakeQuantActivationPerTokenFP4(unittest.TestCase):
+    """测试 FakeQuantActivationPerToken 使用 fp4_e2m1_per_token_sym"""
+
+    def setUp(self):
+        self.q_param = QParam(scheme=fp4_e2m1_per_token_sym)
+
+    def test_init(self):
+        ir_module = FakeQuantActivationPerToken(self.q_param)
+        self.assertEqual(ir_module.x_q_scheme, fp4_e2m1_per_token_sym)
+
+    def test_forward_preserves_shape(self):
+        ir_module = FakeQuantActivationPerToken(self.q_param)
+        x = torch.randn(2, 4, 10, 16)
+        with torch.no_grad():
+            output = ir_module(x)
+        self.assertEqual(output.shape, x.shape)
+        self.assertTrue(torch.isfinite(output).all())
+
+    def test_scheme_property(self):
+        ir_module = FakeQuantActivationPerToken(self.q_param)
+        self.assertEqual(ir_module.x_q_scheme.dtype, QDType.FP4_E2M1)
+        self.assertEqual(ir_module.x_q_scheme.scope, QScope.PER_TOKEN)
 
 
 if __name__ == '__main__':

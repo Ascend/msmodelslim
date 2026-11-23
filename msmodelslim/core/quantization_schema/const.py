@@ -37,7 +37,14 @@ mxfp4_dual_scale_sym = QScheme(scope=QScope.DUAL_SCALE, dtype=QDType.MXFP4, symm
 mxfp8_per_block_sym = QScheme(scope=QScope.PER_BLOCK, dtype=QDType.MXFP8, symmetric=True)
 mxfp8_per_channel_sym = QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.MXFP8, symmetric=True)
 int8_per_head_sym = QScheme(scope=QScope.PER_HEAD, dtype=QDType.INT8, symmetric=True)
+int8_per_tile_sym = QScheme(scope=QScope.PER_TILE, dtype=QDType.INT8, symmetric=True)
+fp8_e4m3_per_tile_sym = QScheme(scope=QScope.PER_TILE, dtype=QDType.FP8_E4M3, symmetric=True)
+mxfp8_per_tile_sym = QScheme(scope=QScope.PER_TILE, dtype=QDType.MXFP8, symmetric=True)
+mxfp8_per_token_sym = QScheme(scope=QScope.PER_TOKEN, dtype=QDType.MXFP8, symmetric=True)
+hif8_per_tensor_sym = QScheme(scope=QScope.PER_TENSOR, dtype=QDType.HiF8, symmetric=True)
+hif8_per_head_sym = QScheme(scope=QScope.PER_HEAD, dtype=QDType.HiF8, symmetric=True)
 
+hif4_per_block_sym = QScheme(scope=QScope.PER_BLOCK, dtype=QDType.HiF4, symmetric=True)
 int4_per_token_asym = QScheme(scope=QScope.PER_TOKEN, dtype=QDType.INT4, symmetric=False)
 int4_per_token_sym = QScheme(scope=QScope.PER_TOKEN, dtype=QDType.INT4, symmetric=True)
 int4_per_tensor_asym = QScheme(scope=QScope.PER_TENSOR, dtype=QDType.INT4, symmetric=False)
@@ -51,5 +58,10 @@ fp8_e4m3_per_token_sym = QScheme(scope=QScope.PER_TOKEN, dtype=QDType.FP8_E4M3, 
 fp8_e4m3_per_tensor_sym = QScheme(scope=QScope.PER_TENSOR, dtype=QDType.FP8_E4M3, symmetric=True)
 fp8_e4m3_per_channel_sym = QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.FP8_E4M3, symmetric=True)
 fp8_e4m3_per_head_sym = QScheme(scope=QScope.PER_HEAD, dtype=QDType.FP8_E4M3, symmetric=True)
+
+fp4_e2m1_per_token_sym = QScheme(scope=QScope.PER_TOKEN, dtype=QDType.FP4_E2M1, symmetric=True)
+fp4_e2m1_per_block_sym = QScheme(scope=QScope.PER_BLOCK, dtype=QDType.FP4_E2M1, symmetric=True)
+fp4_e2m1_per_channel_sym = QScheme(scope=QScope.PER_CHANNEL, dtype=QDType.FP4_E2M1, symmetric=True)
+fp4_e2m1_per_head_sym = QScheme(scope=QScope.PER_HEAD, dtype=QDType.FP4_E2M1, symmetric=True)
 
 float_per_tensor_sym = QScheme(scope=QScope.PER_TENSOR, dtype=QDType.FLOAT, symmetric=True)

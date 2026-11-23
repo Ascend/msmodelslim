@@ -252,12 +252,15 @@ class DistributedAscendV1Saver(AscendV1Saver):
         for name, sub in self._iter_tasks('', self.model, memo=self.processed_modules):
             self._process_module_maybe_wrapper_ir(name, sub)
 
+        self.update_global_kv_quant_type()
+
         for key, val in self.json_append.items():
             self.json_writer.write(key, val)
 
-        # 每 rank 把 FA 分支状态落成独立 key(见 AscendV1Saver.record_fa_layer_states),
+        # 每 rank 把 FA/KV 分支状态落成独立 key,
         # merge 时跨 rank 聚合后统一拼完整 quant_type。
         self.record_fa_layer_states()
+        self.record_kv_layer_states()
 
         if self.quarot_info is not None:
             self.metadata['quarot'] = self.quarot_info.get_quarot_save_info()
@@ -378,8 +381,9 @@ class DistributedAscendV1Saver(AscendV1Saver):
             # 合并json文件
             merged_meta = {}
             merged_optional = {}
-            # 跨 rank 汇总的 FA 层分支状态: {parent: {act: [dtype, strategy, scope_tag]}}
+            # 跨 rank 汇总的 FA/KV 层分支状态: {parent: {act/branch: cfg}}
             merged_fa_layer_states = {}
+            merged_kv_layer_states = {}
             for json_file in json_files:
                 with open(json_file, "r", encoding="utf-8") as f:
                     meta = json.load(f)
@@ -389,19 +393,25 @@ class DistributedAscendV1Saver(AscendV1Saver):
                 merged_meta.update(meta)
                 # 收集各 rank 的 FA 分支状态
                 for key, layer_states in meta.items():
-                    if not key.startswith(f"{AscendV1Saver.FA_LAYER_STATE_PREFIX}/"):
-                        continue
-                    parent = key.split("/", 1)[1]
-                    merged_fa_layer_states.setdefault(parent, {}).update(layer_states)
+                    if key.startswith(f"{AscendV1Saver.FA_LAYER_STATE_PREFIX}/"):
+                        parent = key.split("/", 1)[1]
+                        merged_fa_layer_states.setdefault(parent, {}).update(layer_states)
+                    elif key.startswith(f"{AscendV1Saver.KV_LAYER_STATE_PREFIX}/"):
+                        parent = key.split("/", 1)[1]
+                        merged_kv_layer_states.setdefault(parent, {}).update(layer_states)
 
             merged_meta["optional"] = merged_optional
 
             # 用跨 rank 汇总的 FA 状态覆盖每层 quant_type
             AscendV1Saver.merge_fa_layer_states(merged_meta, merged_fa_layer_states)
+            # 用跨 rank 汇总的 KV 状态覆盖每层 quant_type
+            AscendV1Saver.merge_kv_layer_states(merged_meta, merged_kv_layer_states)
 
-            # 清理内部 FA 状态 key, 不落盘
+            # 清理内部 FA/KV 状态 key, 不落盘
             for key in list(merged_meta):
                 if key.startswith(f"{AscendV1Saver.FA_LAYER_STATE_PREFIX}/"):
+                    del merged_meta[key]
+                elif key.startswith(f"{AscendV1Saver.KV_LAYER_STATE_PREFIX}/"):
                     del merged_meta[key]
 
             # 对键进行排序

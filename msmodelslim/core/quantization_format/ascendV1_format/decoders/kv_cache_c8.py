@@ -27,7 +27,7 @@ AscendV1 KV-cache (C8) decoder. Inverse of AscendV1Saver.on_dynamic_cache.
 import torch
 
 from msmodelslim.core.quantization_format.common.ir_builder.kv_cache import KvCacheParamSet, KvCacheStructureSpec
-from msmodelslim.core.quantization_schema.attention import FakeQuantDynamicCache
+from msmodelslim.core.quantization_schema.attention_dynamic import FakeQuantDynamicCache
 from msmodelslim.core.quantization_schema.const import int8_per_channel_sym
 
 from .base import KvCacheIrDecoder

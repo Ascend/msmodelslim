@@ -314,7 +314,7 @@ class TestMXFP4Quantization(unittest.TestCase):
             symmetric=self.x_scheme.symmetric,
         )
         x_q_dq = fake_quantize(QStorage(QDType.FLOAT, x_shaped), x_q_param)
-        x_q_dq.value = undo_reshape_to_blocks(x_q_dq.value, padded_shape, orig_shape, axes)
+        x_q_dq.value = undo_reshape_to_blocks(x_q_dq.value, padded_shape, orig_shape)
 
         self.assertEqual(x_q_param.ext['scale'].shape[-2], x_shaped.shape[-2])
 
@@ -340,7 +340,7 @@ class TestMXFP4Quantization(unittest.TestCase):
             symmetric=self.x_scheme.symmetric,
         )
         x_q_dq = fake_quantize(QStorage(QDType.FLOAT, x_shaped), x_q_param)
-        x_q_dq.value = undo_reshape_to_blocks(x_q_dq.value, padded_shape, orig_shape, axes)
+        x_q_dq.value = undo_reshape_to_blocks(x_q_dq.value, padded_shape, orig_shape)
 
         # 由于是量化，输出应该与输入不完全相同（除非输入恰好是量化值）
         # 但形状应该相同

@@ -64,6 +64,7 @@ from msmodelslim.core.infer_engine.interface import FakeQuantInferenceInterface
 from msmodelslim.core.quantization_algorithm.flat_quant import FlatQuantInterface
 from msmodelslim.core.quantization_algorithm.kv_smooth import KVSmoothFusedInterface
 from msmodelslim.core.quantization_algorithm.quant.fa3.interface import FA3QuantAdapterInterface, FA3QuantPlaceHolder
+from msmodelslim.core.quantization_algorithm.quant.kvcache.interface import DynamicCacheAdapterInterface
 from msmodelslim.core.quantization_algorithm.quarot import (
     LAOSOnlineRotationInterface,
     OnlineQuaRotInterface,
@@ -123,7 +124,7 @@ __all__ = [
     'AdaptRotationInterface',  # For AdaptRotation stage1/stage2.
     'LAOSOnlineRotationInterface',  # For LAOS online rotation.
     'OnlineQuaRotInterface',  # For QuaRotOnline.
-    # save interface
     'AscendV1SaveInterface',  # For AscendV1 save.
     'AscendV1GlobalModelDtypeInterface',  # For global model torch dtype (e.g. Saver deq_scale int64).
+    'DynamicCacheAdapterInterface',  # For KV cache quantization, inject placeholders.
 ]

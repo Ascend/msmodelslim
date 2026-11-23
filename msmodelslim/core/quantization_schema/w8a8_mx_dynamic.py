@@ -90,7 +90,7 @@ class W8A8MXDynamicPerBlockFakeQuantLinear(AutoFakeQuantLinear):
             symmetric=self.x_scheme.symmetric,
         )
         x_q_dq = fake_quantize(QStorage(QDType.FLOAT, x), x_q_param)
-        x_q_dq.value = undo_reshape_to_blocks(x_q_dq.value, padded_shape, orig_shape, axes)
+        x_q_dq.value = undo_reshape_to_blocks(x_q_dq.value, padded_shape, orig_shape)
 
         w_q_storage = QStorage(dtype=self.w_scheme.dtype, value=self.weight)
         axes = self.w_axes
@@ -104,6 +104,6 @@ class W8A8MXDynamicPerBlockFakeQuantLinear(AutoFakeQuantLinear):
             ext={"scale": self.weight_scale.data},
         )
         weight_q_dq = dequantize(w_q_storage, w_q_param)
-        weight_q_dq.value = undo_reshape_to_blocks(weight_q_dq.value, w_padded_shape, w_orig_shape, axes)
+        weight_q_dq.value = undo_reshape_to_blocks(weight_q_dq.value, w_padded_shape, w_orig_shape)
 
         return F.linear(x_q_dq.value, weight_q_dq.value, self.bias)

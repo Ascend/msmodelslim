@@ -24,8 +24,8 @@ import pytest
 import torch
 
 from msmodelslim.core.quantization_format.ascendV1_format.decoders.kv_cache_c8 import KvCacheC8Decoder
-from msmodelslim.core.quantization_schema.attention import FakeQuantDynamicCache
 from msmodelslim.core.quantization_schema.const import int8_per_channel_sym
+from msmodelslim.core.quantization_schema.attention_dynamic import FakeQuantDynamicCache
 from msmodelslim.utils.exception import SchemaValidateError
 
 _P = "lm_attn"

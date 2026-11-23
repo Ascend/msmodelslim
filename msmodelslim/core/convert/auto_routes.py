@@ -32,6 +32,7 @@ from msmodelslim.utils.exception import UnsupportedError
 # (src_ir, dst_ir) -> full route including both endpoints
 _BEST_ROUTES: dict[tuple[IRKind, IRKind], list[IRKind]] = {
     (IRKind.FP8_BLOCK, IRKind.FLOAT): [IRKind.FP8_BLOCK, IRKind.FLOAT],
+    (IRKind.NVFP4_MODELOPT, IRKind.FLOAT): [IRKind.NVFP4_MODELOPT, IRKind.FLOAT],
     (IRKind.INT4_PACKED, IRKind.FLOAT): [IRKind.INT4_PACKED, IRKind.FLOAT],
     (IRKind.FP8_BLOCK, IRKind.W8A8_MXFP8): [
         IRKind.FP8_BLOCK,
@@ -50,6 +51,8 @@ _BEST_ROUTES: dict[tuple[IRKind, IRKind], list[IRKind]] = {
     (IRKind.FP8_BLOCK, IRKind.W8A16_INT8): [IRKind.FP8_BLOCK, IRKind.FLOAT, IRKind.W8A16_INT8],
     (IRKind.FP8_BLOCK, IRKind.W8A16_INT8_ASYM): [IRKind.FP8_BLOCK, IRKind.FLOAT, IRKind.W8A16_INT8_ASYM],
     (IRKind.FP8_BLOCK, IRKind.W8A8_INT8): [IRKind.FP8_BLOCK, IRKind.FLOAT, IRKind.W8A8_INT8],
+    (IRKind.FLOAT, IRKind.HIFP4): [IRKind.FLOAT, IRKind.HIFP4],
+    (IRKind.NVFP4_MODELOPT, IRKind.HIFP4): [IRKind.NVFP4_MODELOPT, IRKind.FLOAT, IRKind.HIFP4],
 }
 
 

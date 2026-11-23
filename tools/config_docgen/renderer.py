@@ -681,4 +681,6 @@ def render_markdown(
         sections.append((str(next_num), "配置场景示例", _scenarios_text(record.scenarios)))
 
     body = "\n\n".join(f"## {num}. {title}\n\n{content}" for num, title, content in sections)
-    return f"<!-- {GENERATED_MARKER} ; class: {record.qualname} -->\n{GENERATED_NOTICE}\n\n# {record.title}\n\n{body}\n"
+    return (
+        f"# {record.title}\n\n<!-- {GENERATED_MARKER} ; class: {record.qualname} -->\n\n{GENERATED_NOTICE}\n\n{body}\n"
+    )

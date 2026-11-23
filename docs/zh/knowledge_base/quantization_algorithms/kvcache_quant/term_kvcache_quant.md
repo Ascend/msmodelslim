@@ -28,7 +28,7 @@ KVCache Quant 的核心思想是把自回归注意力中需要跨 token 长期�
 
 以标准注意力为例，历史 Key/Value 被不断追加为 $K_{1:t},V_{1:t}$，当前 Query 通过 $\operatorname{softmax}(Q_tK_{1:t}^T/\sqrt d)V_{1:t}$ 读取它们。量化可写成 $K_q=Q(K;S_K,Z_K)$、$V_q=Q(V;S_V,Z_V)$，随后用反量化值或支持低比特输入的算子完成注意力。若从 FP16/BF16 压缩到 INT8，忽略尺度元数据时理论元素存储约减半；更低位宽则进一步降低。
 
-尺度粒度决定哪些 token/head/channel 共用量化区间。per-channel/per-head 可以减少不同通道之间的离群值串扰；动态尺度能随当前数据适配，但需要在线统计与额外元数据，静态尺度开销更小却依赖校准分布。K 和 V 的误差传播也不同：K 误差先改变 logits，经过 softmax 后可能产生非线性放大；V 误差主要在线性加权求和中传播。因此两者即使使用相同位宽，也可能表现出不同敏感性。
+尺度粒度决定哪些 token/head/channel 共用量化区间。per-channel/per-head 可以减少不同通道之间的离群值串扰；per-token/per-block 等动态粒度能随当前数据适配，但需要在线统计与额外元数据，静态尺度开销更小却依赖校准分布。K 和 V 的误差传播也不同：K 误差先改变 logits，经过 softmax 后可能产生非线性放大；V 误差主要在线性加权求和中传播。因此两者即使使用相同位宽，也可能表现出不同敏感性。
 
 ### 2.3 数学描述
 
@@ -44,7 +44,7 @@ $$
 \hat X=S_X(q_X-Z_X)
 $$
 
-其中 $S_X,Z_X$ 可以按 tensor、head、channel 或更细粒度共享。标准注意力在使用量化缓存时近似为：
+其中 $S_X,Z_X$ 可以按 tensor、head、channel、token 或 block 等粒度共享。标准注意力在使用量化缓存时近似为：
 
 $$
 \hat Y_t=\operatorname{softmax}\left(\frac{Q_t\hat K_{1:t}^{T}}{\sqrt d}\right)\hat V_{1:t}
@@ -73,9 +73,10 @@ $$
 ### 2.4 关键性质
 
 - **状态量化**：量化对象是会跨解码步保存并重复读取的 Key/Value 历史状态。
-- **per_channel 量化**：按隐藏层维度计算量化参数，平衡精度与效率。
-- **内存压缩**：FP16→INT8 理论可减少约 50% 的 cache 内存占用。
-- **增量校准**：支持动态序列长度变化的增量式校准。
+- **多粒度量化**：支持 per-channel（静态）、per-head（静态）、per-token（动态）、per-tile（动态）、per-block（动态）等多种尺度粒度。
+- **多格式支持**：支持 INT8、FP8_E4M3、FP4_E2M1、MXFP4、MXFP8、HiF4 等多种数值格式。
+- **静态与动态量化**：per-channel/per-head 在校准阶段计算并保存 scale，推理时使用固定尺度；per-token/per-tile/per-block 在推理时按当前数据计算尺度，导出侧不保存 scale。
+- **内存压缩**：FP16 到 INT8 理论可减少约 50% 的 cache 内存占用；更低格式（FP4/HiF4）进一步降低。
 - **误差具有时间复用性**：历史 K/V 的量化误差会在后续多个解码步中被反复读取。
 
 从误差与适用边界看，尺度太粗会被 head/channel 离群值支配，尺度太细又会增加存储和计算开销；动态尺度适配强但可能给解码路径增加归约延迟。低位宽还会让极少数重要历史 token 的表示失真，因此实际算法常与 KV Smooth、head 选择或混合精度策略配合。
@@ -83,14 +84,23 @@ $$
 ### 2.5 适用场景
 
 - 长序列推理场景下需要降低 KV Cache 显存占用的场景。
-- 与 [线性量化](../linear_quant/term_linear_quant.md) 配合实现全量化方案，提升长序列推理效率。
+- 与[线性量化](../linear_quant/term_linear_quant.md)配合实现全量化方案，提升长序列推理效率。
 
 ### 2.6 使用限制
 
 - 注意力模块 `forward` 函数必须接受一个 `DynamicCache` 对象并调用 `cache.update()`。
-- 当前仅支持 INT8 量化，仅对 KV Cache 状态量化。
 - 伪量化阶段仍需原精度内存，真实内存节省需要底层算子支持。
 - 基于模块类名称模式匹配（`*self_attn*`），自定义命名需要适配。
+- 动态量化方案（per-token/per-tile/per-block）在导出侧不保存 scale，由部署侧运行时计算。
+- 静态量化方案在导出侧保存 scale（及可选的 offset），支持类型如下：
+
+| IR 类 | 文件 | dtype | scope | 对称性 | 保存的参数 |
+| --- | --- | --- | --- | --- | --- |
+| `FakeQuantCacheINT8PerChannel` | `msmodelslim/core/quantization_schema/attention.py` | INT8 | PER_CHANNEL | 对称/非对称 | `kv_cache_scale`, `kv_cache_offset` |
+| `FakeQuantCacheFP8PerChannel` | `msmodelslim/core/quantization_schema/attention_fp8.py` | FP8_E4M3 | PER_CHANNEL | 对称 | `kv_cache_scale` |
+| `FakeQuantCacheFP8PerHead` | `msmodelslim/core/quantization_schema/attention_fp8.py` | FP8_E4M3 | PER_HEAD | 对称 | `kv_cache_scale` |
+| `FakeQuantCacheFP4PerChannel` | `msmodelslim/core/quantization_schema/attention_fp4.py` | FP4_E2M1 | PER_CHANNEL | 对称 | `kv_cache_scale` |
+| `FakeQuantCacheFP4PerHead` | `msmodelslim/core/quantization_schema/attention_fp4.py` | FP4_E2M1 | PER_HEAD | 对称 | `kv_cache_scale` |
 
 ---
 
