@@ -1,4 +1,4 @@
-# msmodelslim eval 命令行 API 文档
+# msmodelslim eval 命令行 API文档
 
 ## 1. 功能说明
 
@@ -21,10 +21,10 @@ msmodelslim eval --model_type <model_type> --model_path <model_path> --prompt_fi
 
 | 参数 | 别名 | 类型 | 传入形式 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 |
 |------|------|------|----------|-----------|--------|----------------|------|
-| `--model_type` | 无 | `string` | 单值 | 必选 | 无 | 模型类型名称，如 `Qwen3-32B`、`Qwen3.6-27B` | 指定待验证模型类型，用于加载对应模型适配器 |
-| `--model_path` | 无 | `string` | 单值 | 必选 | 无 | 量化导出目录（需存在且可读） | 待验证的量化权重目录 |
+| `--model_type` | 无 | `string` | 单值 | 必选 | 无 | 模型类型名称，如 `Qwen3-32B`、`Qwen3.6-27B` | 指定待验证模型类型，用于加载对应模型适配器。 |
+| `--model_path` | 无 | `string` | 单值 | 必选 | 无 | 量化导出目录（需存在且可读） | 待验证的量化权重目录。 |
 | `--prompt_file` | 无 | `string` | 单值 | 必选 | 无 | 文件绝对/相对路径。LLM 要求样本文件扩展名为 `.json` 或 `.jsonl`；VLM 多模态样本文件须命名为 `index.json` 或 `index.jsonl` | 推理样本文件。 |
-| `--device` | 无 | `string` | 单值 | 可选 | `npu` | `npu`、`cpu`，推荐使用 `npu` | 运行设备类型 |
+| `--device` | 无 | `string` | 单值 | 可选 | `npu` | `npu`、`cpu`，推荐使用 `npu` | 运行设备类型。 |
 | `--device_id` | 无 | `list` | 可接收单个或多个值，空格分隔 | 可选 | 无 | 非负整数列表，如 `0` 或 `0 1 2 3` | 设备索引；传入多个值时启用多卡样本并行（DP）推理，单值或不传为单卡推理。 |
 | `--max_new_tokens` | 无 | `int` | 单值 | 可选 | `1` | 正整数（≥ 1） | 每个样本新生成的 token 数（不含 prompt 部分）。 |
 | `--log_level` | 无 | `string` | 单值 | 可选 | `info` | `debug`、`info`、`warning`、`error` | 日志级别。 |
@@ -50,7 +50,7 @@ msmodelslim eval \
   --prompt_file ${PROMPT_FILE}
 ```
 
-`${MODEL_TYPE}` 为模型类型名称（如 `Qwen3-32B`），`${MODEL_PATH}` 为量化导出目录，`${PROMPT_FILE}` 为推理样本文件路径。默认在 `npu` 上运行，`--max_new_tokens` 取默认值 `1`，即每个样本仅生成 1个 token。
+`${MODEL_TYPE}` 为模型类型名称（如 `Qwen3-32B`），`${MODEL_PATH}` 为量化导出目录，`${PROMPT_FILE}` 为推理样本文件路径。默认在 `npu` 上运行，`--max_new_tokens` 取默认值 `1`，即每个样本仅生成1个 token。
 
 ### 5.2 多卡并行推理
 
@@ -64,7 +64,7 @@ msmodelslim eval \
   --max_new_tokens 5
 ```
 
-`--device npu --device_id 0 1 2 3` 使用 4张 NPU 做数据并行：样本按卡轮转分片进行推理，按全局样本序归并结果。样本数不能被卡数整除时，不足部分会从头复制补位，补位样本的结果在归并时被丢弃，不影响输出顺序。
+`--device npu --device_id 0 1 2 3` 使用4个NPU做数据并行：样本按卡轮转分片进行推理，按全局样本序归并结果。样本数不能被卡数整除时，不足部分会从头复制补位，补位样本的结果在归并时被丢弃，不影响输出顺序。
 
 ## 6. 退出码与异常处理
 

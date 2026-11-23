@@ -4,9 +4,9 @@ description: 告警与提示类问题的处理说明；不覆盖安装、运行�
 keywords: [告警, 提示, DeprecationWarning, swigvarlink, SWIG, sentencepiece]
 ---
 
-# 告警与提示 FAQ
+# 告警与提示FAQ
 
-> 本节覆盖 msModelSlim 运行过程中告警与提示类常见问题。新增条目按 `1.`、`2.` 顺序在文末追加，并保持“问题现象 / 问题原因 / 解决方法 / 关联文档（可选）”的三段结构（段内小节编号依次为 `x.1`~`x.3`）。
+> 本节覆盖msModelSlim运行过程中告警与提示类常见问题。新增条目按 `1.`、`2.` 顺序在文末追加，并保持“问题现象 / 问题原因 / 解决方法 / 关联文档（可选）”的三段结构（段内小节编号依次为 `x.1`~`x.3`）。
 
 ## 1. 量化结束告警“sys:1: DeprecationWarning: builtin type swigvarlink has no module attribute”？
 
@@ -14,7 +14,7 @@ keywords: [告警, 提示, DeprecationWarning, swigvarlink, SWIG, sentencepiece]
 
 量化结束时出现告警：
 
-```text
+```output
 sys:1: DeprecationWarning: builtin type swigvarlink has no module attribute
 ```
 

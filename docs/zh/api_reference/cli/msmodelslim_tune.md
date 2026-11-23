@@ -1,8 +1,8 @@
-# msmodelslim tune 命令行 API 文档
+# msmodelslim tune 命令行 API文档
 
 ## 1. 功能说明
 
-`msmodelslim tune` 是自动调优命令，读取包含 `strategy` 与 `evaluation` 的调优 YAML，循环执行"生成量化配置 → 量化 → 精度评估"流程，根据评估结果迭代搜索满足精度期望的量化配置，直至策略生成器耗尽、达到 `--timeout` 超时或达到最大迭代次数。量化模型与评估历史等结果写入 `--save_path`；调优结束后，最终最佳实践可保存到自定义最佳实践仓库。
+`msmodelslim tune` 是自动调优命令，读取包含 `strategy` 与 `evaluation` 的调优 YAML，循环执行“生成量化配置 → 量化 → 精度评估”流程，根据评估结果迭代搜索满足精度期望的量化配置，直至策略生成器耗尽、达到 `--timeout` 超时或达到最大迭代次数。量化模型与评估历史等结果写入 `--save_path`；调优结束后，最终最佳实践可保存到自定义最佳实践仓库。
 
 命令边界：本命令不展开具体调优策略与评估配置的编写；字段说明见《[自动调优配置说明导航](../config/tuning/README.md)》，其中策略模板引用的量化任务协议见《[量化任务配置说明导航](../config/quant/README.md)》；操作步骤见《[自动调优使用说明](../../user_guide/usage_auto_precision_tuning.md)》。
 
@@ -56,7 +56,7 @@ msmodelslim tune --model_path <model_path> --save_path <save_path> --config <con
 
 | 环境变量 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 |
 |----------|------|-----------|--------|----------------|------|
-| `MSMODELSLIM_CUSTOM_PRACTICE_REPO` | `string` | 可选 | 无（未设置） | 目录路径 | 调优结束后将最终最佳实践保存到该自定义最佳实践仓库；未设置时命令仅记录"不支持保存"的提示。 |
+| `MSMODELSLIM_CUSTOM_PRACTICE_REPO` | `string` | 可选 | 无（未设置） | 目录路径 | 调优结束后将最终最佳实践保存到该自定义最佳实践仓库；未设置时命令仅记录“不支持保存”的提示。 |
 | `MSMODELSLIM_LOG_LEVEL` | `string` | 可选 | `INFO` | `INFO`、`DEBUG` | 设置日志级别；设置后打印同级及以上日志。 |
 
 ## 7. 使用示例
@@ -87,7 +87,7 @@ msmodelslim tune \
   --device_id 0 1 2 3
 ```
 
-`--timeout` 设为 `7200` 表示最多运行 7200 秒（2小时）；`--device_id` 设为 `0 1 2 3` 表示使用4个 NPU 设备。
+`--timeout` 设为 `7200` 表示最多运行 2 小时（7200 秒）；`--device_id` 设为 `0 1 2 3` 表示使用4个 NPU 设备。
 
 ## 8. 退出码与异常处理
 

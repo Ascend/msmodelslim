@@ -30,15 +30,15 @@
 
 - 新增对 `Step-3.7-Flash`（W8A8 MXFP8）多模态模型的量化支持
 
-🔹 **[2026.08.07]**
-
-- 多模态理解模型支持多卡分布式逐层量化，提升多模态理解模型量化效率
-- 新增对 `Kimi-K3`（W4A8）模型的量化支持
-
 🔹 **[2026.09.02]**
 
 - 完善 Gemma4 Dense `gemma-4-31B-it` 的 MXFP8/MXFP4 混合量化最佳实践
 - 完善 Gemma4 MoE `gemma-4-26B-A4B-it` 的 MXFP8/MXFP4 混合量化最佳实践
+
+🔹 **[2026.08.07]**
+
+- 多模态理解模型支持多卡分布式逐层量化，提升多模态理解模型量化效率
+- 新增对 `Kimi-K3`（W4A8）模型的量化支持
 
 🔹 **[2026.07.15]**
 
@@ -84,7 +84,7 @@
 
 ## 🚀 快速开始
 
-MindStudio ModelSlim（msModelSlim）是面向昇腾生态的模型压缩工具，覆盖大语言和多模态模型的量化与压缩。我们以 Qwen3.6-27B 为例，体验如何通过一键量化将模型权重压缩为 W8A8 格式，并基于 vLLM-Ascend 完成推理部署验证，具体请参见《[msModelSlim 快速入门](./docs/zh/quick_start/quantization_quick_start.md)》。
+MindStudio ModelSlim（msModelSlim）是面向昇腾生态的模型压缩工具，覆盖大语言模型和多模态模型的量化与压缩。我们以 Qwen3.6-27B 为例，体验如何通过一键量化将模型权重压缩为 W8A8 格式，并基于 vLLM-Ascend 完成推理部署验证，具体请参见《[msModelSlim 快速入门](./docs/zh/quick_start/quantization_quick_start.md)》。
 
 ---
 
@@ -100,7 +100,7 @@ pip install msmodelslim
 msmodelslim --help
 ```
 
-> 工具支持同时在线安装、离线安装以及源码安装，请参见《[msModelSlim 安装指南](./docs/zh/install_guide/install_guide.md)》。
+> 工具支持在线安装、离线安装以及源码安装，请参见《[msModelSlim 安装指南](./docs/zh/install_guide/install_guide.md)》。
 
 ---
 
@@ -168,7 +168,7 @@ msmodelslim --help
 
 |                                                                         即时互动（微信群）                                                                          |                                                                               官方资讯（公众号）                                                                                | 深度支持（助手/论坛）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 |:----------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <img src="https://raw.gitcode.com/Ascend/docs/files/master/common/Writing_Template/figures/qr_code_wechat_work.png" width="120"><br><sub>*扫码加入技术交流群*</sub> | <img src="https://raw.gitcode.com/Ascend/docs/files/master/common/Writing_Template/figures/qr_code_wechat_official_account.png" width="120"><br><sub>*扫码关注官方公众号*</sub> | 扫码入群并关注公众号，直达 MindStudio 用户与开发者最快捷的交流平台：<br> **快速提问：** 与社区小伙伴即时探讨技术问题<br>**掌握动态：** 第一时间获取版本发布与功能更新通知<br> **经验共享：** 与广大开发者交流最佳实践与实战心得  <br> <br> **更多支持渠道**：👉 昇腾助手：[![WeChat](https://img.shields.io/badge/WeChat-07C160?style=flat-square&logo=wechat&logoColor=white)](https://gitcode.com/Ascend/msit/blob/master/docs/zh/figures/readme/xiaozhushou.png) 👉 昇腾论坛：[![Website](https://img.shields.io/badge/Website-%231e37ff?style=flat-square&logo=RSS&logoColor=white)](https://www.hiascend.com/forum/) |
+| <img src="https://raw.gitcode.com/Ascend/docs/files/master/common/Writing_Template/figures/qr_code_wechat_work.png" alt="扫码加入技术交流群的企业微信群二维码，图片下方标注扫码加入技术交流群" width="120"><br><sub>*扫码加入技术交流群*</sub> | <img src="https://raw.gitcode.com/Ascend/docs/files/master/common/Writing_Template/figures/qr_code_wechat_official_account.png" alt="扫码关注官方公众号的二维码，图片下方标注扫码关注官方公众号" width="120"><br><sub>*扫码关注官方公众号*</sub> | 扫码入群并关注公众号，直达 MindStudio 用户与开发者最快捷的交流平台：<br> **快速提问：** 与社区小伙伴即时探讨技术问题<br>**掌握动态：** 第一时间获取版本发布与功能更新通知<br> **经验共享：** 与广大开发者交流最佳实践与实战心得  <br> <br> **更多支持渠道**：👉 昇腾助手：[![WeChat](https://img.shields.io/badge/WeChat-07C160?style=flat-square&logo=wechat&logoColor=white)](https://gitcode.com/Ascend/msit/blob/master/docs/zh/figures/readme/xiaozhushou.png) 👉 昇腾论坛：[![Website](https://img.shields.io/badge/Website-%231e37ff?style=flat-square&logo=RSS&logoColor=white)](https://www.hiascend.com/forum/) |
 
 ---
 

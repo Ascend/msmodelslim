@@ -1,4 +1,4 @@
-# msmodelslim quant 命令行 API 文档
+# msmodelslim quant 命令行 API文档
 
 ## 1. 功能说明
 

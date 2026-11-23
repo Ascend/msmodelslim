@@ -24,7 +24,7 @@ keywords: [硬件, 兼容, Ascend, 昇腾, 300I, 300T, A2, A3, 310P, BF16, 算�
 
 加载模型或执行量化时出现类似以下报错：
 
-```text
+```output
 Unsupported soc version: Ascend910_9382
 ```
 
@@ -48,19 +48,19 @@ Unsupported soc version: Ascend910_9382
 
 在 310P/300I 上执行量化时出现类似以下报错：
 
-```text
+```output
 aclnnAmin ... DT_BFLOAT16 not implemented
 InplaceIndexAdd ... not supported
 ```
 
 ### 2.2 问题原因
 
-310P/300I DUO 不支持 BF16 或部分算子；msModelSlim 量化主流程面向 910 系列，310 系列只保证有限的推理能力，量化精度不保证。
+310P/300I Duo 不支持 BF16 或部分算子；msModelSlim 量化主流程面向 910 系列，310 系列只保证有限的推理能力，量化精度不保证。
 
 ### 2.3 解决方法
 
 1. 在 A2/A3 上完成量化，310 侧只做推理。
-2. 必须在 310P 上运行时，改用硬件支持的精度（如 fp16），并重新评测精度。
+2. 必须在 310P 上运行时，改用硬件支持的精度（如 FP16），并重新评测精度。
 3. 确认镜像与硬件型号匹配，避免使用面向 910 的算子包。
 
 ### 2.4 关联文档
@@ -74,7 +74,7 @@ InplaceIndexAdd ... not supported
 
 执行量化或推理时出现类似以下报错：
 
-```text
+```output
 aclnnCast failed
 Parse dynamic kernel config fail
 aicore timeout, retCode=0x25

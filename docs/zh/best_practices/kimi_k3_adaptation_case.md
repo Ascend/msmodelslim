@@ -6,13 +6,13 @@
 
 **覆盖流程**：模型适配 → 量化方案设计 → 权重量化 → 精度测评。
 
-**关联流程**：《[多模态理解模型接入指南](../knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md)》、《[一键量化使用指南](../user_guide/usage_one_click_quantization.md)》
+**关联流程**：《[多模态理解模型接入指南](../knowledge_base/ptq/vlm/integration_guide_vision_transformer_quantization.md)》、《[一键量化使用指南](../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 环境与版本
 
 | 项 | 版本或配置 |
 | --- | --- |
-| 产品形态 | 昇腾 A3 系列产品（限定，本案例基于昇腾 A3 系列产品完成验证） |
+| 产品形态 | Atlas A3 系列产品（限定，本案例基于Atlas A3 系列产品完成验证） |
 | vLLM Ascend | [vllm-ascend:v0.23.0rc1-a3](https://quay.io/repository/ascend/vllm-ascend?tab=tags&tag=v0.23.0rc1-a3) |
 | CANN | 9.0.1（随镜像预置） |
 | PyTorch | 2.10.0（随镜像预置） |
@@ -156,7 +156,7 @@
 
 2. 参考[vLLM Ascend指导文档](https://docs.vllm.ai/projects/ascend/zh-cn/v0.23.0/tutorials/models/Kimi-K3.html)进行量化模型部署。
 
-3. 服务启动后，使用 curl 验证量化模型对话正常
+3. 服务启动后，使用 curl 验证量化模型对话正常：
 
    ```bash
    # 分别替换 <NODE0_LOCAL_IP> 和 <SERVICE_PORT> 为设备 IP 和服务化端口

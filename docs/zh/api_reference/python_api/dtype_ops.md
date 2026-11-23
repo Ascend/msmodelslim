@@ -2,7 +2,7 @@
 
 ## 功能说明
 
-`msmodelslim.core.dtype_ops` 提供张量级量化、反量化与参数计算接口，覆盖 INT8、INT4、FP8、MXFP8、MXFP4。公开入口是模块级函数，不导出类。命名、调用步骤见《[量化数据类型 ops 使用流程指南](../../knowledge_base/dtype_ops/usage_dtype_ops.md)》；概念词条见[量化数据类型](../../knowledge_base/dtype_ops/README.md)。函数名为 `{类型}_{操作}_{粒度}_{对称性}`。操作为 `calc_qparam`、`quantize`、`dequantize`、`quantize_dynamic`。MX 不加粒度后缀，只接 `_sym`。`per_channel` 同时用于权重和激活：激活侧习称 per-token，仍调用 `_per_channel_*`。入参和返回值相近的接口写在同一篇文档中，各接口的参数与取值见下方文档。
+`msmodelslim.core.dtype_ops` 提供张量级量化、反量化与参数计算接口，覆盖INT8、INT4、FP8、MXFP8、MXFP4。公开入口是模块级函数，不导出类。命名、调用步骤见《[量化数据类型 ops 使用流程指南](../../knowledge_base/dtype_ops/usage_dtype_ops.md)》；概念词条见[量化数据类型](../../knowledge_base/dtype_ops/README.md)。函数名为 `{类型}_{操作}_{粒度}_{对称性}`。操作为 `calc_qparam`、`quantize`、`dequantize`、`quantize_dynamic`。MX 不加粒度后缀，只接 `_sym`。`per_channel` 同时用于权重和激活：激活侧习称 per-token，仍调用 `_per_channel_*`。入参和返回值相近的接口写在同一篇文档中，各接口的参数与取值见下方文档。
 
 ## 接口文档
 

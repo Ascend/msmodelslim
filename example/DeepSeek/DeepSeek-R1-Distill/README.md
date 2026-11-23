@@ -2,7 +2,7 @@
 
 ## 使用前准备
 
-- 使用 MindIE1.0版本 [官方镜像](https://gitcode.com/Ascend/ascend-docker-image/tree/dev/mindie#%E5%90%AF%E5%8A%A8%E5%AE%B9%E5%99%A8)，如1.0.0-800I-A2-py311-openeuler24.03-lts
+- 使用 MindIE1.0版本 [官方镜像](https://www.hiascend.com/developer/ascendhub/detail/af85b724a7e5469ebd7ea13c3439d48f)，如1.0.0-800I-A2-py311-openeuler24.03-lts
 
 ## 支持的模型版本与量化策略
 

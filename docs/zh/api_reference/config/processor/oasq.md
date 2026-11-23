@@ -4,7 +4,7 @@
 > 本页由 `tools.config_docgen` 根据源码注解生成。
 > 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
 
-# oasq 配置说明
+# oasq配置说明
 
 ## 1. 配置概述
 
@@ -30,7 +30,7 @@ OASQ（Outlier-Aware Smooth Quantization）处理器配置。
 
 **配置约束**
 
-- 校验 max_iters：设置时必须大于 0。
+- 校验max_iters：设置时必须大于0。
 
 ## 3. 完整配置参考
 

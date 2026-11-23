@@ -2,7 +2,7 @@
 
 ## 1. 案例背景
 
-本案例针对 Qwen3-32B 模型 W8A8 量化后对话输出乱码的问题进行调优。初始方案采用全静态量化（per-channel/per-tensor）搭配 Smooth Quant 离群值抑制算法，但量化后模型出现对话乱码。经过系统化调优，量化模型在 AIME25 数据集上的精度从不可用提升至 70.00%，此外，还在 GPQA 数据集上分别验证了校准集调整与量化回退两类备选优化手段的效果。
+本案例针对 Qwen3-32B 模型 W8A8 量化后对话输出乱码的问题进行调优。初始方案采用全静态量化（per-channel/per-tensor）搭配Smooth Quant离群值抑制算法，但量化后模型出现对话乱码。经过系统化调优，量化模型在 AIME25 数据集上的精度从不可用提升至 70.00%，此外，还在 GPQA 数据集上分别验证了校准集调整与量化回退两类备选优化手段的效果。
 
 本案例实际覆盖《[量化精度调优指南](../user_guide/process_quantization_precision_tuning.md)》的 5 个步骤：确认精度问题可信 → 调整离群值抑制算法 → 调整量化策略 → 调整校准集 → 量化回退。
 
@@ -32,7 +32,7 @@
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | Qwen3-32B 浮点模型 | 本地保存的模型权重目录 | 含模型配置、权重分片及类别所需附属文件（如 tokenizer、config 等） | 文件齐全；若官方提供了校验值或版本号，则本地的对应值须与官方一致。 |
+| 输入 | Qwen3-32B 浮点模型 | 本地保存的模型权重目录 | 含模型配置、权重分片及各类所需附属文件（如 tokenizer、config 等） | 文件齐全；若官方提供了校验值或版本号，则本地的对应值须与官方一致。 |
 | 输入 | 量化配置 YAML | 本案例各步骤给出的配置文件（每组实验一个） | modelslim_v1 协议 YAML | 可被 `msmodelslim quant` 加载执行 |
 | 输入 | 校准集 | 仓库内置校准集目录，格式参考[`msmodelslim/lab_calib/mix_calib.jsonl`](../../../lab_calib/mix_calib.jsonl)、[`qwen3_cot_w4a4.json`](../../../lab_calib/qwen3_cot_w4a4.json) | JSON/JSONL，样本与任务、语言匹配 | 样本可被模型 tokenizer 预处理，量化流程可正常读取 |
 | 输入 | 测评集与 badcase | AIME25、GPQA 测评集及 AISBench 测评结果 | 与任务匹配的问答格式 | 浮点模型在测评集上可复现原始精度 |
@@ -88,7 +88,7 @@ msmodelslim quant \
 
 **操作**：
 
-1. **按优先级顺序逐次调优**：遵循优先 Iterative Smooth、非对称 → 对称 → 调整 alpha → 其他算法的调优顺序，逐次执行以下循环：生成配置 → 量化 → 部署测评，每一步根据评测结果决定是否继续下一步（均搭配相同的 `linear_quant` 静态量化与 `save` 保存格式）。各组算法配置要点如下（完整参数见算法文档）：
+1. **按优先级顺序逐次调优**：遵循优先 Iterative Smooth、非对称 → 对称 → 调整 alpha → 其他算法的调优顺序，逐次执行以下循环：生成配置 → 量化 → 部署测评，每一步根据测评结果决定是否继续下一步（均搭配相同的 `linear_quant` 静态量化与 `save` 保存格式）。各组算法配置要点如下（完整参数见算法文档）：
 
    a. **Iterative Smooth（非对称/alpha:0.5）**：优先尝试非对称方案，非对称仅支持 `norm-linear` 子图。详见《[Iterative Smooth 算法](../knowledge_base/quantization_algorithms/iterative_smooth/usage_iterative_smooth.md)》。
 
@@ -125,7 +125,7 @@ msmodelslim quant \
 
 **操作**：
 
-1. **按优先级顺序逐次调优**：可以优先选择 `per_tensor`（静态量化）, `per_token`（动态量化）的两种方法。如果 `per_tensor` 和 `per_token` 均不达标，可参考《[量化精度调优指南 - 量化算法选择](../user_guide/process_quantization_precision_tuning.md#步骤3量化算法选择)》尝试其他量化策略，例如切换权重量化方法（`ssz`/`gptq`/`autoround`）或激活量化方法（`histogram`）、`pd_mix` 混合粒度等。
+1. **按优先级顺序逐次调优**：可以优先选择 `per_tensor`（静态量化）、`per_token`（动态量化）两种方法。如果 `per_tensor` 和 `per_token` 均不达标，可参考《[量化精度调优指南 - 量化算法选择](../user_guide/process_quantization_precision_tuning.md#步骤3量化算法选择)》尝试其他量化策略，例如切换权重量化方法（`ssz`/`gptq`/`autoround`）或激活量化方法（`histogram`）、`pd_mix` 混合粒度等。
 
    a. **per_tensor（静态量化）**：在量化配置 YAML 的 `linear_quant` 处理器中，将 `qconfig.act.scope` 设为 `per_tensor`，执行量化命令。`linear_quant` 处理器参数详见《[Linear Quant 算法](../knowledge_base/quantization_algorithms/linear_quant/usage_linear_quant.md)》，量化方法参数详见[MinMax](../knowledge_base/quantization_algorithms/minmax/usage_minmax.md)。——评测后若精度不达标，切换为 per_token。
 
@@ -153,7 +153,7 @@ msmodelslim quant \
 
 **操作**：
 
-1. **加入 badcase 样本**：校准集优化策略详见[量化精度调优指南 - 校准集调整](../user_guide/process_quantization_precision_tuning.md#步骤4校准集调整)，本案例执行"加入 badcase"策略。使用默认校准集 `mix_calib.jsonl`（48 条），加入 5 条 badcase 后为 53 条。
+1. **加入 badcase 样本**：校准集优化策略详见[量化精度调优指南 - 校准集调整](../user_guide/process_quantization_precision_tuning.md#步骤4校准集调整)，本案例执行“加入 badcase”策略。使用默认校准集 `mix_calib.jsonl`（48 条），加入 5 条 badcase 后为 53 条。
 
 2. **获取 badcase 样本**：从 AISBench 测评结果文件中筛选"模型输出（`prediction` 字段）与参考答案（`gold` 字段）不一致"的样本，提取少量 badcase。例如，一个 badcase 样本为：
 

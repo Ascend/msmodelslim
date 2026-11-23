@@ -1,12 +1,12 @@
 ---
 title: FAQ 总览（索引）
-description: msModelSlim 常见问题统一索引，按安装/运行/硬件/精度/部署/告警六类导航至对应 FAQ 子文档；本页不含具体问答。
+description: msModelSlim 常见问题统一索引，按安装/运行/硬件/精度/部署/告警六类导航至对应 FAQ子文档；本页不含具体问答。
 keywords: [FAQ, 常见问题, 故障排查, 索引, Killed, pydantic, DeprecationWarning, 权重转换, MXFP8, VLM, 硬件兼容]
 ---
 
 # FAQ
 
-> 本文档为 msModelSlim 常见问题（FAQ）的统一索引。FAQ 按主题拆分为多篇子文档，便于 AI 检索与快速定位；具体问答内容请在对应分类文档中查阅。
+> 本文档为msModelSlim常见问题（FAQ）的统一索引。FAQ 按主题拆分为多篇子文档，便于 AI 检索与快速定位；具体问答内容请在对应分类文档中查阅。
 
 ## 1. 分类索引
 
@@ -14,7 +14,7 @@ keywords: [FAQ, 常见问题, 故障排查, 索引, Killed, pydantic, Deprecatio
 |------|---------|------|
 | 1. 安装与依赖 | pydantic 版本冲突、accelerate 依赖安装失败 | [faq_installation.md](./faq_installation.md) |
 | 2. 运行与资源 | 进程 Killed、显存/内存不足（OOM） | [faq_runtime.md](./faq_runtime.md) |
-| 3. 硬件兼容 | 硬件环境与算子兼容指引；新增 A3 SoC、310P/300I 算子与 BF16 限制、aclnn/kernel 自检 | [faq_hardware.md](./faq_hardware.md) |
+| 3. 硬件兼容 | 硬件环境与算子兼容指引；新增 A3 SoC、310P/300I 算子与 BF16 限制、aclnn/Kernel 自检 | [faq_hardware.md](./faq_hardware.md) |
 | 4. 精度与调优 | 精度调优、异常定位指引；新增 VLM 敏感层排查 | [faq_precision.md](./faq_precision.md) |
 | 5. 部署与推理 | MindIE / vLLM-Ascend 部署指引；新增 FP8/INT4→BF16、BF16→MXFP8 权重转换 | [faq_deployment.md](./faq_deployment.md) |
 | 6. 告警与提示 | DeprecationWarning 等告警处理 | [faq_warning.md](./faq_warning.md) |

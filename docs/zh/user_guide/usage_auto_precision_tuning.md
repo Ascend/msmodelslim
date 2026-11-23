@@ -8,8 +8,8 @@
 
 使用自动调优功能前，需要完成以下工具的安装：
 
-1. **msModelSlim**：用于自动调优任务的启动与执行。安装方式请参考 《[安装指南](../install_guide/install_guide.md)》。
-2. **vLLM-Ascend**：用于量化后模型服务化启动。自动调优功能在评估量化后模型精度时，需要使用 vLLM-Ascend 将量化后的模型以服务化方式启动。建议直接使用官方提供的镜像进行安装，详细安装说明请参考 [vLLM-Ascend 安装文档](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/installation.html)。
+1. **msModelSlim**：用于自动调优任务的启动与执行。安装方式请参考《[安装指南](../install_guide/install_guide.md)》。
+2. **vLLM-Ascend**：用于量化后模型服务化启动。自动调优功能在评估量化后模型精度时，需要使用 vLLM-Ascend 将量化后的模型以服务化方式启动。建议直接使用官方提供的镜像进行安装，详细安装说明请参考 [vLLM-Ascend安装文档](https://docs.vllm.ai/projects/vllm-ascend-cn/zh-cn/latest/installation.html)。
 3. **AISBench**：用于量化后模型测试。自动调优功能使用 [AISBench](https://github.com/AISBench/benchmark) 对量化后的模型进行精度评估和测试。完成安装后，还需要参考 [AISBench 数据集准备指南](https://github.com/AISBench/benchmark/blob/master/docs/source_zh_cn/get_started/datasets.md) 准备对应的数据集。
 
 请确保上述工具已正确安装并配置，否则自动调优功能将无法正常进行模型评估。
@@ -52,7 +52,7 @@
    - 调优策略已无搜索空间（无法生成新的可评估量化配置）
    - 达到最大迭代次数
    - 达到最大迭代耗时
-   - 调优策略主动报错退出。例如 Standing High 摸高策略在调优起始会先进行浮点预检（评估全回退浮点基线精度），若发现连浮点模型都无法满足用户配置的精度目标，将抛出 `SpecError`（错误码 302）退出，并提示放宽精度预期，详见《[Standing High 调优算法](../knowledge_base/tuning_strategies/standing_high/standing_high.md)》
+   - 调优策略主动报错退出。例如 Standing High 摸高策略在调优起始时会先进行浮点预检（评估全回退浮点基线精度），若发现连浮点模型都无法满足用户配置的精度目标，将抛出 `SpecError`（错误码 302）退出，并提示放宽精度预期，详见《[Standing High 调优算法](../knowledge_base/tuning_strategies/standing_high/standing_high.md)》
 
 6. **保存结果**：调优结束后，会保存量化模型权重、调优历史与精度缓存，以及评估与服务日志等产出件；具体产出位置与目录结构请参考下文「输出说明」。
 
@@ -106,7 +106,7 @@ msmodelslim tune --model_path ${MODEL_PATH} --save_path ${SAVE_PATH} --config ${
 |-------------------|-----------|-------------------|--------------------------------------------------------------------------------------|
 | model_path        | 模型路径      | 必选                | 类型：Str                                                                               |
 | save_path         | 调优结果保存路径  | 必选                | 类型：Str                                                                               |
-| config            | 调优配置文件路径  | 必选                | 1. 类型：Str <br>2. 配置文件路径，必须为完整的文件路径 <br>3. 配置文件格式为 YAML，配置协议说明见 《[自动调优配置说明导航](../api_reference/config/tuning/README.md)》，示例配置见各策略目录（如 《[Standing High 示例](../knowledge_base/tuning_strategies/standing_high/standing_high.yaml)》） |
+| config            | 调优配置文件路径  | 必选                | 1. 类型：Str <br>2. 配置文件路径，必须为完整的文件路径 <br>3. 配置文件格式为 YAML，配置协议说明见《[自动调优配置说明导航](../api_reference/config/tuning/README.md)》，示例配置见各策略目录（如《[Standing High 示例](../knowledge_base/tuning_strategies/standing_high/standing_high.yaml)》） |
 | device            | 量化设备类型    | 可选                | 1. 类型：Str <br>2. 参考值：'npu','cpu' <br>3. 默认值为"npu"。多卡索引请配合 device_id 指定 |
 | device_id         | 量化设备索引    | 可选                | 1. 类型：int列表，用空格分隔，如：0 1 2 3 <br>2. 指定多个设备索引时（如：0 1 2 3），系统可启动分布式逐层量化（DP）。算法支持范围与配置方式详见《[多卡量化并行](../knowledge_base/parallel/README.md)》 |
 | model_type        | 模型名称      | 可选                | 1. 类型：Str <br>2. 默认值为"default" <br>3. 大小写敏感，请参考《[大模型支持矩阵](../knowledge_base/model/README.md)》 |
@@ -142,9 +142,9 @@ ${SAVE_PATH}/
 
 | 目录 | 路径 | 说明 |
 | --- | --- | --- |
-| 量化模型权重 | `${SAVE_PATH}/quant_model` | 保存最后一次迭代生成的量化模型权重文件。根据量化配置中 `save` 字段指定的保存器类型。 |
+| 量化模型权重 | `${SAVE_PATH}/quant_model` | 保存最后一次迭代生成的量化模型权重文件，根据量化配置中 `save` 字段指定的保存器类型。 |
 | 调优历史记录 | `${SAVE_PATH}/history` | 保存所有迭代的调优历史记录，包括 `history.yaml`（调优历史索引）、`accuracy.yaml`（精度缓存）及各次迭代的 `<config_id>.yaml`（量化配置）。 |
-| vLLM 服务日志 | `${SAVE_PATH}/vllm_server.log` | 记录最近一次 vLLM-Ascend 服务启动和运行过程中的日志信息，包括模型加载、服务启动、推理请求处理等日志。 |
+| vLLM-Ascend 服务日志 | `${SAVE_PATH}/vllm_server.log` | 记录最近一次 vLLM-Ascend 服务启动和运行过程中的日志信息，包括模型加载、服务启动、推理请求处理等日志。 |
 | AISBench 评估日志 | `${SAVE_PATH}/aisbench_logs` | 保存每次迭代的 AISBench 评估日志文件，记录每次迭代的评估过程日志。 |
 | AISBench 详细输出 | `${SAVE_PATH}/aisbench_output` | 保存每次迭代的 AISBench 详细评估输出，包含评估任务配置、推理和评估日志、推理结果、精度评估结果及汇总报告等文件。 |
 | 最终量化配置 YAML | 精度达标且写入最佳实践库时：由 `MSMODELSLIM_CUSTOM_PRACTICE_REPO` 指定路径下按模型谱系生成（如 `qwen3/xxx.yaml`） | 未设置 `MSMODELSLIM_CUSTOM_PRACTICE_REPO` 时**不会**写入最佳实践库；可在 `${SAVE_PATH}/history` 中查看各次迭代配置与精度并选择 `<config_id>.yaml` 复现。写入最佳实践库的 YAML 可直接用于后续量化；若因达到最大迭代次数或超时而停止，则不会写入最终配置。 |
@@ -153,7 +153,7 @@ ${SAVE_PATH}/
 
 ### 4.1 相关资料
 
-- **配置协议**：调优配置文件的详细说明，可以参考 《[自动调优配置说明导航](../api_reference/config/tuning/README.md)》。完整的配置文件示例见各策略目录，例如 《[Standing High 示例](../knowledge_base/tuning_strategies/standing_high/standing_high.yaml)》、《[Standing High With Experience 示例](../knowledge_base/tuning_strategies/standing_high_with_experience/standing_high_with_experience.yaml)》、《[Binary Fallback 示例](../knowledge_base/tuning_strategies/binary_fallback/binary_fallback.yaml)》。
+- **配置协议**：调优配置文件的详细说明，可以参考 《[自动调优配置说明导航](../api_reference/config/tuning/README.md)》。完整的配置文件示例见各策略目录，例如《[Standing High 示例](../knowledge_base/tuning_strategies/standing_high/standing_high.yaml)》、《[Standing High With Experience 示例](../knowledge_base/tuning_strategies/standing_high_with_experience/standing_high_with_experience.yaml)》、《[Binary Fallback 示例](../knowledge_base/tuning_strategies/binary_fallback/binary_fallback.yaml)》。
 - **调优算法**：策略总览见《[自动调优策略总览](../knowledge_base/tuning_strategies/README.md)》。各策略详情：
   - 《[Standing High 调优算法](../knowledge_base/tuning_strategies/standing_high/standing_high.md)》：基于量化回退层选择和离群值抑制策略的自动调优算法
   - 《[Standing High With Experience 调优算法](../knowledge_base/tuning_strategies/standing_high_with_experience/standing_high_with_experience.md)》：基于专家经验的摸高算法策略

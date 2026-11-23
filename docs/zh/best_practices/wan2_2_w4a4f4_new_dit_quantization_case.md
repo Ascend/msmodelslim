@@ -2,7 +2,7 @@
 
 ## 1. 案例背景
 
-**目标**：基于 MindIE SD 推理栈，对 Wan2.2 系列双专家 DiT 文生视频模型进行 W4A4F4 量化验证，对比原始浮点权重与量化后权重的生成质量。相对原始浮点权重，量化后模型生成视频质量损失控制在可接受范围内，无肉眼可识别的严重画质崩坏；且在 VBench-1.0-mini 的 1% 子集上，VBench Quality 与 VBench Semantic 的绝对得分下降均小于1个百分点（pp），即 `|FP 得分 − 量化得分| < 1pp`。
+**目标**：基于 MindIE SD 推理栈，对 Wan2.2 系列双专家 DiT 文生视频模型进行 W4A4F4 量化验证，对比原始浮点权重与量化后权重的生成质量。相对原始浮点权重，量化后模型生成视频质量损失控制在可接受范围内，无肉眼可识别的严重画质崩坏；且在 VBench-1.0-mini 的 1% 子集上，VBench Quality 与 VBench Semantic 的绝对得分下降均小于1pp，即 `|FP 得分 − 量化得分| < 1pp`。
 
 **覆盖流程**：模型接入适配 → 量化方案设计 → 权重量化 → 精度评测
 
@@ -19,12 +19,12 @@
 | 模型结构            | 双专家DiT（low_noise_model + high_noise_model）+ GQA注意力 + 文本编码器 + VAE |
 | 量化类型            | w4a4f4 |
 | 开源权重来源         | [Wan2.2-T2V-A14B](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B) 等官方开源地址 |
-| 推理框架与并行 | MindIE SD；本案例并行策略：DiT/T5 启用 FSDP 切分、序列维度启用 Ulysses Sequence Parallel（SP）、CFG 双卡分离、VAE 启用并行；未启用 Expert Parallel（双专家由框架自动调度）。对比双方使用完全相同的并行约定，具体取值见“操作步骤“章节的步骤 6/7。 |
+| 推理框架与并行 | MindIE SD；本案例并行策略：DiT/T5 启用 FSDP 切分、序列维度启用 Ulysses Sequence Parallel（SP）、CFG 双卡分离、VAE 启用并行；未启用 Expert Parallel（双专家由框架自动调度）。对比双方使用完全相同的并行约定，具体取值见“操作步骤”章节的步骤 6/7。 |
 
 **验证范围声明**：
 
 - 覆盖：DiT主干网络双专家W4A4F4量化、文生视频生成质量对比
-- 不覆盖：文本编码器量化、VAE量化、语音输出、超过81帧/720P以上分辨率长视频、特殊风格微调版本
+- 不覆盖：文本编码器量化、VAE量化、语音输出、超过81帧或720P以上分辨率长视频、特殊风格微调版本
 
 ## 3. 环境与版本
 
@@ -370,7 +370,7 @@ torchrun --nproc_per_node=4 --master_port=23459 vbench.py \
 | ---------- | ---------------------------- |
 | 评测工具       | AISBench |
 | 对比对象       | Wan2.2 FP16浮点推理生成结果 vs Wan2.2 W4A4F4量化推理生成结果 |
-| 数据集与任务     | Vbench-1.0-mini 1%子集 |
+| 数据集与任务     | VBench-1.0-mini 1%子集 |
 | 样本数 / 子集策略 | VBench-1.0-mini 1%子集共11条prompt，每条prompt生成1个视频，共11个视频样本 |
 | 指标与方向      | VBench Quality、VBench Semantic |
 | 验收阈值       | VBench Quality 与 Semantic 两项的绝对得分下降均 < 1pp（即 `\|FP 得分 − 量化得分\| < 1pp`）；逐项判定，任一项超阈值即不通过 |
@@ -380,7 +380,7 @@ torchrun --nproc_per_node=4 --master_port=23459 vbench.py \
 
 **数据准备**：
 
-VBench-1.0-mini 数据集已在步骤 5 中准备完毕（`final_mini_dataset_0_01/` 目录）。VBench 评测的数据准备、小模型权重缓存下载及 AISBench 环境安装请参考 《[AISBench VBench 评测文档](https://github.com/AISBench/benchmark/blob/master/docs/source_zh_cn/extended_benchmark/lmm_generate/vbench.md)》。
+VBench-1.0-mini 数据集已在步骤 5 中准备完毕（`final_mini_dataset_0_01/` 目录）。VBench 评测的数据准备、小模型权重缓存下载及 AISBench 环境安装请参考《[AISBench VBench 评测文档](https://github.com/AISBench/benchmark/blob/master/docs/source_zh_cn/extended_benchmark/lmm_generate/vbench.md)》。
 
 **评测配置要点**：
 

@@ -4,11 +4,11 @@
 > 本页由 `tools.config_docgen` 根据源码注解生成。
 > 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
 
-# mindie_format_saver 配置说明
+# mindie_format_saver配置说明
 
 ## 1. 配置概述
 
-MindIE 保存格式配置，导出 MindIE 落盘格式的权重文件。
+MindIE保存格式配置，导出 MindIE 落盘格式的权重文件。
 
 | 项目 | 内容 |
 |------|------|

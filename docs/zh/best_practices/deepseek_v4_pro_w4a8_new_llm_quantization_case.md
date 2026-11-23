@@ -35,7 +35,7 @@
 | PyTorch | 2.10.0（随镜像预置） |
 | TorchNPU | 2.10.0（随镜像预置） |
 | vLLM Ascend | [0.22.1rc1](https://quay.io/repository/ascend/vllm-ascend?tab=tags&tag=v0.22.1rc1-a3)（随镜像预置） |
-| 评测工具 | [AISBench](https://github.com/AISBench/benchmark)（安装指南见[《官方文档》](https://github.com/AISBench/benchmark/blob/master/README.md)） |
+| 评测工具 | [AISBench](https://github.com/AISBench/benchmark)（安装指南见《[官方文档](https://github.com/AISBench/benchmark/blob/master/README.md)》） |
 | 其他依赖 | `transformers==4.48.2`（量化时需要降级，镜像内默认 5.5.4） |
 
 **本案例前置条件**：
@@ -47,10 +47,10 @@
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
 | 输入 | 浮点模型目录 | `${MODEL_PATH}`（用户下载） | 含 `config.json`、`tokenizer.json`、模型权重文件（safetensors，可能为 FP8 权重）；可被 Transformers 4.48.2 加载 | 使用 `transformers.AutoModel.from_pretrained` 加载无报错 |
-| 输入 | 校准数据集 | [混合校准数据集（mix_calib.jsonl）](../../../lab_calib/mix_calib.jsonl) | JSONL 格式，每行含 `inputs_pretokenized` 字段 | 校准集可以在量化流程被正常读取 |
+| 输入 | 校准数据集 | [混合校准数据集（mix_calib.jsonl）](../../../lab_calib/mix_calib.jsonl) | JSONL 格式，每行含 `inputs_pretokenized` 字段 | 校准集可以在量化流程中被正常读取 |
 | 交付件 | 模型适配器代码 | [msmodelslim/model/deepseek_v4/](../../../msmodelslim/model/deepseek_v4/)（适配器 + 加载器） | 适配器需实现量化流水线所需接口（QuaRot、FlexSmoothQuant 等） | 安装 msmodelslim 工具后 entry point 注册生效，`--model_type DeepSeek-V4-Pro` 可命中适配器 |
 | 交付件 | 量化配置文件 | [lab_practice/deepseek_v4/deepseek_v4_pro_w4a8.yaml](../../../lab_practice/deepseek_v4/deepseek_v4_pro_w4a8.yaml) | 含量化策略、qconfig、校准数据集与保存器配置 | `msmodelslim quant --config ${CONFIG_PATH}` 可加载该配置 |
-| 交付件 | 量化权重目录 | `${SAVE_PATH}`（量化流程输出目录） | 含可解析的 `quant_model_description.json`、完整权重文件（safetensors 及必要的分片/index）、`config.json`、tokenizer 等辅助文件 | 量化权重可被 vLLM Ascend `--quantization ascend` 拉起服务化，并完成推理冒烟 |
+| 交付件 | 量化权重目录 | `${SAVE_PATH}`（量化流程输出目录） | 含可解析的 `quant_model_description.json`、完整权重文件（safetensors 及必要的分片/index）、`config.json`、tokenizer 等辅助文件 | 量化权重可被 vLLM Ascend `--quantization ascend` 拉起服务化，并完成推理冒烟测试 |
 | 交付件 | 精度测试结果 | AISBench 输出目录（`${QUANT_WORK_DIR}`） | 含相同评测条件下的选定精度基线、量化结果及验收计算记录；若使用论文或模型卡片公开分数，需注明基线来源并确保评测条件一致 | 量化结果不低于选定的精度基线时直接通过；量化结果低于选定的精度基线且相对下降比例不超过 1% 时通过；量化结果低于选定的精度基线且相对下降比例超过 1% 时不通过 |
 
 ## 4. 操作步骤
@@ -163,7 +163,7 @@
 3. 编写[量化配置](../../../lab_practice/deepseek_v4/deepseek_v4_pro_w4a8.yaml)：
 
    - `spec.process` 按 `quarot` → `flex_awq_ssz` → `flex_smooth_quant` → `linear_quant` 顺序执行：QuaRot 使用 `block_size: 32`；Flex AWQ SSZ 处理路由专家 `up-down` 子图；Flex Smooth Quant 处理 `norm-linear` 子图；Linear Quant 对路由专家执行 W4A8，对共享专家和注意力模块执行 W8A8，并通过 `include`/`exclude` 排除低秩分支和共享专家等不匹配模块。
-   - W4A8 使用 per-token INT8 激活、per-channel INT4 权重和 SSZ；W8A8 使用 per-token INT8 激活、per-channel INT8 权重和 minmax。校准集为 `mix_calib.jsonl`，保存器为 `ascendv1_saver`，按 4 GB 分片保存。
+   - W4A8 使用 per-token INT8 激活、per-channel INT4 权重和 SSZ；W8A8 使用 per-token INT8 激活、per-channel INT8 权重和 minmax。校准集为 `mix_calib.jsonl`，保存器为 `ascendv1_saver`，按 4GB 分片保存。
 
 4. 验证适配器和配置：
 
@@ -188,7 +188,7 @@
 
 **操作**：
 
-1. 若尚未拉起环境，请参考 [《vLLM Ascend 官方指导》](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Pro.html) 拉取镜像并创建容器（需挂载 NPU 设备与模型权重目录），本案例使用的镜像为 `quay.io/ascend/vllm-ascend:v0.22.1rc1-a3`。
+1. 若尚未拉起环境，请参考 《[vLLM Ascend 官方指导](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Pro.html)》 拉取镜像并创建容器（需挂载 NPU 设备与模型权重目录），本案例使用的镜像为 `quay.io/ascend/vllm-ascend:v0.22.1rc1-a3`。
 
 2. 在容器内检查 NPU 状态与 CANN 环境：
 
@@ -205,7 +205,7 @@
    # 当前版本为 5.5.4
    ```
 
-4. 下载 msModelSlim 源码并安装 msmodelslim 工具：
+4. 下载 msModelSlim 源码并安装 msModelSlim 工具：
 
    ```bash
    git clone https://gitcode.com/Ascend/msmodelslim
@@ -331,7 +331,7 @@ DeepSeek-V4-Pro 已在 `model.py` 中设置 `USE_DP_MODE=True`，并在 `model_a
    pip install transformers==5.5.4
    ```
 
-2. 配置环境变量并拉起 vLLM Ascend 推理服务（参考[《vLLM Ascend 官方文档》](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Pro.html)）：
+2. 配置环境变量并拉起 vLLM Ascend 推理服务（参考《[vLLM Ascend 官方文档](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Pro.html)》）：
 
    DeepSeek-V4-Pro 模型较大，这里官方示例是多节点部署。以下为Atlas 800I A3产品节点 0 的拉起命令，具体命令可以参考对应的官方文档：
 
@@ -408,7 +408,7 @@ DeepSeek-V4-Pro 已在 `model.py` 中设置 `USE_DP_MODE=True`，并在 `model_a
 
 | 项 | 内容 |
 | --- | --- |
-| 评测工具 | AISBench（安装指南见[《AISBench 代码仓安装指南》](https://github.com/AISBench/benchmark/blob/master/README.md)） |
+| 评测工具 | AISBench（安装指南见《[AISBench 代码仓安装指南](https://github.com/AISBench/benchmark/blob/master/README.md)》） |
 | 评测对象 | W4A8 量化权重 `${SAVE_PATH}` |
 | 对比基准 | 选定的精度基线，论文或模型卡片公开分数可作为基线，但需注明来源并确保评测条件一致 |
 | 数据集与任务 | [GPQA](https://github.com/AISBench/benchmark/tree/master/ais_bench/benchmark/configs/datasets/gpqa) |
@@ -499,7 +499,7 @@ ais_bench \
 
 **操作**：
 
-1. 使用[线性层敏感层分析工具](../user_guide/usage_sensitive_linear_analysis.md)分析原始浮点权重，定位量化敏感层。完整调优流程参见[《量化精度调优指南》](../user_guide/process_quantization_precision_tuning.md)：
+1. 使用[线性层敏感层分析工具](../user_guide/usage_sensitive_linear_analysis.md)分析原始浮点权重，定位量化敏感层。完整调优流程参见《[量化精度调优指南](../user_guide/process_quantization_precision_tuning.md)》：
 
    ```bash
    msmodelslim analyze linear \
@@ -568,6 +568,6 @@ ais_bench \
 - 模型适配器代码：[msmodelslim/model/deepseek_v4/](../../../msmodelslim/model/deepseek_v4/)（[model_adapter.py](../../../msmodelslim/model/deepseek_v4/model_adapter.py)、[model.py](../../../msmodelslim/model/deepseek_v4/model.py)、[loader.py](../../../msmodelslim/model/deepseek_v4/loader.py)）
 - 适配器注册配置：[config/config.ini](../../../config/config.ini)
 - 量化权重格式与交付检查：[AscendV1 使用指南](../knowledge_base/quantization_format/ascendv1/ascendv1_usage.md)
-- vLLM Ascend 官方部署文档：[《DeepSeek-V4-Pro 教程》](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Pro.html)
+- vLLM Ascend官方部署文档：《[DeepSeek-V4-Pro 教程](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Pro.html)》
 - AISBench 评测工具及安装指南：[代码仓 README](https://github.com/AISBench/benchmark/blob/master/README.md)
-- GPQA 精度参考：论文或模型卡片公开分数 **89.1** 作为公开基线分数（参考[《ModelScope 模型卡片》](https://www.modelscope.cn/models/deepseek-ai/DeepSeek-V4-Pro)）。
+- GPQA 精度参考：论文或模型卡片公开分数 **89.1** 作为公开基线分数（参考《[ModelScope 模型卡片](https://www.modelscope.cn/models/deepseek-ai/DeepSeek-V4-Pro)》）

@@ -1,6 +1,6 @@
-# msmodelslim 命令行 API 总览
+# msmodelslim命令行API总览
 
-`msmodelslim` 是 MindStudio msModelSlim 的命令行入口，提供量化、敏感层分析、伪量化精度评估与自动调优四类子命令。本页汇总全局参数、子命令清单与各子命令文档入口；各子命令的参数细节、参数关系与使用示例见对应文档。
+`msmodelslim` 是MindStudio ModelSlim的命令行入口，提供量化、敏感层分析、伪量化模型精度评估与自动调优四类子命令。本页汇总全局参数、子命令清单与各子命令文档入口；各子命令的参数细节、参数关系与使用示例见对应文档。
 
 ## 1. 命令格式
 
@@ -51,7 +51,7 @@ msmodelslim --version
 msmodelslim -h
 ```
 
-`-V`/`--version` 输出 `msmodelslim <版本> (<git hash>)` 与构建信息；`-h`/`--help` 输出子命令清单。两者均不依赖 model 与权重路径。
+`-V`/`--version` 输出 `msmodelslim <版本> (<git hash>)` 与构建信息；`-h`/`--help` 输出子命令清单。两者均不依赖model与权重路径。
 
 ### 5.2 查看某个子命令的帮助
 

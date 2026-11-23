@@ -4,11 +4,11 @@
 > 本页由 `tools.config_docgen` 根据源码注解生成。
 > 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
 
-# flex_smooth_quant 配置说明
+# flex_smooth_quant配置说明
 
 ## 1. 配置概述
 
-FlexSmoothQuant 平滑量化处理器配置。
+FlexSmoothQuant平滑量化处理器配置。
 
 | 项目 | 内容 |
 |------|------|
@@ -22,7 +22,7 @@ FlexSmoothQuant 平滑量化处理器配置。
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `type` | `string` | 可选 | `flex_smooth_quant` | `flex_smooth_quant` | 处理器类型，固定为 `flex_smooth_quant`。 | 无 |
-| `alpha` | `float` | 可选 | `null` | >0.0；<1.0；0 < 值 < 1；或 null | 激活→权重的平滑迁移强度（0~1），越大迁移越多离群值到权重。 | 无 |
+| `alpha` | `float` | 可选 | `null` | >0.0；<1.0；0 < 值 < 1；或 null | 激活→权重的平滑迁移强度（0~1），越大，迁移越多离群值到权重。 | 无 |
 | `beta` | `float` | 可选 | `null` | >0.0；<1.0；0 < 值 < 1；或 null | 额外的平滑调优系数（0~1），配合 alpha 使用。 | 无 |
 | `enable_subgraph_type` | `list[any]` | 可选 | `['norm-linear', 'linear-linear', 'ov', 'up-down']` | 列表元素必须全部为字符串 | 应用平滑的子图类型列表，默认 `norm-linear`、`linear-linear`、`ov`、`up-down`。 | 无 |
 | `include` | `list[string] / null` | 可选 | `null` | 列表元素：字符串长度 ≤ 200；或 null | 包含的模块名称模式；不设置表示全部匹配。 | 无 |
