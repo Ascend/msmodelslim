@@ -635,6 +635,42 @@ class TestPrecheckIntegration(TestNaiveQuantizationAppBase):
         self.assertIsNone(model_type_binding.args[0])
         self.assertTrue(model_type_binding.kwargs["skip_when_none"])
 
+    def test_quant_precheck_labels_config_checks_as_config(self):
+        from msmodelslim.app.naive_quantization import application as app_module
+
+        app = self._make_app()
+        string_bind = MagicMock(wraps=app_module.string_field_check.bind)
+        path_bind = MagicMock(wraps=app_module.readable_path_check.bind)
+        config_path = str(Path(self.temp_dir) / "convert.yaml")
+        with (
+            patch.object(app_module, "msmodelslim_config") as mock_config,
+            patch.object(app_module.string_field_check, "bind", string_bind),
+            patch.object(app_module.readable_path_check, "bind", path_bind),
+            patch(
+                "msmodelslim.core.quant_service.modelslim_convert.config_detect.is_modelslim_convert_config",
+                return_value=True,
+            ),
+            patch("msmodelslim.utils.precheck.rules.convert_to_readable_file", side_effect=Path),
+            patch("msmodelslim.utils.precheck.rules.check_read_permission"),
+            patch("msmodelslim.utils.precheck.rules.check_write_permission"),
+            patch.object(app_module, "convert_to_writable_dir", side_effect=Path),
+        ):
+            mock_config.precheck_items = {"quant_precheck_item": set()}
+            app.quant(
+                model_type=None,
+                model_path=str(self.model_path),
+                save_path=str(self.save_path),
+                device_type=DeviceType.CPU,
+                config_path=config_path,
+            )
+
+        config_string_ids = [call.kwargs["rule_id"] for call in string_bind.call_args_list if call.args[1] == "config"]
+        self.assertEqual(config_string_ids, ["string.fields.config"])
+        config_path_ids = [
+            call.kwargs["rule_id"] for call in path_bind.call_args_list if call.kwargs.get("file") is True
+        ]
+        self.assertEqual(config_path_ids, ["path.permission.config"])
+
     def test_quant_precheck_registers_occupancy_for_valid_unique_indices(self):
         from msmodelslim.app.naive_quantization import application as app_module
 

@@ -72,8 +72,8 @@ def test_string_field_skip_when_none():
     with pytest.raises(SchemaValidateError, match="must be a string"):
         string_field_check(None)
     assert string_field_check("x") is True
-    assert string_field_check(None, "config_path", skip_when_none=True) is False
-    assert string_field_check("x", "config_path", skip_when_none=True) is True
+    assert string_field_check(None, "config", skip_when_none=True) is False
+    assert string_field_check("x", "config", skip_when_none=True) is True
 
 
 def test_string_field_check_reports_parameter_name():
@@ -194,8 +194,11 @@ def test_disk_check_supports_ratio_and_empty_model(monkeypatch):
     monkeypatch.setattr(rules, "get_dir_size", lambda _: 100)
     monkeypatch.setattr(rules, "get_free_space", lambda _: 149)
 
-    with pytest.raises(EnvError):
+    with pytest.raises(EnvError) as error_info:
         rules.check_disk_space("model", "save", size_ratio=1.5)
+    action = str(error_info.value.action)
+    assert "change --save_path" in action
+    assert "greater than" in action
 
     monkeypatch.setattr(rules, "get_free_space", lambda _: 150)
     assert "model directory size" in rules.check_disk_space("model", "save", size_ratio=1.5)

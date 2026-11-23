@@ -68,28 +68,56 @@ class DebugInfoPersistence(KeyInfoPersistenceInfra):
         """
         Initialize DebugInfoPersistence.
 
+        Construction only records the target directory: the directory is created and
+        the writers are opened on the first save. Building this persistence therefore
+        has no filesystem side effect, so it cannot fail before the caller's own
+        checks (such as the quantization precheck of --save_path) have run.
+
         Args:
             save_dir: Directory to save context files. If None, uses current directory.
         """
         if save_dir is None:
             save_dir = "."
         self.save_dir = Path(save_dir) / "debug_info"
+        self.json_writer: Optional[JsonWriter] = None
+        self.safetensors_writer: Optional[SafetensorsWriter] = None
 
-        self.save_dir.mkdir(parents=True, exist_ok=True)
+    def _prepare_writers(self) -> None:
+        """Create the output directory and open the file writers on demand.
 
-        # Validate write permissions
-        get_write_directory(str(self.save_dir))
+        The directory is created only when it is still missing: the write permission is
+        checked later by ``SafetensorsWriter``, so a failure here cannot preempt the
+        caller's own prechecks of ``--save_path``. The writers are created once per
+        instance and reused by later saves, so a caller that saves several times (for
+        example once per expert) writes into the same files, exactly as when the
+        writers were created in ``__init__``.
 
-        # Initialize writers
-        self.json_writer = JsonWriter(str(self.save_dir), DEBUG_INFO_JSON_NAME)
-        self.safetensors_writer = SafetensorsWriter(
+        The instance counts as ready only after both writers exist; the attributes are
+        assigned after both are built, so a failure while opening them leaves the
+        instance untouched and a later save retries instead of using a half-initialized
+        object.
+        """
+        if self.json_writer is not None and self.safetensors_writer is not None:
+            return
+
+        if not self.save_dir.exists():
+            self.save_dir = Path(get_write_directory(str(self.save_dir)))
+
+        json_writer = JsonWriter(str(self.save_dir), DEBUG_INFO_JSON_NAME)
+        safetensors_writer = SafetensorsWriter(
             logger=get_logger(),
             file_path=os.path.join(str(self.save_dir), DEBUG_INFO_SAFETENSORS_NAME),
         )
 
+        self.json_writer = json_writer
+        self.safetensors_writer = safetensors_writer
+
     def save_from_context(self, ctx: Optional[IContext] = None) -> None:
         """
         Save context data to debug_info.json and debug_info.safetensors.
+
+        May be called more than once: multimodal_sd_v1 saves once per expert, and the
+        directory and writers created by the first call are reused afterwards.
 
         Args:
             ctx: Context to save. If None, uses current context from get_current_context().
@@ -105,6 +133,8 @@ class DebugInfoPersistence(KeyInfoPersistenceInfra):
                 "No context available to save",
                 action="Ensure context is created and set before calling save_from_context",
             )
+
+        self._prepare_writers()
 
         get_logger().info(f"Saving context to {self.save_dir}")
 

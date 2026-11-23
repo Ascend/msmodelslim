@@ -159,7 +159,8 @@ def check_disk_space(
             need_gb,
             release_gb,
         ),
-        action="Please free %.2f GB or change --save_path" % release_gb,
+        action="Please free %.2f GB or change --save_path to a directory whose available space is greater than %.2f GB."
+        % (release_gb, need_gb),
     )
 
 
