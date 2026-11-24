@@ -146,7 +146,7 @@ def check_quant_arguments(device_type, quant_type, config_path, trust_remote_cod
             action="Please use DeviceType.NPU or DeviceType.CPU.",
         )
     if quant_type is not None and config_path is not None:
-        raise SchemaValidateError("quant_type and config_path only one can be provided")
+        raise SchemaValidateError("quant_type and config only one can be provided")
     if quant_type is not None and not isinstance(quant_type, QuantType):
         raise SchemaValidateError("quant_type must be a QuantType")
 
@@ -159,7 +159,7 @@ def check_quant_arguments(device_type, quant_type, config_path, trust_remote_cod
         from msmodelslim.core.quant_service.modelslim_convert.config_detect import is_modelslim_convert_config
 
         if config_path is None or not is_modelslim_convert_config(config_path):
-            raise SchemaValidateError("model_type is required unless config_path uses apiversion modelslim_convert")
+            raise SchemaValidateError("model_type is required unless config uses apiversion modelslim_convert")
 
 
 def log_skipped_checks(report: PrecheckReport) -> None:
@@ -516,8 +516,8 @@ class NaiveQuantizationApplication:
             )
 
         manager = PrecheckManager()
-        string_id = f"{STRING_FIELD_GROUP}.config_path"
-        path_id = f"{PATH_PERMISSION_GROUP}.config_path"
+        string_id = f"{STRING_FIELD_GROUP}.config"
+        path_id = f"{PATH_PERMISSION_GROUP}.config"
         quant_argument_values = (device_type, quant_type, config_path, trust_remote_code, tag, model_type)
         for name, value in (("model_path", model_path), ("save_path", save_path)):
             manager.register(string_field_check.bind(value, name, rule_id=f"{STRING_FIELD_GROUP}.{name}"))
@@ -527,7 +527,7 @@ class NaiveQuantizationApplication:
                 model_type, "model_type", skip_when_none=True, rule_id=f"{STRING_FIELD_GROUP}.model_type"
             )
         )
-        manager.register(string_field_check.bind(config_path, "config_path", skip_when_none=True, rule_id=string_id))
+        manager.register(string_field_check.bind(config_path, "config", skip_when_none=True, rule_id=string_id))
         manager.register(readable_path_check.bind(model_path, rule_id=f"{PATH_PERMISSION_GROUP}.model_path"))
         manager.register(writable_path_check.bind(save_path, rule_id=f"{PATH_PERMISSION_GROUP}.save_path"))
         manager.register(readable_path_check.bind(config_path, file=True, skip_when_none=True, rule_id=path_id))

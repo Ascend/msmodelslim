@@ -26,15 +26,22 @@ import json
 import pytest
 import torch
 from safetensors.torch import load_file
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from msmodelslim.core.context import LocalDictContext
 from msmodelslim.infra.debug_info_persistence import DebugInfoPersistence
-from msmodelslim.utils.exception import SchemaValidateError
+from msmodelslim.utils.exception import SchemaValidateError, SecurityError
 
 
 class TestDebugInfoPersistence:
     """测试调试上下文到 JSON 与 SafeTensors 文件的持久化。"""
+
+    def test_init_does_not_create_save_directory(self, tmp_path):
+        """初始化不产生文件系统副作用：目录与写入器推迟到保存时创建。"""
+        persistence = DebugInfoPersistence(str(tmp_path))
+
+        assert persistence.save_dir == tmp_path / "debug_info"
+        assert not (tmp_path / "debug_info").exists()
 
     def test_save_from_context_writes_debug_info_and_tensor(self, tmp_path):
         """正常路径：非张量写入 JSON，张量写入 SafeTensors 且内容保持一致。"""
@@ -65,3 +72,23 @@ class TestDebugInfoPersistence:
             persistence.save_from_context()
 
         mock_get_context.assert_called_once_with()
+
+    @patch("msmodelslim.infra.debug_info_persistence.SafetensorsWriter")
+    def test_writer_failure_leaves_instance_retryable(self, mock_writer_class, tmp_path):
+        """写入器构造失败时不留半初始化状态：两个 writer 复位，下次保存重试成功。"""
+        mock_writer_class.side_effect = [SecurityError("permission denied"), MagicMock()]
+        persistence = DebugInfoPersistence(str(tmp_path))
+        context = LocalDictContext(enable_debug=True)
+        context["quant"].debug["step"] = 1
+
+        with pytest.raises(SecurityError):
+            persistence.save_from_context(context)
+
+        assert persistence.json_writer is None
+        assert persistence.safetensors_writer is None
+
+        persistence.save_from_context(context)
+
+        save_dir = tmp_path / "debug_info"
+        json_payload = json.loads((save_dir / "debug_info.json").read_text(encoding="utf-8"))
+        assert json_payload["quant"]["step"] == 1
