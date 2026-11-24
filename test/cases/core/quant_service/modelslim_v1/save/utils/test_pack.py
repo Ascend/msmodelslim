@@ -125,12 +125,12 @@ class TestPackHiF4Utils(unittest.TestCase):
 
 class TestPackHif4ScaleE1(unittest.TestCase):
     def test_1d_exact_multiple_of_8(self):
-        """Aggregate 8 elements into one uint8 with big-endian bit order."""
+        """Pack the first scale flag into the least significant bit."""
         vals = torch.tensor([1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0], dtype=torch.float32)
         out = pack_hif4_scale_e1_to_uint8(vals)
         self.assertEqual(out.dtype, torch.uint8)
         self.assertEqual(out.shape, (1,))
-        self.assertEqual(out.item(), 85)
+        self.assertEqual(out.item(), 0xAA)
 
     def test_3d_shape(self):
         """Test 3D tensor aggregation."""
@@ -155,17 +155,12 @@ class TestPackHif4ScaleE1(unittest.TestCase):
             dtype=torch.float32,
         )
         out = pack_hif4_scale_e1_to_uint8(vals)
-        expected = torch.tensor([99, 255], dtype=torch.uint8)
+        expected = torch.tensor([0xC6, 0xFF], dtype=torch.uint8)
         self.assertEqual(out.tolist(), expected.tolist())
 
 
 # ---------- pack_hif4_scale_to_fp32 tests ----------
 class TestPackHif4ScaleToFp32(unittest.TestCase):
-    @staticmethod
-    def int_bits_to_float32(bits: int) -> float:
-        """将 32 位无符号整数位模式转换为 float32"""
-        return struct.unpack('f', struct.pack('I', bits & 0xFFFFFFFF))[0]
-
     def test_basic_packing(self):
         """Test the whole packing chain: scale_factor, lv2, lv3 -> float32 bits."""
         scale_factor = torch.tensor([1.0, 2.0], dtype=torch.float32).reshape(2, 1, 1, 1)
@@ -174,23 +169,13 @@ class TestPackHif4ScaleToFp32(unittest.TestCase):
             dtype=torch.float32,
         )
         lv3 = torch.ones(2, 1, 1, 16, dtype=torch.float32)
+        lv3[0, 0, 0, 0] = 2.0
+        lv3[0, 0, 0, 10] = 2.0
         result = pack_hif4_scale_to_fp32(scale_factor, lv2, lv3)
-        result_bits = result.view(torch.int32)
-
-        expected_bits = torch.tensor(
-            [
-                -1068171264,
-                -989921280,
-            ],
-            dtype=torch.int32,
-        )
-        self.assertTrue(
-            torch.equal(result_bits, expected_bits),
-            msg=(
-                f"\nExpected bits : {[hex(i & 0xFFFFFFFF) for i in expected_bits.tolist()]}"
-                f"\nActual bits   : {[hex(i & 0xFFFFFFFF) for i in result_bits.tolist()]}"
-            ),
-        )
+        self.assertEqual(result.dtype, torch.float32)
+        packed_bytes = struct.pack("<2i", *result.view(torch.int32).tolist())
+        # The device reads Lv1, Lv2, then the low and high bytes of Lv3.
+        self.assertEqual(packed_bytes, bytes.fromhex("C0 AA 01 04 C4 FF 00 00"))
 
     def test_e6m2_boundary_values_when_bias48(self):
         """Verify the to_e6m2 conversion including carry and clamp."""
@@ -199,25 +184,18 @@ class TestPackHif4ScaleToFp32(unittest.TestCase):
         lv3 = torch.ones(4, 1, 1, 16, dtype=torch.float32)
         result = pack_hif4_scale_to_fp32(scale_factor, lv2, lv3).squeeze()
         self.assertEqual(result.shape, (4,))
-        expected_bits = [-1207959552, -1006632960, 989855744, -33554432]
-        expected_float = torch.tensor([self.int_bits_to_float32(b) for b in expected_bits], dtype=torch.float32)
-        assert torch.equal(result, expected_float)
+        self.assertEqual(result.view(torch.int32).tolist(), [0xB8, 0xC4, 0x3B, 0xFE])
 
     def test_e6m2_clamp_to_min_max_when_out_of_range(self):
         scale_factor = torch.tensor([2 ** (-50), 2**20], dtype=torch.float32).reshape(2, 1, 1, 1)
 
-        lv2 = torch.ones(2, 1, 1, 8)
-        lv3 = torch.ones(2, 1, 1, 16)
+        lv2 = torch.ones(2, 1, 1, 8, dtype=torch.float32)
+        lv3 = torch.ones(2, 1, 1, 16, dtype=torch.float32)
 
         result = pack_hif4_scale_to_fp32(scale_factor, lv2, lv3)
 
-        expected_bits = [
-            0,
-            -33554432,
-        ]
-        expected = torch.tensor([self.int_bits_to_float32(x) for x in expected_bits], dtype=torch.float32)
-
-        assert torch.equal(result, expected)
+        self.assertEqual(result.shape, (2,))
+        self.assertEqual(result.view(torch.int32).tolist(), [0x00, 0xFE])
 
     def test_lv2_lv3_squeeze_alignment(self):
         """When scale_factor has singleton dim, squeeze must propagate correctly."""

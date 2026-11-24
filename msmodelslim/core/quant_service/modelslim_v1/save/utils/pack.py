@@ -162,8 +162,8 @@ def pack_hif4_scale_e1_to_uint8(scale_tensor: torch.Tensor):
     original_shape = scale_tensor.shape
     bits_reshaped = bits.view(-1, 8)
 
-    # 3. big-endian,using tensor multiplication to simulate bit operations. [2^0, 2^1, ..., 2^7]
-    weights = torch.tensor([128, 64, 32, 16, 8, 4, 2, 1], dtype=torch.uint8, device=bits.device)
+    # 3. Pack each group least significant bit first.
+    weights = torch.tensor([1, 2, 4, 8, 16, 32, 64, 128], dtype=torch.uint8, device=bits.device)
 
     # 4. Aggregated into an 8-bit integer through dot product (sum of displacements)
     uint8_tensor = (bits_reshaped * weights).sum(dim=-1, dtype=torch.uint8)
@@ -215,9 +215,10 @@ def pack_hif4_scale_to_fp32(scale_factor, scale_lv2, scale_lv3):
 
     l2_u8 = pack_hif4_scale_e1_to_uint8(scale_lv2).to(torch.int32)
     l3_u8 = pack_hif4_scale_e1_to_uint8(scale_lv3).to(torch.int32)
-    # assume the last dimension [..., 1] is the high bit and [..., 0] is the low bit
+    # The first Lv3 group occupies the low byte and the second group occupies the high byte.
     l3_u16 = (l3_u8[..., 1:2] << 8) | (l3_u8[..., 0:1])
 
-    packed_int32 = (f_u8 << 24) | (l2_u8 << 16) | (l3_u16 & 0xFFFF)
+    # The device reads little-endian bytes in the order Lv1, Lv2, Lv3 low, Lv3 high.
+    packed_int32 = (l3_u16 << 16) | (l2_u8 << 8) | f_u8
     packed_int32 = packed_int32.squeeze(-1)
     return packed_int32.view(torch.float32)
