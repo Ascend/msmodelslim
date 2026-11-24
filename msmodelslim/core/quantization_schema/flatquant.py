@@ -45,7 +45,6 @@ class FlatQuantOnlineWrapper(WrapperIR):
             rotation_info: 旋转矩阵信息
         """
         super().__init__(module)
-        self.sigmoid = torch.nn.Sigmoid()
         self.clip_factor = None
         self.left_trans = None
         self.right_trans = None
@@ -60,6 +59,7 @@ class FlatQuantOnlineWrapper(WrapperIR):
         return True
 
     def _add_clip(self, clip_factor: torch.Tensor):
+        """保存 ActivationQuantizer.get_clip_ratio() 导出的归一化裁剪比例。"""
         self.clip_factor = nn.Parameter(clip_factor, requires_grad=False)
 
     def _add_flat(self, save_trans: Dict[str, torch.Tensor]):
@@ -92,8 +92,8 @@ class FlatQuantOnlineWrapper(WrapperIR):
         h_max, h_min = reshaped_hidden_states.amax(1, keepdim=True), reshaped_hidden_states.amin(1, keepdim=True)
         tmp = torch.zeros_like(h_max)
         h_max, h_min = torch.maximum(h_max, tmp), torch.minimum(h_min, tmp)
-        h_max = h_max * self.sigmoid(self.clip_factor)
-        h_min = h_min * self.sigmoid(self.clip_factor)
+        h_max = h_max * self.clip_factor
+        h_min = h_min * self.clip_factor
 
         h_clamped = hidden_states.clamp(min=h_min, max=h_max)
 
@@ -204,7 +204,7 @@ class FlatQuantOnlineHookIR(HookIR):
         """
         self.remove_hook()
         flat_ir = FlatQuantOnlineWrapper(module)
-        if self.clip_factor:
+        if self.clip_factor is not None:
             flat_ir._add_clip(self.clip_factor)
         flat_ir._add_flat(self.save_trans)
         return flat_ir

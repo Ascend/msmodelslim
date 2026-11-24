@@ -112,6 +112,22 @@ class TestFlatQuantOnlineWrapper(unittest.TestCase):
         clipped = wrapper._apply_clip(x)
         self.assertEqual(clipped.shape, x.shape)
 
+    def test_forward_preserves_clip_ratio_when_ratio_is_normalized(self):
+        """场景：传入已归一化的裁剪比例。预期：按该比例裁剪，不再做 sigmoid。"""
+        x = torch.tensor([[-2.0, 0.0, 2.0], [1.0, 2.0, 4.0], [-4.0, -2.0, -1.0]])
+        for ratio in (0.0, 0.25, 0.5, 1.0):
+            with self.subTest(ratio=ratio):
+                wrapper = FlatQuantOnlineWrapper(nn.Identity())
+                wrapper._add_clip(torch.tensor([ratio]))
+                expected = torch.tensor(
+                    [
+                        [-2.0 * ratio, 0.0, 2.0 * ratio],
+                        [min(1.0, 4.0 * ratio), min(2.0, 4.0 * ratio), 4.0 * ratio],
+                        [-4.0 * ratio, max(-2.0, -4.0 * ratio), max(-1.0, -4.0 * ratio)],
+                    ]
+                )
+                torch.testing.assert_close(wrapper(x), expected)
+
     def test_FlatQuantOnlineWrapper_output_shape_equals_input_when_apply_flat_with_right_trans(self):
         """FlatQuantOnlineWrapper-调用_apply_flat带right_trans后-输出形状与输入一致"""
         wrapper = FlatQuantOnlineWrapper(self.wrapped_module)
@@ -246,6 +262,20 @@ class TestFlatQuantOnlineHookIR(unittest.TestCase):
         wrapper = hook_ir.wrapper_module(module)
         self.assertIsInstance(wrapper, FlatQuantOnlineWrapper)
         self.assertIs(wrapper.wrapped_module, module)
+
+    def test_wrapper_module_preserves_clip_ratio_when_converting_hook(self):
+        """场景：HookIR 保存归一化比例，包括零和一。预期：转换后前向保持裁剪范围。"""
+        x = torch.tensor([[-2.0, 0.0, 2.0]])
+        for ratio in (0.0, 0.25, 0.5, 1.0):
+            with self.subTest(ratio=ratio):
+                hook_ir = FlatQuantOnlineHookIR(torch.tensor([ratio]), {"right_trans": torch.eye(3)})
+                module = nn.Linear(3, 3, bias=False)
+                with torch.no_grad():
+                    module.weight.copy_(torch.eye(3))
+                hook_ir.set_hook_handle(module.register_forward_pre_hook(hook_ir))
+                wrapper = hook_ir.wrapper_module(module)
+                expected = torch.tensor([[-2.0 * ratio, 0.0, 2.0 * ratio]])
+                torch.testing.assert_close(wrapper(x), expected)
 
     def test_FlatQuantOnlineHookIR_clip_factor_is_none_when_wrapper_module_without_clip(self):
         """FlatQuantOnlineHookIR-调用wrapper_module无裁剪-clip_factor为None"""
