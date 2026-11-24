@@ -54,13 +54,29 @@ def _convert_hookir_to_wrapper(module: nn.Module) -> None:
 class QuantSaveProcessorConfig(AutoProcessorConfig):
     """统一保存处理器配置。
 
-    位于 `spec.process[]`，由 `type: saver` 分派；将量化结果按 `format` 指定的格式
-    导出到输出目录。`format` 是单对象（非列表），由保存处理器按 `_auto_save` 自动
-    注入对应格式，通常无需在 YAML 中显式配置。
+    说明：
+    - 该处理器位于 `spec.process[]`。`type: saver` 是内部保存处理器的分派标识，
+      不是模型导出格式；用户可见的导出格式由 `format.type` 决定。
+    - 根级 `spec.save[]` 支持 `ascendv1_saver`、`compressed_tensors` 和
+      `mindie_format_saver`；`ascendv1_saver` 与 `mindie_format_saver` 会路由到各自的
+      保存处理器，`compressed_tensors` 则使用该统一保存处理器。
+    - 直接使用 `QuantSaveProcessor` 时，`format` 当前仅支持 `compressed_tensors`。
+      通常由框架根据根级 `spec.save[]` 自动注入 `format`，普通量化任务无需在
+      `spec.process[]` 中手工编写 `type: saver`。
+
+    注意事项：
+    - 如需选择导出格式，请在根级 `spec.save[]` 中配置；只有直接构造统一保存处理器时，
+      才需要在 `format` 中显式指定 `type: compressed_tensors` 及其扩展字段。
     """
 
-    type: Literal["saver"] = Field(default="saver", description="处理器类型，固定为 `saver`。")
-    format: SerializeAsAny[QuantFormatConfig] = Field(description="导出格式配置（单对象），由保存处理器自动注入。")
+    type: Literal["saver"] = Field(
+        default="saver",
+        description="处理器分派标识，固定为 `saver`；该值不是导出格式，导出格式由 `format.type` 指定。",
+    )
+    format: SerializeAsAny[QuantFormatConfig] = Field(
+        description="导出格式配置（单对象）；由 `QuantSaveProcessor` 直接使用时当前必须为 "
+        "`compressed_tensors`，通常由框架从 `spec.save[]` 自动注入。"
+    )
     save_directory: str = Field(default="", exclude=True)
 
     def set_save_directory(self, save_directory: str):

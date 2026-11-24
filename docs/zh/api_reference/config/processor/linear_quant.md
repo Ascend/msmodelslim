@@ -47,6 +47,10 @@
 
 描述单个张量（权重或激活）的量化方式。
 
+- `QConfig` 是量化配置的公共组成单元，字段直接内联在所属配置下（如 `LinearQConfig.qconfig.act` / `qconfig.weight`、AWQ 的 `weight_qconfig`）。
+- `scope` 不是所有张量共享的自由组合项，必须与字段所属的张量角色一致；本类仅说明激活和权重的通用粒度，其他张量角色的候选范围由所属处理器配置页补充说明。
+- `dtype`、`scope` 与 `symmetric` 共同组成量化方案（scheme），`method` 在该方案下选择参数估计算法；四者与 `ext` 的可用组合由所属量化器或处理器实现决定。
+
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
 | `dtype` | `string` | 必选 | 无 | `float`、`int8`、`int4`、`mxfp8`、`mxfp4`、`fp8_e4m3` | 量化数据类型，如 `int8`、`int4`、`mxfp8`、`mxfp4`、`fp8_e4m3`；`float` 表示该张量不量化。 | 无 |
@@ -57,7 +61,13 @@
 
 **配置约束**
 
-- 激活：`per_tensor`（整张量一个尺度）、`per_token`（按 token）、`per_channel`（按通道）、`per_block`（按固定块）、`pd_mix`（Prefill/Decode 混合粒度）、`dual_scale`（双尺度）；<br>权重：`per_channel`（按通道）、`per_group`（按分组）、`per_block`（按固定块）、`dual_scale`（双尺度）、`per_channel_neg_offset`（按通道且 offset 取反的部署语义）；<br>FA3 注意力：`per_head`（按注意力头）、`per_channel`（按通道）、`per_token`（按 token）、`per_block`（按固定块）。具体可用组合取决于 `dtype`、`symmetric`、`method` 与所属量化器/处理器实现。
+- 激活 `scope` 支持 `per_tensor`（整张量一个尺度）、`per_token`（按 token）、`per_channel`（按通道）、`per_block`（按固定块）、`pd_mix`（Prefill/Decode 混合粒度）和 `dual_scale`（双尺度）；该组粒度仅适用于激活字段。
+- 权重 `scope` 支持 `per_channel`（按通道）、`per_group`（按分组）、`per_block`（按固定块）、`dual_scale`（双尺度）和 `per_channel_neg_offset`（按通道且 offset 取反的部署语义）；不支持激活专用的 `per_tensor`、`per_token`、`pd_mix`。
+- 除激活和权重外，其他张量角色可能定义额外粒度；以所属处理器配置页的约束为准。
+- `dtype` 的可选范围取决于张量角色、量化方案和所属量化器实现；例如 `float` 表示不量化，此时激活使用 `method=none`，不能按其他整数/浮点量化类型理解。
+- `method` 按张量角色分为两类：激活量化器支持 `minmax`、`histogram`、`none`，其中 `none` 仅配合 `dtype=float`；权重量化器支持 `minmax`、`mse_round`、`ssz`、`gptq` 等。
+- `symmetric` 与 `ext` 也受 `dtype`、`scope`、`method` 和量化器实现约束；例如非对称量化 `symmetric=false` 需要实现支持 zero_point，`ext` 只能填写所选 `method` 声明的扩展参数。
+- 上述粒度只是各角色允许的候选范围；最终 `(dtype, scope, symmetric, method)` 组合是否存在，仍以所属量化器/处理器的已注册实现为准，未注册的组合会在创建量化器时失败。
 
 ## 3. 完整配置参考
 
