@@ -42,7 +42,7 @@ FlatQuant处理器配置：定义量化训练参数、策略、混合精度等
 | `add_diag` | `bool` | 可选 | `true` | — | 是否启用对角缩放矩阵，用于全局缩放 | 无 |
 | `lwc` | `bool` | 可选 | `true` | — | 是否启用权重校准（训练权重量化参数） | 无 |
 | `lac` | `bool` | 可选 | `true` | — | 是否启用激活校准（训练激活量化参数） | 无 |
-| `diag_init` | `string` | 可选 | `one_style` | — | 对角缩放矩阵的初始化方式，支持sq_style以及one_style | 无 |
+| `diag_init` | `string` | 可选 | `one_style` | — | 对角缩放矩阵的初始化方式,支持sq_style以及one_style | 无 |
 | `diag_alpha` | `float` | 可选 | `0.3` | — | 对角线缩放参数，控制缩放强度 | 无 |
 | `warmup` | `bool` | 可选 | `true` | — | 是否启用训练预热机制，提升稳定性 | 无 |
 | `deactive_amp` | `bool` | 可选 | `true` | — | 是否禁用混合精度训练（用于调试） | 无 |
@@ -72,7 +72,7 @@ FlatQuant处理器配置：定义量化训练参数、策略、混合精度等
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `act` | `object` | 可选 | `{'dtype': 'float', 'scope': 'per_tensor', 'symmetric': True, 'method': 'none'}` | — | 激活值的量化配置，由激活量化器实现，`method` 支持 `minmax`、`histogram`、`none`；`scope` 支持 `per_tensor`、`per_token`、`per_channel` 等；激活 `per_channel` 仅支持 `int8`、`fp8_e4m3`、`mxfp8` 配合 `method=minmax`。默认 `float`（不量化激活），仅对权重做量化。 | 本页 <a href="#2-2-2-qconfig">§2.2.2</a> |
+| `act` | `object` | 可选 | `{'dtype': 'float', 'scope': 'per_tensor', 'symmetric': True, 'method': 'none'}` | — | 激活值的量化配置。由激活量化器实现，`method` 支持 `minmax`、`histogram`、`none`；`scope` 支持 `per_tensor`、`per_token`、`per_channel` 等；激活 `per_channel` 仅支持 `int8`、`fp8_e4m3`、`mxfp8` 配合 `method=minmax`。默认 `float`（不量化激活），仅对权重做量化。 | 本页 <a href="#2-2-2-qconfig">§2.2.2</a> |
 | `weight` | `object` | 必选 | 无 | — | 权重的量化配置，必选。由权重量化器实现，`method` 支持 `minmax`、`mse_round`、`ssz`、`gptq` 等；`scope` 支持 `per_channel`、`per_group`、`per_block` 等，不支持 `per_tensor`/`per_token`。 | 本页 <a href="#2-2-2-qconfig">§2.2.2</a> |
 
 **配置约束**

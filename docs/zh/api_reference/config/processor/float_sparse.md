@@ -4,7 +4,7 @@
 > 本页由 `tools.config_docgen` 根据源码注解生成。
 > 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
 
-# float_sparse配置说明
+# float_sparse 配置说明
 
 ## 1. 配置概述
 

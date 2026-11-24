@@ -4,11 +4,11 @@
 > 本页由 `tools.config_docgen` 根据源码注解生成。
 > 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
 
-# smooth_quant配置说明
+# smooth_quant 配置说明
 
 ## 1. 配置概述
 
-SmoothQuant平滑量化处理器配置。
+SmoothQuant 平滑量化处理器配置。
 
 | 项目 | 内容 |
 |------|------|

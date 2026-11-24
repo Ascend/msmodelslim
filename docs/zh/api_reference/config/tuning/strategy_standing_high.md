@@ -4,7 +4,7 @@
 > 本页由 `tools.config_docgen` 根据源码注解生成。
 > 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
 
-# standing_high配置说明
+# standing_high 配置说明
 
 ## 1. 配置概述
 
@@ -41,10 +41,10 @@
 | `AWQProcessorConfig` | `awq` | AWQ（Activation-aware Weight Quantization）处理器配置。 | 《[awq 配置说明](../processor/awq.md)》 |
 | `BinaryAnalysisProcessorConfig` | `binary_analysis` | 二值（有/无量化）敏感度分析处理器配置。 | 《[binary_analysis 配置说明](../processor/binary_analysis.md)》 |
 | `BinaryOperatorLayerWiseProcessorConfig` | `binary_operator_layer_wise` | 逐层敏感度分析处理器配置（对比逐块浮点与量化输出）。 | 《[binary_operator_layer_wise 配置说明](../processor/binary_operator_layer_wise.md)》 |
-| `BinaryOperatorModelWiseProcessorConfig` | `binary_operator_model_wise` | 模型级敏感度分析配置（对比模型最终输出，使用 MSE 指标）。 | 《[binary_operator_model_wise 配置说明](../processor/binary_operator_model_wise.md)》 |
+| `BinaryOperatorModelWiseProcessorConfig` | `binary_operator_model_wise` | 模型级敏感度分析配置（对比模型最终输出，使用 MSE 指标） | 《[binary_operator_model_wise 配置说明](../processor/binary_operator_model_wise.md)》 |
 | `DynamicCacheProcessorConfig` | `dynamic_cache` | KV cache 量化处理器配置。 | 《[dynamic_cache 配置说明](../processor/dynamic_cache.md)》 |
 | `FA3QuantProcessorConfig` | `fa3_quant` | FA3（FlashAttention-3）量化处理器配置。 | 《[fa3_quant 配置说明](../processor/fa3_quant.md)》 |
-| `FlatQuantProcessorConfig` | `flatquant` | FlatQuant处理器配置：定义量化训练参数、策略、混合精度等。 | 《[flatquant 配置说明](../processor/flatquant.md)》 |
+| `FlatQuantProcessorConfig` | `flatquant` | FlatQuant处理器配置：定义量化训练参数、策略、混合精度等 | 《[flatquant 配置说明](../processor/flatquant.md)》 |
 | `FlexAWQSSZProcessorConfig` | `flex_awq_ssz` | Flex AWQ SSZ 离群值抑制处理器配置。 | 《[flex_awq_ssz 配置说明](../processor/flex_awq_ssz.md)》 |
 | `FlexSmoothQuantProcessorConfig` | `flex_smooth_quant` | FlexSmoothQuant 平滑量化处理器配置。 | 《[flex_smooth_quant 配置说明](../processor/flex_smooth_quant.md)》 |
 | `FloatSparseProcessorConfig` | `float_sparse` | 浮点稀疏处理器配置。 | 《[float_sparse 配置说明](../processor/float_sparse.md)》 |

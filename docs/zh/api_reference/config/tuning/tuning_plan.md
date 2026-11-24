@@ -4,7 +4,7 @@
 > 本页由 `tools.config_docgen` 根据源码注解生成。
 > 修改字段描述、类概述或校验逻辑后，请重新生成并提交生成稿。
 
-# tuning_plan配置说明
+# tuning_plan 配置说明
 
 ## 1. 配置概述
 
@@ -35,7 +35,7 @@
 | 配置类 | `type` | 说明 | 文档 |
 |--------|----------|------|------|
 | `StandingHighStrategyConfig` | `standing_high` | 摸高算法策略配置（V1框架）：先跑敏感层分析，再逐步回退不满意的层并尝试不同离群值抑制策略。 | 《[standing_high 配置说明](strategy_standing_high.md)》 |
-| `StandingHighWithExperienceStrategyConfig` | `standing_high_with_experience` | 基于专家经验的摸高算法策略配置。 | 《[standing_high_with_experience 配置说明](strategy_standing_high_with_experience.md)》 |
+| `StandingHighWithExperienceStrategyConfig` | `standing_high_with_experience` | 基于专家经验的摸高算法策略配置 | 《[standing_high_with_experience 配置说明](strategy_standing_high_with_experience.md)》 |
 | `BinaryFallbackStrategyConfig` | `binary_fallback` | 二分回退调优策略配置。 | 《[binary_fallback 配置说明](strategy_binary_fallback.md)》 |
 
 <h3 id="2-3-evaluateserviceconfig">2.3 EvaluateServiceConfig</h3>
@@ -44,7 +44,7 @@
 
 | 配置类 | 说明 | 文档 |
 |--------|------|------|
-| `ServiceOrientedEvaluateServiceConfig` | 面向服务的评估服务配置：评估需求 + AISBench 评测 + vLLM-Ascend 推理引擎。 | 《[evaluation_service_oriented 配置说明](evaluation_service_oriented.md)》 |
+| `ServiceOrientedEvaluateServiceConfig` | 面向服务的评估服务配置：评估需求 + aisbench 评测 + vLLM-Ascend 推理引擎。 | 《[evaluation_service_oriented 配置说明](evaluation_service_oriented.md)》 |
 
 ## 3. 完整配置参考
 

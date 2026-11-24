@@ -8,7 +8,7 @@
 
 ## 1. 配置概述
 
-面向服务的评估服务配置：评估需求 + AISBench 评测 + vLLM-Ascend 推理引擎。
+面向服务的评估服务配置：评估需求 + aisbench 评测 + vLLM-Ascend 推理引擎。
 
 | 项目 | 内容 |
 |------|------|
@@ -80,7 +80,7 @@ AISBench 评测配置
 
 | 字段路径 | 类型 | 必选/可选 | 默认值 | 取值范围或格式 | 含义 | 引用配置 |
 |----------|------|-----------|--------|----------------|------|----------|
-| `binary` | `string` | 可选 | `ais_bench` | `ais_bench` | AISBench 启动命令，固定为 'ais_bench' | 无 |
+| `binary` | `string` | 可选 | `ais_bench` | `ais_bench` | aisbench 启动命令，固定为 'ais_bench' | 无 |
 | `mode` | `string` | 可选 | `all` | 字符串长度 ≤ 200 | 评测模式 | 无 |
 | `timeout` | `int` | 可选 | `7200` | >0 | 命令执行超时时间（秒），默认2小时 | 无 |
 | `cleanup_model_config` | `bool` | 可选 | `true` | — | 是否清理生成的模型配置文件 | 无 |
