@@ -33,7 +33,7 @@ from msmodelslim.core.quantization_format.common.ir_builder.activation import (
     Fa3DynamicParamSet,
     Fa3DynamicStructureSpec,
 )
-from msmodelslim.core.quantization_schema.activation_dynamic import FakeQuantActivationPerToken
+from msmodelslim.core.quantization_schema.activation import FakeQuantActivationPerToken
 from msmodelslim.core.quantization_schema.qal import QScheme
 
 from .base import Fa3IrDecoder

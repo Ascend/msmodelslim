@@ -20,11 +20,17 @@ See the Mulan PSL v2 for more details.
 msmodelslim/core/quantization_format/ascendV1_format/decoders/fa3_per_block.py 的单元测试。
 """
 
+import pytest
 import torch
 
 from msmodelslim.core.quantization_format.ascendV1_format.decoders.fa3_per_block import Fa3PerBlockDecoder
-from msmodelslim.core.quantization_schema.activation_dynamic import FakeQuantActivationPerBlock
-from msmodelslim.core.quantization_schema.const import mxfp8_per_block_sym
+from msmodelslim.core.quantization_schema.activation import FakeQuantActivationPerBlock, HIF4FakeQuantActivationPerBlock
+from msmodelslim.core.quantization_schema.const import (
+    fp4_e2m1_per_block_sym,
+    hif4_per_block_sym,
+    mxfp4_per_block_sym,
+    mxfp8_per_block_sym,
+)
 
 _P = "lm_attn"
 
@@ -32,10 +38,19 @@ _P = "lm_attn"
 class TestFa3PerBlockDecoder:
     """对应 Fa3PerBlockDecoder。"""
 
-    def test_ir_type_returns_per_block_activation(self, fake_store_cls):
+    @pytest.mark.parametrize(
+        "scheme, expected",
+        [
+            (mxfp4_per_block_sym, FakeQuantActivationPerBlock),
+            (mxfp8_per_block_sym, FakeQuantActivationPerBlock),
+            (fp4_e2m1_per_block_sym, FakeQuantActivationPerBlock),
+            (hif4_per_block_sym, HIF4FakeQuantActivationPerBlock),
+        ],
+    )
+    def test_ir_type_returns_registered_per_block_activation(self, fake_store_cls, scheme, expected):
         decoder = Fa3PerBlockDecoder(fake_store_cls())
 
-        assert decoder.ir_type(mxfp8_per_block_sym) is FakeQuantActivationPerBlock
+        assert decoder.ir_type(scheme) is expected
 
     def test_structure_and_params_carry_scheme_without_tensor_reads(self, fake_store_cls):
         decoder = Fa3PerBlockDecoder(fake_store_cls())

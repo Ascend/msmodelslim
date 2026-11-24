@@ -21,7 +21,7 @@ See the Mulan PSL v2 for more details.
 
 import unittest
 from test.cases.core.quantization_schema.test_activation_static import BaseActivationTestMixin
-from msmodelslim.core.quantization_schema.fp8_activation_static import FP8FakeQuantActivationPerHead
+from msmodelslim.core.quantization_schema.activation import FP8FakeQuantActivationPerHead
 from msmodelslim.core.quantization_schema.const import fp8_e4m3_per_head_sym
 from msmodelslim.core.quantization_schema.qal import QDType
 
@@ -31,7 +31,7 @@ class TestFP8FakeQuantActivationPerHead(BaseActivationTestMixin, unittest.TestCa
 
     module_class = FP8FakeQuantActivationPerHead
     scheme_const = fp8_e4m3_per_head_sym
-    fake_quantize_path = "msmodelslim.core.quantization_schema.activation_static.fake_quantize"
+    fake_quantize_path = "msmodelslim.core.quantization_schema.activation.per_head.fake_quantize"
     expected_dtype = QDType.FP8_E4M3
 
 

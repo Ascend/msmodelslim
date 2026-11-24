@@ -33,8 +33,11 @@ from msmodelslim.core.quantization_format.common.ir_builder.activation import (
     Fa3PerTensorStructureSpec,
 )
 from msmodelslim.core.quantization_format.common.tensor_utils import require_keys, squeeze_shape
-from msmodelslim.core.quantization_schema.const import hif8_per_tensor_sym
-from msmodelslim.core.quantization_schema.hif8_activation_static import HIF8FakeQuantActivationPerTensor
+from msmodelslim.core.quantization_schema.const import fp8_e4m3_per_tensor_sym, hif8_per_tensor_sym
+from msmodelslim.core.quantization_schema.activation import (
+    FP8FakeQuantActivationPerTensor,
+    HIF8FakeQuantActivationPerTensor,
+)
 from msmodelslim.core.quantization_schema.qal import QScheme
 
 from .base import Fa3IrDecoder
@@ -47,7 +50,10 @@ _TENSOR_ACTION = "Please ensure the export was produced by AscendV1Saver per-ten
 class Fa3PerTensorDecoder(Fa3IrDecoder):
     """Decode per-tensor static FA3 scale using the same FAQuant tensor contract."""
 
-    _IR_CLS_MAP = {hif8_per_tensor_sym: HIF8FakeQuantActivationPerTensor}
+    _IR_CLS_MAP = {
+        hif8_per_tensor_sym: HIF8FakeQuantActivationPerTensor,
+        fp8_e4m3_per_tensor_sym: FP8FakeQuantActivationPerTensor,
+    }
 
     def ir_type(self, scheme: QScheme) -> Type[nn.Module]:
         return self._IR_CLS_MAP[scheme]

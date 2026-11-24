@@ -25,17 +25,18 @@ from typing import Optional, Tuple
 import torch
 from torch import nn
 
-from msmodelslim.core.quantization_schema.activation_dynamic import (
+from msmodelslim.core.quantization_schema.activation import (
     FakeQuantActivationPerBlock,
+    HIF4FakeQuantActivationPerBlock,
     FakeQuantActivationPerToken,
-)
-from msmodelslim.core.quantization_schema.auto import AutoFakeQuantActivation
-from msmodelslim.core.quantization_schema.fp8_activation_static import FP8FakeQuantActivationPerHead
-from msmodelslim.core.quantization_schema.int8_activation_static import INT8FakeQuantActivationPerHead
-from msmodelslim.core.quantization_schema.hif8_activation_static import (
+    FakeQuantActivationPerTensor,
+    FP8FakeQuantActivationPerHead,
+    FP8FakeQuantActivationPerTensor,
+    INT8FakeQuantActivationPerHead,
     HIF8FakeQuantActivationPerHead,
     HIF8FakeQuantActivationPerTensor,
 )
+from msmodelslim.core.quantization_schema.auto import AutoFakeQuantActivation
 from msmodelslim.core.quantization_schema.qal import QParam, QScheme
 from msmodelslim.core.quantization_schema.qal.qregistry import QABCRegistry
 from msmodelslim.utils.exception import SchemaValidateError
@@ -141,7 +142,10 @@ class Fa3PerHeadIrBuilder(IrBuilder):
         _copy_module_params(ir_module, filled, device)
 
 
-@QABCRegistry.register(dispatch_key=HIF8FakeQuantActivationPerTensor, abc_class=IrBuilder)
+@QABCRegistry.multi_register(
+    dispatch_key=[HIF8FakeQuantActivationPerTensor, FP8FakeQuantActivationPerTensor],
+    abc_type=IrBuilder,
+)
 class Fa3PerTensorIrBuilder(IrBuilder):
     def transform_shell(
         self,
@@ -164,7 +168,7 @@ class Fa3PerTensorIrBuilder(IrBuilder):
         return TransformResult(mode=ApplyMode.INSERT, module=new_module)
 
     def bind_from_param_set(self, ir_module: nn.Module, param_set: Fa3PerTensorParamSet) -> None:
-        if not isinstance(ir_module, HIF8FakeQuantActivationPerTensor):
+        if not isinstance(ir_module, FakeQuantActivationPerTensor):
             raise SchemaValidateError(
                 f"Expected FA3 per-tensor FakeQuantActivation, got {type(ir_module).__name__}",
                 action="Please run transform_shell before bind_from_param_set.",
@@ -213,7 +217,10 @@ class Fa3PerTokenIrBuilder(IrBuilder):
         # Dynamic: no tensors to copy, scheme already set by transform_shell.
 
 
-@QABCRegistry.register(dispatch_key=FakeQuantActivationPerBlock, abc_class=IrBuilder)
+@QABCRegistry.multi_register(
+    dispatch_key=[FakeQuantActivationPerBlock, HIF4FakeQuantActivationPerBlock],
+    abc_type=IrBuilder,
+)
 class Fa3PerBlockIrBuilder(IrBuilder):
     def transform_shell(
         self,
@@ -229,7 +236,7 @@ class Fa3PerBlockIrBuilder(IrBuilder):
                 f"Fa3PerBlockIrBuilder expects Fa3DynamicStructureSpec, got {type(structure).__name__}",
                 action="Please pass IR-semantic structure from the Format translator.",
             )
-        new_module = FakeQuantActivationPerBlock(QParam(scheme=structure.scheme))
+        new_module = AutoFakeQuantActivation.create(QParam(scheme=structure.scheme))
         set_module(model, module_name, new_module)
         return TransformResult(mode=ApplyMode.INSERT, module=new_module)
 

@@ -36,9 +36,11 @@ from msmodelslim.core.quantization_format.common.ir_builder.activation import (
 )
 from msmodelslim.core.quantization_format.common.tensor_utils import require_keys, squeeze_shape
 from msmodelslim.core.quantization_schema.const import fp8_e4m3_per_head_sym, hif8_per_head_sym, int8_per_head_sym
-from msmodelslim.core.quantization_schema.fp8_activation_static import FP8FakeQuantActivationPerHead
-from msmodelslim.core.quantization_schema.hif8_activation_static import HIF8FakeQuantActivationPerHead
-from msmodelslim.core.quantization_schema.int8_activation_static import INT8FakeQuantActivationPerHead
+from msmodelslim.core.quantization_schema.activation import (
+    FP8FakeQuantActivationPerHead,
+    HIF8FakeQuantActivationPerHead,
+    INT8FakeQuantActivationPerHead,
+)
 from msmodelslim.core.quantization_schema.qal import QScheme
 
 from .base import Fa3IrDecoder

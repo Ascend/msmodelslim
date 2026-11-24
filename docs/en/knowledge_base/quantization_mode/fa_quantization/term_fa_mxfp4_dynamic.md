@@ -3,7 +3,7 @@
 > **Entry Category**: Quantization Data Format ([FA Quantization](README.md))<br>
 > **English Name**: FA MXFP4 Dynamic Quantization<br>
 > **Application Domain**: Long-context inference acceleration, low-precision attention computation<br>
-> **Hosting IR Class**: `FakeQuantActivationPerBlock` ([`msmodelslim/ir/activation_dynamic.py`](../../../../../msmodelslim/ir/activation_dynamic.py))<br>
+> **Hosting IR Class**: `FakeQuantActivationPerBlock` ([`msmodelslim/core/quantization_schema/activation/per_block.py`](../../../../../msmodelslim/core/quantization_schema/activation/per_block.py))<br>
 
 ---
 

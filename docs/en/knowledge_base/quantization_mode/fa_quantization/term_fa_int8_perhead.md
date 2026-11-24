@@ -3,7 +3,7 @@
 > **Entry Category**: Quantization Data Format ([FA Quantization](README.md))<br>
 > **English Name**: FA INT8 PerHead Quantization<br>
 > **Application Domain**: Long-context inference acceleration, low-precision attention computation<br>
-> **Hosting IR Class**: `INT8FakeQuantActivationPerHead` ([`msmodelslim/ir/activation_static.py`](../../../../../msmodelslim/ir/activation_static.py))<br>
+> **Hosting IR Class**: `INT8FakeQuantActivationPerHead` ([`msmodelslim/core/quantization_schema/activation/int8_per_head.py`](../../../../../msmodelslim/core/quantization_schema/activation/int8_per_head.py))<br>
 
 ---
 

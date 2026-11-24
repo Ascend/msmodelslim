@@ -495,15 +495,15 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `{prefix}.fa_v.scale` | `"FAQuant"` | V 激活量化 scale（该分支为静态量化时写出） |
 | `{prefix}.fa_v.offset` | `"FAQuant"` | V 激活量化 zero-point（该分支为静态量化时写出） |
 | `{prefix}.quant_type` | string | 该注意力层 FA 量化类型串，取值见下方规则，例如 `INT8`、`FP8_DYNAMIC`、`Q_INT8_DYNAMIC_KV_INT8`、`QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL` |
-| `fa_quant_type` | string | 全局 FA 量化类型（启用 FA 量化时写入，如 `"FAQuant"`） |
+| `fa_quant_type` | string | 全局 FA 量化类型。FP8 per-tensor 的保存入口使用 `FAQuant`，HiF8 per-tensor 的保存入口使用 `FAKQuant` |
 
 **`{prefix}.quant_type` 取值规则**：
 
 | 规则 | 说明 | 示例 |
 | --- | --- | --- |
-| 数据类型名 | 类型串采用数据类型名称：FP8（E4M3）为 `FP8`，INT8 为 `INT8`，MXFP4 为 `MXFP4`，MXFP8 为 `MXFP8` | — |
-| 动态标记 | 动态（per-token/per-block）在类型名后追加 `_DYNAMIC`；静态不加 | per-token 动态的 INT8 记作 `INT8_DYNAMIC` |
-| per-channel 标记 | per-channel 静态在类型名后追加 `_PER_CHANNEL`，以与 per-head 静态区分 | per-channel 静态的 MXFP8 记作 `MXFP8_PER_CHANNEL` |
+| 数据类型名 | FP8 E4M3 写作 `FP8`，FP4 E2M1 写作 `FP4_E2M1`，HiF4 写作 `HIF4`。INT8、MXFP4、MXFP8 直接使用格式名 | — |
+| 动态标记 | 单一动态粒度使用 `{格式}_DYNAMIC`。FP4 E2M1 支持两种动态粒度，在 `DYNAMIC` 前显式追加粒度 | `INT8_DYNAMIC`、`FP4_E2M1_PER_BLOCK_DYNAMIC` |
+| 静态粒度 | per-tensor 追加 `_PER_TENSOR`，per-channel 追加 `_PER_CHANNEL`，per-head 只写格式名 | `FP8_PER_TENSOR`、`MXFP8_PER_CHANNEL` |
 | 前缀规则 | 采用同一量化方式的分支合并，按 Q/K/V/P 顺序拼接前缀；QKV 三分支完全一致时省略前缀 | Q、K 采用同一量化方式记作 `QK_...`；QKV 一致时省略前缀 |
 | 多组拼接 | 不同量化方式的分组之间以 `_` 连接 | `Q_INT8_DYNAMIC_KV_INT8`、`QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL` |
 
@@ -518,19 +518,26 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `Q_INT8_DYNAMIC_KV_INT8` | [FA Q-INT8 动态 K/V-INT8 静态量化](../../quantization_schema/fa_quantization/term_fa_q_int8_dynamic_kv_int8.md) |
 | `Q_FP8_DYNAMIC_KV_FP8` | [FA Q-FP8 动态 K/V-FP8 静态量化](../../quantization_schema/fa_quantization/term_fa_q_fp8_dynamic_kv_fp8.md) |
 | `QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL` | [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](../../quantization_schema/fa_quantization/term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md) |
+| `FP8_PER_TENSOR` | FP8 E4M3 per-tensor 静态量化 |
+| `FP4_E2M1_PER_TOKEN_DYNAMIC` | FP4 E2M1 per-token 动态量化 |
+| `FP4_E2M1_PER_BLOCK_DYNAMIC` | FP4 E2M1 per-block 动态量化，块长 32 |
+| `HIF4_DYNAMIC` | HiF4 per-block 动态量化，块长 64 |
+| `Q_FP8_PER_TENSOR_KV_FP4_E2M1_PER_BLOCK_DYNAMIC` | [Q 使用 FP8 静态量化，K/V 使用 FP4 动态量化](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md#fp8-static-fp4-block) |
 
-静态分支落盘 `scale` / `offset`：per-head 静态写出 float32 类型的 scale，并写出一个取值为零的 zero-point，INT8 方案为零值 int8、FP8 方案为零值 float32。per-channel 静态（MXFP8）将 E8M0 共享指数编码为 uint8（exp + 127）写为 scale，并随附 uint8 零值 zero-point。动态分支（per-token / per-block）对应激活不落盘 `scale` / `offset`，仅写入上述 `{prefix}.quant_type`。算法配置见《[FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)》。
+FP4 动态描述需包含粒度。读取已有导出产物时，按原配置的粒度将旧的无粒度描述改为上述 per-token 或 per-block 名称。
+
+静态分支落盘 `scale` / `offset`。FP8 和 HiF8 的 per-tensor scale 与零 offset 均为 float32，形状为 `(1,)`。per-head 静态写出 float32 类型的 scale，并写出一个取值为零的 zero-point，INT8 方案为零值 int8、FP8 方案为零值 float32。per-channel 静态（MXFP8）将 E8M0 共享指数编码为 uint8（exp + 127）写为 scale，并随附 uint8 零值 zero-point。动态分支（per-token / per-block）对应激活不落盘 `scale` / `offset`，仅写入上述 `{prefix}.quant_type`。算法配置见《[FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)》。
 
 **<span id="st-faquant">`quant_model_weights*.safetensors`</span>**
 
 | 张量名 | 数据类型 | 说明 |
 | --- | --- | --- |
-| `{prefix}.fa_q.scale` | float32 或 uint8 | Q 的静态 scale：per-head 为 float32，per-channel 为 uint8（E8M0 指数 exp + 127） |
-| `{prefix}.fa_q.offset` | int8、float32 或 uint8 | Q 的静态 zero-point：per-head 为 int8（INT8）或 float32（FP8）零值，per-channel 为 uint8 零值 |
-| `{prefix}.fa_k.scale` | float32 或 uint8 | K 的静态 scale：per-head 为 float32，per-channel 为 uint8（E8M0 指数 exp + 127） |
-| `{prefix}.fa_k.offset` | int8、float32 或 uint8 | K 的静态 zero-point：per-head 为 int8（INT8）或 float32（FP8）零值，per-channel 为 uint8 零值 |
-| `{prefix}.fa_v.scale` | float32 或 uint8 | V 的静态 scale：per-head 为 float32，per-channel 为 uint8（E8M0 指数 exp + 127） |
-| `{prefix}.fa_v.offset` | int8、float32 或 uint8 | V 的静态 zero-point：per-head 为 int8（INT8）或 float32（FP8）零值，per-channel 为 uint8 零值 |
+| `{prefix}.fa_q.scale` | float32 或 uint8 | Q 的静态 scale：per-head 和 per-tensor 为 float32，per-channel 为 uint8（E8M0 指数 exp + 127） |
+| `{prefix}.fa_q.offset` | int8、float32 或 uint8 | Q 的静态 zero-point：per-head 为 int8（INT8）或 float32（FP8）零值，per-tensor 为 float32 零值，per-channel 为 uint8 零值 |
+| `{prefix}.fa_k.scale` | float32 或 uint8 | K 的静态 scale：per-head 和 per-tensor 为 float32，per-channel 为 uint8（E8M0 指数 exp + 127） |
+| `{prefix}.fa_k.offset` | int8、float32 或 uint8 | K 的静态 zero-point：per-head 为 int8（INT8）或 float32（FP8）零值，per-tensor 为 float32 零值，per-channel 为 uint8 零值 |
+| `{prefix}.fa_v.scale` | float32 或 uint8 | V 的静态 scale：per-head 和 per-tensor 为 float32，per-channel 为 uint8（E8M0 指数 exp + 127） |
+| `{prefix}.fa_v.offset` | int8、float32 或 uint8 | V 的静态 zero-point：per-head 为 int8（INT8）或 float32（FP8）零值，per-tensor 为 float32 零值，per-channel 为 uint8 零值 |
 
 ---
 

@@ -20,13 +20,14 @@ See the Mulan PSL v2 for more details.
 """
 
 import unittest
+from unittest.mock import PropertyMock, patch
 
 import torch
 
-from msmodelslim.core.quantization_schema.activation_dynamic import (
+from msmodelslim.core.quantization_schema.activation import (
     FakeQuantActivationPerToken,
     FakeQuantActivationPerBlock,
-    FakeQuantActivationPerBlockHif4,
+    HIF4FakeQuantActivationPerBlock,
 )
 from msmodelslim.core.quantization_schema.qal import QParam, QScope, QDType
 from msmodelslim.core.quantization_schema.const import (
@@ -162,6 +163,19 @@ class TestFakeQuantActivationPerBlock(unittest.TestCase):
             output = ir_module(x)
         self.assertEqual(output.dtype, torch.float32)
 
+    def test_forward_uses_block_size_from_mx_format_info(self):
+        finfo = QDType.MXFP4.mx_finfo._replace(block_size=16)
+        x = torch.ones(1, 1, 1, 21)
+        x[..., 16:] = 3
+
+        with patch.object(QDType, "mx_finfo", new_callable=PropertyMock, return_value=finfo):
+            ir_module = FakeQuantActivationPerBlock(self.q_param)
+            output = ir_module(x)
+
+        self.assertEqual(output.shape, x.shape)
+        _, max_val = ir_module.x_minmax_block_observer.get_min_max()
+        torch.testing.assert_close(max_val.flatten(), torch.tensor([1.0, 3.0]))
+
     def test_forward_invalid_block_size(self):
         """非 32 倍数的 head_dim 应正常处理（pad/trim）。"""
         ir_module = FakeQuantActivationPerBlock(self.q_param)
@@ -229,46 +243,48 @@ class TestFakeQuantActivationPerBlockMXFP8(unittest.TestCase):
         self.assertTrue(ir_module.x_q_scheme.symmetric)
 
 
-class TestFakeQuantActivationPerBlockHif4(unittest.TestCase):
-    """测试 FakeQuantActivationPerBlockHif4（HiF4 per-block 动态量化）"""
+class TestHIF4FakeQuantActivationPerBlock(unittest.TestCase):
+    """测试 HIF4FakeQuantActivationPerBlock（HiF4 per-block 动态量化）"""
 
     def setUp(self):
         self.q_param = QParam(scheme=hif4_per_block_sym)
 
     def test_init(self):
-        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        ir_module = HIF4FakeQuantActivationPerBlock(self.q_param)
         self.assertEqual(ir_module.x_q_scheme, hif4_per_block_sym)
+        self.assertIsInstance(ir_module, FakeQuantActivationPerBlock)
+        self.assertEqual(ir_module.block_size, 64)
 
     def test_forward_4d_shape(self):
-        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        ir_module = HIF4FakeQuantActivationPerBlock(self.q_param)
         x = torch.randn(2, 4, 10, 128)
         with torch.no_grad():
             output = ir_module(x)
         self.assertEqual(output.shape, x.shape)
 
     def test_forward_preserves_dtype(self):
-        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        ir_module = HIF4FakeQuantActivationPerBlock(self.q_param)
         x = torch.randn(2, 4, 10, 64, dtype=torch.float32)
         with torch.no_grad():
             output = ir_module(x)
         self.assertEqual(output.dtype, torch.float32)
 
     def test_forward_non_block_aligned_dim(self):
-        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        ir_module = HIF4FakeQuantActivationPerBlock(self.q_param)
         x = torch.randn(2, 4, 10, 50)
         with torch.no_grad():
             output = ir_module(x)
         self.assertEqual(output.shape, x.shape)
 
     def test_forward_produces_finite_output(self):
-        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        ir_module = HIF4FakeQuantActivationPerBlock(self.q_param)
         x = torch.randn(2, 4, 10, 128)
         with torch.no_grad():
             output = ir_module(x)
         self.assertTrue(torch.isfinite(output).all())
 
     def test_scheme_property(self):
-        ir_module = FakeQuantActivationPerBlockHif4(self.q_param)
+        ir_module = HIF4FakeQuantActivationPerBlock(self.q_param)
         self.assertEqual(ir_module.x_q_scheme.scope, QScope.PER_BLOCK)
         self.assertEqual(ir_module.x_q_scheme.dtype, QDType.HiF4)
         self.assertTrue(ir_module.x_q_scheme.symmetric)

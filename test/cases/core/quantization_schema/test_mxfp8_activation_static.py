@@ -27,12 +27,12 @@ from torch import nn
 from msmodelslim.core.quantization_schema.api import calculate_qparam
 from msmodelslim.core.quantization_schema.auto import AutoFakeQuantActivation
 from msmodelslim.core.quantization_schema.const import mxfp8_per_channel_sym
-from msmodelslim.core.quantization_schema.mxfp8_activation_static import MXFP8FakeQuantActivationPerChannel
+from msmodelslim.core.quantization_schema.activation import MXFP8FakeQuantActivationPerChannel
 from msmodelslim.core.quantization_schema.qal import QParam, QDType, QScope
 
 
 class TestMXFP8FakeQuantActivationPerChannel(unittest.TestCase):
-    """对应 msmodelslim/core/quantization_schema/mxfp8_activation_static.py"""
+    """对应 msmodelslim/core/quantization_schema/activation/mxfp8_per_channel.py"""
 
     def _make_qparam(self, channels: int = 16) -> QParam:
         amax = torch.ones(channels, dtype=torch.float32)

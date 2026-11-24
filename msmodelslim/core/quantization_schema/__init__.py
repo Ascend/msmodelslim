@@ -65,11 +65,12 @@ __all__ = [
     "W16A16sLinear",
     "INT8FakeQuantActivationPerHead",
     "FP8FakeQuantActivationPerHead",
+    "FP8FakeQuantActivationPerTensor",
     "FakeQuantActivationPerHead",
     "MXFP8FakeQuantActivationPerChannel",
     "FakeQuantActivationPerToken",
     "FakeQuantActivationPerBlock",
-    "FakeQuantActivationPerBlockHif4",
+    "HIF4FakeQuantActivationPerBlock",
     "HIF8FakeQuantActivationPerTensor",
     "HIF8FakeQuantActivationPerHead",
     "FlatQuantOnlineWrapper",
@@ -121,15 +122,17 @@ __all__ = [
     "mx_quantization",
 ]
 
-from .int8_activation_static import INT8FakeQuantActivationPerHead
-from .fp8_activation_static import FP8FakeQuantActivationPerHead
-from .mxfp8_activation_static import MXFP8FakeQuantActivationPerChannel
-from .activation_static import FakeQuantActivationPerHead
-from .hif8_activation_static import HIF8FakeQuantActivationPerTensor, HIF8FakeQuantActivationPerHead
-from .activation_dynamic import (
+from .activation import (
+    INT8FakeQuantActivationPerHead,
+    FP8FakeQuantActivationPerHead,
+    FP8FakeQuantActivationPerTensor,
+    MXFP8FakeQuantActivationPerChannel,
+    FakeQuantActivationPerHead,
+    HIF8FakeQuantActivationPerTensor,
+    HIF8FakeQuantActivationPerHead,
     FakeQuantActivationPerToken,
     FakeQuantActivationPerBlock,
-    FakeQuantActivationPerBlockHif4,
+    HIF4FakeQuantActivationPerBlock,
 )
 from .api.impl import int_quantization, fp_quantization, mx_quantization
 from .attention import FakeQuantCacheINT8PerChannel

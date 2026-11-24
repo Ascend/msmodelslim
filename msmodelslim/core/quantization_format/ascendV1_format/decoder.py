@@ -31,8 +31,12 @@ from typing import Dict, List, Mapping, Optional, Tuple
 from torch import nn
 
 from msmodelslim.core.quantization_schema.const import (
+    fp4_e2m1_per_block_sym,
+    fp4_e2m1_per_token_sym,
     fp8_e4m3_per_head_sym,
+    fp8_e4m3_per_tensor_sym,
     fp8_e4m3_per_token_sym,
+    hif4_per_block_sym,
     hif8_per_head_sym,
     hif8_per_tensor_sym,
     int8_per_head_sym,
@@ -75,7 +79,7 @@ _ACTS_LONGEST_FIRST = (
     "V",
     "P",
 )
-_DTYPES_LONGEST_FIRST = ("MXFP8", "MXFP4", "HIF8", "INT8", "FP8")
+_DTYPES_LONGEST_FIRST = ("FP4_E2M1", "MXFP8", "MXFP4", "HIF8", "HIF4", "INT8", "FP8", "FP4")
 _DEFAULT_BRANCHES = ("Q", "K", "V")
 _FALLBACK_SUBMODULE = {
     "Q": ("fa_q", "fa3_q"),
@@ -95,6 +99,10 @@ _FA3_SCHEMES = frozenset(
         fp8_e4m3_per_head_sym,
         hif8_per_head_sym,
         hif8_per_tensor_sym,
+        hif4_per_block_sym,
+        fp8_e4m3_per_tensor_sym,
+        fp4_e2m1_per_block_sym,
+        fp4_e2m1_per_token_sym,
         int8_per_token_sym,
         fp8_e4m3_per_token_sym,
         mxfp4_per_block_sym,
@@ -102,18 +110,20 @@ _FA3_SCHEMES = frozenset(
     }
 )
 
-# Disk quant_type wording -> QScheme. Static means per-head, dynamic means
-# per-token (INT8/FP8) or per-block (MXFP4/MXFP8), mirroring the save side.
-# HiF8 additionally supports static per-tensor through the PER_TENSOR scope tag.
+# FP4 E2M1 needs a scope tag to distinguish its two dynamic schemes.
 _FA3_SCHEME_BY_DTYPE_AND_DYNAMIC = {
     ("INT8", False, ""): int8_per_head_sym,
     ("FP8", False, ""): fp8_e4m3_per_head_sym,
     ("HIF8", False, ""): hif8_per_head_sym,
     ("HIF8", False, "PER_TENSOR"): hif8_per_tensor_sym,
+    ("FP8", False, "PER_TENSOR"): fp8_e4m3_per_tensor_sym,
     ("INT8", True, ""): int8_per_token_sym,
     ("FP8", True, ""): fp8_e4m3_per_token_sym,
     ("MXFP4", True, ""): mxfp4_per_block_sym,
     ("MXFP8", True, ""): mxfp8_per_block_sym,
+    ("HIF4", True, ""): hif4_per_block_sym,
+    ("FP4_E2M1", True, "PER_BLOCK"): fp4_e2m1_per_block_sym,
+    ("FP4_E2M1", True, "PER_TOKEN"): fp4_e2m1_per_token_sym,
 }
 
 
@@ -142,20 +152,20 @@ def _parse_fa_quant_type(quant_type: str) -> Dict[str, QScheme]:
             break
         act_prefix, remaining = _consume_act_prefix(remaining)
         dtype, remaining = _consume_dtype(remaining, quant_type)
-        is_dynamic = remaining.startswith("_DYNAMIC")
-        if is_dynamic:
-            remaining = remaining[len("_DYNAMIC") :]
         scope_tag = ""
         if remaining.startswith("_PER_"):
             scope_name, separator, suffix = remaining[len("_PER_") :].partition("_")
             scope_tag = f"PER_{scope_name}"
             remaining = f"_{suffix}" if separator else ""
+        is_dynamic = remaining.startswith("_DYNAMIC")
+        if is_dynamic:
+            remaining = remaining[len("_DYNAMIC") :]
         scheme = _FA3_SCHEME_BY_DTYPE_AND_DYNAMIC.get((dtype, is_dynamic, scope_tag))
         if scheme is None:
             raise SchemaValidateError(
                 f"Unsupported FA3 quant_type={quant_type!r} for dtype={dtype!r}, dynamic={is_dynamic}",
-                action="Supported dtype/dynamic combos: INT8, INT8_DYNAMIC, FP8, "
-                "FP8_DYNAMIC, MXFP4_DYNAMIC, MXFP8_DYNAMIC, HIF8, HIF8_PER_TENSOR.",
+                action="Expected a supported FA3 descriptor such as FP8_DYNAMIC, "
+                "FP4_E2M1_PER_BLOCK_DYNAMIC, or FP4_E2M1_PER_TOKEN_DYNAMIC.",
             )
         branches = tuple(act_prefix) if act_prefix else _DEFAULT_BRANCHES
         for branch in branches:
@@ -163,7 +173,7 @@ def _parse_fa_quant_type(quant_type: str) -> Dict[str, QScheme]:
     if not result:
         raise SchemaValidateError(
             f"Could not parse FA3 quant_type={quant_type!r}",
-            action="Supported forms: INT8, FP8_DYNAMIC, Q_FP8, QV_INT8_K_FP8, MXFP8_DYNAMIC.",
+            action="Supported forms: INT8, Q_FP8, and Q_FP8_PER_TENSOR_KV_FP4_E2M1_PER_BLOCK_DYNAMIC.",
         )
     return result
 
@@ -190,7 +200,7 @@ def _consume_dtype(remaining: str, original: str) -> Tuple[str, str]:
                 return dtype, after
     raise SchemaValidateError(
         f"Could not parse dtype in FA3 quant_type={original!r} at {remaining!r}",
-        action="Supported dtypes: INT8, FP8, HIF8, MXFP4, MXFP8.",
+        action="Supported dtypes: INT8, FP8, HIF8, HIF4, FP4, MXFP4, MXFP8.",
     )
 
 
@@ -281,10 +291,14 @@ class AscendV1FormatDecoder:
             fp8_e4m3_per_head_sym: Fa3PerHeadDecoder(store),
             hif8_per_head_sym: Fa3PerHeadDecoder(store),
             hif8_per_tensor_sym: Fa3PerTensorDecoder(store),
+            fp8_e4m3_per_tensor_sym: Fa3PerTensorDecoder(store),
             int8_per_token_sym: Fa3PerTokenDecoder(store),
             fp8_e4m3_per_token_sym: Fa3PerTokenDecoder(store),
             mxfp4_per_block_sym: Fa3PerBlockDecoder(store),
             mxfp8_per_block_sym: Fa3PerBlockDecoder(store),
+            hif4_per_block_sym: Fa3PerBlockDecoder(store),
+            fp4_e2m1_per_block_sym: Fa3PerBlockDecoder(store),
+            fp4_e2m1_per_token_sym: Fa3PerTokenDecoder(store),
         }
         self._kv_cache: Dict[str, KvCacheIrDecoder] = {
             KvCacheC8Decoder.label: KvCacheC8Decoder(store),

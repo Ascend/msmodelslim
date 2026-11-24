@@ -3,7 +3,7 @@
 > **Entry Category**: Quantization Data Format ([FA Quantization](README.md))<br>
 > **English Name**: FA Q-FP8 Dynamic K/V-FP8 Static Quantization<br>
 > **Application Domain**: Long-context inference acceleration, low-precision attention computation<br>
-> **Hosting IR Class**: `FakeQuantActivationPerToken` (Q, [`msmodelslim/ir/activation_dynamic.py`](../../../../../msmodelslim/ir/activation_dynamic.py)), `FP8FakeQuantActivationPerHead` (K/V, [`msmodelslim/ir/activation_static.py`](../../../../../msmodelslim/ir/activation_static.py))<br>
+> **Hosting IR Class**: `FakeQuantActivationPerToken` (Q, [`msmodelslim/core/quantization_schema/activation/per_token.py`](../../../../../msmodelslim/core/quantization_schema/activation/per_token.py)), `FP8FakeQuantActivationPerHead` (K/V, [`msmodelslim/core/quantization_schema/activation/fp8_per_head.py`](../../../../../msmodelslim/core/quantization_schema/activation/fp8_per_head.py))<br>
 
 ---
 

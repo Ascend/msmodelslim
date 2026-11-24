@@ -31,7 +31,7 @@ from msmodelslim.core.quantization_schema import (
     FP8FakeQuantActivationPerHead,
     FakeQuantActivationPerToken,
     FakeQuantActivationPerBlock,
-    FakeQuantActivationPerBlockHif4,
+    HIF4FakeQuantActivationPerBlock,
     HIF8FakeQuantActivationPerHead,
     HIF8FakeQuantActivationPerTensor,
 )
@@ -359,7 +359,7 @@ class TestFA3QuantProcessor(unittest.TestCase):
         request = BatchProcessRequest(name="layer", module=layer, datas=None, outputs=None)
 
         qparam = QParam(scheme=QScheme(scope=QScope.PER_BLOCK, dtype=QDType.HiF4, symmetric=True))
-        real_ir = FakeQuantActivationPerBlockHif4(qparam)
+        real_ir = HIF4FakeQuantActivationPerBlock(qparam)
         mock_create.return_value = real_ir
 
         processor.postprocess(request)
@@ -532,7 +532,7 @@ class TestFA3QuantProcessor(unittest.TestCase):
 
     def test_postprocess_replaces_observer_with_mxfp8_ir_when_per_channel_calibrated(self):
         from msmodelslim.core.quantization_algorithm.quant.fa3.processor import _FA3PerChannelObserver
-        from msmodelslim.core.quantization_schema.mxfp8_activation_static import MXFP8FakeQuantActivationPerChannel
+        from msmodelslim.core.quantization_schema.activation import MXFP8FakeQuantActivationPerChannel
 
         details = {
             "fa_v": create_qconfig(QDType.MXFP8, QScope.PER_CHANNEL).model_dump(),
@@ -692,7 +692,8 @@ def test_fa3_postprocess_rejects_fixed_per_head_scale_when_adapter_omits_num_hea
         processor.postprocess(request)
 
 
-def test_fa3_postprocess_rejects_fixed_scale_when_dtype_is_not_hif8():
+@pytest.mark.parametrize("dtype, scope", [(QDType.INT8, QScope.PER_HEAD), (QDType.FP8_E4M3, QScope.PER_TENSOR)])
+def test_fa3_postprocess_rejects_fixed_scale_when_dtype_is_not_hif8(dtype, scope):
     model = nn.Module()
     request = BatchProcessRequest(name="", module=model, datas=[])
     adapter = create_mock_adapter()
@@ -700,7 +701,7 @@ def test_fa3_postprocess_rejects_fixed_scale_when_dtype_is_not_hif8():
         "fa_q", FA3QuantPlaceHolder(num_heads=2)
     )
     config = create_processor_config(
-        qconfig=QConfig(dtype=QDType.INT8, scope=QScope.PER_HEAD, symmetric=True, method="static"),
+        qconfig=QConfig(dtype=dtype, scope=scope, symmetric=True, method="static"),
     )
     processor = FA3QuantProcessor(model, config, adapter)
 

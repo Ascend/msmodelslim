@@ -19,11 +19,7 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-from msmodelslim.core.quantization_schema.qal import QABCRegistry
-from msmodelslim.utils.logging import get_logger, logger_setter
-from .auto import AutoFakeQuantActivation
-from .const import hif8_per_head_sym, hif8_per_tensor_sym
-from .activation_static import FakeQuantActivationPerHead, FakeQuantActivationPerTensor
+from msmodelslim.utils.logging import get_logger
 
 
 _HIF8_FIXED_SCALES = (8, 15, 32768)
@@ -39,19 +35,3 @@ def resolve_hif8_static_scale(scale: object) -> float:
     else:
         get_logger().warning("Unsupported HiF8 fixed scale %r; using default %g.", scale, _HIF8_FIXED_DEFAULT)
     return _HIF8_FIXED_DEFAULT
-
-
-@QABCRegistry.multi_register(dispatch_key=[hif8_per_tensor_sym], abc_type=AutoFakeQuantActivation)
-@logger_setter()
-class HIF8FakeQuantActivationPerTensor(FakeQuantActivationPerTensor):
-    """对称 per-tensor HiF8 伪量化/反量化。"""
-
-    pass
-
-
-@QABCRegistry.multi_register(dispatch_key=[hif8_per_head_sym], abc_type=AutoFakeQuantActivation)
-@logger_setter()
-class HIF8FakeQuantActivationPerHead(FakeQuantActivationPerHead):
-    """对称 per-head HiF8 伪量化/反量化。"""
-
-    pass

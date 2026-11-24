@@ -667,7 +667,7 @@ def test_fake_quant_model_generates_two_greedy_tokens_when_built_on_meta():
 @pytest.mark.parametrize("method", ["minmax", "static"])
 @pytest.mark.parametrize("split_branches", [False, True])
 def test_dspark_forward_stays_native_when_backbone_fa3_is_enabled(method, split_branches):
-    from msmodelslim.core.quantization_schema.hif8_activation_static import HIF8FakeQuantActivationPerHead
+    from msmodelslim.core.quantization_schema.activation import HIF8FakeQuantActivationPerHead
     from msmodelslim.model.deepseek_v4_dspark.model import DSparkBlock
     from msmodelslim.model.deepseek_v4_dspark.model_adapter import DeepSeekV4DSparkModelAdapter
 

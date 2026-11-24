@@ -22,11 +22,12 @@ See the Mulan PSL v2 for more details.
 import torch
 from torch import nn
 
-from msmodelslim.core.quantization_schema.api import fake_quantize
-from msmodelslim.core.quantization_schema.qal import QABCRegistry, QDType, QParam, QStorage
 from msmodelslim.utils.logging import logger_setter
-from .auto import AutoFakeQuantActivation
-from .const import mxfp8_per_channel_sym
+
+from ..api import fake_quantize
+from ..auto import AutoFakeQuantActivation
+from ..const import mxfp8_per_channel_sym
+from ..qal import QABCRegistry, QDType, QParam, QStorage
 
 
 @QABCRegistry.multi_register(dispatch_key=[mxfp8_per_channel_sym], abc_type=AutoFakeQuantActivation)

@@ -32,7 +32,13 @@ import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
 from torch import nn
+from torch.nn.functional import scaled_dot_product_attention
 
+from msmodelslim.core.quantization_algorithm.quant.fa3 import (
+    FA3QuantPlaceHolder,
+    FA3QuantProcessor,
+    FA3QuantProcessorConfig,
+)
 from msmodelslim.core.quantization_format.ascendV1_format.format import (
     ASCENDV1_DESC_JSON_NAME,
     ASCENDV1_SAFETENSORS_NAME,
@@ -43,14 +49,19 @@ from msmodelslim.core.base.protocol import BatchProcessRequest
 from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import AscendV1Config, AscendV1Saver
 from msmodelslim.core.quantization_format.ascendV1_format.decoder import _parse_fa_quant_type
 from msmodelslim.core.quantization_schema.const import int8_per_channel_sym, int8_per_head_sym
-from msmodelslim.core.quantization_schema.int8_activation_static import INT8FakeQuantActivationPerHead
+from msmodelslim.core.quantization_schema.activation import INT8FakeQuantActivationPerHead
+from msmodelslim.core.quantization_schema.api import fake_quantize
 from msmodelslim.core.quantization_schema.qal import QParam
 from msmodelslim.core.quantization_schema.w8a8_static import W8A8StaticFakeQuantLinear
 from msmodelslim.core.quantization_algorithm.quant.fa3.interface import FA3QuantAdapterInterface
 from msmodelslim.core.quantization_schema.attention_dynamic import FakeQuantDynamicCache
 from msmodelslim.core.quantization_schema.const import (
+    fp4_e2m1_per_block_sym,
+    fp4_e2m1_per_token_sym,
     fp8_e4m3_per_head_sym,
+    fp8_e4m3_per_tensor_sym,
     fp8_e4m3_per_token_sym,
+    hif4_per_block_sym,
     hif8_per_head_sym,
     hif8_per_tensor_sym,
     int8_per_token_sym,
@@ -323,6 +334,141 @@ class TestFa3AndKvCacheFlow:
         assert attn.fa_k.kv_cache_scale.tolist() == [[3.0], [3.0]]
         assert attn.fa_k.kv_cache_offset.tolist() == [[-1.0], [-1.0]]
 
+    @pytest.mark.parametrize("dtype", [torch.float16, torch.bfloat16])
+    @pytest.mark.parametrize(
+        "kv_scheme, descriptor",
+        [(fp4_e2m1_per_block_sym, "FP4_E2M1_PER_BLOCK_DYNAMIC"), (hif4_per_block_sym, "HIF4_DYNAMIC")],
+    )
+    def test_c4a8_calibrates_and_round_trips(self, tmp_path, dtype, kv_scheme, descriptor):
+        model = _Blocks()
+        attn = model.layers[0].attn
+        for branch in ("fa_q", "fa_k", "fa_v"):
+            attn.set_submodule(branch, FA3QuantPlaceHolder())
+        q = dict(dtype="fp8_e4m3", scope="per_tensor", symmetric=True, method="minmax")
+        kv = dict(dtype=kv_scheme.dtype, scope="per_block", symmetric=True, method="minmax")
+        config = FA3QuantProcessorConfig(details={"fa_q": q, "fa_k": kv, "fa_v": kv})
+        adapter = _FA3Adapter()
+        processor = FA3QuantProcessor(model, config, adapter)
+        request = BatchProcessRequest(name="layers.0.attn", module=attn)
+        assert not processor.is_data_free()
+        processor.preprocess(request)
+        attn.fa_q(torch.tensor([112.0, -448.0], dtype=dtype).reshape(1, 2, 1, 1))
+        attn.fa_q(torch.tensor([224.0, 336.0], dtype=dtype).reshape(1, 2, 1, 1))
+        assert isinstance(attn.fa_k, FA3QuantPlaceHolder)
+        assert isinstance(attn.fa_v, FA3QuantPlaceHolder)
+        processor.postprocess(request)
+        torch.testing.assert_close(attn.fa_q.input_scale, torch.ones(1, dtype=attn.fa_q.input_scale.dtype))
+
+        q_input = torch.zeros(1, 1, 1, 35, dtype=dtype)
+        q_input[..., :2] = torch.tensor([512.0, -512.0], dtype=dtype)
+        k_input = torch.zeros(1, 1, 2, 35, dtype=dtype)
+        indices = [0, 1, 32, 33]
+        token_multiplier = k_input.new_tensor([1.0, 2.0]).reshape(1, 1, 2, 1)
+        k_input[..., indices] = k_input.new_tensor([1.5, -6.0, 0.25, 3.0]) * token_multiplier
+        v_input = -k_input
+
+        if kv_scheme == fp4_e2m1_per_block_sym:
+            block_size = 32
+            block_maxima = [6.0, 3.0]
+            scale_key = "scale"
+            block_scales = [1.0, 0.5]
+            # E2M1 codes (1.5, -6, 0.5, 6) at the two block scales.
+            dequantized = [1.5, -6.0, 0.25, 3.0]
+        else:
+            block_size = 64
+            block_maxima = [6.0]
+            scale_key = "weight_scale_factor"
+            block_scales = [0.875]
+            # The shared scale is 0.875. The local shifts give effective scales of 3.5 and 1.75.
+            # HiF4 codes (0.5, -1.75, 0.25, 1.75) give the expected dequantized values.
+            dequantized = [1.75, -6.125, 0.4375, 3.0625]
+
+        q_out = attn.fa_q(q_input)
+        with patch(f"{type(attn.fa_k).__module__}.fake_quantize", wraps=fake_quantize) as quantize:
+            k_out, v_out = attn.fa_k(k_input), attn.fa_v(v_input)
+        assert quantize.call_count == 2
+        for module, call in zip((attn.fa_k, attn.fa_v), quantize.call_args_list):
+            assert module.block_size == block_size
+            _, maxima = module.x_minmax_block_observer.get_min_max()
+            scale = call.args[1].ext[scale_key]
+            # One row per token. A head dimension of 35 spans two FP4 blocks or one HiF4 block.
+            assert scale.shape == maxima.shape
+            torch.testing.assert_close(
+                maxima.reshape(2, -1), maxima.new_tensor([block_maxima, [2 * m for m in block_maxima]])
+            )
+            torch.testing.assert_close(
+                scale.reshape(2, -1), scale.new_tensor([block_scales, [2 * s for s in block_scales]])
+            )
+
+        expected_k = torch.zeros_like(k_input)
+        expected_k[..., indices] = expected_k.new_tensor(dequantized) * token_multiplier
+        torch.testing.assert_close(q_out, q_input.clamp(-448, 448))
+        torch.testing.assert_close(k_out, expected_k, rtol=0, atol=0)
+        torch.testing.assert_close(v_out, -expected_k, rtol=0, atol=0)
+        attn_out = scaled_dot_product_attention(q_out, k_out, v_out)
+        assert attn_out.dtype == dtype
+
+        source = tmp_path / "source"
+        source.mkdir()
+        output = tmp_path / "export"
+        output.mkdir()
+        save_adapter = BaseModelAdapter("FA3C4A8Toy", source)
+        saver = AscendV1Saver(model, AscendV1Config(save_directory=str(output), part_file_size=0), save_adapter)
+        saver.postprocess(BatchProcessRequest(name="", module=model))
+        saver.post_run()
+
+        fmt = AscendV1Format(str(output))
+        fmt.bind_adapter(adapter)
+        prefix = "layers.0.attn"
+        assert fmt.description["fa_quant_type"] == "FAQuant"
+        assert fmt.store.has(f"{prefix}.fa_q.scale")
+        assert fmt.description[f"{prefix}.quant_type"] == f"Q_FP8_PER_TENSOR_KV_{descriptor}"
+        assert fmt.description[f"{prefix}.fa_q.scale"] == "FAQuant"
+        assert fmt.store.get_shape(f"{prefix}.fa_q.scale") == (1,)
+        offset_key = f"{prefix}.fa_q.offset"
+        assert fmt.description[offset_key] == "FAQuant"
+        torch.testing.assert_close(fmt.store.get(offset_key), torch.zeros(1))
+        for branch in ("fa_k", "fa_v"):
+            assert not fmt.store.has(f"{prefix}.{branch}.scale")
+            assert not fmt.store.has(f"{prefix}.{branch}.offset")
+        restored = _Blocks()
+        fmt.apply_ir(restored)
+        fmt.hydrate(restored)
+        restored_attn = restored.layers[0].attn
+        assert restored_attn.fa_q.x_q_scheme == fp8_e4m3_per_tensor_sym
+        assert restored_attn.fa_k.x_q_scheme == restored_attn.fa_v.x_q_scheme == kv_scheme
+        torch.testing.assert_close(restored_attn.fa_q(q_input), q_out)
+        torch.testing.assert_close(restored_attn.fa_k(k_input), k_out)
+        torch.testing.assert_close(restored_attn.fa_v(v_input), v_out)
+
+    def test_fp4_mixed_dynamic_scopes_restore_distinct_ir(self, fake_store_cls):
+        description = {"layers.0.attn.quant_type": "Q_FP4_E2M1_PER_BLOCK_DYNAMIC_KV_FP4_E2M1_PER_TOKEN_DYNAMIC"}
+        fmt = _make_format(description, fake_store_cls(), _FA3Adapter())
+        model = _Blocks()
+
+        fmt.apply_ir(model)
+        fmt.hydrate(model)
+
+        attn = model.layers[0].attn
+        assert attn.fa_q.x_q_scheme == fp4_e2m1_per_block_sym
+        assert attn.fa_k.x_q_scheme == attn.fa_v.x_q_scheme == fp4_e2m1_per_token_sym
+
+    def test_fp8_per_tensor_loads_legacy_scale_only_export(self, fake_store_cls):
+        scale_key = "layers.0.attn.fa_q.scale"
+        store = fake_store_cls()
+        scale = torch.tensor([2.0])
+        store.put_shape(scale_key, scale.shape)
+        store.put(scale_key, scale)
+        description = {"layers.0.attn.quant_type": "Q_FP8_PER_TENSOR", scale_key: "FAQuant"}
+        fmt = _make_format(description, store, _FA3Adapter())
+        model = _Blocks()
+
+        fmt.apply_ir(model)
+        fmt.hydrate(model)
+
+        assert model.layers[0].attn.fa_q.x_q_scheme == fp8_e4m3_per_tensor_sym
+        torch.testing.assert_close(model.layers[0].attn.fa_q.input_scale, scale)
+
     def test_apply_ir_raises_when_fa_targets_without_fa3_adapter(self, fake_store_cls):
         fmt = _make_format(self._fa3_description(), self._attn_store(fake_store_cls), None)
         with pytest.raises(UnsupportedError):
@@ -508,8 +654,14 @@ def test_hif8_export_roundtrip_preserves_scales_and_numerics_when_static(tmp_pat
         ("FP8_DYNAMIC", {branch: fp8_e4m3_per_token_sym for branch in "QKV"}),
         ("HIF8", {branch: hif8_per_head_sym for branch in "QKV"}),
         ("HIF8_PER_TENSOR", {branch: hif8_per_tensor_sym for branch in "QKV"}),
+        ("HIF4_DYNAMIC", {branch: hif4_per_block_sym for branch in "QKV"}),
+        ("FP8_PER_TENSOR", {branch: fp8_e4m3_per_tensor_sym for branch in "QKV"}),
         ("Q_HIF8_PER_TENSOR_K_INT8_DYNAMIC", {"Q": hif8_per_tensor_sym, "K": int8_per_token_sym}),
         ("Q_HIF8_K_HIF8_PER_TENSOR", {"Q": hif8_per_head_sym, "K": hif8_per_tensor_sym}),
+        (
+            "Q_FP8_PER_TENSOR_KV_FP4_E2M1_PER_BLOCK_DYNAMIC",
+            {"Q": fp8_e4m3_per_tensor_sym, "K": fp4_e2m1_per_block_sym, "V": fp4_e2m1_per_block_sym},
+        ),
     ],
 )
 def test_fa3_descriptor_preserves_scope_and_static_semantics_when_format_varies(quant_type, expected):

@@ -3,7 +3,7 @@
 > **Entry Category**: [Quantization Format](../README.md)<br>
 > **English Name**: AscendV1 Quantization Format<br>
 > **Application Domain**: Ascend NPU inference, large language model quantization and compression, multimodal understanding model quantization and compression<br>
-> **msModelSlim Implementation**: [`msmodelslim/format/ascendV1_format/`](../../../../../msmodelslim/format/ascendV1_format/)
+> **msModelSlim Implementation**: [`msmodelslim/core/quantization_format/ascendV1_format/`](../../../../../msmodelslim/core/quantization_format/ascendV1_format/)
 
 ---
 
@@ -495,15 +495,15 @@ The specific `{prefix}` depends on the naming of the attention KV-related module
 | `{prefix}.fa_v.scale` | `"FAQuant"` | V activation quantization scale (written when this branch uses static quantization) |
 | `{prefix}.fa_v.offset` | `"FAQuant"` | V activation quantization zero-point (written when this branch uses static quantization) |
 | `{prefix}.quant_type` | string | The FA quantization type string of this attention layer; for the values see the rules below, for example `INT8`, `FP8_DYNAMIC`, `Q_INT8_DYNAMIC_KV_INT8`, and `QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL` |
-| `fa_quant_type` | string | Global FA quantization type (written when FA quantization is enabled, such as `"FAQuant"`) |
+| `fa_quant_type` | string | Global FA quantization type. The FP8 per-tensor save handler uses `FAQuant`, and the HiF8 per-tensor save handler uses `FAKQuant` |
 
 **`{prefix}.quant_type` Value Rules**:
 
 | Rule | Description | Example |
 | --- | --- | --- |
-| Data type name | The type string uses the data type name: FP8 (E4M3) is `FP8`, INT8 is `INT8`, MXFP4 is `MXFP4`, and MXFP8 is `MXFP8` | — |
-| Dynamic marker | Dynamic (per-token/per-block) appends `_DYNAMIC` after the type name; static does not | per-token dynamic INT8 is written as `INT8_DYNAMIC` |
-| per-channel marker | per-channel static appends `_PER_CHANNEL` after the type name to distinguish it from per-head static | per-channel static MXFP8 is written as `MXFP8_PER_CHANNEL` |
+| Data type name | FP8 E4M3 is written as `FP8`, FP4 E2M1 as `FP4_E2M1`, and HiF4 as `HIF4`. INT8, MXFP4, and MXFP8 use their format names directly | — |
+| Dynamic marker | A format with one dynamic granularity uses `{format}_DYNAMIC`. FP4 E2M1 has two dynamic granularities and includes the scope before `DYNAMIC` | `INT8_DYNAMIC`, `FP4_E2M1_PER_BLOCK_DYNAMIC` |
+| Static granularity | per-tensor appends `_PER_TENSOR`, per-channel appends `_PER_CHANNEL`, and per-head uses the format name alone | `FP8_PER_TENSOR`, `MXFP8_PER_CHANNEL` |
 | Prefix rule | Branches using the same quantization method are merged, and prefixes are concatenated in Q/K/V/P order; the prefix is omitted when all three QKV branches are identical | Q and K using the same quantization method are written as `QK_...`; the prefix is omitted when QKV are identical |
 | Multi-group concatenation | Groups with different quantization methods are connected with `_` | `Q_INT8_DYNAMIC_KV_INT8`, `QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL` |
 
@@ -518,19 +518,26 @@ The correspondence between validated schemes and `{prefix}.quant_type`:
 | `Q_INT8_DYNAMIC_KV_INT8` | [FA Q-INT8 Dynamic K/V-INT8 Static Quantization](../../quantization_mode/fa_quantization/term_fa_q_int8_dynamic_kv_int8.md) |
 | `Q_FP8_DYNAMIC_KV_FP8` | [FA Q-FP8 Dynamic K/V-FP8 Static Quantization](../../quantization_mode/fa_quantization/term_fa_q_fp8_dynamic_kv_fp8.md) |
 | `QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL` | [FA QK-MXFP8 Dynamic / V-MXFP8 PerChannel Static Quantization](../../quantization_mode/fa_quantization/term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md) |
+| `FP8_PER_TENSOR` | FP8 E4M3 per-tensor static quantization |
+| `FP4_E2M1_PER_TOKEN_DYNAMIC` | FP4 E2M1 per-token dynamic quantization |
+| `FP4_E2M1_PER_BLOCK_DYNAMIC` | FP4 E2M1 per-block dynamic quantization with 32-element blocks |
+| `HIF4_DYNAMIC` | HiF4 per-block dynamic quantization with 64-element blocks |
+| `Q_FP8_PER_TENSOR_KV_FP4_E2M1_PER_BLOCK_DYNAMIC` | [Static FP8 Q with dynamic FP4 K/V](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md#fp8-static-fp4-block) |
 
-Static branches write `scale` / `offset` to disk: per-head static writes a float32 scale plus a zero-valued zero-point - int8 zero for INT8 schemes and float32 zero for FP8 schemes. per-channel static (MXFP8) encodes the E8M0 shared exponent as uint8 (exp + 127) and writes it as the scale, together with a uint8 zero-valued zero-point. The activations of dynamic branches (per-token / per-block) do not write `scale` / `offset` to disk; only the `{prefix}.quant_type` above is written. For the algorithm configuration see [FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md).
+FP4 dynamic descriptors require a scope. To read an existing export with an implicit FP4 scope, update its descriptor to the per-token or per-block name that matches the original configuration.
+
+Static branches write `scale` and `offset` to disk. FP8 and HiF8 per-tensor write a float32 scale and a float32 zero offset, both of shape `(1,)`. Per-head static writes a float32 scale plus a zero-valued zero-point - int8 zero for INT8 schemes and float32 zero for FP8 schemes. per-channel static (MXFP8) encodes the E8M0 shared exponent as uint8 (exp + 127) and writes it as the scale, together with a uint8 zero-valued zero-point. The activations of dynamic branches (per-token / per-block) do not write `scale` / `offset` to disk; only the `{prefix}.quant_type` above is written. For the algorithm configuration see [FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md).
 
 **<span id="st-faquant">`quant_model_weights*.safetensors`</span>**
 
 | Tensor Name | Data Type | Description |
 | --- | --- | --- |
-| `{prefix}.fa_q.scale` | float32 or uint8 | Static scale of Q: float32 for per-head, uint8 for per-channel (E8M0 exponent exp + 127) |
-| `{prefix}.fa_q.offset` | int8, float32, or uint8 | Static zero-point of Q: int8 (INT8) or float32 (FP8) zero for per-head, uint8 zero for per-channel |
-| `{prefix}.fa_k.scale` | float32 or uint8 | Static scale of K: float32 for per-head, uint8 for per-channel (E8M0 exponent exp + 127) |
-| `{prefix}.fa_k.offset` | int8, float32, or uint8 | Static zero-point of K: int8 (INT8) or float32 (FP8) zero for per-head, uint8 zero for per-channel |
-| `{prefix}.fa_v.scale` | float32 or uint8 | Static scale of V: float32 for per-head, uint8 for per-channel (E8M0 exponent exp + 127) |
-| `{prefix}.fa_v.offset` | int8, float32, or uint8 | Static zero-point of V: int8 (INT8) or float32 (FP8) zero for per-head, uint8 zero for per-channel |
+| `{prefix}.fa_q.scale` | float32 or uint8 | Static scale of Q: float32 for per-head and per-tensor, uint8 for per-channel (E8M0 exponent exp + 127) |
+| `{prefix}.fa_q.offset` | int8, float32, or uint8 | Static zero-point of Q: int8 (INT8) or float32 (FP8) zero for per-head, float32 zero for per-tensor, uint8 zero for per-channel |
+| `{prefix}.fa_k.scale` | float32 or uint8 | Static scale of K: float32 for per-head and per-tensor, uint8 for per-channel (E8M0 exponent exp + 127) |
+| `{prefix}.fa_k.offset` | int8, float32, or uint8 | Static zero-point of K: int8 (INT8) or float32 (FP8) zero for per-head, float32 zero for per-tensor, uint8 zero for per-channel |
+| `{prefix}.fa_v.scale` | float32 or uint8 | Static scale of V: float32 for per-head and per-tensor, uint8 for per-channel (E8M0 exponent exp + 127) |
+| `{prefix}.fa_v.offset` | int8, float32, or uint8 | Static zero-point of V: int8 (INT8) or float32 (FP8) zero for per-head, float32 zero for per-tensor, uint8 zero for per-channel |
 
 ---
 

@@ -23,9 +23,9 @@ See the Mulan PSL v2 for more details.
 import torch
 from torch import nn
 
-from msmodelslim.core.quantization_schema.api import fake_quantize
-from msmodelslim.core.quantization_schema.qal import QScheme, QScope, QDType, QParam, QStorage
-from msmodelslim.core.quantization_schema.auto import AutoFakeQuantActivation
+from ..api import fake_quantize
+from ..auto import AutoFakeQuantActivation
+from ..qal import QDType, QParam, QScheme, QScope, QStorage
 
 
 class FakeQuantActivationPerHead(AutoFakeQuantActivation):
@@ -61,23 +61,3 @@ class FakeQuantActivationPerHead(AutoFakeQuantActivation):
         x_out = x_q_dq.value.reshape(x_perm.shape)
         x_out = x_out.movedim(-1, 1)
         return x_out
-
-
-class FakeQuantActivationPerTensor(AutoFakeQuantActivation):
-    """Static activation fake quantization with one shared scale."""
-
-    def __init__(self, x_q_param: QParam):
-        super().__init__()
-        self.x_q_scheme = x_q_param.scheme
-
-        scale = x_q_param.ext.get("scale")
-        if scale is None:
-            class_name = self.__class__.__name__
-            raise ValueError(f"`scale` is needed in ext but is missing for {class_name}")
-
-        self.input_scale = nn.Parameter(scale, requires_grad=False)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        ext = {"scale": self.input_scale.data}
-        x_q_param = QParam(scheme=self.x_q_scheme, ext=ext)
-        return fake_quantize(QStorage(QDType.FLOAT, x), x_q_param).value

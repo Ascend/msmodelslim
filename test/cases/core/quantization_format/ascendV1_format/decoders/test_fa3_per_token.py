@@ -23,7 +23,7 @@ msmodelslim/core/quantization_format/ascendV1_format/decoders/fa3_per_token.py ç
 import torch
 
 from msmodelslim.core.quantization_format.ascendV1_format.decoders.fa3_per_token import Fa3PerTokenDecoder
-from msmodelslim.core.quantization_schema.activation_dynamic import FakeQuantActivationPerToken
+from msmodelslim.core.quantization_schema.activation import FakeQuantActivationPerToken
 from msmodelslim.core.quantization_schema.const import int8_per_token_sym
 
 _P = "lm_attn"

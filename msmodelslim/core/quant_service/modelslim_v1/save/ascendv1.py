@@ -32,6 +32,7 @@ from torch import nn
 
 from msmodelslim import logger
 import msmodelslim.core.quantization_schema as qir
+from msmodelslim.core.quantization_schema.activation import FakeQuantActivationPerTensor
 from msmodelslim.core.quantization_schema.qal import QDType, QScope
 from msmodelslim.core.quantization_schema.qal.qregistry import QABCRegistry
 from msmodelslim.model import IModel
@@ -810,19 +811,26 @@ class AscendV1Saver(AutoSaverProcessor):
     def on_hif8_activation_per_head(self, prefix: str, module: qir.HIF8FakeQuantActivationPerHead):
         self._save_activation_per_head(prefix, module, torch.float32)
 
-    def on_hif8_activation_per_tensor(self, prefix: str, module: qir.HIF8FakeQuantActivationPerTensor):
+    def _save_activation_per_tensor(self, prefix: str, module: FakeQuantActivationPerTensor):
         scale = module.input_scale.to(torch.float32).reshape(1)
         self.write_tensor(prefix + ".scale", "FAQuant", scale)
         self.write_tensor(prefix + ".offset", "FAQuant", torch.zeros_like(scale))
         self.update_fa_quant_type(prefix, module, scope_tag="PER_TENSOR")
+
+    def on_hif8_activation_per_tensor(self, prefix: str, module: qir.HIF8FakeQuantActivationPerTensor):
+        self._save_activation_per_tensor(prefix, module)
         self.update_global_fa_quant_type('FAKQuant')
+
+    def on_fp8_activation_per_tensor(self, prefix: str, module: qir.FP8FakeQuantActivationPerTensor):
+        self._save_activation_per_tensor(prefix, module)
+        self.update_global_fa_quant_type('FAQuant')
 
     def on_activation_per_token(self, prefix: str, module: qir.FakeQuantActivationPerToken):
         # FA3动态量化保存策略
         self.update_fa_quant_type(prefix, module)
 
     def on_activation_per_block(self, prefix: str, module: qir.FakeQuantActivationPerBlock):
-        # FA3 MXFP4/MXFP8 per-block 动态量化保存策略
+        # FA3 MXFP4/MXFP8/HiF4/FP4 per-block 动态量化保存策略
         self.update_fa_quant_type(prefix, module)
 
     def on_mxfp8_activation_per_channel(self, prefix: str, module: qir.MXFP8FakeQuantActivationPerChannel):
@@ -851,8 +859,9 @@ class AscendV1Saver(AutoSaverProcessor):
         scope = module.x_q_scheme.scope
         is_dynamic = scope in (QScope.PER_TOKEN, QScope.PER_BLOCK)
         strategy = "DYNAMIC" if is_dynamic else "STATIC"
-        # per_channel 静态需在描述串中显式带 PER_CHANNEL（如 V_MXFP8_PER_CHANNEL）
-        scope_tag = "PER_CHANNEL" if scope == QScope.PER_CHANNEL else scope_tag
+        # Preserve the per-channel tag and distinguish FP4 E2M1 dynamic scopes.
+        if scope == QScope.PER_CHANNEL or (is_dynamic and module.x_q_scheme.dtype == QDType.FP4_E2M1):
+            scope_tag = SCOPE_MAP[scope]
 
         if parent_prefix not in self.fa_quant_states:
             self.fa_quant_states[parent_prefix] = {}
@@ -940,7 +949,7 @@ class AscendV1Saver(AutoSaverProcessor):
 
         与 update_fa_quant_type 中拼串规则保持一致:
           - 相同配置的分支合并, 按 Q/K/V/P 顺序;  QKV 全一致则省略前缀
-          - 动态保留 _DYNAMIC;  per_channel 静态追加 _PER_CHANNEL
+          - 动态使用 {格式}_DYNAMIC，FP4 E2M1 在 DYNAMIC 前追加粒度
         """
         config_to_acts = {}
         for expected_act in ['Q', 'K', 'V', 'P']:
@@ -957,10 +966,10 @@ class AscendV1Saver(AutoSaverProcessor):
             if act_prefix == "QKV":
                 act_prefix = ""
             suffixes = []
-            if cfg_strategy == "DYNAMIC":
-                suffixes.append("DYNAMIC")
             if cfg_scope_tag:
                 suffixes.append(cfg_scope_tag)
+            if cfg_strategy == "DYNAMIC":
+                suffixes.append("DYNAMIC")
             config_str = cfg_dtype if not suffixes else f"{cfg_dtype}_{'_'.join(suffixes)}"
             parts.append(f"{act_prefix}_{config_str}" if act_prefix else config_str)
         return "_".join(parts)

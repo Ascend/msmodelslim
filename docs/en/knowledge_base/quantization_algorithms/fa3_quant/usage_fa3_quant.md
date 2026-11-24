@@ -79,14 +79,14 @@ spec:
 **Action**:
 
 msModelSlim implementation entry point:
-[View the corresponding implementation directory](../../../../../msmodelslim/processor/quant/fa3)
+[View the corresponding implementation directory](../../../../../msmodelslim/core/quantization_algorithm/quant/fa3)
 
 | Configuration Item | Meaning (Rationale) | Recommended Configuration | Selection and Tuning Advice |
 | --- | --- | --- | --- |
 | `type` | Processor identifier, fixed to `fa3_quant`. | Fixed. | Not a tuning item. |
 | `qconfig` | One set of quantization configuration shared by Q/K/V; mutually exclusive with `details`. When both are omitted, the current processor constructs a default INT8, `per_head`, symmetric, MinMax configuration. | For the first validation of the general Attention/MLA path it can be omitted, using the default INT8 per-head; when a model practice exists, prefer following it and using `fp8_e4m3 + per_token`, INT8 per-token, or MXFP4 per-block explicitly. | Do not use `details` to add complexity when a unified configuration already satisfies the accuracy of all three paths. Recalibration/validation is required after changing the dtype/scope; in particular, `per_head` and `per_token/per_block` differ in their statistics and data dependencies. |
-| `qconfig.dtype` | The numeric format of Q/K/V. The repository practices already include `int8`, `fp8_e4m3`, and `mxfp4`, and the specific validity also depends on the scope/method registration and the deployment backend. | Use the default INT8 first when there is no model-specific recipe; when a practical recipe exists and the target backend supports it, follow its FP8/MXFP format directly. | The dtype is a deployment target, not a simple "accuracy knob". When switching formats, also check the scope, the quantization method, and the hardware/operator support, and redo the quantization evaluation. |
-| `qconfig.scope` | Determines the scale granularity of the FA tensor. The current FA3 post-processing explicitly supports `per_head`, `per_token`, and `per_block`. `per_head` stores statistical scales for each attention head; `per_token/per_block` are more like runtime or format-local scales. | The general default is `per_head`; several FA3 practices in the repository use `per_token`, and the MXFP4 practice uses `per_block`. | `per_head` requires calibration statistics and can capture the range differences between heads; in the source code, the data-free path is taken only when all enabled branches are per-token/per-block. Prefer selecting by model practice and deployment format rather than assuming "finer is always better". |
+| `qconfig.dtype` | Numeric format for Q/K/V, such as `int8`, `fp8_e4m3`, `fp4_e2m1`, `hif4`, or `mxfp4`. | Follow the model recipe and the target backend. | When switching formats, check the granularity, quantization method, and operator support, then rerun evaluation. |
+| `qconfig.scope` | Determines where scales are shared. FA3 uses `per_head`, `per_tensor`, `per_channel`, `per_token`, or `per_block` depending on the numeric format. | The default is INT8 `per_head`. Use `details` when branches use different formats or granularities. | A mixed scheme with FP8 per-tensor MinMax requires calibration. Dynamic K/V computes scales during the forward pass. |
 | `qconfig.symmetric` / `method` | Determines whether there is a zero-point and how the scale is estimated. The existing default and the main practices all use symmetric + MinMax. | Prefer `symmetric: true` and `method: minmax`. | Deviate only when the registered combination and the deployment side explicitly support other settings; do not apply an unsupported general QConfig enumeration directly to FA3. |
 | `details` | Allows `fa_q`, `fa_k`, and `fa_v` to be configured separately, which suits scenarios where the three paths differ in sensitivity or target format; when one path is configured as `null`, the current processing logic can skip that branch. | Not set at the introductory stage. Split it only when a unified `qconfig` cannot accommodate all three paths. | Use Attention MSE or a quantization evaluation first to locate whether Q, K, or V is more sensitive, and then raise the precision/change the granularity only for the sensitive branch. Do not give all three paths different configurations from the start, which makes attribution very difficult. |
 | `include` | Allow list for the scope; a module-name pattern determines which matched modules enter the current algorithm. It only decides *where* the algorithm is applied and does not change the algorithm's internal formula. | Start from `["*"]` when there is no model-specific recipe; when a `lab_practice` recipe exists, inherit its module scope directly. | First ensure the scope covers the intended modules, then check accuracy. If the scope is too broad, a few incompatible structures or sensitive layers amplify the overall risk; if it is too narrow, the algorithm's benefit may not be visible. When narrowing the scope, adjust by structural family or known sensitive layers rather than deleting a large number of layers by index alone. |
@@ -149,6 +149,34 @@ msmodelslim quant \
 ```
 
 **Output**: Complete quantized weight files and description files are generated in the directory specified by `--save_path`.
+
+<a id="fp8-static-fp4-block"></a>
+
+#### Example: static FP8 per-tensor Q and dynamic FP4 per-block K/V
+
+Add the following entry to `spec.process` and keep `spec.dataset` for Q calibration. The `minmax` method computes the static FP8 scale.
+
+```yaml
+- type: fa3_quant
+  details:
+    fa_q:
+      dtype: fp8_e4m3
+      scope: per_tensor
+      symmetric: true
+      method: minmax
+    fa_k:
+      dtype: fp4_e2m1
+      scope: per_block
+      symmetric: true
+      method: minmax
+    fa_v:
+      dtype: fp4_e2m1
+      scope: per_block
+      symmetric: true
+      method: minmax
+```
+
+FP4 E2M1 splits K/V into 32-element blocks along the last dimension. For HiF4, set `fa_k.dtype` and `fa_v.dtype` to `hif4` and keep `per_block`. HiF4 uses 64-element blocks. See [AscendV1 FAQuant](../../quantization_format/ascendv1/term_ascendv1.md#desc-faquant) for the exported descriptors.
 
 ## 5. Terminology
 

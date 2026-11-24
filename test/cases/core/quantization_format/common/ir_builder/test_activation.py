@@ -34,12 +34,12 @@ from msmodelslim.core.quantization_format.common.ir_builder.activation import (
     Fa3PerTokenIrBuilder,
 )
 from msmodelslim.core.quantization_format.common.ir_builder.base import ApplyMode
-from msmodelslim.core.quantization_schema.activation_dynamic import (
+from msmodelslim.core.quantization_schema.activation import (
     FakeQuantActivationPerBlock,
     FakeQuantActivationPerToken,
+    INT8FakeQuantActivationPerHead,
 )
 from msmodelslim.core.quantization_schema.const import int8_per_head_sym, int8_per_token_sym, mxfp8_per_block_sym
-from msmodelslim.core.quantization_schema.int8_activation_static import INT8FakeQuantActivationPerHead
 from msmodelslim.core.quantization_schema.qal import QParam
 from msmodelslim.utils.exception import SchemaValidateError
 

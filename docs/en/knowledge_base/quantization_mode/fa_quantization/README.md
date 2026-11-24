@@ -26,10 +26,11 @@ FA quantization **is essentially a composite quantization mode**: it acts on the
 - **Quantization target**: the activation tensors of the three branches Q/K/V fed into Flash Attention (K/V carry cache compression, Q enables low-precision score computation).
 - **Quantization granularity available per branch**:
   - **per-head**: the scale is shared per attention head, **static** (requires calibration), such as [FA INT8 PerHead Quantization](term_fa_int8_perhead.md).
+  - **per-tensor**: one static scale is shared across the activation tensor. FP8 (E4M3) uses `minmax` calibration.
   - **per-token**: the scale is computed online per token, **dynamic** (no calibration), such as [FA INT8 Dynamic Quantization](term_fa_int8_dynamic.md) and [FA FP8 Dynamic Quantization](term_fa_fp8_dynamic.md).
-  - **per-block**: split into 32-element blocks along head_dim with a block-level shared exponent, **dynamic** (no calibration), such as [FA MXFP4 Dynamic Quantization](term_fa_mxfp4_dynamic.md) and [FA QK-MXFP8 Dynamic / V-MXFP8 PerChannel Static Quantization](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md).
+  - **per-block**: activations are split along the last dimension, `head_dim`. MXFP4 and MXFP8 use 32-element blocks with a shared exponent. FP4 E2M1 uses a scale per 32-element block. HiF4 uses three-level scaling per 64-element block. Dynamic branches require no calibration.
   - **per-channel (V branch only)**: the exponent is shared along `(head, dim)` channels, **static** (requires calibration), such as [FA QK-MXFP8 Dynamic / V-MXFP8 PerChannel Static Quantization](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md).
-- **Data types**: INT8, FP8 (E4M3), MXFP8, MXFP4.
+- **Data types**: INT8, FP8 (E4M3), FP4 (E2M1), HiF4, HiF8, MXFP8, and MXFP4.
 - **Relationship with KV**: this category builds on [KVCache Quantization](../kv_cache_quantization/README.md) (inheriting its memory benefit) and adds Q quantization to enable low-precision attention matrix computation.
 
 ---

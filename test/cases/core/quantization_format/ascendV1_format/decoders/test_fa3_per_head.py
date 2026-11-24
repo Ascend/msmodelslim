@@ -25,8 +25,10 @@ import torch
 
 from msmodelslim.core.quantization_format.ascendV1_format.decoders.fa3_per_head import Fa3PerHeadDecoder
 from msmodelslim.core.quantization_schema.const import fp8_e4m3_per_head_sym, int8_per_head_sym
-from msmodelslim.core.quantization_schema.fp8_activation_static import FP8FakeQuantActivationPerHead
-from msmodelslim.core.quantization_schema.int8_activation_static import INT8FakeQuantActivationPerHead
+from msmodelslim.core.quantization_schema.activation import (
+    FP8FakeQuantActivationPerHead,
+    INT8FakeQuantActivationPerHead,
+)
 from msmodelslim.utils.exception import SchemaValidateError
 
 _P = "lm_attn"

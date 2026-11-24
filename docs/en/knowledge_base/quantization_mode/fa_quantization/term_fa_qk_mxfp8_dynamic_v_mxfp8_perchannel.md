@@ -3,7 +3,7 @@
 > **Entry Category**: Quantization Data Format ([FA Quantization](README.md))<br>
 > **English Name**: FA QK-MXFP8 Dynamic V-MXFP8 PerChannel Static Quantization<br>
 > **Application Domain**: Long-context inference acceleration, low-precision attention computation<br>
-> **Hosting IR Class**: `FakeQuantActivationPerBlock` (Q/K, [`msmodelslim/ir/activation_dynamic.py`](../../../../../msmodelslim/ir/activation_dynamic.py)), `MXFP8FakeQuantActivationPerChannel` (V, [`msmodelslim/ir/mxfp8_activation_static.py`](../../../../../msmodelslim/ir/mxfp8_activation_static.py))<br>
+> **Hosting IR Class**: `FakeQuantActivationPerBlock` (Q/K, [`msmodelslim/core/quantization_schema/activation/per_block.py`](../../../../../msmodelslim/core/quantization_schema/activation/per_block.py)), `MXFP8FakeQuantActivationPerChannel` (V, [`msmodelslim/core/quantization_schema/activation/mxfp8_per_channel.py`](../../../../../msmodelslim/core/quantization_schema/activation/mxfp8_per_channel.py))<br>
 
 ---
 

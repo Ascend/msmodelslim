@@ -26,10 +26,11 @@ FA 量化**本质上是一个组合量化模式**：作用于注意力 Q/K/V 三
 - **量化对象**：送入 Flash Attention 的 Q/K/V 三个分支的激活张量（K/V 承接缓存压缩，Q 使能低精度得分计算）。
 - **分支可选的量化粒度**：
   - **per-head**：按注意力头共享 scale，**静态**（需校准），如 [FA INT8 PerHead 量化](term_fa_int8_perhead.md)。
+  - **per-tensor**：整张激活共享一个静态 scale。FP8（E4M3）使用 `minmax` 校准。
   - **per-token**：逐 token 在线计算 scale，**动态**（免校准），如 [FA INT8 动态量化](term_fa_int8_dynamic.md)、[FA FP8 动态量化](term_fa_fp8_dynamic.md)。
-  - **per-block**：沿 head_dim 按 32 元素分块、块级共享指数，**动态**（免校准），如 [FA MXFP4 动态量化](term_fa_mxfp4_dynamic.md)、[FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md)。
+  - **per-block**：沿最后一维 `head_dim` 在线分块。MXFP4 和 MXFP8 使用 32 元素块及共享指数，FP4 E2M1 使用 32 元素块及块级 scale，HiF4 使用 64 元素块及三级缩放。动态分支免校准。
   - **per-channel（V 分支专用）**：沿 `(head, dim)` 通道共享指数，**静态**（需校准），如 [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md)。
-- **数据类型**：INT8、FP8（E4M3）、MXFP8、MXFP4。
+- **数据类型**：INT8、FP8（E4M3）、FP4（E2M1）、HiF4、HiF8、MXFP8、MXFP4。
 - **与 KV 的关系**：本类以 [KVCache 量化](../kv_cache_quantization/README.md)为基础（继承其显存收益），追加 Q 量化使能低精度注意力矩阵运算。
 
 ---

@@ -522,7 +522,10 @@ class TestRecordFaLayerStates:
     def test_writes_per_parent_state_when_fa_quant_states_present(self):
         saver = _make_mock_saver()
         saver.fa_quant_states = {
-            "model.layers.3.self_attn": {"Q": ["MXFP8", "DYNAMIC", ""], "V": ["MXFP8", "STATIC", "PER_CHANNEL"]},
+            "model.layers.3.self_attn": {
+                "Q": ["MXFP8", "DYNAMIC", ""],
+                "V": ["MXFP8", "STATIC", "PER_CHANNEL"],
+            },
         }
         saver.record_fa_layer_states()
         saver.json_writer.write.assert_called_once_with(
@@ -677,6 +680,28 @@ class TestSingleVsMergedFaQuantTypeConsistent:
         per_rank_layer_states.setdefault(parent, {})["V"] = list(v_cfg)
         AscendV1Saver.merge_fa_layer_states(merged_meta, per_rank_layer_states)
         assert merged_meta[f"{parent}.quant_type"] == expected
+
+    def test_fp4_dynamic_label_distinguishes_per_block_from_existing_per_token(self):
+        saver = _make_mock_saver()
+        saver.on_activation_per_block("attn.fa_q", self._make_module(QDType.FP4_E2M1, QScope.PER_BLOCK))
+        saver.on_activation_per_token("attn.fa_k", self._make_module(QDType.FP4_E2M1, QScope.PER_TOKEN))
+        saver.json_writer.write.assert_called_with(
+            "attn.quant_type", "Q_FP4_E2M1_PER_BLOCK_DYNAMIC_K_FP4_E2M1_PER_TOKEN_DYNAMIC"
+        )
+
+    def test_merge_preserves_distinct_dynamic_scopes_with_static_fp8(self):
+        parent = "model.layers.3.self_attn"
+        rank_states = {
+            "Q": ["FP8", "STATIC", "PER_TENSOR"],
+            "K": ["FP4_E2M1", "DYNAMIC", "PER_BLOCK"],
+            "V": ["HIF4", "DYNAMIC", ""],
+            "P": ["FP4_E2M1", "DYNAMIC", "PER_TOKEN"],
+        }
+        merged_meta = {}
+        AscendV1Saver.merge_fa_layer_states(merged_meta, {parent: rank_states})
+        assert merged_meta[f"{parent}.quant_type"] == (
+            "Q_FP8_PER_TENSOR_K_FP4_E2M1_PER_BLOCK_DYNAMIC_V_HIF4_DYNAMIC_P_FP4_E2M1_PER_TOKEN_DYNAMIC"
+        )
 
 
 class TestW4A8MxfpPassthroughSave:

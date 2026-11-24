@@ -85,8 +85,8 @@ msModelSlim 实现入口：：
 | --- | --- | --- | --- |
 | `type` | 处理器标识，固定为 `fa3_quant`。 | 固定。 | 不作为调参项。 |
 | `qconfig` | Q/K/V 共用的一套量化配置；与 `details` 互斥。两者都省略时，当前处理器构造默认 INT8、`per_head`、对称、MinMax 配置。 | 第一次验证通用 Attention/MLA 路径可省略，使用默认 INT8 per-head；已有模型实践时优先照实践显式使用 `fp8_e4m3 + per_token`、INT8 per-token 或 MXFP4 per-block。 | 统一配置能满足三路精度时不要使用 `details` 增加复杂度。改变 dtype/scope 后要重新校准/验证；尤其 `per_head` 与 `per_token/per_block` 的统计方式和数据依赖不同。 |
-| `qconfig.dtype` | Q/K/V 的数值格式。仓库实践已出现 `int8`、`fp8_e4m3`、`mxfp4`，具体合法性还取决于 scope/method 注册和部署后端。 | 没有模型专用配方时先用默认 INT8；有实践配方且目标后端支持时直接沿用其 FP8/MXFP 格式。 | dtype 是部署目标，不是简单“精度旋钮”。切换格式时同时检查 scope、量化方法、硬件/算子支持，并重做量化评测。 |
-| `qconfig.scope` | 决定 FA 张量尺度粒度。当前 FA3 后处理明确支持 `per_head`、`per_token`、`per_block`。`per_head` 为每个注意力头保存统计尺度；`per_token/per_block` 更偏运行时或格式化局部尺度。 | 通用默认为 `per_head`；仓库多个 FA3 实践使用 `per_token`，MXFP4 实践使用 `per_block`。 | `per_head` 需要校准统计并能捕获不同 Head 的范围差异；源码中仅当所有启用分支都是 per-token/per-block 时可走 data-free 路径。优先按模型实践和部署格式选，不要只依据粒度“越细越好”。 |
+| `qconfig.dtype` | Q/K/V 的数值格式，例如 `int8`、`fp8_e4m3`、`fp4_e2m1`、`hif4` 和 `mxfp4`。 | 按模型配方和目标后端选择。 | 切换格式时同时检查粒度、量化方法和算子支持，并重新评测。 |
+| `qconfig.scope` | 决定 scale 的共享范围。FA3 使用 `per_head`、`per_tensor`、`per_channel`、`per_token` 或 `per_block`，可用组合取决于数值格式。 | 默认使用 INT8 `per_head`。分支采用不同格式或粒度时使用 `details`。 | 含 FP8 per-tensor MinMax 的混合配置需要校准。动态 K/V 在前向时计算 scale。 |
 | `qconfig.symmetric` / `method` | 决定是否有 zero-point 以及如何估计尺度。现有默认与主要实践均使用对称 + MinMax。 | 优先 `symmetric: true`、`method: minmax`。 | 只有注册组合和部署端明确支持其他设置时才偏离；不要把不支持的通用 QConfig 枚举直接用于 FA3。 |
 | `details` | 允许 `fa_q`、`fa_k`、`fa_v` 分别配置，适合三路敏感性或目标格式不同的场景；某一路配置为 `null` 时当前处理逻辑可跳过该分支。 | 入门不设置。只有统一 `qconfig` 无法兼顾三路时再拆分。 | 先用 Attention MSE 或量化评测定位是 Q、K 还是 V 更敏感，再只提高敏感分支精度/更换粒度。不要一开始就给三路都不同配置，否则很难归因。 |
 | `include` | 作用范围白名单，使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
@@ -149,6 +149,34 @@ msmodelslim quant \
 ```
 
 **输出**：在指定的 `--save_path` 目录下生成完整的量化权重文件与描述文件。
+
+<a id="fp8-static-fp4-block"></a>
+
+#### 示例：FP8 per-tensor 静态 Q 与 FP4 per-block 动态 K/V
+
+将下面的条目放入 `spec.process`，并保留 `spec.dataset` 用于 Q 分支校准。FP8 静态 scale 由 `minmax` 计算。
+
+```yaml
+- type: fa3_quant
+  details:
+    fa_q:
+      dtype: fp8_e4m3
+      scope: per_tensor
+      symmetric: true
+      method: minmax
+    fa_k:
+      dtype: fp4_e2m1
+      scope: per_block
+      symmetric: true
+      method: minmax
+    fa_v:
+      dtype: fp4_e2m1
+      scope: per_block
+      symmetric: true
+      method: minmax
+```
+
+FP4 E2M1 的 K/V 沿最后一维按 32 元素分块。若使用 HiF4，将 `fa_k.dtype` 和 `fa_v.dtype` 改为 `hif4`，粒度保持 `per_block`，块长为 64。对应描述串见 [AscendV1 FAQuant](../../quantization_format/ascendv1/term_ascendv1.md#desc-faquant)。
 
 ## 5. 术语
 

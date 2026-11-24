@@ -70,7 +70,7 @@ Samples excluded by the window produce clipping error; the narrower the window, 
 
 - **Per-head quantization**: computes quantization parameters independently for each attention head to accommodate distribution differences.
 - **Recall Window**: uses a sliding window to find the minimum range containing a given proportion of the data, suppressing the influence of outliers.
-- **Multi-granularity support**: supports multiple quantization granularities for INT8 and FP8 (static/dynamic).
+- **Multi-granularity support**: each branch can select its own quantization scheme, including static FP8 E4M3 per-tensor, dynamic FP4 E2M1 per-token or per-block, and dynamic HiF4 per-block.
 - **Trade-off between clipping and accuracy**: the retention ratio of Recall Window directly determines the balance between tail saturation and bulk resolution.
 
 In terms of error and applicability boundaries, attention is especially sensitive to Q/K quantization because the error enters the dot product and passes through softmax. A seemingly small logit deviation can change the probability ranking when two candidate positions score similarly; the calibration data must therefore cover real sequence lengths, positional patterns, and head behavior.

@@ -103,10 +103,11 @@ class AutoSaverProcessor(AutoSessionProcessor):
             qir.FP8FakeQuantActivationPerHead: self.on_fp8_activation_per_head,
             qir.HIF8FakeQuantActivationPerHead: self.on_hif8_activation_per_head,
             qir.HIF8FakeQuantActivationPerTensor: self.on_hif8_activation_per_tensor,
+            qir.FP8FakeQuantActivationPerTensor: self.on_fp8_activation_per_tensor,
             qir.MXFP8FakeQuantActivationPerChannel: self.on_mxfp8_activation_per_channel,
             qir.FakeQuantActivationPerToken: self.on_activation_per_token,
             qir.FakeQuantActivationPerBlock: self.on_activation_per_block,
-            qir.FakeQuantActivationPerBlockHif4: self.on_activation_per_block,
+            qir.HIF4FakeQuantActivationPerBlock: self.on_activation_per_block,
             qir.W16A16sLinear: self.on_w16a16s,
             qir.QuarotOnlineHeadRotationWrapper: self.on_rotation_wrapper,
             qir.QuarotOnlineKroneckerRotationWrapper: self.on_kronecker_rotation_wrapper,
@@ -293,6 +294,11 @@ class AutoSaverProcessor(AutoSessionProcessor):
     def on_hif8_activation_per_tensor(self, prefix: str, module: qir.HIF8FakeQuantActivationPerTensor):
         raise NotImplementedError(
             f"You should implement the on_hif8_activation_per_tensor method for {self.__class__.__name__}"
+        )
+
+    def on_fp8_activation_per_tensor(self, prefix: str, module: qir.FP8FakeQuantActivationPerTensor):
+        raise NotImplementedError(
+            f"You should implement the on_fp8_activation_per_tensor method for {self.__class__.__name__}"
         )
 
     def on_mxfp8_activation_per_channel(self, prefix: str, module: qir.MXFP8FakeQuantActivationPerChannel):

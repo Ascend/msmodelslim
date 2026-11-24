@@ -29,7 +29,7 @@ from torch import nn
 
 from msmodelslim.core.quantization_schema.api import calculate_qparam
 from msmodelslim.core.quantization_schema.qal import QScope, QDType, QABCRegistry, QParam
-from msmodelslim.core.quantization_schema.hif8_activation_static import resolve_hif8_static_scale
+from msmodelslim.core.quantization_schema.activation.utils import resolve_hif8_static_scale
 from msmodelslim.core.base.protocol import BatchProcessRequest
 import msmodelslim.core.quantization_schema as qir
 from msmodelslim.core.observer.minmax import MsMinMaxObserver, MinMaxObserverConfig
@@ -305,8 +305,8 @@ class FA3QuantProcessor(AutoSessionProcessor):
                     continue
                 if qconfig.dtype != QDType.HiF8:
                     raise UnsupportedError(
-                        "FA3 method 'static' supports only HiF8.",
-                        action="Please check configuration in .yaml file",
+                        "FA3 method 'static' uses a fixed scale and supports only HiF8.",
+                        action="Use method 'minmax' with scope 'per_tensor' to calibrate a static FP8 scale.",
                     )
                 fixed_scale = resolve_hif8_static_scale(qconfig.ext.get("static_scale"))
                 if qconfig.scope == QScope.PER_HEAD:
@@ -401,6 +401,8 @@ class FA3QuantProcessor(AutoSessionProcessor):
             q_scope=fa_config.scope,
             symmetric=fa_config.symmetric,
         )
+        # FA3 per-tensor 协议要求 scale 形状为 (1,)，标定产出的 scale 为 0-d 标量，此处归一
+        q_param.ext["scale"] = q_param.ext["scale"].reshape(1)
         fa_quantizer = qir.AutoFakeQuantActivation.create(q_param)
         self.model.set_submodule(name, fa_quantizer)
 

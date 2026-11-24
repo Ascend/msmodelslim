@@ -3,7 +3,7 @@
 > **词条类别**：量化数据格式（[FA 量化](README.md)）<br>
 > **英文名称**：FA QK-MXFP8 Dynamic V-MXFP8 PerChannel Static Quantization<br>
 > **应用领域**：长上下文推理加速、低精度注意力计算<br>
-> **承载 IR 类**：`FakeQuantActivationPerBlock`（Q/K，[`msmodelslim/core/quantization_schema/activation_dynamic.py`](../../../../../msmodelslim/core/quantization_schema/activation_dynamic.py)）、`MXFP8FakeQuantActivationPerChannel`（V，[`msmodelslim/core/quantization_schema/mxfp8_activation_static.py`](../../../../../msmodelslim/core/quantization_schema/mxfp8_activation_static.py)）<br>
+> **承载 IR 类**：`FakeQuantActivationPerBlock`（Q/K，[`msmodelslim/core/quantization_schema/activation/per_block.py`](../../../../../msmodelslim/core/quantization_schema/activation/per_block.py)）、`MXFP8FakeQuantActivationPerChannel`（V，[`msmodelslim/core/quantization_schema/activation/mxfp8_per_channel.py`](../../../../../msmodelslim/core/quantization_schema/activation/mxfp8_per_channel.py)）<br>
 
 ---
 
