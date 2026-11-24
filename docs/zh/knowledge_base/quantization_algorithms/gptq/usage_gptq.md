@@ -34,7 +34,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行量化流程。
+- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行量化流程。
 - **确定权重量化粒度**：先锁定 `dtype + scope + symmetric + method` 组合；GPTQ 支持 `per_channel` 与 `per_group`，后者需配合 `group_size`。
 - **收集 Hessian 近似统计**：通过校准数据（推荐 50 条）前向运行，估计每个 Linear 的输入二阶矩作为 Hessian 近似。
 - **设置阻尼与分块**：`percdamp` 控制 Hessian 对角线阻尼比例，`block_size` 控制逐列处理的计算块大小。
@@ -107,12 +107,12 @@ GPTQ 建议按 **位宽 → scope/group_size → percdamp → block_size** 的�
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| GPTQ 权重量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《GPTQ 权重量化算法 量化术语百科词条》](./term_gptq.md) |
+| GPTQ 权重量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[GPTQ 权重量化算法 量化术语百科词条](./term_gptq.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

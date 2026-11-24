@@ -10,7 +10,7 @@
 - **敏感层保护**：对精度极度敏感的层（如 `down_proj` 或 `gate`）使用更高比特或特定的平滑算法；
 - **多算法组合**：在同一组层上先后应用平滑处理（Smooth）和线性量化（Linear Quant）。
 
-组合处理器本身不实现量化公式；子处理器字段与其独立使用时完全一致。模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
+组合处理器本身不实现量化公式；子处理器字段与其独立使用时完全一致。模型是否在官方验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
 
 ## 2. 输入和交付件
 
@@ -150,8 +150,8 @@ msmodelslim quant \
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| group 配置说明 | 字段类型、默认值与完整配置约束。 | [《group 配置说明》](../../../api_reference/config/processor/group.md) |
-| modelslim_v1 配置说明 | runner、process、save、dataset 等任务级配置。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| DevKit 总览 | DevKit 索引与领域边界。 | [《DevKit》](../README.md) |
-| 量化算法总览 | 可作为 `configs` 子项的算法使用指南。 | [《量化算法》](../../quantization_algorithms/README.md) |
-| 一键量化使用指南 | CLI 参数与端到端流程。 | [《一键量化使用指南》](../../../user_guide/usage_one_click_quantization.md) |
+| group 配置说明 | 字段类型、默认值与完整配置约束。 | 《[group 配置说明](../../../api_reference/config/processor/group.md)》 |
+| modelslim_v1 配置说明 | runner、process、save、dataset 等任务级配置。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| DevKit 总览 | DevKit 索引与领域边界。 | 《[DevKit](../README.md)》 |
+| 量化算法总览 | 可作为 `configs` 子项的算法使用指南。 | 《[量化算法](../../quantization_algorithms/README.md)》 |
+| 一键量化使用指南 | CLI 参数与端到端流程。 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |

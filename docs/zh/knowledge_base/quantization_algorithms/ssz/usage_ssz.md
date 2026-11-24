@@ -34,7 +34,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行量化流程。
+- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行量化流程。
 - **确定权重位宽**：先固定目标位宽（如 INT4 或 INT8），再确认当前版本支持的 `dtype + scope + symmetric + method` 组合；位宽由产品和后端目标决定，不作为小幅调参。
 - **MinMax 初始化**：SSZ 以 MinMax 量化结果为初始点，得到首轮量化参数，作为迭代优化的起点。
 - **迭代优化 scale/offset**：从初始量化参数出发，交替使用当前整数码求最小二乘 scale，再重新量化；误差不再改善时可提前收敛。
@@ -102,12 +102,12 @@ SSZ 的核心自由度是位宽和 `step`；scope/symmetric/method 当前基本�
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| SSZ 权重量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《SSZ 权重量化算法 量化术语百科词条》](./term_ssz.md) |
+| SSZ 权重量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[SSZ 权重量化算法 量化术语百科词条](./term_ssz.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

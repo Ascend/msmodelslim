@@ -38,7 +38,7 @@ flowchart LR
 
 适配器的组合继承构建方法与代码示例见《[Iterative Smooth 迭代平滑算法使用指南](../iterative_smooth/usage_iterative_smooth.md)》步骤 1。后续 `svd_res` 与 `linear_quant` 阶段由标准流水线方法驱动，无需额外专用接口。之后量化命令中通过 `--model_type` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。请注意：模型适配必须先完成，才能执行后续量化流程。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。请注意：模型适配必须先完成，才能执行后续量化流程。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -165,7 +165,7 @@ msmodelslim quant \
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
 | `PipelineInterface` / `IterSmoothInterface` | 模型流水线与 SVDQuant 算法适配接口，均由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| svd_res 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《svd_res 配置说明》](../../../api_reference/config/processor/svd_res.md) |
-| iter_smooth 配置说明 | 三阶段流水线中的其他处理器参数。 | [《iter_smooth 配置说明》](../../../api_reference/config/processor/iter_smooth.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| svd_res 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[svd_res 配置说明](../../../api_reference/config/processor/svd_res.md)》 |
+| iter_smooth 配置说明 | 三阶段流水线中的其他处理器参数。 | 《[iter_smooth 配置说明](../../../api_reference/config/processor/iter_smooth.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

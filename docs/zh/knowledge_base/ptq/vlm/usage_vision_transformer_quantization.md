@@ -16,7 +16,7 @@
 
 | 类型 | 名称 | 来源或保存位置 | 格式或约束 | 验收方式 |
 | --- | --- | --- | --- | --- |
-| 输入 | 浮点 VLM 权重目录 | 模型下载或本地路径 | HuggingFace 格式，含 `config.json` 及 `*.safetensors` 分片 | 可被目标 Transformers 版本正常加载 |
+| 输入 | 浮点 VLM 权重目录 | 模型下载或本地路径 | Hugging Face 格式，含 `config.json` 及 `*.safetensors` 分片 | 可被目标 Transformers 版本正常加载 |
 | 输入 | 多模态校准数据集 | 工具内置 `lab_calib/calibImages/` 或用户自定义路径 | 包含图像文件及可选配对 Prompt 的目录或 JSONL，推荐 50 条 | 可被适配器 `handle_dataset` 成功编码为多模态输入张量 |
 | 输入 | 量化配置文件 | 本地 YAML 文件 | 符合 `multimodal_vlm_modelslim_v1` 协议规范 | 通过模式校验（Schema Validation） |
 | 交付件 | 量化权重目录 | `--save_path` 指定路径 | 含 `quant_model_description.json` 及 `*.safetensors` 分片 | 导出完整且推理冒烟测试通过 |
@@ -36,7 +36,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-前置条件：模型适配：量化前需先完成模型适配，适配器实现 PipelineInterface（基础流水线接口）等接口，详见[《VLM 模型接入量化流程指南》](./integration_guide_vision_transformer_quantization.md)。若目标模型已在官方预验证列表中，无需编写适配代码，直接指定对应 `--model_type` 即可。模型适配必须先完成，才能执行量化流程。
+**前置条件：模型适配**：量化前需先完成模型适配，适配器实现 PipelineInterface（基础流水线接口）等接口，详见《[VLM 模型接入量化流程指南](./integration_guide_vision_transformer_quantization.md)》。若目标模型已在官方预验证列表中，无需编写适配代码，直接指定对应 `--model_type` 即可。模型适配必须先完成，才能执行量化流程。
 
 - **适配模型流水线接口**：确保待量化 VLM 模型具备符合 `multimodal_vlm_modelslim_v1` 规范的适配器接口，能够驱动视觉特征提取与文本解码的联合前向。
 - **配置多模态校准数据集**：通过 `spec.dataset` 与 `spec.default_text` 指定图文校准数据，推荐 50 条图像样本及配对 Prompt，稳定覆盖通用视觉特征分布。
@@ -118,7 +118,7 @@ index.jsonl 示例：
 
 **方式二：纯图像目录**
 
-目录内仅包含图像文件，无 .json/.jsonl。所有图像使用配置中的 `default_text` 作为统一文本 prompt。
+目录内仅包含图像文件，无 .json/.jsonl。所有图像使用配置中的 `default_text` 作为统一文本 Prompt。
 
 **说明**：此方式后续不再演进，新场景请使用方式一。
 

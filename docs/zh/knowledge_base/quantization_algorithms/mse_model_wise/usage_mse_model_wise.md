@@ -89,7 +89,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
 
 之后分析命令中通过 `--model_type MyModelAdapter` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -150,14 +150,14 @@ msmodelslim analyze layer \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 模型级 MSE 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《模型级 MSE 敏感层分析算法 量化术语百科词条》](./term_mse_model_wise.md) |
+| 模型级 MSE 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[模型级 MSE 敏感层分析算法 量化术语百科词条](./term_mse_model_wise.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | [《LLM 量化使用指南·步骤 1》](../../ptq/llm/usage_large_language_model_quantization.md) |
+| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | 《[LLM 量化使用指南·步骤 1](../../ptq/llm/usage_large_language_model_quantization.md)》 |
 | `MSEModelWiseAnalysisInterface` | 模型级 MSE 分析模型适配接口，由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| binary_operator_model_wise 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《binary_operator_model_wise 配置说明》](../../../api_reference/config/processor/binary_operator_model_wise.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| binary_operator_model_wise 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[binary_operator_model_wise 配置说明](../../../api_reference/config/processor/binary_operator_model_wise.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

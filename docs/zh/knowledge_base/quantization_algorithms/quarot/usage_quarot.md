@@ -66,7 +66,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
 
 `TransformersModel` 提供通用的 LLM 加载与 Tokenizer 逻辑，框架接口提供标准化驱动能力，拼在一起即构成完整适配器。之后量化命令中通过 `--model_type MyModelAdapter` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -169,7 +169,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
 
 3. **参考已有适配实现**：仓库内置模型适配器可直接参考，如 `msmodelslim/model/glm_5/quarot.py`、`msmodelslim/model/deepseek_v3/quarot.py`（QuaRot 接口实现），以及 `msmodelslim/model/glm_5/model_adapter.py`（适配器组合方式）。
 
-4. **开发新模型适配代码**：请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。
+4. **开发新模型适配代码**：请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -220,7 +220,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
 
 **目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。
 
-#### 完整示例：QuaRot + W8A8 动态量化（推荐起点）
+#### 完整示例：QuaRot 与 W8A8 动态量化（推荐起点）
 
 ##### 配置文件：`quarot_w8a8_dynamic.yaml`
 
@@ -271,14 +271,14 @@ msmodelslim quant \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| QuaRot 旋转量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《QuaRot 旋转量化算法 量化术语百科词条》](./term_quarot.md) |
+| QuaRot 旋转量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[QuaRot 旋转量化算法 量化术语百科词条](./term_quarot.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | [《LLM 量化使用指南·步骤 1》](../../ptq/llm/usage_large_language_model_quantization.md) |
+| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | 《[LLM 量化使用指南·步骤 1](../../ptq/llm/usage_large_language_model_quantization.md)》 |
 | `QuaRotInterface` / `OnlineQuaRotInterface` / `LAOSOnlineRotationInterface` / `AdaptRotationInterface` | QuaRot 算法模型适配接口，均由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| quarot 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《quarot 配置说明》](../../../api_reference/config/processor/quarot.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| quarot 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[quarot 配置说明](../../../api_reference/config/processor/quarot.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

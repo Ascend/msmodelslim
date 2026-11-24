@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-本指南面向首次对 Diffusion Transformer 架构的多模态生成模型（如 FLUX.1、HunyuanVideo、Wan2.1、Wan2.2、Qwen-Image-Edit 等）执行[《训练后量化词条》](../term_ptq.md)的用户。文档提供规范的量化使用流程，系统阐明多模态生成模型的适配接口、校准集与浮点推理配置、保存格式、算法选型、调度器（Runner）机制，并提供完整的 W8A8 量化开箱即用示例。
+本指南面向首次对 Diffusion Transformer 架构的多模态生成模型（如 FLUX.1、HunyuanVideo、Wan2.1、Wan2.2、Qwen-Image-Edit 等）执行《[训练后量化词条](../term_ptq.md)》的用户。文档提供规范的量化使用流程，系统阐明多模态生成模型的适配接口、校准集与浮点推理配置、保存格式、算法选型、调度器（Runner）机制，并提供完整的 W8A8 量化开箱即用示例。
 
 适用场景：
 
@@ -287,4 +287,4 @@ msmodelslim quant \
 | `msmodelslim quant` | 一键量化 CLI 入口与完整命令说明 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
 | multimodal_sd_modelslim_v1 配置说明 | `runner`/`process`/`per_expert`/`save`/`dataset`/`multimodal_sd_config` 等任务级配置的字段说明 | 《[multimodal_sd_modelslim_v1 配置说明](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》 |
 | linear_quant 配置说明 | `linear_quant` 处理器及其 `qconfig` 各字段的完整取值说明 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
-| 多模态生成模型接入 | DiT 模型接入与适配器开发 | 《[多模态生成模型接入](./integration_guide_diffusion_transformer_quantization.md)》 |
+| 多模态生成模型接入 | DiT 模型接入与适配器开发 | 《[DiT 模型接入量化流程指南](./integration_guide_diffusion_transformer_quantization.md)》 |

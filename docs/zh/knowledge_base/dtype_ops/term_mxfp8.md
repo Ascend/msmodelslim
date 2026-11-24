@@ -6,7 +6,7 @@
 
 ## 1. 概述
 
-**MXFP8** 是 [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf) 的8位块级格式：每32个元素共享一个 E8M0 指数（2 的幂），块内元素为 E4M3 或 E5M2。对离群值比 [INT8](term_int8.md) 更稳，scale 开销比逐元素 [FP8](term_fp8.md) 更低。公式按 OCP MX §6.3。只有对称路径。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
+**MXFP8** 是 [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf) 的8位块级格式：每32个元素共享一个E8M0 指数（2 的幂），块内元素为E4M3或E5M2。对离群值比 [INT8](term_int8.md) 更稳，scale 开销比逐元素 [FP8](term_fp8.md) 更低。公式按 OCP MX §6.3。只有对称路径。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
 
 ---
 
@@ -38,7 +38,7 @@ $$q_i = \mathrm{clamp}(\mathrm{roundTiesToEven\_to\_FP8}(x'_i), \pm\mathrm{max\_
 - $q_i$：块内 FP8 量化值。
 - $\hat{x}_i$：反量化还原值。
 
-减去 $e_{\max}$，是为了让块内最大元素落到元素格式的上沿。全零块的 $e_{\mathrm{shared}}=-127$ 是合法值。元素舍入与 [FP8](term_fp8.md) 相同，没有 zero-point。
+减去 $e_{\max}$，是为了让块内最大元素落到元素格式的上界。全零块的 $e_{\mathrm{shared}}=-127$ 是合法值。元素舍入与 [FP8](term_fp8.md) 相同，没有 zero-point。
 
 ### 2.3 与相关格式的关系
 

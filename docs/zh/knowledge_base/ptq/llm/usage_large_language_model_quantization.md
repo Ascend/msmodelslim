@@ -98,7 +98,7 @@ flowchart LR
    ```
 
 2. **格式选型与文档链接**：
-   - **[ascendv1_saver配置说明](../../../api_reference/config/format/ascendv1_saver.md)**：**昇腾 NPU 部署推荐格式**。专为昇腾加速库（ATB / Ascend Transformer Boost）与 MindIE设计，生成包含量化元数据描述的 `quant_model_description.json` 及分片量化权重 `*.safetensors`，自动完成硬件指令所要求的权重重排（Pack）与反量化系数预处理。
+   - **[ascendv1_saver配置说明](../../../api_reference/config/format/ascendv1_saver.md)**：**昇腾NPU部署推荐格式**。专为昇腾加速库（ATB / Ascend Transformer Boost）与 MindIE设计，生成包含量化元数据描述的 `quant_model_description.json` 及分片量化权重 `*.safetensors`，自动完成硬件指令所要求的权重重排（Pack）与反量化系数预处理。
    - **[mindie_format_saver配置说明](../../../api_reference/config/format/mindie_format_saver.md)**：面向新版本 MindIE SD/MindIE 生态的统一部署格式。
 
 3. **选型指南**：
@@ -174,12 +174,12 @@ flowchart LR
 
    **工作原理与优势对比**：
 
-   | 特性 | 传统量化 (Model-wise) | 逐层量化 (单卡) | 分布式逐层量化 (多卡 DP) |
+   | 特性 | 传统量化（Model-wise） | 逐层量化（单卡） | 分布式逐层量化（多卡 DP） |
    |----------|----------|----------|----------|
    | **处理方式** | 模型级整网处理 | 单设备分层顺序处理 | 多设备并行分层处理 |
    | **内存占用** | 模型大小的 2-3 倍 | **单层大小的 2-3 倍** | **单层大小的 2-3 倍** |
-   | **量化效率** | 快 (针对小模型) | 较慢 (针对大模型) | **显著提升 (多卡并行)** |
-   | **适用模型** | 小模型 (<32B) | 大模型 (≥32B) | 超大模型或大规模校准集 |
+   | **量化效率** | 快（针对小模型） | 较慢（针对大模型） | **显著提升（多卡并行）** |
+   | **适用模型** | 小模型（<32B） | 大模型（≥32B） | 超大模型或大规模校准集 |
 
    **选型建议**：
 

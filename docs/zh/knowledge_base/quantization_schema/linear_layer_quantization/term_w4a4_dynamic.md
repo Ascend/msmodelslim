@@ -21,7 +21,7 @@ W4A4 动态量化是对线性层的权重与激活都做 [INT4](../../dtype_ops/
 | 位宽 | W 4bit，A 4bit | 同为 4bit，权重访存降至 [FP16/BF16](../../dtype_ops/term_fp16_bf16.md) 的 1/4、INT8 的 1/2 |
 | 数据类型 | INT4 | 整数格式（内部以 INT8 承载存储） |
 | 参数获取方式 | 激活动态 / 权重静态 | 激活逐 token 在线求 min/max 并计算 scale；权重 scale/offset 在量化阶段固化 |
-| 量化粒度 | 权重 per-channel/per-group；激活 per-token | 权重逐输出通道或按固定分组（如 128元素）共享 scale/offset；激活逐 token 共享 scale |
+| 量化粒度 | 权重 per-channel/per-group；激活 per-token | 权重逐输出通道或按固定分组（如128元素）共享 scale/offset；激活逐 token 共享 scale |
 | 对称性 | 激活对称；权重对称或非对称 | 激活对称仅 scale；权重可加 offset 适配非对称分布 |
 
 ### 2.2 量化公式

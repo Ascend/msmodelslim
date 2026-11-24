@@ -27,7 +27,7 @@ Standing High 算法的核心思想是“摸高”：算法首先进行浮点预
 
 **4. 二分搜索最小回退级别**
 
-如果初始配置不满足精度要求，算法使用二分搜索找到满足精度要求的最小回退级别。回退级别由层选择器根据模型结构自动计算，级别越高，回退到浮点的层越多。算法在回退级别 1 到最大级别之间进行二分搜索，快速定位满足精度要求的最小回退级别。
+如果初始配置不满足精度要求，算法使用二分搜索找到满足精度要求的最小回退级别。回退级别由层选择器根据模型结构自动计算，级别越高，回退到浮点的层越多。算法在回退级别1到最大级别之间进行二分搜索，快速定位满足精度要求的最小回退级别。
 
 **5. 摸高过程**
 
@@ -41,7 +41,7 @@ Standing High 算法的核心思想是“摸高”：算法首先进行浮点预
 
 4） **自适应步长**：如果找到满足精度要求的配置，算法会记录该配置，并将步长翻倍（最大不超过当前回退级别），以加快搜索速度。如果所有策略都不满足要求，则重置步长为1，继续尝试。
 
-5） **终止条件**：出现以下任一情况时终止并返回当前记录的最佳配置：初始配置已满足精度要求；摸高过程中回退级别已到 0 且所有离群值抑制策略均已尝试；或步长已为 1 且所有离群值抑制策略均不满足精度要求。此外，若浮点预检未通过，算法会在搜索开始前直接报错退出（见“浮点预检”）。
+5） **终止条件**：出现以下任一情况时终止并返回当前记录的最佳配置：初始配置已满足精度要求；摸高过程中回退级别已到0 且所有离群值抑制策略均已尝试；或步长已为1 且所有离群值抑制策略均不满足精度要求。此外，若浮点预检未通过，算法会在搜索开始前直接报错退出（见“浮点预检”）。
 
 **6. 离群值抑制策略遍历**
 
@@ -63,17 +63,17 @@ Standing High 算法的核心思想是“摸高”：算法首先进行浮点预
 
 **推理引擎支持**：需要注意推理引擎对任意回退的支持情况。一般情况下，单算子模式下 vLLM-Ascend 支持任意回退，但使用混合算子时可能不支持任意回退。在使用 Standing High 算法时，请确保配置的推理引擎（如 vLLM-Ascend）能够支持量化回退功能。
 
-**模型适配**：策略启动时会**自动运行敏感层分析**以生成回退候选。模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**（即 `core/runner/pipeline_interface.py` 中的 `PipelineInterface`）。分析由 `PipelineAnalysisService` 经 `LayerWiseRunner` 调用适配器的 `init_model`、`handle_dataset` 及 visit/forward pipeline，**不会在策略侧预先调用 `load_model`**。与 CLI `msmodelslim analyze` 要求一致。详见 《[LLM 大模型接入指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。
+**模型适配**：策略启动时会**自动运行敏感层分析**以生成回退候选。模型适配器须实现 **`ModelSlimPipelineInterfaceV1`**（即 `core/runner/pipeline_interface.py` 中的 `PipelineInterface`）。分析由 `PipelineAnalysisService` 经 `LayerWiseRunner` 调用适配器的 `init_model`、`handle_dataset` 及 visit/forward pipeline，**不会在策略侧预先调用 `load_model`**。与 CLI `msmodelslim analyze` 要求一致。详见《[LLM 大模型接入指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 ## 功能介绍
 
 ### 使用说明
 
-在自动调优流程中通过 `msmodelslim tune` 启动；在调优 YAML 的 `strategy` 字段将 `type` 设为 `standing_high`，并按下文配置其他字段即可。完整调优配置与命令参数见 《[自动调优使用说明](../../../user_guide/usage_auto_precision_tuning.md)》。
+在自动调优流程中通过 `msmodelslim tune` 启动；在调优 YAML 的 `strategy` 字段将 `type` 设为 `standing_high`，并按下文配置其他字段即可。完整调优配置与命令参数见《[自动调优使用说明](../../../user_guide/usage_auto_precision_tuning.md)》。
 
 ### YAML 配置示例
 
-对应于自动调优配置文件中的 `strategy` 字段
+对应于自动调优配置文件中的 `strategy` 字段：
 
 ```yaml
 strategy:
@@ -118,9 +118,9 @@ strategy:
 
 **作用**: 指定调优算法的类型，对于 Standing High 算法，该字段应设置为 `standing_high`。
 
-**类型**: `string`
+**类型**：`string`
 
-**值**: `standing_high`
+**值**：`standing_high`
 
 #### anti_outlier_strategies - 离群值抑制策略列表
 
@@ -130,7 +130,7 @@ strategy:
 
 - 可以配置空列表 `[]`，表示不使用离群值抑制策略
 - 可以配置单个离群值抑制策略，如 `iter_smooth`
-- 可以配置多种离群值抑制策略的混合策略，将多个策略放在同一个列表中。
+- 可以配置多种离群值抑制策略的混合策略，将多个策略放在同一个列表中
 
 **配置示例**：
 
@@ -156,10 +156,10 @@ anti_outlier_strategies:
 
 **核心字段**:
 
-- **runner**: 量化调度器类型，定义量化处理的调度方式（auto、layer_wise、dp_layer_wise、model_wise等）
-- **process**: 处理器列表，定义量化处理的处理器配置（linear_quant、iter_smooth等）
-- **save**: 保存器列表，定义量化结果的保存方式（ascendv1_saver等）
-- **dataset**: 校准数据集配置，指定校准数据集文件名
+- **runner**：量化调度器类型，定义量化处理的调度方式（auto、layer_wise、dp_layer_wise、model_wise等）
+- **process**：处理器列表，定义量化处理的处理器配置（linear_quant、iter_smooth等）
+- **save**：保存器列表，定义量化结果的保存方式（ascendv1_saver等）
+- **dataset**：校准数据集配置，指定校准数据集文件名
 
 **配置要求**：
 
@@ -205,7 +205,7 @@ template:
 | config_id | 配置文件名称 | string | 量化配置的标识符 |
 | label | 配置文件标签 | object | 量化配置的标签信息，包括量化位数、稀疏性等 |
 
-**label 字段说明**:
+**label字段说明**:
 
 | 字段名 | 作用 | 类型 | 说明 |
 |--------|------|------|------|

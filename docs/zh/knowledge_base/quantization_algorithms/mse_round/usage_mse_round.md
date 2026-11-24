@@ -34,7 +34,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行量化流程。
+- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行量化流程。
 - **确定 MXFP8 per-block 方案**：当前 MSE_Round 只注册 MXFP8 per-block 对称权重量化，用户侧主要工作是确认格式与 axes 布局。
 - **计算两种 shared exponent 候选**：算法对每个 block 的 shared exponent 计算向上/向下两个候选，无需用户干预。
 - **比较重构 MSE**：算法自动比较两个候选的重构 MSE，选择误差更小的舍入结果。
@@ -43,13 +43,13 @@ flowchart LR
 
 ## 4. 操作步骤
 
-### 步骤 1：确认目标与约束
+### 步骤1：确认目标与约束
 
 **操作**：先固定目标模型、最终量化格式/位宽、作用对象和评测基线，再确认当前版本支持的参数组合。目标模型已有 `lab_practice` 配方时，优先把该配方作为实践基线；没有模型专用配方时，再使用本指南给出的通用推荐起点。若算法依赖校准统计或优化数据，还应在调参前固定代表性数据，避免把数据分布变化误判为参数收益。
 
 **输出**：一份明确的配置目标：目标位宽/格式、处理范围、校准条件、评测基线和部署约束。
 
-### 步骤 2：建立推荐配置
+### 步骤2：建立推荐配置
 
 **操作**：
 
@@ -74,7 +74,7 @@ spec:
 
 **输出**：一份可复现的推荐配置，后续所有参数调整均以此为比较对象。
 
-### 步骤 3：选择并调整参数
+### 步骤3：选择并调整参数
 
 **操作**：
 
@@ -92,7 +92,7 @@ MSE_Round 的算法内部已经自动比较两种 exponent 舍入，因此用户
 
 **输出**：一份完成单变量调整的算法参数方案，关键字段均有明确的选择依据和调整方向。
 
-### 步骤 4：根据结果收敛参数方案
+### 步骤4：根据结果收敛参数方案
 
 **操作**：
 
@@ -106,12 +106,12 @@ MSE_Round 的算法内部已经自动比较两种 exponent 舍入，因此用户
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| MSE_Round 权重量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《MSE_Round 权重量化算法 量化术语百科词条》](./term_mse_round.md) |
+| MSE_Round 权重量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[MSE_Round 权重量化算法 量化术语百科词条](./term_mse_round.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

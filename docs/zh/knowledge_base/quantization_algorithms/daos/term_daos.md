@@ -80,7 +80,7 @@ $$
 
 ## 3. 关联流程
 
-- [《DAOS 参数配置流程指南》](./usage_daos.md)：通过本流程可将 OASQ 与 TLQ（及可选 FA3）串联配置并落地 DAOS。
+- 《[DAOS 参数配置流程指南](./usage_daos.md)》：通过本流程可将 OASQ 与 TLQ（及可选 FA3）串联配置并落地 DAOS。
 
 ---
 

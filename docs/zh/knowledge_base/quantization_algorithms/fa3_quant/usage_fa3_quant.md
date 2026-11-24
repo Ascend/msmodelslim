@@ -53,7 +53,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface, F
 
 之后量化命令中通过 `--model_type MyModelAdapter` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。请注意：模型适配必须先完成，才能执行后续量化流程。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。请注意：模型适配必须先完成，才能执行后续量化流程。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -78,7 +78,7 @@ spec:
 
 **操作**：
 
-msModelSlim 实现入口：：
+msModelSlim 实现入口：
 [查看对应实现目录](../../../../../msmodelslim/core/quantization_algorithm/quant/fa3)
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
@@ -89,8 +89,8 @@ msModelSlim 实现入口：：
 | `qconfig.scope` | 决定 FA 张量尺度粒度。当前 FA3 后处理明确支持 `per_head`、`per_token`、`per_block`。`per_head` 为每个注意力头保存统计尺度；`per_token/per_block` 更偏运行时或格式化局部尺度。 | 通用默认为 `per_head`；仓库多个 FA3 实践使用 `per_token`，MXFP4 实践使用 `per_block`。 | `per_head` 需要校准统计并能捕获不同 Head 的范围差异；源码中仅当所有启用分支都是 per-token/per-block 时可走 data-free 路径。优先按模型实践和部署格式选，不要只依据粒度“越细越好”。 |
 | `qconfig.symmetric` / `method` | 决定是否有 zero-point 以及如何估计尺度。现有默认与主要实践均使用对称 + MinMax。 | 优先 `symmetric: true`、`method: minmax`。 | 只有注册组合和部署端明确支持其他设置时才偏离；不要把不支持的通用 QConfig 枚举直接用于 FA3。 |
 | `details` | 允许 `fa_q`、`fa_k`、`fa_v` 分别配置，适合三路敏感性或目标格式不同的场景；某一路配置为 `null` 时当前处理逻辑可跳过该分支。 | 入门不设置。只有统一 `qconfig` 无法兼顾三路时再拆分。 | 先用 Attention MSE 或量化评测定位是 Q、K 还是 V 更敏感，再只提高敏感分支精度/更换粒度。不要一开始就给三路都不同配置，否则很难归因。 |
-| `include` | 作用范围白名单，使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
-| `exclude` | 作用范围黑名单，命中后从 `include` 的候选中排除，优先级高于 `include`。适合保护敏感层、首尾层或模型专用不兼容结构。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。每次增加排除项后应确认通配符没有误伤相邻模块。 |
+| `include` | 作用范围允许列表，使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
+| `exclude` | 作用范围阻止列表，命中后从 `include` 的候选中排除，优先级高于 `include`。适合保护敏感层、首尾层或模型专用不兼容结构。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。每次增加排除项后应确认通配符没有误伤相邻模块。 |
 
 #### 参数组合与选择顺序
 
@@ -102,7 +102,7 @@ FA3 的首要决策是 `qconfig` 统一配置还是 `details` 分路配置。先
 
 **目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。
 
-#### 完整示例：FA3 Quant + W8A8 动态量化（推荐起点）
+#### 完整示例：FA3 Quant 与 W8A8 动态量化（推荐起点）
 
 ##### 配置文件：`fa3_quant_w8a8.yaml`
 
@@ -161,6 +161,6 @@ msmodelslim quant \
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
 | `PipelineInterface` / `FA3QuantAdapterInterface` | 模型流水线与 FA3 Quant 算法适配接口，均由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| fa3_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《fa3_quant 配置说明》](../../../api_reference/config/processor/fa3_quant.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| fa3_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[fa3_quant 配置说明](../../../api_reference/config/processor/fa3_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

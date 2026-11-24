@@ -66,7 +66,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface, A
 
 之后量化命令中通过 `--model_type MyModelAdapter` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。请注意：模型适配必须先完成，才能执行后续量化流程。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。请注意：模型适配必须先完成，才能执行后续量化流程。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -101,7 +101,7 @@ spec:
 
 **操作**：
 
-msModelSlim 实现入口：：
+msModelSlim 实现入口：
 [查看对应实现目录](../../../../../msmodelslim/core/quantization_algorithm/anti_outlier/awq)
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
@@ -110,8 +110,8 @@ msModelSlim 实现入口：：
 | `weight_qconfig` | AWQ 搜索缩放系数时用于模拟最终权重量化误差的配置。搜索器会用它评价候选缩放，因此其 `dtype/scope/symmetric/method` 必须代表最终权重量化器。 | 必须与下游最终权重量化配置保持一致。INT4 权重目标就用 INT4 配置；只做 W8 权重量化则用 INT8。 | 最终权重量化方式一旦变化，应重新搜索 AWQ scale。不要用 INT8 的搜索结果直接服务 INT4，也不要搜索时用 per-channel、落地时改成另一种粒度。 |
 | `n_grid` | AWQ 缩放系数的网格搜索密度，默认 `20`。网格越密，候选更细，搜索时间也相应增加。 | 先用默认 `20`。 | 当最优点对网格位置很敏感、重复试验显示粗网格错过明显更优区间时再增加；快速验证可减少。若精度问题来自错误 qconfig 或子图范围，增加网格数不会解决。 |
 | `enable_subgraph_type` | 控制 AWQ 在哪些可融合结构上搜索/应用平滑，支持 `norm-linear`、`linear-linear`、`ov`、`up-down`。不同模型结构可匹配的子图不同。 | 没有模型配方时从默认四类建立覆盖基线；有实践配置时只启用实践中验证的结构。 | 如果某类结构不匹配、效果不稳定或部署融合不支持，就只关闭该类；不要为了规避单个问题把所有子图都关掉。新增子图类型后要重新校准，因为搜索数据和权重路径都变了。 |
-| `include` | 作用范围白名单，使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
-| `exclude` | 作用范围黑名单，命中后从 `include` 的候选中排除，优先级高于 `include`。适合保护敏感层、首尾层或模型专用不兼容结构。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。每次增加排除项后应确认通配符没有误伤相邻模块。 |
+| `include` | 作用范围允许列表（allowlist），使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
+| `exclude` | 作用范围阻止列表（blocklist），命中后从 `include` 的候选中排除，优先级高于 `include`。适合保护敏感层、首尾层或模型专用不兼容结构。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。每次增加排除项后应确认通配符没有误伤相邻模块。 |
 
 #### 参数组合与选择顺序
 
@@ -123,7 +123,7 @@ AWQ 最关键的联动是 **`weight_qconfig` ↔ 最终权重量化配置**。�
 
 **目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。
 
-#### 完整示例：AWQ + W4A8 动态量化（推荐起点）
+#### 完整示例：AWQ+W4A8 动态量化（推荐起点）
 
 ##### 配置文件：`awq_w4a8.yaml`
 
@@ -181,13 +181,13 @@ msmodelslim quant \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| AWQ 激活感知权重量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《AWQ 激活感知权重量化算法 量化术语百科词条》](./term_awq_smooth.md) |
+| AWQ 激活感知权重量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[AWQ 激活感知权重量化算法 量化术语百科词条](./term_awq_smooth.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
 | `PipelineInterface` | 模型流水线接口，由 `msmodelslim.model.interface_hub` 汇总导出；`AWQInterface` 由 `msmodelslim.core.quantization_algorithm.anti_outlier.awq` 提供。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| awq 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《awq 配置说明》](../../../api_reference/config/processor/awq.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| awq 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[awq 配置说明](../../../api_reference/config/processor/awq.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

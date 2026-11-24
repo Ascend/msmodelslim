@@ -68,7 +68,7 @@ source /dev/stdin <<< "$(
 
 若输出 `[PASS]`，表示识别成功，继续下一步；若输出 `[FAIL]`，可能原因如下：
 
-1. 硬件不在支持范围内：本教程仅支持Atlas A2 系列产品和Atlas A3 系列产品，请切换至兼容硬件后重试；
+1. 硬件不在支持范围内：本教程仅支持Atlas A2系列产品和Atlas A3系列产品，请切换至兼容硬件后重试；
 2. 底层环境异常：未安装 `lspci`，或当前用户无权执行 `lspci -n -D`，请联系环境管理员确认。
 
 #### 2.1.3 宿主机：拉取镜像
@@ -105,7 +105,7 @@ cd ~ && curl -fLO --retry 3 https://inst.obs.cn-north-4.myhuaweicloud.com/env/ct
 
 成功启动日志：
 
-```text
+```output
 Container 'xxxxxx' started successfully.
 ```
 
@@ -204,7 +204,7 @@ msmodelslim quant --model_path ~/qwen36_27b_base --save_path ~/qwen36_27b_w8a8 -
 
 量化耗时约 3 分钟，出现如下输出即表示完成：
 
-```text
+```output
 msmodelslim.app.naive_quantization - INFO - ===========SUCCESS===========
 ```
 
@@ -224,7 +224,7 @@ ls -al ~/qwen36_27b_w8a8
 
 输出目录结构类似如下，其中标记【量化】的为量化产出文件，标记【原始】的为从原始模型复制的推理配置文件（仅列出主要文件，非完整列表）：
 
-```text
+```output
 ~/qwen36_27b_w8a8/
 ├── Qwen3.6-27B_best_practice.yaml                  # 【量化】量化配置协议文件（记录本次量化的完整配置信息，可用于方案复现）
 ├── quant_model_description.json                    # 【量化】量化权重描述文件（记录每个权重张量的量化类型与元数据，是推理框架加载量化模型的重要依据）
@@ -322,7 +322,7 @@ vllm serve ~/qwen36_27b_w8a8 \
 
 当出现类似如下日志时，表示服务启动成功：
 
-```text
+```output
 (APIServer pid=6036) INFO:     Started server process [6036]
 (APIServer pid=6036) INFO:     Waiting for application startup.
 (APIServer pid=6036) INFO:     Application startup complete.
@@ -332,7 +332,7 @@ vllm serve ~/qwen36_27b_w8a8 \
 
 若服务启动中止，未出现上述成功日志，请根据终端输出的错误信息定位问题。常见错误及处理方式：
 
-1. 端口被占用：错误信息包含 `Address already in use` 或 `bind: address already in use`。请通过 `--port` 更换端口，或中止使用此端口的进程。
+1. 端口被占用：错误信息包含 `Address already in use` 或 `bind: address already in use`。请通过 `--port` 更换端口，或终止使用此端口的进程。
 2. 显存不足（OOM）：错误信息包含类似 `Out of memory`，可通过 `npu-smi info` 确认目标卡显存占用情况，通过 `ASCEND_RT_VISIBLE_DEVICES` 切换至空闲卡。
 
 #### 2.3.4 推理验证

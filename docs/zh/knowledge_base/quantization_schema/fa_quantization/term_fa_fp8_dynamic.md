@@ -47,7 +47,7 @@ $$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|
 
 #### 2.4.1 适用场景
 
-- **长上下文/多模态生成**：Wan2.2、Flux1、HunYuanVideo、QwenImageEdit 等模型的推荐默认，动态免校准对多模态输入分布变化更鲁棒。
+- **长上下文/多模态生成**：Wan2.2、Flux1、HunYuanVideo、QwenImageEdit 等模型的推荐默认配置，动态免校准对多模态输入分布变化更鲁棒。
 - **校准数据不可靠或缺失**：无法获得代表性校准集时，动态 per-token 模式更稳。
 - **注意力精度要求高**：需要比静态量化更细粒度的激活量化，且接受在线归约开销。
 

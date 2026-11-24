@@ -27,7 +27,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行量化流程。
+- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行量化流程。
 - **确定 MXFP4 双尺度方案**：DualScale 注册为 MXFP4 `dual_scale` 专用粒度，在普通 MXFP4 block scale 之外再引入更大粒度的第二层尺度。
 - **设置外层 block 大小**：通过 `ext.dual_block_size` 设置第二层尺度覆盖的大块大小；大块越小越适应局部分布，但尺度数量和开销更高。
 - **计算两级尺度**：内部先做 MXFP4 per-block MinMax 量化，再按 `dual_block_size` 计算/保存额外 scale。
@@ -104,12 +104,12 @@ DualScale 的核心旋钮是 `dual_block_size`。先固定 MXFP4 + dual_scale �
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| DualScale 双尺度量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《DualScale 双尺度量化算法 量化术语百科词条》](./term_dual_scale.md) |
+| DualScale 双尺度量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[DualScale 双尺度量化算法 量化术语百科词条](./term_dual_scale.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

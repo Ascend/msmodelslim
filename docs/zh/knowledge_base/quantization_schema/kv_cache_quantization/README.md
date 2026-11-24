@@ -51,7 +51,7 @@ KVCache 量化是对注意力机制中的 **KVCache（缓存的 Key/Value 张量
 
 ## 4. 关联词条
 
-- [量化模式](../README.md)：上位概念，本词条是"KVCache 量化"类别。
+- [量化模式](../README.md)：上位概念，本词条是“KVCache 量化”类别。
 - [线性层量化](../linear_layer_quantization/README.md)：同位概念，作用于权重与激活的量化类别，可与本类叠加。
 - [FA 量化](../fa_quantization/README.md)：进阶概念，在本类基础上进一步量化 Q。
 - [KVCache-PerChannel 量化](term_kv_cache_perchannel.md)：下位概念，本类别当前唯一的量化模式。

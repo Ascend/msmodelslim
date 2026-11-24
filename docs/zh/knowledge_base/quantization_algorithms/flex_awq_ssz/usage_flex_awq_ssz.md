@@ -58,7 +58,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface, F
 
 之后量化命令中通过 `--model_type MyModelAdapter` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。请注意：模型适配必须先完成，才能执行后续量化流程。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。请注意：模型适配必须先完成，才能执行后续量化流程。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -105,12 +105,12 @@ spec:
 | --- | --- | --- | --- |
 | `type` | 处理器标识，固定为 `flex_awq_ssz`。 | 固定。 | 不调。 |
 | `alpha` | 控制激活统计在平滑尺度中的指数权重。当前实现如果未提供 `alpha` 会用真实 `qconfig` 模拟量化误差搜索 alpha；因此省略它会把选择交给数据驱动搜索。 | 推荐省略 `alpha` 让算法搜索；有经过同模型同 qconfig 验证的固定值时才手工设置。 | 手工值只对当前校准分布、子图和 qconfig 有意义。最终权重位宽、SSZ 设置或子图范围变化后，应重新搜索而不是照搬旧 alpha。 |
-| `beta` | 配置层面提供 0~1 的系数，但当前 FlexAWQSSZ 搜索/应用路径把 beta 固定为 `0`，主要优化 alpha；它与 FlexSmoothQuant 的双参数搜索行为不同。 | 通常省略/保持默认，不把 beta 当作当前版本的主要调参旋钮。 | 除非后续实现/模型配方明确使用 beta，否则不要根据 FlexSmoothQuant 的经验手动调 beta；当前算法的主要选择依据是 alpha + 真实 qconfig。 |
+| `beta` | 配置层面提供 0~1 的系数，但当前Flex AWQ SSZ搜索/应用路径把 beta 固定为 `0`，主要优化 alpha；它与Flex Smooth Quant的双参数搜索行为不同。 | 通常省略/保持默认，不把 beta 当作当前版本的主要调参旋钮。 | 除非后续实现/模型配方明确使用 beta，否则不要根据Flex Smooth Quant的经验手动调 beta；当前算法的主要选择依据是 alpha+真实 qconfig。 |
 | `qconfig` | 搜索时直接构造最终线性量化器来评价候选平滑尺度，因此 qconfig 是 AWQ 搜索目标的一部分。DeepSeek/GLM W4A8 实践统一使用激活 INT8 per-token MinMax + 权重 INT4 per-channel SSZ，并在 SSZ 中配置 `step: 10`。 | W4A8 目标可优先使用仓库验证组合；其他目标必须改成真正的最终 qconfig。 | qconfig 任一关键项改变都应重新搜索 alpha。特别是权重从 MinMax 换 SSZ、INT8 换 INT4，会改变候选尺度的真实量化误差。 |
 | `qconfig.weight.ext.step` | 传给 SSZ 的最大迭代次数。SSZ 内部默认最多 50 次并支持提前收敛，仓库 FlexAWQSSZ 实践使用 `10` 来平衡搜索代价。 | 复用 W4A8 实践时用 `10`；独立模型精度优先且时间允许时可省略，让 SSZ 使用默认最多 50 次。 | step 太小可能让每个 alpha 候选下的 SSZ 还未充分优化，进而影响 alpha 排序；但过大也会显著放大“外层 alpha 搜索 × 内层 SSZ”成本。先固定 qconfig，再在时间/收敛之间选择。 |
 | `enable_subgraph_type` | 决定在哪类可融合子图上执行。虽然默认支持四类，但当前仓库 5 个 FlexAWQSSZ 实践均只启用 `["up-down"]`，说明模型配方常会有意收窄范围。 | 有实践配方时完全照其子图类型；无配方时不要机械照抄“默认四类”，先根据模型结构和目标层选择。 | 扩大子图类型会增加搜索与变换范围，也可能引入不适配结构。若算法本来只为 MLP up/down 低比特优化，先从 `up-down` 建立基线更容易解释。 |
-| `include` | 作用范围白名单，使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
-| `exclude` | 作用范围黑名单，命中后从 `include` 的候选中排除，优先级高于 `include`。适合保护敏感层、首尾层或模型专用不兼容结构。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。每次增加排除项后应确认通配符没有误伤相邻模块。 |
+| `include` | 作用范围允许列表，使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
+| `exclude` | 作用范围阻止列表，命中后从 `include` 的候选中排除，优先级高于 `include`。适合保护敏感层、首尾层或模型专用不兼容结构。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。每次增加排除项后应确认通配符没有误伤相邻模块。 |
 
 #### 参数组合与选择顺序
 
@@ -191,6 +191,6 @@ msmodelslim quant \
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
 | `PipelineInterface` / `FlexSmoothQuantInterface` | 模型流水线与 Flex AWQ SSZ 算法适配接口，均由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| flex_awq_ssz 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《flex_awq_ssz 配置说明》](../../../api_reference/config/processor/flex_awq_ssz.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| flex_awq_ssz 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[flex_awq_ssz 配置说明](../../../api_reference/config/processor/flex_awq_ssz.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

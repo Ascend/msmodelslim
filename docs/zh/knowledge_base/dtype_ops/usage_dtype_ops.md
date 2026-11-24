@@ -100,7 +100,7 @@ flowchart TD
 
 | 参数或调用 | 默认 | 什么时候用 |
 | --- | --- | --- |
-| `detach` | 不训练:对权重调 `quantize_dynamic`，内部默认 `detach` | 要训练：走 `calc_qparam` 和 `quantize`，不要 `detach`，让 scale 进计算图。 |
+| `detach` | 不训练：对权重调 `quantize_dynamic`，内部默认 `detach` | 要训练：走 `calc_qparam` 和 `quantize`，不要 `detach`，让 scale 进计算图。 |
 | `dtype` | `None`，即 float32 网格，可以反传 | 训练要反传：不传，或显式 `torch.float32`。要把 `q` 存成低精度：INT8 / INT4 / MXFP4 传 `torch.int8`；FP8 / MXFP8 传对应 `float8`。非 float32 不能反传。 |
 | `ste_clamp` | `True`：前向饱和、反向恒等，饱和位置梯度仍为 1 | 只有不希望饱和位置还有梯度时才传 `False`。`round_ste` 始终开启，不用传。 |
 
@@ -122,7 +122,7 @@ scale = int8_calc_qparam_per_channel_sym(w, axis=0)
 q, scale = int8_quantize_per_channel_sym(w, scale, axis=0, dtype=torch.float32)
 w_hat = int8_dequantize_per_channel_sym(q, scale, axis=0)
 
-# 场景 3：训练量化参数，但不希望饱和位置还有梯度。才传 ste_clamp=False。
+# 场景 3：训练量化参数，但不希望饱和位置还有梯度时才传 ste_clamp=False。
 q, scale = int8_quantize_per_channel_sym(
     w, scale, axis=0, dtype=torch.float32, ste_clamp=False
 )
@@ -138,7 +138,7 @@ q, scale = int8_quantize_per_channel_sym(
 
 - INT8 对称：`int8_calc_qparam_per_channel_sym` 等，返回 float32 scale。区间强制包含 0，`scale = amax / 127`。
 - INT4 对称：`int4_calc_qparam_per_group_sym` 等，返回 float32 scale。区间强制包含 0，`scale = amax / 7`。
-- INT 非对称：返回 `(scale, offset)`，`offset` 为整数 zero-point。
+- INT 非对称：返回 `(scale, offset)`，`offset` 为整数 zero_point。
 - FP8：`fp8_calc_qparam_per_channel_sym(x, axis, fmt)`，`scale = amax / max_norm`。
 - MX：`mxfp8_calc_qparam_sym` / `mxfp4_calc_qparam_sym` 直接返回可落盘的 `uint8` E8M0。
 

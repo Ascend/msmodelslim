@@ -34,7 +34,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：分析前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行分析流程。
+- **前置条件：模型适配**：分析前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行分析流程。
 - **确定线性层范围**：通过 `--patterns` 圈定待统计的线性模块名模式，第一次建议覆盖与实际量化计划一致的范围。
 - **固定 metrics=quantile**：`--metrics quantile` 选定本指南对应的分析指标，决定 score 的定义和排序含义。
 - **统计分位数/IQR**：在线性/卷积类模块激活上计算绝对最大值与四分位距（IQR）的比值构造 score；score 越高通常表示“整体主体分布较窄，但少量极值把动态范围拉得很大”。
@@ -56,7 +56,7 @@ flowchart LR
 - 分析范围：`linear`；
 - `--metrics`：`quantile`；
 - `--top_k`：先用 `15`；
-- `--patterns`：先用 `"*"`，建立全量线性层基线；
+- `--patterns`：先用 `"*"`，建立全量线性层基线。
 
 **输出**：一组可复现的敏感性分析基线参数，用于生成第一版候选排序。
 
@@ -96,12 +96,12 @@ Quantile 比纯 max 更关注“极值相对主体区间有多异常”。它适
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| Quantile 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《Quantile 敏感层分析算法 量化术语百科词条》](./term_quantile.md) |
+| Quantile 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[Quantile 敏感层分析算法 量化术语百科词条](./term_quantile.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | [《敏感层分析使用指南》](../../../user_guide/usage_sensitive_linear_analysis.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | 《[敏感层分析使用指南](../../../user_guide/usage_sensitive_linear_analysis.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

@@ -1,12 +1,12 @@
 # DevKit
 
-DevKit 是 msModelSlim V1 量化流水线中的**编排与资源管理**能力：它们挂在 `spec.process[]`（或由框架注入）上，以 `type` 分派，但不属于量化算法本体。算法负责「如何量化」；DevKit 负责「如何组合执行」等。
+DevKit是 msModelSlim V1 量化流水线中的**编排与资源管理**能力：它们挂在 `spec.process[]`（或由框架注入）上，以 `type` 分派，但不属于量化算法本体。算法负责「如何量化」；DevKit 负责「如何组合执行」等。
 
-> **阅读建议**：已对外开放的 DevKit 组件提供「使用指南」。字段级类型、默认值与完整 YAML 参考见《[配置说明导航](../../api_reference/config/README.md)》中对应 `type` 页。源码位于 [`msmodelslim/core/devkit/`](../../../../msmodelslim/core/devkit/)。
+> **阅读建议**：已对外开放的DevKit组件提供「使用指南」。字段级类型、默认值与完整 YAML 参考见《[配置说明导航](../../api_reference/config/README.md)》中对应 `type` 页。源码位于 [`msmodelslim/core/devkit/`](../../../../msmodelslim/core/devkit/)。
 
 ## 1. 组件分类
 
-按在量化流水线中的职责对 DevKit 组件分类：
+按在量化流水线中的职责对DevKit组件分类：
 
 | 分类 | 职责 | 组件 |
 |------|------|------|

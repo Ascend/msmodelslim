@@ -61,7 +61,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface):
 
 之后量化命令中通过 `--model_type MyModelAdapter` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。请注意：模型适配必须先完成，才能执行后续量化流程。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。请注意：模型适配必须先完成，才能执行后续量化流程。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -88,15 +88,15 @@ spec:
 
 **操作**：
 
-msModelSlim 实现入口：：
+msModelSlim 实现入口：
 [查看对应实现目录](../../../../../msmodelslim/core/quantization_algorithm/sparse)
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
 | --- | --- | --- | --- |
 | `type` | 处理器标识，固定为 `float_sparse`。 | 固定。 | 不调。 |
 | `sparse_ratio` | 目标置零权重比例，范围 0~1。算法用校准数据和二阶/重构信息做剪枝，比例越高代表压缩更激进，留下的非零权重更少，重构压力也更大。代码默认 `0.3`；Qwen3 W16A16S 实践使用 `0.4`。 | 新模型从默认 `0.3` 建立精度基线；只有同模型实践明确验证时可直接使用 `0.4`。 | 精度裕量充足、希望更高稀疏时逐步提高；任务指标明显下降时先降低 ratio，再考虑排除敏感层。不要把单个模型验证过的 0.4 当成所有模型通用值。 |
-| `include` | 作用范围白名单，使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
-| `exclude` | 作用范围黑名单，命中后从 `include` 的候选中排除，优先级高于 `include`。适合保护敏感层、首尾层或模型专用不兼容结构。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。每次增加排除项后应确认通配符没有误伤相邻模块。 |
+| `include` | 作用范围允许列表使用模块名模式决定哪些匹配到的模块进入当前算法。它只决定“在哪些模块做”，不会改变算法内部公式。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。范围过宽时，少数结构不兼容或敏感层会放大整体风险；范围过窄则可能让算法收益看不出来。收窄范围时优先按结构族或已知敏感层调整，不建议仅凭层号大面积删除。 |
+| `exclude` | 作用范围阻止列表，命中后从 `include` 的候选中排除，优先级高于 `include`。适合保护敏感层、首尾层或模型专用不兼容结构。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。每次增加排除项后应确认通配符没有误伤相邻模块。 |
 
 #### 参数组合与选择顺序
 
@@ -144,13 +144,13 @@ msmodelslim quant \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 浮点稀疏（ADMM）算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《浮点稀疏（ADMM）算法 量化术语百科词条》](./term_float_sparse.md) |
+| 浮点稀疏（ADMM）算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[浮点稀疏（ADMM）算法 量化术语百科词条](./term_float_sparse.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
 | `PipelineInterface` | 模型流水线接口，由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| float_sparse 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《float_sparse 配置说明》](../../../api_reference/config/processor/float_sparse.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| float_sparse 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[float_sparse 配置说明](../../../api_reference/config/processor/float_sparse.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

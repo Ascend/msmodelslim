@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-本指南面向需要使用 [RA Compress 注意力头分析算法](./term_ra_compress.md) 的用户。RA Compress（`ra_compress`）作为 `msmodelslim analyze attn_head` 的 metrics 指标，用于 KV 注意力头粒度的筛选，输出归纳头（induction heads）与回声头（echo heads）的入选索引，交付给 MindIE 推理框架用于长序列 KV cache 压缩：用户可据此完成长序列压缩，压缩后的模型可用于后续推理部署；具体已适配的量化模型列表，请参见《[MindIE 是什么](https://www.hiascend.com/document/detail/zh/mindie/10RC3/whatismindie/mindie_what_0001.html)》的“MindIE 支持模型列表”章节。该产物不写入量化配置。
+本指南面向需要使用 [RA Compress 注意力头分析算法](./term_ra_compress.md) 的用户。RA Compress（`ra_compress`）作为 `msmodelslim analyze attn_head` 的 metrics 指标，用于 KV 注意力头粒度的筛选，输出归纳头（induction heads）与回声头（echo heads）的入选索引，交付给 MindIE 推理框架用于长序列 KV Cache 压缩：用户可据此完成长序列压缩，压缩后的模型可用于后续推理部署；具体已适配的量化模型列表，请参见《[MindIE 是什么](https://www.hiascend.com/document/detail/zh/mindie/10RC3/whatismindie/mindie_what_0001.html)》的“MindIE 支持模型列表”章节。该产物不写入量化配置。
 
 适用场景：
 
@@ -104,7 +104,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
 
 之后分析命令中通过 `--model_type MyModelAdapter` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -177,13 +177,13 @@ msmodelslim analyze attn_head \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| RA Compress 注意力头分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《RA Compress 量化术语百科词条》](./term_ra_compress.md) |
+| RA Compress 注意力头分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[RA Compress 量化术语百科词条](./term_ra_compress.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
 | `RaCompressAnalysisInterface` | RA Compress 分析模型适配接口（需实现 `get_proj_names` 与 `get_tokenizer`），由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| unary_analysis 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《unary_analysis 配置说明》](../../../api_reference/config/processor/unary_analysis.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| unary_analysis 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[unary_analysis 配置说明](../../../api_reference/config/processor/unary_analysis.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

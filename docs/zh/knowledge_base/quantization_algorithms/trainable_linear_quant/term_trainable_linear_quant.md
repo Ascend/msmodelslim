@@ -83,7 +83,7 @@ $$
 
 ## 3. 关联流程
 
-- [《Trainable Linear Quant 参数配置流程指南》](./usage_trainable_linear_quant.md)：通过本流程可将 TLQ 写入量化任务并完成适配与调参。
+- 《[Trainable Linear Quant 参数配置流程指南](./usage_trainable_linear_quant.md)》：通过本流程可将 TLQ 写入量化任务并完成适配与调参。
 
 ---
 

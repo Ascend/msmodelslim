@@ -6,7 +6,7 @@
 
 ## 1. 概述
 
-**量化**把高精度浮点张量映射到低精度张量，用更少的比特保存同一批数据；**反量化**是它的逆过程。本词条说明量化公式、scale / zero_point、静态与动态、粒度和对称性。各数据类型如何落到这些公式上，见 [INT8](term_int8.md)、[INT4](term_int4.md)、[FP8](term_fp8.md)、[MXFP8](term_mxfp8.md)、[MXFP4](term_mxfp4.md)。
+**量化**把高精度浮点张量映射到低精度张量，用更少的比特保存同一批数据；**反量化**是量化的逆过程。本词条说明量化公式、scale / zero_point、静态与动态、粒度和对称性。各数据类型如何落到这些公式上，见 [INT8](term_int8.md)、[INT4](term_int4.md)、[FP8](term_fp8.md)、[MXFP8](term_mxfp8.md)、[MXFP4](term_mxfp4.md)。
 
 ---
 
@@ -42,7 +42,7 @@ $$x \approx (q - zero\_point) \times scale$$
 
 ### 2.3 为什么要量化
 
-- **减小存储与访存带宽**：权重从 [FP16 / BF16](term_fp16_bf16.md)（2字节每元素）降为 [INT8](term_int8.md)（1字节/元素），权重占用与读取带宽减半；KVCache 同理。
+- **减小内存与访存带宽**：权重从 [FP16 / BF16](term_fp16_bf16.md)（2字节/元素）降为 [INT8](term_int8.md)（1字节/元素），权重占用与读取带宽减半；KVCache 同理。
 - **使能低精度矩阵运算**：权重与激活都量化成整数后，矩阵乘可走整数/低精度算子（见 [GEMM](../quantization_schema/term_gemm.md)），在专用硬件上有计算收益。
 - **压缩 KVCache 显存**：量化缓存的历史 K/V，显著降低长上下文推理的显存占用。
 
@@ -69,7 +69,7 @@ $$x \approx (q - zero\_point) \times scale$$
 - **per-group**：按固定大小分组（如 128个元素）各一份参数，如 [GPTQ](../quantization_algorithms/gptq/term_gptq.md)/[LAOS](../quantization_algorithms/laos/term_laos.md) 的分组量化。
 - **per-token**：激活侧对 per-channel 的习称，按输入行（每个 token）各一份参数，常用于动态量化。
 - **per-head**：注意力布局下把 head 维挪到最后，公式仍是 per-channel。
-- **per-block**：按固定大小分块（如 [MXFP8](term_mxfp8.md)/[MXFP4](term_mxfp4.md) 的 32元素）共享一个块级指数，是 MX 格式的专用粒度；与 per-group 逐组记 scale 不同，per-block 共享的是指数。
+- **per-block**：按固定大小分块（如 [MXFP8](term_mxfp8.md)/[MXFP4](term_mxfp4.md) 的32个元素）共享一个块级指数，是 MX 格式的专用粒度；与 per-group 逐组记 scale 不同，per-block 共享的是指数。
 
 ### 2.7 对称性与非对称性
 

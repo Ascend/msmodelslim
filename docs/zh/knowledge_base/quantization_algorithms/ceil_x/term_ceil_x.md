@@ -44,7 +44,7 @@ $$
 
 - $s$：shared exponent
 - $\max(|x|)$：block 内权重绝对值的最大值
-- $c$：控制 shared exponent 跳变边界的正除数。
+- $c$：控制 shared exponent 跳变边界的正除数
 - $\epsilon$：数值稳定项，$\epsilon = 9.6 \times 10^{-7}$
 - $e_{\text{max}}$：指数偏置，MXFP4 E4M2 格式下 $e_{\text{max}} = 2^{e_{\text{bits}}-1} = 2$
 
@@ -63,7 +63,7 @@ c^* = \arg\min_{c \in [c_{\min}, c_{\max}]} \sum_{\text{blocks}} \|x - \hat{x}(c
 $$
 
 - $c^*$：搜索得到的最优除数
-- $c_{\min}$、$c_{\max}$：候选除数的搜索边界。
+- $c_{\min}$、$c_{\max}$：候选除数的搜索边界
 - $\hat{x}(c)$：使用除数 $c$ 量化-反量化后的值
 
 若 shared exponent 为 $s$，把归一化块记为 $u=x/2^s$，则后续 MXFP4 编码可抽象为 $\hat x=2^s\,\mathcal F(u)$，其中 $\mathcal F$ 表示低比特浮点格点投影。于是块误差为：
@@ -85,12 +85,12 @@ Ceil_X 并不是直接连续优化 $E(s)$，而是通过 $c$ 控制整数指数 
 
 ### 2.5 适用场景
 
-- 对 mxFP4 量化精度有更高要求的场景。
+- 对 MXFP4 量化精度有更高要求的场景。
 - 权重分布范围较大、floor 缩放导致步长过粗或大值截断的模型层。
 
 ### 2.6 使用限制
 
-- 仅支持 mxFP4 格式的 per-block 对称量化。
+- 仅支持 MXFP4 格式的 per-block 对称量化。
 - 启用 `enable_search` 时增加若干次前向量化评估，计算开销增大。
 - `search_max` 须大于 `search_min`。
 

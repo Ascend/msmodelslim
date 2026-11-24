@@ -2,11 +2,11 @@
 
 ## 1. 适用范围
 
-本指南面向需要使用 [FourOverSix 自适应块缩放量化算法](./term_fouroversix.md) 的用户。FourOverSix 作为 `linear_quant` 处理器的权重量化方法，通过 per-block 在 Scale-to-6 与 Scale-to-4 间 MSE 择优，提升 mxFP4 权重量化精度。
+本指南面向需要使用 [FourOverSix 自适应块缩放量化算法](./term_fouroversix.md) 的用户。FourOverSix 作为 `linear_quant` 处理器的权重量化方法，通过 per-block 在 Scale-to-6 与 Scale-to-4 间 MSE 择优，提升 MXFP4 权重量化精度。
 
 适用场景：
 
-- 需要在 mxFP4 权重量化场景下逐块比较 Scale-to-4 与 Scale-to-6，按重构 MSE 选择误差更小的方案；
+- 需要在 MXFP4 权重量化场景下逐块比较 Scale-to-4 与 Scale-to-6，按重构 MSE 选择误差更小的方案；
 - 需要在使用 MXFP4 per-block 布局约束的同时，提升低比特权重量化精度。
 
 模型是否在官方预验证列表中请参考《[大模型支持矩阵](../../model/README.md)》；如需快速了解 CLI 基础用法可参阅《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》。
@@ -34,8 +34,8 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行量化流程。
-- **确定 MXFP4 per-block 方案**：先锁定部署目标与当前量化器实际注册的 `dtype + scope + symmetric + method` 组合；当前实现只注册 mxFP4 per-block 对称量化。
+- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行量化流程。
+- **确定 MXFP4 per-block 方案**：先锁定部署目标与当前量化器实际注册的 `dtype + scope + symmetric + method` 组合；当前实现只注册 MXFP4 per-block 对称量化。
 - **逐块比较 Scale-to-4/6**：算法对每个 MXFP4 block 分别尝试 scale-to-6 与 scale-to-4 两种尺度方案。
 - **选择误差更小尺度**：按重构 MSE 在每个 block 内选择误差更小的方案，是 FourOverSix 相对单一尺度的核心收益来源。
 - **量化权重**：按选定尺度应用最终量化；通过 `ext.axes` 控制 MXFP4 block 的划分轴。
@@ -101,12 +101,12 @@ FourOverSix 是自动逐块二选一算法，通常没有必要再人为搜索 4
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| FourOverSix 自适应块缩放量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《FourOverSix 自适应块缩放量化算法 量化术语百科词条》](./term_fouroversix.md) |
+| FourOverSix 自适应块缩放量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[FourOverSix 自适应块缩放量化算法 量化术语百科词条](./term_fouroversix.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

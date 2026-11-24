@@ -51,7 +51,7 @@ flowchart LR
 
 1. 明确线性层 W/A 目标位宽与数值格式（如 MXFP4 / INT4 等）。
 2. 明确是否需要对 Attention 做 FA 量化以加速推理（是否纳入 `fa3_quant`）。
-3. 明确 TLQ 的 OP 路径倾向：通常使用 `minmax_tune` + `round_tune`；也可按 TLQ 使用指南**单独**启用 `trainable_smooth`（不可与前两者联用）。
+3. 明确 TLQ 的 OP 路径倾向：通常使用 `minmax_tune` + `round_tune`；也可按 TLQ使用指南**单独**启用 `trainable_smooth`（不可与前两者联用）。
 
 > 所需显存与耗时难以在配置前准确预估，不必在本步做资源定量；以步骤 3 实际运行为准。
 
@@ -68,7 +68,7 @@ flowchart LR
    - **OASQ**：见《[OASQ 使用指南](../oasq/usage_oasq.md)》完成子图适配并写入 `oasq`。
    - **TLQ**：见《[TLQ 使用指南](../trainable_linear_quant/usage_trainable_linear_quant.md)》完成适配并写入 `trainable_linear_quant`；`operations` 按步骤 1 选定路径配置；`strategies[].qconfig` 与最终部署位宽一致。若选用 `trainable_smooth`，须按该指南确认子图能力。
    - **FA3**：若步骤 1 决定开启 FA，见《[FA3 Quant 使用指南](../fa3_quant/usage_fa3_quant.md)》完成适配，并在 TLQ 之后追加 `fa3_quant`。
-3. 字段类型与约束见第 6 章相关文档。
+3. 字段类型与约束见第6章相关文档。
 4. 核对串联约束：
    - 顺序为 OASQ → TLQ → 可选 FA3。
    - OASQ 的 `symmetric` 应与后续量化对称性假设一致。
@@ -112,17 +112,17 @@ flowchart LR
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| DAOS 低比特量化方案 | 方案定义、原理、性质与限制。 | [《DAOS 低比特量化方案 量化术语百科词条》](./term_daos.md) |
-| OASQ | DAOS 前置离群抑制。 | [《OASQ 词条》](../oasq/term_oasq.md) |
-| Trainable Linear Quant | DAOS 可训练线性量化阶段。 | [《TLQ 词条》](../trainable_linear_quant/term_trainable_linear_quant.md) |
-| FA3 Quant | 可选的 Attention FA 量化。 | [《FA3 Quant 词条》](../fa3_quant/term_fa3_quant.md) |
+| DAOS 低比特量化方案 | 方案定义、原理、性质与限制。 | 《[DAOS 低比特量化方案 量化术语百科词条](./term_daos.md)》 |
+| OASQ | DAOS 前置离群抑制。 | 《[OASQ 词条](../oasq/term_oasq.md)》 |
+| Trainable Linear Quant | DAOS 可训练线性量化阶段。 | 《[TLQ 词条](../trainable_linear_quant/term_trainable_linear_quant.md)》 |
+| FA3 Quant | 可选的 Attention FA 量化。 | 《[FA3 Quant 词条](../fa3_quant/term_fa3_quant.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| oasq 配置说明 | 字段类型、默认值与约束。 | [《oasq 配置说明》](../../../api_reference/config/processor/oasq.md) |
-| trainable_linear_quant 配置说明 | 字段类型、默认值与约束。 | [《trainable_linear_quant 配置说明》](../../../api_reference/config/processor/trainable_linear_quant.md) |
-| fa3_quant 配置说明 | 字段类型、默认值与约束。 | [《fa3_quant 配置说明》](../../../api_reference/config/processor/fa3_quant.md) |
-| multimodal_sd_modelslim_v1 | 多模态生成任务级配置。 | [《multimodal_sd_modelslim_v1 配置说明》](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| oasq 配置说明 | 字段类型、默认值与约束。 | 《[oasq 配置说明](../../../api_reference/config/processor/oasq.md)》 |
+| trainable_linear_quant 配置说明 | 字段类型、默认值与约束。 | 《[trainable_linear_quant 配置说明](../../../api_reference/config/processor/trainable_linear_quant.md)》 |
+| fa3_quant 配置说明 | 字段类型、默认值与约束。 | 《[fa3_quant 配置说明](../../../api_reference/config/processor/fa3_quant.md)》 |
+| multimodal_sd_modelslim_v1 | 多模态生成任务级配置。 | 《[multimodal_sd_modelslim_v1 配置说明](../../../api_reference/config/quant/multimodal_sd_modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

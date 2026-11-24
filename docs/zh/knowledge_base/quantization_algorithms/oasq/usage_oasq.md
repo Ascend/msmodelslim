@@ -93,7 +93,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface, O
 
 之后量化命令中通过 `--model_type MyModelAdapter` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -135,7 +135,7 @@ spec:
 | `max_iters` | 离群阈值搜索的最大迭代次数；不设置时用实现默认（当前 `8`），显式设置须 >0。 | 省略，用默认。 | 日志显示迭代耗尽且离群比例难落入目标区间时，再小幅增大。 |
 | `symmetric` | 是否按对称假设收集统计；非对称时 `norm-linear` 可启用 shift，其他子图会关闭 shift。 | `true`。 | 仅当后续量化明确非对称且主要依赖 `norm-linear` 时设 `false`。 |
 | `enable_subgraph_type` | 应用 OASQ 的子图类型列表。 | 默认四类；有实践配方则沿用。 | 某类结构无效或不兼容时单独去掉该类，不要用 `max_iters` 补偿。 |
-| `include` / `exclude` | 模块名通配白名单 / 黑名单；`exclude` 优先。 | `include: ["*"]`，`exclude: []`。 | 局部敏感或不兼容层用 `exclude` 回退；改范围后需重新跑量化对比。 |
+| `include` / `exclude` | 模块名通配允许列表/阻止列表；`exclude` 优先。 | `include: ["*"]`，`exclude: []`。 | 局部敏感或不兼容层用 `exclude` 回退；改范围后需重新跑量化对比。 |
 
 调整顺序建议：先固定 `symmetric` 与子图类型，再改 `include`/`exclude`，最后才动 `max_iters`。每次只改一项，并保持后续量化配置与校准集不变。
 
@@ -145,7 +145,7 @@ spec:
 
 **目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。
 
-#### 完整示例：OASQ + W8A8 动态量化
+#### 完整示例：OASQ 与 W8A8 动态量化
 
 ##### 配置文件：`oasq_w8a8.yaml`
 
@@ -199,14 +199,14 @@ msmodelslim quant \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| OASQ 离群感知平滑量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《OASQ 离群感知平滑量化算法 量化术语百科词条》](./term_oasq.md) |
+| OASQ 离群感知平滑量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[OASQ 离群感知平滑量化算法 量化术语百科词条](./term_oasq.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | [《LLM 量化使用指南·步骤 1》](../../ptq/llm/usage_large_language_model_quantization.md) |
+| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | 《[LLM 量化使用指南·步骤 1](../../ptq/llm/usage_large_language_model_quantization.md)》 |
 | `OASQInterface` | OASQ 算法模型适配接口，由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| oasq 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《oasq 配置说明》](../../../api_reference/config/processor/oasq.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| oasq 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[oasq 配置说明](../../../api_reference/config/processor/oasq.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

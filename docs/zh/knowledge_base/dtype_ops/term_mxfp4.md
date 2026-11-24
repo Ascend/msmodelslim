@@ -6,7 +6,7 @@
 
 ## 1. 概述
 
-**MXFP4** 是 [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf) 的4bit块级格式：每32个元素共享一个 E8M0，块内元素为 E2M1（$e_{\max}=2$，$\mathrm{max\_norm}=6$）。在 4bit 下仍保留浮点动态范围，对离群值比 [INT4](term_int4.md) 更稳。公式与 [MXFP8](term_mxfp8.md) 相同，只是元素参数不同。只有对称路径。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
+**MXFP4** 是 [OCP MX v1.0](https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf) 的4bit块级格式：每32个元素共享一个E8M0指数，块内元素为E2M1（$e_{\max}=2$，$\mathrm{max\_norm}=6$）。在 4bit 下仍保留浮点动态范围，对离群值比 [INT4](term_int4.md) 更稳。公式与 [MXFP8](term_mxfp8.md) 相同，只是元素参数不同。只有对称路径。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
 
 ---
 

@@ -123,7 +123,7 @@ flowchart LR
 | `sync_gather_tensor_lists` | `tensor_list`；`on_cpu`；`group` | 收集各 rank 的张量列表并展平为一条大列表。适用于校准阶段按 batch 缓存的激活张量在 `postprocess` 一次性合并 |
 
 - **形态 A：Observer 内同步**（统计量累计在 Observer 中）。
-  以 [FA3PerHeadObserver](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/quant/fa3/processor.py)为例, Observer 前向时按共享模块判定传入同步开关 `sync`：
+  以 [FA3PerHeadObserver](https://gitcode.com/Ascend/msmodelslim/blob/master/msmodelslim/core/quantization_algorithm/quant/fa3/processor.py)为例，Observer 前向时按共享模块判定传入同步开关 `sync`：
 
   ```python
     def forward(self, x: torch.Tensor) -> torch.Tensor:

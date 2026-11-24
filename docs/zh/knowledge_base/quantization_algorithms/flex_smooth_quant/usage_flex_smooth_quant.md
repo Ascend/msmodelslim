@@ -76,7 +76,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface, F
 
 之后量化命令中通过 `--model_type MyModelAdapter` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。请注意：模型适配必须先完成，才能执行后续量化流程。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。请注意：模型适配必须先完成，才能执行后续量化流程。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -106,7 +106,7 @@ spec:
 
 **操作**：
 
-msModelSlim 实现入口：：
+msModelSlim 实现入口：
 [查看对应实现目录](../../../../../msmodelslim/core/quantization_algorithm/anti_outlier/flex_smooth)
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
@@ -128,7 +128,7 @@ msModelSlim 实现入口：：
 
 **目标**：整合上述步骤生成完整的 YAML 量化配置文件，并通过 CLI 启动量化流程。
 
-#### 完整示例：Flex Smooth Quant + W8A8 动态量化（推荐起点）
+#### 完整示例：Flex Smooth Quant 与 W8A8 动态量化（推荐起点）
 
 ##### 配置文件：`flex_smooth_quant_w8a8.yaml`
 
@@ -181,13 +181,13 @@ msmodelslim quant \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| Flex Smooth Quant 灵活平滑量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《Flex Smooth Quant 灵活平滑量化算法 量化术语百科词条》](./term_flex_smooth_quant.md) |
+| Flex Smooth Quant 灵活平滑量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[Flex Smooth Quant 灵活平滑量化算法 量化术语百科词条](./term_flex_smooth_quant.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
 | `PipelineInterface` / `FlexSmoothQuantInterface` | 模型流水线与 Flex Smooth Quant 算法适配接口，均由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| flex_smooth_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《flex_smooth_quant 配置说明》](../../../api_reference/config/processor/flex_smooth_quant.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| flex_smooth_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[flex_smooth_quant 配置说明](../../../api_reference/config/processor/flex_smooth_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

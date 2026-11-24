@@ -34,7 +34,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行量化流程。
+- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行量化流程。
 - **确定量化位宽与粒度**：先锁定部署目标与当前量化器实际注册的 `dtype + scope + symmetric + method` 组合；粒度越局部越能适应动态范围变化，但元数据与后端要求更高。
 - **统计最小/最大值**：MinMax 通过校准数据观测张量极值，不主动丢弃尾部；数据分布直接决定统计结果。
 - **计算 scale/zero-point**：由观测范围确定量化参数，对称量化围绕 0，非对称可适应明显偏移分布。
@@ -109,12 +109,12 @@ MinMax 是首选基线的原因是变量最少。精度不够时应先定位：*
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| MinMax 最小最大值量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《MinMax 最小最大值量化算法 量化术语百科词条》](./term_minmax.md) |
+| MinMax 最小最大值量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[MinMax 最小最大值量化算法 量化术语百科词条](./term_minmax.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

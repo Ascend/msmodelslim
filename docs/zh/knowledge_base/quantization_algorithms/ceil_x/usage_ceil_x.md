@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-本指南面向需要使用 [Ceil_X 自适应除数 MXFP4 量化算法](./term_ceil_x.md) 的用户。Ceil_X 作为 `linear_quant` 处理器的权重量化方法，通过 ceil + 可配置除数优化 shared exponent，减少大值截断，提升 mxFP4 权重量化精度。
+本指南面向需要使用 [Ceil_X 自适应除数 MXFP4 量化算法](./term_ceil_x.md) 的用户。Ceil_X 作为 `linear_quant` 处理器的权重量化方法，通过 ceil + 可配置除数优化 shared exponent，减少大值截断，提升 MXFP4 权重量化精度。
 
 ## 2. 输入和交付件
 
@@ -27,7 +27,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行量化流程。
+- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行量化流程。
 - **确定 MXFP4 per-block 方案**：Ceil_X 只注册为 MXFP4 `per_block` 权重量化，分块共享指数是算法定义的一部分，格式与粒度属于固定约束。
 - **选择固定除数或搜索模式**：先用默认除数 `7.25` 建立基线；固定值不满足精度时再开启自动 MSE 搜索，而不是凭经验大幅手调。
 - **计算 shared exponent**：按 ceil + 可配置除数计算 shared exponent，除数越大步长越细但溢出风险越高。
@@ -81,7 +81,7 @@ spec:
 | `ext.axes` | 指定沿哪些张量维度做 MX block reshape/共享指数，默认 `-1`（最后一维）。轴选择会改变哪些元素共享一个 block，因此直接影响尺度统计和导出布局。 | 线性权重通常保持默认 `-1`；只有模型/后端布局明确要求其他轴时才修改。 | 不要把 axes 当精度微调参数。改轴之前确认目标权重维度、block 布局和后端一致；否则即使离线误差降低，也可能无法正确部署。 |
 | `ext.ceil_x_value` | Ceil_X 中 shared exponent 计算的除数，范围 `[6,12]`，默认 `7.25`。源码关系为 c 越大，shared exponent 越小、量化步长更细，但同时更接近表示上限、溢出风险更高。 | 不搜索时用默认 `7.25`。 | 如果固定值误差不理想，优先开启自动 MSE 搜索，而不是凭经验大幅手调。手调时应在合法范围内小步变化并同时观察溢出/饱和与重构误差。 |
 | `ext.enable_search` | 是否在给定区间内枚举 `ceil_x_value`，用权重重构 MSE 选择最优候选。 | 快速/稳定配方用 `false`；独立模型精度优先时可设 `true`。 | 固定 7.25 已满足精度就无需搜索；不同层分布差异明显或固定值损失偏高时开启。开启后 `ceil_x_value` 只是初始/配置值，不再是主要手调旋钮。 |
-| `ext.search_min` / `ext.search_max` | 自动搜索区间，默认 `[6,12]`，且上下界都必须在算法允许范围内、上界大于下界。 | 保持 `6.0` / `12.0`。 | 只有观察到最佳候选长期落在边界附近时才考虑收窄/调整区间；由于算法本身合法范围就是 `[6,12]`，不能向外无限扩。 |
+| `ext.search_min` / `ext.search_max` | 自动搜索区间，默认 `[6,12]`，且上下界都必须在算法允许范围内、上界大于下界。 | 保持 `6.0` / `12.0`。 | 只有观察到最佳候选长期落在边界附近时才考虑收窄/调整区间；由于算法本身合法范围就是 `[6,12]`，不能向外无限扩展。 |
 | `ext.search_step` | 候选步长，默认 `0.25`。候选数约由区间宽度/步长决定，步长越小越细但耗时越高。 | 先 `0.25`。 | 若最佳点附近 MSE 曲线很陡且精度对候选敏感，可减小步长；若只是快速筛选可适度增大。先固定搜索范围，再改变步长，便于判断收益。 |
 
 #### 参数组合与选择顺序
@@ -105,12 +105,12 @@ Ceil_X 中真正可调的是 `ceil_x_value` 或其搜索配置；`dtype/scope/sy
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| Ceil_X 自适应除数 MXFP4 量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《Ceil_X 自适应除数 MXFP4 量化算法 量化术语百科词条》](./term_ceil_x.md) |
+| Ceil_X 自适应除数 MXFP4 量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[Ceil_X 自适应除数 MXFP4 量化算法 量化术语百科词条](./term_ceil_x.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

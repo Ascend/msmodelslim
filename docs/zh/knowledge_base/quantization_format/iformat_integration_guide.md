@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-本流程面向需要将**新量化落盘格式**接入 msModelSlim 的外部开发者与维护者。以 `compressed_tensors` 为完整 1-shot 示例，说明如何基于 `IFormat` 协议实现格式导出，并通过 YAML 配置启用。
+本流程面向需要将**新量化落盘格式**接入msModelSlim 的外部开发者与维护者。以 `compressed_tensors` 为完整 1-shot 示例，说明如何基于 `IFormat` 协议实现格式导出，并通过 YAML 配置启用。
 
 不适用：仅消费已有格式的用户（请先阅读《[量化格式](README.md)》地图并跳转对应使用指南）。
 
@@ -12,8 +12,8 @@
 
 **前置条件**：
 
-- 已阅读《[量化格式](README.md)》并确认需新增格式（而非扩展既有 handler）
-- 已明确目标推理框架的加载约定（张量命名与元数据 schema）
+- 已阅读《[量化格式](README.md)》并确认需新增格式（而非扩展既有handler）
+- 已明确目标推理框架的加载约定（张量命名与元数据schema）
 
 **后续操作**：代码合入后补齐文档：按《[资料规范](../../contributing/development_guide/docs_standards/README.md)》与《[新建量化格式资料](../../../../skills/docs-management/scenarios/add-quantization-format.md)》编写格式词条与使用指南，并更新《[量化格式](README.md)》格式地图。
 
@@ -39,7 +39,7 @@ flowchart LR
 
 ## 5. 操作步骤
 
-### 步骤 1：适配协议与基类
+### 步骤1：适配协议与基类
 
 **目标**：理解 `IFormat` / `ExportContext` / `QuantFormatBase` 职责边界，并据此完成新格式适配所需的协议对齐与基类选型。
 
@@ -53,7 +53,7 @@ flowchart LR
 
 `ExportContext` 字段：`save_directory`、`source_model_path`、`rank` / `world_size`。
 
-继承 `QuantFormatBase` 可自动获得模块树遍历、`WrapperIR` 处理与 handler 映射分发。子类需实现：
+继承 `QuantFormatBase` 可自动获得模块树遍历、`WrapperIR` 处理与handler 映射分发。子类需实现：
 
 ```python
 def build_module_handler_map(self) -> Dict[Type[nn.Module], ModuleHandler]:
@@ -65,9 +65,9 @@ def on_float_module(self, prefix: str, module: nn.Module) -> None:
     ...
 ```
 
-**输出**：选定基类与需支持的 QIR 类型清单。
+**输出**：选定基类与需支持的QIR 类型清单。
 
-### 步骤 2：定义 Config 类
+### 步骤2：定义 Config 类
 
 **操作**：继承 `QuantFormatConfig`，设置唯一的 `type` Literal：
 
@@ -82,11 +82,11 @@ class MyQuantFormatConfig(QuantFormatConfig):
 
 参考：[`CompressedTensorsQuantFormatConfig`](../../../../msmodelslim/core/quantization_format/compressed_tensors_format/compressed_tensors.py)
 
-**输出**：Config 类源文件。
+**输出**：Config类源文件。
 
-### 步骤 3：实现 IFormat 子类
+### 步骤3：实现 IFormat 子类
 
-**操作**：实现 handler 与三段生命周期。最小示意：
+**操作**：实现handler 与三段生命周期。最小示例：
 
 ```python
 from typing import Dict, Type
@@ -134,20 +134,20 @@ class MyQuantFormat(QuantFormatBase):
 
 参考：[`CompressedTensorsQuantFormat`](../../../../msmodelslim/core/quantization_format/compressed_tensors_format/compressed_tensors.py)
 
-**Handler 编写要点**：
+**Handler编写要点**：
 
-- 每种 QIR 量化模块类型需对应一个 handler。
+- 每种QIR 量化模块类型需对应一个 handler。
 - `WrapperIR`：非原子性先处理被包装模块再处理包装器；原子性只处理包装器。
 - 未注册模块类型默认 `on_float_module()`。
-- 推荐在 `finalize_export()` 中扫描 QIR 反向推导元数据（如 compressed-tensors 的 `quantization_config`）。
+- 推荐在 `finalize_export()` 中扫描QIR 反向推导元数据（如 compressed-tensors 的 `quantization_config`）。
 
-**输出**：Format 实现类。
+**输出**：Format实现类。
 
-### 步骤 4：注册格式绑定与 YAML 联合类型
+### 步骤4：注册格式绑定与 YAML 联合类型
 
-**目标**：使 YAML spec.save[].type 能按 type 反序列化为新 Config。
+**目标**：使YAML spec.save[].type 能按 type 反序列化为新 Config。
 
-**操作**：在 [msmodelslim/core/quantization_format/registry.py](../../../../msmodelslim/core/quantization_format/registry.py) 中 import 新 Config，并加入 QuantFormatConfigUnion：
+**操作**：在 [msmodelslim/core/quantization_format/registry.py](../../../../msmodelslim/core/quantization_format/registry.py) 中import 新 Config，并加入 QuantFormatConfigUnion：
 
 ```python
 from msmodelslim.core.quantization_format.my_format.my_format import MyQuantFormatConfig
@@ -163,15 +163,15 @@ QuantFormatConfigUnion = Annotated[
 ]
 ```
 
-加入后，parse_format_config 与一键量化 spec.save 即可识别 type: "my_format"。
+加入后，parse_format_config与一键量化 spec.save 即可识别 type: "my_format"。
 
-**输出**：可被 Pydantic 按 `type` 反序列化的配置绑定。
+**输出**：可被Pydantic 按 `type` 反序列化的配置绑定。
 
-### 步骤 5：配置启用、测试与资料同步
+### 步骤5：配置启用、测试与资料同步
 
 **操作**：
 
-1. YAML 启用：
+1. YAML启用：
 
    ```yaml
    spec:
@@ -180,18 +180,18 @@ QuantFormatConfigUnion = Annotated[
          part_file_size: 4
    ```
 
-2. 参考 [`test/cases/core/quantization_format/compressed_tensors_format/`](../../../../test/cases/core/quantization_format/compressed_tensors_format)：实现 Mock writer、构造最小 QIR 模型、调用三段生命周期并断言键名 / dtype / 元数据。
+2. 参考 [`test/cases/core/quantization_format/compressed_tensors_format/`](../../../../test/cases/core/quantization_format/compressed_tensors_format)：实现Mock writer、构造最小 QIR 模型、调用三段生命周期并断言键名 / dtype / 元数据。
 
-3. 按资料标准在 `docs/zh/knowledge_base/quantization_format/<format_name>/` 新增词条与使用指南，并在《[量化格式](README.md)》地图登记链接。
+3. 按资料规范在 `docs/zh/knowledge_base/quantization_format/<format_name>/` 新增词条与使用指南，并在《[量化格式](README.md)》地图登记链接。
 
-**输出**：可通过一键量化 YAML（`spec.save.type`）启动导出、单测通过、文档地图可导航。
+**输出**：可通过一键量化YAML（`spec.save.type`）启动导出、单测通过、文档地图可导航。
 
 **通过条件**：配置可解析；单测断言通过；地图存在新格式词条与使用指南链接。
 
 ## 6. 验收条件
 
-- 仅外部脚本导出、未注册进 msModelSlim 配置与工厂，不视为接入完成。
-- 缺少对关键 QIR 类型的 handler 或元数据写入失败，不得合入。
+- 仅外部脚本导出、未注册进msModelSlim 配置与工厂，不视为接入完成。
+- 缺少对关键QIR 类型的 handler 或元数据写入失败，不得合入。
 - 文档未登记到格式地图时，资料验收不通过。
 
 ## 7. 术语

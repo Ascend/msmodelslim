@@ -76,7 +76,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface, I
 
 之后量化命令中通过 `--model_type MyModelAdapter` 引用该适配器。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。请注意：模型适配必须先完成，才能执行后续量化流程。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。请注意：模型适配必须先完成，才能执行后续量化流程。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -108,7 +108,7 @@ spec:
 
 **操作**：
 
-msModelSlim 实现入口：：
+msModelSlim 实现入口：
 [查看对应实现目录](../../../../../msmodelslim/core/quantization_algorithm/anti_outlier/iter_smooth)
 
 | 配置项 | 含义（原理） | 推荐配置 | 选择与调整建议 |
@@ -118,12 +118,12 @@ msModelSlim 实现入口：：
 | `scale_min` | 平滑 scale 的最小下限，默认 `1e-5`，用于避免极小尺度引起下溢或数值放大。 | 保持 `1e-5`。 | 它主要是数值稳定保护，不应作为常规精度旋钮。只有确认某些通道 scale 被下限大量截断且影响结果时才研究调整。 |
 | `symmetric` | 决定后续量化假设以及平滑是否需要 shift。当前非对称路径主要支持 `norm-linear`，其他子图会关闭 shift。 | 常规 W8A8 实践优先 `true`。 | 只有明确采用非对称激活/权重量化且子图能力匹配时设 `false`。若想在多种子图上统一平滑，不建议为了少量偏移分布贸然切非对称。 |
 | `enable_subgraph_type` | 决定哪些结构应用 IterSmooth。 | 先使用目标模型实践；没有配方时从默认四类开始，并通过匹配/评测确认。 | 如果非对称模式、部署融合或模型结构限制某类子图，应先收窄对应类型；不要通过修改 alpha 来补偿错误的子图匹配。 |
-| `include` | 作用范围白名单，使用模块名模式决定哪些匹配到的模块进入当前算法。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。收窄范围时优先按结构族或已知敏感层调整。 |
-| `exclude` | 作用范围黑名单，命中后从 `include` 的候选中排除，优先级高于 `include`。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。 |
+| `include` | 作用范围允许列表，使用模块名模式决定哪些匹配到的模块进入当前算法。 | 无模型专用配方时从 `["*"]` 开始；已有 `lab_practice` 时直接沿用其模块范围。 | 先保证范围覆盖预期模块，再看精度。收窄范围时优先按结构族或已知敏感层调整。 |
+| `exclude` | 作用范围阻止列表，命中后从 `include` 的候选中排除，优先级高于 `include`。 | 默认先保持空列表；只有实践配方、兼容性约束或敏感性结果给出明确证据时再加入。 | 局部精度问题优先通过 `exclude` 做小范围回退，比提高全模型位宽或关闭整个算法更容易保留收益。 |
 
 #### 参数组合与选择顺序
 
-**最后只调一个主要旋钮**：IterSmooth 的主旋钮是 `alpha`；`scale_min` 主要保数值稳定，`symmetric` 与子图能力有关。先确定后续量化是否对称以及子图范围，再调 alpha，并保持同一校准集和评测集。
+**最后只调一个主要旋钮**：IterSmooth 的主旋钮是 `alpha`；`scale_min` 主要保证数值稳定，`symmetric` 与子图能力有关。先确定后续量化是否对称以及子图范围，再调 alpha，并保持同一校准集和评测集。
 
 **输出**：一份完成单变量调整的算法参数方案，关键字段均有明确的选择依据和调整方向。
 
@@ -186,13 +186,13 @@ msmodelslim quant \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| Iterative Smooth 迭代平滑算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《Iterative Smooth 迭代平滑算法 量化术语百科词条》](./term_iterative_smooth.md) |
+| Iterative Smooth 迭代平滑算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[Iterative Smooth 迭代平滑算法 量化术语百科词条](./term_iterative_smooth.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
 | `PipelineInterface` / `IterSmoothInterface` | 模型流水线与 Iterative Smooth 算法适配接口，均由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| iter_smooth 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《iter_smooth 配置说明》](../../../api_reference/config/processor/iter_smooth.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| iter_smooth 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[iter_smooth 配置说明](../../../api_reference/config/processor/iter_smooth.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

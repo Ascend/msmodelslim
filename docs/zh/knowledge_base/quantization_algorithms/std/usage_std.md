@@ -34,7 +34,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：分析前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行分析流程。
+- **前置条件：模型适配**：分析前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行分析流程。
 - **确定线性层范围**：通过 `--patterns` 圈定待统计的线性模块名模式，第一次建议覆盖与实际量化计划一致的范围。
 - **固定 metrics=std**：`--metrics std` 选定本指南对应的分析指标，决定 score 的定义和排序含义。
 - **统计动态范围与标准差**：在线性/卷积类模块输入激活上计算 `abs_max / std`；score 高表示最大幅值相对典型离散程度更突出，常用于快速识别可能被少量极值拉宽量化范围的层。
@@ -56,9 +56,9 @@ flowchart LR
 - 分析范围：`linear`；
 - `--metrics`：`std`；
 - `--top_k`：先用 `15`；
-- `--patterns`：先用 `"*"`，建立全量线性层基线；
+- `--patterns`：先用 `"*"`，建立全量线性层基线。
 
-**输出**：一组可复现的敏感性分析基线参数，用于生成第一版候选排序。
+**输出**：一组可复现的敏感度分析基线参数，用于生成第一版候选排序。
 
 ### 步骤 3：选择并调整参数
 
@@ -78,7 +78,7 @@ flowchart LR
 - **高分表示“按 `std` 定义更值得关注”，不等价于一定要回退**。应把 Top-K 当作候选集，再用实际量化精度或模型任务指标验证。
 - **`top_k` 只改变输出规模**。真正影响“谁排在前面”的通常是校准数据、候选范围以及本指标自身的统计定义。
 
-Std 成本低、解释直接，适合作为第一轮粗筛；对非常重尾的分布，Kurtosis/Quantile 往往能补充更多形状信息。
+Std 成本低、解释直观，适合作为第一轮粗筛；对非常重尾的分布，Kurtosis/Quantile 往往能补充更多形状信息。
 
 **输出**：一份参数含义和调整方向明确的分析配置；修改项能够与排序变化建立对应关系。
 
@@ -96,12 +96,12 @@ Std 成本低、解释直接，适合作为第一轮粗筛；对非常重尾的�
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| Std 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《Std 敏感层分析算法 量化术语百科词条》](./term_std.md) |
+| Std 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[Std 敏感层分析算法 量化术语百科词条](./term_std.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | [《敏感层分析使用指南》](../../../user_guide/usage_sensitive_linear_analysis.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | 《[敏感层分析使用指南](../../../user_guide/usage_sensitive_linear_analysis.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

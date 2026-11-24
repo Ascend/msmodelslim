@@ -6,7 +6,7 @@
 
 ## 1. 概述
 
-**FP8** 遵循 [OCP OFP8](https://www.opencompute.org/documents/ocp-8-bit-floating-point-specification-ofp8-revision-1-0-2023-12-01-pdf-1)：每个元素独立编码，没有块级共享指数。两种元素格式里，E4M3精度更高（上界 448），E5M2 动态范围更宽（上界 57344）。位宽与 [INT8](term_int8.md) 相同，但对离群值更稳。标准只定义对称路径（实数 scale、没有 zero-point）。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
+**FP8** 遵循 [OCP OFP8](https://www.opencompute.org/documents/ocp-8-bit-floating-point-specification-ofp8-revision-1-0-2023-12-01-pdf-1)：每个元素独立编码，没有块级共享指数。两种元素格式里，E4M3精度更高（上界448），E5M2动态范围更宽（上界57344）。位宽与 [INT8](term_int8.md) 相同，但对离群值更稳。标准只定义对称路径（实数 scale、没有 zero-point）。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
 
 ---
 
@@ -38,7 +38,7 @@ $$s = \frac{\mathrm{amax}}{\mathrm{max\_norm}}, \qquad x' = \frac{x}{s}, \qquad 
 $$\mathrm{min\_exp} = 2 - 2^{e_{\mathrm{bits}}-1}, \qquad a \leftarrow \mathrm{round}\left(\frac{a}{2^{e_{\mathrm{priv}}}} \cdot 2^{m-2}\right) / 2^{m-2} \cdot 2^{e_{\mathrm{priv}}}$$
 
 - $e_{\mathrm{bits}}$：指数位数。
-- $m$：实现中的 `mbits`，等于符号位加隐含位加显式尾数位。E4M3 为 5，E5M2 为 4。舍入公式中的 $2^{m-2}$ 对应显式尾数位（E4M3 为 3，E5M2 为 2）。编码表「尾数」列写显式位数，与格式名 E4M3 / E5M2 一致。
+- $m$：实现中的 `mbits`，等于符号位加隐含位加显式尾数位。E4M3为5，E5M2为4。舍入公式中的 $2^{m-2}$ 对应显式尾数位（E4M3为3，E5M2为2）。编码表「尾数」列写显式位数，与格式名 E4M3 / E5M2 一致。
 - $e_{\mathrm{priv}}=\lfloor\log_2|a|\rfloor$，先 clamp 到 $\mathrm{min\_exp}$。
 - 无 zero-point。
 
@@ -50,7 +50,7 @@ $$\mathrm{min\_exp} = 2 - 2^{e_{\mathrm{bits}}-1}, \qquad a \leftarrow \mathrm{r
 ### 2.4 适用场景与限制
 
 - **适用**：权重与激活，例如 [W8A8 FP8 动态量化](../quantization_schema/linear_layer_quantization/term_w8a8_fp8_dynamic.md)。离群值较多时优先 E4M3，分布更宽时用 E5M2。
-- **限制**：需要硬件FP8 GEMM。E4M3 上界是 448，更大的值靠 scale 缩放。只有对称路径。
+- **限制**：需要硬件FP8 GEMM。E4M3 上界是448，更大的值靠 scale 缩放。只有对称路径。
 
 ---
 

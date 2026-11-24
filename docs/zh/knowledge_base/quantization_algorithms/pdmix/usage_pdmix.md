@@ -34,8 +34,8 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行量化流程。
-- **确定 W8A8 混合阶段目标**：PDMIX 中激活四个字段基本是固定定义，先确认目标部署链支持 `pd_mix` scope 与非对称激活组合。
+- **前置条件：模型适配**：量化前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行量化流程。
+- **确定 W8A8 混合阶段目标**：PDMIX 中激活的四个字段基本是固定定义，先确认目标部署链支持 `pd_mix` scope 与非对称激活组合。
 - **Prefill 使用 per-token**：源码在 Prefill 使用 per-token 对称式伪量化行为，保证 Prefill 精度。
 - **Decode 使用 per-tensor**：Decode 统计并导出 per-tensor 非对称参数（含 zero-point），降低 Decode 尺度开销。
 - **共享权重 per-channel 配置**：权重仍由 `linear_quant` 的 weight qconfig 决定，仓库实践搭配 `int8 + per_channel + symmetric + minmax`。
@@ -84,7 +84,7 @@ spec:
 | `qconfig.act.dtype` | 当前 PDMIX 激活量化器注册为 INT8。 | 固定 `int8`。 | 需要其他位宽时应换方案。 |
 | `qconfig.act.symmetric` | PDMIX 最终注册方案为非对称 `int8_pd_mix_asym`，用于 Decode per-tensor zero-point；因此这里是支持约束，不是“看分布再选”的自由开关。 | 固定 `false`。 | 不要改成 true；当前没有对应 PDMIX 对称注册实现。 |
 | `qconfig.act.method` | 当前 PDMIX 激活由 MinMax 观察器收集 Prefill/Decode 统计。 | 固定 `minmax`。 | 不是可替换的通用 method。 |
-| `qconfig.weight.*` | PDMIX 本质是激活量化策略，权重仍由 `linear_quant` 的 weight qconfig 决定。仓库 W8A8C8 实践搭配 `int8 + per_channel + symmetric + minmax`，这是已验证伴随配置，而不是 PDMIX 数学上唯一可能的权重形式。 | 入门/复现实践用 INT8 per-channel 对称 MinMax 权重。 | 如果要换低比特权重算法，应按该权重量化器的支持组合重新验证整套 PDMIX 模型，而不是把“权重只能 INT8”当成 PDMIX 原理约束。 |
+| `qconfig.weight.*` | PDMIX 本质是激活量化策略，权重仍由 `linear_quant` 的 weight qconfig 决定。仓库 W8A8C8 实践搭配 `int8 + per_channel + symmetric + minmax`，这是已验证配套配置，而不是 PDMIX 数学上唯一可能的权重形式。 | 入门/复现实践用 INT8 per-channel 对称 MinMax 权重。 | 如果要换低比特权重算法，应按该权重量化器的支持组合重新验证整套 PDMIX 模型，而不是把“权重只能 INT8”当成 PDMIX 原理约束。 |
 
 ### 参数组合与选择顺序
 
@@ -106,12 +106,12 @@ PDMIX 中激活四个字段基本是固定定义；真正可变的是它与哪�
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| PDMIX 阶段间混合量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《PDMIX 阶段间混合量化算法 量化术语百科词条》](./term_pdmix.md) |
+| PDMIX 阶段间混合量化算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[PDMIX 阶段间混合量化算法 量化术语百科词条](./term_pdmix.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | [《linear_quant 配置说明》](../../../api_reference/config/processor/linear_quant.md) |
-| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | [《modelslim_v1 配置说明》](../../../api_reference/config/quant/modelslim_v1.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| linear_quant 配置说明 | 字段类型、默认值、合法取值与完整配置约束。 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
+| modelslim_v1 配置说明 | 需要继续探索 runner、prior、save、dataset 等任务级高级配置时查阅。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

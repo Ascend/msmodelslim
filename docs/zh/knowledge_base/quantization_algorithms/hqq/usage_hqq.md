@@ -59,7 +59,7 @@ spec:
       include: ["*"]
 ```
 
-上面的推荐值用于建立第一版可复现基线，其中最值得关注的配置包括 `qconfig.weight.scope`, `qconfig.weight.dtype`, `qconfig.weight.symmetric`, `qconfig.weight.method`。此处给出的`qconfig.weight`的推荐值为唯一可选值。
+上面的推荐值用于建立第一版可复现基线，其中最值得关注的配置包括 `qconfig.weight.scope`、`qconfig.weight.dtype`、`qconfig.weight.symmetric`、`qconfig.weight.method`。此处给出的`qconfig.weight`的推荐值为唯一可选值。
 
 **输出**：一份可复现的推荐基线配置。
 

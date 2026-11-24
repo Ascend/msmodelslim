@@ -131,7 +131,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 **实现要点**：
 
-- **视觉全量 + 语言逐层**：VLM 推荐在 `init_model` 中加载完整视觉编码器，但语言模型仅初始化第 1 层（临时设 `num_hidden_layers=1`），其余层通过 `generate_decoder_layer` 在前向过程中按需加载并释放，避免大模型多模态量化时显存溢出。
+- **视觉全量 + 语言逐层**：VLM 推荐在 `init_model` 中加载完整视觉编码器，但语言模型仅初始化第 1 层（临时设置 `num_hidden_layers=1`），其余层通过 `generate_decoder_layer` 在前向过程中按需加载并释放，避免大模型多模态量化时显存溢出。
 - **特征融合对齐**：`generate_model_forward` 中的视觉特征提取与融合（如 `masked_scatter` 替换 `<image>` 占位、DeepStack 跨层注入等）必须与原模型官方前向逻辑完全一致。
 - **MoE 权重转换**：若模型使用 3D 融合权重存储 MoE 专家，需在加载 Decoder 时转换为标准 Linear 层，以便量化框架逐层处理。
 
@@ -139,7 +139,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 ### 步骤 5：在全局配置文件中注册模型
 
-**目标**：在 `config/config.ini` 中注册模型名称和加载器入口，使 CLI能够通过 `--model_type` 正确路由。
+**目标**：在 `config/config.ini` 中注册模型名称和加载器入口，使CLI能够通过`--model_type`正确路由。
 
 **操作**：
 
@@ -163,7 +163,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 ### 步骤 6：编写量化 YAML 方案并执行验证
 
-**目标**：创建适配该 VLM 模型的量化方案 YAML，并通过 CLI 运行端到端量化测试。
+**目标**：创建适配该 VLM 模型的量化方案 YAML，并通过CLI运行端到端量化测试。
 
 **操作**：
 

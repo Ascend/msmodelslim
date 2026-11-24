@@ -72,7 +72,7 @@ class AttentionAnalysisInterface(ABC):
 ```
 
 - **`get_attention_module_cls`**：返回 Attention 模块的类名字符串。Processor 按 `module.__class__.__name__` 精确匹配并挂载输出 hook，例如 `"DeepseekV3Attention"`、`"MLA"`。
-- **`get_attention_output_extractor`**：从 Attention 模块 `forward` 返回值（Tensor、tuple 等）中提取用于敏感度分析的主 tensor。例如 DeepSeek-V3 的 `forward` 返回 `(attn_output, ...)` 的 tuple，返回 `lambda x: x[0]`；GLM 系列直接返回输出张量时，返回 `lambda x: x`。
+- **`get_attention_output_extractor`**：从 Attention 模块 `forward` 返回值（Tensor、tuple 等）中提取用于敏感度分析的主tensor。例如 DeepSeek-V3 的 `forward` 返回 `(attn_output, ...)` 的 tuple，返回 `lambda x: x[0]`；GLM 系列直接返回输出张量时，返回 `lambda x: x`。
 
 对于基于 HuggingFace Transformers 实现的标准开源 LLM，建议通过组合继承快速构建适配器：
 
@@ -96,7 +96,7 @@ class MyModelAdapter(TransformersModel, ModelInfoInterface, PipelineInterface,
 
 之后分析命令中通过 `--model_type MyModelAdapter` 引用该适配器。仓库内可参考的适配实现包括 `msmodelslim/model/deepseek_v3/model_adapter.py` 与 `msmodelslim/model/glm_5/model_adapter.py`。
 
-如需开发新模型适配代码，请参考[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。
+如需开发新模型适配代码，请参考《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。
 
 **输出**：已在框架中注册可用的模型适配器（通过 `--model_type` 调用）。
 
@@ -157,13 +157,13 @@ msmodelslim analyze attn \
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| Attention MSE 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《Attention MSE 敏感层分析算法 量化术语百科词条》](./term_attention_mse.md) |
+| Attention MSE 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[Attention MSE 敏感层分析算法 量化术语百科词条](./term_attention_mse.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | [《LLM 量化使用指南·步骤 1》](../../ptq/llm/usage_large_language_model_quantization.md) |
+| `PipelineInterface` | 模型流水线适配接口（数据预处理、模型加载、模块遍历）。 | 《[LLM 量化使用指南·步骤 1](../../ptq/llm/usage_large_language_model_quantization.md)》 |
 | `AttentionAnalysisInterface` | Attention MSE 分析模型适配接口，由 `msmodelslim.model.interface_hub` 汇总导出。 | [接口汇总模块](../../../../../msmodelslim/model/interface_hub.py) |
-| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | [《敏感层分析使用指南》](../../../user_guide/usage_sensitive_layer_analysis.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | 《[敏感层分析使用指南](../../../user_guide/usage_sensitive_layer_analysis.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

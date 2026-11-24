@@ -35,7 +35,7 @@ flowchart LR
 
 各阶段的关键细节如下：
 
-- **前置条件：模型适配**：分析前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见[《LLM 模型接入量化流程指南》](../../ptq/llm/integration_guide_large_language_model_quantization.md)。模型适配必须先完成，才能执行分析流程。
+- **前置条件：模型适配**：分析前需先完成模型适配，适配器实现 `PipelineInterface`（基础流水线接口）等接口，详见《[LLM 模型接入量化流程指南](../../ptq/llm/integration_guide_large_language_model_quantization.md)》。模型适配必须先完成，才能执行分析流程。
 - **确定 Decoder 块范围**：固定待分析模型与分析范围，让分析范围与后续实际量化对象一致，否则排序无法指导最终配置。
 - **固定 metrics=mse_layer_wise**：指标决定 score 的定义和排序含义；不同 `quant_modules` 配置下的 score 不能直接混在一起比较。
 - **对选中子模块做量化扰动**：逐个 Decoder block 比较“当前 block 量化路径”与浮点路径，得到局部干预误差。
@@ -97,11 +97,11 @@ Layer-wise MSE 更适合做局部回退候选。若最终配置只量化 MLP，�
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 层级 MSE 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | [《层级 MSE 敏感层分析算法 量化术语百科词条》](./term_mse_layer_wise.md) |
+| 层级 MSE 敏感层分析算法 | 说明该算法的定义、核心原理、关键性质、适用场景与限制。 | 《[层级 MSE 敏感层分析算法 量化术语百科词条](./term_mse_layer_wise.md)》 |
 
 ## 6. 相关文档
 
 | 接口或文档 | 简述 | 链接 |
 | --- | --- | --- |
-| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | [《敏感层分析使用指南》](../../../user_guide/usage_sensitive_layer_analysis.md) |
-| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | [《权重量化使用指南》](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md) |
+| 敏感层分析使用指南 | 完整 CLI、输入输出和进阶流程。 | 《[敏感层分析使用指南](../../../user_guide/usage_sensitive_layer_analysis.md)》 |
+| 权重量化使用指南 | 用户指南：量化命令参数与完整使用说明。 | 《[权重量化使用指南](https://gitcode.com/Ascend/msmodelslim/blob/master/docs/zh/user_guide/usage_weight_quantization.md)》 |

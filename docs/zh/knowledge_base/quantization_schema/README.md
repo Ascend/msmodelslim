@@ -22,7 +22,7 @@
 
 ### 2.1 如何理解一个量化模式
 
-一个量化模式名通常由"作用结构 + 张量位宽 + 参数获取方式 + 量化粒度 + 数据类型"几部分构成，掌握了这些要素，就能读懂任意一个模式名：
+一个量化模式名通常由“作用结构 + 张量位宽 + 参数获取方式 + 量化粒度 + 数据类型”几部分构成，掌握了这些要素，就能读懂任意一个模式名：
 
 - **作用结构**：线性层（Linear/MatMul）用 `WxAy` 记法表示权重与激活的位宽组合。后缀可选：可以只写位宽（如 `W8A8`、`W4A4`），也可以追加数据类型或参数获取方式（如 `W8A8 静态`、`W4A4 MX 动态`）。KVCache 作用于缓存的 K/V 张量；FA 量化作用于注意力输入 Q/K/V。
 - **张量位宽**：W 与 A 分别表示权重与激活的位宽。位宽越低，访存与计算收益越大，但数值分辨率越低、精度损失风险越高。
@@ -50,7 +50,7 @@
 
 ### 2.3 模式索引
 
-以下为 msModelSlim 支持的量化模式全量清单（按量化对象分类），也是各具体量化模式词条的总览入口。表中"承载 IR 类"为 [`msmodelslim/core/quantization_schema/`](../../../../msmodelslim/core/quantization_schema/) 中的类名，类名里的 **FakeQuant**（伪量化）指量化后立即反量化的占位层，用于在浮点计算中模拟真实量化的数值效果：
+以下为 msModelSlim 支持的量化模式全量清单（按量化对象分类），也是各具体量化模式词条的总览入口。表中“承载 IR 类”为 [`msmodelslim/core/quantization_schema/`](../../../../msmodelslim/core/quantization_schema/) 中的类名，类名里的 **FakeQuant**（伪量化）指量化后立即反量化的占位层，用于在浮点计算中模拟真实量化的数值效果：
 
 #### 2.3.1 线性层量化
 
@@ -111,7 +111,7 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 - [线性层量化](linear_layer_quantization/README.md)：下位概念，本词条下量化模式的主体类别。
 - [KVCache 量化](kv_cache_quantization/README.md)：下位概念，针对 KVCache 的量化类别。
 - [FA 量化](fa_quantization/README.md)：下位概念，KVCache 量化的进阶类别。
-- [W8A8 静态量化](linear_layer_quantization/term_w8a8_static.md)：下位概念，线性层量化中"权重/激活静态"的典型模式。
+- [W8A8 静态量化](linear_layer_quantization/term_w8a8_static.md)：下位概念，线性层量化中“权重/激活静态”的典型模式。
 - [线性量化算法](../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，描述线性层量化模式的代码实现。
 - [KVCache Quant 缓存量化算法](../quantization_algorithms/kvcache_quant/term_kvcache_quant.md)：配套术语，描述 KVCache 量化算法。
 - [FA3 Quant 注意力激活量化算法](../quantization_algorithms/fa3_quant/term_fa3_quant.md)：配套术语，描述 FA 量化算法。
