@@ -46,8 +46,10 @@ Quant settings
 import collections
 import json
 import os
+from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Literal, Optional, Tuple
+from types import MethodType
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generator, List, Literal, Optional, Tuple
 
 import torch
 import torch.distributed as dist
@@ -72,6 +74,7 @@ from msmodelslim.model.deepseek_v4_1_flash.checkpoint import (
     tensor_spec,
     write_engram_bf16,
     write_engram_int8,
+    write_engram_mxfp8,
     write_json,
     write_shard,
 )
@@ -82,6 +85,8 @@ from msmodelslim.model.common.pausable_forward import (
 )
 from msmodelslim.model.base import BaseModelAdapter
 from msmodelslim.model.interface_hub import (
+    DynamicCacheAdapterInterface,
+    FA3QuantAdapterInterface,
     FakeQuantInferenceInterface,
     FlexSmoothQuantInterface,
     IterSmoothInterface,
@@ -102,9 +107,9 @@ class DeepSeekV41FlashModelConfig(BaseModel):
     it via :meth:`apply_adapter_config`.
     """
 
-    engram_quant_type: Literal['int8_sym', 'bf16'] = Field(
+    engram_quant_type: Literal['int8_sym', 'mxfp8', 'bf16'] = Field(
         default='int8_sym',
-        description="Engram 记忆表导出格式：`int8_sym` 写 INT8 权重 + E8M0 每组 scale（体积减半）；"
+        description="Engram 记忆表导出格式：`mxfp8` 写 FP8 E4M3 权重 + E8M0 每组 scale, `int8_sym` 写 INT8 权重 + E8M0 每组 scale (体积减半): "
         "`bf16` 原样写 BF16。",
     )
     dspark: bool = Field(
@@ -275,6 +280,8 @@ class DeepSeekV41FlashModelAdapter(
     FlexSmoothQuantInterface,
     IterSmoothInterface,
     FakeQuantInferenceInterface,
+    FA3QuantAdapterInterface,
+    DynamicCacheAdapterInterface,
 ):
     """Adapter for the internally-derived DeepSeek-V4.1-Flash checkpoint layout."""
 
@@ -282,7 +289,7 @@ class DeepSeekV41FlashModelAdapter(
         super().__init__(model_type=model_type, model_path=model_path, trust_remote_code=trust_remote_code)
         self._source_keys: Optional[set] = None
         self._model: Optional[nn.Module] = None
-        self._engram_quant_type: Literal['int8_sym', 'bf16'] = 'int8_sym'
+        self._engram_quant_type: Literal['int8_sym', 'mxfp8', 'bf16'] = 'int8_sym'
         self._dspark: bool = True
         self._export_embedding_storage: bool = False
         #: Cached ``named_parameters()`` names of the built model; see _in_model.
@@ -1289,6 +1296,143 @@ class DeepSeekV41FlashModelAdapter(
             dist.barrier()
         return drive
 
+    # ==================== FA3QuantAdapterInterface ====================
+    def inject_fa3_placeholders(
+        self,
+        root_name: str,
+        root_module: nn.Module,
+        should_inject: Callable[[str], bool],
+    ) -> None:
+        """为 DeepSeek-V4.1 Indexer 安装 FA3 占位并包裹 forward。
+
+        与 DeepSeek-V4 的 FA3 实现对齐：在 Indexer 的 Q 路径（wq_b + RoPE 后）
+        和 K 路径（wk + k_norm + RoPE 后、写入 k_cache 前）插入 fa_q / fa_k 占位。
+        V4.1 的 Indexer 没有 V 分支，因此不注入 fa_v；部署侧读取
+        ``<indexer>.quant_type`` 即可拿到 Q/K 分支的 C4A4 配置。
+        """
+        from importlib import import_module
+        from msmodelslim.core.quantization_algorithm.quant.fa3 import FA3QuantPlaceHolder
+
+        def _wrap_indexer_forward(indexer_mod: nn.Module) -> None:
+            if getattr(indexer_mod, '_dsv41_fa3_wrapped', False):
+                return
+            deepseek_module = import_module(indexer_mod.forward.__func__.__module__)
+            apply_rotary_emb = deepseek_module.apply_rotary_emb
+            fp4_act_quant = deepseek_module.fp4_act_quant
+            fp4_block_size = deepseek_module.fp4_block_size
+            select_candidate_blocks = deepseek_module.select_candidate_blocks
+
+            @wraps(indexer_mod.forward)
+            def new_indexer_forward(
+                self,
+                x: torch.Tensor,
+                qr: torch.Tensor,
+                latent: torch.Tensor,
+                start_pos: int,
+                offset: int,
+            ):
+                assert self.freqs_cis is not None  # nosec
+                bsz, seqlen, _ = x.size()
+                ratio, rd, end_pos = self.compress_ratio, self.rope_head_dim, start_pos + seqlen
+
+                # ---- K path（仅 kv-source 层真正产生 index key）----
+                if self.owns_k and latent is not None:
+                    freqs = (
+                        self.freqs_cis[: seqlen - seqlen % ratio : ratio]
+                        if start_pos == 0
+                        else self.freqs_cis[start_pos + 1 - ratio].unsqueeze(0)
+                    )
+                    k = self.k_norm(self.wk(latent))
+                    apply_rotary_emb(k[..., -rd:], freqs)
+                    fp4_act_quant(k, fp4_block_size, True)
+
+                    # FA3 C4A4：K 走 HiF4 激活量化后再写入 index cache
+                    if hasattr(self, 'fa_k'):
+                        k = self.fa_k(k.unsqueeze(1)).squeeze(1)
+
+                    self.k_cache[:bsz, start_pos // ratio : start_pos // ratio + k.size(1)] = k
+                    deepseek_module.shared_attn.index_k = self.k_cache
+
+                # ---- Q path ----
+                q = self.wq_b(qr).unflatten(-1, (self.n_local_heads, self.index_head_dim))
+                apply_rotary_emb(q[..., -rd:], self.freqs_cis[start_pos:end_pos])
+                fp4_act_quant(q, fp4_block_size, True)
+
+                # FA3 C4A4：Q 走 HiF4 激活量化；统一成 (B, H, S, D) 便于部署侧对齐
+                if hasattr(self, 'fa_q'):
+                    q = self.fa_q(q.transpose(1, 2).contiguous()).transpose(1, 2).contiguous()
+
+                index_k = deepseek_module.shared_attn.index_k[:bsz, : end_pos // ratio]
+                if index_k.device != x.device:
+                    index_k = index_k.to(x.device)
+                weights = self.weights_proj(x) * (self.softmax_scale * self.n_heads**-0.5)
+                index_score = torch.einsum("bshd,btd->bsht", q, index_k)
+                index_score = (index_score.relu_() * weights.unsqueeze(-1)).sum(dim=2)
+                if deepseek_module.world_size > 1:
+                    deepseek_module.dist.all_reduce(index_score)
+
+                if start_pos == 0:
+                    compress_lens = (torch.arange(1, seqlen + 1, device=x.device) // ratio).unsqueeze(-1)
+                    index_score.masked_fill_(
+                        torch.arange(seqlen // ratio, device=x.device) >= compress_lens, -torch.inf
+                    )
+                else:
+                    compress_lens = end_pos // ratio
+
+                if self.is_candidate_source:
+                    deepseek_module.shared_attn.candidates = select_candidate_blocks(
+                        index_score, compress_lens, self.candidate_topk_blocks, self.candidate_block_size
+                    )
+                elif self.uses_candidates:
+                    index_score = index_score.masked_fill(~deepseek_module.shared_attn.candidates, -torch.inf)
+
+                topk = min(self.index_topk, end_pos // ratio)
+                idxs = index_score.topk(topk, dim=-1, sorted=False).indices.sort(dim=-1).values
+                return torch.where(idxs < compress_lens, idxs + offset, -1).int()
+
+            indexer_mod.forward = MethodType(new_indexer_forward, indexer_mod)
+            indexer_mod._dsv41_fa3_wrapped = True
+
+        for name, module in root_module.named_modules():
+            if module.__class__.__name__ != 'Indexer':
+                continue
+            full_name = f"{root_name}.{name}" if root_name else name
+            if not should_inject(full_name):
+                continue
+            if not hasattr(module, 'fa_q'):
+                root_module.set_submodule(f"{name}.fa_q", FA3QuantPlaceHolder(ratio=0.9999))
+            if not hasattr(module, 'fa_k'):
+                root_module.set_submodule(f"{name}.fa_k", FA3QuantPlaceHolder(ratio=0.9999))
+            _wrap_indexer_forward(module)
+
+    # ==================== DynamicCacheAdapterInterface ====================
+    def inject_kvcache_placeholders(
+        self,
+        root_name: str,
+        root_module: nn.Module,
+        should_inject: Callable[[str], bool],
+        placeholder_factory: Callable[[], nn.Module],
+    ) -> Dict[str, nn.Module]:
+        """为 V4.1 Attention 安装 K/V cache 量化占位。
+
+        Attention 的 window/compressed cache 在原生 forward 里由 kernel 直接处理，
+        msmodelslim 侧只需要把 ``key_states_quantizer`` / ``value_states_quantizer``
+        挂到模块上；AscendV1 saver 会据此导出 ``<attn>.quant_type``（C4A16-FP4）。
+        Indexer 不是 Attention，不会被注入。
+        """
+        injected: Dict[str, nn.Module] = {}
+        for name, module in root_module.named_modules():
+            if module.__class__.__name__ not in ('Attention', 'DSparkAttention'):
+                continue
+            full_name = f"{root_name}.{name}" if root_name else name
+            if not should_inject(full_name):
+                continue
+            for attr in ('key_states_quantizer', 'value_states_quantizer'):
+                if not isinstance(getattr(module, attr, None), nn.Module):
+                    module.add_module(attr, placeholder_factory())
+            injected[full_name] = module
+        return injected
+
     def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
         # KV cache in the layer-wise flow lives in RuntimeBufferStore, not a
         # module flag; nothing to toggle here.
@@ -1321,6 +1465,14 @@ class DeepSeekV41FlashModelAdapter(
         weight_map: Dict[str, str] = {}
         engram_tensors: Dict[str, Dict[str, Any]] = {}
         # actual engram layers: from the source layout (source has the tables),
+        # Tensors the backbone saver already exported (e.g. a recipe-quantized
+        # layers.N.engram.wkv) must keep their saved bytes and index entries;
+        # the Engram postprocess only fills what the layer walk skipped.
+        index_paths = sorted(save_dir.glob('*.index.json'))
+        existing_weight_map: Dict[str, str] = {}
+        if index_paths:
+            existing_weight_map = json.loads(index_paths[0].read_text()).get('weight_map', {})
+        # actual engram layers: from the source layout (source has the tables),
         # not the pinned recipe (mini/debug ckpts carry their own ids).
         engram_layers = sorted(int(k.split('.')[1]) for k in self._source_keys if k.endswith('.engram.embed.weight'))
         for layer in engram_layers:
@@ -1328,7 +1480,12 @@ class DeepSeekV41FlashModelAdapter(
             # (1) memory table — table rows are never rotated.
             embed_key = f'{base}.embed.weight'
             embed_file = f'quant_model_weights-engram-{layer}.safetensors'
-            writer = write_engram_int8 if self._engram_quant_type == 'int8_sym' else write_engram_bf16
+            writers = {
+                'int8_sym': write_engram_int8,
+                'mxfp8': write_engram_mxfp8,
+                'bf16': write_engram_bf16,
+            }
+            writer = writers[self._engram_quant_type]
             table = writer(save_dir / embed_file, self.model_path, embed_key)
             # Register from what the writer actually produced, so the storage
             # description cannot drift from the bytes written beside it.
@@ -1365,13 +1522,14 @@ class DeepSeekV41FlashModelAdapter(
                     f'engram={"present" if eng is not None else "MISSING"}, '
                     f'wkv={"present" if linear is not None else "MISSING"}'
                 )
-            if wkv is not None:
-                tensors[f'{base}.wkv.weight'] = wkv.contiguous()
+            wkv_key = f'{base}.wkv.weight'
+            if wkv is not None and wkv_key not in existing_weight_map:
+                tensors[wkv_key] = wkv.contiguous()
             # (3) remaining engram tensors (projection / gate): decoded BF16.
             for key in sorted(
                 k for k in self._source_keys if k.startswith(base + '.') and k != embed_key and not k.endswith('.scale')
             ):
-                if key == f'{base}.wkv.weight':
+                if key == wkv_key or key in existing_weight_map:
                     continue
                 tensors[key] = decode_tensor(self.model_path, key).detach().to(torch.bfloat16).contiguous()
             if tensors:
@@ -1435,18 +1593,20 @@ class DeepSeekV41FlashModelAdapter(
         """Describe each Engram table's quant type in quant_model_description.json.
 
         One ``layers.N.engram.embed.quant_type`` entry per table only when the
-        saver quantizes it (``spec.model_adapter.engram_quant_type: int8_sym``);
-        a plain bf16 table carries no such key.  When ``export_embedding_storage``
-        is set, the legacy ``optional.embedding_storage`` block is emitted for
-        old serving contracts.
+        saver quantizes it (``spec.model_adapter.engram_quant_type`` is
+        ``mxfp8`` or ``int8_sym``); a plain bf16 table carries no such key.
+        When ``export_embedding_storage`` is set, the legacy
+        ``optional.embedding_storage`` block is emitted for old serving
+        contracts.
         """
         path = save_dir / 'quant_model_description.json'
         description = json.loads(path.read_text()) if path.exists() else {}
-        if self._engram_quant_type == 'int8_sym':
+        quant_types = {'mxfp8': 'MXFP8', 'int8_sym': 'INT8_SYM'}
+        if self._engram_quant_type in quant_types:
             for key in engram_tensors:
                 if key.endswith('.engram.embed.weight'):
                     layer = key.split('.')[1]
-                    description[f'layers.{layer}.engram.embed.quant_type'] = 'INT8_SYM'
+                    description[f'layers.{layer}.engram.embed.quant_type'] = quant_types[self._engram_quant_type]
         if self._export_embedding_storage:
             description.setdefault('optional', {})['embedding_storage'] = engram_source_description(engram_tensors)
         write_json(path, description)

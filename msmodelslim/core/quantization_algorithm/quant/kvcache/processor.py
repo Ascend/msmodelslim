@@ -117,7 +117,7 @@ class DynamicCacheProcessorConfig(AutoProcessorConfig):
 
 
 @QABCRegistry.register(dispatch_key=DynamicCacheProcessorConfig, abc_class=AutoSessionProcessor)
-@logger_setter(prefix="msmodelslim.processor.kvcache_quant")
+@logger_setter(prefix="msmodelslim.core.quantization_algorithm.quant.kvcache")
 class DynamicCacheQuantProcessor(AutoSessionProcessor):
     def __init__(
         self,

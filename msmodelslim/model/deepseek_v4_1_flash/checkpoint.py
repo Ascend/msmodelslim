@@ -166,20 +166,23 @@ def engram_source_description(tensors):
             continue
         prefix = key.removesuffix('.weight')
         shape = spec['shape']
-        if spec['dtype'] not in ('BF16', 'I8') or len(shape) != 2 or shape[1] != 256:
-            raise ValueError(f'{key}: expected BF16 or INT8 [rows, 256]')
+        if spec['dtype'] not in ('BF16', 'I8', 'F8_E4M3') or len(shape) != 2 or shape[1] != 256:
+            raise ValueError(f'{key}: expected BF16, INT8 or MXFP8[rows, 256]')
+        formats = {'BF16': 'bf16', 'I8': 'int8_sym', 'F8_E4M3': 'mxfp8'}
         module = dict(
-            format='bf16' if spec['dtype'] == 'BF16' else 'int8_sym',
+            format=formats[spec['dtype']],
             weight_dtype=spec['dtype'],
             weight_shape=list(shape),
             layout='row_major',
         )
         expected.add(key)
-        if spec['dtype'] == 'I8':
+        if spec['dtype'] in ('I8', 'F8_E4M3'):
+            # 表宽固定为 256；每组 32 列 → 8 个 scale
+            groups = 8
             scale_key = prefix + '.scale'
             scale = tensors.get(scale_key, {})
-            if scale.get('dtype') != ENGRAM_SCALE_DTYPE or scale.get('shape') != [shape[0], 8]:
-                raise ValueError(f'{scale_key}: expected {ENGRAM_SCALE_DTYPE} [rows, 8]')
+            if scale.get('dtype') != ENGRAM_SCALE_DTYPE or scale.get('shape') != [shape[0], groups]:
+                raise ValueError(f'{scale_key}: expected {ENGRAM_SCALE_DTYPE} [rows, {groups}]')
             expected.add(scale_key)
             module.update(
                 group_size=32,
@@ -263,6 +266,50 @@ def write_engram_int8(path, model_path, key, group=32, block_rows=1 << 20):
         TensorOutput(path, scale_key, ENGRAM_SCALE_DTYPE, (rows, groups)),
     ]
     result = TensorStreamProcessor(block_rows=block_rows).process(inputs, outputs, quant, desc=key)
+    entry = result[str(Path(path))]
+    return {
+        'sha256': entry['sha256'],
+        'payload_bytes': rows * width + rows * groups,
+        'file_bytes': Path(path).stat().st_size,
+        'tensors': entry['tensors'],
+    }
+
+
+def write_engram_mxfp8(path, model_path, key, group=32, block_rows=1 << 20):
+    """Write one native MXFP8 table without touching its bits.
+
+    The source Engram table is already MXFP8: E4M3 weights against an E8M0
+    shared exponent per ``group`` values.  The serving loader keeps those bytes
+    verbatim (``F8_E4M3`` weights plus ``F8_E8M0`` scales), so this writer
+    streams both tensors row-block by row-block and only checks their dtype and
+    shape -- no decode, no requantization, no precision change.
+    """
+    shape, _ = tensor_spec(model_path, key)
+    rows, width = shape
+    assert width % group == 0, f'{key}: width {width} not divisible by group {group}'  # nosec
+    groups = width // group
+    scale_key = key.removesuffix('.weight') + '.scale'
+    root = Path(model_path)
+    index = checkpoint_index(root)
+    if scale_key not in index:
+        raise ValueError(f'{key}: MXFP8 Engram table requires {scale_key}')
+    inputs = [
+        TensorInput(root / index[key], key, shape),
+        TensorInput(root / index[scale_key], scale_key, (rows, groups)),
+    ]
+
+    def passthrough(w_block, s_block):
+        assert w_block.dtype == torch.float8_e4m3fn, f'{key}: source is not F8_E4M3'  # nosec
+        assert s_block.dtype == torch.float8_e8m0fnu, f'{scale_key}: source is not F8_E8M0'  # nosec
+        assert w_block.shape == (w_block.shape[0], width)  # nosec
+        assert s_block.shape == (w_block.shape[0], groups)  # nosec
+        return [w_block.contiguous(), s_block.contiguous()]
+
+    outputs = [
+        TensorOutput(path, key, 'F8_E4M3', shape),
+        TensorOutput(path, scale_key, ENGRAM_SCALE_DTYPE, (rows, groups)),
+    ]
+    result = TensorStreamProcessor(block_rows=block_rows).process(inputs, outputs, passthrough, desc=key)
     entry = result[str(Path(path))]
     return {
         'sha256': entry['sha256'],
