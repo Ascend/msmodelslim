@@ -139,7 +139,7 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 
 ### 步骤 5：在全局配置文件中注册模型
 
-**目标**：在 `config/config.ini` 中注册模型名称和加载器入口，使 CLI能够通过 `--model_type` 正确路由。
+**目标**：在 `config/config.ini` 中注册模型名称和加载器入口，使CLI能够通过 `--model_type` 正确路由。
 
 **操作**：
 

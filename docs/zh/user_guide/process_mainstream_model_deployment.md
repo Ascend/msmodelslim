@@ -136,4 +136,4 @@ flowchart LR
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 量化（PTQ） | 训练后量化（Post-Training Quantization）：模型训练完成后直接对权重和激活进行量化，无需重训练| 《[ptq知识](../knowledge_base/ptq)》 |
+| 量化（PTQ） | 训练后量化（Post-Training Quantization）：模型训练完成后直接对权重和激活进行量化，无需重训练| 《[ptq知识](../knowledge_base/ptq/README.md)》 |

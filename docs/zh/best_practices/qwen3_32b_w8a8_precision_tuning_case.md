@@ -125,7 +125,7 @@ msmodelslim quant \
 
 **操作**：
 
-1. **按优先级顺序逐次调优**：可以优先选择 `per_tensor`（静态量化）, `per_token`（动态量化）的两种方法。如果 `per_tensor` 和 `per_token` 均不达标，可参考《[量化精度调优指南 - 量化算法选择](../user_guide/process_quantization_precision_tuning.md#步骤3量化算法选择)》尝试其他量化策略，例如切换权重量化方法（`ssz`/`gptq`/`autoround`）或激活量化方法（`histogram`）、`pd_mix` 混合粒度等。
+1. **按优先级顺序逐次调优**：可以优先选择 `per_tensor`（静态量化）, `per_token`（动态量化）两种方法。如果 `per_tensor` 和 `per_token` 均不达标，可参考《[量化精度调优指南 - 量化算法选择](../user_guide/process_quantization_precision_tuning.md#步骤3量化算法选择)》尝试其他量化策略，例如切换权重量化方法（`ssz`/`gptq`/`autoround`）或激活量化方法（`histogram`）、`pd_mix` 混合粒度等。
 
    a. **per_tensor（静态量化）**：在量化配置 YAML 的 `linear_quant` 处理器中，将 `qconfig.act.scope` 设为 `per_tensor`，执行量化命令。`linear_quant` 处理器参数详见《[Linear Quant 算法](../knowledge_base/quantization_algorithms/linear_quant/usage_linear_quant.md)》，量化方法参数详见[MinMax](../knowledge_base/quantization_algorithms/minmax/usage_minmax.md)。——评测后若精度不达标，切换为 per_token。
 

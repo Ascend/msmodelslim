@@ -7,7 +7,7 @@
 
 ## 1. 概述
 
-W8A8 PD-Mix 量化是以 **Prefill / Decode 推理阶段**为界混合两种激活量化策略的 W8A8 方案：Prefill 阶段激活逐 token 动态量化（保精度），Decode 阶段激活整体静态量化（零在线开销）。它是 [W8A8 动态](term_w8a8_dynamic.md) 与 [W8A8 静态](term_w8a8_static.md) 的分阶段融合，PD-Mix即 Prefill-Decode Mix。
+W8A8 PD-Mix 量化是以 **Prefill / Decode 推理阶段**为界混合两种激活量化策略的 W8A8 方案：Prefill 阶段激活逐 token 动态量化（保精度），Decode 阶段激活整体静态量化（零在线开销）。它是 [W8A8 动态](term_w8a8_dynamic.md) 与 [W8A8 静态](term_w8a8_static.md) 的分阶段融合，PD-Mix即Prefill-Decode Mix。
 
 ---
 

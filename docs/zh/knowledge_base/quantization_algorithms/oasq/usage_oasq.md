@@ -135,7 +135,7 @@ spec:
 | `max_iters` | 离群阈值搜索的最大迭代次数；不设置时用实现默认（当前 `8`），显式设置须 >0。 | 省略，用默认。 | 日志显示迭代耗尽且离群比例难落入目标区间时，再小幅增大。 |
 | `symmetric` | 是否按对称假设收集统计；非对称时 `norm-linear` 可启用 shift，其他子图会关闭 shift。 | `true`。 | 仅当后续量化明确非对称且主要依赖 `norm-linear` 时设 `false`。 |
 | `enable_subgraph_type` | 应用 OASQ 的子图类型列表。 | 默认四类；有实践配方则沿用。 | 某类结构无效或不兼容时单独去掉该类，不要用 `max_iters` 补偿。 |
-| `include` / `exclude` | 模块名通配白名单 / 黑名单；`exclude` 优先。 | `include: ["*"]`，`exclude: []`。 | 局部敏感或不兼容层用 `exclude` 回退；改范围后需重新跑量化对比。 |
+| `include` / `exclude` | 模块名通配允许列表 / 阻止列表；`exclude` 优先。 | `include: ["*"]`，`exclude: []`。 | 局部敏感或不兼容层用 `exclude` 回退；改范围后需重新跑量化对比。 |
 
 调整顺序建议：先固定 `symmetric` 与子图类型，再改 `include`/`exclude`，最后才动 `max_iters`。每次只改一项，并保持后续量化配置与校准集不变。
 

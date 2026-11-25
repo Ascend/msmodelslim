@@ -84,7 +84,7 @@
 
 ## 🚀 快速开始
 
-MindStudio ModelSlim（msModelSlim）是面向昇腾生态的模型压缩工具，覆盖大语言和多模态模型的量化与压缩。我们以 Qwen3.6-27B 为例，体验如何通过一键量化将模型权重压缩为 W8A8 格式，并基于 vLLM-Ascend 完成推理部署验证，具体请参见《[msModelSlim 快速入门](./docs/zh/quick_start/quantization_quick_start.md)》。
+MindStudio ModelSlim（msModelSlim）是面向昇腾生态的模型压缩工具，覆盖大语言模型和多模态模型的量化与压缩。我们以 Qwen3.6-27B 为例，体验如何通过一键量化将模型权重压缩为 W8A8 格式，并基于 vLLM-Ascend 完成推理部署验证，具体请参见《[msModelSlim 快速入门](./docs/zh/quick_start/quantization_quick_start.md)》。
 
 ---
 
@@ -100,7 +100,7 @@ pip install msmodelslim
 msmodelslim --help
 ```
 
-> 工具支持同时在线安装、离线安装以及源码安装，请参见《[msModelSlim 安装指南](./docs/zh/install_guide/install_guide.md)》。
+> 工具同时支持在线安装、离线安装以及源码安装，请参见《[msModelSlim 安装指南](./docs/zh/install_guide/install_guide.md)》。
 
 ---
 

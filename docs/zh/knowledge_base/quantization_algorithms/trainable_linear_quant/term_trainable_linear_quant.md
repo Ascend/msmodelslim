@@ -40,7 +40,7 @@ $$
 \mathcal L(\theta)=\ell\big(Y,\hat Y\big),
 $$
 
-其中 $\ell$ 默认可为逐元素 L1（实现中 `loss_type: l1`），也可选用对离群区域加权的自定义形式（`custom_outlier`）。
+其中 $\ell$ 默认为逐元素 L1（实现中 `loss_type: l1`），也可选用对离群区域加权的自定义形式（`custom_outlier`）。
 
 以权重量化为例，归一化后的可学习舍入可抽象为：
 

@@ -192,7 +192,7 @@
 
 **输出**：
 
-- vLLM Ascend 推理服务正常运行，curl 请求返回正常响应；AISBench 精度测评结果精度达标。
+- vLLM Ascend 推理服务正常运行，curl 请求返回正常响应；AISBench 精度测评结果达标。
 
 ## 5. 结果与经验
 
