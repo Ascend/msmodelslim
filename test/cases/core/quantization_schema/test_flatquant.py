@@ -208,6 +208,29 @@ class TestFlatQuantOnlineWrapper(unittest.TestCase):
         repr_str = wrapper.extra_repr()
         self.assertIn("No affine transformation", repr_str)
 
+    def test_apply_clip_matches_tokenwise_output_when_input_has_leading_dimensions(self):
+        """场景：裁剪二维、三维及四维激活值。预期：保留输入形状，数值与逐 token 裁剪一致。"""
+        wrapper = FlatQuantOnlineWrapper(nn.Identity())
+        wrapper._add_clip(torch.tensor([0.5]))
+        for shape in [(6, 4), (1, 3, 4), (2, 3, 4), (2, 1, 4), (2, 2, 3, 4)]:
+            with self.subTest(shape=shape):
+                x = torch.arange(torch.tensor(shape).prod().item(), dtype=torch.float32).reshape(shape) - 12
+                expected = torch.cat([wrapper(token.unsqueeze(0)) for token in x.reshape(-1, 4)]).reshape(shape)
+                actual = wrapper(x)
+                self.assertEqual(actual.shape, x.shape)
+                torch.testing.assert_close(actual, expected)
+
+    def test_apply_clip_matches_tokenwise_output_when_input_is_noncontiguous(self):
+        """场景：裁剪非连续三维激活值。预期：保留输入形状，数值与逐 token 裁剪一致。"""
+        wrapper = FlatQuantOnlineWrapper(nn.Identity())
+        wrapper._add_clip(torch.tensor([0.5]))
+        x = (torch.arange(24, dtype=torch.float32).reshape(3, 2, 4) - 12).transpose(0, 1)
+        self.assertFalse(x.is_contiguous())
+        expected = torch.cat([wrapper(token.unsqueeze(0)) for token in x.reshape(-1, 4)]).reshape(x.shape)
+        actual = wrapper(x)
+        self.assertEqual(actual.shape, x.shape)
+        torch.testing.assert_close(actual, expected)
+
 
 class TestFlatQuantOnlineHookIR(unittest.TestCase):
     """Unit tests for FlatQuantOnlineHookIR."""
@@ -290,6 +313,23 @@ class TestFlatQuantOnlineHookIR(unittest.TestCase):
         module = nn.Linear(32, 16)
         wrapper = hook_ir.wrapper_module(module)
         self.assertIsNotNone(wrapper.clip_factor)
+
+    def test_forward_matches_tokenwise_output_when_hook_wraps_batched_linear(self):
+        """场景：HookIR 包装线性层并对批量输入旋转和裁剪。预期：输出形状及数值与逐 token 执行一致。"""
+        module = nn.Linear(4, 3, bias=False)
+        with torch.no_grad():
+            module.weight.copy_(torch.arange(12, dtype=torch.float32).reshape(3, 4) / 12)
+        hook_ir = FlatQuantOnlineHookIR(torch.tensor([0.5]), {"right_trans": torch.eye(4).flip(1)})
+        hook_ir.set_hook_handle(module.register_forward_pre_hook(hook_ir))
+        wrapper = hook_ir.wrapper_module(module)
+        for shape in [(2, 3, 4), (2, 1, 4)]:
+            with self.subTest(shape=shape):
+                x = torch.arange(torch.tensor(shape).prod().item(), dtype=torch.float32).reshape(shape) - 12
+                expected = torch.cat([wrapper(token.unsqueeze(0)) for token in x.reshape(-1, 4)])
+                expected = expected.reshape(*shape[:-1], 3)
+                actual = wrapper(x)
+                self.assertEqual(actual.shape, expected.shape)
+                torch.testing.assert_close(actual, expected)
 
     def test_FlatQuantOnlineHookIR_trans_not_none_when_wrapper_module(self):
         """FlatQuantOnlineHookIR-调用wrapper_module-变换矩阵不为None"""

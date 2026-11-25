@@ -86,7 +86,7 @@ class FlatQuantOnlineWrapper(WrapperIR):
         Returns:
             经过可学习激活值裁剪，裁剪之后的激活值。
         """
-        init_shape = hidden_states.shape  # noqa: F841
+        init_shape = hidden_states.shape
         reshaped_hidden_states = hidden_states.reshape((-1, hidden_states.shape[-1]))
 
         h_max, h_min = reshaped_hidden_states.amax(1, keepdim=True), reshaped_hidden_states.amin(1, keepdim=True)
@@ -95,9 +95,9 @@ class FlatQuantOnlineWrapper(WrapperIR):
         h_max = h_max * self.clip_factor
         h_min = h_min * self.clip_factor
 
-        h_clamped = hidden_states.clamp(min=h_min, max=h_max)
+        h_clamped = reshaped_hidden_states.clamp(min=h_min, max=h_max)
 
-        return h_clamped
+        return h_clamped.reshape(init_shape)
 
     def _apply_flat(self, hidden_states: torch.Tensor) -> torch.Tensor:
         """
