@@ -61,6 +61,16 @@ class FA3QuantProcessorConfig(AutoProcessorConfig):
 
     位于 `spec.process[]`，由 `type: fa3_quant` 分派；对 FA3 注意力模块应用统一量化
     （`qconfig`）或 Q/K/V 分支级量化（`details`），两者互斥。
+
+    约束：
+    - `qconfig` 与 `details.fa_q`/`details.fa_k`/`details.fa_v` 都按 FA3 的 Q/K/V 注意力张量
+      解释；`scope` 支持 `per_head`、`per_channel`、`per_tensor`、`per_token` 和 `per_block`。
+    - `method: static` 目前仅支持 HiF8，且仅支持 `per_head` 或 `per_tensor`；其他
+      `scope` 不支持静态固定 scale。
+    - `per_token` 和 `per_block` 是数据无关的动态量化路径；`per_head`、`per_channel` 和
+      `per_tensor` 需要校准统计。
+    - 具体 `(dtype, scope, symmetric, method)` 组合仍需有对应的 FA3/激活量化实现；未注册的
+      组合会在创建量化器时失败。
     """
 
     type: Literal["fa3_quant"] = Field(default="fa3_quant", description="处理器类型，固定为 `fa3_quant`。")

@@ -509,13 +509,14 @@ def _nested_refs(
                     refs.append((item_path, slugs[precheck], "type 分派"))
             continue
         if _refers_to_saver(info.annotation):
-            # 单个 saver/format 对象（如 saver 处理器的 format）为自动注入，不列出公开格式；
-            # 只有列表形式（如 spec.save[]）才是用户可选的保存格式。
-            if _annotation_is_list(info.annotation):
-                item_path = field_path if field_path.endswith("[]") else f"{field_path}[]"
-                for fmt in formats:
-                    if fmt in slugs:
-                        refs.append((item_path, slugs[fmt], "type 分派"))
+            # 保存格式无论列表（如 spec.save[]）还是单对象（如 saver 的 format），
+            # 都按 type 分派到同一组公开 QuantFormatConfig 派生配置。
+            item_path = field_path
+            if _annotation_is_list(info.annotation) and not item_path.endswith("[]"):
+                item_path = f"{item_path}[]"
+            for fmt in formats:
+                if fmt in slugs:
+                    refs.append((item_path, slugs[fmt], "type 分派"))
             continue
         if annotation_refers_to(info.annotation, AutoProcessorConfig):
             item_path = (
@@ -589,8 +590,10 @@ def _dispatch_bases_for(cls: type, yaml_path: str) -> Dict[str, str]:
     for name, info in cls.model_fields.items():
         field_path = f"{yaml_path}.{name}" if yaml_path else name
         ann = info.annotation
-        if _refers_to_saver(ann) and _annotation_is_list(ann):
-            item_path = field_path if field_path.endswith("[]") else f"{field_path}[]"
+        if _refers_to_saver(ann):
+            item_path = field_path
+            if _annotation_is_list(ann) and not item_path.endswith("[]"):
+                item_path = f"{item_path}[]"
             bases[item_path] = "QuantFormatConfig"
             continue
         if annotation_refers_to(ann, AutoProcessorConfig):
