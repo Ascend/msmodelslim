@@ -105,6 +105,11 @@ class ModelslimV1QuantService(IQuantService):
             Literal['model_wise', 'layer_wise']: 确定的pipeline类型
         """
         if quant_config.spec.runner == RunnerType.MODEL_WISE:
+            if device_indices is not None and len(device_indices) > 1:
+                get_logger().warning(
+                    "model_wise runner cannot honor specified devices; device indices %s will be ignored.",
+                    device_indices,
+                )
             get_logger().info("Model-wise runner detected, using model-wise pipeline.")
             return RunnerType.MODEL_WISE
 
@@ -168,6 +173,11 @@ class ModelslimV1QuantService(IQuantService):
                 if item.is_file() and item.suffix == ".safetensors":
                     item.unlink()
             get_logger().info("Cleared safetensors under save_path: %s", save_path)
+
+        # torch_npu 首次运行期调用会 _lazy_init() 默认设备(NPU:0)，
+        # seed_all 内部的 manual_seed_all 就是这条调用，先绑到目标卡。
+        if device == DeviceType.NPU and device_indices:
+            torch.npu.set_device(f"npu:{device_indices[0]}")
 
         common_seed = 42
         seed_all(seed=common_seed, mode=True)
