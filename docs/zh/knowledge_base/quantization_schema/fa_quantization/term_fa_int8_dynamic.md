@@ -82,5 +82,5 @@ $$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|
 
 ## 5. 参考文档
 
-1. 《[FA3 Quant 参数配置流程指南](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》
+1. 《[FA3 Quant 参数配置流程指南](../../quantization_algorithm/fa3_quant/usage_fa3_quant.md)》
 2. 《[量化模式](../README.md)》

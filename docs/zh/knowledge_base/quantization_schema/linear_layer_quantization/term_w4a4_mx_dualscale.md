@@ -75,12 +75,12 @@ $$e = \lfloor \log_2(\max_{i \in \mathrm{block}}|x_i|) \rfloor, \qquad q_i = \ma
 - [W4A4 MX 动态量化](term_w4a4_mx_dynamic.md)：同类模式，单层缩放的 MXFP4 基础版。
 - [W4A4 动态量化](term_w4a4_dynamic.md)：对比模式，INT4 整数方案。
 - [W4A8 MX 动态量化](term_w4a8_mx_dynamic.md)：同类模式，激活改用 MXFP8 保精度。
-- [DualScale 双尺度量化算法](../../quantization_algorithms/dual_scale/term_dual_scale.md)：配套术语，本模式对应的算法处理器文档。
+- [DualScale 双尺度量化算法](../../quantization_algorithm/dual_scale/term_dual_scale.md)：配套术语，本模式对应的算法处理器文档。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
-2. 《[DualScale 参数配置流程指南](../../quantization_algorithms/dual_scale/usage_dual_scale.md)》
+1. 《[线性量化参数配置流程指南](../../quantization_algorithm/linear_quant/usage_linear_quant.md)》
+2. 《[DualScale 参数配置流程指南](../../quantization_algorithm/dual_scale/usage_dual_scale.md)》
 3. 《[量化模式](../README.md)》

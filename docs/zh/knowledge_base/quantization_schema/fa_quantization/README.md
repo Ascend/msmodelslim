@@ -95,12 +95,12 @@ FA 量化的一个"模式"是指 **Q/K/V 三分支量化方式的整体组合**�
 - [KVCache 量化](../kv_cache_quantization/README.md)：上位概念（基础），本类在其基础上追加 Q 量化。
 - [线性层量化](../linear_layer_quantization/README.md)：同位概念，作用于权重与激活的量化类别，可与本类叠加。
 - [FA INT8 PerHead 量化](term_fa_int8_perhead.md)：下位概念，本类别下三分支统一 per-head 静态的整体组合模式。
-- [FA3 Quant 注意力激活量化算法](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)：配套术语，描述 FA 量化算法。
+- [FA3 Quant 注意力激活量化算法](../../quantization_algorithm/fa3_quant/term_fa3_quant.md)：配套术语，描述 FA 量化算法。
 
 ---
 
 ## 5. 参考文档
 
 1. Dao T et al. FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness. NeurIPS 2022. <https://arxiv.org/abs/2205.14135>
-2. 《[FA3 Quant 参数配置流程指南](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》
+2. 《[FA3 Quant 参数配置流程指南](../../quantization_algorithm/fa3_quant/usage_fa3_quant.md)》
 3. 《[量化模式](../README.md)》

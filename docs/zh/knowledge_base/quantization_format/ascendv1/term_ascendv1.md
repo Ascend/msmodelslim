@@ -519,7 +519,7 @@ W8A8 静态激活相关字段与 W8A8_DYNAMIC 权重量化字段的并集：
 | `Q_FP8_DYNAMIC_KV_FP8` | [FA Q-FP8 动态 K/V-FP8 静态量化](../../quantization_schema/fa_quantization/term_fa_q_fp8_dynamic_kv_fp8.md) |
 | `QK_MXFP8_DYNAMIC_V_MXFP8_PER_CHANNEL` | [FA QK-MXFP8 动态 / V-MXFP8 PerChannel 静态量化](../../quantization_schema/fa_quantization/term_fa_qk_mxfp8_dynamic_v_mxfp8_perchannel.md) |
 
-静态分支落盘 `scale` / `offset`：per-head 静态写出 float32 类型的 scale，并写出一个取值为零的 zero-point，INT8 方案为零值 int8、FP8 方案为零值 float32。per-channel 静态（MXFP8）将 E8M0 共享指数编码为 uint8（exp + 127）写为 scale，并随附 uint8 零值 zero-point。动态分支（per-token / per-block）对应激活不落盘 `scale` / `offset`，仅写入上述 `{prefix}.quant_type`。算法配置见《[FA3 Quant](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)》。
+静态分支落盘 `scale` / `offset`：per-head 静态写出 float32 类型的 scale，并写出一个取值为零的 zero-point，INT8 方案为零值 int8、FP8 方案为零值 float32。per-channel 静态（MXFP8）将 E8M0 共享指数编码为 uint8（exp + 127）写为 scale，并随附 uint8 零值 zero-point。动态分支（per-token / per-block）对应激活不落盘 `scale` / `offset`，仅写入上述 `{prefix}.quant_type`。算法配置见《[FA3 Quant](../../quantization_algorithm/fa3_quant/term_fa3_quant.md)》。
 
 **<span id="st-faquant">`quant_model_weights*.safetensors`</span>**
 

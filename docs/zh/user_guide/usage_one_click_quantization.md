@@ -83,7 +83,7 @@ msmodelslim quant \
 
 > **可选：了解量化算法与格式选型**
 >
-> 默认情况下无需关心算法与格式细节，工具自动匹配最佳实践配置。如需理解离群值抑制、线性量化等算法差异，参见《[量化算法说明](../knowledge_base/quantization_algorithms/README.md)》；如需选择导出格式（AscendV1、compressed-tensors 等），参见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》。
+> 默认情况下无需关心算法与格式细节，工具自动匹配最佳实践配置。如需理解离群值抑制、线性量化等算法差异，参见《[量化算法说明](../knowledge_base/quantization_algorithm/README.md)》；如需选择导出格式（AscendV1、compressed-tensors 等），参见《[量化格式支持矩阵](../knowledge_base/quantization_format/README.md)》。
 
 **输出**：确认的 `${MODEL_TYPE}` 与 `${QUANT_TYPE}`（即 `--model_type`、`--quant_type` 两个参数的取值）。
 

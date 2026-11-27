@@ -128,12 +128,12 @@ flowchart LR
    | --- | --- | --- | --- |
    | MX 格式量化（linear_quant） | `mxfp8`（E4M3/E5M2）或 `mxfp4` 数据类型，配合 `scope: per_block`（通常每 32 个元素共享 scale），保持浮点高动态范围 | 昇腾 NPU 硬件优化的权重与激活量化 | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
    | INT8 动态量化（linear_quant） | `dtype: int8`，激活 `per_token` 逐 Token 在线计算 scale（动态）、权重 `per_channel`，无需浮点 dump 校准数据 | 快速验证与轻量部署（如 Wan2.1） | 《[linear_quant 配置说明](../../../api_reference/config/processor/linear_quant.md)》 |
-   | MinMax / MSE | 激活量化用 `minmax` 统计极值；权重量化推荐 `mse_round`，以均方误差最小化搜索舍入 | 提升低位宽下的权重保真度 | 《[MinMax](../../quantization_algorithms/minmax/usage_minmax.md)》 |
-   | 在线正交旋转（QuaRot / online_quarot） | 在自注意力投影层引入正交变换矩阵，打散激活离群值通道 | 极端敏感层或低比特量化时的画质改善 | 《[QuaRot](../../quantization_algorithms/quarot/usage_quarot.md)》 |
+   | MinMax / MSE | 激活量化用 `minmax` 统计极值；权重量化推荐 `mse_round`，以均方误差最小化搜索舍入 | 提升低位宽下的权重保真度 | 《[MinMax](../../quantization_algorithm/minmax/usage_minmax.md)》 |
+   | 在线正交旋转（QuaRot / online_quarot） | 在自注意力投影层引入正交变换矩阵，打散激活离群值通道 | 极端敏感层或低比特量化时的画质改善 | 《[QuaRot](../../quantization_algorithm/quarot/usage_quarot.md)》 |
    | FA3 注意力量化（fa3_quant） | 对自注意力 QK^T 与 PV 计算引入 `fp8_e4m3` 或 `mxfp4` 低比特执行 | 配合 W4A4 等低比特方案进一步压缩注意力计算开销 | 《[fa3_quant 配置说明](../../../api_reference/config/processor/fa3_quant.md)》 |
    | 按专家独立配置（per_expert） | 为敏感专家单独指定更保守的量化策略 | 多专家 DiT 中各专家误差容忍度差异较大时 | — |
 
-   > 更多量化算法介绍请参考《[量化算法总览](../../quantization_algorithms/README.md)》。
+   > 更多量化算法介绍请参考《[量化算法总览](../../quantization_algorithm/README.md)》。
 
 2. **算法选型与调优**：
    - **W8A8 INT8 动态量化（轻量起点）**：激活 `per_token`、权重 `per_channel`，`dtype` 均为 `int8`。逐 Token 在线计算 scale，可设 `enable_dump: false` 跳过浮点推理 dump，适合快速验证与资源受限场景（可参考 `lab_practice/wan2_1/wan2_1_w8a8_dynamic.yaml`，其中排除了 `*ffn.2*` 等敏感层）。

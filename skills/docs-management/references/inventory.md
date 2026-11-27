@@ -7,7 +7,7 @@
 ## 步骤
 
 1. 遍历 `docs/zh/` 各一级目录：`api_reference`、`best_practices`、`contributing`、`install_guide`、`knowledge_base`、`legal`、`quick_start`、`release_notes`、`support`、`user_guide`。
-2. `knowledge_base/` 按领域子目录分类：`model`、`quantization_algorithms`、`quantization_format`、`tuning_strategies`、`ptq`、`parallel`。
+2. `knowledge_base/` 按领域子目录分类：`model`、`quantization_algorithm`、`quantization_format`、`tuning_strategies`、`ptq`、`parallel`。
 3. 按区域分类统计，每个区域下列出文档文件与子目录。
 4. 对每个文档标注：
    - 所属区域。

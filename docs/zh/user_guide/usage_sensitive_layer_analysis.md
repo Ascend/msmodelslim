@@ -78,8 +78,8 @@ msmodelslim analyze layer \
 
 | 可选指标 | 适用说明 | 算法说明 | 推荐 |
 | --- | --- | --- | --- |
-| `mse_layer_wise` | 按 Decoder 块内子模块输出 MSE 评估层敏感度，显存更友好 | 《[层级 MSE](../knowledge_base/quantization_algorithms/mse_layer_wise/term_mse_layer_wise.md)》 | 默认首选 |
-| `mse_model_wise` | 按模型最终输出 MSE 评估层敏感度，显存占用更大 | 《[模型级 MSE](../knowledge_base/quantization_algorithms/mse_model_wise/term_mse_model_wise.md)》 | 需最终输出视角时改用 |
+| `mse_layer_wise` | 按 Decoder 块内子模块输出 MSE 评估层敏感度，显存更友好 | 《[层级 MSE](../knowledge_base/quantization_algorithm/mse_layer_wise/term_mse_layer_wise.md)》 | 默认首选 |
+| `mse_model_wise` | 按模型最终输出 MSE 评估层敏感度，显存占用更大 | 《[模型级 MSE](../knowledge_base/quantization_algorithm/mse_model_wise/term_mse_model_wise.md)》 | 需最终输出视角时改用 |
 
 **输出**：已选定的 `${METRICS}`。
 
@@ -107,7 +107,7 @@ msmodelslim analyze layer \
 
 - **尚未接入的模型**：须先完成适配器开发与注册，再进入步骤4。通用适配要求见《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》。
 - **支持矩阵中已接入的模型**：可跳过通用适配，确认所用 `--model_type` 名称即可。
-- **算法侧额外接口**：若所选指标要求额外分析接口，一并按算法文档补齐（入口见《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#3-敏感层分析算法)》）。
+- **算法侧额外接口**：若所选指标要求额外分析接口，一并按算法文档补齐（入口见《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithm/README.md#3-敏感层分析算法)》）。
 
 完成或修改适配器后，在仓库根目录重新执行 `bash install.sh`，使注册生效。
 
@@ -193,7 +193,7 @@ msmodelslim analyze layer \
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
 | 模型适配 | 新模型接入与注册 | 《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》 |
-| 敏感层分析算法 | 用于 `msmodelslim analyze` 的各类敏感度指标（如层级 MSE 等） | 《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#3-敏感层分析算法)》 |
+| 敏感层分析算法 | 用于 `msmodelslim analyze` 的各类敏感度指标（如层级 MSE 等） | 《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithm/README.md#3-敏感层分析算法)》 |
 
 ## 9. 接口文档列表
 

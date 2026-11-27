@@ -23,7 +23,7 @@ SVDQuant 不是对线性层权重与激活直接做低位宽量化，而是在�
 | 量化对象 | 残差主通路的权重 W 与激活 A；低秩旁路不量化 | 离群值迁移后权重被拆为低秩分量（高精度）与残差分量（低比特量化） |
 | 位宽 | 残差 W/A 低比特（如 4bit）；低秩旁路 FP16 | 位宽取决于残差线性量化配置 |
 | 数据类型 | 混合 | 残差走低比特（如 MXFP4 / INT4），低秩旁路 FP16 |
-| 参数获取方式 | 跟随残差线性量化配置（静态 / 动态） | 由 [`linear_quant`](../../quantization_algorithms/linear_quant/term_linear_quant.md) 决定 |
+| 参数获取方式 | 跟随残差线性量化配置（静态 / 动态） | 由 [`linear_quant`](../../quantization_algorithm/linear_quant/term_linear_quant.md) 决定 |
 | 量化粒度 | 跟随残差线性量化配置（如 per-block） | 无固定粒度，随配置而定 |
 | 对称性 | 跟随残差线性量化配置 | 随配置而定 |
 
@@ -57,7 +57,7 @@ $$
 ### 2.3 与其他模式的关系
 
 - **与 [W4A4 动态量化](term_w4a4_dynamic.md)（同为极低比特方案）**：W4A4 直接对全部权重与激活整数量化；SVDQuant 先分解权重、仅量化残差分量，借低秩旁路吸收离群值，降低 4bit 的量化精度风险。二者可理解为“直接量化”与“分解后量化”两条路径。
-- **与 [W8A8 静态量化](term_w8a8_static.md)（基础线性量化方案）**：残差主通路的量化即通过 [`linear_quant`](../../quantization_algorithms/linear_quant/term_linear_quant.md) 实现，W8A8 等线性量化模式可作为残差主通路的底层量化方式。
+- **与 [W8A8 静态量化](term_w8a8_static.md)（基础线性量化方案）**：残差主通路的量化即通过 [`linear_quant`](../../quantization_algorithm/linear_quant/term_linear_quant.md) 实现，W8A8 等线性量化模式可作为残差主通路的底层量化方式。
 - **与 [浮点稀疏量化](term_float_sparse.md)（同为结构级模式）**：浮点稀疏以保留高位宽、跳过稀疏零值为特点；SVDQuant 以低秩分量吸收离群值为特点。两者都通过“保留部分高精度分量 + 压缩主体”的结构性思路降低压缩精度风险。
 
 ### 2.4 适用场景与限制
@@ -90,12 +90,12 @@ $$
 - [W8A8 静态量化](term_w8a8_static.md)：配套模式，可作为残差主通路的底层量化方式。
 - [浮点稀疏量化](term_float_sparse.md)：对比模式，同为“保留高精度分量 + 压缩主体”的结构级模式。
 - [FP16/BF16](../../dtype_ops/term_fp16_bf16.md)：配套术语，低秩旁路使用的高精度数据类型。
-- [SVDQuant 低秩残差量化算法](../../quantization_algorithms/svdquant/term_svdquant.md)：配套术语，算法侧的原理与实现说明。
+- [SVDQuant 低秩残差量化算法](../../quantization_algorithm/svdquant/term_svdquant.md)：配套术语，算法侧的原理与实现说明。
 
 ---
 
 ## 5. 参考文档
 
 1. Li M et al. SVDQuant: Absorbing Outliers by Low-Rank Components for 4-Bit Diffusion Models. NeurIPS 2024. <https://arxiv.org/abs/2411.05007>
-2. 《[SVDQuant 参数配置流程指南](../../quantization_algorithms/svdquant/usage_svdquant.md)》
+2. 《[SVDQuant 参数配置流程指南](../../quantization_algorithm/svdquant/usage_svdquant.md)》
 3. 《[量化模式](../README.md)》

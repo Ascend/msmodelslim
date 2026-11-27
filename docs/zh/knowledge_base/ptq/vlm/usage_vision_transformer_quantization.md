@@ -200,12 +200,12 @@ calib_data.jsonl 示例：
 
    | 算法 | 简述 | 适用场景 | 链接 |
    | --- | --- | --- | --- |
-   | MinMax | 统计张量极值直接计算 scale 与 zero-point，开销低 | W8A8 量化的基础估计算法 | 《[MinMax](../../quantization_algorithms/minmax/usage_minmax.md)》 |
-   | SmoothQuant | 将激活离群值按通道缩放迁移到权重 | 降低全网静态量化难度 | 《[SmoothQuant](../../quantization_algorithms/smooth_quant/usage_smooth_quant.md)》 |
-   | QuaRot | 引入正交 Walsh-Hadamard 旋转矩阵打散激活离群特征 | 改善低比特多模态模型的分布偏移 | 《[QuaRot](../../quantization_algorithms/quarot/usage_quarot.md)》 |
-   | KVCache Quant | 对多轮图文对话中的 Key/Value 缓存张量量化 | 多轮图文对话的显存优化 | 《[KVCache Quant](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)》 |
+   | MinMax | 统计张量极值直接计算 scale 与 zero-point，开销低 | W8A8 量化的基础估计算法 | 《[MinMax](../../quantization_algorithm/minmax/usage_minmax.md)》 |
+   | SmoothQuant | 将激活离群值按通道缩放迁移到权重 | 降低全网静态量化难度 | 《[SmoothQuant](../../quantization_algorithm/smooth_quant/usage_smooth_quant.md)》 |
+   | QuaRot | 引入正交 Walsh-Hadamard 旋转矩阵打散激活离群特征 | 改善低比特多模态模型的分布偏移 | 《[QuaRot](../../quantization_algorithm/quarot/usage_quarot.md)》 |
+   | KVCache Quant | 对多轮图文对话中的 Key/Value 缓存张量量化 | 多轮图文对话的显存优化 | 《[KVCache Quant](../../quantization_algorithm/kvcache_quant/usage_kvcache_quant.md)》 |
 
-   > 完整算法列表请参阅《[量化算法总览](../../quantization_algorithms/README.md)》。
+   > 完整算法列表请参阅《[量化算法总览](../../quantization_algorithm/README.md)》。
 
 2. **算法选型与调优**：
    - **视觉敏感投影层排除（关键策略）**：视觉特征投影层（如 `*merger*`、`*linear_fc2`、`*deepstack_merger_list*` 等）负责将图像 patch 特征映射至文本 token 空间，对数值精度高度敏感。在 `exclude` 列表中显式排除，保留浮点权重，可抑制跨模态对齐误差导致的图文理解崩塌。

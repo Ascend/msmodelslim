@@ -78,7 +78,7 @@ msmodelslim analyze attn \
 
 | 可选指标 | 适用说明 | 算法说明 | 推荐 |
 | --- | --- | --- | --- |
-| `mse` | 浮点与量化权重下 attention 输出 MSE，用于 FA 量化回退 | 《[Attention MSE](../knowledge_base/quantization_algorithms/attention_mse/term_attention_mse.md)》 | 当前唯一可选指标，直接选用 |
+| `mse` | 浮点与量化权重下 attention 输出 MSE，用于 FA 量化回退 | 《[Attention MSE](../knowledge_base/quantization_algorithm/attention_mse/term_attention_mse.md)》 | 当前唯一可选指标，直接选用 |
 
 **输出**：已选定的 `${METRICS}`。
 
@@ -106,7 +106,7 @@ msmodelslim analyze attn \
 
 - **尚未接入的模型**：须先完成适配器开发与注册，再进入步骤 4。通用适配要求见《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》。
 - **支持矩阵中已接入的模型**：可跳过通用适配，确认所用 `--model_type` 名称即可。
-- **算法侧额外接口**：若所选指标要求额外分析接口，一并按算法文档补齐（入口见《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#3-敏感层分析算法)》）。
+- **算法侧额外接口**：若所选指标要求额外分析接口，一并按算法文档补齐（入口见《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithm/README.md#3-敏感层分析算法)》）。
 
 完成或修改适配器后，在仓库根目录重新执行 `bash install.sh`，使注册生效。
 
@@ -194,7 +194,7 @@ msmodelslim analyze attn \
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
 | 模型适配 | 新模型接入与注册 | 《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》 |
-| 敏感层分析算法 | 用于 `msmodelslim analyze` 的各类敏感度指标（如 Attention MSE 等） | 《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#3-敏感层分析算法)》 |
+| 敏感层分析算法 | 用于 `msmodelslim analyze` 的各类敏感度指标（如 Attention MSE 等） | 《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithm/README.md#3-敏感层分析算法)》 |
 
 ## 9. 接口文档列表
 

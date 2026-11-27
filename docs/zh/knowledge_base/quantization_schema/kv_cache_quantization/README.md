@@ -55,13 +55,13 @@ KVCache 量化是对注意力机制中的 **KVCache（缓存的 Key/Value 张量
 - [线性层量化](../linear_layer_quantization/README.md)：同位概念，作用于权重与激活的量化类别，可与本类叠加。
 - [FA 量化](../fa_quantization/README.md)：进阶概念，在本类基础上进一步量化 Q。
 - [KVCache-PerChannel 量化](term_kv_cache_perchannel.md)：下位概念，本类别当前唯一的量化模式。
-- [KVCache Quant 缓存量化算法](../../quantization_algorithms/kvcache_quant/term_kvcache_quant.md)：配套术语，描述 KVCache 量化算法。
-- [KV Smooth 缓存平滑算法](../../quantization_algorithms/kv_smooth/term_kv_smooth.md)：前置术语，量化前对 KV 做平滑以降低量化误差。
+- [KVCache Quant 缓存量化算法](../../quantization_algorithm/kvcache_quant/term_kvcache_quant.md)：配套术语，描述 KVCache 量化算法。
+- [KV Smooth 缓存平滑算法](../../quantization_algorithm/kv_smooth/term_kv_smooth.md)：前置术语，量化前对 KV 做平滑以降低量化误差。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[KVCache Quant 参数配置流程指南](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)》
-2. 《[KV Smooth 参数配置流程指南](../../quantization_algorithms/kv_smooth/usage_kv_smooth.md)》
+1. 《[KVCache Quant 参数配置流程指南](../../quantization_algorithm/kvcache_quant/usage_kvcache_quant.md)》
+2. 《[KV Smooth 参数配置流程指南](../../quantization_algorithm/kv_smooth/usage_kv_smooth.md)》
 3. 《[量化模式](../README.md)》

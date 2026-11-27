@@ -66,7 +66,7 @@ $$x \approx (q - zero\_point) \times scale$$
 
 - **per-tensor**：整个张量共享一份 scale。
 - **per-channel**：沿选定轴各一份参数。同一套公式同时给权重和激活用：挂在权重上就叫 per-channel（如 W 的 out_dim）；挂在激活上、按 token 切行后就叫 per-token。`dtype_ops` 函数都是 `_per_channel_*`。
-- **per-group**：按固定大小分组（如 128个元素）各一份参数，如 [GPTQ](../quantization_algorithms/gptq/term_gptq.md)/[LAOS](../quantization_algorithms/laos/term_laos.md) 的分组量化。
+- **per-group**：按固定大小分组（如 128个元素）各一份参数，如 [GPTQ](../quantization_algorithm/gptq/term_gptq.md)/[LAOS](../quantization_algorithm/laos/term_laos.md) 的分组量化。
 - **per-token**：激活侧对 per-channel 的习称，按输入行（每个 token）各一份参数，常用于动态量化。
 - **per-head**：注意力布局下把 head 维挪到最后，公式仍是 per-channel。
 - **per-block**：按固定大小分块（如 [MXFP8](term_mxfp8.md)/[MXFP4](term_mxfp4.md) 的32个元素）共享一个块级指数，是 MX 格式的专用粒度；与 per-group 逐组记 scale 不同，per-block 共享的是指数。

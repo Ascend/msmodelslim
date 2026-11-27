@@ -1,8 +1,8 @@
 # DevKit
 
-DevKit是 msModelSlim V1 量化流水线中的**编排与资源管理**能力：它们挂在 `spec.process[]`（或由框架注入）上，以 `type` 分派，但不属于量化算法本体。算法负责「如何量化」；DevKit 负责「如何组合执行」等。
+DevKit 是 msModelSlim V1 量化流水线中的**编排与资源管理**能力，挂在 `spec.process[]`（或由框架注入）上，以 `type` 分派，但不属于量化算法本体。算法负责**如何量化**，DevKit 负责**如何组合执行**。
 
-> **阅读建议**：已对外开放的DevKit组件提供「使用指南」。字段级类型、默认值与完整 YAML 参考见《[配置说明导航](../../api_reference/config/README.md)》中对应 `type` 页。源码位于 [`msmodelslim/core/devkit/`](../../../../msmodelslim/core/devkit/)。
+> **阅读建议**：已对外开放的 DevKit 组件提供使用指南。字段级类型、默认值与完整 YAML 参考见《[配置说明导航](../../api_reference/config/README.md)》中对应 `type` 页。源码位于 [`msmodelslim/core/devkit/`](../../../../msmodelslim/core/devkit/)。
 
 ## 1. 组件分类
 
@@ -26,7 +26,7 @@ DevKit是 msModelSlim V1 量化流水线中的**编排与资源管理**能力：
 
 | 领域 | 关系 |
 |------|------|
-| [量化算法](../quantization_algorithms/README.md) | 算法处理器可出现在 `group.configs` 或与 DevKit 组件同列于 `process`；DevKit 不实现量化公式 |
+| [量化算法](../quantization_algorithm/README.md) | 算法处理器可出现在 `group.configs` 或与 DevKit 组件同列于 `process`；DevKit 不实现量化公式 |
 | [量化格式](../quantization_format/README.md) | 落盘格式由 `spec.save[]`（如 `ascendv1_saver`）配置，详见量化格式领域 |
 | [量化模式](../quantization_schema/README.md) | 模式描述 IR / FakeQuant 结构；DevKit 不定义新模式 |
 
@@ -34,7 +34,8 @@ DevKit是 msModelSlim V1 量化流水线中的**编排与资源管理**能力：
 
 ```text
 msmodelslim/core/devkit/
+├── __init__.py
 ├── group.py          # type: group（量化校准）
 ├── load.py           # type: load（设备与资源）
-└── save.py           # type: save（结果落盘）
+└── save.py           # type: saver（结果落盘）
 ```

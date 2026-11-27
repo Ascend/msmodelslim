@@ -6,7 +6,7 @@
 
 ## 1. 概述
 
-**INT4** 是4bit有符号整数，取值 $[-8, 7]$，共16个均匀档位。压缩比相对 [INT8](term_int8.md) 再翻一倍，通常只用于权重，并配合分组与重构（[GPTQ](../quantization_algorithms/gptq/term_gptq.md)、[LAOS](../quantization_algorithms/laos/term_laos.md)）。公式与 INT8 相同，只是 $b=4$。舍入遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229) 的 `roundTiesToEven`。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
+**INT4** 是4bit有符号整数，取值 $[-8, 7]$，共16个均匀档位。压缩比相对 [INT8](term_int8.md) 再翻一倍，通常只用于权重，并配合分组与重构（[GPTQ](../quantization_algorithm/gptq/term_gptq.md)、[LAOS](../quantization_algorithm/laos/term_laos.md)）。公式与 INT8 相同，只是 $b=4$。舍入遵循 [IEEE 754-2019](https://ieeexplore.ieee.org/document/8766229) 的 `roundTiesToEven`。函数用法见《[量化数据类型 ops 使用流程指南](usage_dtype_ops.md)》。
 
 ---
 

@@ -235,4 +235,4 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None:
 | VLM 量化使用指南 | 标准多模态理解模型量化全流程、配置协议与开箱即用示例 | 《[VLM 量化使用指南](usage_vision_transformer_quantization.md)》 |
 | multimodal_vlm_modelslim_v1 配置说明 | `process`/`save`/`dataset` 等多模态理解配置的字段说明 | 《[multimodal_vlm_modelslim_v1 配置说明](../../../api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》 |
 | 一键量化使用指南 | 一键量化 CLI 入口与完整命令参数说明 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
-| 量化算法总览 | 离群值平滑抑制与各类量化算法详述 | 《[量化算法总览](../../quantization_algorithms/README.md)》 |
+| 量化算法总览 | 离群值平滑抑制与各类量化算法详述 | 《[量化算法总览](../../quantization_algorithm/README.md)》 |

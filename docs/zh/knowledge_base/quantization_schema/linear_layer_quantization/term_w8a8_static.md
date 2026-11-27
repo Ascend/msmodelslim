@@ -58,7 +58,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 #### 2.4.2 使用限制
 
 - **依赖校准数据**：校准集分布偏差过大会导致 scale 失真、精度漂移。
-- **激活离群值敏感**：per-tensor 静态量化在激活存在显著离群值时精度劣化，需先做离群值抑制（如 [SmoothQuant](../../quantization_algorithms/smooth_quant/term_smooth_quant.md)）或改用[动态量化](term_w8a8_dynamic.md)。
+- **激活离群值敏感**：per-tensor 静态量化在激活存在显著离群值时精度劣化，需先做离群值抑制（如 [SmoothQuant](../../quantization_algorithm/smooth_quant/term_smooth_quant.md)）或改用[动态量化](term_w8a8_dynamic.md)。
 
 ---
 
@@ -76,13 +76,13 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 稀疏量化](term_w8a8_sparse.md)：同类模式，在本模式 INT8 静态量化之上收窄码本并二次压缩。
 - [W8A16 静态量化](term_w8a16_static.md)：同类模式，激活保持 16bit。
 - [W4A4 动态量化](term_w4a4_dynamic.md)：同类模式，更低比特的权重+激活量化。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
-- [MinMax 最小最大值量化算法](../../quantization_algorithms/minmax/term_minmax.md)：配套术语，静态量化常用的量化参数统计方法。
+- [线性量化算法](../../quantization_algorithm/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
+- [MinMax 最小最大值量化算法](../../quantization_algorithm/minmax/term_minmax.md)：配套术语，静态量化常用的量化参数统计方法。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
-2. 《[MinMax 参数配置流程指南](../../quantization_algorithms/minmax/usage_minmax.md)》
+1. 《[线性量化参数配置流程指南](../../quantization_algorithm/linear_quant/usage_linear_quant.md)》
+2. 《[MinMax 参数配置流程指南](../../quantization_algorithm/minmax/usage_minmax.md)》
 3. 《[量化模式](../README.md)》

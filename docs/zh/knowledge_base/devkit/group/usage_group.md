@@ -37,7 +37,7 @@ flowchart LR
 
 - **确认混合策略与子处理器**：列出层族与目标方案（如 Attention 用 W8A8 静态、MLP 用 W8A8 动态），并确认每个方案对应的处理器 `type` 与独立使用时的字段要求；有 `lab_practice` 配方时优先沿用。
 - **建立推荐配置**：把多个本可独立出现在 `process` 中的处理器挂到同一个 `type: group` 的 `configs` 下，建立可比较基线。挂入 Group 后，需校准数据的子处理器可共享同一轮前向。
-- **调整作用范围并避免重复量化**：用各子项的 `include` / `exclude` 圈定层族；同一层被多个子项匹配时会先后处理，通常用 `exclude` 避免无意重复量化。
+- **调整作用范围并避免重复量化**：用各子项的 `include` / `exclude` 圈定层族；同一层被多个子项匹配时会先后处理，通常用 `exclude` 避免无意义的重复量化。
 - **编写完整任务配置并执行**：补齐 `dataset`、`save` 等任务级字段后，通过一键量化 CLI 跑通端到端流程，并在异常时优先核对范围重叠与是否误写成多个独立处理器。
 
 实现见 [msmodelslim/core/devkit/group.py](../../../../../msmodelslim/core/devkit/group.py)。
@@ -52,7 +52,7 @@ flowchart LR
 
 1. 列出层族与策略，例如：`*self_attn*` → W8A8 静态；`*mlp*` → W8A8 动态并排除 `*gate*`。
 2. 确认每个策略对应的处理器 `type`（如 `linear_quant`、`smooth_quant`）及其独立使用时的字段要求。
-3. 若目标模型已有 `lab_practice` 配方，优先沿用其中的 Group / 范围配置。
+3. 若目标模型已有 `lab_practice` 配方，优先沿用其中的 `type: group`，以及各子处理器的作用范围。
 
 **输出**：一份层族到处理器 type 与关键参数的清单，可直接映射为 `configs` 列表项。
 
@@ -60,7 +60,7 @@ flowchart LR
 
 **操作**：
 
-下面配置用于建立 **W8A8 静态 + 动态混合量化** 的可比较基线。YAML 示例与原先《组合处理器》用户指南保持一致。
+下面配置用于建立 **W8A8 静态 + 动态混合量化** 的可比较基线。
 
 ```yaml
 apiversion: modelslim_v1
@@ -127,19 +127,19 @@ spec:
 **操作**：
 
 1. 按步骤 2 的示例补齐 `apiversion`、`spec.runner`（如需）、`dataset`、`save`。
-2. 执行一键量化（参数含义见《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》）：
+2. 执行一键量化，命令行如下所示，其中，`${MODEL_PATH}` 为浮点权重目录，`${SAVE_PATH}` 为量化权重输出目录，`${MODEL_TYPE}` 为模型适配器名称（大小写敏感，与支持矩阵一致），`${CONFIG}` 为含 `type: group` 的 YAML 路径，例如 `./group_mixed_w8a8.yaml`。`--device` 取 `npu` 或 `cpu`；多卡时把 `--device_id 0` 写成 `--device_id 0 1 2 3`
 
 ```bash
 msmodelslim quant \
-  --model_path <浮点模型目录> \
-  --save_path <量化权重输出目录> \
-  --model_type <模型适配器名称> \
-  --config ./group_mixed_w8a8.yaml \
+  --model_path "${MODEL_PATH}" \
+  --save_path "${SAVE_PATH}" \
+  --model_type "${MODEL_TYPE}" \
+  --config "${CONFIG}" \
   --device npu \
   --device_id 0
 ```
 
-**输出**：在 `--save_path` 下生成完整量化权重与描述文件。
+**输出**：在 `${SAVE_PATH}` 下生成完整量化权重与描述文件。
 
 **异常处置**：
 
@@ -153,5 +153,5 @@ msmodelslim quant \
 | group 配置说明 | 字段类型、默认值与完整配置约束。 | 《[group 配置说明](../../../api_reference/config/processor/group.md)》 |
 | modelslim_v1 配置说明 | runner、process、save、dataset 等任务级配置。 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
 | DevKit 总览 | DevKit 索引与领域边界。 | 《[DevKit](../README.md)》 |
-| 量化算法总览 | 可作为 `configs` 子项的算法使用指南。 | 《[量化算法](../../quantization_algorithms/README.md)》 |
+| 量化算法总览 | 可作为 `configs` 子项的算法使用指南。 | 《[量化算法](../../quantization_algorithm/README.md)》 |
 | 一键量化使用指南 | CLI 参数与端到端流程。 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |

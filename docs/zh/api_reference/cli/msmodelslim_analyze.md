@@ -95,7 +95,7 @@ msmodelslim analyze attn_head --model_type <model_type> --model_path <model_path
 - 历史用法 `--metrics attention_mse`（省略 scope 时）会转换为 `analyze attn --metrics mse` 并丢弃 `--patterns`；该行为仅为向后兼容，命令会给出废弃提示，不推荐作为正式用法。
 - `--top_k` 必须为大于0的整数；`--calibration_dataset`：LLM 为 `.json`/`.jsonl`，VLM 可为图文目录名（如 `calibImages`）。两者均只由 `linear`/`layer`/`attn` 提供，`attn_head` 无这两个参数（传入会报 `unrecognized arguments`，帮助信息中也不会列出）。
 - `--save_path` 对四个 scope 均可用，落盘内容随 scope 不同：`linear`/`layer`/`attn` 输出量化 YAML（`top <n>:` 加 `disable_names` 列表，`layer` scope 的整块回退名为 `<block>.*`），指定目录时文件名为 `<model_type>-<metrics>.yaml`；`attn_head` 输出 `head.pt`（含 `prefix_matching`/`copying` 两个字典），交付给后续 MindIE 推理框架的长序列 KV Cache 压缩能力使用，不写入量化配置。目录不存在时会自动创建；不指定该参数时结果只打印到日志。
-- `attn_head` / `ra_compress` 仅支持 LLM；多模态理解与多模态生成模型不适用。该场景不提供 `--top_k` 与 `--calibration_dataset`，校准输入由算法在运行时自行构造，详见《[RA Compress 使用指南](../../knowledge_base/quantization_algorithms/ra_compress/usage_ra_compress.md)》。
+- `attn_head` / `ra_compress` 仅支持 LLM；多模态理解与多模态生成模型不适用。该场景不提供 `--top_k` 与 `--calibration_dataset`，校准输入由算法在运行时自行构造，详见《[RA Compress 使用指南](../../knowledge_base/quantization_algorithm/ra_compress/usage_ra_compress.md)》。
 
 ## 5. 使用示例
 
@@ -171,7 +171,7 @@ msmodelslim analyze attn_head \
   --save_path ./head_result
 ```
 
-仅适用于大语言模型；多模态理解与多模态生成模型不支持。该场景不支持 `--calibration_dataset` 与 `--top_k`：算法会在运行时自行构造受控的随机校准输入（首 token + 随机重复段），外部校准集不参与计算。产出的 `head.pt` 交付给 MindIE 推理框架用于长序列 KV Cache 压缩：用户可据此完成长序列压缩，压缩后的模型可用于后续推理部署；具体已适配的量化模型列表，请参见《[MindIE 是什么](https://www.hiascend.com/document/detail/zh/mindie/10RC3/whatismindie/mindie_what_0001.html)》的“MindIE 支持模型列表”章节。该产物不写入量化配置。校准输入约定详见《[RA Compress 注意力头分析使用指南](../../knowledge_base/quantization_algorithms/ra_compress/usage_ra_compress.md)》。
+仅适用于大语言模型；多模态理解与多模态生成模型不支持。该场景不支持 `--calibration_dataset` 与 `--top_k`：算法会在运行时自行构造受控的随机校准输入（首 token + 随机重复段），外部校准集不参与计算。产出的 `head.pt` 交付给 MindIE 推理框架用于长序列 KV Cache 压缩：用户可据此完成长序列压缩，压缩后的模型可用于后续推理部署；具体已适配的量化模型列表，请参见《[MindIE 是什么](https://www.hiascend.com/document/detail/zh/mindie/10RC3/whatismindie/mindie_what_0001.html)》的“MindIE 支持模型列表”章节。该产物不写入量化配置。校准输入约定详见《[RA Compress 注意力头分析使用指南](../../knowledge_base/quantization_algorithm/ra_compress/usage_ra_compress.md)》。
 
 ## 6. 退出码与异常处理
 

@@ -112,9 +112,9 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 - [KVCache 量化](kv_cache_quantization/README.md)：下位概念，针对 KVCache 的量化类别。
 - [FA 量化](fa_quantization/README.md)：下位概念，KVCache 量化的进阶类别。
 - [W8A8 静态量化](linear_layer_quantization/term_w8a8_static.md)：下位概念，线性层量化中“权重/激活静态”的典型模式。
-- [线性量化算法](../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，描述线性层量化模式的代码实现。
-- [KVCache Quant 缓存量化算法](../quantization_algorithms/kvcache_quant/term_kvcache_quant.md)：配套术语，描述 KVCache 量化算法。
-- [FA3 Quant 注意力激活量化算法](../quantization_algorithms/fa3_quant/term_fa3_quant.md)：配套术语，描述 FA 量化算法。
+- [线性量化算法](../quantization_algorithm/linear_quant/term_linear_quant.md)：配套术语，描述线性层量化模式的代码实现。
+- [KVCache Quant 缓存量化算法](../quantization_algorithm/kvcache_quant/term_kvcache_quant.md)：配套术语，描述 KVCache 量化算法。
+- [FA3 Quant 注意力激活量化算法](../quantization_algorithm/fa3_quant/term_fa3_quant.md)：配套术语，描述 FA 量化算法。
 - [量化数据格式](../dtype_ops/README.md)：配套概念，量化模式所采用的 5 种数据格式（[INT8](../dtype_ops/term_int8.md)/[INT4](../dtype_ops/term_int4.md)/[FP8](../dtype_ops/term_fp8.md)/[MXFP8](../dtype_ops/term_mxfp8.md)/[MXFP4](../dtype_ops/term_mxfp4.md)）的标准定义与 [`core/dtype_ops`](../../../../msmodelslim/core/dtype_ops/) 实现对应。
 
 ---
@@ -124,5 +124,5 @@ FA 量化**本质上是一个组合量化模式**，作用于注意力 **Q/K/V �
 1. Jacob B et al. Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference. CVPR 2018. <https://arxiv.org/abs/1712.05877>
 2. Yao Z et al. ZeroQuant: Efficient and Affordable Post-Training Quantization for Large-Scale Transformers. NeurIPS 2022. <https://arxiv.org/abs/2206.01861>
 3. Liu Z et al. KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache. ICML 2024. <https://arxiv.org/abs/2402.02750>
-4. 《[线性量化参数配置流程指南](../quantization_algorithms/linear_quant/usage_linear_quant.md)》
+4. 《[线性量化参数配置流程指南](../quantization_algorithm/linear_quant/usage_linear_quant.md)》
 5. 《[AscendV1 格式说明](../quantization_format/ascendv1/ascendv1_usage.md)》

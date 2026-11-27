@@ -79,9 +79,9 @@ msmodelslim analyze linear \
 
 | 可选指标 | 适用说明 | 算法说明 | 推荐 |
 | --- | --- | --- | --- |
-| `kurtosis` | 关注激活尖峰与尾部，辅助回退或混精 | 《[Kurtosis](../knowledge_base/quantization_algorithms/kurtosis/term_kurtosis.md)》 | 默认首选：不确定激活形态时先用本指标 |
-| `quantile` | 激活离群较多，希望降低离群点主导 | 《[Quantile](../knowledge_base/quantization_algorithms/quantile/term_quantile.md)》 | 激活离群点较多时改用或与 `kurtosis` 对照 |
-| `std` | 关注动态范围与离散度比值，做线性层粗筛 | 《[Std](../knowledge_base/quantization_algorithms/std/term_std.md)》 | 需按动态范围粗筛时改用或与 `kurtosis` 对照 |
+| `kurtosis` | 关注激活尖峰与尾部，辅助回退或混精 | 《[Kurtosis](../knowledge_base/quantization_algorithm/kurtosis/term_kurtosis.md)》 | 默认首选：不确定激活形态时先用本指标 |
+| `quantile` | 激活离群较多，希望降低离群点主导 | 《[Quantile](../knowledge_base/quantization_algorithm/quantile/term_quantile.md)》 | 激活离群点较多时改用或与 `kurtosis` 对照 |
+| `std` | 关注动态范围与离散度比值，做线性层粗筛 | 《[Std](../knowledge_base/quantization_algorithm/std/term_std.md)》 | 需按动态范围粗筛时改用或与 `kurtosis` 对照 |
 
 **输出**：已选定的 `${METRICS}`。
 
@@ -109,7 +109,7 @@ msmodelslim analyze linear \
 
 - **尚未接入的模型**：须先完成适配器开发与注册，再进入步骤 4。通用适配要求见《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》。
 - **支持矩阵中已接入的模型**：可跳过通用适配，确认所用 `--model_type` 名称即可。
-- **算法侧额外接口**：若所选指标要求额外分析接口，一并按算法文档补齐（入口见《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#3-敏感层分析算法)》）。
+- **算法侧额外接口**：若所选指标要求额外分析接口，一并按算法文档补齐（入口见《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithm/README.md#3-敏感层分析算法)》）。
 
 完成或修改适配器后，在仓库根目录重新执行 `bash install.sh`，使注册生效。
 
@@ -198,7 +198,7 @@ msmodelslim analyze linear \
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
 | 模型适配 | 新模型接入与注册 | 《[LLM 大模型接入指南](../knowledge_base/ptq/llm/integration_guide_large_language_model_quantization.md)》 |
-| 敏感层分析算法 | 用于 `msmodelslim analyze` 的各类敏感度指标（如 Kurtosis 等） | 《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithms/README.md#3-敏感层分析算法)》 |
+| 敏感层分析算法 | 用于 `msmodelslim analyze` 的各类敏感度指标（如 Kurtosis 等） | 《[量化算法总览 - 敏感层分析算法](../knowledge_base/quantization_algorithm/README.md#3-敏感层分析算法)》 |
 
 ## 9. 接口文档列表
 

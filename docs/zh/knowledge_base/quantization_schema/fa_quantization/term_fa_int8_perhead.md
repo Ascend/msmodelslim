@@ -73,11 +73,11 @@ $$q = \mathrm{round}(x / s), \qquad \hat{x} = q \cdot s, \qquad s = \frac{\max(|
 - [FA INT8 动态量化](term_fa_int8_dynamic.md)：同类模式，per-token 动态的 INT8 统一模式。
 - [FA Q-INT8 动态 K/V-INT8 静态量化](term_fa_q_int8_dynamic_kv_int8.md)：同类模式，Q 走动态、K/V 走静态的 INT8 混合模式。
 - [KVCache 量化](../kv_cache_quantization/README.md)：基础类别，本模式在其基础上追加 Q 量化。
-- [FA3 Quant 注意力激活量化算法](../../quantization_algorithms/fa3_quant/term_fa3_quant.md)：配套术语，本模式对应的算法处理器文档。
+- [FA3 Quant 注意力激活量化算法](../../quantization_algorithm/fa3_quant/term_fa3_quant.md)：配套术语，本模式对应的算法处理器文档。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[FA3 Quant 参数配置流程指南](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》
+1. 《[FA3 Quant 参数配置流程指南](../../quantization_algorithm/fa3_quant/usage_fa3_quant.md)》
 2. 《[量化模式](../README.md)》

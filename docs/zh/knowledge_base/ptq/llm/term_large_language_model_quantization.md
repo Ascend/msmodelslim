@@ -28,7 +28,7 @@
 针对 LLM 的架构与运行时瓶颈，其量化方案具备以下关键特征：
 
 - **权重量化解决访存瓶颈**：在小 Batch 场景下，通过 Weight-only 量化显著减少单步前向传播的权重搬运量，实现显存占用大幅降低与生成速度提升。
-- **特定通道离群值（Outliers）显著**：深层网络激活值中，极少部分通道的幅值远高于其他通道（高达数百倍）。直接量化会导致巨大精度衰减，通常需结合 [SmoothQuant](../../quantization_algorithms/smooth_quant/term_smooth_quant.md)（权重-激活平滑缩放）或 [QuaRot](../../quantization_algorithms/quarot/term_quarot.md)（正交旋转消除离群值）进行分布整形。
+- **特定通道离群值（Outliers）显著**：深层网络激活值中，极少部分通道的幅值远高于其他通道（高达数百倍）。直接量化会导致巨大精度衰减，通常需结合 [SmoothQuant](../../quantization_algorithm/smooth_quant/term_smooth_quant.md)（权重-激活平滑缩放）或 [QuaRot](../../quantization_algorithm/quarot/term_quarot.md)（正交旋转消除离群值）进行分布整形。
 - **轻量校准与无数据适配**：校准过程无需海量语料，通常仅需数十至数百条具有通用代表性的文本序列即可统计稳定的量化 Scale 参数。
 - **KV Cache 量化协同**：除常规 Linear 层（QKV、Dense、MLP）外，将 KV Cache 压缩至 INT8/FP8 格式可提升长文本推理的吞吐量。
 
@@ -47,8 +47,8 @@
 - [PTQ](../term_ptq.md)：上位概念，大语言模型量化属于训练后量化的具体应用。
 - [VLM 量化](../vlm/term_vision_transformer_quantization.md)：同类概念，多模态理解模型的量化（其文本端沿用 LLM 量化原理）。
 - [DiT 量化](../dit/term_diffusion_transformer_quantization.md)：对比算法，扩散生成模型的量化（非自回归去噪范式）。
-- [SmoothQuant](../../quantization_algorithms/smooth_quant/term_smooth_quant.md)：配套算法，解决 LLM 激活离群值的经典平滑算法。
-- [QuaRot](../../quantization_algorithms/quarot/term_quarot.md)：配套算法，通过正交旋转矩阵消除激活离群值的算法。
+- [SmoothQuant](../../quantization_algorithm/smooth_quant/term_smooth_quant.md)：配套算法，解决 LLM 激活离群值的经典平滑算法。
+- [QuaRot](../../quantization_algorithm/quarot/term_quarot.md)：配套算法，通过正交旋转矩阵消除激活离群值的算法。
 - [权重转换](../convert/term_weight_conversion.md)：配套术语，量化权重的离线重构与格式转换。
 
 ---

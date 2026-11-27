@@ -30,7 +30,7 @@ PTQ 的核心思想是通过离线统计校准集前向传播中的张量极值�
 
 | 架构类型 | 核心模型结构 | 推理计算特征 | 核心量化挑战与应对 |
 | :--- | :--- | :--- | :--- |
-| **[LLM 量化](./llm/term_large_language_model_quantization.md)** | Transformer Decoder-only | 自回归逐 token 生成，内存带宽受限（Memory-bound）；带 KV Cache | 激活值存在特定通道的固定离群点（Outliers），需采用 [SmoothQuant](../quantization_algorithms/smooth_quant/term_smooth_quant.md)、[QuaRot](../quantization_algorithms/quarot/term_quarot.md) 等离群值抑制或旋转算法；需结合 KV Cache 量化。 |
+| **[LLM 量化](./llm/term_large_language_model_quantization.md)** | Transformer Decoder-only | 自回归逐 token 生成，内存带宽受限（Memory-bound）；带 KV Cache | 激活值存在特定通道的固定离群点（Outliers），需采用 [SmoothQuant](../quantization_algorithm/smooth_quant/term_smooth_quant.md)、[QuaRot](../quantization_algorithm/quarot/term_quarot.md) 等离群值抑制或旋转算法；需结合 KV Cache 量化。 |
 | **[VLM 量化](./vlm/term_vision_transformer_quantization.md)** | ViT 视觉编码器 + 文本 Decoder | 跨模态异构；图像特征经投影层融入文本空间 | 视觉编码器与文本解码器分布特性差异大，模态对齐投影层（Merger/Projection）对量化敏感，需配合多模态校准数据并进行针对性敏感度保护或模态间旋转协同。 |
 | **[DiT 量化](./dit/term_diffusion_transformer_quantization.md)** | Diffusion Transformer 主干 | 多步迭代去噪，无 KV Cache，计算密集（Compute-bound） | 激活分布随时间步（Timestep）高度动态非平稳，需覆盖多时间步的去噪轨迹进行校准；多专家模型需按专家分别统计分布。 |
 
@@ -59,7 +59,7 @@ PTQ 的核心思想是通过离线统计校准集前向传播中的张量极值�
 - [VLM 量化](./vlm/term_vision_transformer_quantization.md)：下位概念，针对多模态视觉语言模型的 PTQ。
 - [DiT 量化](./dit/term_diffusion_transformer_quantization.md)：下位概念，针对扩散 Transformer 生成模型的 PTQ。
 - [权重转换](./convert/term_weight_conversion.md)：配套术语，量化权重的离线重构与格式转换。
-- [SmoothQuant](../quantization_algorithms/smooth_quant/term_smooth_quant.md)：配套算法，PTQ 中常用的激活离群值抑制技术。
+- [SmoothQuant](../quantization_algorithm/smooth_quant/term_smooth_quant.md)：配套算法，PTQ 中常用的激活离群值抑制技术。
 
 ---
 

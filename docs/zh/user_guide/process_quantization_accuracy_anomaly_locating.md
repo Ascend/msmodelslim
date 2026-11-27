@@ -297,8 +297,8 @@ flowchart TD
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 旋转量化 | 通过旋转矩阵改变激活值分布的量化技术（如 QuaRot），dump 对比前需对参与旋转的激活执行反旋转 | 《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》 |
-| 离群值抑制 | 通过平滑因子缩放激活值以抑制离群值的量化技术（如 SmoothQuant、Iterative Smooth），dump 对比前需对相应激活执行逆平滑 | 《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》 |
+| 旋转量化 | 通过旋转矩阵改变激活值分布的量化技术（如 QuaRot），dump 对比前需对参与旋转的激活执行反旋转 | 《[量化算法总览](../knowledge_base/quantization_algorithm/README.md)》 |
+| 离群值抑制 | 通过平滑因子缩放激活值以抑制离群值的量化技术（如 SmoothQuant、Iterative Smooth），dump 对比前需对相应激活执行逆平滑 | 《[量化算法总览](../knowledge_base/quantization_algorithm/README.md)》 |
 
 ## 8. 接口文档列表
 

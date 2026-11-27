@@ -32,7 +32,7 @@
 | 3 | `lab_practice/**/*.yaml` | `verified_model_types` / `verified_tags` / `label` 是否有匹配实践 |
 | 4 | `example/<family>/README.md` | 模型版本、量化模式、依赖、注意事项 |
 | 5 | `msmodelslim/model/<adapter>/` | 是否实现该模式所需接口（如 KV/FA3 接口） |
-| 6 | `docs/zh/knowledge_base/quantization_algorithms/README.md` 与各 `usage_*.md` | 算法支持与最小配置 |
+| 6 | `docs/zh/knowledge_base/quantization_algorithm/README.md` 与各 `usage_*.md` | 算法支持与最小配置 |
 | 7 | `docs/zh/knowledge_base/ptq/convert/usage_weight_conversion.md` | 权重格式/精度转换的支持范围与示例 |
 
 > 结论按**最保守**的一档输出；证据冲突时说明差异。
@@ -97,7 +97,7 @@
 
 算法列表与 `quant_type` 映射会随版本变化，本 skill 不维护逐算法表。判定顺序：
 
-1. 打开 `docs/zh/knowledge_base/quantization_algorithms/README.md` 与对应 `usage_*.md`，确认算法能力与配置字段；
+1. 打开 `docs/zh/knowledge_base/quantization_algorithm/README.md` 与对应 `usage_*.md`，确认算法能力与配置字段；
 2. 查 `lab_practice` 是否有该模型的已验证实践；算法文档存在不等于该模型有实践；
 3. 按 §4 的结论档位输出，并给出对应算法文档的真实路径。
 
@@ -113,10 +113,10 @@
 | 最佳实践 | `lab_practice/**/*.yaml` |
 | 模型示例 | `example/<family>/README.md` |
 | 新模型流程 | `docs/zh/user_guide/process_new_model_quantization_tuning.md` |
-| 算法总览 | `docs/zh/knowledge_base/quantization_algorithms/README.md` |
+| 算法总览 | `docs/zh/knowledge_base/quantization_algorithm/README.md` |
 | 量化模式 | `docs/zh/knowledge_base/quantization_schema/` |
-| KV Cache | `docs/zh/knowledge_base/quantization_algorithms/kvcache_quant/usage_kvcache_quant.md` |
-| FA3 | `docs/zh/knowledge_base/quantization_algorithms/fa3_quant/usage_fa3_quant.md` |
+| KV Cache | `docs/zh/knowledge_base/quantization_algorithm/kvcache_quant/usage_kvcache_quant.md` |
+| FA3 | `docs/zh/knowledge_base/quantization_algorithm/fa3_quant/usage_fa3_quant.md` |
 | 权重转换 | `docs/zh/knowledge_base/ptq/convert/usage_weight_conversion.md` |
 
 ## 9. 回答骨架

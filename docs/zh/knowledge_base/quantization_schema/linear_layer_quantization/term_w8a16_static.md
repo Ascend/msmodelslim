@@ -76,13 +76,13 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W8A8 静态量化](term_w8a8_static.md)：对比模式，激活亦量化为 INT8、换取整数 GEMM 加速。
 - [W4A8 动态量化](term_w4a8_dynamic.md)：对比模式，权重压到 4bit 的混合位宽方案。
 - [浮点稀疏量化](term_float_sparse.md)：同类模式，完全不量化的稀疏基线。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
-- [MinMax 最小最大值量化算法](../../quantization_algorithms/minmax/term_minmax.md)：配套术语，静态量化常用的量化参数统计方法。
+- [线性量化算法](../../quantization_algorithm/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
+- [MinMax 最小最大值量化算法](../../quantization_algorithm/minmax/term_minmax.md)：配套术语，静态量化常用的量化参数统计方法。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
-2. 《[MinMax 参数配置流程指南](../../quantization_algorithms/minmax/usage_minmax.md)》
+1. 《[线性量化参数配置流程指南](../../quantization_algorithm/linear_quant/usage_linear_quant.md)》
+2. 《[MinMax 参数配置流程指南](../../quantization_algorithm/minmax/usage_minmax.md)》
 3. 《[量化模式](../README.md)》

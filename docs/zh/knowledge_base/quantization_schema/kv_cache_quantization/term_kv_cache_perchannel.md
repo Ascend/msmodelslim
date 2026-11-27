@@ -71,13 +71,13 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [量化模式](../README.md)：上位概念，本词条属于[KVCache 量化](README.md)类别，是该类别下的一种具体模式。
 - [FA 量化](../fa_quantization/README.md)：进阶概念，在 K/V 量化基础上追加 Q 量化。
 - [W8A8 静态量化](../linear_layer_quantization/term_w8a8_static.md)：配套模式，可与本模式叠加使用。
-- [KVCache Quant 缓存量化算法](../../quantization_algorithms/kvcache_quant/term_kvcache_quant.md)：配套术语，本模式对应的算法处理器文档。
-- [KV Smooth 缓存平滑算法](../../quantization_algorithms/kv_smooth/term_kv_smooth.md)：前置术语，量化前对 KV 做平滑以降低量化误差。
+- [KVCache Quant 缓存量化算法](../../quantization_algorithm/kvcache_quant/term_kvcache_quant.md)：配套术语，本模式对应的算法处理器文档。
+- [KV Smooth 缓存平滑算法](../../quantization_algorithm/kv_smooth/term_kv_smooth.md)：前置术语，量化前对 KV 做平滑以降低量化误差。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[KVCache Quant 参数配置流程指南](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)》
-2. 《[KV Smooth 参数配置流程指南](../../quantization_algorithms/kv_smooth/usage_kv_smooth.md)》
+1. 《[KVCache Quant 参数配置流程指南](../../quantization_algorithm/kvcache_quant/usage_kvcache_quant.md)》
+2. 《[KV Smooth 参数配置流程指南](../../quantization_algorithm/kv_smooth/usage_kv_smooth.md)》
 3. 《[量化模式](../README.md)》

@@ -29,7 +29,7 @@
 
 - **双模态分布差异显著**：视觉激活值与文本激活值的动态范围和通道方差特征截然不同，量化校准必须依赖图文混合（包含多样性图像和配对指令文本）的真实多模态数据集。
 - **投影对齐层对量化误差高度敏感**：投影层承担视觉到语言空间的几何坐标转换，细微的数值截断都会导致多模态语义对齐漂移。工程中常将投影层保留为高精度（FP16/BF16）或采用极细粒度量化。
-- **模态间空间几何对齐**：当使用旋转类算法（如 [QuaRot](../../quantization_algorithms/quarot/term_quarot.md)）消除文本侧激活离群值时，视觉侧输出特征必须同步施加相应的正交变换，以确保送入语言解码器前两者的特征空间依然严格对齐。
+- **模态间空间几何对齐**：当使用旋转类算法（如 [QuaRot](../../quantization_algorithm/quarot/term_quarot.md)）消除文本侧激活离群值时，视觉侧输出特征必须同步施加相应的正交变换，以确保送入语言解码器前两者的特征空间依然严格对齐。
 - **组件分级量化策略**：视觉编码器多为密集前向计算（受限于计算吞吐），语言解码器长序列生成受限于访存带宽，需针对性配置不同的量化比特与算法策略。
 
 ---
@@ -47,7 +47,7 @@
 - [PTQ](../term_ptq.md)：上位概念，视觉语言模型量化属于训练后量化的具体应用。
 - [LLM 量化](../llm/term_large_language_model_quantization.md)：配套概念，VLM 的语言解码部分沿用 LLM 量化方案。
 - [DiT 量化](../dit/term_diffusion_transformer_quantization.md)：同类概念，多模态生成模型的量化。
-- [QuaRot](../../quantization_algorithms/quarot/term_quarot.md)：配套算法，涉及模态对齐投影层的旋转变换。
+- [QuaRot](../../quantization_algorithm/quarot/term_quarot.md)：配套算法，涉及模态对齐投影层的旋转变换。
 - [权重转换](../convert/term_weight_conversion.md)：配套术语，量化权重的离线重构与格式转换。
 
 ---

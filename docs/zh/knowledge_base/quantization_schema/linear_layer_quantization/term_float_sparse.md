@@ -72,13 +72,13 @@
 - [W8A8 稀疏量化](term_w8a8_sparse.md)：对比模式，INT8 收窄码本后再二次压缩，不是置零。
 - [W8A16 静态量化](term_w8a16_static.md)：同类模式，位宽维度的精度基线。
 - [W8A8 静态量化](term_w8a8_static.md)：对比模式，可与稀疏叠加构成 W8A8S。
-- [浮点稀疏（ADMM）算法](../../quantization_algorithms/float_sparse/term_float_sparse.md)：配套术语，产出本模式所承载稀疏权重的算法。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，线性层量化的代码实现。
+- [浮点稀疏（ADMM）算法](../../quantization_algorithm/float_sparse/term_float_sparse.md)：配套术语，产出本模式所承载稀疏权重的算法。
+- [线性量化算法](../../quantization_algorithm/linear_quant/term_linear_quant.md)：配套术语，线性层量化的代码实现。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[浮点稀疏参数配置流程指南](../../quantization_algorithms/float_sparse/usage_float_sparse.md)》
-2. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
+1. 《[浮点稀疏参数配置流程指南](../../quantization_algorithm/float_sparse/usage_float_sparse.md)》
+2. 《[线性量化参数配置流程指南](../../quantization_algorithm/linear_quant/usage_linear_quant.md)》
 3. 《[量化模式](../README.md)》

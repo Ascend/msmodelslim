@@ -55,7 +55,7 @@ metadata:
 
 - `msmodelslim analyze` 参数与命令 → 《[msmodelslim analyze CLI](../../docs/zh/api_reference/cli/msmodelslim_analyze.md)》
 - 层级敏感层分析完整流程 → 《[层级敏感层分析使用指南](../../docs/zh/user_guide/usage_sensitive_layer_analysis.md)》
-- 分析算法与 metric 语义 → 《[量化算法总览](../../docs/zh/knowledge_base/quantization_algorithms/README.md)》
+- 分析算法与 metric 语义 → 《[量化算法总览](../../docs/zh/knowledge_base/quantization_algorithm/README.md)》
 
 闭环使用 `layer` scope。
 

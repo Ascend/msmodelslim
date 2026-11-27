@@ -228,4 +228,4 @@ def enable_kv_cache(self, model: nn.Module, need_kv_cache: bool) -> None
 | modelslim_v1 配置说明 | `runner`/`process`/`save`/`dataset` 等任务级配置的字段说明 | 《[modelslim_v1 配置说明](../../../api_reference/config/quant/modelslim_v1.md)》 |
 | 一键量化使用指南 | 一键量化 CLI 入口与完整命令参数说明 | 《[一键量化使用指南](../../../user_guide/usage_one_click_quantization.md)》 |
 | 自动调优使用说明 | 敏感层分析、回退候选及调优策略说明 | 《[自动调优使用说明](../../../user_guide/usage_auto_precision_tuning.md)》 |
-| 量化算法总览 | 离群值平滑抑制与各类量化算法详述 | 《[量化算法总览](../../quantization_algorithms/README.md)》 |
+| 量化算法总览 | 离群值平滑抑制与各类量化算法详述 | 《[量化算法总览](../../quantization_algorithm/README.md)》 |

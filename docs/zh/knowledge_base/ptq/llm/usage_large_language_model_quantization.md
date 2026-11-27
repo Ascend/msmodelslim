@@ -118,12 +118,12 @@ flowchart LR
 
    | 算法 | 简述 | 适用场景 | 链接 |
    | --- | --- | --- | --- |
-   | MinMax | 统计张量最大/最小值直接计算 scale 与 zero-point，开销极低 | W8A8 动静态量化的默认估计算法 | 《[MinMax](../../quantization_algorithms/minmax/usage_minmax.md)》 |
-   | SmoothQuant | 将激活中的离群值按通道缩放迁移到权重，降低激活量化难度 | 恢复 W8A8 静态量化的精度 | 《[SmoothQuant](../../quantization_algorithms/smooth_quant/usage_smooth_quant.md)》 |
-   | QuaRot | 引入正交 Walsh-Hadamard 旋转矩阵，在不改变前向输出的前提下打散激活离群通道 | 激活离群严重、平滑算法收益不足时 | 《[QuaRot](../../quantization_algorithms/quarot/usage_quarot.md)》 |
-   | KVCache Quant | 对 Key/Value 缓存张量做低比特量化 | 长序列多轮对话的显存与吞吐优化 | 《[KVCache Quant](../../quantization_algorithms/kvcache_quant/usage_kvcache_quant.md)》 |
+   | MinMax | 统计张量最大/最小值直接计算 scale 与 zero-point，开销极低 | W8A8 动静态量化的默认估计算法 | 《[MinMax](../../quantization_algorithm/minmax/usage_minmax.md)》 |
+   | SmoothQuant | 将激活中的离群值按通道缩放迁移到权重，降低激活量化难度 | 恢复 W8A8 静态量化的精度 | 《[SmoothQuant](../../quantization_algorithm/smooth_quant/usage_smooth_quant.md)》 |
+   | QuaRot | 引入正交 Walsh-Hadamard 旋转矩阵，在不改变前向输出的前提下打散激活离群通道 | 激活离群严重、平滑算法收益不足时 | 《[QuaRot](../../quantization_algorithm/quarot/usage_quarot.md)》 |
+   | KVCache Quant | 对 Key/Value 缓存张量做低比特量化 | 长序列多轮对话的显存与吞吐优化 | 《[KVCache Quant](../../quantization_algorithm/kvcache_quant/usage_kvcache_quant.md)》 |
 
-   > 完整支持的离群值抑制算法、量化优化算法及敏感层分析算法，请参阅《[量化算法总览](../../quantization_algorithms/README.md)》。
+   > 完整支持的离群值抑制算法、量化优化算法及敏感层分析算法，请参阅《[量化算法总览](../../quantization_algorithm/README.md)》。
 
 2. **算法选型与调优**：
    - **W8A8动态量化（推荐起点）**：激活 `scope: per_token`、权重 `scope: per_channel`、`symmetric: true`、估计方法 `minmax`。逐 Token 动态计算 scale，对离群点适应性好，精度接近浮点基线，无需叠加平滑算法。

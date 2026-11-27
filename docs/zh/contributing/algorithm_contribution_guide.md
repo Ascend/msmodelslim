@@ -31,7 +31,7 @@
 **前置条件**：
 
 - 已阅读《[Contributing to MindStudio ModelSlim](contributing_guide.md)》，具备提交 Issue、PR 与签署 CLA 的条件；
-- 已对照《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》，确认拟贡献能力与既有算法的定位关系；
+- 已对照《[量化算法总览](../knowledge_base/quantization_algorithm/README.md)》，确认拟贡献能力与既有算法的定位关系；
 - 已选定至少 1 组对比实验用的模型，以及评测数据或校准数据：模型与数据须可公开获取，或已在本仓库文档、`lab_practice` 中引用；评审与其他贡献者无需私有权重或未公开数据集，即可按同样配置复现；
 - 本地开发环境可运行项目单测与 pre-commit（见《[编码规范](development_guide/coding_standards.md)》、《[开发者测试指南](development_guide/testing_guide.md)》）。
 
@@ -79,7 +79,7 @@ flowchart TD
 **操作**：对照下列要点完成自检。提交前须给出**场景定义**与**对比结论**，场景至少包含：
 
 1. **目标对象**：模型族或结构类型（如 LLM Decoder、MLA、扩散 UNet）、量化模式（如 W4A8、W4A4 MXFP、C8）或业务约束（长序列、显存受限、校准数据极少等）；
-2. **对比基线**：框架内已有、同定位的推荐算法或组合（见《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》）；
+2. **对比基线**：框架内已有、同定位的推荐算法或组合（见《[量化算法总览](../knowledge_base/quantization_algorithm/README.md)》）；
 3. **优势维度**（至少一项可量化或可复现），并给出数据集范围与对应指标（含基线与本算法）；所用模型与数据集须可公开获取，以便他人按同样配置复现：
 
    | 维度 | 可接受的优势形态（示例） |
@@ -229,13 +229,13 @@ flowchart TD
 | --- | --- |
 | 术语词条 | 适用与不适用场景写清；遵循《[术语词条模板](development_guide/docs_standards/01_term_glossary_template.md)》 |
 | 使用指南 | 推荐起步配置与调参优先级，避免只罗列字段；遵循《[流程指南模板](development_guide/docs_standards/02_process_guide_template.md)》 |
-| 算法总览登记 | 更新《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》对应表格与选择建议 |
+| 算法总览登记 | 更新《[量化算法总览](../knowledge_base/quantization_algorithm/README.md)》对应表格与选择建议 |
 | 最佳实践 | `lab_practice/` 至少一条可复现配置（如适用） |
 
 推荐文档目录：
 
 ```text
-docs/zh/knowledge_base/quantization_algorithms/<algo_name>/
+docs/zh/knowledge_base/quantization_algorithm/<algo_name>/
 ├── term_<name>.md
 └── usage_<name>.md
 ```
@@ -288,13 +288,13 @@ docs/zh/knowledge_base/quantization_algorithms/<algo_name>/
 | 对比实验 | ≥1 个公开可获取的模型与数据集；给出基线配置、本算法配置、指标表与复现步骤 |
 | 可接入 | 能按 RFC 约定的入口接入框架，并与现有流程或其他算法合理组合使用 |
 | 可维护 | 通过单元测试（本次变更相关行覆盖率大于 80%）与 pre-commit；配置或接口有类型与校验；关键路径有日志 |
-| 资料齐全 | 词条与使用指南齐全；并在《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》登记 |
+| 资料齐全 | 词条与使用指南齐全；并在《[量化算法总览](../knowledge_base/quantization_algorithm/README.md)》登记 |
 
 ## 7. 术语
 
 | 术语 | 简述 | 链接 |
 | --- | --- | --- |
-| 量化算法 | 离群值抑制、结构量化、模型压缩、敏感层分析等算法说明 | 《[量化算法总览](../knowledge_base/quantization_algorithms/README.md)》 |
+| 量化算法 | 离群值抑制、结构量化、模型压缩、敏感层分析等算法说明 | 《[量化算法总览](../knowledge_base/quantization_algorithm/README.md)》 |
 | 量化模式 | 如 W8A8、W4A8 等比特组合策略的命名与约定 | 《[量化模式命名规范](../knowledge_base/model/README.md#量化模式命名规范)》 |
 
 ## 8. 安全说明

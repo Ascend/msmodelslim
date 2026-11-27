@@ -80,11 +80,11 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W4A4 动态量化](term_w4a4_dynamic.md)：对比模式，激活压到4bit、压缩更狠。
 - [W8A16 静态量化](term_w8a16_static.md)：对比模式，激活不量化的高精度基线。
 - [W4A8 MX 动态量化](term_w4a8_mx_dynamic.md)：同类模式，改用 MX 浮点格式承载同一位宽。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
+- [线性量化算法](../../quantization_algorithm/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
+1. 《[线性量化参数配置流程指南](../../quantization_algorithm/linear_quant/usage_linear_quant.md)》
 2. 《[量化模式](../README.md)》

@@ -31,7 +31,7 @@
 | 线性层量化 | `docs/zh/knowledge_base/quantization_schema/linear_layer_quantization/README.md` |
 | KV Cache 量化 | `docs/zh/knowledge_base/quantization_schema/kv_cache_quantization/README.md` |
 | FA 量化 | `docs/zh/knowledge_base/quantization_schema/fa_quantization/README.md` |
-| 算法总览 | `docs/zh/knowledge_base/quantization_algorithms/README.md` |
+| 算法总览 | `docs/zh/knowledge_base/quantization_algorithm/README.md` |
 | 量化格式 | `docs/zh/knowledge_base/quantization_format/README.md` |
 | AscendV1 | `docs/zh/knowledge_base/quantization_format/ascendv1/ascendv1_usage.md` |
 | 一键量化 | `docs/zh/user_guide/usage_one_click_quantization.md` |
@@ -62,7 +62,7 @@
 
 ### 4.3 算法分类
 
-按原理可分为训练后量化、旋转/变换、平滑/离群值抑制、混合低比特等几类。具体算法有哪些、支持哪些 `quant_type`、如何配置，以《[量化算法总览](../../../docs/zh/knowledge_base/quantization_algorithms/README.md)》与各 `usage_*.md` 为准，本 skill 不维护算法清单。
+按原理可分为训练后量化、旋转/变换、平滑/离群值抑制、混合低比特等几类。具体算法有哪些、支持哪些 `quant_type`、如何配置，以《[量化算法总览](../../../docs/zh/knowledge_base/quantization_algorithm/README.md)》与各 `usage_*.md` 为准，本 skill 不维护算法清单。
 
 **算法支持 ≠ 模型有实践**：模型是否有已验证配方，回到 C2 判定。
 

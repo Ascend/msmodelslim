@@ -50,7 +50,7 @@ $$s = \frac{x_{\max} - x_{\min}}{2^b - 1}, \qquad z = \mathrm{round}\left(\frac{
 ### 2.4 适用场景与限制
 
 - **适用**：权重、激活、KVCache，例如 [W8A8 静态量化](../quantization_schema/linear_layer_quantization/term_w8a8_static.md)、[W8A8 动态量化](../quantization_schema/linear_layer_quantization/term_w8a8_dynamic.md)、[KVCache-PerChannel 量化](../quantization_schema/kv_cache_quantization/term_kv_cache_perchannel.md)。
-- **限制**：均匀分档对离群值敏感，常配合 [SmoothQuant](../quantization_algorithms/smooth_quant/term_smooth_quant.md)。非对称要多存一份 offset。
+- **限制**：均匀分档对离群值敏感，常配合 [SmoothQuant](../quantization_algorithm/smooth_quant/term_smooth_quant.md)。非对称要多存一份 offset。
 
 ---
 

@@ -57,7 +57,7 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 
 #### 2.4.2 使用限制
 
-- **精度门槛高**：4bit 激活量化精度风险大，通常需要配合离群值抑制（如 [SmoothQuant](../../quantization_algorithms/smooth_quant/term_smooth_quant.md)）与精度调优方可上线。
+- **精度门槛高**：4bit 激活量化精度风险大，通常需要配合离群值抑制（如 [SmoothQuant](../../quantization_algorithm/smooth_quant/term_smooth_quant.md)）与精度调优方可上线。
 - **硬件算子依赖**：INT4 整数 GEMM 需目标硬件算子库支持，否则无法兑现计算收益。
 
 ---
@@ -77,13 +77,13 @@ $$q = \mathrm{round}(x / s) + z, \qquad \hat{x} = (q - z) \cdot s, \qquad s = \f
 - [W4A4 MX 动态量化](term_w4a4_mx_dynamic.md)：同类模式，改用 MXFP4 浮点格式。
 - [W8A16 静态量化](term_w8a16_static.md)：对比模式，激活保持 16bit 的高精度方案。
 - [SVDQuant 量化](term_svdquant.md)：对比模式，以低秩分解吸收离群值、仅量化残差分量，降低 4bit 精度风险。
-- [线性量化算法](../../quantization_algorithms/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
-- [LAOS 低比特量化方案](../../quantization_algorithms/laos/term_laos.md)：配套术语，面向 W4A4 的精度优化算法。
+- [线性量化算法](../../quantization_algorithm/linear_quant/term_linear_quant.md)：配套术语，本模式的代码实现。
+- [LAOS 低比特量化方案](../../quantization_algorithm/laos/term_laos.md)：配套术语，面向 W4A4 的精度优化算法。
 
 ---
 
 ## 5. 参考文档
 
-1. 《[线性量化参数配置流程指南](../../quantization_algorithms/linear_quant/usage_linear_quant.md)》
-2. 《[LAOS 参数配置流程指南](../../quantization_algorithms/laos/usage_laos.md)》
+1. 《[线性量化参数配置流程指南](../../quantization_algorithm/linear_quant/usage_linear_quant.md)》
+2. 《[LAOS 参数配置流程指南](../../quantization_algorithm/laos/usage_laos.md)》
 3. 《[量化模式](../README.md)》

@@ -3,7 +3,7 @@
 | 子目录 | 入口 |
 |--------|------|
 | `model` | 《[大模型支持矩阵](model/README.md)》 |
-| `quantization_algorithms` | 《[量化算法](quantization_algorithms/README.md)》 |
+| `quantization_algorithm` | 《[量化算法](quantization_algorithm/README.md)》 |
 | `devkit` | 《[DevKit](devkit/README.md)》 |
 | `dtype_ops` | 《[量化数据类型](dtype_ops/README.md)》 |
 | `quantization_schema` | 《[量化模式](quantization_schema/README.md)》 |

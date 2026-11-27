@@ -144,6 +144,6 @@ msmodelslim quant \
 - [qwen3_vl_moe_w8a8.yaml 配置文件](../../../lab_practice/qwen3_vl_moe/qwen3_vl_moe_w8a8.yaml)
 - 《[multimodal_vlm_modelslim_v1 配置说明](../../../docs/zh/api_reference/config/quant/multimodal_vlm_modelslim_v1.md)》
 - 《[多卡量化并行](../../../docs/zh/knowledge_base/parallel/README.md)》
-- [QuaRot 算法说明](../../../docs/zh/knowledge_base/quantization_algorithms/quarot/term_quarot.md)
-- [Iterative Smooth 算法说明](../../../docs/zh/knowledge_base/quantization_algorithms/iterative_smooth/term_iterative_smooth.md)
-- [LinearQuantProcess 线性层量化处理器说明](../../../docs/zh/knowledge_base/quantization_algorithms/linear_quant/term_linear_quant.md)
+- [QuaRot 算法说明](../../../docs/zh/knowledge_base/quantization_algorithm/quarot/term_quarot.md)
+- [Iterative Smooth 算法说明](../../../docs/zh/knowledge_base/quantization_algorithm/iterative_smooth/term_iterative_smooth.md)
+- [LinearQuantProcess 线性层量化处理器说明](../../../docs/zh/knowledge_base/quantization_algorithm/linear_quant/term_linear_quant.md)

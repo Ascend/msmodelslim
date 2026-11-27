@@ -86,5 +86,5 @@ $$q = \mathrm{round}(x / s_h), \qquad \hat{x} = q \cdot s_h, \qquad s_h = \frac{
 
 ## 5. 参考文档
 
-1. 《[FA3 Quant 参数配置流程指南](../../quantization_algorithms/fa3_quant/usage_fa3_quant.md)》
+1. 《[FA3 Quant 参数配置流程指南](../../quantization_algorithm/fa3_quant/usage_fa3_quant.md)》
 2. 《[量化模式](../README.md)》
