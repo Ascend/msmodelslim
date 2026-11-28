@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+# pylint: disable=too-many-lines
 
 """
 -------------------------------------------------------------------------
@@ -99,6 +100,7 @@ except ImportError:
     pass
 
 import torch  # noqa: E402
+from safetensors import safe_open  # noqa: E402
 from torch import nn  # noqa: E402
 
 from msmodelslim.core.base.protocol import ProcessRequest  # noqa: E402
@@ -108,6 +110,20 @@ import msmodelslim.model.qwen3_omni_moe.model_adapter  # noqa: F401, E402
 from msmodelslim.core.const import DeviceType  # noqa: E402
 from msmodelslim.core.graph import AdapterConfig, MappingConfig  # noqa: E402
 from msmodelslim.utils.exception import InvalidDatasetError  # noqa: E402
+from msmodelslim.core.quant_service.modelslim_v1.save.ascendv1 import (  # noqa: E402
+    AscendV1Config,
+    AscendV1Saver,
+)
+from msmodelslim.core.quant_service.modelslim_v1.save.interface import AscendV1SaveInterface  # noqa: E402
+from msmodelslim.core.quantization_schema.const import (  # noqa: E402
+    int8_per_channel_sym,
+    int8_per_token_sym,
+)
+from msmodelslim.core.quantization_schema.qal import QDType, QParam, QStorage  # noqa: E402
+from msmodelslim.core.quantization_schema.w8a8_dynamic import (  # noqa: E402
+    W8A8DynamicPerChannelFakeQuantLinear,
+)
+from msmodelslim.model import IModel  # noqa: E402
 
 
 def _make_thinker_config(
@@ -207,6 +223,13 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         adapter = self._create_adapter()
         adapter.model_type = self.model_type
         self.assertEqual(adapter.get_model_type(), self.model_type)
+
+    def test_handle_dataset_empty_dataset_clears_replication_flag(self):
+        adapter = self._create_adapter()
+        with patch("msmodelslim.model.qwen3_omni_moe.model_adapter.set_calibration_replicated") as mock_set:
+            result = adapter.handle_dataset(dataset=[], device=DeviceType.CPU)
+        self.assertEqual(result, [])
+        mock_set.assert_called_once_with(False)
 
     def test_handle_dataset_text_only(self):
         """handle_dataset 纯文本样本：应调用 processor 并返回 _collect_inputs_to_device 结果"""
@@ -669,6 +692,16 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         self.assertIn("audio_tower.layers.0.self_attn_layer_norm", sources)
         self.assertIn("model.layers.0.input_layernorm", sources)
 
+    def test_expert_range_falls_back_to_full_when_patch_inactive(self):
+        adapter = self._create_adapter()
+        adapter._ep_patch_applied = False
+        text_config = adapter.config.thinker_config.text_config
+        with patch(
+            "msmodelslim.model.qwen3_omni_moe.model_adapter.dist.is_initialized",
+            return_value=False,
+        ):
+            self.assertEqual(adapter._expert_range_for_subgraph(text_config), (0, text_config.num_experts))
+
     def test_get_adapter_config_for_subgraph_with_moe(self):
         """get_adapter_config_for_subgraph 含 MoE 时应包含 experts up-down"""
         thinker_config = _make_thinker_config(
@@ -765,7 +798,7 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         mock_model.config.text_config = adapter.config.thinker_config.text_config
         mock_model.model = types.SimpleNamespace(layers=nn.ModuleList())
 
-        class _DummyDecoder(nn.Module):
+        class _DummyDecoder(nn.Module):  # pylint: disable=abstract-method
             def __init__(self):
                 super().__init__()
                 self.input_layernorm = nn.LayerNorm(64)
@@ -813,7 +846,7 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
         mock_model.config.text_config = adapter.config.thinker_config.text_config
         mock_model.model = types.SimpleNamespace(layers=nn.ModuleList([nn.Linear(1, 1)]))
 
-        class _DummyDecoder(nn.Module):
+        class _DummyDecoder(nn.Module):  # pylint: disable=abstract-method
             def __init__(self):
                 super().__init__()
                 self.input_layernorm = nn.LayerNorm(64)
@@ -960,6 +993,221 @@ class TestQwen3OmniMoeThinkerModelAdapter(unittest.TestCase):
             gen = adapter.generate_model_forward(model=mock_model, inputs=sample)
             list(gen)
         mock_model.model.rotary_emb.assert_called_once()
+
+
+class _SaveContractAdapter(IModel, AscendV1SaveInterface):
+    """最小 adapter：只实现真实 saver 需要的模型信息与前缀钩子。"""
+
+    def __init__(self, model_path):
+        self._path = Path(model_path)
+
+    @property
+    def model_type(self):
+        return "test"
+
+    @property
+    def model_path(self):
+        return self._path
+
+    @property
+    def trust_remote_code(self):
+        return False
+
+    def ascendv1_save_module_preprocess(self, prefix, module, model):
+        del model
+        if prefix == "thinker" or prefix.startswith("thinker."):
+            return prefix, module
+        return (f"thinker.{prefix}" if prefix else "thinker"), module
+
+    def ascendv1_save_postprocess(self, model, save_directory):
+        del model, save_directory
+
+
+class TestQwen3OmniMoeAscendV1SaveOptimization(unittest.TestCase):
+    """Unit tests for one-pass thinker prefix export.
+
+    权重键由 ascendv1_save_module_preprocess 在落盘时统一写入 thinker. 前缀；
+    description.json 的头部元数据键不属于权重命名空间，保持裸名。
+    因此 adapter 不覆写 ascendv1_save_postprocess，导出件不允许被二次改写。
+    """
+
+    @staticmethod
+    def _create_adapter():
+        from msmodelslim.model.qwen3_omni_moe.model_adapter import Qwen3OmniMoeThinkerModelAdapter
+
+        return Qwen3OmniMoeThinkerModelAdapter.__new__(Qwen3OmniMoeThinkerModelAdapter)
+
+    def test_module_preprocess_returns_prefixed_path_when_path_is_regular(self):
+        adapter = self._create_adapter()
+        module = nn.Linear(2, 2)
+
+        prefix, returned_module = adapter.ascendv1_save_module_preprocess(
+            "model.layers.0.self_attn.q_proj", module, nn.Identity()
+        )
+
+        self.assertEqual(prefix, "thinker.model.layers.0.self_attn.q_proj")
+        self.assertIs(returned_module, module)
+
+    def test_module_preprocess_returns_thinker_root_when_path_is_empty(self):
+        adapter = self._create_adapter()
+        module = nn.Identity()
+
+        prefix, returned_module = adapter.ascendv1_save_module_preprocess("", module, nn.Identity())
+
+        self.assertEqual(prefix, "thinker")
+        self.assertIs(returned_module, module)
+
+    def test_module_preprocess_keeps_single_prefix_when_path_is_already_prefixed(self):
+        adapter = self._create_adapter()
+        module = nn.Identity()
+
+        prefix, _ = adapter.ascendv1_save_module_preprocess("thinker.model.layers.0", module, nn.Identity())
+
+        self.assertEqual(prefix, "thinker.model.layers.0")
+
+    DESCRIPTION_META_KEYS = {
+        "version",
+        "model_quant_type",
+        "metadata",
+        "group_size",
+        "optional",
+        "kv_cache_type",
+        "kv_quant_type",
+        "fa_quant_type",
+        "reduce_quant_type",
+    }
+
+    def test_adapter_does_not_override_postprocess(self):
+        """后处理必须走接口空实现，避免再次改写已落盘的导出件。"""
+        from msmodelslim.model.qwen3_omni_moe.model_adapter import Qwen3OmniMoeThinkerModelAdapter
+
+        self.assertNotIn(
+            "ascendv1_save_postprocess",
+            Qwen3OmniMoeThinkerModelAdapter.__dict__,
+            "prefix must be written in one pass by ascendv1_save_module_preprocess",
+        )
+
+    def test_export_format_contract_when_saver_wrote_final_keys(self):
+        """构造 post_run 产物并断言导出件格式契约。
+
+        权重键带 thinker.、元数据键裸名、index.json 保持
+        {"metadata", "weight_map"} 结构；调用后处理（基类空实现）
+        两次后所有导出件字节不变。
+        """
+        adapter = self._create_adapter()
+        with tempfile.TemporaryDirectory() as save_directory:
+            description_path = Path(save_directory) / "quant_model_description.json"
+            index_path = Path(save_directory) / "quant_model_weights.safetensors.index.json"
+            weight_path = Path(save_directory) / "quant_model_weights-00001-of-00001.safetensors"
+
+            weight_key = "thinker.model.layers.0.self_attn.q_proj.weight"
+            shard_name = weight_path.name
+            description = {
+                weight_key: "W8A8_DYNAMIC",
+                "version": "1.0.0",
+                "model_quant_type": "W8A8_DYNAMIC",
+                "metadata": {},
+                "group_size": 0,
+                "optional": {},
+            }
+            index = {
+                "metadata": {"total_size": 1024},
+                "weight_map": {weight_key: shard_name},
+            }
+            description_path.write_text(json.dumps(description), encoding="utf-8")
+            index_path.write_text(json.dumps(index), encoding="utf-8")
+            weight_path.write_bytes(b"must-not-be-rewritten")
+            before = {p: p.read_bytes() for p in (description_path, index_path, weight_path)}
+
+            adapter.ascendv1_save_postprocess(nn.Identity(), save_directory)
+            adapter.ascendv1_save_postprocess(nn.Identity(), save_directory)
+
+            for path, content in before.items():
+                self.assertEqual(path.read_bytes(), content, f"{path.name} was rewritten")
+
+            desc_data = json.loads(description_path.read_text(encoding="utf-8"))
+            index_data = json.loads(index_path.read_text(encoding="utf-8"))
+            self.assertLessEqual(
+                {"version", "model_quant_type", "metadata", "group_size", "optional"},
+                set(desc_data),
+            )
+            self.assertNotIn("thinker.version", desc_data)
+            weight_keys = set(desc_data) - self.DESCRIPTION_META_KEYS
+            self.assertTrue(weight_keys)
+            self.assertTrue(all(k.startswith("thinker.") for k in weight_keys))
+            self.assertFalse(any("thinker.thinker." in k for k in weight_keys))
+
+            self.assertEqual(set(index_data), {"metadata", "weight_map"})
+            self.assertEqual(set(index_data["weight_map"]), weight_keys)
+            self.assertTrue(all(k.startswith("thinker.") for k in index_data["weight_map"]))
+
+    def test_saver_writes_consistent_thinker_keys_end_to_end(self):
+        """用真实 AscendV1Saver 写出一个量化线性层，校验三份导出件键名一致。
+
+        覆盖 review 指出的隐式链路：saver 的 JsonWriter / SafetensorsWriter
+        必须消费 ascendv1_save_module_preprocess 返回的前缀，才能让
+        description.json 的权重键、index.json 的 weight_map 与 safetensors
+        分片键集合三者相同且均带 thinker. 前缀，而元数据键保持裸名。
+        """
+        x_q_param = QParam(
+            scheme=int8_per_token_sym,
+            ext={"scale": torch.ones(1, dtype=torch.float32)},
+        )
+        w_q_param = QParam(
+            scheme=int8_per_channel_sym,
+            ext={"scale": torch.full((4,), 0.1, dtype=torch.float32)},
+        )
+        fq_linear = W8A8DynamicPerChannelFakeQuantLinear(
+            x_q_param,
+            w_q_param,
+            QStorage(dtype=QDType.INT8, value=torch.zeros((4, 4), dtype=torch.int8)),
+            None,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            save_directory = Path(tmp) / "out"
+            save_directory.mkdir()
+            model_path = Path(tmp) / "model"
+            model_path.mkdir()
+            (model_path / "config.json").write_text("{}", encoding="utf-8")
+
+            saver = AscendV1Saver(
+                nn.Module(),
+                AscendV1Config(save_directory=str(save_directory), part_file_size=4),
+                _SaveContractAdapter(model_path),
+            )
+            saver._process_module(  # pylint: disable=protected-access
+                "model.layers.0.mlp.down_proj", fq_linear
+            )
+            with (
+                patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.copy_files"),
+                patch("msmodelslim.core.quant_service.modelslim_v1.save.ascendv1.remove_quantization_config"),
+            ):
+                saver.post_run()
+
+            description = json.loads((save_directory / "quant_model_description.json").read_text(encoding="utf-8"))
+            index = json.loads(
+                (save_directory / "quant_model_weights.safetensors.index.json").read_text(encoding="utf-8")
+            )
+
+            weight_keys = set(description) - self.DESCRIPTION_META_KEYS
+            expected = {
+                "thinker.model.layers.0.mlp.down_proj.weight",
+                "thinker.model.layers.0.mlp.down_proj.weight_scale",
+                "thinker.model.layers.0.mlp.down_proj.weight_offset",
+            }
+            self.assertEqual(weight_keys, expected)
+            self.assertIn("version", description)
+            self.assertNotIn("thinker.version", description)
+
+            self.assertEqual(set(index), {"metadata", "weight_map"})
+            self.assertEqual(set(index["weight_map"]), weight_keys)
+
+            shard_keys = set()
+            for shard in sorted(set(index["weight_map"].values())):
+                with safe_open(str(save_directory / shard), framework="pt") as handle:
+                    shard_keys |= set(handle.keys())
+            self.assertEqual(shard_keys, weight_keys)
 
 
 if __name__ == "__main__":

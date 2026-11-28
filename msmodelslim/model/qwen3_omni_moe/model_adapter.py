@@ -18,7 +18,6 @@ See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
 
-import glob
 import os
 from collections import defaultdict
 from functools import lru_cache
@@ -26,8 +25,8 @@ from typing import List, Any, Generator, Tuple, Dict, Optional
 from unittest.mock import patch
 
 import torch
+import torch.distributed as dist
 from safetensors import safe_open
-from safetensors.torch import save_file
 from torch import nn
 from tqdm import tqdm
 
@@ -48,9 +47,15 @@ from msmodelslim.model.interface_hub import (
     AscendV1SaveInterface,
 )
 from msmodelslim.model.common.vlm_base import VLMBaseModelAdapter
+from msmodelslim.model.common.utils import _get_expert_range
 from msmodelslim.utils.exception import InvalidDatasetError
 from msmodelslim.utils.logging import logger_setter, get_logger
-from msmodelslim.utils.security import get_valid_read_path, json_safe_load, json_safe_dump, MAX_READ_FILE_SIZE_32G
+from msmodelslim.utils.security import get_valid_read_path, json_safe_load, MAX_READ_FILE_SIZE_32G
+from .ep_patches import (
+    apply_qwen3_omni_moe_ep_patches,
+    is_ep_patch_applied,
+    set_calibration_replicated,
+)
 
 
 @logger_setter()
@@ -70,6 +75,8 @@ class Qwen3OmniMoeThinkerModelAdapter(  # pylint: disable=too-many-ancestors
     def __init__(self, model_type: str, model_path: str, trust_remote_code: bool = False):
         self._processor = None
         self._tokenizer = None
+        # EP 补丁是否真正替换了 MoE block；用于子图配置与「专家是否已按 rank 切分」保持一致
+        self._ep_patch_applied = False
         super().__init__(model_type, model_path, trust_remote_code)
 
     def get_model_pedigree(self) -> str:
@@ -131,6 +138,20 @@ class Qwen3OmniMoeThinkerModelAdapter(  # pylint: disable=too-many-ancestors
         All calibration samples in one task must share the same effective modality
         combination, including whether video contributes an audio track.
         """
+        try:
+            n_samples = len(dataset)
+        except TypeError:
+            n_samples = None
+
+        # DistributedSampler only gives every rank the same sample when there is
+        # exactly one: with 2..world_size-1 samples it pads and different ranks
+        # receive different samples, so the gather is still required.  Set the
+        # flag on every path (including the empty dataset) to avoid keeping a
+        # value from a previous task in the same process.
+        set_calibration_replicated(n_samples == 1)
+        if n_samples == 0:
+            return []
+
         from transformers import Qwen3OmniMoeProcessor  # pylint: disable=no-name-in-module
 
         # 1. Init processor (once)
@@ -242,6 +263,13 @@ class Qwen3OmniMoeThinkerModelAdapter(  # pylint: disable=too-many-ancestors
             raise ImportError("Please install transformers with Qwen3-Omni-Moe support.") from e
 
         get_logger().info("Initializing Qwen3-Omni-Moe model...")
+        apply_qwen3_omni_moe_ep_patches()
+        self._ep_patch_applied = is_ep_patch_applied()
+        if dist.is_initialized() and dist.get_world_size() > 1 and not self._ep_patch_applied:
+            get_logger().warning(
+                "EP patch did not apply (transformers layout mismatch?); every rank still holds all experts, "
+                "subgraph config falls back to the full expert range."
+            )
 
         thinker_config = self.config.thinker_config
         origin_layers = thinker_config.text_config.num_hidden_layers
@@ -540,6 +568,23 @@ class Qwen3OmniMoeThinkerModelAdapter(  # pylint: disable=too-many-ancestors
         model.config.use_cache = need_kv_cache
         get_logger().info("KV cache %s", "enabled" if need_kv_cache else "disabled")
 
+    def _expert_range_for_subgraph(self, text_config: Any) -> Tuple[int, int]:
+        """Return the expert range that is really materialized on this rank.
+
+        The subgraph config must describe the modules the model actually holds.
+        ``_get_expert_range`` only derives the range from the world size, which is
+        correct solely when the EP patch replaced the MoE block.  If the patch did
+        not apply (e.g. transformers renamed the private classes), every rank still
+        holds all experts; slicing the subgraph by world size would then skip
+        ``1 - 1/world_size`` of them without any error.
+        """
+        total = int(text_config.num_experts)
+        if self._ep_patch_applied:
+            return _get_expert_range(text_config)
+        if dist.is_initialized() and dist.get_world_size() > 1:
+            get_logger().warning("EP patch inactive; using the full expert range [0, %d) for subgraph config.", total)
+        return 0, total
+
     def get_adapter_config_for_subgraph(self) -> List[AdapterConfig]:
         """
         Get adapter config for subgraph-based anti-outlier processing (iter_smooth).
@@ -613,7 +658,8 @@ class Qwen3OmniMoeThinkerModelAdapter(  # pylint: disable=too-many-ancestors
                         ]
                     )
                 elif text_config.num_experts:
-                    for expert_idx in range(text_config.num_experts):
+                    expert_start, expert_end = self._expert_range_for_subgraph(text_config)
+                    for expert_idx in range(expert_start, expert_end):
                         moe_up_down_mapping_config = MappingConfig(
                             source=f"model.layers.{layer_idx}.mlp.experts.{expert_idx}.up_proj",
                             targets=[f"model.layers.{layer_idx}.mlp.experts.{expert_idx}.down_proj"],
@@ -624,17 +670,26 @@ class Qwen3OmniMoeThinkerModelAdapter(  # pylint: disable=too-many-ancestors
 
         return adapter_config
 
-    def ascendv1_save_postprocess(self, model: nn.Module, save_directory: str) -> None:
-        """为满足 vLLM Ascend 要求，在描述/索引与权重文件中为键名统一添加 thinker. 前缀。"""
-        prefix = "thinker."
-        for name in ("quant_model_description.json", "quant_model_weights.safetensors.index.json"):
-            path = os.path.join(save_directory, name)
-            data = json_safe_load(path)
-            target = data.get("weight_map") if data.get("weight_map") is not None else data
-            json_safe_dump({f"{prefix}{k}": v for k, v in target.items()}, path, indent=2)
-        for path in glob.glob(os.path.join(save_directory, "*.safetensors")):
-            with safe_open(path, framework="pt", device="cpu") as f:
-                save_file({f"{prefix}{k}": f.get_tensor(k) for k in f.keys()}, path)
+    # 权重键由下面的 ascendv1_save_module_preprocess 在落盘时一次写成 thinker. 前缀；
+    # description.json 中的 version / model_quant_type / metadata / group_size / optional
+    # 等头部元数据不属于权重命名空间，须保持裸名（下游按这些固定键名读取）。
+    # JsonWriter / SafetensorsWriter 共用同一个前缀，三份文件的键名从写入起保持一致，
+    # index.json 也保持 {"metadata", "weight_map"} 结构。
+
+    def ascendv1_save_module_preprocess(
+        self, prefix: str, module: nn.Module, model: nn.Module
+    ) -> Tuple[str, nn.Module]:
+        """唯一的前缀写入点：在 saver 写张量前把键名还原为完整的 thinker. 命名空间。
+
+        JsonWriter.write() 与 SafetensorsWriter.write() 共用这里返回的 prefix，
+        因此 description.json、index.json 的 weight_map 与 safetensors 分片
+        从写入起就使用同一套键名。
+        """
+        del model
+        thinker_prefix = "thinker."
+        if prefix == "thinker" or prefix.startswith(thinker_prefix):
+            return prefix, module
+        return f"thinker.{prefix}" if prefix else "thinker", module
 
     @lru_cache(maxsize=1)
     def _get_weight_map(self) -> Dict[str, str]:
