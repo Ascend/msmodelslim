@@ -17,9 +17,12 @@ MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 See the Mulan PSL v2 for more details.
 -------------------------------------------------------------------------
 """
-# pylint: disable=logging-fstring-interpolation,no-name-in-module,too-many-ancestors,unnecessary-comprehension
+# The adapter is pinned to the transformers version that provides the Qwen3-VL MoE
+# modules; pre-commit may inspect imports with a different installed version.
+# pylint: disable=logging-fstring-interpolation,too-many-lines,no-name-in-module
 
 import gc
+import json
 import os
 from collections import defaultdict
 from functools import lru_cache
@@ -28,6 +31,7 @@ from typing import List, Any, Generator, Tuple, Dict
 from unittest.mock import patch
 
 import torch
+import torch.distributed as dist
 from safetensors import safe_open
 from torch import nn
 from tqdm import tqdm
@@ -43,6 +47,7 @@ from msmodelslim.app.naive_quantization.model_info_interface import ModelInfoInt
 from msmodelslim.core.base.protocol import ProcessRequest
 from msmodelslim.core.graph import AdapterConfig, MappingConfig
 from msmodelslim.model.common.layer_wise_forward import generated_decoder_layer_visit_func
+from msmodelslim.model.common.utils import resolve_expert_ep_range
 from msmodelslim.model.interface_hub import (
     IterSmoothInterface,
     FlexSmoothQuantInterface,
@@ -60,7 +65,7 @@ from .moe_utils import UnstackedQwen3VLMoeSparseMoeBlock
 
 
 @logger_setter()
-class Qwen3VLMoeModelAdapter(
+class Qwen3VLMoeModelAdapter(  # pylint: disable=too-many-ancestors
     VLMBaseModelAdapter,
     ModelInfoInterface,
     ModelSlimPipelineInterfaceV1,
@@ -238,7 +243,10 @@ class Qwen3VLMoeModelAdapter(
         # Load full state_dict for the first layer + vision encoder + lm_head
         get_logger().info("Loading weights for vision encoder, first decoder layer, and lm_head...")
         state_dict = self._get_state_dict(model)
-        model.load_state_dict(state_dict)
+        # EP skips the fused expert tensors here; layer 0's experts are re-read as a
+        # per-rank slice by _convert_single_moe_layer right below.
+        ep_world = dist.get_world_size() if dist.is_initialized() else 1
+        _assert_only_experts_missing(model.load_state_dict(state_dict, strict=False), ep_world > 1)
 
         # CRITICAL: Copy text_config attention heads to model.config for OV smoothing
         # BaseSmoothProcessor._apply_standard_ov_smooth() reads from model.config, not model.config.text_config
@@ -502,7 +510,10 @@ class Qwen3VLMoeModelAdapter(
             - pre_run_fused_ln: Empty dict (no pre-run fusion)
             - fused_map: Dict mapping RMSNorm names to Linear layer names
         """
-        return {}, _qwen3_vl_moe_get_ln_fuse_map(self.config.text_config)
+        # Expert-parallel runs only materialise the local expert range; listing all
+        # 128 experts would make the fusion pass call get_submodule() on None slots.
+        _, _, ep_start, ep_end = resolve_expert_ep_range(self.config.text_config.num_experts)
+        return {}, _qwen3_vl_moe_get_ln_fuse_map(self.config.text_config, ep_start, ep_end)
 
     def get_bake_names(self):
         """
@@ -553,7 +564,7 @@ class Qwen3VLMoeModelAdapter(
         # Pass full config (includes vision_config) for visual projections
         pre_run, rot_pairs = _qwen3_vl_moe_get_rotate_map(self.config, block_size)
 
-        return [pre_run], [pair for pair in rot_pairs.values()]
+        return [pre_run], list(rot_pairs.values())
 
     @lru_cache(maxsize=1)
     def _get_weight_map(self) -> Dict[str, str]:
@@ -561,6 +572,50 @@ class Qwen3VLMoeModelAdapter(
         index_path = os.path.join(self.model_path, "model.safetensors.index.json")
         index_data = json_safe_load(index_path)
         return index_data['weight_map']
+
+    def _prefetch_layer_ranges(self, requests, workers: int = 4) -> None:
+        """Warm the page cache for one layer with several parallel large reads.
+
+        GlusterFS over FUSE caps a single request at 128 KiB, so a serial
+        ``get_tensor`` loop on a cold layer runs at 30-60 MB/s while 8 concurrent
+        streams reach 300-700 MB/s.  Reading the exact byte ranges first turns the
+        following ``get_tensor`` calls into cache hits (~1 GB/s).
+        """
+        from concurrent.futures import ThreadPoolExecutor
+
+        def _read(args):
+            file_path, offset, length = args
+            try:
+                with open(file_path, "rb", buffering=0) as handle:
+                    handle.seek(offset)
+                    while length > 0:
+                        block = handle.read(min(length, 4 << 20))
+                        if not block:
+                            break
+                        length -= len(block)
+            except OSError:
+                pass
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            list(pool.map(_read, requests))
+
+    def _collect_tensor_ranges(self, file_groups) -> list:
+        """Map (shard, tensor) pairs to absolute byte ranges inside the shard."""
+
+        requests = []
+        for file_name, names in file_groups.items():
+            file_path = os.path.join(str(self.model_path), file_name)
+            try:
+                header, base = _safetensors_header(file_path)
+            except (OSError, ValueError):
+                continue
+            for param_name in names:
+                meta = header.get(param_name)
+                if meta is None:
+                    continue
+                start, end = meta["data_offsets"]
+                requests.append((file_path, base + start, end - start))
+        return requests
 
     def _get_state_dict(self, module: nn.Module, prefix: str = "") -> Dict[str, torch.Tensor]:
         """
@@ -577,6 +632,12 @@ class Qwen3VLMoeModelAdapter(
 
         # Get all parameter names for this module
         param_names = [name for name, _ in module.named_parameters()]
+        # Under EP the fused experts are read later as a per-rank slice; reading the
+        # full 3D tensor here would add ~4.8 GiB per layer per rank on top of it.
+        # ``named_parameters()`` yields names without a leading dot (``mlp.experts.*``),
+        # so the marker must not be prefixed with one.
+        if dist.is_initialized() and dist.get_world_size() > 1:
+            param_names = [n for n in param_names if "mlp.experts." not in n]
 
         # Group by safetensors file
         file_groups = defaultdict(list)
@@ -585,6 +646,17 @@ class Qwen3VLMoeModelAdapter(
             if full_name in weight_map:
                 file_name = weight_map[full_name]
                 file_groups[file_name].append(param_name)
+
+        # Parallel warm-up of the exact byte ranges this layer needs.  GlusterFS
+        # over FUSE caps one request at 128 KiB, so a serial get_tensor loop on a
+        # cold 4.8 GiB MoE layer crawls at 30-60 MB/s; 8 concurrent streams reach
+        # 300-700 MB/s and turn the loop below into page-cache hits (~1 GB/s).
+        full_groups = {
+            file_name: [(f"{prefix}.{n}" if prefix else n) for n in names] for file_name, names in file_groups.items()
+        }
+        prefetch_requests = self._collect_tensor_ranges(full_groups)
+        if len(prefetch_requests) > 16:
+            self._prefetch_layer_ranges(prefetch_requests)
 
         # Load weights file by file
         state_dict = {}
@@ -646,7 +718,11 @@ class Qwen3VLMoeModelAdapter(
 
             # Load weights from safetensors
             state_dict = self._get_state_dict(decoder, prefix=name)
-            decoder.load_state_dict(state_dict)
+            # Expert-parallel runs skip the fused expert tensors in _get_state_dict
+            # and re-read only the local slice in _convert_single_moe_layer, so the
+            # missing keys here are expected and get filled right after.
+            ep_size = dist.get_world_size() if dist.is_initialized() else 1
+            _assert_only_experts_missing(decoder.load_state_dict(state_dict, strict=False), ep_size > 1)
             decoder.eval()
 
             # Add layer to model's layer list
@@ -676,6 +752,47 @@ class Qwen3VLMoeModelAdapter(
             return True
         return False
 
+    def _load_expert_weight_slices(self, layer_idx: int, expert_start: int, expert_end: int):
+        """Read ``[expert_start, expert_end)`` of one layer's fused expert tensors.
+
+        ``safe_open(...).get_slice`` lets each rank pull only its own 1/world_size of
+        the 3D weight instead of deserialising all experts and slicing afterwards.
+        The byte range of that slice is warmed with parallel reads first, because a
+        serial ``get_slice`` on GlusterFS/FUSE crawls at 30-60 MB/s: experts are ~97%
+        of the 235B weights, so leaving them un-prefetched dominates the whole run.
+        """
+        weight_map = self._get_weight_map()
+        prefix = f"model.language_model.layers.{layer_idx}.mlp.experts"
+        itemsize = {"F64": 8, "F32": 4, "BF16": 2, "F16": 2, "I64": 8, "I32": 4, "I16": 2, "I8": 1, "U8": 1, "BOOL": 1}
+
+        requests = []
+        shard_paths = {}
+        for key in (f"{prefix}.gate_up_proj", f"{prefix}.down_proj"):
+            shard = weight_map.get(key)
+            if shard is None:
+                raise InvalidModelError(f"Missing expert weight {key} in index")
+            file_path = os.path.join(str(self.model_path), shard)
+            shard_paths[key] = file_path
+            try:
+                header, base = _safetensors_header(file_path)
+            except (OSError, ValueError) as exc:
+                raise InvalidModelError(f"Cannot read shard {file_path}: {exc}") from exc
+            meta = header[key]
+            per_expert = 1
+            for dim in meta["shape"][1:]:
+                per_expert *= dim
+            per_expert *= itemsize.get(meta["dtype"], 2)
+            offset = base + meta["data_offsets"][0] + expert_start * per_expert
+            requests.append((file_path, offset, (expert_end - expert_start) * per_expert))
+
+        self._prefetch_layer_ranges(requests, workers=8)
+
+        slices = []
+        for key in (f"{prefix}.gate_up_proj", f"{prefix}.down_proj"):
+            with safe_open(shard_paths[key], framework="pt", device="cpu") as f:
+                slices.append(f.get_slice(key)[expert_start:expert_end])
+        return slices[0], slices[1]
+
     def _convert_single_moe_layer(self, layer: nn.Module, layer_idx: int):
         """
         Convert a single MoE layer's 3D fused weights to standard nn.Linear layers.
@@ -697,9 +814,19 @@ class Qwen3VLMoeModelAdapter(
             )
             return
 
+        # Expert-parallel runs must not deserialise all 128 experts per rank: read only
+        # this rank's contiguous slice straight from the safetensors shard.
+        expert_slices = None
+        ep_size, _, ep_start, ep_end = resolve_expert_ep_range(self.config.text_config.num_experts)
+        if ep_size > 1:
+            expert_slices = self._load_expert_weight_slices(layer_idx, ep_start, ep_end)
+
         # Create unstacked MoE block
         unstacked_moe_block = UnstackedQwen3VLMoeSparseMoeBlock(
-            self.config.text_config, original_moe_block, copy_weights=False
+            self.config.text_config,
+            original_moe_block,
+            copy_weights=False,
+            expert_slices=expert_slices,
         )
 
         # Transform weights from 3D fused to individual Linear layers
@@ -719,7 +846,38 @@ class Qwen3VLMoeModelAdapter(
         gc.collect()
 
 
-def _qwen3_vl_moe_get_ln_fuse_map(config):
+@lru_cache(maxsize=16)
+def _safetensors_header(file_path: str):
+    """Return ``(header_dict, data_base_offset)`` for a shard, parsed once."""
+    import struct
+
+    with open(file_path, "rb") as handle:
+        header_len = struct.unpack("<Q", handle.read(8))[0]
+        return json.loads(handle.read(header_len)), 8 + header_len
+
+
+def _assert_only_experts_missing(incompatible, ep_enabled: bool) -> None:
+    """Fail fast when ``load_state_dict`` silently skipped non-expert weights.
+
+    EP runs load the fused expert tensors separately, so those keys are expected to
+    be absent; any other missing or unexpected key means the model would run with
+    stale or uninitialised weights.
+    """
+    missing = list(incompatible.missing_keys)
+    unexpected = list(incompatible.unexpected_keys)
+    if not ep_enabled:
+        if missing or unexpected:
+            raise RuntimeError(f"state_dict mismatch: missing={missing[:5]} unexpected={unexpected[:5]}")
+        return
+    non_expert_missing = [key for key in missing if "mlp.experts." not in key]
+    if non_expert_missing or unexpected:
+        raise RuntimeError(
+            "only fused expert tensors may be missing under EP, "
+            f"got missing={non_expert_missing[:5]} unexpected={unexpected[:5]}"
+        )
+
+
+def _qwen3_vl_moe_get_ln_fuse_map(config, expert_start=None, expert_end=None):
     """
     Get LayerNorm-Linear fusion mapping for Qwen3-VL-MoE text decoder.
 
@@ -727,11 +885,15 @@ def _qwen3_vl_moe_get_ln_fuse_map(config):
 
     Args:
         config: Text config (config.text_config)
+        expert_start: First locally owned expert id (expert-parallel runs)
+        expert_end: One past the last locally owned expert id
 
     Returns:
         Dict mapping LayerNorm names to Linear layer names
     """
     ln_linear_map = {}
+    first = 0 if expert_start is None else expert_start
+    last = config.num_experts if expert_end is None else expert_end
 
     for layer_idx in range(config.num_hidden_layers):
         # Attention: input_layernorm → QKV projections
@@ -741,11 +903,11 @@ def _qwen3_vl_moe_get_ln_fuse_map(config):
             f"model.language_model.layers.{layer_idx}.self_attn.v_proj",
         ]
 
-        # MoE experts: post_attention_layernorm → gate_proj + up_proj for all experts
+        # MoE experts: post_attention_layernorm → gate_proj + up_proj for local experts
         ln_linear_map[f"model.language_model.layers.{layer_idx}.post_attention_layernorm"] = [
             f"model.language_model.layers.{layer_idx}.mlp.experts.{i}.{proj}"
             for proj in ["gate_proj", "up_proj"]
-            for i in range(config.num_experts)
+            for i in range(first, last)
         ]
 
         # Expert gate (router)
@@ -842,7 +1004,10 @@ def _qwen3_vl_moe_get_rotate_map(config, block_size):
 
         # MoE experts rotation
         # Also safe: contained within each layer
-        for i in range(config.text_config.num_experts):
+        # Expert-parallel runs only own [ep_start, ep_end); naming the other slots
+        # would resolve to None modules and break the rotation pass.
+        _, _, ep_start, ep_end = resolve_expert_ep_range(config.text_config.num_experts)
+        for i in range(ep_start, ep_end):
             right_rot[f"model.language_model.layers.{layer_idx}.mlp.experts.{i}.gate_proj"] = rot
             right_rot[f"model.language_model.layers.{layer_idx}.mlp.experts.{i}.up_proj"] = rot
             left_rot[f"model.language_model.layers.{layer_idx}.mlp.experts.{i}.down_proj"] = rot
